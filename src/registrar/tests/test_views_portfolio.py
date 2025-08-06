@@ -27,7 +27,7 @@ from .common import MockEppLib, MockSESClient, completed_domain_request, create_
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
-from django.test import Client, RequestFactory
+from django.test import Client
 import logging
 import json
 

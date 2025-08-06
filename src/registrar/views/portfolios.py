@@ -1211,16 +1211,6 @@ class PortfolioOrganizationsView(ListView, FormMixin):
         self.form = self.get_form()
         print("form: ", self.form)
 
-    # def _handle_success_response(self, request, portfolio):
-    #     """
-    #     Return a success response (JSON or redirect with messages).
-    #     """
-    #     success_message = f"You set your active portfolio to {portfolio}."
-    #     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-    #         return JsonResponse({"success": success_message}, status=200)
-    #     messages.success(request, success_message)
-    #     return redirect(reverse("domains"))
-
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):

@@ -152,33 +152,3 @@ def get_rejection_email_for_user_json(request):
     domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
     email = get_rejection_reason_default_email(domain_request, reason)
     return JsonResponse({"email": email}, status=200)
-
-
-# @grant_access(IS_PORTFOLIO_MEMBER)
-# def set_portfolio_in_session(request, user_portfolio_perm_pk):
-#     """
-#     Handles updating active portfolio in session.
-
-#     Takes user portfolio permission pk to ensure that portfolio set
-#     in session is associated with a user portfolio permission with
-#     that portfolio.
-#     """
-#     portfolio_permission = UserPortfolioPermission.objects.filter(id=user_portfolio_perm_pk).first()
-#     if not portfolio_permission:
-#         return JsonResponse({"error": "Invalid user portfolio permission"}, status=404)
-#     # validate user has permission to portfolio permission accessed
-#     user = portfolio_permission.user
-#     print("user: ", user)
-#     print("request user: ", request.user)
-#     if user != request.user:
-#         return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
-
-#     portfolio = portfolio_permission.portfolio
-#     request.session["portfolio"] = portfolio
-#     session_portfolio = request.session["portfolio"]
-
-#     logger.info(f"Set active portfolio to {portfolio.organization_name}.")
-#     logger.info(f"Session portfolio now {session_portfolio}.")
-#     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-#         return JsonResponse({"success": success_message}, status=200)
-#     return redirect(reverse("domains"))
