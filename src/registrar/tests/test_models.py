@@ -2378,17 +2378,19 @@ class TestDomainRequestIncomplete(TestCase):
             },
         ]
         for case in test_cases:
-            with self.subTest(case=case):
-                self.domain_request.has_cisa_representative = case["has_cisa_representative"]
-                self.domain_request.cisa_representative_email = case["cisa_representative_email"]
-                self.domain_request.has_anything_else_text = case["has_anything_else_text"]
-                self.domain_request.anything_else = case["anything_else"]
-                self.domain_request.save()
-                self.domain_request.refresh_from_db()
-                self.assertEqual(
-                    self.wizard.form_is_complete(),
-                    case["expected"],
-                    msg=f"Failed for case: {case}",
+            self.domain_request.has_cisa_representative = case["has_cisa_representative"]
+            self.domain_request.cisa_representative_email = case["cisa_representative_email"]
+            self.domain_request.has_anything_else_text = case["has_anything_else_text"]
+            self.domain_request.anything_else = case["anything_else"]
+            self.domain_request.save()
+            self.domain_request.refresh_from_db()
+            
+            result = self.wizard.form_is_complete()
+            expected = case["expected"]
+
+            if result != expected:
+                self.fail(f"\nTest Failed": {case}"
+                    f"\nExpected: {expected}, Got: {result}\n"
                 )
 
     @less_console_noise_decorator
