@@ -9,7 +9,7 @@ from registrar.utility.email import EmailSendingError
 from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, create_user, get_ap_style_month  # type: ignore
+from .common import MockEppLib, create_user  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -263,7 +263,6 @@ class TestDomainDetail(TestDomainOverview):
         home_page = self.app.get("/")
         logger.info(f"This is the value of home_page: {home_page}")
         self.assertContains(home_page, "igorville.gov")
-
         # click the "Edit" link
         detail_page = home_page.click("Manage", index=0)
         self.assertContains(detail_page, "igorville.gov")
@@ -741,11 +740,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            expiration_month = datetime.today().strftime("%B")
-            # Format month to AP style if necessary
-            ap_month = get_ap_style_month(expiration_month) or expiration_month
-            ap_date_format = f"{ap_month} %-d, %Y"
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime(ap_date_format)
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%B %-d, %Y")
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
