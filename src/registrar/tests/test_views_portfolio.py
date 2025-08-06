@@ -680,6 +680,8 @@ class TestPortfolio(WebTest):
             self.assertIsNone(session["portfolio"])
 
     @less_console_noise_decorator
+
+    # TODO: Remove or update test in #3776 to test portfolio redirect 
     def test_portfolio_in_session_when_multiple_portfolios_active(self):
         """When multiple_portfolios flag is true and user has a portfolio,
         the portfolio should be set in session."""

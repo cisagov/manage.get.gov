@@ -173,7 +173,7 @@ class CheckPortfolioMiddleware:
         # portfolio and another for switching portfolio; for now, select first
         # TODO: Add logic to redirect user to Select Organization page if portfolio is none.
         # For now, default portfolio to first portfolio as in production.
-        if not flag_is_active(request, "multiple_portfolios") or not request.session["portfolio"]:
+        if not flag_is_active(request, "multiple_portfolios") or not request.session.get("portfolio"):
             request.session["portfolio"] = request.user.get_first_portfolio()
 
 
