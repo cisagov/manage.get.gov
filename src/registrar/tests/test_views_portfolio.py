@@ -5127,7 +5127,6 @@ class TestPortfolioSelectOrganizationView(WebTest):
     def setUp(self):
         super().setUp()
         self.user = create_user()
-        self.factory = RequestFactory()
         # Create Portfolio
         self.portfolio_1 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 1")
         self.portfolio_2 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 2")
