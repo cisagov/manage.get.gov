@@ -1255,5 +1255,4 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         success_message = f"You set your active portfolio to {portfolio}."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
-        messages.success(request, success_message)
         return redirect(reverse("domains"))
