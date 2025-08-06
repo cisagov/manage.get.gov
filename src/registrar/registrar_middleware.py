@@ -137,20 +137,6 @@ class CheckPortfolioMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.home = reverse("home")
-        # self.portfolio_setup_page = reverse("your-portfolios")
-        self.profile_setup_page = reverse("finish-user-profile-setup")
-        self.profile_page = reverse("user-profile")
-        self.logout_page = reverse("logout")
-
-        self.excluded_pages = [
-            # self.portfolio_setup_page,
-            self.profile_page,
-            self.logout_page,
-            "/admin",
-            # These are here as there is a bug with this middleware that breaks djangos built in debug console.
-            # The debug console uses this directory, but since this overrides that, it throws errors.
-            "/__debug__",
-        ]
 
     def __call__(self, request):
         response = self.get_response(request)
@@ -185,33 +171,10 @@ class CheckPortfolioMiddleware:
     def set_portfolio_in_session(self, request):
         # NOTE: we will want to change later to have a workflow for selecting
         # portfolio and another for switching portfolio; for now, select first
-        # Set portfolio to first portfolio if one is not set
-
-        # If user has multiple portfolios and active portfolio not yet set,
-        # Direct to select portfolio page
-        multiple_portfolios_flag = flag_is_active(request, "multiple_portfolios")
-        user_has_multiple_portfolios = request.user.get_num_portfolios() > 1
-        no_set_session_portfolio = not request.session.get("portfolio")
-
-        request.session["portfolio"] = request.user.get_first_portfolio()
-
-        # if multiple_portfolios_flag and user_has_multiple_portfolios:
-        # if no_set_session_portfolio:
-        # print("Redirecting to set portfolio page")
-        # self._redirect_to_select_portfolio_page(request)
-        # else:
-        # If user doesn't have multiple portfolios, grab first portfolio
-        # Handles edge case where multiple_portfolios flag is off but
-        # User has multiple user portfolio permissions from previous sessions.
-        # request.session["portfolio"] = request.user.get_first_portfolio()
-
-    def _redirect_to_select_portfolio_page(self, request):
-        # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.excluded_pages):
-            return HttpResponseRedirect(self.portfolio_setup_page)
+        if flag_is_active(request, "multiple_portfolios"):
+            request.session["portfolio"] = request.user.get_first_portfolio()
         else:
-            # Process the view as normal
-            return None
+            request.session["portfolio"] = request.user.get_first_portfolio()
 
 
 class RestrictAccessMiddleware:
