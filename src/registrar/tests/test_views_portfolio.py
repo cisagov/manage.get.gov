@@ -214,6 +214,7 @@ class TestPortfolio(WebTest):
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
+        self.portfolio.organization_type = "federal"
         self.portfolio.save()
 
         # User can access organization info form via organization overview page
@@ -482,7 +483,7 @@ class TestPortfolio(WebTest):
         self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
-    def test_portfolio_org_info_includes_name_and_address(self):
+    def test_portfolio_org_info_includes_name_address_and_type(self):
         """Org name and address appears on the org info page."""
         self.app.set_user(self.user.username)
         portfolio_additional_permissions = [
@@ -493,11 +494,14 @@ class TestPortfolio(WebTest):
             user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
         )
 
-        self.portfolio.organization_name = "Hotel California"
-        self.portfolio.save()
-        page = self.app.get(reverse("organization-info"))
-        # Org name in Sidenav, main nav, webpage title, and breadcrumb
-        self.assertContains(page, "Hotel California", count=5)
+            self.portfolio.organization_name = "Hotel California"
+            self.portfolio.organization_type = "federal"
+            self.portfolio.save()
+            page = self.app.get(reverse("organization-info"))
+            # Org name in Sidenav, main nav, webpage title, and breadcrumb
+            self.assertContains(page, "Hotel California", count=5)
+            self.assertContains(page, "Organization type")
+            self.assertContains(page, "Federal")
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):
