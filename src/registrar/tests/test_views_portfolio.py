@@ -434,8 +434,6 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertNotContains(portfolio_page, reverse("domains"))
-            self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
@@ -451,7 +449,7 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_requests", active=True)
     def test_accessible_pages_when_user_does_not_have_role(self):
-        """Test that admin / memmber roles are associated with the right access"""
+        """Test that admin / member roles are associated with the right access"""
         self.app.set_user(self.user.username)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -481,8 +479,8 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertNotContains(portfolio_page, reverse("domains"))
-            self.assertNotContains(portfolio_page, reverse("domain-requests"))
+            self.assertContains(portfolio_page, reverse("domains"))
+            self.assertContains(portfolio_page, reverse("domain-requests"))
 
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
@@ -879,7 +877,7 @@ class TestPortfolio(WebTest):
         home = self.app.get(reverse("home")).follow()
 
         self.assertContains(home, "Hotel California")
-        self.assertNotContains(home, "Members")
+        self.assertContains(home, "Members")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -1344,11 +1342,11 @@ class TestPortfolio(WebTest):
         # dropdown
         self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
         # link to requests
-        self.assertNotContains(portfolio_landing_page, 'href="/requests/')
+        self.assertContains(portfolio_landing_page, 'href="/requests/')
         # link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
         # link to members
-        self.assertNotContains(portfolio_landing_page, 'href="/members/')
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)

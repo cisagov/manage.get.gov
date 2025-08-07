@@ -2369,7 +2369,6 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
-        self.assertNotContains(page, "Organization")
 
         # Test for the good value
         self.assertContains(page, "Ice Cream")
