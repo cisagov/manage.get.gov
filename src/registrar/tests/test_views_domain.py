@@ -254,6 +254,55 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
+    
+    def makeUserOrgUser(self, role):
+        '''Switches to enterprise mode with the specified role'''
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults={"roles": [role]}
+        )
+    
+    def makeUserNonOrgUser(self):
+        '''Essentially switches to legacy mode by
+        stripping the user of portfolio permissions'''
+        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+    
+    def switchToEnterpriseMode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
+        '''
+        Use this decorator for all tests where we want to be in Enterprise mode.
+
+        By default, our test mock data has users that do not have portfolio permissions.
+        This decorator grants portfolio permissions temporarily for the function
+        it decorates.
+
+        NOTE: This decorator (in general) should appear at the top of any other decorators.
+        
+        USE CASE:
+        # Default role (ORGANIZATION_ADMIN)
+        @BaseTestCase.switchToEnterpriseMode_wrapper()
+        @other_decorator
+        @other_decorator
+        def test_admin_role(self):
+            ...
+
+        # Custom role
+        @BaseTestCase.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        @other_decorator
+        @other_decorator
+        def test_member_role(self):
+            ...
+
+        '''
+        def decorator(func):
+            def wrapper(self, *args, **kwargs):
+                self.makeUserOrgUser(role)
+                try:
+                    return func(self, *args, **kwargs)
+                finally:
+                    self.makeUserNonOrgUser()
+            return wrapper
+        return decorator
 
 
 class TestDomainDetail(TestDomainOverview):
@@ -765,10 +814,7 @@ class TestDomainManagers(TestDomainOverview):
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
         self.domain_information.save()
-        # Add portfolio perms to the user object
-        self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
+        self.makeUserNonOrgUser()
 
     @classmethod
     def tearDownClass(cls):
@@ -782,7 +828,18 @@ class TestDomainManagers(TestDomainOverview):
         UserDomainRole.objects.all().delete()
         User.objects.exclude(id=self.user.id).delete()
         super().tearDown()
+  
+    @less_console_noise_decorator
+    def test_domain_managers(self):
+        response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
+        self.assertContains(response, "Domain managers")
+        self.assertContains(response, "Add a domain manager")
+        # assert that the non-portfolio view contains Role column and doesn't contain Admin
+        self.assertContains(response, "Role</th>")
+        self.assertNotContains(response, "Admin")
+        self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_domain_managers_portfolio_view(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
@@ -831,6 +888,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -887,6 +945,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -937,6 +996,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "notauser@igorville.gov")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -970,6 +1030,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -1019,6 +1080,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -2217,33 +2279,54 @@ class TestDomainOrganization(TestDomainOverview):
 class TestDomainSuborganization(TestDomainOverview):
     """Tests the Suborganization page for portfolio users"""
 
-    @less_console_noise_decorator
-    def test_edit_suborganization_field(self):
-        """Ensure that org admins can edit the suborganization field"""
+    def setUp(self):
+        super().setUp()
         # Create a portfolio and two suborgs
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        self.suborg = Suborganization.objects.create(portfolio=self.portfolio, name="Vanilla")
+        self.suborg_2 = Suborganization.objects.create(portfolio=self.portfolio, name="Chocolate")
 
         # Create an unrelated portfolio
-        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+        self.unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        self.unrelated_suborg = Suborganization.objects.create(portfolio=self.unrelated_portfolio, name="Apple")
 
         # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-        self.domain_information.sub_organization = suborg
+        self.domain_information.portfolio = self.portfolio
+        self.domain_information.sub_organization = self.suborg
 
         # Add a organization_name to test if the old value still displays
         self.domain_information.organization_name = "Broccoli"
         self.domain_information.save()
         self.domain_information.refresh_from_db()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    def tearDown(self):
+        """Ensure that the user has its original permissions"""
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+        # Unlink suborgs to avoid ProtectedError
+        DomainInformation.objects.update(sub_organization=None)
+        Suborganization.objects.all().delete()
+
+        User.objects.exclude(id=self.user.id).delete()
+        super().tearDown()
+
+    @less_console_noise_decorator
+    def test_edit_suborganization_field(self):
+        """Ensure that org admins can edit the suborganization field"""
+
+
         # Add portfolio perms to the user object
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
-        self.assertEqual(self.domain_information.sub_organization, suborg)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg)
 
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
@@ -2251,56 +2334,34 @@ class TestDomainSuborganization(TestDomainOverview):
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
         self.assertContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
 
         # Assert that the right option is selected. This component uses data-default-value.
-        self.assertContains(page, f'data-default-value="{suborg.id}"')
+        self.assertContains(page, f'data-default-value="{self.suborg.id}"')
 
         # Try changing the suborg
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        page.form["sub_organization"] = suborg_2.id
+        page.form["sub_organization"] = self.suborg_2.id
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = page.form.submit().follow()
 
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
         self.assertContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
 
         # Assert that the right option is selected
-        self.assertContains(page, f'data-default-value="{suborg_2.id}"')
+        self.assertContains(page, f'data-default-value="{self.suborg_2.id}"')
 
         self.domain_information.refresh_from_db()
-        self.assertEqual(self.domain_information.sub_organization, suborg_2)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg_2)
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
     @less_console_noise_decorator
     def test_view_suborganization_field(self):
         """Only org admins can edit the suborg field, ensure that others cannot"""
 
-        # Create a portfolio and two suborgs
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
-
-        # Create an unrelated portfolio
-        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
-
-        # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-        self.domain_information.sub_organization = suborg
-
-        # Add a organization_name to test if the old value still displays
-        self.domain_information.organization_name = "Broccoli"
-        self.domain_information.save()
-        self.domain_information.refresh_from_db()
-
-        # Add portfolio perms to the user object
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-        )
-
-        self.assertEqual(self.domain_information.sub_organization, suborg)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg)
 
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
@@ -2310,34 +2371,19 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # The page shouldn't contain these choices
         self.assertNotContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
         self.assertNotContains(page, "Save")
 
         self.assertContains(
             page, "The suborganization for this domain can only be updated by a organization administrator."
         )
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
         and displays correctly on the domain overview page"""
 
-        # Create a portfolio
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-
-        # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-
-        # Add a organization_name to test if the old value still displays
-        self.domain_information.organization_name = "Broccoli"
-        self.domain_information.save()
-        self.domain_information.refresh_from_db()
-
-        # Add portfolio perms to the user object
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
         self.user.refresh_from_db()
 
         # Navigate to the domain overview page
@@ -2351,11 +2397,6 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the bad value
         self.assertNotContains(page, "Broccoli")
-
-        # Cleanup
-        self.domain_information.delete()
-        suborg.delete()
-        portfolio.delete()
 
 
 class TestDomainSecurityEmail(TestDomainOverview):
@@ -2783,6 +2824,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_org_name_change_with_portfolio(self):
@@ -2954,6 +2996,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_senior_official_when_portfolio(self):
@@ -3078,15 +3121,17 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
-    def test_single_domain_w_org_feature_flag(self):
+    def test_single_domain_w_org_feature_on(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
-    def test_with_mulitple_domains_w_org_feature_flag(self):
+    def test_with_mulitple_domains_w_org_feature_on(self):
         today = datetime.now()
         expiring_date = (today + timedelta(days=31)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
@@ -3101,8 +3146,9 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
-    def test_no_expiring_domains_w_org_feature_flag(self):
+    def test_no_expiring_domains_w_org_feature_on(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
