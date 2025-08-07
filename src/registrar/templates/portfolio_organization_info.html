@@ -88,6 +88,11 @@
             {% include "includes/organization_address.html" with organization=portfolio %}
             </div>
             {% endif %}
+
+            {% if organization_type %}
+                <h3>Organization type</h3>
+                {{ organization_type }}
+            {% endif %}
         </div>
     </div>
 </div>

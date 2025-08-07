@@ -24,9 +24,8 @@
     {% endif %}
     
     {# To display default styling for sub-header text and organization information in organization overview #}
-    {% if sub_header_text %}
-      <h4 class="margin-bottom-0">{{ sub_header_text }}</h4>  
-      {% if sub_header_text == "Organization admins" %}  
+      {% if sub_header_text == 'Organization admins' %}  
+        <h4 class="margin-bottom-0">{{ sub_header_text }}</h4>  
         <ul class="usa-list">
           {% for admin in portfolio_admins %}
             <li>{{ admin.get_full_name|default:admin.username }}</li>
@@ -35,7 +34,11 @@
           {% endfor %}
         </ul>
         <h4 class="margin-bottom-2">Organization name and address</h4>
-      {% endif %}
+        {% include "includes/organization_address.html" with organization=value %}
+        {% if organization_type %}
+          <h4 class="margin-bottom-2">Organization Type</h4>
+          {{ organization_type }}
+        {% endif %}
     {% endif %}
     
     {% if permissions %}
@@ -142,7 +145,8 @@
         </ul>
       {% endif %}
     
-    {% else %}
+    <!-- this is just to prevent the portfolio from appearing on Org Overview page -->
+    {% elif sub_header_text != "Organization admins" %}
       {% if custom_text_for_value_none %}
         <p class="margin-top-0 text-base-dark">{{ custom_text_for_value_none }}</p>
       {% endif %}
