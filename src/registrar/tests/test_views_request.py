@@ -3445,7 +3445,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
 
         # Create domain request with the portfolio agency
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
-        self.assertFalse(domain_request.unlock_organization_contact())
+        self.assertFalse(domain_request.unlock_organization_contact(self.wizard.request))
 
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_disabled(self):
@@ -3457,7 +3457,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         Portfolio.objects.create(creator=self.user, organization_name=federal_agency.agency)
 
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
-        self.assertTrue(domain_request.unlock_organization_contact())
+        self.assertTrue(domain_request.unlock_organization_contact(self.wizard.request))
 
 
 class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):

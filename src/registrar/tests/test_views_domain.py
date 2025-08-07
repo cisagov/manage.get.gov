@@ -254,22 +254,20 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         super().setUp()
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
-    
+
     def makeUserOrgUser(self, role):
-        '''Switches to enterprise mode with the specified role'''
+        """Switches to enterprise mode with the specified role"""
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            defaults={"roles": [role]}
+            user=self.user, portfolio=self.portfolio, defaults={"roles": [role]}
         )
-    
+
     def makeUserNonOrgUser(self):
-        '''Essentially switches to legacy mode by
-        stripping the user of portfolio permissions'''
+        """Essentially switches to legacy mode by
+        stripping the user of portfolio permissions"""
         UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
-    
+
     def switchToEnterpriseMode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
-        '''
+        """
         Use this decorator for all tests where we want to be in Enterprise mode.
 
         By default, our test mock data has users that do not have portfolio permissions.
@@ -277,7 +275,7 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         it decorates.
 
         NOTE: This decorator (in general) should appear at the top of any other decorators.
-        
+
         USE CASE:
         # Default role (ORGANIZATION_ADMIN)
         @BaseTestCase.switchToEnterpriseMode_wrapper()
@@ -293,7 +291,8 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         def test_member_role(self):
             ...
 
-        '''
+        """
+
         def decorator(func):
             def wrapper(self, *args, **kwargs):
                 self.makeUserOrgUser(role)
@@ -301,7 +300,9 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
                     return func(self, *args, **kwargs)
                 finally:
                     self.makeUserNonOrgUser()
+
             return wrapper
+
         return decorator
 
 
@@ -828,7 +829,7 @@ class TestDomainManagers(TestDomainOverview):
         UserDomainRole.objects.all().delete()
         User.objects.exclude(id=self.user.id).delete()
         super().tearDown()
-  
+
     @less_console_noise_decorator
     def test_domain_managers(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
@@ -2319,7 +2320,6 @@ class TestDomainSuborganization(TestDomainOverview):
     @less_console_noise_decorator
     def test_edit_suborganization_field(self):
         """Ensure that org admins can edit the suborganization field"""
-
 
         # Add portfolio perms to the user object
         UserPortfolioPermission.objects.get_or_create(

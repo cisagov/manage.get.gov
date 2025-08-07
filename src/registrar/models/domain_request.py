@@ -1374,7 +1374,7 @@ class DomainRequest(TimeStampedModel):
         # Check if the current federal agency is an outlawed one
         if not request.user.is_org_user(request):
             return False
-        
+
         if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
             Portfolio = apps.get_model("registrar.Portfolio")
             return (
