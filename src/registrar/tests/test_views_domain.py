@@ -2356,7 +2356,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
         self.assertEqual(self.domain_information.sub_organization, self.suborg_2)
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+    @TestDomainOverview.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_view_suborganization_field(self):
         """Only org admins can edit the suborg field, ensure that others cannot"""

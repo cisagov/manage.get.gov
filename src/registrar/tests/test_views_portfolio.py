@@ -407,10 +407,10 @@ class TestPortfolio(WebTest):
         # Members should be redirected to the readonly domains page
         portfolio_page = self.app.get(reverse("home")).follow()
 
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, "You aren’t managing any domains")
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
@@ -450,12 +450,12 @@ class TestPortfolio(WebTest):
         # Members should be redirected to the readonly domains page
         portfolio_page = self.app.get(reverse("home")).follow()
 
-            self.assertContains(portfolio_page, self.portfolio.organization_name)
-            self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-            self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-            self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertContains(portfolio_page, reverse("domains"))
-            self.assertContains(portfolio_page, reverse("domain-requests"))
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
+        self.assertContains(portfolio_page, reverse("domains"))
+        self.assertContains(portfolio_page, reverse("domain-requests"))
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
@@ -494,14 +494,14 @@ class TestPortfolio(WebTest):
             user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
         )
 
-            self.portfolio.organization_name = "Hotel California"
-            self.portfolio.organization_type = "federal"
-            self.portfolio.save()
-            page = self.app.get(reverse("organization-info"))
-            # Org name in Sidenav, main nav, webpage title, and breadcrumb
-            self.assertContains(page, "Hotel California", count=5)
-            self.assertContains(page, "Organization type")
-            self.assertContains(page, "Federal")
+        self.portfolio.organization_name = "Hotel California"
+        self.portfolio.organization_type = "federal"
+        self.portfolio.save()
+        page = self.app.get(reverse("organization-info"))
+        # Org name in Sidenav, main nav, webpage title, and breadcrumb
+        self.assertContains(page, "Hotel California", count=5)
+        self.assertContains(page, "Organization type")
+        self.assertContains(page, "Federal")
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):

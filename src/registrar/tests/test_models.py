@@ -2384,14 +2384,12 @@ class TestDomainRequestIncomplete(TestCase):
             self.domain_request.anything_else = case["anything_else"]
             self.domain_request.save()
             self.domain_request.refresh_from_db()
-            
+            # Compare expected test result with actual result
             result = self.wizard.form_is_complete()
             expected = case["expected"]
 
             if result != expected:
-                self.fail(f"\nTest Failed": {case}"
-                    f"\nExpected: {expected}, Got: {result}\n"
-                )
+                self.fail(f"\nTest Failed: {case}\nExpected: {expected}, Got: {result}\n")
 
     @less_console_noise_decorator
     def test_is_policy_acknowledgement_complete(self):
