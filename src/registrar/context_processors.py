@@ -39,10 +39,9 @@ def is_production(request):
 
 
 def org_user_status(request):
+    is_org_user = False
     if request.user.is_authenticated:
         is_org_user = request.user.is_org_user(request)
-    else:
-        is_org_user = False
 
     return {
         "is_org_user": is_org_user,
