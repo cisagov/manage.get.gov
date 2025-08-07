@@ -332,7 +332,8 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 if form.__class__ in check_for_portfolio:
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
-                    if not info or info.portfolio:
+                    is_org_user = self.request.user.is_org_user(self.request)
+                    if is_org_user and (not info or info.portfolio):
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -1322,8 +1323,10 @@ class DomainAddUserView(DomainFormBaseView):
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view
+            is_org_user = self.request.user.is_org_user(self.request)
             if (
-                not flag_is_active_for_user(requestor, "multiple_portfolios")
+                is_org_user
+                and not flag_is_active_for_user(requestor, "multiple_portfolios")
                 and domain_org is not None
                 and requestor_can_update_portfolio
                 and not member_of_this_org

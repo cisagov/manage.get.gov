@@ -408,7 +408,7 @@ class User(AbstractUser):
 
     def is_org_user(self, request):
         portfolio = request.session.get("portfolio")
-        return self.has_view_portfolio_permission(portfolio)
+        return portfolio is not None and self.has_view_portfolio_permission(portfolio)
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""

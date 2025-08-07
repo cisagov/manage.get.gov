@@ -999,7 +999,7 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
-                is_org_user = recipient.has_view_portfolio_permission(self.portfolio)
+                is_org_user = self.portfolio is not None and recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
                 purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
