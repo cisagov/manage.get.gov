@@ -374,7 +374,7 @@ class OrganizationContactForm(RegistrarForm):
         # Set the queryset for federal agency.
         # If the organization_requests flag is active, We want to exclude agencies with a portfolio.
         federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
-        if self.org_mode:
+        if self.request.user.is_org_user(self.request):
             # Exclude both predefined agencies and those matching portfolio records in one query
             federal_agency_queryset = federal_agency_queryset.exclude(
                 id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
