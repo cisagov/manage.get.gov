@@ -3,16 +3,8 @@
 # This workflow may fail if changes to the database schema make objects in stable 
 # incompatible with staging. This should resolve once both schemas match again.
 
-name: Clone Stable Database
+name: Clone Test Database
 
-on:
-  schedule:
-    # Run daily at 12:00 AM EST
-    - cron: '0 0 * * *'
-  # Allow manual triggering
-  workflow_dispatch:
-
-env:
 workflow_dispatch:
     inputs:
       environment:
