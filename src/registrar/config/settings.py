@@ -209,6 +209,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
+    # Add DB info to logs
+    "registrar.registrar_middleware.DatabaseConnectionMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -646,6 +648,17 @@ LOGGING = {
         "registrar": {
             "handlers": django_handlers,
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # DB info
+        "django.db.backends": {
+            "handlers": django_handlers,
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.db.backends.schema": {
+            "handlers": django_handlers,
+            "level": "WARNING",
             "propagate": False,
         },
     },
