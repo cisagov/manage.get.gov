@@ -50,6 +50,8 @@ from registrar.views.utility.invitation_helper import (
     handle_invitation_exceptions,
 )
 
+from registrar.services.cloudflare_service import CloudflareService
+
 from ..forms import (
     SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
@@ -707,6 +709,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+    dns_vendor_service = CloudflareService
 
     def has_permission(self):
         has_permission = super().has_permission()
@@ -752,21 +755,12 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
                     "Content-Type": "application/json",
                 }
-                params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
-
-                # 1. Get tenant details
-                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params, timeout=5)
-                tenant_response_json = tenant_response.json()
-                logger.info(f"Found tenant: {tenant_response_json}")
-                tenant_id = tenant_response_json["result"][0]["tenant_tag"]
-                errors = tenant_response_json.get("errors", [])
-                tenant_response.raise_for_status()
 
                 # 2. Create or get a account under tenant
 
                 # Check to see if the account already exists. Filters accounts by tenant_id / account_name.
                 account_name = f"account-{self.object.name}"
-                params = {"tenant_id": tenant_id, "name": account_name}
+                params = {"tenant_id": settings.DOTGOV_TEST_TENANT_ACCOUNT_ID, "name": account_name}
 
                 account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
                 account_response_json = account_response.json()
@@ -781,17 +775,14 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # If we didn't, create one
                 if not account_id:
-                    account_response = requests.post(
-                        f"{base_url}/accounts",
-                        headers=headers,
-                        json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
-                        timeout=5,
-                    )
-                    account_response_json = account_response.json()
-                    logger.info(f"Created account: {account_response_json}")
-                    account_id = account_response_json["result"]["id"]
-                    errors = account_response_json.get("errors", [])
-                    account_response.raise_for_status()
+                    # account_response = requests.post(
+                    #     f"{base_url}/accounts",
+                    #     headers=headers,
+                    #     json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
+                    #     timeout=5,
+                    # )
+
+                    account_id = self.dns_vendor_service.create_account(account_name)
 
                 # 3. Create or get a zone under account
 
