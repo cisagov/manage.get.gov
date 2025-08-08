@@ -9,14 +9,15 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 PII_FIELDS = {
-    "Contact": ["email","first_name", "last_name", "phone"],
-    "User": [ "email", "first_name", "last_name"],
-    "PublicContact": ["email","first_name", "last_name", "phone"],
+    "Contact": ["email", "first_name", "last_name", "phone"],
+    "User": ["email", "first_name", "last_name"],
+    "PublicContact": ["email", "first_name", "last_name", "phone"],
     "DomainInvitation": ["email"],
-    "PortfolioInvitation": ["email"]
+    "PortfolioInvitation": ["email"],
 }
 
 SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov"]
+
 
 class Command(BaseCommand):
     help = "Clean tables in database to prepare for import."
@@ -43,7 +44,7 @@ class Command(BaseCommand):
 
         for model_name, fields in PII_FIELDS.items():
             self.scrub_pii(model_name, fields)
-    
+
     def scrub_pii(self, model_name, fields):
         try:
             model = apps.get_model("registrar", model_name)
@@ -52,10 +53,10 @@ class Command(BaseCommand):
             updated_total = 0
 
             while True:
-                instances = list(model.objects.all()[offset:offset + BATCH_SIZE])
+                instances = list(model.objects.all()[offset : offset + BATCH_SIZE])
                 if not instances:
                     break
-                
+
                 for instance in instances:
                     skip_row = False
                     for field in fields:
@@ -76,13 +77,13 @@ class Command(BaseCommand):
                             fake_value = self.generate_fake_value(field)
                             setattr(instance, field, fake_value)
                             instance.save()
-                            updated_total +=1
-                        
-                offset+= BATCH_SIZE
+                            updated_total += 1
+
+                offset += BATCH_SIZE
 
                 logger.info(f"Scrubbed {updated_total} rows in {model_name}")
         except Exception:
-            logger.error(f'Model {model_name} not found')
+            logger.error(f"Model {model_name} not found")
 
     def generate_fake_value(self, field):
         "Return fake data based on the field type"
@@ -94,4 +95,3 @@ class Command(BaseCommand):
             return fake.last_name()
         elif "phone" in field:
             return fake.phone_number()
-        
