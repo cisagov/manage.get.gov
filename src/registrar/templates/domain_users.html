@@ -4,12 +4,11 @@
 {% block title %}Domain managers | {{ domain.name }} | {% endblock %}
 
   {% block breadcrumb %}
-  {% if portfolio %}
   <!-- Navigation breadcrumbs -->
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
         <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
@@ -19,7 +18,6 @@
       </li>
     </ol>
   </nav>
-  {% endif %}
   {% endblock breadcrumb %}
 
 {% block domain_content %}

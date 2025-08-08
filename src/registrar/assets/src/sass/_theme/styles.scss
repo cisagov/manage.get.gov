@@ -10,6 +10,7 @@
 --- Custom Styles ---------------------------------*/
 @forward "base";
 @forward "typography";
+@forward "footer";
 @forward "lists";
 @forward "accordions";
 @forward "buttons";
@@ -28,7 +29,6 @@
 @forward "containers";
 @forward "modals";
 @forward "tags";
-
 /*--------------------------------------------------
 --- Admin ---------------------------------*/
 @forward "admin";

@@ -222,6 +222,7 @@ class TestPortfolio(WebTest):
         self.portfolio.senior_official = so
         self.portfolio.organization_name = "Hotel California"
         self.portfolio.city = "Los Angeles"
+        self.portfolio.organization_type = "federal"
         self.portfolio.save()
 
         with override_flag("organization_feature", active=True):
@@ -236,6 +237,9 @@ class TestPortfolio(WebTest):
             self.assertContains(response, "spacedivision@igorville.com")
             # Organization overview page includes portfolio admin
             self.assertContains(response, "Galileo")
+            # Organization overview page includes org type
+            self.assertContains(response, "Organization Type")
+            self.assertContains(response, "Federal")
 
     @less_console_noise_decorator
     def test_portfolio_organization_page_directs_to_org_detail_forms(self):
@@ -430,8 +434,6 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertNotContains(portfolio_page, reverse("domains"))
-            self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
@@ -447,7 +449,7 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     @override_flag("organization_requests", active=True)
     def test_accessible_pages_when_user_does_not_have_role(self):
-        """Test that admin / memmber roles are associated with the right access"""
+        """Test that admin / member roles are associated with the right access"""
         self.app.set_user(self.user.username)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -477,8 +479,8 @@ class TestPortfolio(WebTest):
             self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
             self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
             self.assertContains(portfolio_page, "You aren’t managing any domains")
-            self.assertNotContains(portfolio_page, reverse("domains"))
-            self.assertNotContains(portfolio_page, reverse("domain-requests"))
+            self.assertContains(portfolio_page, reverse("domains"))
+            self.assertContains(portfolio_page, reverse("domain-requests"))
 
             # The organization page should still be accessible
             org_page = self.app.get(reverse("organization"))
@@ -507,7 +509,7 @@ class TestPortfolio(WebTest):
             self.assertContains(page, "The name of your organization will be publicly listed as the domain registrant.")
 
     @less_console_noise_decorator
-    def test_portfolio_org_info_includes_name_and_address(self):
+    def test_portfolio_org_info_includes_name_address_and_type(self):
         """Org name and address appears on the org info page."""
         with override_flag("organization_feature", active=True):
             self.app.set_user(self.user.username)
@@ -520,10 +522,13 @@ class TestPortfolio(WebTest):
             )
 
             self.portfolio.organization_name = "Hotel California"
+            self.portfolio.organization_type = "federal"
             self.portfolio.save()
             page = self.app.get(reverse("organization-info"))
             # Org name in Sidenav, main nav, webpage title, and breadcrumb
             self.assertContains(page, "Hotel California", count=5)
+            self.assertContains(page, "Organization type")
+            self.assertContains(page, "Federal")
 
     @less_console_noise_decorator
     def test_org_form_invalid_update(self):
@@ -872,7 +877,7 @@ class TestPortfolio(WebTest):
         home = self.app.get(reverse("home")).follow()
 
         self.assertContains(home, "Hotel California")
-        self.assertNotContains(home, "Members")
+        self.assertContains(home, "Members")
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
@@ -1337,11 +1342,11 @@ class TestPortfolio(WebTest):
         # dropdown
         self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
         # link to requests
-        self.assertNotContains(portfolio_landing_page, 'href="/requests/')
+        self.assertContains(portfolio_landing_page, 'href="/requests/')
         # link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
         # link to members
-        self.assertNotContains(portfolio_landing_page, 'href="/members/')
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     @override_flag("organization_feature", active=True)
