@@ -3,6 +3,7 @@ Contains middleware used in settings.py
 """
 
 import logging
+import time
 import re
 from urllib.parse import parse_qs
 from django.conf import settings
@@ -10,6 +11,8 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.urls import resolve
+from django.db import connections
+from django.utils.deprecation import MiddlewareMixin
 from registrar.models import User
 from waffle.decorators import flag_is_active
 
@@ -252,3 +255,31 @@ class RequestLoggingMiddleware:
             # Log user information
             logger.info("Router log")
         return self.get_response(request)
+
+
+class DatabaseConnectionMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        request._db_start_time = time.time()
+        request._db_queries_start = len(connections["default"].queries)
+
+        # Log connection state
+        connection = connections["default"]
+        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
+
+    def process_response(self, request, response):
+        if hasattr(request, "_db_start_time"):
+            connection = connections["default"]
+            query_count = len(connection.queries) - request._db_queries_start
+            duration = time.time() - request._db_start_time
+
+            # Get request ID for correlation
+            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
+            logger.info(
+                f"DB_CONN_END: req_id={request_id}, "
+                f"queries={query_count}, "
+                f"duration={duration:.3f}s, "
+                f"total_queries={len(connection.queries)}, "
+                f"status={response.status_code}, "
+                f"path={request.path}"
+            )
+        return response
