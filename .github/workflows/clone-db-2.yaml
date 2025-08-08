@@ -1,38 +1,35 @@
-# This workflow runs at the top of every hour and can be manually run as needed
-# The workflow will copy the database from stable (production) to our staging sandbox.
-# This workflow may fail if changes to the database schema make objects in stable 
-# incompatible with staging. This should resolve once both schemas match again.
-
 name: Clone Test Database
+run-name: Create test database to ${{ github.event.inputs.environment }}
 
-workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy'
-        required: true
-        default: 'backup'
-        type: 'choice'
-        options:
-          - aa
-          - acadia
-          - ad
-          - backup
-          - bob
-          - dg
-          - el
-          - es
-          - glacier
-          - hotgov
-          - kma
-          - litterbox
-          - meoward
-          - nl
-          - olympic
-          - potato
-          - product
-          - rh
-          - yellowstone
-          - zion
+on:
+  workflow_dispatch:
+      inputs:
+        environment:
+          description: 'Environment to deploy'
+          required: true
+          default: 'backup'
+          type: 'choice'
+          options:
+            - aa
+            - acadia
+            - ad
+            - backup
+            - bob
+            - dg
+            - el
+            - es
+            - glacier
+            - hotgov
+            - kma
+            - litterbox
+            - meoward
+            - nl
+            - olympic
+            - potato
+            - product
+            - rh
+            - yellowstone
+            - zion
 jobs:
   clone-database:
     runs-on: ubuntu-24.04
@@ -74,7 +71,7 @@ jobs:
             cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
             cf_org: cisa-dotgov
             cf_space: ${{ env.DESTINATION_ENVIRONMENT }}
-            cf_command: "run-task getgov-staging --command 'python manage.py load' --name fixtures"
+            cf_command: "run-task getgov-testdb --command 'python manage.py load' --name fixtures"
 
         - name: Cleanup
           if: always()
