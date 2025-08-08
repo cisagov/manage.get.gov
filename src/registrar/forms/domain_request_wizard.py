@@ -3,7 +3,6 @@ import logging
 from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from registrar.models.portfolio import Portfolio
-from registrar.utility.waffle import flag_is_active_anywhere
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
@@ -375,7 +374,7 @@ class OrganizationContactForm(RegistrarForm):
         # Set the queryset for federal agency.
         # If the organization_requests flag is active, We want to exclude agencies with a portfolio.
         federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
-        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
+        if self.request.user.is_org_user(self.request):
             # Exclude both predefined agencies and those matching portfolio records in one query
             federal_agency_queryset = federal_agency_queryset.exclude(
                 id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)

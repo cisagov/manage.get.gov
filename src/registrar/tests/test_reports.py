@@ -48,7 +48,6 @@ from .common import (
     get_time_aware_date,
     GenericTestHelper,
 )
-from waffle.testutils import override_flag
 
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
@@ -334,7 +333,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_data_type_user_with_portfolio(self):
         """Tests DomainDataTypeUser export with portfolio permissions"""
 
@@ -403,8 +401,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         return csv_content
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_domain_request_data_type_user_with_portfolio(self):
         """Tests DomainRequestsDataType export with portfolio permissions"""
 
@@ -815,8 +811,6 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         self.factory = RequestFactory()
 
     @skip("flaky test that needs to be refactored")
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""
