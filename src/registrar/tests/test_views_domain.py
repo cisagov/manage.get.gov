@@ -8,7 +8,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, create_user, get_ap_style_month  # type: ignore
+from .common import GenericTestHelper, MockEppLib, create_user, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -255,55 +255,6 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 
-    def makeUserOrgUser(self, role):
-        """Switches to enterprise mode with the specified role"""
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, defaults={"roles": [role]}
-        )
-
-    def makeUserNonOrgUser(self):
-        """Essentially switches to legacy mode by
-        stripping the user of portfolio permissions"""
-        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
-
-    def switchToEnterpriseMode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
-        """
-        Use this decorator for all tests where we want to be in Enterprise mode.
-
-        By default, our test mock data has users that do not have portfolio permissions.
-        This decorator grants portfolio permissions temporarily for the function
-        it decorates.
-
-        NOTE: This decorator (in general) should appear at the top of any other decorators.
-
-        USE CASE:
-        # Default role (ORGANIZATION_ADMIN)
-        @BaseTestCase.switchToEnterpriseMode_wrapper()
-        @other_decorator
-        @other_decorator
-        def test_admin_role(self):
-            ...
-
-        # Custom role
-        @BaseTestCase.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
-        @other_decorator
-        @other_decorator
-        def test_member_role(self):
-            ...
-
-        """
-
-        def decorator(func):
-            def wrapper(self, *args, **kwargs):
-                self.makeUserOrgUser(role)
-                try:
-                    return func(self, *args, **kwargs)
-                finally:
-                    self.makeUserNonOrgUser()
-
-            return wrapper
-
-        return decorator
 
 
 class TestDomainDetail(TestDomainOverview):
@@ -815,8 +766,7 @@ class TestDomainManagers(TestDomainOverview):
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
         self.domain_information.save()
-        self.makeUserNonOrgUser()
-
+        
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -840,7 +790,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotContains(response, "Admin")
         self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_domain_managers_portfolio_view(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
@@ -889,7 +839,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -946,7 +896,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -997,7 +947,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "notauser@igorville.gov")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1031,7 +981,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -1081,7 +1031,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -2356,7 +2306,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
         self.assertEqual(self.domain_information.sub_organization, self.suborg_2)
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_view_suborganization_field(self):
         """Only org admins can edit the suborg field, ensure that others cannot"""
@@ -2378,7 +2328,7 @@ class TestDomainSuborganization(TestDomainOverview):
             page, "The suborganization for this domain can only be updated by a organization administrator."
         )
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
@@ -2824,7 +2774,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_org_name_change_with_portfolio(self):
@@ -2996,7 +2946,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_senior_official_when_portfolio(self):
@@ -3121,7 +3071,7 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_single_domain_w_org_feature_on(self):
         self.client.force_login(self.user)
@@ -3129,7 +3079,7 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_with_mulitple_domains_w_org_feature_on(self):
         today = datetime.now()
@@ -3146,7 +3096,7 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
-    @TestDomainOverview.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     def test_no_expiring_domains_w_org_feature_on(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()

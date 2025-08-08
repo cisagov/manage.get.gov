@@ -238,6 +238,50 @@ class GenericTestHelper(TestCase):
         )
         return response
 
+    def switchToEnterpriseMode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
+        """
+        Use this decorator for all tests where we want to be in Enterprise mode.
+
+        By default, our test mock data has users that do not have portfolio permissions.
+        This decorator grants portfolio permissions temporarily for the function
+        it decorates.
+
+        NOTE: This decorator (in general) should appear at the top of any other decorators.
+
+        USE CASE:
+        # Default role (ORGANIZATION_ADMIN)
+        @BaseTestCase.switchToEnterpriseMode_wrapper()
+        @other_decorator
+        @other_decorator
+        def test_admin_role(self):
+            ...
+
+        # Custom role
+        @BaseTestCase.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        @other_decorator
+        @other_decorator
+        def test_member_role(self):
+            ...
+
+        """
+
+        #NOTE: "self" in this function is not GenericTestHelper.  Instead,
+        #"self" refers to the parent class of the function passed into the decorator.
+        def decorator(func):
+            def wrapper(self, *args, **kwargs):
+                """Switches to enterprise mode with the specified role"""
+                UserPortfolioPermission.objects.get_or_create(
+                    user=self.user, portfolio=self.portfolio, defaults={"roles": [role]}
+                )
+                try:
+                    return func(self, *args, **kwargs)
+                finally:
+                    """Essentially switches to legacy mode by
+                    stripping the user of portfolio permissions"""
+                    UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+            return wrapper
+        return decorator
+
 
 class MockUserLogin:
     def __init__(self, get_response):
