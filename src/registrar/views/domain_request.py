@@ -228,7 +228,6 @@ class DomainRequestWizard(TemplateView):
                 creator=self.request.user,
                 portfolio=portfolio,
             )
-            # Question for reviewers: we should probably be doing this right?
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
@@ -296,7 +295,7 @@ class DomainRequestWizard(TemplateView):
         """This method handles GET requests."""
 
         self.kwargs = kwargs
-        if not self.is_portfolio and self.request.user.is_org_user(request):
+        if self.request.user.is_org_user(request):
             self.is_portfolio = True
             # Configure titles, wizard_conditions, unlocking_steps, and steps
             self.configure_step_options()
