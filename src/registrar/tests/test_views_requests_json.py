@@ -319,7 +319,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         # Extract fields from response
         domain_request_ids = [domain_request["id"] for domain_request in data["domain_requests"]]
         requested_domain = [domain_request["requested_domain"] for domain_request in data["domain_requests"]]
-        creator = [domain_request["creator"] for domain_request in data["domain_requests"]]
+        creator = [domain_request["requester"] for domain_request in data["domain_requests"]]
         status = [domain_request["status"] for domain_request in data["domain_requests"]]
         action_urls = [domain_request["action_url"] for domain_request in data["domain_requests"]]
         action_labels = [domain_request["action_label"] for domain_request in data["domain_requests"]]
@@ -490,7 +490,7 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
             )
             self.assertEqual(response.status_code, 200)
             data = response.json
-            self.assertTrue(any(req["creator"].startswith("info") for req in data["domain_requests"]))
+            self.assertTrue(any(req["requester"].startswith("info") for req in data["domain_requests"]))
 
         # Test search without portfolio (should not search on creator)
         with override_flag("organization_feature", active=False), override_flag("organization_requests", active=False):
