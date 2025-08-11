@@ -2858,13 +2858,9 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     def test_get_fieldsets_cisa_analyst_organization(self):
         with less_console_noise():
-            UserPortfolioPermission.objects.get_or_create(
-                user=self.user,
-                portfolio=self.portfolio,
-                defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]},
-            )
             request = self.client.request().wsgi_request
             request.user = self.staffuser
             fieldsets = self.admin.get_fieldsets(request)
@@ -2893,7 +2889,6 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
 
             self.assertEqual(fieldsets, expected_fieldsets)
-            UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
 
     @less_console_noise_decorator
     def test_analyst_can_see_related_domains_and_requests_in_user_form(self):

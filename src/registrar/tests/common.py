@@ -238,6 +238,7 @@ class GenericTestHelper(TestCase):
         )
         return response
 
+    @staticmethod
     def switchToEnterpriseMode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
         """
         Use this decorator for all tests where we want to be in Enterprise mode.
