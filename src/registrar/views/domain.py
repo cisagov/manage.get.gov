@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from registrar.utility.errors import APIError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -709,7 +710,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
-    dns_vendor_service = CloudflareService
+    dns_vendor_service = CloudflareService()
 
     def has_permission(self):
         has_permission = super().has_permission()
@@ -758,7 +759,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # 2. Create or get a account under tenant
 
-                # Check to see if the account already exists. Filters accounts by tenant_id / account_name.
+                # GET account: Check to see if the account already exists. Filters accounts by tenant_id / account_name.
                 account_name = f"account-{self.object.name}"
                 params = {"tenant_id": settings.DOTGOV_TEST_TENANT_ACCOUNT_ID, "name": account_name}
 
@@ -773,16 +774,13 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 accounts = account_response_json.get("result", [])
                 account_id = self.find_by_name(accounts, account_name)
 
-                # If we didn't, create one
+                # CREATE account: If we didn't, create one
                 if not account_id:
-                    # account_response = requests.post(
-                    #     f"{base_url}/accounts",
-                    #     headers=headers,
-                    #     json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
-                    #     timeout=5,
-                    # )
-
-                    account_id = self.dns_vendor_service.create_account(account_name)
+                    try:
+                        account_data = self.dns_vendor_service.create_account(account_name)
+                        account_id = account_data["result"]["id"]
+                    except APIError as e:
+                     logger.error(f"API error in view: {str(e)}")
 
                 # 3. Create or get a zone under account
 
