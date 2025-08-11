@@ -373,11 +373,11 @@ class OrganizationContactForm(RegistrarForm):
 
         # Set the queryset for federal agency.
         federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
-        
+
         # Exclude both predefined agencies and those matching portfolio records in one query
         federal_agency_queryset = federal_agency_queryset.exclude(
-                id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
-            )
+            id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
+        )
 
         self.fields["federal_agency"].queryset = federal_agency_queryset
 

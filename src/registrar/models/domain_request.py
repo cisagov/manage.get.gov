@@ -1369,7 +1369,6 @@ class DomainRequest(TimeStampedModel):
             return True
         return False
 
-    
     def unlock_organization_contact(self) -> bool:
         """Unlocks the organization_contact step."""
         # Check if the current federal agency is an outlawed one

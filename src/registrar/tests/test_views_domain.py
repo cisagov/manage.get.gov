@@ -256,7 +256,6 @@ class TestDomainOverview(TestWithDomainPermissions, WebTest):
         self.client.force_login(self.user)
 
 
-
 class TestDomainDetail(TestDomainOverview):
     @skip("Assertion broke for no reason, why? Need to fix")
     def test_domain_detail_link_works(self):
@@ -766,7 +765,7 @@ class TestDomainManagers(TestDomainOverview):
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
         self.domain_information.save()
-        
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

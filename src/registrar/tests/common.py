@@ -262,11 +262,10 @@ class GenericTestHelper(TestCase):
         @other_decorator
         def test_member_role(self):
             ...
-
         """
 
-        #NOTE: "self" in this function is not GenericTestHelper.  Instead,
-        #"self" refers to the parent class of the function passed into the decorator.
+        # NOTE: "self" in this function is not GenericTestHelper.  Instead,
+        # "self" refers to the parent class of the function passed into the decorator.
         def decorator(func):
             def wrapper(self, *args, **kwargs):
                 """Switches to enterprise mode with the specified role"""
@@ -279,7 +278,9 @@ class GenericTestHelper(TestCase):
                     """Essentially switches to legacy mode by
                     stripping the user of portfolio permissions"""
                     UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+
             return wrapper
+
         return decorator
 
 
