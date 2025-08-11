@@ -353,6 +353,7 @@ class TestDomainInvitationAdmin(WebTest):
             self.assertContains(response, invited_html, count=1)
             self.assertContains(response, retrieved_html, count=1)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -420,6 +421,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.count(), 1)
         self.assertEqual(UserPortfolioPermission.objects.first().user, user)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
@@ -484,6 +486,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserDomainRole.objects.first().user, user)
         self.assertEqual(UserPortfolioPermission.objects.count(), 0)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -541,6 +544,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -595,6 +599,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -663,6 +668,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -728,6 +734,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -788,6 +795,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
         self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
@@ -841,6 +849,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -900,6 +909,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
         self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -953,6 +963,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1019,6 +1030,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     @less_console_noise_decorator
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -2846,6 +2858,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper
     def test_get_fieldsets_cisa_analyst_organization(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
