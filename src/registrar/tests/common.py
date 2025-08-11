@@ -251,14 +251,14 @@ class GenericTestHelper(TestCase):
 
         USE CASE:
         # Default role (ORGANIZATION_ADMIN)
-        @BaseTestCase.switchToEnterpriseMode_wrapper()
+        @GenericTestHelper.switchToEnterpriseMode_wrapper()
         @other_decorator
         @other_decorator
         def test_admin_role(self):
             ...
 
         # Custom role
-        @BaseTestCase.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        @GenericTestHelper.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
         @other_decorator
         @other_decorator
         def test_member_role(self):
