@@ -95,7 +95,7 @@ secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 secret_registry_tenant_key = secret("REGISTRY_TENANT_KEY", None)
 secret_registry_tenant_name = secret("REGISTRY_TENANT_NAME", None)
 secret_registry_service_email = secret("REGISTRY_SERVICE_EMAIL", None)
-secret_dotgov_tenant_account_id = secret("DOTGOV_TENANT_ID", None)
+secret_dotgov_tenant_id = secret("DOTGOV_TEST_TENANT_ID", None)
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -812,6 +812,7 @@ SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 SECRET_REGISTRY_TENANT_KEY = secret_registry_tenant_key
 SECRET_REGISTRY_TENANT_NAME = secret_registry_tenant_name
 SECRET_REGISTRY_SERVICE_EMAIL = secret_registry_service_email
+SECRET_DOTGOV_TENANT_ID = secret_dotgov_tenant_id
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
