@@ -12,7 +12,6 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.urls import resolve
 from django.db import connections
-from django.utils.deprecation import MiddlewareMixin
 from registrar.models import User
 from waffle.decorators import flag_is_active
 
@@ -244,7 +243,7 @@ class RequestLoggingMiddleware:
             # Get remote IP address or IPv6 address
             forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
             if forwarded_for:
-                remote_ip = forwarded_for.split(",")[0]
+                remote_ip = forwarded_for.split(",")[0].strip()
             else:
                 remote_ip = request.META.get("REMOTE_ADDR")
             # Get request path
@@ -257,16 +256,23 @@ class RequestLoggingMiddleware:
         return self.get_response(request)
 
 
-class DatabaseConnectionMiddleware(MiddlewareMixin):
-    def process_request(self, request):
+class DatabaseConnectionMiddleware:
+    """
+    Middleware to track database connection metrics and query performance.
+    Uses the same callable pattern as RequestLoggingMiddleware.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         request._db_start_time = time.time()
         request._db_queries_start = len(connections["default"].queries)
 
         # Log connection state
         connection = connections["default"]
         logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
-
-    def process_response(self, request, response):
+        response = self.get_response(request)
         if hasattr(request, "_db_start_time"):
             connection = connections["default"]
             query_count = len(connection.queries) - request._db_queries_start
