@@ -759,7 +759,6 @@ class TestPortfolio(WebTest):
         domain_requests = self.app.get(reverse("domain-requests"))
         self.assertEqual(domain_requests.status_code, 200)
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
     @less_console_noise_decorator
     def test_cannot_view_members_table(self):
         """Test that user without proper permission is denied access to members view."""
@@ -768,10 +767,8 @@ class TestPortfolio(WebTest):
         # Portfolio Permission "view_members" selected.
         # NOTE: Admins, by default, DO have permission
         # to view/edit members.
-        # Scenarios to test include;
-        # (1) - User is not admin and can view portfolio, but not the members table
-        # (1) - User is admin and can view portfolio, as well as the members table
-
+        # Testing scenario: User is not admin and can view portfolio, but not the members table
+        
         # --- non-admin
         self.app.set_user(self.user.username)
 
@@ -790,18 +787,15 @@ class TestPortfolio(WebTest):
         # Assert the response is a 403 Forbidden
         self.assertEqual(response.status_code, 403)
 
-        # --- admin
-        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).update(
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        # Admins should have access to this page by default
-        response = self.client.get(reverse("members"), follow=True)
-        self.assertEqual(response.status_code, 200)
-
     @less_console_noise_decorator
     def test_can_view_members_table(self):
         """Test that user with proper permission is able to access members view"""
+         # Users can only view the members table if they have
+        # Portfolio Permission "view_members" selected.
+        # NOTE: Admins, by default, DO have permission
+        # to view/edit members.
+        # Testing scenario: User is admin and can view portfolio, as well as the members table
+
 
         self.app.set_user(self.user.username)
 
