@@ -22,7 +22,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from .common import MockEppLib, MockSESClient, completed_domain_request, create_test_user, create_user
+from .common import GenericTestHelper, MockEppLib, MockSESClient, completed_domain_request, create_test_user, create_user
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
@@ -759,53 +759,8 @@ class TestPortfolio(WebTest):
         domain_requests = self.app.get(reverse("domain-requests"))
         self.assertEqual(domain_requests.status_code, 200)
 
+    @GenericTestHelper.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=False)
-    def test_organization_members_waffle_flag_off_hides_nav_link(self):
-        """Setting the organization_members waffle off hides the nav link"""
-        self.app.set_user(self.user.username)
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-                UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
-                UserPortfolioPermissionChoices.EDIT_REQUESTS,
-            ],
-        )
-
-        home = self.app.get(reverse("home")).follow()
-
-        self.assertContains(home, "Hotel California")
-        self.assertContains(home, "Members")
-
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
-    def test_organization_members_waffle_flag_on_shows_nav_link(self):
-        """Setting the organization_members waffle on shows the nav link"""
-        self.app.set_user(self.user.username)
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            ],
-        )
-
-        home = self.app.get(reverse("home")).follow()
-
-        self.assertContains(home, "Hotel California")
-        self.assertContains(home, "Members")
-
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_cannot_view_members_table(self):
         """Test that user without proper permission is denied access to members view."""
 
