@@ -16,7 +16,7 @@ PII_FIELDS = {
     "PortfolioInvitation": ["email"],
 }
 
-SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov"]
+SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov", "example.org", "example.net", "example.com"]
 
 BATCH_SIZE = 1000
 
@@ -50,6 +50,7 @@ class Command(BaseCommand):
     def scrub_pii(self, model_name, fields):
         try:
             model = apps.get_model("registrar", model_name)
+            print(model)
         except LookupError:
             logger.error(f"{model_name} not found")
 
@@ -65,22 +66,25 @@ class Command(BaseCommand):
                 if not instance:
                     break
 
-                if self.should_skip(instance, fields):
+                if self.should_skip(instance):
                     continue
-
+                
+                updated = False
                 for field in fields:
                     if hasattr(instance, field):
                         setattr(instance, field, self.generate_fake_value(field))
-                        instance.save()
-                        updated_total += 1
+                        updated = True
+            
+                if updated:
+                    instance.save()
+                    updated_total += 1
 
             offset += BATCH_SIZE
+
             logger.info(f"Scrubbed {updated_total} in {model_name}")
 
-    def should_skip(self, instance, fields):
+    def should_skip(self, instance):
         "Return True if instance should not be scrubbed"
-        if "email" in fields:
-            return False
         email = getattr(instance, "email", None)
         if not email:
             return False
@@ -88,11 +92,13 @@ class Command(BaseCommand):
 
     def generate_fake_value(self, field):
         "Return fake data based on the field type"
+        first_name = fake.first_name()
+        last_name = fake.last_name()
         if "email" in field:
-            return fake.email()
+            return f"{first_name.lower()}.{last_name.lower()}@example.com"
         elif "first_name" in field:
-            return fake.first_name()
+            return first_name
         elif "last_name" in field:
-            return fake.last_name()
+            return last_name
         elif "phone" in field:
             return fake.phone_number()
