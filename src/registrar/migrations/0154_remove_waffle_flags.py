@@ -2,21 +2,23 @@
 
 from django.db import migrations, models
 
+
 def remove_old_flags(apps, schema_editor):
     """
     Forward migration to delete the specified WaffleFlag objects
     """
 
-    WaffleFlag = apps.get_model('registrar', 'WaffleFlag')
-    
-    flags_to_remove = ['organization_feature', 'organization_members', 'organization_requests']
+    WaffleFlag = apps.get_model("registrar", "WaffleFlag")
+
+    flags_to_remove = ["organization_feature", "organization_members", "organization_requests"]
 
     for flag_name in flags_to_remove:
-        try: 
+        try:
             WaffleFlag.objects.get(name=flag_name).delete()
-        except WaffleFlag.DoesNotExist: 
+        except WaffleFlag.DoesNotExist:
             pass
-    
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
