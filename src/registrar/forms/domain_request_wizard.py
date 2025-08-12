@@ -20,7 +20,6 @@ from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
 from django.core.exceptions import ValidationError
-from django.utils.safestring import mark_safe
 
 logger = logging.getLogger(__name__)
 
@@ -330,12 +329,6 @@ class OrganizationContactForm(RegistrarForm):
         # We populate this queryset in init.
         queryset=FederalAgency.objects.none(),
         widget=ComboboxWidget,
-        help_text=mark_safe(
-            "Don't see your agency listed? Its domains may be managed through enterprise mode, "
-            "which limits who can submit domain requests. "
-            f'<a href="{public_site_url("contact")}" class="usa-link" target="_blank">Contact us</a> '
-            "for assistance."
-        ),
     )
     organization_name = forms.CharField(
         label="Organization name",
