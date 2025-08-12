@@ -23,7 +23,6 @@ from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
 from .common import (
-    GenericTestHelper,
     MockEppLib,
     MockSESClient,
     completed_domain_request,
