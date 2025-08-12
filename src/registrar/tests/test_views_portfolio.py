@@ -741,7 +741,7 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_user_in_portfolio_shows_nav_link_and_allows_permission(self):
-        """Setting the organization_requests waffle on shows the nav link and allows access to the requests page"""
+        """A user in the portfolio will see the nav link and allows access to the requests page"""
         self.app.set_user(self.user.username)
 
         UserPortfolioPermission.objects.get_or_create(
