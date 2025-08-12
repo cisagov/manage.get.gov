@@ -1,9 +1,9 @@
-from unittest.mock import patch, Mock, MagicMock
-from django.test import TestCase
+from unittest.mock import patch
+from django.test import SimpleTestCase
 
 from registrar.services.cloudflare_service import CloudflareService
 
-class TestCloudflareService(TestCase):
+class TestCloudflareService(SimpleTestCase):
     """Test cases for the CloudflareService class"""
     def setUp(self):
         self.service = CloudflareService()
