@@ -22,7 +22,14 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from .common import GenericTestHelper, MockEppLib, MockSESClient, completed_domain_request, create_test_user, create_user
+from .common import (
+    GenericTestHelper,
+    MockEppLib,
+    MockSESClient,
+    completed_domain_request,
+    create_test_user,
+    create_user,
+)
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
@@ -768,7 +775,7 @@ class TestPortfolio(WebTest):
         # NOTE: Admins, by default, DO have permission
         # to view/edit members.
         # Testing scenario: User is not admin and can view portfolio, but not the members table
-        
+
         # --- non-admin
         self.app.set_user(self.user.username)
 
@@ -790,12 +797,11 @@ class TestPortfolio(WebTest):
     @less_console_noise_decorator
     def test_can_view_members_table(self):
         """Test that user with proper permission is able to access members view"""
-         # Users can only view the members table if they have
+        # Users can only view the members table if they have
         # Portfolio Permission "view_members" selected.
         # NOTE: Admins, by default, DO have permission
         # to view/edit members.
         # Testing scenario: User is admin and can view portfolio, as well as the members table
-
 
         self.app.set_user(self.user.username)
 
