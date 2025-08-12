@@ -18,7 +18,7 @@
     </legend>
 
     {% if is_federal %}
-      {% with attr_required=True %}
+      {% with attr_required=True sublabel_text=forms.0.federal_agency.help_text %}
         {% input_with_errors forms.0.federal_agency %}
       {% endwith %}
     {% endif %}
