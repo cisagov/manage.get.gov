@@ -18,6 +18,8 @@ PII_FIELDS = {
 
 SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov"]
 
+BATCH_SIZE = 1000
+
 
 class Command(BaseCommand):
     help = "Clean tables in database to prepare for import."
@@ -48,42 +50,41 @@ class Command(BaseCommand):
     def scrub_pii(self, model_name, fields):
         try:
             model = apps.get_model("registrar", model_name)
-            BATCH_SIZE = 1000
-            offset = 0
-            updated_total = 0
+        except LookupError:
+            logger.error(f"{model_name} not found")
 
-            while True:
-                instances = list(model.objects.all()[offset : offset + BATCH_SIZE])
-                if not instances:
+        offset = 0
+        updated_total = 0
+
+        while True:
+            instances = list(model.objects.all()[offset : offset + BATCH_SIZE])
+            if not instances:
+                break
+
+            for instance in instances:
+                if not instance:
                     break
 
-                for instance in instances:
-                    skip_row = False
-                    for field in fields:
-                        if field == "email" and hasattr(instance, field):
-                            current_value = getattr(instance, field)
-                            if current_value:
-                                for domain in SKIP_EMAIL_DOMAINS:
-                                    if current_value.lower().endswith(f"@{domain}"):
-                                        skip_row = True
-                                        break
-                        if skip_row:
-                            break
-                    if skip_row:
-                        continue
+                if self.should_skip(instance, fields):
+                    continue
 
-                    for field in fields:
-                        if hasattr(instance, field):
-                            fake_value = self.generate_fake_value(field)
-                            setattr(instance, field, fake_value)
-                            instance.save()
-                            updated_total += 1
+                for field in fields:
+                    if hasattr(instance, field):
+                        setattr(instance, field, self.generate_fake_value(field))
+                        instance.save()
+                        updated_total += 1
 
-                offset += BATCH_SIZE
+            offset += BATCH_SIZE
+            logger.info(f"Scrubbed {updated_total} in {model_name}")
 
-                logger.info(f"Scrubbed {updated_total} rows in {model_name}")
-        except Exception:
-            logger.error(f"Model {model_name} not found")
+    def should_skip(self, instance, fields):
+        "Return True if instance should not be scrubbed"
+        if "email" in fields:
+            return False
+        email = getattr(instance, "email", None)
+        if not email:
+            return False
+        return any(email.lower().endswith(f"@{domain}") for domain in SKIP_EMAIL_DOMAINS)
 
     def generate_fake_value(self, field):
         "Return fake data based on the field type"
