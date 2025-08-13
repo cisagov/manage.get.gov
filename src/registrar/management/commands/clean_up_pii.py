@@ -1,7 +1,7 @@
 from django.core.management import BaseCommand
 from django.apps import apps
 from faker import Faker
-from registrar.management.commands.utility.terminal_helper import TerminalHelper, TerminalColors
+from registrar.management.commands.utility.terminal_helper import TerminalColors
 from django.conf import settings
 import logging
 import argparse
@@ -75,26 +75,29 @@ class Command(BaseCommand):
                 if self.should_skip(instance):
                     continue
 
-                updated = False
-
                 new_dict = self.generate_fake_value(fields)
-
-                for field in fields:
-                    new_value = new_dict.get(field)
-                    if hasattr(instance, field):
-                        new_dict[field] = new_value
-                        if not dry_run:
-                            setattr(instance, field, new_value)
-                            updated = True
-                if updated and not dry_run:
-                    instance.save()
-                updated_total += 1
+                updated_total += self.iterate_through_fields(fields, instance, dry_run, new_dict)
 
             offset += BATCH_SIZE
             status_text = "Would scrub" if dry_run else "Scrubbed"
             logger.info(
                 f"_{TerminalColors.OKGREEN} {status_text} {updated_total} records in {model_name} {TerminalColors.ENDC}"
             )
+
+    def iterate_through_fields(self, fields, instance, dry_run, new_dict):
+        updated = False
+        total = 0
+        for field in fields:
+            new_value = new_dict.get(field)
+            if hasattr(instance, field):
+                new_dict[field] = new_value
+                if not dry_run:
+                    setattr(instance, field, new_value)
+                    updated = True
+        if updated and not dry_run:
+            instance.save()
+        total += 1
+        return total
 
     def should_skip(self, instance):
         "Return True if instance should not be scrubbed"
