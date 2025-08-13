@@ -7,7 +7,6 @@ on:
         environment:
           description: 'Environment to deploy'
           required: true
-          default: 'backup'
           type: 'choice'
           options:
             - aa
