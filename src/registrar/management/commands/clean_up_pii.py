@@ -1,9 +1,10 @@
 from django.core.management import BaseCommand
 from django.apps import apps
 from faker import Faker
-from registrar.management.commands.utility.terminal_helper import TerminalHelper
+from registrar.management.commands.utility.terminal_helper import TerminalHelper, TerminalColors
 from django.conf import settings
 import logging
+import argparse
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -14,43 +15,39 @@ PII_FIELDS = {
     "PublicContact": ["email", "first_name", "last_name", "phone"],
     "DomainInvitation": ["email"],
     "PortfolioInvitation": ["email"],
+    "SeniorOfficial": ["email", "first_name", "last_name"]
 }
 
-SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov", "example.org", "example.net", "example.com"]
+SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov", "contractors.truss.works", "gsa.gov", "example.com"]
 
 BATCH_SIZE = 1000
 
 
 class Command(BaseCommand):
     help = "Clean tables in database to prepare for import."
+   
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--dry_run",
+            action=argparse.BooleanOptionalAction,
+            help="Show what would be changed without making any database modifications.",
+        )
+        return super().add_arguments(parser)
 
-    def handle(self, **options):
+    def handle(self, *args, **options):
         """Clean up all pii from rows from a list of tables"""
 
+        dry_run = options.get("dry_run", False)
         if settings.IS_PRODUCTION:
             logger.error("clean_pii cannot be run in production")
             return
 
-        TerminalHelper.prompt_for_execution(
-            system_exit_on_terminate=True,
-            prompt_message="""
-            This script will delete PII from the following tables
-             * Contact
-             * User
-             * PublicContact
-             * DomainInvitation
-             * PortfolioInvitation
-            """,
-            prompt_title="Do you wish to proceed with these changes?",
-        )
-
         for model_name, fields in PII_FIELDS.items():
-            self.scrub_pii(model_name, fields)
+            self.scrub_pii(model_name, fields,dry_run)
 
-    def scrub_pii(self, model_name, fields):
+    def scrub_pii(self, model_name, fields, dry_run):
         try:
             model = apps.get_model("registrar", model_name)
-            print(model)
         except LookupError:
             logger.error(f"{model_name} not found")
 
@@ -70,18 +67,23 @@ class Command(BaseCommand):
                     continue
                 
                 updated = False
+
+                new_dict = self.generate_fake_value(fields)
+               
                 for field in fields:
+                    new_value =new_dict.get(field)
                     if hasattr(instance, field):
-                        setattr(instance, field, self.generate_fake_value(field))
-                        updated = True
-            
-                if updated:
+                        new_dict[field] = new_value
+                        if not dry_run:
+                            setattr(instance, field,new_value)
+                            updated = True
+                if updated and not dry_run:
                     instance.save()
-                    updated_total += 1
+                updated_total += 1
 
             offset += BATCH_SIZE
-
-            logger.info(f"Scrubbed {updated_total} in {model_name}")
+            status_text = "Would scrub" if dry_run else "Scrubbed"
+            logger.info(f"_{TerminalColors.OKGREEN} {status_text} {updated_total} records in {model_name} {TerminalColors.ENDC}")
 
     def should_skip(self, instance):
         "Return True if instance should not be scrubbed"
@@ -90,15 +92,19 @@ class Command(BaseCommand):
             return False
         return any(email.lower().endswith(f"@{domain}") for domain in SKIP_EMAIL_DOMAINS)
 
-    def generate_fake_value(self, field):
+    def generate_fake_value(self,fields):
         "Return fake data based on the field type"
-        first_name = fake.first_name()
+        dict = {}
+        first_name = fake.first_name() 
         last_name = fake.last_name()
-        if "email" in field:
-            return f"{first_name.lower()}.{last_name.lower()}@example.com"
-        elif "first_name" in field:
-            return first_name
-        elif "last_name" in field:
-            return last_name
-        elif "phone" in field:
-            return fake.phone_number()
+        for field in fields:
+            if "email" in field:
+                dict["email"] = f"{first_name}.{last_name}@example.com"
+            elif "first_name" in field:
+                dict["first_name"] = first_name
+            elif "last_name" in field:
+                dict["last_name"] = last_name
+            elif "phone" in field:
+                dict["phone_number"] = fake.phone_number()
+        return dict
+
