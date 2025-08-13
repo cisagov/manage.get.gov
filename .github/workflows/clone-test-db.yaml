@@ -30,7 +30,7 @@ on:
             - yellowstone
             - zion
 jobs:
-  clone-database:
+  clone-test-database:
     runs-on: ubuntu-24.04
     env:
       # must be the github secrets for the receiving sandbox
@@ -39,7 +39,7 @@ jobs:
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
       SOURCE_ENVIRONMENT: test_db
     steps:
-        - name: Clone Database
+        - name: Clone Test Database
           run: |
             # install cf cli and other tools
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg

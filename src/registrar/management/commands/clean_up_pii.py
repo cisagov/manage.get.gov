@@ -15,17 +15,26 @@ PII_FIELDS = {
     "PublicContact": ["email", "first_name", "last_name", "phone"],
     "DomainInvitation": ["email"],
     "PortfolioInvitation": ["email"],
-    "SeniorOfficial": ["email", "first_name", "last_name"]
+    "SeniorOfficial": ["email", "first_name", "last_name"],
 }
 
-SKIP_EMAIL_DOMAINS = ["ecstech.com", "cisa.dhs.gov", "truss.works", "gwe.cisa.dhs.gov", "igorville.gov", "contractors.truss.works", "gsa.gov", "example.com"]
+SKIP_EMAIL_DOMAINS = [
+    "ecstech.com",
+    "cisa.dhs.gov",
+    "truss.works",
+    "gwe.cisa.dhs.gov",
+    "igorville.gov",
+    "contractors.truss.works",
+    "gsa.gov",
+    "example.com",
+]
 
 BATCH_SIZE = 1000
 
 
 class Command(BaseCommand):
     help = "Clean tables in database to prepare for import."
-   
+
     def add_arguments(self, parser):
         parser.add_argument(
             "--dry_run",
@@ -43,7 +52,7 @@ class Command(BaseCommand):
             return
 
         for model_name, fields in PII_FIELDS.items():
-            self.scrub_pii(model_name, fields,dry_run)
+            self.scrub_pii(model_name, fields, dry_run)
 
     def scrub_pii(self, model_name, fields, dry_run):
         try:
@@ -65,17 +74,17 @@ class Command(BaseCommand):
 
                 if self.should_skip(instance):
                     continue
-                
+
                 updated = False
 
                 new_dict = self.generate_fake_value(fields)
-               
+
                 for field in fields:
-                    new_value =new_dict.get(field)
+                    new_value = new_dict.get(field)
                     if hasattr(instance, field):
                         new_dict[field] = new_value
                         if not dry_run:
-                            setattr(instance, field,new_value)
+                            setattr(instance, field, new_value)
                             updated = True
                 if updated and not dry_run:
                     instance.save()
@@ -83,7 +92,9 @@ class Command(BaseCommand):
 
             offset += BATCH_SIZE
             status_text = "Would scrub" if dry_run else "Scrubbed"
-            logger.info(f"_{TerminalColors.OKGREEN} {status_text} {updated_total} records in {model_name} {TerminalColors.ENDC}")
+            logger.info(
+                f"_{TerminalColors.OKGREEN} {status_text} {updated_total} records in {model_name} {TerminalColors.ENDC}"
+            )
 
     def should_skip(self, instance):
         "Return True if instance should not be scrubbed"
@@ -92,10 +103,10 @@ class Command(BaseCommand):
             return False
         return any(email.lower().endswith(f"@{domain}") for domain in SKIP_EMAIL_DOMAINS)
 
-    def generate_fake_value(self,fields):
+    def generate_fake_value(self, fields):
         "Return fake data based on the field type"
         dict = {}
-        first_name = fake.first_name() 
+        first_name = fake.first_name()
         last_name = fake.last_name()
         for field in fields:
             if "email" in field:
@@ -107,4 +118,3 @@ class Command(BaseCommand):
             elif "phone" in field:
                 dict["phone_number"] = fake.phone_number()
         return dict
-

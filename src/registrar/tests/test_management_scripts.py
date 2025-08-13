@@ -2696,28 +2696,33 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
+
 class TestCleanPII(TestCase):
     def setUp(self):
-      self.user1 = User.objects.create(email="lucille@aol.gov",first_name="Lucille", last_name="Malt", username="user1")
-      self.user2 = User.objects.create(email="somedotgovdev@ecstech.com", first_name="Dottie", last_name="Glover",  username="user2")
-      self.contact1 = Contact.objects.create(email="testuser55@gmail.com", first_name="Wella", last_name="Comma")
-    
+        self.user1 = User.objects.create(
+            email="lucille@aol.gov", first_name="Lucille", last_name="Malt", username="user1"
+        )
+        self.user2 = User.objects.create(
+            email="somedotgovdev@ecstech.com", first_name="Dottie", last_name="Glover", username="user2"
+        )
+        self.contact1 = Contact.objects.create(email="testuser55@gmail.com", first_name="Wella", last_name="Comma")
+
     def test_dry_run_does_not_modify_data(self):
         call_command("clean_up_pii", dry_run=True)
         self.contact1.refresh_from_db()
         self.assertEqual(self.contact1.email, "testuser55@gmail.com")
 
     def test_modifies_data(self):
-        
+
         call_command("clean_up_pii", dry_run=False)
-    
+
         self.user1.refresh_from_db()
         self.user2.refresh_from_db()
         self.contact1.refresh_from_db()
         self.assertNotEqual(self.contact1.email, "testuser@gmail.com")
-        self.assertEqual(self.user2.email,"somedotgovdev@ecstech.com")
+        self.assertEqual(self.user2.email, "somedotgovdev@ecstech.com")
         self.assertNotEqual(self.user1.email, "lucille@aol.com")
-    
+
     def tearDown(self):
         """Clean up test data."""
         super().tearDown()
