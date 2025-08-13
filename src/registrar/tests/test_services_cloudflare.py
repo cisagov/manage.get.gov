@@ -2,7 +2,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from registrar.services.cloudflare_service import CloudflareService
-
+from registrar.utility.errors import APIError
 class TestCloudflareService(SimpleTestCase):
     """Test cases for the CloudflareService class"""
     def setUp(self):
@@ -18,5 +18,18 @@ class TestCloudflareService(SimpleTestCase):
         }
         result = self.service.create_account(account_name)
         print(result)
-        self.assertEqual(result['result']['name'], account_name)
+        self.assertEqual(result['result']['name'], account_name)   
         
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_create_account_failure(self, mock_make_request):
+        """Test create_account with API failure"""
+        account_name = ' '
+        mock_make_request.return_value = {
+            'success': False,
+            'message': 'Cannot be empty'
+        }
+        
+        with self.assertRaises(APIError) as context:
+            self.service.create_account(account_name)
+        
+        self.assertIn(f"Failed to create account for {account_name}: Cannot be empty", str(context.exception))
