@@ -35,8 +35,8 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       # must be the github secrets for the receiving sandbox
-      CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
-      CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
       SOURCE_ENVIRONMENT: test_db
     steps:
@@ -67,8 +67,8 @@ jobs:
         - name: Load Fixtures
           uses: cloud-gov/cg-cli-tools@main
           with:
-            cf_username: ${{ secrets.CF_STAGING_USERNAME }}
-            cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+            cf_username: CF_${{ github.event.inputs.environment }}_USERNAME
+            cf_password: CF_${{ github.event.inputs.environment }}_PASSWORD
             cf_org: cisa-dotgov
             cf_space: ${{ env.DESTINATION_ENVIRONMENT }}
             cf_command: "run-task getgov-testdb --command 'python manage.py load' --name fixtures"
