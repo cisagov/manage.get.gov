@@ -107,16 +107,16 @@ This is helpful for debugging situations where epplib is not correctly or fully 
 ### Adding in an 'expiring soon' or 'expired' domain
 
 #### Overview
-Expiration dates created by fixtures in sandboxes are not accurate (it resets to the expiration date to a year from 'today').
-In order to view an expiring or expired domain, we need to pull a record from staging and use it on the desired sandbox. In order to have edit ability, you must be a domain manager of that domain. Below are instructions on how to add a domain from staging sandbox into another sandbox and how to be able to view the domain. As a domain manager you will be able to view the renewal form.
+Expiration dates created by fixtures in sandboxes are not accurate (they are not synced to the OT&E registry and will reset to 
+the expiration date to a year from 'today'). In order to view an expiring or expired domain, we need to pull records from the 
+OT&E registry. In order to have edit ability, you must be a domain manager of that domain. Below are instructions on how to 
+find, add, and then view an expiring or expired domain to a sandbox. As a domain manager you will be able to view the renewal form.
 
 #### Find an expired or expiring domain record
 
-1. Go to the `staging` sandbox and to `/admin`
-2. Go to Domains and find a domain that is actually expired or expiring soon by sorting the Expiration Date column
-3. Click into the domain to check the expiration date
-4. Click into Manage Domain to double check the expiration date as well (this expiration date is the source of truth)
-5. Now hold onto that domain name, and save it for the command below
+1. Get access to the OT&E registry by asking another team member
+2. Click on Reports to download a file of expired or expiring domains
+3. Find a domain name from the report, and save it for the command below
 
 #### Duplicate the domain into your sandbox environment of choice and assign to manager and portfolio
 
