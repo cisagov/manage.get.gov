@@ -340,7 +340,6 @@ class TestDomainInvitationAdmin(WebTest):
                 follow=True,
             )
 
-            # testing
             # Assert that the filters are added
             self.assertContains(response, "invited", count=5)
             self.assertContains(response, "Invited", count=2)

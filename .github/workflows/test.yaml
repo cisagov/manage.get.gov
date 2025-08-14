@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  check-for-python-changes:
+  check_python_changes:
     runs-on: ubuntu-latest
     outputs:
       any_python_files_changed: $ {{steps.changed-files.outputs.any_changed}}
@@ -27,11 +27,11 @@ jobs:
             *.py
             src/**/*.py
       - name: Print detected changes
-        run: echo "any_changed=${{ steps.changed-files.outputs.any_changed }}"
+        run: echo "any=${{ toJson(needs) }}"
 
   python-linting:
-    needs: check-for-python-changes
-    if: needs.check-for-python-changes.outputs.any_python_files_changed == 'true'
+    needs: check_python_changes
+    if: needs.check_python_changes.outputs.any_python_files_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -43,8 +43,8 @@ jobs:
         run: docker compose run app python manage.py lint
 
   python-test:
-    needs: check-for-python-changes
-    if: needs.check-for-python-changes.outputs.any_python_files_changed == 'true'
+    needs: check_python_changes.
+    if: needs.check_python_changes.outputs.any_python_files_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -54,8 +54,8 @@ jobs:
         run: docker compose run app python manage.py test --parallel
 
   django-migrations-complete:
-    needs: check-for-python-changes
-    if: needs.check-for-python-changes.outputs.any_python_files_changed == 'true'
+    needs: check_python_changes
+    if: needs.check_python_changes.outputs.any_python_files_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
