@@ -3,6 +3,7 @@ from django.test import SimpleTestCase
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError
+
 class TestCloudflareService(SimpleTestCase):
     """Test cases for the CloudflareService class"""
     def setUp(self):
@@ -76,17 +77,28 @@ class TestCloudflareService(SimpleTestCase):
         mock_make_request.return_value = {
             'success': True,
             'data': {
-                "content": "198.51.100.4",
-                "name": "democracy.gov",
-                "proxied": False,
-                "type": "A",
-                "comment": "Test domain name",
-                "ttl": 3600
+                "result": {
+                    "content": "198.51.100.4",
+                    "name": "democracy.gov",
+                    "proxied": False,
+                    "type": "A",
+                    "comment": "Test domain name",
+                    "ttl": 3600
+                }
             }
         }
         result = self.service.create_dns_record(zone_id, record_data)
         print(result)
-        self.assertEqual(result['result']['name'], )   
+        self.assertEqual(result['result']['name'], "democracy.gov")
+        self.assertEqual(result['result']['content'], "198.51.100.4")
+        self.assertEqual(result['result'], {
+                    "content": "198.51.100.4",
+                    "name": "democracy.gov",
+                    "proxied": False,
+                    "type": "A",
+                    "comment": "Test domain name",
+                    "ttl": 3600
+                })
         
     @patch('registrar.services.cloudflare_service.make_api_request')
     def test_create_dns_record_failure(self, mock_make_request):
@@ -107,5 +119,5 @@ class TestCloudflareService(SimpleTestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, record_data_missing_content)
         
-        self.assertIn(f"Failed to create record for zone {zone_id}: 'missing content field'", str(context.exception))
+        self.assertIn(f"Failed to create dns record for zone {zone_id}: missing content field", str(context.exception))
         
