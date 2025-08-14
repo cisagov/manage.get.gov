@@ -17,7 +17,6 @@ class TestCloudflareService(SimpleTestCase):
             'data': {"result": {"name": account_name, "id": "12345"}}
         }
         result = self.service.create_account(account_name)
-        print(result)
         self.assertEqual(result['result']['name'], account_name)   
         
     @patch('registrar.services.cloudflare_service.make_api_request')
@@ -33,3 +32,31 @@ class TestCloudflareService(SimpleTestCase):
             self.service.create_account(account_name)
         
         self.assertIn(f"Failed to create account for {account_name}: Cannot be empty", str(context.exception))
+
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_create_zone_success(self, mock_make_request):
+        """Test successful create_zone call"""
+        account_name = "test.gov test account"
+        account_id = "12345"
+        mock_make_request.return_value = {
+            'success': True,
+            'data': {"result": {"name": account_name, "id": "12345", "nameservers": ["hostess1.mostess.gov", "hostess2.mostess.gov"]}}
+        }
+        result = self.service.create_zone(account_name, account_id)
+        print(result)
+        self.assertEqual(result['result']['name'], account_name)   
+        
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_create_zone_failure(self, mock_make_request):
+        """Test create_zone with API failure"""
+        account_name = "test.gov test account"
+        account_id = "12345"
+        mock_make_request.return_value = {
+            'success': False,
+            'message': 'invalid'
+        }
+        
+        with self.assertRaises(APIError) as context:
+            self.service.create_zone(account_name, account_id)
+        
+        self.assertIn(f"Failed to create zone for {account_name}: invalid", str(context.exception))

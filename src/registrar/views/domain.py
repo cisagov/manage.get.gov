@@ -667,7 +667,7 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -709,7 +709,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov"]
     dns_vendor_service = CloudflareService()
 
     def has_permission(self):
@@ -761,7 +761,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # GET account: Check to see if the account already exists. Filters accounts by tenant_id / account_name.
                 account_name = f"account-{self.object.name}"
-                params = {"tenant_id": settings.DOTGOV_TEST_TENANT_ACCOUNT_ID, "name": account_name}
+                params = {"tenant_id": settings.SECRET_DOTGOV_TENANT_ID, "name": account_name}
 
                 account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
                 account_response_json = account_response.json()
@@ -799,43 +799,14 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # Create one if it doesn't presently exist
                 if not zone_id:
-                    zone_response = requests.post(
-                        f"{base_url}/zones",
-                        headers=headers,
-                        json={"name": zone_name, "account": {"id": account_id}, "type": "full"},
-                        timeout=5,
-                    )
-                    zone_response_json = zone_response.json()
-                    logger.info(f"Created zone: {zone_response_json}")
-                    zone_id = zone_response_json.get("result", {}).get("id")
-                    errors = zone_response_json.get("errors", [])
+                    try:
+                        zone_data = self.dns_vendor_service.create_zone(account_name, account_id)
+                        zone_id = account_data["result"]["id"]
+                    except APIError as e:
+                     errors = zone_data.get("errors", [])
+                     logger.error(f"API error in view: {str(e)}, {errors}")
+                    
                     zone_response.raise_for_status()
-
-                # 4. Add or get a zone subscription
-
-                # See if one already exists
-                subscription_response = requests.get(
-                    f"{base_url}/zones/{zone_id}/subscription", headers=headers, timeout=5
-                )
-                subscription_response_json = subscription_response.json()
-                logger.debug(f"get subscription: {subscription_response_json}")
-
-                # Create a subscription if one doesn't exist already.
-                # If it doesn't, we get this error message (code 1207):
-                # Add a core subscription first and try again. The zone does not have an active core subscription.
-                # Note that status code and error code are different here.
-                if subscription_response.status_code == 404:
-                    subscription_response = requests.post(
-                        f"{base_url}/zones/{zone_id}/subscription",
-                        headers=headers,
-                        json={"rate_plan": {"id": "PARTNERS_ENT"}, "frequency": "annual"},
-                        timeout=5,
-                    )
-                    subscription_response.raise_for_status()
-                    subscription_response_json = subscription_response.json()
-                    logger.info(f"Created subscription: {subscription_response_json}")
-                else:
-                    subscription_response.raise_for_status()
 
                 # # 5. Create DNS record
                 # # Format the DNS record according to Cloudflare's API requirements
@@ -852,9 +823,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     timeout=5,
                 )
                 dns_response_json = dns_response.json()
-                logger.info(f"Created DNS record: {dns_response_json}")
                 errors = dns_response_json.get("errors", [])
                 dns_response.raise_for_status()
+                logger.info(f"Created DNS record: {dns_response_json}")
                 dns_name = dns_response_json["result"]["name"]
                 messages.success(request, f"DNS A record '{dns_name}' created successfully.")
             except Exception as err:

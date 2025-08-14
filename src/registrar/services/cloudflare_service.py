@@ -19,7 +19,7 @@ class CloudflareService:
             "Content-Type": "application/json",
         }
     # POST account
-    def create_account(self, account_name)-> str:     
+    def create_account(self, account_name):     
         url = f"{self.base_url}/accounts"
         data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
         response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
@@ -31,5 +31,17 @@ class CloudflareService:
         return response['data']
 
     # POST zone
+    def create_zone(self, account_name, account_id):     
+        url = f"{self.base_url}/zones"
+        data = {"name": account_name, "account": {"id": account_id }}
+        response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
+        if not response['success']:
+            raise APIError(f"Failed to create zone for {account_name}: {response['message']}")
+               
+        logger.info(f"Created zone for account {account_name}: {response['data']}")
+
+        return response['data']
 
     # POST dns_record
+   
+    
