@@ -21,7 +21,7 @@
       {% with attr_required=True %}
         {% input_with_errors forms.0.federal_agency %}
       {% endwith %}
-      <p id="id_organization_contact-federal_agency__sublabel" class="text-base margin-top-2px margin-bottom-1">
+      <p class="font-body-xs text-base-darker">
         Don't see your agency listed? Its domains may be managed through enterprise mode, which limits who can submit domain requests. <a href="{% public_site_url 'contact' %}" class="usa-link" target="_blank">Contact us</a> for assistance.
       </p>
     {% endif %}
