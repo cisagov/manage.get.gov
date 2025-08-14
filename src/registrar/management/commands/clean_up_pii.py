@@ -33,7 +33,7 @@ BATCH_SIZE = 1000
 
 
 class Command(BaseCommand):
-    help = "Clean tables in database to prepare for import."
+    help = "Clean tables with pii in order to use as a test data"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -48,7 +48,7 @@ class Command(BaseCommand):
 
         dry_run = options.get("dry_run", False)
         if settings.IS_PRODUCTION:
-            logger.error("clean_pii cannot be run in production")
+            logger.error("clean_up_pii cannot be run in production")
             return
 
         for model_name, fields in PII_FIELDS.items():
@@ -85,8 +85,9 @@ class Command(BaseCommand):
             )
 
     def iterate_through_fields(self, fields, instance, dry_run, new_dict):
+        "Loop through fields with pii, and count the record for the updated total for each model"
         updated = False
-        total = 0
+
         for field in fields:
             new_value = new_dict.get(field)
             if hasattr(instance, field):
@@ -96,18 +97,17 @@ class Command(BaseCommand):
                     updated = True
         if updated and not dry_run:
             instance.save()
-        total += 1
-        return total
+        return 1
 
     def should_skip(self, instance):
-        "Return True if instance should not be scrubbed"
+        "Skip emails that reference current admins and data that was already scrubbed"
         email = getattr(instance, "email", None)
         if not email:
             return False
         return any(email.lower().endswith(f"@{domain}") for domain in SKIP_EMAIL_DOMAINS)
 
     def generate_fake_value(self, fields):
-        "Return fake data based on the field type"
+        "Return fake data dict, created a dict so that the first name and last name matches with email"
         dict = {}
         first_name = fake.first_name()
         last_name = fake.last_name()
