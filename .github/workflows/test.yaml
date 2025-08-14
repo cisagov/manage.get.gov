@@ -13,7 +13,7 @@ jobs:
   check-for-python-changes:
     runs-on: ubuntu-latest
     outputs:
-      any_python_files_changed: ${{ steps.changed-files.outputs.any_changed }}
+      any_python_files_changed: $ {{steps.changed-files.outputs.any_changed}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -27,11 +27,11 @@ jobs:
             *.py
             src/**/*.py
       - name: Print detected changes
-        run: echo "any_changed=${{ steps.changed-files.outputs.any_changed }}"
+        run: echo "Changed files detected by action:${{ steps.changed-files.outputs.all_changed_files}}"
 
   python-linting:
     needs: check-for-python-changes
-    if: ${{ needs['check-for-python-changes'].outputs.any_python_files_changed == 'true'
+    if: needs.check-for-python-changes.outputs.any_python_files_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
