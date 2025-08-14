@@ -24,8 +24,7 @@ jobs:
         uses: tj-actions/changed-files@v35
         with:
           files: |
-            *.py
-            src/**/*.py
+            **/*.py
       - name: Print detected changes
         run: echo "Changed files detected by action:${{ steps.changed-files.outputs.all_changed_files}}"
 
