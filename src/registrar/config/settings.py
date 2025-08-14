@@ -209,6 +209,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
+    # Add DB info to logs
+    "registrar.registrar_middleware.DatabaseConnectionMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -504,6 +506,45 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
+        # Add all extra fields from the log record
+        extra_fields = {}
+        for key, value in record.__dict__.items():
+            # Skip standard LogRecord attributes
+            if key not in {
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "getMessage",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "message",
+            }:
+                # Only include JSON-serializable values
+                try:
+                    json.dumps(value)
+                    extra_fields[key] = value
+                except (TypeError, ValueError):
+                    # Convert non-serializable values to strings
+                    extra_fields[key] = str(value)
+
+        # Merge extra fields into the main log record
+        log_record.update(extra_fields)
+
         return json.dumps(log_record, ensure_ascii=False)
 
 
@@ -646,6 +687,17 @@ LOGGING = {
         "registrar": {
             "handlers": django_handlers,
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # DB info
+        "django.db.backends": {
+            "handlers": django_handlers,
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.db.backends.schema": {
+            "handlers": django_handlers,
+            "level": "WARNING",
             "propagate": False,
         },
     },
