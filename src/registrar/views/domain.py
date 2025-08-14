@@ -806,8 +806,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                      errors = zone_data.get("errors", [])
                      logger.error(f"API error in view: {str(e)}, {errors}")
                     
-                    zone_response.raise_for_status()
-
                 # # 5. Create DNS record
                 # # Format the DNS record according to Cloudflare's API requirements
                 dns_response = requests.post(
