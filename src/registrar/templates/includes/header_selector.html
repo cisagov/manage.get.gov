@@ -1,4 +1,5 @@
-{% if not is_org_user %}
+{% url 'your-portfolios' as your_portfolios_url %} 
+{% if not is_org_user or request.path == your_portfolios_url %}
     {% include "includes/header_basic.html" with logo_clickable=logo_clickable %}
 {% else %}
     {% include "includes/header_extended.html" with logo_clickable=logo_clickable %}
