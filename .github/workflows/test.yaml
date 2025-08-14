@@ -25,7 +25,7 @@ jobs:
         with:
           files: |
             *.py
-            **/*.py
+            src/**/*.py
 
   python-linting:
     needs: check-for-python-changes
