@@ -60,3 +60,52 @@ class TestCloudflareService(SimpleTestCase):
             self.service.create_zone(account_name, account_id)
         
         self.assertIn(f"Failed to create zone for {account_name}: invalid", str(context.exception))
+
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_create_dns_record_success(self, mock_make_request):
+        """Test successful create_dns_record call"""
+        zone_id = "54321"
+        record_data = {
+            "content": "198.51.100.4",
+            "name": "democracy.gov",
+            "proxied": False,
+            "type": "A",
+            "comment": "Test domain name",
+            "ttl": 3600
+        }
+        mock_make_request.return_value = {
+            'success': True,
+            'data': {
+                "content": "198.51.100.4",
+                "name": "democracy.gov",
+                "proxied": False,
+                "type": "A",
+                "comment": "Test domain name",
+                "ttl": 3600
+            }
+        }
+        result = self.service.create_dns_record(zone_id, record_data)
+        print(result)
+        self.assertEqual(result['result']['name'], )   
+        
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_create_dns_record_failure(self, mock_make_request):
+        """Test create_zone with API failure"""
+        zone_id = "54321"
+        record_data_missing_content = {
+            "name": "democracy.gov",
+            "proxied": False,
+            "type": "A",
+            "comment": "Test domain name",
+            "ttl": 3600
+        }
+        mock_make_request.return_value = {
+            'success': False,
+            'message': 'missing content field'
+        }
+        
+        with self.assertRaises(APIError) as context:
+            self.service.create_dns_record(zone_id, record_data_missing_content)
+        
+        self.assertIn(f"Failed to create record for zone {zone_id}: 'missing content field'", str(context.exception))
+        
