@@ -346,6 +346,7 @@ class TestDomainInvitationAdmin(WebTest):
             self.assertContains(response, "retrieved", count=4)
             self.assertContains(response, "Retrieved", count=2)
 
+            # adding comment to py file. 
             # Check for the HTML context specificially
             invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
             retrieved_html = '<a id="status-filter-retrieved" href="?status__exact=retrieved">Retrieved</a>'
