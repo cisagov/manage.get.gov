@@ -120,4 +120,102 @@ class TestCloudflareService(SimpleTestCase):
             self.service.create_dns_record(zone_id, record_data_missing_content)
         
         self.assertIn(f"Failed to create dns record for zone {zone_id}: missing content field", str(context.exception))
+
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_get_accounts_success(self, mock_make_request):
+        """Test successful get_all_accounts call"""
+        mock_make_request.return_value = {
+            'success': True,
+            'data': {'result': [
+                {'id': 1, 'name': 'test acct 1'},
+                {'id': 2, 'name': 'test acct 2'},
+                ]
+            }
+        }
         
+        result = self.service.get_all_accounts()
+        
+        self.assertEqual(result, {'result': [
+                {'id': 1, 'name': 'test acct 1'},
+                {'id': 2, 'name': 'test acct 2'},
+                ]
+            })
+    
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_get_all_accounts_failure(self, mock_make_request):
+        """Test get_all_accounts with API failure"""
+        mock_make_request.return_value = {
+            'success': False,
+            'message': 'Something is wrong'
+        }
+        
+        with self.assertRaises(APIError) as context:
+            self.service.get_all_accounts()
+        
+        self.assertIn('Failed to get accounts', str(context.exception))
+        
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_get_zones_success(self, mock_make_request):
+        """Test successful get_all_zones call"""
+        mock_make_request.return_value = {
+            'success': True,
+            'data': {'result': [
+                {'id': 1, 'name': 'test zone 1', 'status': 'active'},
+                {'id': 2, 'name': 'test zone 2', 'status': 'active'},
+                ]
+            }
+        }
+        
+        result = self.service.get_all_zones()
+        
+        self.assertEqual(result, {'result': [
+                {'id': 1, 'name': 'test zone 1', 'status': 'active'},
+                {'id': 2, 'name': 'test zone 2', 'status': 'active'},
+                ]
+            })
+    
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_get_all_zones_failure(self, mock_make_request):
+        """Test get_all_zones with API failure"""
+        mock_make_request.return_value = {
+            'success': False,
+            'message': 'Something is wrong'
+        }
+        
+        with self.assertRaises(APIError) as context:
+            self.service.get_all_zones()
+        
+        self.assertIn('Failed to get zones', str(context.exception))
+        
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_get_dns_record_success(self, mock_make_request):
+        '''Test get_dns_record with API success'''
+        zone_id = '1234'
+        record_id = '45454'
+        mock_make_request.return_value = {
+            'success': True,
+            'data': {'result':
+                {'id': 2, 'name': 'A', 'content': '198.22.333.4', 'ttl': 3600}
+            }
+        }
+
+        result = self.service.get_dns_record(zone_id, record_id)
+
+        self.assertEqual( result, {'result':
+            {'id': 2, 'name': 'A', 'content': '198.22.333.4', 'ttl': 3600}
+        })
+        
+    @patch('registrar.services.cloudflare_service.make_api_request')
+    def test_get_dns_record_failure(self, mock_make_request):
+        '''Test get_dns_record with API failure'''
+        zone_id = ''
+        record_id = '45454'
+        mock_make_request.return_value = {
+            'success': False,
+            'message': 'whomp, whomp'
+        }
+
+        with self.assertRaises(APIError) as context:
+            self.service.get_dns_record(zone_id, record_id)
+
+        self.assertIn(f"Failed to get dns record: whomp, whomp", str(context.exception))

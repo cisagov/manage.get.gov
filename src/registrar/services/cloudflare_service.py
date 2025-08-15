@@ -37,7 +37,7 @@ class CloudflareService:
         response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
 
         if not response['success']:
-            raise APIError(f"Failed to create zone for {account_name}: {response['message']}; errors returned: {errors}")
+            raise APIError(f"Failed to create zone for {account_name}: {response['message']}")
         logger.info(f"Created zone for account {account_name}: {response['data']}")
 
         return response['data']
@@ -53,4 +53,38 @@ class CloudflareService:
 
         return response['data']
     
+    # GET accounts
+    def get_all_accounts(self):
+        '''Gets all accounts under all(?!) tenants'''
+        url = f"{self.base_url}/accounts"
+        response = make_api_request(url=url, method="GET", headers=self.headers )
+
+        if not response['success']:
+            raise APIError(f"Failed to get accounts: {response['message']}")             
+        logger.info(f"Retrieved all accounts: {response['data']}")
+
+        return response['data']
+    
+    # GET zones
+    def get_all_zones(self):
+        '''Gets all zones under all(?!) tenants'''
+        url = f"{self.base_url}/accounts"
+        response = make_api_request(url=url, method="GET", headers=self.headers )
+
+        if not response['success']:
+            raise APIError(f"Failed to get zones: {response['message']}")             
+        logger.info(f"Retrieved all zones: {response['data']}")
+
+        return response['data']
+ 
+    # GET dns record for zone
+    def get_dns_record(self, zone_id, record_id):
+        url = f"{self.base_url}/zones/{zone_id}/dns_records/{record_id}"
+        response = make_api_request(url=url, method="GET", headers=self.headers )
+
+        if not response['success']:
+            raise APIError(f"Failed to get dns record: {response['message']}")             
+        logger.info(f"Retrieved record {record_id} from {zone_id}: {response['data']}")
+
+        return response['data']
     
