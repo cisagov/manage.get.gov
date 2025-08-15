@@ -1241,7 +1241,7 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         # Verify user has permissions to access selected portfolio
         portfolio_permission = UserPortfolioPermission.objects.filter(portfolio=portfolio, user=request.user).first()
         if not portfolio_permission:
-            return JsonResponse({"error": "Invalid user portfolio permission"}, status=404)
+            return JsonResponse({"error": "Invalid user portfolio permission"}, status=403)
         if portfolio_permission.user != request.user:
             return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
 
