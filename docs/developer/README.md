@@ -173,6 +173,8 @@ See the [database-access README](./database-access.md) for information on how to
 
 ## Running tests
 
+Edit to .md file (test)
+
 Crash course on Docker's `run` vs `exec`: in order to run the tests inside of a container, a container must be running. If you already have a container running, you can use `exec`. If you do not, you can use `run`, which will attempt to start one.
 
 To get a container running:

@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 from registrar.models.contact import Contact
 
+#comment
 from .common import MockSESClient, less_console_noise
 import boto3_mocking  # type: ignore
 import logging
