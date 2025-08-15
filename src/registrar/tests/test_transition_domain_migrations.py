@@ -19,13 +19,17 @@ from unittest.mock import patch
 
 from registrar.models.contact import Contact
 
-#comment
 from .common import MockSESClient, less_console_noise
 import boto3_mocking  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)
 
+
+class TestFailure(TestCase):
+    def mytest(self):
+        self.assertRaises(FooException, Contact, name='1234')
+        
 
 class TestProcessedMigrations(TestCase):
     """This test case class is designed to verify the idempotency of migrations

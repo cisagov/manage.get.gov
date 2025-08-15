@@ -26,7 +26,7 @@ jobs:
           files: |
             **/*.py
       - name: Print detected changes
-        run: echo "Changed files detected by action:${{ steps.changed-files.outputs.all_changed_files}}"
+        run: echo "Changed python files detected by action:${{ steps.changed-files.outputs.all_changed_files}}"
 
   python-linting:
     needs: check-for-python-changes
