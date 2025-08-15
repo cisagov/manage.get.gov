@@ -26,11 +26,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestFailure(TestCase):
-    def mytest(self):
-        self.assertRaises(FooException, Contact, name='1234')
-        
-
 class TestProcessedMigrations(TestCase):
     """This test case class is designed to verify the idempotency of migrations
     related to domain transitions in the domain_request."""
