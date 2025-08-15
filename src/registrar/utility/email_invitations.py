@@ -56,11 +56,7 @@ def _validate_invitation(email, user, domains, requestor, is_member_of_different
 
 def _check_outside_org_membership(email, requestor, is_member_of_different_org):
     """Raise an error if the email belongs to a different organization."""
-    if (
-        flag_is_active_for_user(requestor, "organization_feature")
-        and not flag_is_active_for_user(requestor, "multiple_portfolios")
-        and is_member_of_different_org
-    ):
+    if not flag_is_active_for_user(requestor, "multiple_portfolios") and is_member_of_different_org:
         raise OutsideOrgMemberError(email=email)
 
 

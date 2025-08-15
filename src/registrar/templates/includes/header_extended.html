@@ -66,7 +66,7 @@
                 </a>
             </li> -->
 
-                {% if has_organization_requests_flag %}
+            {% if is_portfolio_user %}
                 <li class="usa-nav__primary-item">
                     <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
                     {% if has_edit_request_portfolio_permission %}
@@ -105,16 +105,13 @@
                         </a>
                     {% endif %}
                 </li>
-                {% endif %}
 
-                {% if has_organization_members_flag %}
-                    {% if has_view_members_portfolio_permission %}
-                    <li class="usa-nav__primary-item">
-                        <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
-                            Members
-                        </a>
-                    </li>
-                    {% endif %}
+                {% if has_view_members_portfolio_permission %}
+                <li class="usa-nav__primary-item">
+                    <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
+                        Members
+                    </a>
+                </li>
                 {% endif %}
 
                 <li class="usa-nav__primary-item">
@@ -129,5 +126,6 @@
             </ul>
         </div>
     </nav>
+    {% endif %}
     {% endblock %}
 </header>

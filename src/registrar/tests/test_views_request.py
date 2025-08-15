@@ -9,7 +9,6 @@ from registrar.utility.constants import BranchChoices
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
-from waffle.testutils import override_flag
 
 from registrar.models import (
     DomainRequest,
@@ -2549,7 +2548,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertNotContains(dotgov_page, "medicare.gov")
 
     # @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_FEB_questions(self):
         """
         Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
@@ -2942,8 +2940,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_missing_edit_permissions(self):
         """Tests that a portfolio user without edit request permissions cannot edit or add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -2965,8 +2961,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         portfolio_perm.delete()
         portfolio.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_with_edit_permissions(self):
         """Tests that a portfolio user with edit request permissions can edit and add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -3080,7 +3074,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(response, "Withdrawn")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_withdraw_portfolio_redirects_correctly(self):
         """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -3219,32 +3212,30 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # Verify that the back button appears
         self.assertContains(next_page, "Back")
 
-        # Test with portfolio flag
-        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
-            portfolio = Portfolio.objects.create(
-                creator=self.user,
-                organization_name="test portfolio",
-            )
-            permission = UserPortfolioPermission.objects.create(
-                user=self.user,
-                portfolio=portfolio,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
-            )
-            domain_request.portfolio = portfolio
-            domain_request.save()
-            domain_request.refresh_from_db()
+        portfolio = Portfolio.objects.create(
+            creator=self.user,
+            organization_name="test portfolio",
+        )
+        permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+        domain_request.portfolio = portfolio
+        domain_request.save()
+        domain_request.refresh_from_db()
 
-            # Check portfolio-specific breadcrumb
-            portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # Check portfolio-specific breadcrumb
+        portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-            self.assertContains(portfolio_page, "Domain requests")
-            domain_request.portfolio = None
-            domain_request.save()
-            # Clean up portfolio
-            permission.delete()
-            portfolio.delete()
+        self.assertContains(portfolio_page, "Domain requests")
+        domain_request.portfolio = None
+        domain_request.save()
+        # Clean up portfolio
+        permission.delete()
+        portfolio.delete()
 
         # Clean up
         domain_request.delete()
@@ -3356,8 +3347,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_wizard_steps_portfolio(self):
         """
         Tests the behavior of the domain request wizard for portfolios.
@@ -3443,8 +3432,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         federal_agency.delete()
         domain_request.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_enabled(self):
         """Tests unlock_organization_contact when agency exists in a portfolio"""
@@ -3460,8 +3447,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertFalse(domain_request.unlock_organization_contact())
 
-    @override_flag("organization_feature", active=False)
-    @override_flag("organization_requests", active=False)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_disabled(self):
         """Tests unlock_organization_contact when organization flags are disabled"""
@@ -3494,7 +3479,6 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
         self.federal_agency.delete()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_viewonly_displays_correct_fields(self):
         """Tests that the viewonly page displays different fields"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
