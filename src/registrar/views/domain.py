@@ -757,24 +757,13 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     "Content-Type": "application/json",
                 }
 
-                # 2. Create or get a account under tenant
+                # 1. Create or get a account under tenant
 
-                # GET account: Check to see if the account already exists. Filters accounts by tenant_id / account_name.
+                # GET account: Check to see if the account already exists
                 account_name = f"account-{self.object.name}"
-                params = {"tenant_id": settings.SECRET_DOTGOV_TENANT_ID, "name": account_name}
+                account_id = self.dns_vendor_service.find_existing_account(account_name)
 
-                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
-                account_response_json = account_response.json()
-                logger.debug(f"account get: {account_response_json}")
-                errors = account_response_json.get("errors", [])
-                account_response.raise_for_status()
-
-                # See if we already made an account.
-                # This maybe doesn't need to be a for loop (1 record or 0) but alas, here we are
-                accounts = account_response_json.get("result", [])
-                account_id = self.find_by_name(accounts, account_name)
-
-                # CREATE account: If we didn't, create one
+                # CREATE account: If one doesn't exist, create one
                 if not account_id:
                     try:
                         account_data = self.dns_vendor_service.create_account(account_name)
@@ -782,20 +771,11 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     except APIError as e:
                      logger.error(f"API error in view: {str(e)}")
 
-                # 3. Create or get a zone under account
-
-                # Try to find an existing zone first by searching on the current id
-                zone_name = self.object.name
-                params = {"account.id": account_id, "name": zone_name}
-                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params, timeout=5)
-                zone_response_json = zone_response.json()
-                logger.debug(f"get zone: {zone_response_json}")
-                errors = zone_response_json.get("errors", [])
-                zone_response.raise_for_status()
+                # 2. Create or get a zone under account
 
                 # Get the zone id
-                zones = zone_response_json.get("result", [])
-                zone_id = self.find_by_name(zones, zone_name)
+                zone_name = self.object.name # domain name
+                zone_id = self.dns_vendor_service.find_existing_zone(zone_name)
 
                 # Create one if it doesn't presently exist
                 if not zone_id:
