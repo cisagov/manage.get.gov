@@ -1185,6 +1185,11 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationsView(ListView, FormMixin):
+    """
+    View for Select Portfolio Organization page when the user does not
+    have an active portfolio in session. Actual session switching is
+    handled in PortfolioOrganizationSelectView.
+    """
     model = UserPortfolioPermission
     template_name = "portfolio_organizations.html"
     context_object_name = "portfolio"
@@ -1211,11 +1216,14 @@ class PortfolioOrganizationsView(ListView, FormMixin):
         """
         self.object = self.get_object()
         self.form = self.get_form()
-        print("form: ", self.form)
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
+    """
+    View that displays an individual portfolio object and sets
+    active session portfolio to said portfolio when selected.
+    """
     model = UserPortfolioPermission
     template_name = "portfolio_organization_select.html"
     context_object_name = "portfolio"

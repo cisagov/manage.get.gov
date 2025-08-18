@@ -5177,7 +5177,6 @@ class TestPortfolioSelectOrganizationView(WebTest):
         return form_data
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
     def test_select_portfolio_page_is_accessible(self):
         """Tests that users with multiple portfolios can access select portfolio page."""
@@ -5189,7 +5188,6 @@ class TestPortfolioSelectOrganizationView(WebTest):
         self.assertContains(response, self.portfolio_2.organization_name)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
     def test_select_portfolio_page_updates_session_portfolio(self):
         """Tests that select organization page updates portfolio in session."""
