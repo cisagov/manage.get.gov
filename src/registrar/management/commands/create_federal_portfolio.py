@@ -118,7 +118,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--skip_existing_portfolios",
             action=argparse.BooleanOptionalAction,
-            help="Only parses newly created portfolios, skippubg existing ones.",
+            help="Only parses newly created portfolios, skipping existing ones.",
         )
         parser.add_argument(
             "--debug",
