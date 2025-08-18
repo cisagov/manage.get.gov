@@ -181,7 +181,6 @@ class CheckPortfolioMiddleware:
             print("portfolio not in session")
             request.session["portfolio"] = None
         
-        print("user is multiple orgs user: ", request.user.is_multiple_orgs_user(request))
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.excluded_pages):
             if request.user.is_multiple_orgs_user(request):

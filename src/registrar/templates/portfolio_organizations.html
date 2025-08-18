@@ -10,9 +10,16 @@
 
 {% block portfolio_content %}
 <div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-1{% endif %}">
-    <div class="grid-row usa-banner__guidance">
-        <img class="usa-banner__icon usa-media-block__img" src="{% static 'img/organizations_img.svg' %}" role="img" alt="" aria-hidden="true"/>
-        <h1>Your organizations</h1>
+    <div class="grid-row usa-banner__guidance margin-bottom-2 flex-align-center">
+        <img 
+        class="" 
+        src="{% static 'img/organizations_img.svg' %}" 
+        role="img" 
+        alt="" 
+        width="72"
+        aria-hidden="true"
+        />
+        <h1 class="margin-bottom-0">Your organizations</h1>
     </div>
 
     <div class="display-none margin-top-0" id="portfolios_list-wrapper">
