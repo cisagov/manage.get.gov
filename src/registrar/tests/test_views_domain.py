@@ -3095,7 +3095,7 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
-    @GenericTestHelper.switch_to_enterprise_mode_wrappergit
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     def test_no_expiring_domains_w_org_feature_on(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
