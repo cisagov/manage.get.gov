@@ -239,7 +239,7 @@ class GenericTestHelper(TestCase):
         return response
 
     @staticmethod
-    def switchToEnterpriseMode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
+    def switch_to_enterprise_mode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
         """
         Use this decorator for all tests where we want to be in Enterprise mode.
 
@@ -251,14 +251,14 @@ class GenericTestHelper(TestCase):
 
         USE CASE:
         # Default role (ORGANIZATION_ADMIN)
-        @GenericTestHelper.switchToEnterpriseMode_wrapper()
+        @GenericTestHelper.switch_to_enterprise_mode_wrapper()
         @other_decorator
         @other_decorator
         def test_admin_role(self):
             ...
 
         # Custom role
-        @GenericTestHelper.switchToEnterpriseMode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        @GenericTestHelper.switch_to_enterprise_mode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
         @other_decorator
         @other_decorator
         def test_member_role(self):

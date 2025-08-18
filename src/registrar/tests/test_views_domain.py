@@ -789,7 +789,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotContains(response, "Admin")
         self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     def test_domain_managers_portfolio_view(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
@@ -838,7 +838,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -895,7 +895,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -946,7 +946,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "notauser@igorville.gov")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -980,7 +980,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -1030,7 +1030,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
@@ -2305,7 +2305,7 @@ class TestDomainSuborganization(TestDomainOverview):
         self.domain_information.refresh_from_db()
         self.assertEqual(self.domain_information.sub_organization, self.suborg_2)
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     def test_view_suborganization_field(self):
         """Only org admins can edit the suborg field, ensure that others cannot"""
@@ -2327,7 +2327,7 @@ class TestDomainSuborganization(TestDomainOverview):
             page, "The suborganization for this domain can only be updated by a organization administrator."
         )
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
@@ -2773,7 +2773,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_org_name_change_with_portfolio(self):
@@ -2945,7 +2945,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_senior_official_when_portfolio(self):
@@ -3070,7 +3070,7 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     def test_single_domain_w_org_feature_on(self):
         self.client.force_login(self.user)
@@ -3078,7 +3078,7 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     def test_with_mulitple_domains_w_org_feature_on(self):
         today = datetime.now()
@@ -3095,7 +3095,7 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
-    @GenericTestHelper.switchToEnterpriseMode_wrapper
+    @GenericTestHelper.switch_to_enterprise_mode_wrappergit
     @less_console_noise_decorator
     def test_no_expiring_domains_w_org_feature_on(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
