@@ -22,6 +22,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
+from registrar.views.portfolios import PortfolioOrganizationSelectView
 from .common import (
     MockEppLib,
     MockSESClient,
@@ -29,7 +30,6 @@ from .common import (
     create_test_user,
     create_user,
 )
-from registrar.views.portfolios import PortfolioOrganizationSelectView
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
