@@ -157,13 +157,12 @@ class CheckPortfolioMiddleware:
             # Set the portfolio in the session if its not already in it
             request.session["portfolio"] = None
 
-        if request.user.is_org_user(request):
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        if request.user.is_org_user(request) and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
 
