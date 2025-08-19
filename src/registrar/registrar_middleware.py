@@ -177,15 +177,14 @@ class CheckPortfolioMiddleware:
         elif "portfolio" not in request.session:
             # Set the portfolio in the session if its not already in it
             request.session["portfolio"] = None
-        
+
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.excluded_pages):
-            if request.user.is_multiple_orgs_user(request):
-                # Redirect user to org select page if no active portfolio
-                if not request.session.get("portfolio"):
-                    org_select_redirect = reverse("your-portfolios")
-                    return HttpResponseRedirect(org_select_redirect)
-        elif request.user.is_org_user(request):            
+            # Redirect user to org select page if no active portfolio
+            if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
+                org_select_redirect = reverse("your-portfolios")
+                return HttpResponseRedirect(org_select_redirect)
+        if request.user.is_org_user(request):
             if current_path == self.home:
                 if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
                     portfolio_redirect = reverse("domains")
@@ -203,7 +202,6 @@ class CheckPortfolioMiddleware:
         # as in production.
         if not flag_is_active(request, "multiple_portfolios"):
             request.session["portfolio"] = request.user.get_first_portfolio()
-            
 
 
 class RestrictAccessMiddleware:
