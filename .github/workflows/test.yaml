@@ -13,20 +13,17 @@ jobs:
   check-for-python-changes:
     runs-on: ubuntu-latest
     outputs:
-      any_python_files_changed: ${{steps.changed-files.outputs.any_changed}}
+      any_python_files_changed: ${{ steps.changed-files.outputs.any }}
+      changed_python_files: ${{ steps.changed-files.outputs.list }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Get changed files
         id: changed-files
-        uses: step-security/changed-files
-        with:
-          files: |
-            **/*.py
-      - name: Print detected changes
-        run: echo "Changed python files detected by action:${{ steps.changed-files.outputs.all_changed_files}}"
+        uses: ./.github/actions/detect-python-changes
+
+      - name: Log changed python files
+        run: |
+          echo "Changed python files:"
+          printf '%s\n' "${{ steps.changed-files.outputs.list }}"
 
   python-linting:
     needs: check-for-python-changes
