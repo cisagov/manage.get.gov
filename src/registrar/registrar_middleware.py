@@ -170,26 +170,21 @@ class CheckPortfolioMiddleware:
 
         # if multiple portfolios are allowed for this user
         if flag_is_active(request, "organization_feature"):
-            print("org model is active")
             self.set_portfolio_in_session(request)
         elif request.session.get("portfolio"):
             # Edge case: User disables flag while already logged in
-            print("portfolio is None")
             request.session["portfolio"] = None
         elif "portfolio" not in request.session:
             # Set the portfolio in the session if its not already in it
-            print("portfolio not in session")
             request.session["portfolio"] = None
         
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.excluded_pages):
             if request.user.is_multiple_orgs_user(request):
                 # Redirect user to org select page if no active portfolio
-                print("portfolio: ", request.session.get("portfolio"))
                 if not request.session.get("portfolio"):
                     org_select_redirect = reverse("your-portfolios")
                     return HttpResponseRedirect(org_select_redirect)
-
         elif request.user.is_org_user(request):            
             if current_path == self.home:
                 if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
