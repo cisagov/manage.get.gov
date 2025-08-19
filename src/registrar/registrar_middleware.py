@@ -170,9 +170,10 @@ class CheckPortfolioMiddleware:
     def set_portfolio_in_session(self, request):
         # NOTE: we will want to change later to have a workflow for selecting
         # portfolio and another for switching portfolio; for now, select first
-        if flag_is_active(request, "multiple_portfolios"):
-            request.session["portfolio"] = request.user.get_first_portfolio()
-        else:
+        # TODO #3776: Add logic to redirect user to Select Organization page if
+        # portfolio is none. For now, default portfolio to first portfolio
+        # as in production.
+        if not flag_is_active(request, "multiple_portfolios") or not request.session.get("portfolio"):
             request.session["portfolio"] = request.user.get_first_portfolio()
 
 

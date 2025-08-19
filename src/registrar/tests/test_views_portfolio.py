@@ -29,6 +29,7 @@ from .common import (
     create_test_user,
     create_user,
 )
+from registrar.views.portfolios import PortfolioOrganizationSelectView
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
 import boto3_mocking  # type: ignore
@@ -634,6 +635,7 @@ class TestPortfolio(WebTest):
         # Check the value of the 'portfolio' session variable
         self.assertIsNone(session["portfolio"])
 
+    # TODO: Remove or update test in #3776 to test portfolio redirect
     @less_console_noise_decorator
     def test_portfolio_in_session_when_multiple_portfolios_active(self):
         """When multiple_portfolios flag is true and user has a portfolio,
@@ -4758,3 +4760,73 @@ class TestPortfolioInvitedMemberEditView(WebTest):
         # Assert that addition and removal emails are not sent
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
+
+
+class TestPortfolioSelectOrganizationView(WebTest):
+    """Tests for the select organization page"""
+
+    def setUp(self):
+        super().setUp()
+        self.user = create_user()
+        # Create Portfolio
+        self.portfolio_1 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 1")
+        self.portfolio_2 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 2")
+        self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
+
+        # Assign user as a member of both portfolios
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio_1,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio_2,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    def custom_portfolio_get_form(self):
+        """
+        Webtest is not able to properly parse the form for selecting portfolio, so manually
+        input form data
+        """
+        mock_portfolio_button = MagicMock()
+        mock_portfolio_button.value.return_value = self.portfolio_2.organization_name
+        form_data = {"set_session_portfolio_button": mock_portfolio_button}
+        return form_data
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    def test_select_portfolio_page_is_accessible(self):
+        """Tests that users with multiple portfolios can access select portfolio page."""
+        response = self.client.get(reverse("your-portfolios"))
+
+        # Make sure the page loaded, and that we're on the right page
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.portfolio_1.organization_name)
+        self.assertContains(response, self.portfolio_2.organization_name)
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    def test_select_portfolio_page_updates_session_portfolio(self):
+        """Tests that select organization page updates portfolio in session."""
+        with patch.object(PortfolioOrganizationSelectView, "get_form", self.custom_portfolio_get_form):
+            self.client.post(reverse("set-session-portfolio"))
+
+        # Access the session via the request
+        active_portfolio = self.client.session.get("portfolio")
+        self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")

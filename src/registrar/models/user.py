@@ -262,6 +262,9 @@ class User(AbstractUser):
             return permission.portfolio
         return None
 
+    def get_num_portfolios(self):
+        return self.get_portfolios().count()
+
     def get_portfolios(self):
         return self.portfolio_permissions.all()
 
@@ -409,6 +412,11 @@ class User(AbstractUser):
     def is_org_user(self, request):
         portfolio = request.session.get("portfolio")
         return portfolio is not None and self.has_view_portfolio_permission(portfolio)
+
+    def is_multiple_orgs_user(self, request):
+        has_multiple_portfolios_feature_flag = flag_is_active(request, "multiple_portfolios")
+        num_portfolios = self.get_num_portfolios()
+        return self.is_org_user(request) and has_multiple_portfolios_feature_flag and num_portfolios > 1
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
