@@ -1221,6 +1221,11 @@ class PortfolioOrganizationsView(ListView, FormMixin):
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
+    """
+    View that displays an individual portfolio object and sets
+    active session portfolio to said portfolio when selected.
+    """
+
     model = UserPortfolioPermission
     template_name = "portfolio_organization_select.html"
     context_object_name = "portfolio"
