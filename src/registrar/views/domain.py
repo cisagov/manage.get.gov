@@ -52,6 +52,7 @@ from registrar.views.utility.invitation_helper import (
 )
 
 from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.dns_hosting_service import DnsHostingService
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -711,6 +712,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov"]
     dns_vendor_service = CloudflareService()
+    dns_hosting_service = DnsHostingService()
 
     def has_permission(self):
         has_permission = super().has_permission()
@@ -761,7 +763,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # GET account: Check to see if the account already exists
                 account_name = f"account-{self.object.name}"
-                account_id = self.dns_vendor_service.find_existing_account(account_name)
+                account_id = self.dns_hosting_service.find_existing_account(account_name)
 
                 # CREATE account: If one doesn't exist, create one
                 if not account_id:
@@ -775,16 +777,15 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # Get the zone id
                 zone_name = self.object.name # domain name
-                zone_id = self.dns_vendor_service.find_existing_zone(zone_name)
+                zone_id = self.dns_hosting_service.find_existing_zone(zone_name)
 
                 # Create one if it doesn't presently exist
                 if not zone_id:
                     try:
-                        zone_data = self.dns_vendor_service.create_zone(account_name, account_id)
-                        zone_id = account_data["result"]["id"]
+                        zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
+                        zone_id = zone_data["result"]["id"]
                     except APIError as e:
-                     errors = zone_data.get("errors", [])
-                     logger.error(f"API error in view: {str(e)}, {errors}")
+                     logger.error(f"API error in view: {str(e)}")
                     
                 # # 5. Create DNS record
                 # # Format the DNS record according to Cloudflare's API requirements

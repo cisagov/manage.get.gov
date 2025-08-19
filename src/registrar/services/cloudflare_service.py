@@ -31,14 +31,14 @@ class CloudflareService:
         return response['data']
 
     # POST zone
-    def create_zone(self, account_name, account_id):     
+    def create_zone(self, zone_name, account_id):     
         url = f"{self.base_url}/zones"
-        data = {"name": account_name, "account": {"id": account_id }}
+        data = {"name": zone_name, "account": {"id": account_id }}
         response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
 
         if not response['success']:
-            raise APIError(f"Failed to create zone for {account_name}: {response['message']}")
-        logger.info(f"Created zone for account {account_name}: {response['data']}")
+            raise APIError(f"Failed to create zone for account {account_id}: {response['message']}")
+        logger.info(f"Created zone {zone_name} for account with id {account_id}: {response['data']}")
 
         return response['data']
 
@@ -68,7 +68,7 @@ class CloudflareService:
     # GET zones
     def get_all_zones(self):
         '''Gets all zones under all(?!) tenants'''
-        url = f"{self.base_url}/accounts"
+        url = f"{self.base_url}/zones"
         response = make_api_request(url=url, method="GET", headers=self.headers )
 
         if not response['success']:

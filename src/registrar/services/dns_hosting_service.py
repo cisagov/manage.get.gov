@@ -38,7 +38,7 @@ class DnsHostingService:
         """Calls create method of vendor serivce to create a DNS record"""
         try:
             record = self.dns_vendor_service.create_dns_record(zone_id, record_data)
-            logger.info(f"Created DNS record of type {record["result"].get("type")}")
+            logger.info(f"Created DNS record of type {record['result'].get('type')}")
         except APIError as e:
             logger.error(f"Error creating dns record in hosting service: {str(e)}")
 
@@ -53,7 +53,7 @@ class DnsHostingService:
         
         return account_id
     
-    def find_existing_zone(self,zone_name):
+    def find_existing_zone(self, zone_name):
         try:
             all_zones_data = self.dns_vendor_service.get_all_zones()
             zones = all_zones_data['result']
