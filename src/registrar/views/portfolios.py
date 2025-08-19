@@ -1185,6 +1185,12 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationsView(ListView, FormMixin):
+    """
+    View for Select Portfolio Organization page when the user does not
+    have an active portfolio in session. Actual session switching is
+    handled in PortfolioOrganizationSelectView.
+    """
+
     model = UserPortfolioPermission
     template_name = "portfolio_organizations.html"
     context_object_name = "portfolio"
@@ -1211,7 +1217,6 @@ class PortfolioOrganizationsView(ListView, FormMixin):
         """
         self.object = self.get_object()
         self.form = self.get_form()
-        print("form: ", self.form)
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
@@ -1241,7 +1246,7 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         # Verify user has permissions to access selected portfolio
         portfolio_permission = UserPortfolioPermission.objects.filter(portfolio=portfolio, user=request.user).first()
         if not portfolio_permission:
-            return JsonResponse({"error": "Invalid user portfolio permission"}, status=404)
+            return JsonResponse({"error": "Invalid user portfolio permission"}, status=403)
         if portfolio_permission.user != request.user:
             return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
 
