@@ -544,7 +544,10 @@ class Command(BaseCommand):
             permission, created = UserPortfolioPermission.objects.get_or_create(
                 portfolio=user_domain_role.domain.domain_info.portfolio,
                 user=user,
-                defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER], "additional_permissions": [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]},
+                defaults={
+                    "roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                    "additional_permissions": [UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS],
+                },
             )
             if created:
                 self.user_portfolio_perm_changes.create.append(permission)
@@ -566,7 +569,7 @@ class Command(BaseCommand):
                 email=email,
                 status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                additional_permissions=[UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
+                additional_permissions=[UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS],
             )
             if created:
                 self.portfolio_invitation_changes.create.append(invitation)
