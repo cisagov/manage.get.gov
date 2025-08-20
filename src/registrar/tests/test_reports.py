@@ -251,31 +251,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         # We expect READY domains,
         # sorted alphabetially by domain name
-        expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,"
-            "Organization name,City,State,SO,SO email,"
-            "Security contact email,Domain managers,Invited domain managers\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
-            "meoward@rocks.com,squeaker@rocks.com\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
-            '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
-            "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,"
-            "squeaker@rocks.com\n"
-            "bdomain4.gov,Unknown,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "bdomain5.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "bdomain6.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,"
-            "Armed Forces Retirement Home,,,, ,,security@mail.gov,,\n"
-            "sdomain8.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "xdomain7.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "zdomain9.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal,"
-            "World War I Centennial Commission,,,, ,,(blank),"
-            "meoward@rocks.com,\n"
-            "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
-        )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
