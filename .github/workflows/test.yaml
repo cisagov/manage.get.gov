@@ -10,8 +10,6 @@ on:
       - main
 
   python-linting:
-    needs: check-for-python-changes
-    if: needs.check-for-python-changes.outputs.any_python_files_changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
