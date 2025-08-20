@@ -11,7 +11,7 @@ runs:
   using: "composite"
   steps:
     - name: Checkout (full history)
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
@@ -23,21 +23,29 @@ runs:
         EVENT_NAME="${{ github.event_name }}"
         HEAD_SHA="${{ github.sha }}"
         PR_BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
+        PR_BASE_SHA="${{ github.event.pull_request.base.ref || '' }}"
         BEFORE_SHA="${{ github.event.before || '' }}"
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
         # Figure out the diff range to compare
         if [ "$EVENT_NAME" = "pull_request"] && [ -n "$PR_BASE_SHA" ] 
         then
+          REF_TO_FETCH="${PR_BASE_REF:-$DEFAULT_BRANCH}"
+          git fetch --no-tags --prune origin "$REF_TO_FETCH" --depth=1
+          if ! git cat-file -e "$PR_BASE_SHA^{commit}" 2>/dev/null
+          then
+            echo "Base SHA $PR_BASE_SHA not present after fetch; fetching full ref..."
+            git fetch --no-tags --prune origin "$REF_TO_FETCH"
+          fi
           BASE_SHA="$PR_BASE_SHA"
         # push (or manual)
         else
           # When there's no PR base to compare against. We prefer before/after.  
-          BASE_SHA="$PR_BASE_SHA"
+          BASE_SHA="$BEFORE_SHA"
           if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] 
           then
             # If it's the first push, no before. So... diff against merge-base with default branch
-            git fetch origin "$DEFAULT_BRANCH" --depth=1
+            git fetch --no-tags --prune origin "$DEFAULT_BRANCH" --depth=1
             BASE_SHA="$(git merge-base "origin/$DEFAULT_BRANCH" "$HEAD_SHA")"
           fi
         fi
@@ -47,6 +55,17 @@ runs:
         # Get changed *.py files (A=added, C=copied, M=modified, R=renamed)
         git fetch --no-tags --prune origin "${BASE_SHA}:${BASE_SHA}" || true
         CHANGED=$(git diff --name-only --diff-filter=ACMR "${DIFF_RANGE}" | grep -E '\.py$' || true)
+
+        echo "-------DEBUG (detector)--------"
+        echo "EVENT: $EVENT_NAME"
+        echo "BASE_REF: ${PR_BASE_REF-'(n/a)'}"
+        echo "BASE_SHA: $BASE_SHA"
+        echo "HEAD_SHA: $HEAD_SHA"
+        echo "DIFF_RANGE: $DIFF_RANGE"
+        echo "Base exists? $(git cat-file -t "$BASE_SHA" 2>/dev/null || echo 'missing')"
+        echo "Name status:"
+        git diff --name-status "$DIFF_RANGE" || true
+        echo "-------------------------------"
 
         # multi-line output
         echo "list<<EOF" >> GITHUB_OUTPUT
