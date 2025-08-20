@@ -98,7 +98,8 @@ class Command(BaseCommand):
                     updated = True
         if updated and not dry_run:
             instance.save()
-        return 1
+        if updated:
+            return 1
 
     def should_skip(self, instance):
         "Skip emails that reference current admins and data that was already scrubbed"
