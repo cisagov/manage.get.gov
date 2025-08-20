@@ -276,7 +276,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "meoward@rocks.com,\n"
             "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
@@ -319,16 +318,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
             "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,"
-            "Portfolio 1 Federal Agency,,, ,,(blank),"
+            ",,,, ,,(blank),"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,"
-            "Portfolio 1 Federal Agency,,, ,,(blank),"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Judicial,WorldWar I Centennial Commission,"
+            "Sub Org 1,Nashville,TN, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
         )
 
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
+
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
@@ -492,8 +492,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
-            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "cdomain11.gov,Federal - Judicial,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Judicial,World War I Centennial Commission,,SubOrg 1,Nashville,TN,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
             "zdomain12.gov,Interstate,,,,,(blank)\n"
@@ -532,8 +532,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
-            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "cdomain11.gov,Federal - Judicial,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Judicial,World War I Centennial Commission,,SubOrg 1,Nashville,TN,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
         )

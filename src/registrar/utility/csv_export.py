@@ -576,7 +576,7 @@ class DomainExport(BaseExport):
             ),
             "converted_federal_type": Case(
                 # When portfolio is present, use its value instead
-                # NOTE: this is an @Property funciton in portfolio.
+                # NOTE: this is an @Property function in portfolio.
                 When(
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
@@ -640,6 +640,30 @@ class DomainExport(BaseExport):
                 ),
                 output_field=CharField(),
             ),
+            "converted_suborganization_name": Case(
+                # When sub_organization is present, use its name
+                When(sub_organization__isnull=False, then=F("sub_organization__name")),
+                # Otherwise, return empty string
+                default=Value(""),
+                output_field=CharField(),
+            ),
+            "converted_city": Case(
+                When(sub_organization__isnull=False, then=F("sub_organization__city")),
+                When(portfolio__isnull=False, then=F("portfolio__city")),
+                default=F("city"),
+                output_field=CharField(),
+            ),
+            "converted_state_territory": Case(
+                When(Q(sub_organization__isnull=False) & ~Q(sub_organization__state_territory=''), then=F("sub_organization__state_territory")),
+                When(Q(portfolio__isnull=False) & ~Q(portfolio__state_territory=''), then=F("portfolio__state_territory")),
+                default=F("state_territory"),
+                output_field=CharField(),
+            ),
+            "agency_field_name": Coalesce(
+                F("converted_organization_name"),
+                F("converted_federal_agency"),
+                Value("")
+            )
         }
 
     @classmethod
@@ -743,6 +767,7 @@ class DomainExport(BaseExport):
 
         security_contact_email = model.get("security_contact_email")
         invalid_emails = DefaultEmail.get_all_emails()
+
         if (
             not security_contact_email
             or not isinstance(security_contact_email, str)
@@ -753,14 +778,14 @@ class DomainExport(BaseExport):
         model["status"] = human_readable_status
         model["first_ready_on"] = first_ready_on
         model["expiration_date"] = expiration_date
-        model["domain_type"] = domain_type
+        model["domain_type"] = domain_type 
         model["security_contact_email"] = security_contact_email
+
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
         FIELDS = cls.get_fields(model)
-
+        print("name", model.get("domain__name"))
         row = [FIELDS.get(column, "") for column in columns]
-
         return row
 
     # NOTE - this override is temporary.
@@ -777,9 +802,9 @@ class DomainExport(BaseExport):
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
             "Agency": model.get("converted_federal_agency"),
-            "Organization name": model.get("converted_organization_name"),
-            "City": model.get("city"),
-            "State": model.get("state_territory"),
+            "Organization name": model.get("converted_suborganization_name"),
+            "City": model.get("converted_city"),
+            "State": model.get("converted_state_territory"),
             "SO": model.get("converted_so_name"),
             "SO email": model.get("converted_so_email"),
             "Security contact email": model.get("security_contact_email"),
@@ -1018,10 +1043,10 @@ class DomainDataFull(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
-            "City": model.get("city"),
-            "State": model.get("state_territory"),
+            "Agency": model.get("agency_field_name"),
+            "Organization name": model.get("converted_suborganization_name"),
+            "City": model.get("converted_city"),
+            "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
@@ -1139,9 +1164,9 @@ class DomainDataFederal(DomainExport):
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
             "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
-            "City": model.get("city"),
-            "State": model.get("state_territory"),
+            "Organization name": model.get("converted_suborganization_name"),
+            "City": model.get("converted_city"),
+            "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
