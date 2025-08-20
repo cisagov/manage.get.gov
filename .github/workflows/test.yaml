@@ -16,7 +16,7 @@ jobs:
     outputs:
       any: ${{ steps.det.outputs.any }}
       list: ${{ steps.det.outputs.list }}
-      steps:
+    steps:
         - name: Detect
           id: det
           uses: ./.github/actions/detect-python-changes
