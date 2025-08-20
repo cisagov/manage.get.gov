@@ -247,6 +247,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         DomainDataType.export_data_to_csv(csv_file)
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
+        print(csv_file)
         # Read the content into a variable
         csv_content = csv_file.read()
         # We expect READY domains,
