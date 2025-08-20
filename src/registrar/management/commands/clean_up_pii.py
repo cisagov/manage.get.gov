@@ -93,11 +93,12 @@ class Command(BaseCommand):
             new_value = new_dict.get(field)
             if hasattr(instance, field):
                 new_dict[field] = new_value
+                updated = True
                 if not dry_run:
                     setattr(instance, field, new_value)
-                    updated = True
-        if updated and not dry_run:
+        if not dry_run:
             instance.save()
+
         if updated:
             return 1
 
