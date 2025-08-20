@@ -27,7 +27,7 @@ runs:
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
         # Figure out the diff range to compare
-        if [ "$EVENT_NAME" = "pull_request"] && [ -n "$PR_BASE_SHA"] 
+        if [ "$EVENT_NAME" = "pull_request"] && [ -n "$PR_BASE_SHA" ] 
         then
           BASE_SHA="$PR_BASE_SHA"
         # push (or manual)
@@ -45,13 +45,10 @@ runs:
         DIFF_RANGE="${BASE_SHA}...${HEAD_SHA}"
 
         # Get changed *.py files (A=added, C=copied, M=modified, R=renamed)
-        git fetch --no-tags --prune --depth=0 origin "${BASE_SHA}:${BASE_SHA}" || true
+        git fetch --no-tags --prune origin "${BASE_SHA}:${BASE_SHA}" || true
         CHANGED=$(git diff --name-only --diff-filter=ACMR "${DIFF_RANGE}" | grep -E '\.py$' || true)
 
         # multi-line output
-        {
-          echo "list<<EOF"
-          echo "${CHANGED}"
-          echo "EOF"
-          if [ -n "$CHANGED" ]; then
-        } >> $GITHUB_OUTPUT
+        echo "list<<EOF" >> GITHUB_OUTPUT
+        echo "${CHANGED}" >> GITHUB_OUTPUT
+        echo "EOF" >> GITHUB_OUTPUT
