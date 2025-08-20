@@ -27,11 +27,11 @@ jobs:
         - name: Show changed files
           run: |
             echo "---DEBUG---"
-            echo "Event name:&{{ github.event_name }}"
-            echo "Before SHA:&{{ github.event.before }}"
-            echo "Head SHA:&{{ github.sha }}"
-            echo "PR BASE SHA (if PR):&{{ github.event.pull_request.base.sha }}"
-            echo "PR Base ref (if PR): :&{{ github.event.pull_request.base.ref }}""
+            echo "Event name: &{{ github.event_name }}"
+            echo "Before SHA: &{{ github.event.before }}"
+            echo "Head SHA: &{{ github.sha }}"
+            echo "PR BASE SHA (if PR): &{{ github.event.pull_request.base.sha }}"
+            echo "PR Base ref (if PR): :&{{ github.event.pull_request.base.ref }}"
             echo
             echo "Detector output: any={{ steps.det.outputs.any }}"
             echo "Detector list: "
