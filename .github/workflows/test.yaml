@@ -10,7 +10,25 @@ on:
       - main
 
 jobs:
+  detect-python-changes:
+    name: Detect Python changes
+    runs-on: ubuntu-latest
+    outputs:
+      any: ${{ steps.det.outputs.any }}
+      list: ${{ steps.det.outputs.list }}
+      steps:
+        - name: Detect
+          id: det
+          uses: ./.github/actions/detect-python-changes
+
+        - name: Show changed files
+          run: |
+            echo "Any python changes? --> ${{ steps.det.outputs.any }}"
+            echo -e "Files:\n${{ steps.det.outputs.list }}"
+
   python-linting:
+    needs: detect-python-changes
+    if: needs.detect-python-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
