@@ -3,8 +3,10 @@ description: Outputs whether *.py files changed and their list
 outputs:
   any:
     description: "true/false if any matched files changed"
+    value: ${{ steps.detect.outputs.any }}
   list:
     description: "newline-separated list of changed *.py files"
+    value: ${{ steps.detect.outputs.list }}
 runs:
   using: "composite"
   steps:
@@ -18,28 +20,30 @@ runs:
       run: |
         set -euo pipefail
 
+        EVENT_NAME="${{ github.event_name }}"
+        HEAD_SHA="${{ github.sha }}"
+        PR_BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
+        BEFORE_SHA="${{ github.event.before || '' }}"
+        DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
+
         # Figure out the diff range to compare
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.sha }}"
-          DIFF_RANGE="${BASE_SHA}...${HEAD_SHA}"
+        if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA"]]; then
+          BASE_SHA="$PR_BASE_SHA"
         # push (or manual)
         else
           # When there's no PR base to compare against. We prefer before/after.  
-          BASE_SHA="${{ github.event.before || '' }}"
-          HEAD_SHA="${{ github.sha }}"
-          if [[ -z "$BASE_SHA" || "${BASE_SHA}" == "0000000000000000000000000000000000000000"]]; then
+          BASE_SHA="$PR_BASE_SHA"
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
             # If it's the first push, no before. So... diff against merge-base with default branch
-            DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
             git fetch origin "$DEFAULT_BRANCH" --depth=1
-            BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" "$HEAD_SHA")"
+            BASE_SHA="$(git merge-base "origin/$DEFAULT_BRANCH" "$HEAD_SHA")"
           fi
-          DIFF_RANGE="${BASE_SHA}...${HEAD_SHA}"
         fi
+
+        DIFF_RANGE="${BASE_SHA}...${HEAD_SHA}"
 
         # Get changed *.py files (A=added, C=copied, M=modified, R=renamed)
         git fetch --no-tags --prune --depth=0 origin "${BASE_SHA}:${BASE_SHA}" || true
-
         CHANGED=$(git diff --name-only --diff-filter=ACMR "${DIFF_RANGE}" | grep -E '\.py$' || true)
 
         # multi-line output
