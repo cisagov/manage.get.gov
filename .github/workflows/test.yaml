@@ -19,7 +19,7 @@ jobs:
     steps:
         - name: Checkout repo (required for local actions)
           uses: actions/checkout@v4
-          
+
         - name: Detect
           id: det
           uses: ./.github/actions/detect-python-changes
@@ -43,6 +43,8 @@ jobs:
         run: docker compose run app python manage.py lint
 
   python-test:
+    needs: detect-python-changes
+    if: needs.detect-python-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -52,6 +54,8 @@ jobs:
         run: docker compose run app python manage.py test --parallel
 
   django-migrations-complete:
+    needs: detect-python-changes
+    if: needs.detect-python-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
