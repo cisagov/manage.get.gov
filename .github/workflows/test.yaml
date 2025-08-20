@@ -17,6 +17,9 @@ jobs:
       any: ${{ steps.det.outputs.any }}
       list: ${{ steps.det.outputs.list }}
     steps:
+        - name: Checkout repo (required for local actions)
+          uses: actions/checkout@v4
+          
         - name: Detect
           id: det
           uses: ./.github/actions/detect-python-changes
