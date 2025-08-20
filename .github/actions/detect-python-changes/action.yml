@@ -27,13 +27,15 @@ runs:
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
         # Figure out the diff range to compare
-        if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA"]]; then
+        if [ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA"] 
+        then
           BASE_SHA="$PR_BASE_SHA"
         # push (or manual)
         else
           # When there's no PR base to compare against. We prefer before/after.  
           BASE_SHA="$PR_BASE_SHA"
-          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+          if [ -z "$BASE_SHA"] || [ "$BASE_SHA" == "0000000000000000000000000000000000000000" ] 
+          then
             # If it's the first push, no before. So... diff against merge-base with default branch
             git fetch origin "$DEFAULT_BRANCH" --depth=1
             BASE_SHA="$(git merge-base "origin/$DEFAULT_BRANCH" "$HEAD_SHA")"
