@@ -59,6 +59,7 @@ class Command(BaseCommand):
             model = apps.get_model("registrar", model_name)
         except LookupError:
             logger.error(f"{model_name} not found")
+            return
 
         offset = 0
         updated_total = 0
@@ -119,5 +120,5 @@ class Command(BaseCommand):
             elif "last_name" in field:
                 dict["last_name"] = last_name
             elif "phone" in field:
-                dict["phone_number"] = fake.phone_number()
+                dict["phone"] = fake.phone_number()
         return dict
