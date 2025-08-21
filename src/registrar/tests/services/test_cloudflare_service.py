@@ -44,7 +44,6 @@ class TestCloudflareService(SimpleTestCase):
             'data': {"result": {"name": account_name, "id": "12345", "nameservers": ["hostess1.mostess.gov", "hostess2.mostess.gov"]}}
         }
         result = self.service.create_zone(account_name, account_id)
-        print(result)
         self.assertEqual(result['result']['name'], account_name)   
         
     @patch('registrar.services.cloudflare_service.make_api_request')

@@ -5,7 +5,7 @@ from registrar.utility.errors import APIError
 
 logger = logging.getLogger(__name__)
 
-class DnsHostingService:
+class DnsHostService:
 
     def __init__(self):
         self.dns_vendor_service = CloudflareService()
@@ -21,7 +21,7 @@ class DnsHostingService:
             logger.info("Successfully created account")
             account_id = account_data["result"]["id"]
         except APIError as e:
-            logger.error(f"Error creating account in DnsHostService: {str(e)}")
+            logger.error(f"DNS setup failed to create account: {str(e)}")
             raise
 
         try:
@@ -29,7 +29,7 @@ class DnsHostingService:
             logger.info("Successfully created zone")
             zone_id = zone_data["result"]["id"]
         except APIError as e:
-            logger.error(f"Error creating account in DnsHostService: {str(e)}")
+            logger.error(f"DNS setup failed to create zone: {str(e)}")
             raise
 
         return (account_id, zone_id)
@@ -40,8 +40,9 @@ class DnsHostingService:
             record = self.dns_vendor_service.create_dns_record(zone_id, record_data)
             logger.info(f"Created DNS record of type {record['result'].get('type')}")
         except APIError as e:
-            logger.error(f"Error creating dns record in DnsHostService: {str(e)}")
+            logger.error(f"Error creating DNS record: {str(e)}")
             raise
+        return record
 
     def find_existing_account(self, account_name):
         try:

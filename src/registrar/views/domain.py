@@ -52,7 +52,7 @@ from registrar.views.utility.invitation_helper import (
 )
 
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.services.dns_hosting_service import DnsHostingService
+from registrar.services.dns_host_service import DnsHostService
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -712,7 +712,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov"]
     dns_vendor_service = CloudflareService()
-    dns_hosting_service = DnsHostingService()
+    dns_hosting_service = DnsHostService()
 
     def has_permission(self):
         has_permission = super().has_permission()
