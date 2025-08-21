@@ -785,7 +785,9 @@ class DomainExport(BaseExport):
         model["security_contact_email"] = security_contact_email
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
+
         FIELDS = cls.get_fields(model)
+        
         row = [FIELDS.get(column, "") for column in columns]
         return row
 
