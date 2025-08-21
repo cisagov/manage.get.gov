@@ -2361,7 +2361,7 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
 
         # Verify only the new one of the two remains
         self.assertEqual(Suborganization.objects.count(), 1)
-        remaining = Suborganization.objects.all().first()
+        remaining = Suborganization.objects.first()
         self.assertEqual(remaining.name, new_name)
 
     @less_console_noise_decorator

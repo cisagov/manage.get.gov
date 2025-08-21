@@ -778,13 +778,11 @@ class DomainExport(BaseExport):
         model["status"] = human_readable_status
         model["first_ready_on"] = first_ready_on
         model["expiration_date"] = expiration_date
-        model["domain_type"] = domain_type 
+        model["domain_type"] = domain_type
         model["security_contact_email"] = security_contact_email
-
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
-        FIELDS = cls.get_fields(model)
-        print("name", model.get("domain__name"))
+        FIELDS = cls.get_fields(model)   
         row = [FIELDS.get(column, "") for column in columns]
         return row
 
