@@ -14,6 +14,7 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        ref: ${{ github.head_ref }}
     
     - id: detect
       shell: bash
@@ -23,18 +24,13 @@ runs:
         HEAD_SHA="${{ github.sha }}"
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
-        git fetch --no-tags --prune origin "$DEFAULT_BRANCH" --depth=1 origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+        git fetch origin "${DEFAULT_BRANCH}:${DEFAULT_BRANCH}"
 
-        BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" "${HEAD_SHA}")"
-
+        BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
         
         echo "-------DEBUG (detector)--------"
-        echo "DEFAULT_BRANCH: ${DEFAULT_BRANCH}"
-        echo "HEAD_SHA: ${HEAD_SHA}"
-        echo "BASE_SHA: ${BASE_SHA}"
-        echo "RANGE: ${BASE_SHA}..${HEAD_SHA}"
-        echo "name status:"
-        git diff --name-status "${BASE_SHA}..${HEAD_SHA}" || true
+        echo "BASE_SHA: ${BASE_SHA}, HEAD=$(git rev-parse HEAD)"
+        git diff --name-status "${BASE_SHA}..HEAD"
         echo "-------------------------------"
 
         CHANGED_ALL="$(
