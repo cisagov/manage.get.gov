@@ -37,7 +37,7 @@ runs:
           git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u
         )"
 
-        PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.py$' || true)"
+        PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | tr ' ' '\n' | grep -Ei '\.py$' || true)"
         # multi-line output
         echo "list<<EOF" >> GITHUB_OUTPUT
         echo "${PY_CHANGED}" >> GITHUB_OUTPUT
