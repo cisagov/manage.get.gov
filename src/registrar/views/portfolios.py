@@ -1209,7 +1209,6 @@ class PortfolioOrganizationsView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
-        context["hide_portfolio_navbar"] = True
         return context
 
     def post(self, request, *args, **kwargs):
