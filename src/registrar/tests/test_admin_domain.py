@@ -130,7 +130,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         # test whether fields are readonly or editable
         self.assertNotContains(response, "id_domain_info-0-portfolio")
         self.assertNotContains(response, "id_domain_info-0-sub_organization")
-        self.assertNotContains(response, "id_domain_info-0-creator")
+        self.assertNotContains(response, "id_domain_info-0-requester")
         self.assertNotContains(response, "id_domain_info-0-federal_agency")
         self.assertNotContains(response, "id_domain_info-0-about_your_organization")
         self.assertNotContains(response, "id_domain_info-0-anything_else")
@@ -189,7 +189,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         # test whether fields are readonly or editable
         self.assertContains(response, "id_domain_info-0-portfolio")
         self.assertContains(response, "id_domain_info-0-sub_organization")
-        self.assertContains(response, "id_domain_info-0-creator")
+        self.assertContains(response, "id_domain_info-0-requester")
         self.assertContains(response, "id_domain_info-0-federal_agency")
         self.assertContains(response, "id_domain_info-0-about_your_organization")
         self.assertContains(response, "id_domain_info-0-anything_else")
@@ -938,7 +938,7 @@ class TestDomainAdminWithClient(TestCase):
         deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
 
         # We don't need to check for all text content, just a portion of it
-        expected_unknown_domain_message = "The creator of the associated domain request has not logged in to"
+        expected_unknown_domain_message = "The requester of the associated domain request has not logged in to"
         expected_dns_message = "Before this domain can be used, name server addresses need"
         expected_hold_message = "While on hold, this domain"
         expected_deleted_message = "This domain was permanently removed from the registry."

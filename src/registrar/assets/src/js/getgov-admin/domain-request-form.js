@@ -521,7 +521,7 @@ class CustomizableEmailBase {
             }
 
             if (this.isEmailAlreadySent()) {
-                this.formLabel.innerHTML = "Email sent to creator:";
+                this.formLabel.innerHTML = "Email sent to requester:";
             } else {
                 this.formLabel.innerHTML = "Email:";
             }

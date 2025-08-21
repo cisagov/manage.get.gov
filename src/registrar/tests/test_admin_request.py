@@ -318,11 +318,11 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request. Will receive email updates"),
+            ("requester", "Person who submitted the domain request. Will receive email updates"),
             ("approved_domain", "Domain associated with this request; will be blank until request is approved"),
-            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
-            ("alternative_domains", "Other domain names the creator provided for consideration"),
-            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("no_other_contacts_rationale", "Required if requester does not list other employees"),
+            ("alternative_domains", "Other domain names the requester provided for consideration"),
+            ("no_other_contacts_rationale", "Required if requester does not list other employees"),
             ("Urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
@@ -616,8 +616,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "13",
             (
-                "creator__first_name",
-                "creator__last_name",
+                "requester__first_name",
+                "requester__last_name",
             ),
         )
 
@@ -625,8 +625,8 @@ class TestDomainRequestAdmin(MockEppLib):
         self.test_helper.assert_table_sorted(
             "-13",
             (
-                "-creator__first_name",
-                "-creator__last_name",
+                "-requester__first_name",
+                "-requester__last_name",
             ),
         )
 
@@ -2038,7 +2038,7 @@ class TestDomainRequestAdmin(MockEppLib):
             "requested_suborganization",
             "suborganization_city",
             "suborganization_state_territory",
-            "creator",
+            "requester",
             "investigator",
             "generic_org_type",
             "is_election_board",
@@ -2106,7 +2106,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "status_history",
                 "federal_agency",
-                "creator",
+                "requester",
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
@@ -2174,7 +2174,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 "is_election_board",
                 "status_history",
                 "federal_agency",
-                "creator",
+                "requester",
                 "about_your_organization",
                 "requested_domain",
                 "approved_domain",
@@ -2248,7 +2248,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Assert that the error message was called with the correct argument
                 mock_error.assert_called_once_with(
                     request,
-                    "This action is not permitted for domain requests with a restricted creator.",
+                    "This action is not permitted for domain requests with a restricted requester.",
                 )
 
             # Assert that the status has not changed
@@ -2272,7 +2272,7 @@ class TestDomainRequestAdmin(MockEppLib):
                 # Assert that the error message was called with the correct argument
                 mock_warning.assert_called_once_with(
                     request,
-                    "Cannot edit a domain request with a restricted creator.",
+                    "Cannot edit a domain request with a restricted requester.",
                 )
 
     @less_console_noise_decorator
