@@ -33,21 +33,19 @@ runs:
         git diff --name-status "${BASE_SHA}..HEAD"
         echo "-------------------------------"
 
-        CHANGED_ALL="$(
-          git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u
-        )"
+        CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u)"
 
         PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | tr ' ' '\n' | grep -Ei '\.py$' || true)"
         # multi-line output
         echo "list<<EOF" >> GITHUB_OUTPUT
-        echo "${PY_CHANGED}" >> GITHUB_OUTPUT
+        echo "${CHANGED_ALL}" >> GITHUB_OUTPUT
         echo "EOF" >> GITHUB_OUTPUT
 
-        if [ -n "$PY_CHANGED"]
+        if echo "${CHANGED_ALL} | grep -Eqi '\.py$"
         then
           echo "any=true" >> "$GITHUB_OUTPUT"
           echo "Matched python files:"
-          echo "$PY_CHANGED"
+          echo "$CHANGED_ALL"
         else
           echo "any=false" >> "$GITHUB_OUTPUT"
         fi
