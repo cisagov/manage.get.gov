@@ -648,7 +648,7 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should not exist yet.")
+            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_organization_feature_inactive(self):
@@ -689,7 +689,6 @@ class TestPortfolio(WebTest):
             # Check the value of the 'portfolio' session variable
             self.assertIsNone(session["portfolio"])
 
-    # TODO: Remove or update test in #3776 to test portfolio redirect
     @less_console_noise_decorator
     def test_portfolio_resets_on_login_when_multiple_portfolios_active(self):
         """When multiple_portfolios flag is true and user has multiple portfolios,
@@ -706,7 +705,7 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check the 'portfolio' session variable does not exist in new login session
-            self.assertNotIn("portfolio", session, "Portfolio session variable should exist.")
+            self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_multiple_portfolios_active_and_no_portfolio(self):
