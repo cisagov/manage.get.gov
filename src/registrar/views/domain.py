@@ -759,12 +759,11 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     "Content-Type": "application/json",
                 }
 
-                # 1. Create or get a account under tenant
+                # 1. Create or get a account
 
-                # GET account: Check to see if the account already exists
+                # Check (by name) to see if the account already exists
                 account_name = f"account-{self.object.name}"
                 account_id = self.dns_hosting_service.find_existing_account(account_name)
-
                 # CREATE account: If one doesn't exist, create one
                 if not account_id:
                     try:
@@ -775,41 +774,36 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # 2. Create or get a zone under account
 
-                # Get the zone id
-                zone_name = self.object.name # domain name
-                zone_id = self.dns_hosting_service.find_existing_zone(zone_name)
+                # Check to see if the zone already exists
+                if account_id:
+                    zone_name = self.object.name # domain name
+                    zone_id = self.dns_hosting_service.find_existing_zone(zone_name)
 
-                # Create one if it doesn't presently exist
-                if not zone_id:
-                    try:
-                        zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
-                        zone_id = zone_data["result"]["id"]
-                    except APIError as e:
-                     logger.error(f"API error in view: {str(e)}")
-                    
-                # # 5. Create DNS record
-                # # Format the DNS record according to Cloudflare's API requirements
-                dns_response = requests.post(
-                    f"{base_url}/zones/{zone_id}/dns_records",
-                    headers=headers,
-                    json={
-                        "type": "A",
-                        "name": form.cleaned_data["name"],
-                        "content": form.cleaned_data["content"],
-                        "ttl": int(form.cleaned_data["ttl"]),
-                        "comment": "Test record (will need clean up)",
-                    },
-                    timeout=5,
-                )
-                dns_response_json = dns_response.json()
-                errors = dns_response_json.get("errors", [])
-                dns_response.raise_for_status()
-                logger.info(f"Created DNS record: {dns_response_json}")
-                dns_name = dns_response_json["result"]["name"]
-                messages.success(request, f"DNS A record '{dns_name}' created successfully.")
-            except Exception as err:
-                logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
-                messages.error(request, f"An error occurred: {err}")
+                    # Create one if it doesn't presently exist
+                    if not zone_id:
+                        try:
+                            zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
+                            zone_id = zone_data["result"]["id"]
+                        except APIError as e:
+                            logger.error(f"API error in view: {str(e)}")
+
+                    if zone_id:
+                        record_data = {
+                                "type": "A",
+                                "name": form.cleaned_data["name"], # record name
+                                "content": form.cleaned_data["content"], # IPv4
+                                "ttl": int(form.cleaned_data["ttl"]),
+                                "comment": "Test record (will need clean up)",
+                            } # TODO type this!
+
+                        # Create a dns record for the zone
+                        try:
+                            record_response = self.dns_hosting_service.create_record(zone_id, record_data)
+                            logger.info(f"Created DNS record: {record_response['result']}")
+                            dns_name = record_response["result"]["name"]
+                            messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+                        except APIError as e:
+                            logger.error(f"API error in view: {str(e)}")
             finally:
                 if errors:
                     messages.error(request, f"Request errors: {errors}")

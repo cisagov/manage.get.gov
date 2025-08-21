@@ -63,6 +63,7 @@ services:
       - REGISTRY_TENANT_KEY
       - REGISTRY_SERVICE_EMAIL
       - REGISTRY_TENANT_NAME
+      - DOTGOV_TEST_TENANT_ID
     stdin_open: true
     tty: true
     ports:

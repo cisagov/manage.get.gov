@@ -88,7 +88,6 @@ class TestCloudflareService(SimpleTestCase):
             }
         }
         result = self.service.create_dns_record(zone_id, record_data)
-        print(result)
         self.assertEqual(result['result']['name'], "democracy.gov")
         self.assertEqual(result['result']['content'], "198.51.100.4")
         self.assertEqual(result['result'], {

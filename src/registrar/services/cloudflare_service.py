@@ -1,3 +1,4 @@
+import json
 import logging
 from django.conf import settings
 
@@ -19,36 +20,37 @@ class CloudflareService:
             "Content-Type": "application/json",
         }
     # POST account
-    def create_account(self, account_name):     
+    def create_account(self, account_name):
         url = f"{self.base_url}/accounts"
         data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
         response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
         if not response['success']:
-            raise APIError(f"Failed to create account for {account_name}: {response['message']}")
+            raise APIError(f"Failed to create account for {account_name}: {response['details']}")
                
         logger.info(f"Created host account: {response['data']}")
 
         return response['data']
 
     # POST zone
-    def create_zone(self, zone_name, account_id):     
+    def create_zone(self, zone_name, account_id):   
         url = f"{self.base_url}/zones"
         data = {"name": zone_name, "account": {"id": account_id }}
         response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
 
         if not response['success']:
-            raise APIError(f"Failed to create zone for account {account_id}: {response['message']}")
+            raise APIError(f"Failed to create zone for account {account_id}: {response['details']}")
         logger.info(f"Created zone {zone_name} for account with id {account_id}: {response['data']}")
 
         return response['data']
 
     # POST dns_record
     def create_dns_record(self, zone_id, record_data):
-        url = f"{self.base_url}/zones/{zone_id}/dns_record"
+        url = f"{self.base_url}/zones/{zone_id}/dns_records"
+        logger.debug(f'attempting to create record for zone {zone_id} with this data: {json.dumps(record_data)}')
         response = make_api_request(url=url, method="POST", headers=self.headers, data=record_data )
 
         if not response['success']:
-            raise APIError(f"Failed to create dns record for zone {zone_id}: {response['message']}")             
+            raise APIError(f"Failed to create dns record for zone {zone_id}: message: {response['message']} details: {response['details']}")             
         logger.info(f"Created dns_record for zone {zone_id}: {response['data']}")
 
         return response['data']
@@ -60,7 +62,7 @@ class CloudflareService:
         response = make_api_request(url=url, method="GET", headers=self.headers )
 
         if not response['success']:
-            raise APIError(f"Failed to get accounts: {response['message']}")             
+            raise APIError(f"Failed to get accounts: message: {response['message']}, details: {response['details']}")             
         logger.info(f"Retrieved all accounts: {response['data']}")
 
         return response['data']
@@ -83,7 +85,7 @@ class CloudflareService:
         response = make_api_request(url=url, method="GET", headers=self.headers )
 
         if not response['success']:
-            raise APIError(f"Failed to get dns record: {response['message']}")             
+            raise APIError(f"Failed to get dns record: message: {response['message']}, details: {response['details']}")             
         logger.info(f"Retrieved record {record_id} from {zone_id}: {response['data']}")
 
         return response['data']
