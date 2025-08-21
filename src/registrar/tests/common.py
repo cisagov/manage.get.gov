@@ -51,7 +51,6 @@ from api.tests.common import less_console_noise_decorator
 logger = logging.getLogger(__name__)
 
 
-# test
 def get_ap_style_month(month):
     AP_STYLE_MONTH = {
         "January": "Jan.",
