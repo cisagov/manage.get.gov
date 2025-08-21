@@ -56,6 +56,7 @@ from django.contrib.contenttypes.models import ContentType
 import csv
 from pathlib import Path
 
+
 class CsvReportsTest(MockDbForSharedTests):
     """Tests to determine if we are uploading our reports correctly."""
 
@@ -74,7 +75,7 @@ class CsvReportsTest(MockDbForSharedTests):
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
-                call('cdomain1.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\r\n'),
+                call("cdomain1.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
@@ -96,7 +97,7 @@ class CsvReportsTest(MockDbForSharedTests):
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
-                call('cdomain1.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\r\n'),
+                call("cdomain1.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
@@ -225,13 +226,13 @@ class CsvReportsTest(MockDbForSharedTests):
 
 class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     """Test the ExportData class from csv_export."""
-    
+
     def rows_from_expected_path(self, file):
         expected_path = Path(__file__).parent / "fixtures" / file
-        with expected_path.open(newline='') as f:
+        with expected_path.open(newline="") as f:
             rows = list(csv.reader(f))
         return rows
-    
+
     @less_console_noise_decorator
     def test_domain_data_type(self):
         """Shows security contacts, domain managers, so"""
@@ -248,18 +249,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Add a first ready date on the first domain. Leaving the others blank.
         self.domain_1.first_ready = get_default_start_date()
         self.domain_1.save()
-    
+
         file = "test_domain_data_type.csv"
         expected_rows = self.rows_from_expected_path(file)
-        
+
         csv_buffer = io.StringIO()
         DomainDataType.export_data_to_csv(csv_buffer)
         csv_buffer.seek(0)
         actual_rows = list(csv.reader(csv_buffer))
 
         self.assertEqual(expected_rows, actual_rows)
-      
-    
+
     @less_console_noise_decorator
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
@@ -466,7 +466,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
-        
 
     @less_console_noise_decorator
     def test_domain_data_federal(self):
@@ -506,7 +505,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
-        
 
     @less_console_noise_decorator
     def test_domain_growth(self):

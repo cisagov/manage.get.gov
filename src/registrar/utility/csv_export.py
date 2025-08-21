@@ -654,16 +654,19 @@ class DomainExport(BaseExport):
                 output_field=CharField(),
             ),
             "converted_state_territory": Case(
-                When(Q(sub_organization__isnull=False) & ~Q(sub_organization__state_territory=''), then=F("sub_organization__state_territory")),
-                When(Q(portfolio__isnull=False) & ~Q(portfolio__state_territory=''), then=F("portfolio__state_territory")),
+                When(
+                    Q(sub_organization__isnull=False) & ~Q(sub_organization__state_territory=""),
+                    then=F("sub_organization__state_territory"),
+                ),
+                When(
+                    Q(portfolio__isnull=False) & ~Q(portfolio__state_territory=""), then=F("portfolio__state_territory")
+                ),
                 default=F("state_territory"),
                 output_field=CharField(),
             ),
             "converted_fed_agency_or_org_name": Coalesce(
-                F("converted_organization_name"),
-                F("converted_federal_agency"),
-                Value("")
-            )
+                F("converted_organization_name"), F("converted_federal_agency"), Value("")
+            ),
         }
 
     @classmethod
@@ -782,7 +785,7 @@ class DomainExport(BaseExport):
         model["security_contact_email"] = security_contact_email
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
-        FIELDS = cls.get_fields(model)   
+        FIELDS = cls.get_fields(model)
         row = [FIELDS.get(column, "") for column in columns]
         return row
 
