@@ -22,7 +22,7 @@ runs:
         set -euo pipefail
 
         EVENT_NAME="${{ github.event_name }}"
-        HEAD_SHA="${{ git rev-parse HEAD }}"
+        HEAD_SHA="$(git rev-parse HEAD)"
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
         PR_BASE_REF="${{ github.event.before || '' }}"
         BEFORE_SHA="${{ github.event.before || '' }}"
