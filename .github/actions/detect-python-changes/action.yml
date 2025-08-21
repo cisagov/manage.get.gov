@@ -21,23 +21,42 @@ runs:
       run: |
         set -euo pipefail
 
-        HEAD_SHA="${{ github.sha }}"
+        EVENT_NAME="${{ github.event_name }}"
+        HEAD_SHA="${{ git rev-parse HEAD }}"
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
+        PR_BASE_REF="${{ github.event.before || '' }}"
+        BEFORE_SHA="${{ github.event.before || '' }}"
 
-        git fetch origin "${DEFAULT_BRANCH}:${DEFAULT_BRANCH}"
+        if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$PR_BASE_REF" ]
+        then
+          git fetch --no-tags --prune --depth=1 origin "+refs/heads/${PR_BASE_REF}:refs/remotes/origin/${PR_BASE_REF}"
 
-        BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
+          echo "-------DEBUG (PR)--------"
+          echo "HEAD: $HEAD_SHA"
+          echo "PR_BASE_REF: $PR_BASE_REF"
+          echo "DIFF: origin/${PR_BASE_REF}...HEAD"
+          echo "-------------------------------"
+
+          CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "origin/${PR_BASE_REF}...HEAD" | tr -d '\r' | sort -u)"
+        else
+          if [-z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000"]
+          then
+            git fetch --no-tags --prune --depth=1 origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
+            BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" "HEAD_SHA")"
+            DIFF_RANGE="${BASE_SHA}..${HEAD_SHA}"
+          else
+            DIFF_RANGE="${BEFORE_SHA}..${HEAD_SHA}"
+          fi
+          echo "-------DEBUG (push) --------"
+          echo "DIFF: $DIFF_RANGE"
+          echo "----------------------------"
+          
+          CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT $DIFF_RANGE | tr -d '\r' | sort -u)"
+        fi
         
-        echo "-------DEBUG (detector)--------"
-        echo "BASE_SHA: ${BASE_SHA}, HEAD=$(git rev-parse HEAD)"
-        git diff --name-status "${BASE_SHA}..HEAD"
-        echo "-------------------------------"
+        echo "CHANGED_FILES (all):"
+        echo '%s\n' "$CHANGED_ALL"
 
-        ###########################
-        # CHANGED_ALL shows every file different between my branch's HEAD and the merge-base with main.
-        # PY_CHANGED includes all python files changed when you merge main into your branch. 
-        ###########################
-        CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u)"
         PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.py$' || true)"
         
         # multi-line output
