@@ -23,30 +23,25 @@ runs:
         HEAD_SHA="${{ github.sha }}"
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
-        git fetch --no-tags --prune origin "$DEFAULT_BRANCH" --depth=1
+        git fetch --no-tags --prune origin "$DEFAULT_BRANCH" --depth=1 origin "+refs/heads/${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
 
-        UNIQUE_COMMITS="$(git rev-list --right-only --cherry-pick --no-merges --ancestry-path "origin/$DEFAULT_BRANCH...$HEAD_SHA" || true)"
+        BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" "${HEAD_SHA}")"
+
         
         echo "-------DEBUG (detector)--------"
-        echo "HEAD_SHA: $HEAD_SHA"
-        echo "Unique commits count: $(printf '%s\n' "$UNIQUE_COMMITS" | sed '/^$/d' | wc -1 || true)"
+        echo "DEFAULT_BRANCH: ${DEFAULT_BRANCH}"
+        echo "HEAD_SHA: ${HEAD_SHA}"
+        echo "BASE_SHA: ${BASE_SHA}"
+        echo "RANGE: ${BASE_SHA}..${HEAD_SHA}"
+        echo "name status:"
+        git diff --name-status "${BASE_SHA}..${HEAD_SHA}" || true
         echo "-------------------------------"
 
-        if [ -z "$UNIQUE_COMMITS" ]
-        then
-          echo "any=false" >> "$GITHUB_OUTPUT"
-            echo "no *.py files changes matched"
-            exit 0
-        fi
-
-        FILES="$(
-          for c in $UNIQUE_COMMITS
-          do
-            git diff --name-only --diff-filter=ACMRDT "${c}^!" || true
-          done | tr -d '\r' | sort -u 
+        CHANGED_ALL="$(
+          git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u
         )"
 
-        PY_CHANGED="$(printf '%s\n' "$FILES" | grep -Ei '\.py$' || true)"
+        PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.py$' || true)"
         # multi-line output
         echo "list<<EOF" >> GITHUB_OUTPUT
         echo "${PY_CHANGED}" >> GITHUB_OUTPUT
