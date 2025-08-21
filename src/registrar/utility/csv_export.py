@@ -666,12 +666,11 @@ class DomainExport(BaseExport):
             ),
             "converted_fed_agency_or_org_name": Case(
                 When(
-                    Q(converted_organization_name__isnull=False) &
-                    ~Q(converted_organization_name=""),
-                    then=F("converted_organization_name")
+                    Q(converted_organization_name__isnull=False) & ~Q(converted_organization_name=""),
+                    then=F("converted_organization_name"),
                 ),
-                default=("converted_federal_agency")
-            )
+                default=("converted_federal_agency"),
+            ),
         }
 
     @classmethod
@@ -792,7 +791,7 @@ class DomainExport(BaseExport):
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
 
         FIELDS = cls.get_fields(model)
-        
+
         row = [FIELDS.get(column, "") for column in columns]
         return row
 
