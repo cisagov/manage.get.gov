@@ -30,9 +30,8 @@ jobs:
             echo "Event name: ${{ github.event_name }}"
             echo "Before SHA: ${{ github.event.before }}"
             echo "Head SHA: ${{ github.sha }}"
-            echo "Detector any: ${{ steps.det.outputs.any }}"
             echo "Detector output: any=${{ steps.det.outputs.any }}"
-            echo "Detector list: "
+            echo "Detector output: list: "
             echo "${{ steps.det.outputs.list }}"
             echo "---------"
 
