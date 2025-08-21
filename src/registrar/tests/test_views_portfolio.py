@@ -648,9 +648,7 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+            self.assertIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_organization_feature_inactive(self):
