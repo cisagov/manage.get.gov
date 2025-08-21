@@ -4063,6 +4063,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "expiration_date",
         "created_at",
         "first_ready",
+        "on_hold_date",
         "deleted",
     ]
 

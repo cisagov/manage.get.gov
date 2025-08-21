@@ -1313,6 +1313,14 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="first ready on",
     )
 
+    # Ok we can do displaying the date which can change, or we can also do a count which would benefit the analyst more
+    on_hold_date = DateField(
+        null=True,
+        editable=False,
+        help_text='Date when this domain is moved into "on hold" state; date will  change',
+        verbose_name="on hold date",
+    )
+
     dsdata_last_change = TextField(
         null=True,
         blank=True,
@@ -1665,6 +1673,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
+
+        # Record the date every time domain transitions to ON_HOLD
+        self.on_hold_date = timezone.now().date()
 
         # In order to allow transition domains to by-pass EPP calls,
         # include this ignoreEPP flag
