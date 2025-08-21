@@ -659,7 +659,7 @@ class DomainExport(BaseExport):
                 default=F("state_territory"),
                 output_field=CharField(),
             ),
-            "agency_field_name": Coalesce(
+            "converted_fed_agency_or_org_name": Coalesce(
                 F("converted_organization_name"),
                 F("converted_federal_agency"),
                 Value("")
@@ -1043,7 +1043,7 @@ class DomainDataFull(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("agency_field_name"),
+            "Agency": model.get("converted_fed_agency_or_org_name"),
             "Organization name": model.get("converted_suborganization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),

@@ -2329,7 +2329,7 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         """
         # Delete any other suborganizations defined in the initial test dataset
         DomainRequest.objects.all().delete()
-        Suborganization.objects.all().delete()
+        Suborganization.objects.exclude(name="SubOrg 1").delete()
 
         Suborganization.objects.create(name="Test Organization ", portfolio=self.portfolio_1)
         Suborganization.objects.create(name="test organization", portfolio=self.portfolio_1)
@@ -2338,7 +2338,7 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         # Create an unrelated record to test that it doesn't get deleted, too
         Suborganization.objects.create(name="unrelated org", portfolio=self.portfolio_1)
         self.run_patch_suborganizations()
-        self.assertEqual(Suborganization.objects.count(), 2)
+        self.assertEqual(Suborganization.objects.count(), 3)
         self.assertEqual(Suborganization.objects.filter(name__in=["unrelated org", "Test Organization"]).count(), 2)
 
     @less_console_noise_decorator
@@ -2346,7 +2346,7 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         """Tests that our hardcoded records update as we expect them to"""
         # Delete any other suborganizations defined in the initial test dataset
         DomainRequest.objects.all().delete()
-        Suborganization.objects.all().delete()
+        Suborganization.objects.exclude(name="SubOrg 1").delete()
 
         # Create orgs with old and new name formats
         old_name = "USDA/OC"
@@ -2358,8 +2358,8 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         self.run_patch_suborganizations()
 
         # Verify only the new one of the two remains
-        self.assertEqual(Suborganization.objects.count(), 1)
-        remaining = Suborganization.objects.first()
+        self.assertEqual(Suborganization.objects.count(), 2)
+        remaining = Suborganization.objects.all()[1]
         self.assertEqual(remaining.name, new_name)
 
     @less_console_noise_decorator
