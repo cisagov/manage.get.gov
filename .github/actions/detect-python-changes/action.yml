@@ -20,64 +20,43 @@ runs:
       run: |
         set -euo pipefail
 
-        EVENT_NAME="${{ github.event_name }}"
         HEAD_SHA="${{ github.sha }}"
-        PR_BASE_SHA="${{ github.event.pull_request.base.sha || '' }}"
-        PR_BASE_SHA="${{ github.event.pull_request.base.ref || '' }}"
-        BEFORE_SHA="${{ github.event.before || '' }}"
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
-        # Figure out the diff range to compare
-        if [ "$EVENT_NAME" = "pull_request"] && [ -n "$PR_BASE_SHA" ] 
-        then
-          REF_TO_FETCH="${PR_BASE_REF:-$DEFAULT_BRANCH}"
-          git fetch --no-tags --prune origin "$REF_TO_FETCH" --depth=1
-          if ! git cat-file -e "$PR_BASE_SHA^{commit}" 2>/dev/null
-          then
-            echo "Base SHA $PR_BASE_SHA not present after fetch; fetching full ref..."
-            git fetch --no-tags --prune origin "$REF_TO_FETCH"
-          fi
-          BASE_SHA="$PR_BASE_SHA"
-        # push (or manual)
-        else
-          # When there's no PR base to compare against. We prefer before/after.  
-          BASE_SHA="$BEFORE_SHA"
-          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] 
-          then
-            # If it's the first push, no before. So... diff against merge-base with default branch
-            git fetch --no-tags --prune origin "$DEFAULT_BRANCH" --depth=1
-            BASE_SHA="$(git merge-base "origin/$DEFAULT_BRANCH" "$HEAD_SHA")"
-          fi
-        fi
+        git fetch --no-tags --prune origin "$DEFAULT_BRANCH" --depth=1
 
-        DIFF_RANGE="${BASE_SHA}...${HEAD_SHA}"
-
-        # Get changed *.py files (A=added, C=copied, M=modified, R=renamed)
-        git fetch --no-tags --prune origin "${BASE_SHA}:${BASE_SHA}" || true
-        CHANGED=$(git diff --name-only --diff-filter=ACMR "${DIFF_RANGE}" | grep -E '\.py$' || true)
-
+        UNIQUE_COMMITS="$(git rev-list --right-only --cherry-pick --no-merges --ancestry-path "origin/$DEFAULT_BRANCH...$HEAD_SHA" || true)"
+        
         echo "-------DEBUG (detector)--------"
-        echo "EVENT: $EVENT_NAME"
-        echo "BASE_REF: ${PR_BASE_REF-'(n/a)'}"
-        echo "BASE_SHA: $BASE_SHA"
         echo "HEAD_SHA: $HEAD_SHA"
-        echo "DIFF_RANGE: $DIFF_RANGE"
-        echo "Base exists? $(git cat-file -t "$BASE_SHA" 2>/dev/null || echo 'missing')"
-        echo "Name status:"
-        git diff --name-status "$DIFF_RANGE" || true
+        echo "Unique commits count: $(printf '%s\n' "$UNIQUE_COMMITS" | sed '/^$/d' | wc -1 || true)"
         echo "-------------------------------"
 
+        if [ -z "$UNIQUE_COMMITS" ]
+        then
+          echo "any=false" >> "$GITHUB_OUTPUT"
+            echo "no *.py files changes matched"
+            exit 0
+        fi
+
+        FILES="$(
+          for c in $UNIQUE_COMMITS
+          do
+            git diff --name-only --diff-filter=ACMRDT "${c}^!" || true
+          done | tr -d '\r' | sort -u 
+        )"
+
+        PY_CHANGED="$(printf '%s\n' "$FILES" | grep -Ei '\.py$' || true)"
         # multi-line output
         echo "list<<EOF" >> GITHUB_OUTPUT
-        echo "${CHANGED}" >> GITHUB_OUTPUT
+        echo "${PY_CHANGED}" >> GITHUB_OUTPUT
         echo "EOF" >> GITHUB_OUTPUT
 
-        if [ -n "$CHANGED"]
+        if [ -n "$PY_CHANGED"]
         then
           echo "any=true" >> "$GITHUB_OUTPUT"
           echo "Matched python files:"
-          echo "$CHANGED"
+          echo "$PY_CHANGED"
         else
           echo "any=false" >> "$GITHUB_OUTPUT"
-          echo "no *.py files changes matched"
         fi
