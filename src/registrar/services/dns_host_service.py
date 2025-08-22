@@ -14,7 +14,7 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def dns_setup(self, account_name):
+    def dns_setup(self, account_name, zone_name):
         """Creates an account and zone in the dns host vendor tenant"""
         try:
             account_data = self.dns_vendor_service.create_account(account_name)
@@ -25,7 +25,7 @@ class DnsHostService:
             raise
 
         try:
-            zone_data = self.dns_vendor_service.create_zone(account_name, account_id)
+            zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
             logger.info("Successfully created zone")
             zone_id = zone_data["result"]["id"]
         except APIError as e:

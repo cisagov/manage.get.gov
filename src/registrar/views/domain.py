@@ -763,11 +763,12 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # Check (by name) to see if the account already exists
                 account_name = f"account-{self.object.name}"
+                zone_name = self.object.name # domain name
                 account_id = self.dns_host_service.find_existing_account(account_name)
                 # if the account doesn't exist, CREATE account and zone and create a record on that zone
                 if not account_id:
                     try:
-                        _, created_zone_id = self.dns_host_service.dns_setup(account_name)
+                        _, created_zone_id = self.dns_host_service.dns_setup(account_name, zone_name)
                     except APIError as e:
                      logger.error(f"API error in view: {str(e)}")
                 
@@ -782,7 +783,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 # if an account already exists but the zone does not, create a zone.
                 if account_id:
-                    zone_name = self.object.name # domain name
                     zone_id = self.dns_host_service.find_existing_zone(zone_name)
 
                     if not zone_id:
