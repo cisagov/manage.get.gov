@@ -1,5 +1,6 @@
 from datetime import date
 import logging
+from contextvars import ContextVar
 import requests
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -81,7 +82,7 @@ from django import forms
 
 logger = logging.getLogger(__name__)
 
-
+context_dns_record = ContextVar("context_dns_record", default=None)
 class DomainBaseView(PermissionRequiredMixin, DetailView):
     """
     Base View for the Domain. Handles getting and setting the domain
@@ -714,6 +715,15 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     dns_vendor_service = CloudflareService()
     dns_host_service = DnsHostService()
 
+    def __init__(self):
+        self.dns_record = None
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        context["dns_record"] = context_dns_record.get()
+        return context
+
     def has_permission(self):
         has_permission = super().has_permission()
         if not has_permission:
@@ -759,7 +769,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                                 "ttl": int(form.cleaned_data["ttl"]),
                                 "comment": "Test record (will need clean up)",
                             }
-                # 1. Create or get a account
 
                 # Check (by name) to see if the account already exists
                 account_name = f"account-{self.object.name}"
@@ -773,9 +782,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                      logger.error(f"API error in view: {str(e)}")
                 
                     try:
-                        
                         record_response = self.dns_host_service.create_record(created_zone_id, record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
+                        self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
                         messages.success(request, f"DNS A record '{dns_name}' created successfully.")
                     except APIError as e:
@@ -787,7 +796,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                     if not zone_id:
                         try:
-                            zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
+                            zone_data = self.dns_vendor_service.create_zone(zone_name, account_id) # TODO: make a create_zone on dns_host_service
                             zone_id = zone_data["result"]["id"]
                         except APIError as e:
                             logger.error(f"API error in view: {str(e)}")
@@ -797,16 +806,16 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         try:
                             record_response = self.dns_host_service.create_record(zone_id, record_data)
                             logger.info(f"Created DNS record: {record_response['result']}")
+                            self.dns_record = record_response["result"]
                             dns_name = record_response["result"]["name"]
                             messages.success(request, f"DNS A record '{dns_name}' created successfully.")
                         except APIError as e:
                             logger.error(f"API error in view: {str(e)}")
+                context_dns_record.set(self.dns_record)
             finally:
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
-
-
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""

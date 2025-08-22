@@ -31,4 +31,7 @@
             Add record
         </button>
     </form>
+    {% if dns_record %}
+    <p>DNS RECORD: {{ dns_record }} </p>
+    {% endif %}
 {% endblock %}  {# domain_content #}
