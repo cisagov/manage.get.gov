@@ -1314,6 +1314,8 @@ class Domain(TimeStampedModel, DomainHelper):
     )
 
     # Ok we can do displaying the date which can change, or we can also do a count which would benefit the analyst more
+    # Having this in the DB would help with knowing when it's put on hold by the domain manager
+    # But we don't NECESSARILY need it if it doesn't help
     on_hold_date = DateField(
         null=True,
         editable=False,
@@ -1665,6 +1667,19 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
+    # @property
+    # def days_on_hold(self):
+    #     if self.state == Domain.State.ON_HOLD:
+    #         return (timezone.now().date() - self.updated_at.date()).days
+    #     return None
+
+    @property
+    def days_on_hold(self):
+        """Return how many days the domain has been on hold, or None if not on hold."""
+        if self.state == Domain.State.ON_HOLD and self.on_hold_date:
+            return (timezone.now().date() - self.on_hold_date).days
+        return None
+
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD)
     def place_client_hold(self, ignoreEPP=False):
         """place a clienthold on a domain (no longer should resolve)
@@ -1689,6 +1704,9 @@ class Domain(TimeStampedModel, DomainHelper):
         """
 
         logger.info("clientHold()-> inside clientHold")
+
+        self.on_hold_date = None
+
         if not ignoreEPP:
             self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here

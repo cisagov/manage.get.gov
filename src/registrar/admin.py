@@ -4064,6 +4064,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "created_at",
         "first_ready",
         "on_hold_date",
+        "days_on_hold",
         "deleted",
     ]
 
