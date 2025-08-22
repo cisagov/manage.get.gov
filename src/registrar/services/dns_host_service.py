@@ -32,7 +32,7 @@ class DnsHostService:
             logger.error(f"DNS setup failed to create zone: {str(e)}")
             raise
 
-        return (account_id, zone_id)
+        return account_id, zone_id
 
     def create_record(self, zone_id, record_data):
         """Calls create method of vendor serivce to create a DNS record"""

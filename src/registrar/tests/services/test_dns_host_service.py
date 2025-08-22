@@ -24,8 +24,9 @@ class TestDnsHostService(SimpleTestCase):
             "result": {"id": zone_id}
         }
         
-        result = self.service.dns_setup(account_name)
-        self.assertEqual(result, (account_id, zone_id))
+        returned_account_id, returned_zone_id = self.service.dns_setup(account_name)
+        self.assertEqual(returned_account_id, account_id)
+        self.assertEqual(returned_zone_id, zone_id)
 
     @patch('registrar.services.dns_host_service.CloudflareService.create_zone')
     @patch('registrar.services.dns_host_service.CloudflareService.create_account')
@@ -34,9 +35,11 @@ class TestDnsHostService(SimpleTestCase):
         mock_create_account.side_effect = APIError(
             'DNS setup failed to create account'
         )
+    
         with self.assertRaises(APIError) as context:
             self.service.dns_setup(account_name)
         
+        mock_create_account.assert_called_once_with(account_name)
         self.assertEqual(context.exception, APIError('DNS setup failed to create account'))
 
     @patch('registrar.services.dns_host_service.CloudflareService.create_dns_record')

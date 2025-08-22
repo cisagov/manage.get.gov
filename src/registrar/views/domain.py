@@ -668,7 +668,7 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov", "address-argue-any.gov", "actually-among-role.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -710,9 +710,9 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov", "dns3.gov", "address-argue-any.gov", "actually-among-role.gov"]
     dns_vendor_service = CloudflareService()
-    dns_hosting_service = DnsHostService()
+    dns_host_service = DnsHostService()
 
     def has_permission(self):
         has_permission = super().has_permission()
@@ -752,34 +752,39 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         " Create one in a test environment if it doesn't already exist."
                     )
 
-                base_url = "https://api.cloudflare.com/client/v4"
-                headers = {
-                    "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
-                    "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
-                    "Content-Type": "application/json",
-                }
-
+                record_data = {
+                                "type": "A",
+                                "name": form.cleaned_data["name"], # record name
+                                "content": form.cleaned_data["content"], # IPv4
+                                "ttl": int(form.cleaned_data["ttl"]),
+                                "comment": "Test record (will need clean up)",
+                            }
                 # 1. Create or get a account
 
                 # Check (by name) to see if the account already exists
                 account_name = f"account-{self.object.name}"
-                account_id = self.dns_hosting_service.find_existing_account(account_name)
-                # CREATE account: If one doesn't exist, create one
+                account_id = self.dns_host_service.find_existing_account(account_name)
+                # if the account doesn't exist, CREATE account and zone and create a record on that zone
                 if not account_id:
                     try:
-                        account_data = self.dns_vendor_service.create_account(account_name)
-                        account_id = account_data["result"]["id"]
+                        _, created_zone_id = self.dns_host_service.dns_setup(account_name)
                     except APIError as e:
                      logger.error(f"API error in view: {str(e)}")
+                
+                    try:
+                        
+                        record_response = self.dns_host_service.create_record(created_zone_id, record_data)
+                        logger.info(f"Created DNS record: {record_response['result']}")
+                        dns_name = record_response["result"]["name"]
+                        messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+                    except APIError as e:
+                        logger.error(f"API error in view: {str(e)}")
 
-                # 2. Create or get a zone under account
-
-                # Check to see if the zone already exists
+                # if an account already exists but the zone does not, create a zone.
                 if account_id:
                     zone_name = self.object.name # domain name
-                    zone_id = self.dns_hosting_service.find_existing_zone(zone_name)
+                    zone_id = self.dns_host_service.find_existing_zone(zone_name)
 
-                    # Create one if it doesn't presently exist
                     if not zone_id:
                         try:
                             zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
@@ -788,17 +793,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                             logger.error(f"API error in view: {str(e)}")
 
                     if zone_id:
-                        record_data = {
-                                "type": "A",
-                                "name": form.cleaned_data["name"], # record name
-                                "content": form.cleaned_data["content"], # IPv4
-                                "ttl": int(form.cleaned_data["ttl"]),
-                                "comment": "Test record (will need clean up)",
-                            } # TODO type this!
-
                         # Create a dns record for the zone
                         try:
-                            record_response = self.dns_hosting_service.create_record(zone_id, record_data)
+                            record_response = self.dns_host_service.create_record(zone_id, record_data)
                             logger.info(f"Created DNS record: {record_response['result']}")
                             dns_name = record_response["result"]["name"]
                             messages.success(request, f"DNS A record '{dns_name}' created successfully.")
