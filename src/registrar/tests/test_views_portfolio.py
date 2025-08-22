@@ -239,7 +239,7 @@ class TestPortfolio(WebTest):
             # Organization overview page includes portfolio admin
             self.assertContains(response, "Galileo")
             # Organization overview page includes org type
-            self.assertContains(response, "Organization Type")
+            self.assertContains(response, "Organization type")
             self.assertContains(response, "Federal")
 
     @less_console_noise_decorator

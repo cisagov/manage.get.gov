@@ -40,14 +40,6 @@
 
         <h1>Organization</h1>
         <div class="margin-top-2 tablet:grid-col-10">
-            <p>The name of your organization will be publicly listed as the domain registrant.</p>
-
-            {% if has_edit_portfolio_permission %}
-            <p>
-                Your organization name can’t be updated here.
-                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
-            </p>
-            {% endif %}
             <h2>Organization admins</h2>
             <ul class="usa-list usa-list--unstyled margin-top-2 margin-bottom-0">
             {% for admin in portfolio_admins %}
@@ -58,8 +50,21 @@
             {% endfor %}
             </ul>
             
-            <h2>Organization name and address</h2>
+            <h2>Organization information</h2>
+            <p>The name of your organization will be publicly listed as the domain registrant.</p>
+
+            {% if has_edit_portfolio_permission %}
+            <p>
+                Your organization name can’t be updated here.
+                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+            </p>
+            {% endif %}
             
+            {% if organization_type %}
+                <h3>Organization type</h3>
+                {{ organization_type }}
+            {% endif %}
+
             {% if has_edit_portfolio_permission %}
             {% include "includes/required_fields.html" with remove_margin_top=True %}
             <form class="usa-form usa-form--large" method="post" novalidate>
@@ -89,10 +94,6 @@
             </div>
             {% endif %}
 
-            {% if organization_type %}
-                <h3>Organization type</h3>
-                {{ organization_type }}
-            {% endif %}
         </div>
     </div>
 </div>
