@@ -6,7 +6,7 @@ have VIEW_MANAGED_DOMAINS permission.
 import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import Q, F, Exists, OuterRef
+from django.db.models import Exists, OuterRef
 from registrar.models import UserPortfolioPermission, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 
@@ -17,7 +17,6 @@ class Command(BaseCommand):
     help = """
     Ensures all ORGANIZATION_MEMBER users have VIEW_MANAGED_DOMAINS permission.
     This fixes the issue where basic members cannot see domains they manage.
-    
     This command is safe to run multiple times and will only update users who need it.
     """
 
