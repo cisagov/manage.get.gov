@@ -891,7 +891,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
         # We need to assert that logo is not clickable and links to manage your domain are not present
         # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
         # instance and lowercase in the other.
-        self.assertContains(save_page, "anage your domains", count=2)
+        self.assertContains(save_page, "anage your domains", count=1)
         self.assertNotContains(save_page, "Before you can manage your domains, we need you to add contact information")
         # Assert that modal does not appear on subsequent submits
         self.assertNotContains(save_page, "domain registrants must maintain accurate contact information")
@@ -1060,13 +1060,12 @@ class PortfoliosTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_no_redirect_when_user_has_no_portfolios(self):
         """No redirect so no follow,
-        implicitely test for the presense of the h2 by looking up its id"""
+        implicitly test for the presense of the h2 by looking up its id"""
         self.portfolio.delete()
         self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            home_page = self.app.get(reverse("home"))
-            self._set_session_cookie()
+        home_page = self.app.get(reverse("home"))
+        self._set_session_cookie()
 
-            self.assertNotContains(home_page, self.portfolio.organization_name)
+        self.assertNotContains(home_page, self.portfolio.organization_name)
 
-            self.assertContains(home_page, 'id="domain-requests-header"')
+        self.assertContains(home_page, 'id="domain-requests-header"')

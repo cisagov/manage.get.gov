@@ -122,7 +122,7 @@ INSTALLED_APPS = [
     # otherwise Django would find the default template
     # provided by django.contrib.admin first and use
     # that instead of our custom templates.
-    "registrar",
+    "registrar.apps.RegistrarConfig",
     # Django automatic admin interface reads metadata
     # from database models to provide a quick, model-centric
     # interface where trusted users can manage content
@@ -209,6 +209,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
+    # Add DB info to logs
+    "registrar.registrar_middleware.DatabaseConnectionMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -504,6 +506,45 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
+        # Add all extra fields from the log record
+        extra_fields = {}
+        for key, value in record.__dict__.items():
+            # Skip standard LogRecord attributes
+            if key not in {
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "getMessage",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "message",
+            }:
+                # Only include JSON-serializable values
+                try:
+                    json.dumps(value)
+                    extra_fields[key] = value
+                except (TypeError, ValueError):
+                    # Convert non-serializable values to strings
+                    extra_fields[key] = str(value)
+
+        # Merge extra fields into the main log record
+        log_record.update(extra_fields)
+
         return json.dumps(log_record, ensure_ascii=False)
 
 
@@ -646,6 +687,17 @@ LOGGING = {
         "registrar": {
             "handlers": django_handlers,
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # DB info
+        "django.db.backends": {
+            "handlers": django_handlers,
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.db.backends.schema": {
+            "handlers": django_handlers,
+            "level": "WARNING",
             "propagate": False,
         },
     },
@@ -797,6 +849,7 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-testdb.app.cloud.gov",
     "getgov-acadia.app.cloud.gov",
     "getgov-glacier.app.cloud.gov",
     "getgov-olympic.app.cloud.gov",

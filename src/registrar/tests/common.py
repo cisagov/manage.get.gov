@@ -51,6 +51,19 @@ from api.tests.common import less_console_noise_decorator
 logger = logging.getLogger(__name__)
 
 
+def get_ap_style_month(month):
+    AP_STYLE_MONTH = {
+        "January": "Jan.",
+        "February": "Feb.",
+        "August": "Aug.",
+        "September": "Sept.",
+        "October": "Oct.",
+        "November": "Nov.",
+        "December": "Dec.",
+    }
+    return AP_STYLE_MONTH[month]
+
+
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
     handlers = {}
@@ -224,6 +237,52 @@ class GenericTestHelper(TestCase):
             follow=True,
         )
         return response
+
+    @staticmethod
+    def switch_to_enterprise_mode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
+        """
+        Use this decorator for all tests where we want to be in Enterprise mode.
+
+        By default, our test mock data has users that do not have portfolio permissions.
+        This decorator grants portfolio permissions temporarily for the function
+        it decorates.
+
+        NOTE: This decorator (in general) should appear at the top of any other decorators.
+
+        USE CASE:
+        # Default role (ORGANIZATION_ADMIN)
+        @GenericTestHelper.switch_to_enterprise_mode_wrapper()
+        @other_decorator
+        @other_decorator
+        def test_admin_role(self):
+            ...
+
+        # Custom role
+        @GenericTestHelper.switch_to_enterprise_mode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        @other_decorator
+        @other_decorator
+        def test_member_role(self):
+            ...
+        """
+
+        # NOTE: "self" in this function is not GenericTestHelper.  Instead,
+        # "self" refers to the parent class of the function passed into the decorator.
+        def decorator(func):
+            def wrapper(self, *args, **kwargs):
+                """Switches to enterprise mode with the specified role"""
+                UserPortfolioPermission.objects.get_or_create(
+                    user=self.user, portfolio=self.portfolio, defaults={"roles": [role]}
+                )
+                try:
+                    return func(self, *args, **kwargs)
+                finally:
+                    """Essentially switches to legacy mode by
+                    stripping the user of portfolio permissions"""
+                    UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+
+            return wrapper
+
+        return decorator
 
 
 class MockUserLogin:
@@ -1038,6 +1097,24 @@ def create_test_user():
     email = "info@example.com"
     phone = "8003111234"
     title = "test title"
+    user = get_user_model().objects.create(
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        title=title,
+    )
+    return user
+
+
+def create_test_user_not_in_portfolio():
+    username = "test_user_not_in_portfolio"
+    first_name = "First"
+    last_name = "Last"
+    email = "not_in_portfolio@example.com"
+    phone = "1234567890"
+    title = "tester not in portfolio"
     user = get_user_model().objects.create(
         username=username,
         first_name=first_name,

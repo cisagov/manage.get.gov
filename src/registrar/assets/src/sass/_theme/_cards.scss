@@ -1,0 +1,17 @@
+@use "uswds-core" as *;
+@use "cisa_colors" as *;
+
+.usa-card__container {
+    background-color: #{$dhs-blue-10};
+    border-color: #{$dhs-blue-30};
+    border-width: 1px;
+    border-radius: 0.25rem;
+}
+
+.usa-card__header {
+    // padding: 2rem;
+}
+
+.usa-card__heading {
+    color: #{$dhs-blue}
+}
