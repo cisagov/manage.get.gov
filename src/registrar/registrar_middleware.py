@@ -151,22 +151,18 @@ class CheckPortfolioMiddleware:
             return None
 
         # if multiple portfolios are allowed for this user
-        if flag_is_active(request, "organization_feature"):
+        if request.user.get_first_portfolio():
             self.set_portfolio_in_session(request)
-        elif request.session.get("portfolio"):
-            # Edge case: User disables flag while already logged in
-            request.session["portfolio"] = None
-        elif "portfolio" not in request.session:
+        else:
             # Set the portfolio in the session if its not already in it
             request.session["portfolio"] = None
 
-        if request.user.is_org_user(request):
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        if request.user.is_org_user(request) and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
 
