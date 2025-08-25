@@ -392,17 +392,17 @@ class TestPortfolio(WebTest):
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, 
-            portfolio=self.portfolio, 
+            user=self.user,
+            portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            defaults={'additional_permissions': portfolio_additional_permissions}
+            defaults={"additional_permissions": portfolio_additional_permissions},
         )
-        
+
         # Update if already exists
         if portfolio_permission.additional_permissions != portfolio_additional_permissions:
             portfolio_permission.additional_permissions = portfolio_additional_permissions
             portfolio_permission.save()
-        
+
         # This will redirect the user to the portfolio page.
         portfolio_page = self.app.get(reverse("home")).follow()
         # Assert that we're on the right page
@@ -433,7 +433,7 @@ class TestPortfolio(WebTest):
         # Domain page should be accessible (they have VIEW_MANAGED_DOMAINS from role)
         domain_page = self.app.get(reverse("domains"))
         self.assertEquals(domain_page.status_code, 200)
-        
+
         # Domain request page should not be accessible (no domain request permissions)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
         self.assertEquals(domain_request_page.status_code, 403)
@@ -687,10 +687,10 @@ class TestPortfolio(WebTest):
         Note: ORGANIZATION_MEMBER role now includes VIEW_MANAGED_DOMAINS by default.
         """
         permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, 
-            portfolio=self.portfolio, 
+            user=self.user,
+            portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            defaults={'additional_permissions': []}  # No additional permissions
+            defaults={"additional_permissions": []},  # No additional permissions
         )
 
         # An organization member now has VIEW_MANAGED_DOMAINS by default from their role
@@ -2515,7 +2515,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
-    
+
     @less_console_noise_decorator
     def test_invited_member_has_view_managed_domains_by_default(self):
         """Tests that an invited ORGANIZATION_MEMBER has VIEW_MANAGED_DOMAINS permission by default.
@@ -2523,31 +2523,31 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         """
         invitation_permissions = self.invitation.get_portfolio_permissions()
         self.assertIn(
-            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS, 
+            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
             invitation_permissions,
-            "ORGANIZATION_MEMBER role should include VIEW_MANAGED_DOMAINS by default"
+            "ORGANIZATION_MEMBER role should include VIEW_MANAGED_DOMAINS by default",
         )
         self.assertIn(
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO, 
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             invitation_permissions,
-            "ORGANIZATION_MEMBER role should include VIEW_PORTFOLIO by default"
+            "ORGANIZATION_MEMBER role should include VIEW_PORTFOLIO by default",
         )
         self.assertNotIn(
-            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS, 
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             invitation_permissions,
-            "ORGANIZATION_MEMBER should not have VIEW_ALL_DOMAINS"
+            "ORGANIZATION_MEMBER should not have VIEW_ALL_DOMAINS",
         )
         self.assertNotIn(
-            UserPortfolioPermissionChoices.EDIT_MEMBERS, 
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
             invitation_permissions,
-            "ORGANIZATION_MEMBER should not have EDIT_MEMBERS"
+            "ORGANIZATION_MEMBER should not have EDIT_MEMBERS",
         )
         self.assertNotIn(
-            UserPortfolioPermissionChoices.EDIT_REQUESTS, 
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
             invitation_permissions,
-            "ORGANIZATION_MEMBER should not have EDIT_REQUESTS"
+            "ORGANIZATION_MEMBER should not have EDIT_REQUESTS",
         )
-        
+
         self.client.force_login(self.user)
         response = self.client.get(reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.id}))
         self.assertEqual(response.status_code, 200)
