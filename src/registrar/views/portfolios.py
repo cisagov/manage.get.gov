@@ -910,7 +910,7 @@ class PortfolioOrganizationView(DetailView):
             context["federal_type"] = portfolio.federal_type
         context["federal_agency"] = portfolio.federal_agency
         return context
-        
+
     def get_object(self, queryset=None):
         """Get the portfolio object based on the session."""
         portfolio = self.request.session.get("portfolio")
