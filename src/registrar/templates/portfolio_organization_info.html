@@ -63,11 +63,7 @@
             
             {% if organization_type %}
                 <h3>Organization type</h3>
-                {% if organization_type == "Federal" and federal_type %}
-                    Federal branch: {{ federal_type }}
-                {% else %}
-                    {{ organization_type }}
-                {% endif %}
+                {{ organization_type }}
             {% endif %}
 
             {% if has_edit_portfolio_permission %}
