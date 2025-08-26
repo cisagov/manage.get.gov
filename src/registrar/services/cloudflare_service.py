@@ -36,9 +36,10 @@ class CloudflareService:
         url = f"{self.base_url}/zones"
         data = {"name": zone_name, "account": {"id": account_id }}
         response = make_api_request(url=url, method="POST", headers=self.headers, data=data )
-
+        errors = response.get('errors')
         if not response['success']:
-            raise APIError(f"Failed to create zone for account {account_id}: {response['details']}")
+            
+            raise APIError(f"Failed to create zone for account {account_id}: errors: {errors} message: {response['message']} details: {response['details']}")
         logger.info(f"Created zone {zone_name} for account with id {account_id}: {response['data']}")
 
         return response['data']
@@ -57,8 +58,9 @@ class CloudflareService:
     
     # GET accounts
     def get_all_accounts(self):
-        '''Gets all accounts under all(?!) tenants'''
-        url = f"{self.base_url}/accounts"
+        '''Gets all accounts under specified tenant. Must include pagination paramenters'''
+        # TODO: adapt fn to check each page until found or doesn't exist
+        url = f"{self.base_url}/tenants/{self.tenant_id}/accounts?page=1&per_page=50"
         response = make_api_request(url=url, method="GET", headers=self.headers )
 
         if not response['success']:

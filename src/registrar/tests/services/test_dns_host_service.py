@@ -10,28 +10,68 @@ class TestDnsHostService(SimpleTestCase):
     def setUp(self):
         self.service = DnsHostService()
 
+    @patch('registrar.services.dns_host_service.CloudflareService.get_all_zones')
+    @patch('registrar.services.dns_host_service.CloudflareService.get_all_accounts')
     @patch('registrar.services.dns_host_service.CloudflareService.create_zone')
     @patch('registrar.services.dns_host_service.CloudflareService.create_account')
-    def test_dns_setup_success(self, mock_create_account, mock_create_zone):
-        account_name = "Account for test.gov"
-        zone_name = "test.gov"
-        account_id = "12345"
-        mock_create_account.return_value = {
-            "result": {"id": account_id }
-        }
+    def test_dns_setup_success(self, mock_create_account, mock_create_zone, mock_get_all_accounts, mock_get_all_zones):
+        test_cases = [
+            {
+                "test_name": "no account, no zone",
+                "account_name": "Account for test.gov",
+                "zone_name": "test.gov",
+                "account_id": "12345",
+                "zone_id": "8765",
+                "found_account_id": None,
+                "found_zone_id": None,
+            },
+            {
+                "test_name": "has account, has zone",
+                "account_name": "Account for test.gov",
+                "zone_name": "test.gov",
+                "account_id": "12345",
+                "zone_id": "8765",
+                "found_account_id": "12345",
+                "found_zone_id": "8765",
+            },
+            {
+                "test_name": "has account, no zone",
+                "account_name": "Account for test.gov",
+                "zone_name": "test.gov",
+                "account_id": "12345",
+                "zone_id": "8765",
+                "found_account_id": "12345",
+                "found_zone_id": None,
+            }
+        ]
         
-        zone_id = "9876"
-        mock_create_zone.return_value = {
-            "result": {"id": zone_id}
-        }
-        
-        returned_account_id, returned_zone_id = self.service.dns_setup(account_name, zone_name)
-        self.assertEqual(returned_account_id, account_id)
-        self.assertEqual(returned_zone_id, zone_id)
+        for case in test_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                mock_create_account.return_value = {
+                    "result": {"id": case["account_id"] }
+                }
+                
+                mock_create_zone.return_value = {
+                    "result": {"id": case["zone_id"], "name": case["zone_name"]}
+                }
 
+                mock_get_all_accounts.return_value = {
+                    "result": [{"id": case.get("found_account_id")}]
+                }
+
+                mock_get_all_zones.return_value = {
+                    "result": [{"id": case.get("found_zone_id")}]
+                }
+            
+                returned_account_id, returned_zone_id = self.service.dns_setup(case["account_name"], case["zone_name"])
+                self.assertEqual(returned_account_id, case["account_id"])
+                self.assertEqual(returned_zone_id, case["zone_id"])
+
+    @patch('registrar.services.dns_host_service.CloudflareService.get_all_zones')
+    @patch('registrar.services.dns_host_service.CloudflareService.get_all_accounts')
     @patch('registrar.services.dns_host_service.CloudflareService.create_zone')
     @patch('registrar.services.dns_host_service.CloudflareService.create_account')
-    def test_dns_setup_failure_from_create_account(self, mock_create_account, mock_create_zone):
+    def test_dns_setup_failure_from_create_account(self, mock_create_account, mock_create_zone, mock_get_all_accounts, mock_get_all_zones):
         account_name = " "
         zone_name = "test.gov"
         mock_create_account.side_effect = APIError(
@@ -44,9 +84,11 @@ class TestDnsHostService(SimpleTestCase):
         mock_create_account.assert_called_once_with(account_name)
         self.assertIn('DNS setup failed to create account', str(context.exception))
     
+    @patch('registrar.services.dns_host_service.CloudflareService.get_all_zones')
+    @patch('registrar.services.dns_host_service.CloudflareService.get_all_accounts')
     @patch('registrar.services.dns_host_service.CloudflareService.create_zone')
     @patch('registrar.services.dns_host_service.CloudflareService.create_account')
-    def test_dns_setup_failure_from_create_zone(self, mock_create_account, mock_create_zone):
+    def test_dns_setup_failure_from_create_zone(self, mock_create_account, mock_create_zone, mock_get_all_accounts, mock_get_all_zones):
         account_name = "Account for test.gov"
         zone_name = "test.gov"
         account_id = "12345"
