@@ -4057,6 +4057,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "expiration_date",
         "created_at",
         "first_ready",
+        "on_hold_date_display",
+        "days_on_hold_display",
         "deleted",
     ]
 
@@ -4142,6 +4144,19 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Use native value for the change form
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
+
+    # --- On Hold Date / Days On Hold
+    @admin.display(description=_("On Hold Date"))
+    def on_hold_date_display(self, obj):
+        """Display the date the domain was put on hold"""
+        date = obj.on_hold_date
+        return date
+
+    @admin.display(description=_("Days On Hold"))
+    def days_on_hold_display(self, obj):
+        """Display how many days the domain has been on hold"""
+        days = obj.days_on_hold
+        return days
 
     def dnssecdata(self, obj):
         return "No" if obj.state == Domain.State.UNKNOWN or not obj.dnssecdata else "Yes"
