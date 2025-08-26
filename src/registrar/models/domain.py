@@ -1660,7 +1660,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     @property
     def on_hold_date(self):
-        """Approximate 'on hold date' from registry last update timestamp."""
+        """Grabbing date ofwhen domain was put on hold via audit log"""
         if self.state != Domain.State.ON_HOLD:
             return None
 
