@@ -906,8 +906,11 @@ class PortfolioOrganizationView(DetailView):
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
         context["organization_type"] = portfolio.get_organization_type_display()
+        if context["organization_type"] == "Federal":
+            context["federal_type"] = portfolio.federal_type
+        context["federal_agency"] = portfolio.federal_agency
         return context
-
+        
     def get_object(self, queryset=None):
         """Get the portfolio object based on the session."""
         portfolio = self.request.session.get("portfolio")
