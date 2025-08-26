@@ -3,6 +3,7 @@ import logging
 import ipaddress
 import re
 import time
+from auditlog.models import LogEntry
 from datetime import date, timedelta
 from typing import Optional
 from django.db import transaction, models, IntegrityError
@@ -1313,16 +1314,6 @@ class Domain(TimeStampedModel, DomainHelper):
         verbose_name="first ready on",
     )
 
-    # Ok we can do displaying the date which can change, or we can also do a count which would benefit the analyst more
-    # Having this in the DB would help with knowing when it's put on hold by the domain manager
-    # But we don't NECESSARILY need it if it doesn't help
-    on_hold_date = DateField(
-        null=True,
-        editable=False,
-        help_text='Date when this domain is moved into "on hold" state; date will  change',
-        verbose_name="on hold date",
-    )
-
     dsdata_last_change = TextField(
         null=True,
         blank=True,
@@ -1667,17 +1658,34 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
-    # @property
-    # def days_on_hold(self):
-    #     if self.state == Domain.State.ON_HOLD:
-    #         return (timezone.now().date() - self.updated_at.date()).days
-    #     return None
+    @property
+    def on_hold_date(self):
+        """Approximate 'on hold date' from registry last update timestamp."""
+        if self.state != Domain.State.ON_HOLD:
+            return None
+
+        last_on_hold = (
+            LogEntry.objects.filter(
+                object_pk=str(self.pk),
+                action=LogEntry.Action.UPDATE,
+                changes__contains={"state": ["ready", "on hold"]},
+                # match when the state goes from ready to on hold
+            )
+            .order_by("-timestamp")
+            .first()
+        )
+
+        if last_on_hold:
+            return last_on_hold.timestamp.date()
+
+        return None
 
     @property
     def days_on_hold(self):
         """Return how many days the domain has been on hold, or None if not on hold."""
-        if self.state == Domain.State.ON_HOLD and self.on_hold_date:
-            return (timezone.now().date() - self.on_hold_date).days
+        date_on_hold = self.on_hold_date
+        if date_on_hold:
+            return (timezone.now().date() - date_on_hold).days
         return None
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD)
@@ -1689,13 +1697,14 @@ class Domain(TimeStampedModel, DomainHelper):
         # (check prohibited statuses)
         logger.info("clientHold()-> inside clientHold")
 
-        # Record the date every time domain transitions to ON_HOLD
-        self.on_hold_date = timezone.now().date()
+        # # Record the date every time domain transitions to ON_HOLD
+        # self._on_hold_date = timezone.now().date()  # NOT persisting
 
         # In order to allow transition domains to by-pass EPP calls,
         # include this ignoreEPP flag
         if not ignoreEPP:
             self._place_client_hold()
+        self.save(update_fields=["state"])
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
     def revert_client_hold(self, ignoreEPP=False):
@@ -1705,11 +1714,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.info("clientHold()-> inside clientHold")
 
-        self.on_hold_date = None
+        # self._on_hold_date = None
 
         if not ignoreEPP:
             self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
+        self.save(update_fields=["state"])
 
     @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
     def deletedInEpp(self):
