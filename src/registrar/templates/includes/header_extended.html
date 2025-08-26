@@ -19,6 +19,9 @@
             </button>
             <div class="usa-nav__secondary">
                 <ul class="usa-nav__secondary-links">
+                    {% if has_multiple_portfolios %}
+                        {% include "includes/portfolio_organizations_dropdown.html" %}
+                    {% endif %}
                     {% if user.is_authenticated %}
                     <li class="usa-nav__secondary-item">
                         <div class="usa-accordion">

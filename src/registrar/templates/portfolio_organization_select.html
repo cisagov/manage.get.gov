@@ -5,6 +5,7 @@
         action="{% url 'set-session-portfolio' %}"
     >
         {% csrf_token %}
+        {% if type == "organizations_page" %}
         <button
             type="submit"
             class="usa-card__container margin-left-0"
@@ -20,5 +21,15 @@
                     </h2>
                 </div>
         </button>
+        {% elif type == "organizations_nav_menu" %}
+        <button 
+            type="submit"
+            class="usa-button usa-button--unstyled usa-nav-link"
+            name="set_session_portfolio_button"
+            value="{{portfolio.organization_name}}"
+        >
+            {{portfolio}}
+        </button>
+        {% endif %}
     </form>
 </div>

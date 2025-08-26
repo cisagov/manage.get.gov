@@ -201,9 +201,13 @@ $-expand-less-icon: (
             vertical-align: middle;
         }
 
-        a {
+        // a {
+        a, .usa-nav-link {
             padding-top: 0.75rem;
             padding-bottom: 0.75rem;
+            &:not:hover {
+                text-decoration: none;
+            }
         }
 
         // Override USWDS defaults
@@ -217,7 +221,8 @@ $-expand-less-icon: (
 
     @include at-media-max($theme-header-min-width) {
         @include nav-list("nav");
-        a {
+        // a {
+        a, .usa-nav-link {
           @include u-padding-y(1.5);
         }
     }
@@ -250,7 +255,8 @@ $-expand-less-icon: (
     }
 
     // ...and their direct links
-    > a {
+    // > a {
+    > .usa-nav-link {
         @include at-media($theme-header-min-width) {
             line-height: line-height($theme-navigation-font-family, 2) !important;
             padding: units(2);            
@@ -261,7 +267,8 @@ $-expand-less-icon: (
     }
 
     > button,
-    > a {
+    > .usa-nav-link {
+    // > a {
             @include at-media($theme-header-min-width) {
             height: 100%;
         }
@@ -275,7 +282,8 @@ $-expand-less-icon: (
         }
     }
 
-    a {
+    // a {
+    .usa-nav-link {
         @include at-media($theme-header-min-width) {
             @include u-padding-y(1.5);
             line-height: 1.1;
@@ -304,7 +312,9 @@ $-expand-less-icon: (
                 background-color: var(--border-color);
                 color: #{$theme-color-primary};
             }
-            a {
+            // a {
+            a, .usa-nav-link {
+
                 @include u-padding-y(1.5);
             }
         }
