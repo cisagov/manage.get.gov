@@ -34,7 +34,9 @@
           {% endfor %}
         </ul>
         <h4 class="margin-bottom-1 margin-top-2">Organization information</h4>
-        {% if organization_type %}
+        {% if organization_type and federal_type %}
+          <span class="text-bold text-primary-darker">Federal Branch: {{ federal_type }}</span>
+        {% else %}
           <span class="text-bold text-primary-darker">Organization type: {{ organization_type }}</span>
         {% endif %}
         {% include "includes/organization_address.html" with organization=value %}

@@ -61,7 +61,10 @@
             {% include "includes/required_fields.html" with remove_margin_top=True %}
             {% endif %}
             
-            {% if organization_type %}
+            {% if organization_type and federal_type %}
+                <p class="margin-top-3 margin-bottom-05 text-primary-darker text-bold">Federal branch</p>
+                {{ federal_type }}
+            {% else %}
                 <p class="margin-top-3 margin-bottom-05 text-primary-darker text-bold">Organization type</p>
                 {{ organization_type }}
             {% endif %}
