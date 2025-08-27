@@ -92,10 +92,6 @@ class Command(BaseCommand):
                 # Exclude those who already have the permission
                 additional_permissions__contains=[UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS]
             )
-            .filter(
-                # Only include users who manage domains in the portfolio
-                Exists(manages_domains_in_portfolio)
-            )
             .distinct()
         )
 
