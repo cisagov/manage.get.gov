@@ -40,6 +40,12 @@ runs:
         CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u)"
         PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.py$' || true)"
         
+        echo "GITHUB OUTPUT"
+        echo "$GITHUB_OUTPUT"
+        echo "PY_CHANGED"
+        echo "$PY_CHANGED"
+
+
         # multi-line output
         echo "list<<EOF" >> "$GITHUB_OUTPUT"
         printf '%s\n' "$PY_CHANGED" >> "$GITHUB_OUTPUT"
