@@ -30,6 +30,7 @@ runs:
         
         echo "-------DEBUG (detector)--------"
         echo "BASE_SHA: ${BASE_SHA}, HEAD=$(git rev-parse HEAD)"
+        echo "HEAD_SHA: ${HEAD_SHA}"
         git diff --name-status "${BASE_SHA}..HEAD"
         echo "-------------------------------"
 
@@ -40,10 +41,9 @@ runs:
         CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..${HEAD_SHA}" | tr -d '\r' | sort -u)"
         PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.py$' || true)"
         
-        echo "GITHUB OUTPUT"
-        echo "$GITHUB_OUTPUT"
-        echo "PY_CHANGED"
-        echo "$PY_CHANGED"
+        echo "CHANGED_ALL: ${CHANGED_ALL}"
+        echo "GITHUB OUTPUT: {$GITHUB_OUTPUT}"
+        echo "PY_CHANGED: {$PY_CHANGED}"
 
 
         # multi-line output
