@@ -332,7 +332,7 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<h2>Organization admins</h2>")
         self.assertContains(response, "<h2>Organization information</h2>")
-        self.assertContains(response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>')
+        self.assertContains(response, '<p class="margin-top-3 margin-bottom-05 text-primary-darker text-bold">Organization name</p>')
         self.assertNotContains(response, "<address>")
         self.assertContains(response, 'for="id_city"')
 

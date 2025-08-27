@@ -907,8 +907,7 @@ class PortfolioOrganizationView(DetailView):
         context["portfolio_admins"] = portfolio.portfolio_admin_users
         context["organization_type"] = portfolio.get_organization_type_display()
         if context["organization_type"] == "Federal":
-            context["federal_type"] = portfolio.federal_type
-        context["federal_agency"] = portfolio.federal_agency
+            context["federal_type"] = portfolio.get_federal_type_display()
         return context
 
     def get_object(self, queryset=None):
@@ -942,6 +941,8 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
         context["organization_type"] = portfolio.get_organization_type_display()
+        if context["organization_type"] == "Federal":
+            context["federal_type"] = portfolio.get_federal_type_display()
         return context
 
     def get_object(self, queryset=None):
