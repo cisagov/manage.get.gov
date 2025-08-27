@@ -14,17 +14,17 @@ from registrar.forms.domain_request_wizard import (
     OtherContactsForm,
     RequirementsForm,
     TribalGovernmentForm,
-    PurposeForm,
     AnythingElseForm,
     AboutYourOrganizationForm,
 )
+from registrar.forms import PurposeDetailsForm
+
 from registrar.forms.domain import ContactForm
 from registrar.forms.portfolio import (
     PortfolioInvitedMemberForm,
     PortfolioMemberForm,
     PortfolioNewMemberForm,
 )
-from waffle.models import get_waffle_flag_model
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -40,10 +40,6 @@ class TestFormValidation(MockEppLib):
         self.API_BASE_PATH = "/api/v1/available/?domain="
         self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
-        # We use both of these flags in the test. In the normal app these are generated normally.
-        # The alternative syntax is adding the decorator to each test.
-        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
-        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
 
     @less_console_noise_decorator
     def test_org_contact_zip_invalid(self):
@@ -257,7 +253,7 @@ class TestFormValidation(MockEppLib):
     @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):
         """Response must be less than 2000 characters."""
-        form = PurposeForm(
+        form = PurposeDetailsForm(
             data={
                 "purpose": "Bacon ipsum dolor amet fatback strip steak pastrami"
                 "shankle, drumstick doner chicken landjaeger turkey andouille."
@@ -476,8 +472,8 @@ class TestBasePortfolioMemberForms(TestCase):
         self.assertTrue(form.is_valid(), f"Form {form_class.__name__} failed validation with data: {data}")
         return form
 
-    def _assert_form_has_error(self, form_class, data, field_name):
-        form = form_class(data=data)
+    def _assert_form_has_error(self, form_class, data, field_name, instance=None):
+        form = form_class(data=data, instance=instance)
         self.assertFalse(form.is_valid())
         self.assertIn(field_name, form.errors)
 
@@ -503,17 +499,23 @@ class TestBasePortfolioMemberForms(TestCase):
             "domain_permissions": "",  # Simulate missing field
             "member_permissions": "",  # Simulate missing field
         }
+        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            portfolio=self.portfolio, user=self.user
+        )
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
 
         # Check required fields for all forms
-        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions")
-        self._assert_form_has_error(PortfolioMemberForm, data, "domain_permissions")
-        self._assert_form_has_error(PortfolioMemberForm, data, "member_permissions")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_request_permissions")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_permissions")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions")
-        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permissions")
-        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_permissions")
-        self._assert_form_has_error(PortfolioNewMemberForm, data, "member_permissions")
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions", user_portfolio_permission)
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_permissions", user_portfolio_permission)
+        self._assert_form_has_error(PortfolioMemberForm, data, "member_permissions", user_portfolio_permission)
+        self._assert_form_has_error(
+            PortfolioInvitedMemberForm, data, "domain_request_permissions", portfolio_invitation
+        )
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "domain_permissions", portfolio_invitation)
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions", portfolio_invitation)
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_request_permissions", portfolio_invitation)
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "domain_permissions", portfolio_invitation)
+        self._assert_form_has_error(PortfolioNewMemberForm, data, "member_permissions", portfolio_invitation)
 
     @less_console_noise_decorator
     def test_clean_validates_required_fields_for_admin_role(self):
@@ -528,7 +530,6 @@ class TestBasePortfolioMemberForms(TestCase):
             portfolio=self.portfolio, user=self.user
         )
         portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
-
         data = {
             "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value,
         }
@@ -676,6 +677,7 @@ class TestBasePortfolioMemberForms(TestCase):
     @less_console_noise_decorator
     def test_invalid_data_for_member(self):
         """Test invalid form submission for a member role with missing permissions."""
+        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(portfolio=self.portfolio, email="hi@ho")
         data = {
             "email": "hi@ho.com",
             "portfolio": self.portfolio.id,
@@ -684,5 +686,5 @@ class TestBasePortfolioMemberForms(TestCase):
             "member_permissions": "",  # Missing field
             "domain_permissions": "",  # Missing field
         }
-        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions")
-        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions")
+        self._assert_form_has_error(PortfolioMemberForm, data, "domain_request_permissions", portfolio_invitation)
+        self._assert_form_has_error(PortfolioInvitedMemberForm, data, "member_permissions", portfolio_invitation)

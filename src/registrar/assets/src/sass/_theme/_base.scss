@@ -79,6 +79,10 @@ body {
   }
 }
 
+.section-outlined--extra-padding {
+  padding: units(2) units(3) units(3);
+}
+
 .section-outlined--border-base-light {
   border: 1px solid color('base-light');
 }
@@ -99,9 +103,7 @@ body {
     }
     .section-outlined__search {
       flex-grow: 4;
-      // Align right
       max-width: 383px;
-      margin-left: auto;
     }
   }
 }
@@ -217,6 +219,10 @@ abbr[title] {
 
 .ellipsis--23 {
   max-width: 23ch;
+}
+
+.ellipsis--15 {
+  max-width: 15ch;
 }
 
 .vertical-align-middle {

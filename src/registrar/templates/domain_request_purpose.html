@@ -2,18 +2,99 @@
 {% load field_helpers url_helpers %}
 
 {% block form_instructions %}
-  <p>.Gov domains are intended for public use. Domains will not be given to organizations that only want to reserve a domain name (defensive registration) or that only intend to use the domain internally (as for an intranet).</p> 
-<p>Read about <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/requirements/' %}">activities that are prohibited on .gov domains.</a></p>
-<h2>What is the purpose of your requested domain?</h2>
-<p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
+  <h4>Compliance with the 21st Century IDEA is required</h4> 
+  <p>As required by the DOTGOV Act, agencies must ensure that any website or digital service that uses a .gov domain 
+    name is in compliance with the 
+    <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://digital.gov/resources/delivering-digital-first-public-experience/">
+      21st Century Integrated Digital Experience Act
+    </a>
+    and implementation guidance, 
+    <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://whitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf">
+      M-23-22, Delivering a Digital-First Public Experience
+    </a>.
+  </p>
 {% endblock %}
 
 {% block form_required_fields_help_text %}
-{# commented out so it does not appear on this page #}
+{# empty this block so it doesn't show on this page #}
 {% endblock %}
 
 {% block form_fields %}
+  {% if requires_feb_questions %}
+      <fieldset class="usa-fieldset margin-top-0">
+        {{forms.0.management_form}}
+        {{forms.1.management_form}}
+        <legend>
+          <h2>What is the purpose of your requested domain?</h2>
+        </legend>
+        <p class="margin-bottom-0 margin-top-1">
+          <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+        </p>
+        {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+          {% input_with_errors forms.0.feb_purpose_choice %}
+        {% endwith %}
+
+        <div id="purpose-details-container" class="conditional-panel display-none">
+          <p class="margin-bottom-3 margin-top-3">
+            <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+          </p>
+          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+            {% input_with_errors forms.1.purpose %}
+          {% endwith %}
+        </div>
+        </fieldset>
+        <fieldset class="usa-fieldset margin-top-2" aria-labelledby="interagency-initiative-question">
+          {{forms.4.management_form}}
+          {{forms.5.management_form}}
+          <legend>
+            <h2 id="interagency-initiative-question">Will the domain name be used for an interagency initiative?</h2>
+          </legend>
+          <p class="margin-bottom-0 margin-top-1">
+            <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+          </p>
+          {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% input_with_errors forms.4.is_interagency_initiative %}
+          {% endwith %}
+
+          <div id="purpose-interagency-initaitive-details-container" class="conditional-panel">
+            <p class="margin-bottom-3 margin-top-3">
+              <em>Describe the nature of the interagency engagement, including the names of the agencies that are involved and their role(s) in this initiative. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+            </p>
+            {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+              {% input_with_errors forms.5.interagency_initiative_details %}
+            {% endwith %}
+          </div>
+        </fieldset>
+        <fieldset class="usa-fieldset margin-top-2">
+          {{forms.2.management_form}}
+          {{forms.3.management_form}}
+          <legend>
+            <h2>Do you have a target time frame for launching this domain?</h2>
+          </legend>
+          <p class="margin-bottom-0 margin-top-1">
+            <em>Select one. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+          </p>
+          {% with add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
+            {% input_with_errors forms.2.has_timeframe %}
+          {% endwith %}
+
+          <div id="purpose-timeframe-details-container" class="conditional-panel">
+            <p class="margin-bottom-3 margin-top-3">
+              <em>Provide information about the context for the launch. Include any dates, events, or announcements that are planned. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
+            </p>
+            {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+              {% input_with_errors forms.3.time_frame_details %}
+            {% endwith %}
+          </div>
+        </fieldset>
+  {% else %}
+    <h2>What is the purpose of your requested domain?</h2>
+    <p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
+
     {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
-      {% input_with_errors forms.0.purpose %}
+      {% input_with_errors forms.1.purpose %}
     {% endwith %}
+  {% endif %}
 {% endblock %}
+
+

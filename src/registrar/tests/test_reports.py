@@ -48,7 +48,6 @@ from .common import (
     get_time_aware_date,
     GenericTestHelper,
 )
-from waffle.testutils import override_flag
 
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
@@ -72,7 +71,7 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
@@ -94,7 +93,7 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
-                call("cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
@@ -261,9 +260,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
             "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal - Executive,"
-            "World War I Centennial Commission,,,, ,,(blank),"
-            "meoward@rocks.com,\n"
             "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,"
             "squeaker@rocks.com\n"
             "bdomain4.gov,Unknown,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
@@ -274,6 +270,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "sdomain8.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
             "xdomain7.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
             "zdomain9.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
+            "cdomain11.gov,Ready,2024-04-02,(blank),Federal,"
+            "World War I Centennial Commission,,,, ,,(blank),"
+            "meoward@rocks.com,\n"
             "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
         )
 
@@ -334,7 +333,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_data_type_user_with_portfolio(self):
         """Tests DomainDataTypeUser export with portfolio permissions"""
 
@@ -403,8 +401,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         return csv_content
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_domain_request_data_type_user_with_portfolio(self):
         """Tests DomainRequestsDataType export with portfolio permissions"""
 
@@ -434,12 +430,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_content = self._run_domain_request_data_type_user_export(request)
 
         # We expect only domain requests associated with the user's portfolio
-        self.assertIn(dd_1.name, csv_content)
-        self.assertIn(dd_3.name, csv_content)
-        self.assertNotIn(dd_2.name, csv_content)
-
-        # Get the csv content
-        csv_content = self._run_domain_request_data_type_user_export(request)
         self.assertIn(dd_1.name, csv_content)
         self.assertIn(dd_3.name, csv_content)
         self.assertNotIn(dd_2.name, csv_content)
@@ -498,7 +488,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
@@ -538,7 +528,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
@@ -594,7 +584,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                     "State,Status,Expiration date, Deleted\n"
                     "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Portfolio1FederalAgency,Ready,(blank)\n"
                     "adomain10.gov,Federal,ArmedForcesRetirementHome,Ready,(blank)\n"
-                    "cdomain11.gov,Federal-Executive,WorldWarICentennialCommission,Ready,(blank)\n"
+                    "cdomain11.gov,Federal,WorldWarICentennialCommission,Ready,(blank)\n"
                     "zdomain12.gov,Interstate,Ready,(blank)\n"
                     "zdomain9.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank),2024-04-01\n"
                     "sdomain8.gov,Federal,ArmedForcesRetirementHome,Deleted,(blank),2024-04-02\n"
@@ -642,7 +632,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "3,2,1,0,0,0,0,0,0,0\n"
             "\n"
             "Domain name,Domain type,Domain managers,Invited domain managers\n"
-            "cdomain11.gov,Federal - Executive,meoward@rocks.com,\n"
+            "cdomain11.gov,Federal,meoward@rocks.com,\n"
             'cdomain1.gov,Federal - Executive,"big_lebowski@dude.co, info@example.com, meoward@rocks.com",'
             "woofwardthethird@rocks.com\n"
             "zdomain12.gov,Interstate,meoward@rocks.com,\n"
@@ -716,7 +706,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             expected_content = (
                 "Domain request,Domain type,Federal type\n"
                 "city3.gov,Federal,Executive\n"
-                "city4.gov,City,Executive\n"
+                "city4.gov,City,\n"
                 "city6.gov,Federal,Executive\n"
             )
 
@@ -783,7 +773,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
-                "city5.gov,Approved,Federal,No,Executive,,Testorg,N/A,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
+                "city5.gov,Approved,Federal,No,,,Testorg,N/A,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
                 "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There is more,"
                 "Testy Tester testy2@town.com,,city.com,\n"
                 "city2.gov,In review,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
@@ -795,7 +785,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
                 'Testy Tester testy2@town.com",'
                 'test@igorville.com,"city.com, https://www.example2.com, https://www.example.com",\n'
-                "city4.gov,Submitted,City,No,Executive,,Testorg,Yes,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
+                "city4.gov,Submitted,City,No,,,Testorg,Yes,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
                 "Tester,testy@town.com,"
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
@@ -821,8 +811,6 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         self.factory = RequestFactory()
 
     @skip("flaky test that needs to be refactored")
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""
@@ -888,7 +876,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         expected_content = (
             # Header
-            "Email,Member access,Invited by,Joined date,Last active,Domain requests,"
+            "Email,Member role,Invited by,Joined date,Last active,Domain requests,"
             "Members,Domains,Number domains assigned,Domain assignments\n"
             # Content
             "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"

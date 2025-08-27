@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from datetime import date
 from registrar.models.domain import Domain
 from registrar.models.portfolio import Portfolio
@@ -13,17 +13,21 @@ from registrar.utility.email_invitations import (
     _send_portfolio_admin_addition_emails_to_portfolio_admins,
     _send_portfolio_admin_removal_emails_to_portfolio_admins,
     send_domain_invitation_email,
-    send_emails_to_domain_managers,
+    _send_domain_invitation_update_emails_to_domain_managers,
+    send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
+    send_portfolio_update_emails_to_portfolio_admins,
 )
 
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.errors import MissingEmailError
+from django.test import TestCase
+from registrar.models import DomainInvitation
 
 
 class DomainInvitationEmail(unittest.TestCase):
@@ -33,7 +37,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations._get_requestor_email")
-    @patch("registrar.utility.email_invitations.send_invitation_email")
+    @patch("registrar.utility.email_invitations._send_domain_invitation_email")
     @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email(
         self,
@@ -83,7 +87,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address=mock_user1.email,
+            to_addresses=[mock_user1.email],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -98,7 +102,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations._get_requestor_email")
-    @patch("registrar.utility.email_invitations.send_invitation_email")
+    @patch("registrar.utility.email_invitations._send_domain_invitation_email")
     @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email_multiple_domains(
         self,
@@ -168,7 +172,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address=mock_user1.email,
+            to_addresses=[mock_user1.email],
             context={
                 "domain": mock_domain1,
                 "requestor_email": mock_requestor_email,
@@ -180,7 +184,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address=mock_user2.email,
+            to_addresses=[mock_user2.email],
             context={
                 "domain": mock_domain2,
                 "requestor_email": mock_requestor_email,
@@ -234,7 +238,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations._get_requestor_email")
-    @patch("registrar.utility.email_invitations.send_invitation_email")
+    @patch("registrar.utility.email_invitations._send_domain_invitation_email")
     @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email_raises_sending_email_exception(
         self,
@@ -281,10 +285,10 @@ class DomainInvitationEmail(unittest.TestCase):
         self.assertEqual(str(context.exception), "Error sending email")
 
     @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.send_emails_to_domain_managers")
+    @patch("registrar.utility.email_invitations._send_domain_invitation_update_emails_to_domain_managers")
     @patch("registrar.utility.email_invitations._validate_invitation")
     @patch("registrar.utility.email_invitations._get_requestor_email")
-    @patch("registrar.utility.email_invitations.send_invitation_email")
+    @patch("registrar.utility.email_invitations._send_domain_invitation_email")
     @patch("registrar.utility.email_invitations._normalize_domains")
     def test_send_domain_invitation_email_manager_emails_send_mail_exception(
         self,
@@ -295,7 +299,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_domain_manager_emails,
     ):
         """Test sending domain invitation email for one domain and assert exception
-        when send_emails_to_domain_managers fails.
+        when _send_domain_invitation_update_emails_to_domain_managers fails.
         """
         # Setup
         mock_domain = MagicMock(name="domain1")
@@ -354,14 +358,14 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.return_value = None  # No exception means success
 
         # Call function
-        result = send_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
 
         # Assertions
         self.assertTrue(result)  # All emails should be successfully sent
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager@example.com",
+            to_addresses=["manager@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -394,14 +398,14 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.side_effect = EmailSendingError("Email sending failed")
 
         # Call function
-        result = send_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
 
         # Assertions
         self.assertFalse(result)  # The result should be False as email sending failed
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager@example.com",
+            to_addresses=["manager@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -426,7 +430,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_filter.return_value = []
 
         # Call function
-        result = send_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
 
         # Assertions
         self.assertTrue(result)  # No emails to send, so it should return True
@@ -457,14 +461,14 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.side_effect = [None, EmailSendingError("Failed to send email")]
 
         # Call function
-        result = send_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
 
         # Assertions
         self.assertFalse(result)  # One email failed, so result should be False
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager1@example.com",
+            to_addresses=["manager1@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -476,7 +480,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/domain_manager_notification.txt",
             "emails/domain_manager_notification_subject.txt",
-            to_address="manager2@example.com",
+            to_addresses=["manager2@example.com"],
             context={
                 "domain": mock_domain,
                 "requestor_email": mock_requestor_email,
@@ -635,7 +639,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_addition_notification.txt",
             "emails/portfolio_admin_addition_notification_subject.txt",
-            to_address=self.admin_user1.email,
+            to_addresses=[self.admin_user1.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -647,7 +651,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_addition_notification.txt",
             "emails/portfolio_admin_addition_notification_subject.txt",
-            to_address=self.admin_user2.email,
+            to_addresses=[self.admin_user2.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -676,7 +680,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_addition_notification.txt",
             "emails/portfolio_admin_addition_notification_subject.txt",
-            to_address=self.admin_user1.email,
+            to_addresses=[self.admin_user1.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -688,7 +692,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_addition_notification.txt",
             "emails/portfolio_admin_addition_notification_subject.txt",
-            to_address=self.admin_user2.email,
+            to_addresses=[self.admin_user2.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -757,7 +761,7 @@ class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_removal_notification.txt",
             "emails/portfolio_admin_removal_notification_subject.txt",
-            to_address=self.admin_user1.email,
+            to_addresses=[self.admin_user1.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -769,7 +773,7 @@ class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_removal_notification.txt",
             "emails/portfolio_admin_removal_notification_subject.txt",
-            to_address=self.admin_user2.email,
+            to_addresses=[self.admin_user2.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -798,7 +802,7 @@ class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_removal_notification.txt",
             "emails/portfolio_admin_removal_notification_subject.txt",
-            to_address=self.admin_user1.email,
+            to_addresses=[self.admin_user1.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -810,7 +814,7 @@ class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             "emails/portfolio_admin_removal_notification.txt",
             "emails/portfolio_admin_removal_notification_subject.txt",
-            to_address=self.admin_user2.email,
+            to_addresses=[self.admin_user2.email],
             context={
                 "portfolio": self.portfolio,
                 "requestor_email": self.requestor_email,
@@ -916,7 +920,7 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         mock_send_email.assert_called_once_with(
             "emails/portfolio_update.txt",
             "emails/portfolio_update_subject.txt",
-            to_address="user@example.com",
+            to_addresses=["user@example.com"],
             context={
                 "requested_user": permissions.user,
                 "portfolio": permissions.portfolio,
@@ -938,18 +942,22 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         permissions.user.email = "user@example.com"
         permissions.portfolio.organization_name = "Test Portfolio"
 
-        mock_get_requestor_email.return_value = "requestor@example.com"
+        mock_get_requestor_email.return_value = MagicMock(name="mock.email")
 
         # Call function
         result = send_portfolio_member_permission_update_email(requestor, permissions)
 
         # Assertions
-        mock_logger.warning.assert_called_once_with(
-            "Could not send email organization member update notification to %s for portfolio: %s",
-            permissions.user.email,
-            permissions.portfolio.organization_name,
-            exc_info=True,
+        expected_message = (
+            "Failed to send organization member update notification email:\n"
+            f"  Requestor Email: {mock_get_requestor_email.return_value}\n"
+            f"  Subject template: portfolio_update_subject.txt\n"
+            f"  To: {permissions.user.email}\n"
+            f"  Portfolio: {permissions.portfolio}\n"
+            f"  Error: Email failed"
         )
+
+        mock_logger.error.assert_called_once_with(expected_message, exc_info=True)
         self.assertFalse(result)
 
     @patch("registrar.utility.email_invitations._get_requestor_email", side_effect=Exception("Unexpected error"))
@@ -991,7 +999,7 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         mock_send_email.assert_called_once_with(
             "emails/portfolio_removal.txt",
             "emails/portfolio_removal_subject.txt",
-            to_address="user@example.com",
+            to_addresses=["user@example.com"],
             context={
                 "requested_user": permissions.user,
                 "portfolio": permissions.portfolio,
@@ -1011,18 +1019,22 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         permissions.user.email = "user@example.com"
         permissions.portfolio.organization_name = "Test Portfolio"
 
-        mock_get_requestor_email.return_value = "requestor@example.com"
+        mock_get_requestor_email.return_value = MagicMock(name="mock.email")
 
         # Call function
         result = send_portfolio_member_permission_remove_email(requestor, permissions)
 
         # Assertions
-        mock_logger.warning.assert_called_once_with(
-            "Could not send email organization member removal notification to %s for portfolio: %s",
-            permissions.user.email,
-            permissions.portfolio.organization_name,
-            exc_info=True,
+        expected_message = (
+            "Failed to send portfolio member removal email:\n"
+            f"  Requestor Email: {mock_get_requestor_email.return_value}\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
+            f"  To: {permissions.user.email}\n"
+            f"  Portfolio: {permissions.portfolio}\n"
+            f"  Error: Email failed"
         )
+
+        mock_logger.error.assert_called_once_with(expected_message, exc_info=True)
         self.assertFalse(result)
 
     @patch("registrar.utility.email_invitations._get_requestor_email", side_effect=Exception("Unexpected error"))
@@ -1064,7 +1076,7 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
         mock_send_email.assert_called_once_with(
             "emails/portfolio_removal.txt",
             "emails/portfolio_removal_subject.txt",
-            to_address="user@example.com",
+            to_addresses=["user@example.com"],
             context={
                 "requested_user": None,
                 "portfolio": invitation.portfolio,
@@ -1090,10 +1102,12 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
         result = send_portfolio_invitation_remove_email(requestor, invitation)
 
         # Assertions
-        mock_logger.warning.assert_called_once_with(
-            "Could not send email organization member removal notification to %s for portfolio: %s",
-            invitation.email,
-            invitation.portfolio.organization_name,
+        mock_logger.error.assert_called_once_with(
+            "Failed to send portfolio invitation removal email:\n"
+            f"  Subject template: portfolio_removal_subject.txt\n"
+            f"  To: {invitation.email}\n"
+            f"  Portfolio: {invitation.portfolio.organization_name}\n"
+            f"  Error: Email failed",
             exc_info=True,
         )
         self.assertFalse(result)
@@ -1112,3 +1126,265 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
 
         # Assertions
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
+
+
+class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
+    """Unit tests for send_domain_manager_removal_emails_to_domain_managers function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.email = "removed.admin@example.com"
+        self.requestor_email = "requestor@example.com"
+        self.domain = MagicMock(spec=Domain)
+        self.domain.name = "Test Domain"
+
+        # Mock domain manager users
+        self.manager_user1 = MagicMock(spec=User)
+        self.manager_user1.email = "manager1@example.com"
+
+        self.manager_user2 = MagicMock(spec=User)
+        self.manager_user2.email = "manager2@example.com"
+
+        self.domain_manager1 = MagicMock(spec=UserDomainRole)
+        self.domain_manager1.user = self.manager_user1
+
+        self.domain_manager2 = MagicMock(spec=UserDomainRole)
+        self.domain_manager2.user = self.manager_user2
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of domain manager removal emails."""
+        mock_filter.return_value.exclude.return_value = [self.domain_manager1]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.manager_user1,
+            manager_removed=self.manager_user2,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
+        )
+
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_addresses=[self.manager_user1.email],
+            context={
+                "domain": self.domain,
+                "removed_by": self.manager_user1,
+                "manager_removed_email": self.manager_user2.email,
+                "date": date.today(),
+            },
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_success_when_no_user(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of domain manager removal emails."""
+        mock_filter.return_value = [self.domain_manager1, self.domain_manager2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.manager_user1,
+            manager_removed=None,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
+        )
+
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_addresses=[self.manager_user1.email],
+            context={
+                "domain": self.domain,
+                "removed_by": self.manager_user1,
+                "manager_removed_email": self.manager_user2.email,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_addresses=[self.manager_user2.email],
+            context={
+                "domain": self.domain,
+                "removed_by": self.manager_user1,
+                "manager_removed_email": self.manager_user2.email,
+                "date": date.today(),
+            },
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_failure(self, mock_filter, mock_send_templated_email):
+        """Test handling of failure in sending admin removal emails."""
+        mock_filter.return_value.exclude.return_value = [self.domain_manager1, self.domain_manager2]
+
+        result = send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.manager_user1,
+            manager_removed=self.manager_user2,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
+        )
+
+        self.assertFalse(result)
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_addresses=[self.manager_user1.email],
+            context={
+                "domain": self.domain,
+                "removed_by": self.manager_user1,
+                "manager_removed_email": self.manager_user2.email,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_manager_deleted_notification.txt",
+            "emails/domain_manager_deleted_notification_subject.txt",
+            to_addresses=[self.manager_user2.email],
+            context={
+                "domain": self.domain,
+                "removed_by": self.manager_user1,
+                "manager_removed_email": self.manager_user2.email,
+                "date": date.today(),
+            },
+        )
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_no_managers_to_notify(self, mock_filter):
+        """Test case where there are no domain managers to notify."""
+        mock_filter.return_value.exclude.return_value = []  # No managers
+
+        result = send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.manager_user1,
+            manager_removed=self.manager_user2,
+            manager_removed_email=self.manager_user2.email,
+            domain=self.domain,
+        )
+
+        self.assertTrue(result)  # No emails sent, but also no failures
+        mock_filter.assert_called_once_with(domain=self.domain)
+
+
+class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
+    """Unit tests for send_portfolio_update_emails_to_portfolio_admins function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.email = "removed.admin@example.com"
+        self.requestor_email = "requestor@example.com"
+        self.portfolio = MagicMock(spec=Portfolio, name="Portfolio")
+        self.portfolio.organization_name = "Test Organization"
+
+        # Mock portfolio admin users
+        self.admin_user1 = MagicMock(spec=User)
+        self.admin_user1.email = "admin1@example.com"
+
+        self.admin_user2 = MagicMock(spec=User)
+        self.admin_user2.email = "admin2@example.com"
+
+        self.portfolio_admin1 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin1.user = self.admin_user1
+        self.portfolio_admin1.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        self.portfolio_admin2 = MagicMock(spec=UserPortfolioPermission)
+        self.portfolio_admin2.user = self.admin_user2
+        self.portfolio_admin2.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
+    def test_send_portfolio_update_emails_to_portfolio_admins(self, mock_filter, mock_send_templated_email):
+        """Test send_portfolio_update_emails_to_portfolio_admins sends templated email."""
+        # Mock data
+        editor = self.admin_user1
+        updated_page = "Organization"
+
+        mock_filter.return_value = [self.portfolio_admin1, self.portfolio_admin2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        # Call function
+        result = send_portfolio_update_emails_to_portfolio_admins(editor, self.portfolio, updated_page)
+
+        mock_filter.assert_called_once_with(
+            portfolio=self.portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_org_update_notification.txt",
+            "emails/portfolio_org_update_notification_subject.txt",
+            to_addresses=self.admin_user1.email,
+            context=ANY,
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/portfolio_org_update_notification.txt",
+            "emails/portfolio_org_update_notification_subject.txt",
+            to_addresses=self.admin_user2.email,
+            context=ANY,
+        )
+        self.assertTrue(result)
+
+
+class TestDomainInvitationCleanupSignal(TestCase):
+    """Integration tests for the signal that cleans up retrieved invitations when UserDomainRole is deleted."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.user = User.objects.create_user(email="test@example.com", username="testuser")
+        self.domain = Domain.objects.create(name="test.gov")
+
+    def test_retrieved_invitation_cleaned_up_when_role_deleted(self):
+        """Test that retrieved invitations are deleted when UserDomainRole is deleted."""
+        # Create and retrieve an invitation
+        invitation = DomainInvitation.objects.create(
+            email=self.user.email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        invitation.retrieve()
+        invitation.save()
+
+        # Verify setup
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        role = UserDomainRole.objects.get(user=self.user, domain=self.domain)
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+        # Delete the role (this should trigger the new signal)
+        role.delete()
+
+        # Verify the invitation was cleaned up
+        self.assertFalse(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+    def test_bug_fix_can_re_add_user_after_removal(self):
+        """Test the complete flow that reproduces and verifies the fix for ticket #3678."""
+        invitation = DomainInvitation.objects.create(
+            email=self.user.email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        invitation.retrieve()
+        invitation.save()
+
+        # Remove the user (simulating admin removing domain manager)
+        role = UserDomainRole.objects.get(user=self.user, domain=self.domain)
+        role.delete()
+
+        self.assertFalse(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+        # Create another invitation
+        invitation = DomainInvitation.objects.create(
+            email=self.user.email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+        invitation.retrieve()
+        invitation.save()
+
+        # Verify setup
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+        role = UserDomainRole.objects.get(user=self.user, domain=self.domain)
+        self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
+
+        self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())

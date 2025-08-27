@@ -5,7 +5,6 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from django.views.generic import DetailView
 from django.contrib import messages
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
@@ -13,6 +12,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
+    IS_MULTIPLE_PORTFOLIOS_MEMBER,
     grant_access,
 )
 from registrar.forms import portfolio as portfolioForms
@@ -29,16 +29,18 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
+    send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
     send_portfolio_invitation_email,
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
+    send_portfolio_update_emails_to_portfolio_admins,
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
-from django.views.generic import View
+from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
 
@@ -76,9 +78,10 @@ class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member.html"
+    pk_url_kwarg = "member_pk"
 
-    def get(self, request, pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+    def get(self, request, member_pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         member = portfolio_permission.user
 
         # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
@@ -102,8 +105,8 @@ class PortfolioMemberView(DetailView, View):
             request,
             self.template_name,
             {
-                "edit_url": reverse("member-permissions", args=[pk]),
-                "domains_url": reverse("member-domains", args=[pk]),
+                "edit_url": reverse("member-permissions", args=[member_pk]),
+                "domains_url": reverse("member-domains", args=[member_pk]),
                 "portfolio_permission": portfolio_permission,
                 "member": member,
                 "member_has_view_all_requests_portfolio_permission": member_has_view_all_requests_portfolio_permission,
@@ -111,26 +114,28 @@ class PortfolioMemberView(DetailView, View):
                 "member_has_view_members_portfolio_permission": member_has_view_members_portfolio_permission,
                 "member_has_edit_members_portfolio_permission": member_has_edit_members_portfolio_permission,
                 "member_has_view_all_domains_portfolio_permission": member_has_view_all_domains_portfolio_permission,
+                "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio),
             },
         )
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioMemberDeleteView(View):
+    pk_url_kwarg = "member_pk"
 
-    def post(self, request, pk):
+    def post(self, request, member_pk):
         """
         Find and delete the portfolio member using the provided primary key (pk).
         Redirect to a success page after deletion (or any other appropriate page).
         """
-        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         member = portfolio_member_permission.user
         portfolio = portfolio_member_permission.portfolio
 
         # Validate if the member can be removed
         error_message = self._validate_member_removal(request, member, portfolio)
         if error_message:
-            return self._handle_error_response(request, error_message, pk)
+            return self._handle_error_response(request, error_message, member_pk)
 
         # Attempt to send notification emails
         self._send_removal_notifications(request, portfolio_member_permission)
@@ -156,19 +161,19 @@ class PortfolioMemberDeleteView(View):
             )
         if member.is_only_admin_of_portfolio(portfolio):
             return (
-                "There must be at least one admin in your organization. Give another member admin "
-                "permissions, make sure they log into the registrar, and then remove this member."
+                "You can't remove yourself because you're the only admin for this organization. "
+                "To remove yourself, you'll need to add another admin."
             )
         return None
 
-    def _handle_error_response(self, request, error_message, pk):
+    def _handle_error_response(self, request, error_message, member_pk):
         """
         Return an error response (JSON or redirect with messages).
         """
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"error": error_message}, status=400)
         messages.error(request, error_message)
-        return redirect(reverse("member", kwargs={"pk": pk}))
+        return redirect(reverse("member", kwargs={"member_pk": member_pk}))
 
     def _send_removal_notifications(self, request, portfolio_member_permission):
         """
@@ -191,6 +196,31 @@ class PortfolioMemberDeleteView(View):
                 messages.warning(
                     request, f"Could not send email notification to {portfolio_member_permission.user.email}"
                 )
+
+            # Notify domain managers for domains which the member is being removed from
+            # Get list of portfolio domains that the member is invited to:
+            invited_domains = Domain.objects.filter(
+                invitations__email=portfolio_member_permission.user.email,
+                domain_info__portfolio=portfolio_member_permission.portfolio,
+                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).distinct()
+            # Get list of portfolio domains that the member is a manager of
+            domains = Domain.objects.filter(
+                permissions__user=portfolio_member_permission.user,
+                domain_info__portfolio=portfolio_member_permission.portfolio,
+            ).distinct()
+            # Combine both querysets while ensuring uniqueness
+            all_domains = domains.union(invited_domains)
+            for domain in all_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=request.user,
+                    manager_removed=portfolio_member_permission.user,
+                    manager_removed_email=portfolio_member_permission.user.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        request, "Could not send email notification to existing domain managers for %s", domain
+                    )
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -223,13 +253,12 @@ class PortfolioMemberEditView(DetailView, View):
     context_object_name = "portfolio"
     template_name = "portfolio_member_permissions.html"
     form_class = portfolioForms.PortfolioMemberForm
+    pk_url_kwarg = "member_pk"
 
-    def get(self, request, pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+    def get(self, request, member_pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         user = portfolio_permission.user
-
         form = self.form_class(instance=portfolio_permission)
-
         return render(
             request,
             self.template_name,
@@ -237,11 +266,12 @@ class PortfolioMemberEditView(DetailView, View):
                 "form": form,
                 "member": user,
                 "portfolio_permission": portfolio_permission,
+                "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio),
             },
         )
 
-    def post(self, request, pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+    def post(self, request, member_pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
         removing_admin_role_on_self = False
@@ -275,17 +305,19 @@ class PortfolioMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member access and permission changes have been saved.")
-            return redirect("member", pk=pk) if not removing_admin_role_on_self else redirect("home")
-
-        return render(
-            request,
-            self.template_name,
-            {
-                "form": form,
-                "member": user,  # Pass the user object again to the template
-            },
-        )
+            messages.success(self.request, "The member role and permission changes have been saved.")
+            return redirect("member", member_pk=member_pk) if not removing_admin_role_on_self else redirect("home")
+        else:
+            return render(
+                request,
+                self.template_name,
+                {
+                    "form": form,
+                    "member": user,
+                    "portfolio_permission": portfolio_permission,
+                    "is_only_admin": request.user.is_only_admin_of_portfolio(portfolio_permission.portfolio),
+                },
+            )
 
     def _handle_exceptions(self, exception):
         """Handle exceptions raised during the process."""
@@ -304,9 +336,10 @@ class PortfolioMemberEditView(DetailView, View):
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
+    pk_url_kwarg = "member_pk"
 
-    def get(self, request, pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+    def get(self, request, member_pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         member = portfolio_permission.user
 
         return render(
@@ -324,9 +357,10 @@ class PortfolioMemberDomainsEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member_domains_edit.html"
+    pk_url_kwarg = "member_pk"
 
-    def get(self, request, pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+    def get(self, request, member_pk):
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         member = portfolio_permission.user
 
         return render(
@@ -338,33 +372,33 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             },
         )
 
-    def post(self, request, pk):
+    def post(self, request, member_pk):
         """
         Handles adding and removing domains for a portfolio member.
         """
         added_domains = request.POST.get("added_domains")
         removed_domains = request.POST.get("removed_domains")
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
         member = portfolio_permission.user
         portfolio = portfolio_permission.portfolio
 
         added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
         if added_domain_ids is None:
-            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
         if removed_domain_ids is None:
-            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         if not (added_domain_ids or removed_domain_ids):
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         try:
             self._process_added_domains(added_domain_ids, member, request.user, portfolio)
             self._process_removed_domains(removed_domain_ids, member)
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("member-domains", kwargs={"pk": pk}))
+            return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
         except IntegrityError:
             messages.error(
                 request,
@@ -372,7 +406,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
-            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+            return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
         except Exception as e:
             messages.error(
                 request,
@@ -380,7 +414,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
-            return redirect(reverse("member-domains-edit", kwargs={"pk": pk}))
+            return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
@@ -427,6 +461,20 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         Processes removed domains by deleting corresponding UserDomainRole instances.
         """
         if removed_domain_ids:
+            # Notify domain managers for domains which the member is being removed from
+            # Fetch Domain objects from removed_domain_ids
+            removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+            # need to get the domains from removed_domain_ids
+            for domain in removed_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=self.request.user,
+                    manager_removed=member,
+                    manager_removed_email=member.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        self.request, "Could not send email notification to existing domain managers for %s", domain
+                    )
             # Delete UserDomainRole instances for removed domains
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
@@ -436,11 +484,10 @@ class PortfolioInvitedMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member.html"
-    # form_class = PortfolioInvitedMemberForm
+    pk_url_kwarg = "invitedmember_pk"
 
-    def get(self, request, pk):
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
-        # form = self.form_class(instance=portfolio_invitation)
+    def get(self, request, invitedmember_pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
 
         # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
         member_has_view_all_requests_portfolio_permission = (
@@ -463,8 +510,8 @@ class PortfolioInvitedMemberView(DetailView, View):
             request,
             self.template_name,
             {
-                "edit_url": reverse("invitedmember-permissions", args=[pk]),
-                "domains_url": reverse("invitedmember-domains", args=[pk]),
+                "edit_url": reverse("invitedmember-permissions", args=[invitedmember_pk]),
+                "domains_url": reverse("invitedmember-domains", args=[invitedmember_pk]),
                 "portfolio_invitation": portfolio_invitation,
                 "member_has_view_all_requests_portfolio_permission": member_has_view_all_requests_portfolio_permission,
                 "member_has_edit_request_portfolio_permission": member_has_edit_request_portfolio_permission,
@@ -475,15 +522,16 @@ class PortfolioInvitedMemberView(DetailView, View):
         )
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioInvitedMemberDeleteView(View):
+    pk_url_kwarg = "invitedmember_pk"
 
-    def post(self, request, pk):
+    def post(self, request, invitedmember_pk):
         """
         Find and delete the portfolio invited member using the provided primary key (pk).
         Redirect to a success page after deletion (or any other appropriate page).
         """
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
 
         try:
             # if invitation being removed is an admin
@@ -495,6 +543,31 @@ class PortfolioInvitedMemberDeleteView(View):
                     messages.warning(self.request, "Could not send email notification to existing organization admins.")
             if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
                 messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
+
+            # Notify domain managers for domains which the invited member is being removed from
+            # Get list of portfolio domains that the invited member is invited to:
+            invited_domains = Domain.objects.filter(
+                invitations__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).distinct()
+            # Get list of portfolio domains that the member is a manager of
+            domains = Domain.objects.filter(
+                permissions__user__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+            ).distinct()
+            # Combine both querysets while ensuring uniqueness
+            all_domains = domains.union(invited_domains)
+            for domain in all_domains:
+                if not send_domain_manager_removal_emails_to_domain_managers(
+                    removed_by_user=request.user,
+                    manager_removed=None,
+                    manager_removed_email=portfolio_invitation.email,
+                    domain=domain,
+                ):
+                    messages.warning(
+                        request, "Could not send email notification to existing domain managers for %s", domain
+                    )
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -527,9 +600,10 @@ class PortfolioInvitedMemberEditView(DetailView, View):
     context_object_name = "portfolio"
     template_name = "portfolio_member_permissions.html"
     form_class = portfolioForms.PortfolioInvitedMemberForm
+    pk_url_kwarg = "invitedmember_pk"
 
-    def get(self, request, pk):
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+    def get(self, request, invitedmember_pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
         form = self.form_class(instance=portfolio_invitation)
 
         return render(
@@ -541,8 +615,8 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             },
         )
 
-    def post(self, request, pk):
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+    def post(self, request, invitedmember_pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
         form = self.form_class(request.POST, instance=portfolio_invitation)
         if form.is_valid():
             try:
@@ -567,8 +641,8 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member access and permission changes have been saved.")
-            return redirect("invitedmember", pk=pk)
+            messages.success(self.request, "The member role and permission changes have been saved.")
+            return redirect("invitedmember", invitedmember_pk=invitedmember_pk)
 
         return render(
             request,
@@ -596,9 +670,10 @@ class PortfolioInvitedMemberEditView(DetailView, View):
 class PortfolioInvitedMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
+    pk_url_kwarg = "invitedmember_pk"
 
-    def get(self, request, pk):
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+    def get(self, request, invitedmember_pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
 
         return render(
             request,
@@ -615,9 +690,10 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
     template_name = "portfolio_member_domains_edit.html"
+    pk_url_kwarg = "invitedmember_pk"
 
-    def get(self, request, pk):
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+    def get(self, request, invitedmember_pk):
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
 
         return render(
             request,
@@ -627,33 +703,33 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
             },
         )
 
-    def post(self, request, pk):
+    def post(self, request, invitedmember_pk):
         """
         Handles adding and removing domains for a portfolio invitee.
         """
         added_domains = request.POST.get("added_domains")
         removed_domains = request.POST.get("removed_domains")
-        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=pk)
+        portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
         email = portfolio_invitation.email
         portfolio = portfolio_invitation.portfolio
 
         added_domain_ids = self._parse_domain_ids(added_domains, "added domains")
         if added_domain_ids is None:
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         removed_domain_ids = self._parse_domain_ids(removed_domains, "removed domains")
         if removed_domain_ids is None:
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         if not (added_domain_ids or removed_domain_ids):
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         try:
             self._process_added_domains(added_domain_ids, email, request.user, portfolio)
             self._process_removed_domains(removed_domain_ids, email)
             messages.success(request, "The domain assignment changes have been saved.")
-            return redirect(reverse("invitedmember-domains", kwargs={"pk": pk}))
+            return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
         except IntegrityError:
             messages.error(
                 request,
@@ -661,7 +737,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
-            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
         except Exception as e:
             messages.error(
                 request,
@@ -669,7 +745,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 f"please contact {DefaultUserValues.HELP_EMAIL}.",
             )
             logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
-            return redirect(reverse("invitedmember-domains-edit", kwargs={"pk": pk}))
+            return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
 
     def _parse_domain_ids(self, domain_data, domain_type):
         """
@@ -729,6 +805,21 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         """
         if not removed_domain_ids:
             return
+
+        # Notify domain managers for domains which the member is being removed from
+        # Fetch Domain objects from removed_domain_ids
+        removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+        # need to get the domains from removed_domain_ids
+        for domain in removed_domains:
+            if not send_domain_manager_removal_emails_to_domain_managers(
+                removed_by_user=self.request.user,
+                manager_removed=None,
+                manager_removed_email=email,
+                domain=domain,
+            ):
+                messages.warning(
+                    self.request, "Could not send email notification to existing domain managers for %s", domain
+                )
 
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(
@@ -799,13 +890,45 @@ class PortfolioNoDomainRequestsView(View):
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
-class PortfolioOrganizationView(DetailView, FormMixin):
+class PortfolioOrganizationView(DetailView):
+    """
+    View to handle displaying and updating overview of portfolio's information.
+    """
+
+    model = Portfolio
+    template_name = "portfolio_organization.html"
+    context_object_name = "portfolio"
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        context = super().get_context_data(**kwargs)
+        portfolio = self.request.session.get("portfolio")
+        context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
+        context["portfolio_admins"] = portfolio.portfolio_admin_users
+        context["organization_type"] = portfolio.get_organization_type_display()
+        return context
+
+    def get_object(self, queryset=None):
+        """Get the portfolio object based on the session."""
+        portfolio = self.request.session.get("portfolio")
+        if portfolio is None:
+            raise Http404("No organization found for this user")
+        return portfolio
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = self.get_context_data(object=self.object)
+        return self.render_to_response(context)
+
+
+@grant_access(IS_PORTFOLIO_MEMBER)
+class PortfolioOrganizationInfoView(DetailView, FormMixin):
     """
     View to handle displaying and updating the portfolio's organization details.
     """
 
     model = Portfolio
-    template_name = "portfolio_organization.html"
+    template_name = "portfolio_organization_info.html"
     form_class = portfolioForms.PortfolioOrgAddressForm
     context_object_name = "portfolio"
 
@@ -814,6 +937,8 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         context = super().get_context_data(**kwargs)
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
+        context["portfolio_admins"] = portfolio.portfolio_admin_users
+        context["organization_type"] = portfolio.get_organization_type_display()
         return context
 
     def get_object(self, queryset=None):
@@ -840,6 +965,20 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
+            user = request.user
+            try:
+                if not send_portfolio_update_emails_to_portfolio_admins(
+                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
+                ):
+                    messages.warning(self.request, "Could not send email notification to all organization admins.")
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+                return None
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
@@ -857,8 +996,8 @@ class PortfolioOrganizationView(DetailView, FormMixin):
         return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
-        """Redirect to the overview page for the portfolio."""
-        return reverse("organization")
+        """Redirect to the org info page for the portfolio."""
+        return reverse("organization-info")
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
@@ -892,6 +1031,45 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         form = self.get_form()
         return self.render_to_response(self.get_context_data(form=form))
 
+    def post(self, request, *args, **kwargs):
+        """Handle POST requests to process form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            user = request.user
+            try:
+                if not send_portfolio_update_emails_to_portfolio_admins(
+                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
+                ):
+                    messages.warning(self.request, "Could not send email notification to all organization admins.")
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
+                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                )
+                logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
+                return None
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        """Handle the case when the form is valid."""
+        self.object = form.save(commit=False)
+        self.object.creator = self.request.user
+        self.object.save()
+        messages.success(self.request, "The senior official information for this portfolio has been updated.")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle the case when the form is invalid."""
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def get_success_url(self):
+        """Redirect to the overview page for the portfolio."""
+        return reverse("organization-senior-official")
+
 
 @grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
 class PortfolioMembersView(View):
@@ -903,7 +1081,7 @@ class PortfolioMembersView(View):
         return render(request, "portfolio_members.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_EDIT)
 class PortfolioAddMemberView(DetailView, FormMixin):
 
     template_name = "portfolio_members_add_new.html"
@@ -960,7 +1138,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         portfolio = form.cleaned_data["portfolio"]
         is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in form.cleaned_data["roles"]
 
-        requested_user = User.objects.filter(email=requested_email).first()
+        requested_user = User.objects.filter(email__iexact=requested_email).first()
         permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
         try:
             if not requested_user or not permission_exists:
@@ -1003,3 +1181,90 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send portfolio email invitation.")
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationsView(ListView, FormMixin):
+    """
+    View for Select Portfolio Organization page when the user does not
+    have an active portfolio in session. Actual session switching is
+    handled in PortfolioOrganizationSelectView.
+    """
+
+    model = UserPortfolioPermission
+    template_name = "portfolio_organizations.html"
+    context_object_name = "portfolio"
+    pk_url_kwarg = "portfolio_pk"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html", context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
+            "portfolio"
+        )
+        context["user_portfolio_permissions"] = user_portfolio_permissions
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles updating active portfolio in session.
+        """
+        self.object = self.get_object()
+        self.form = self.get_form()
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationSelectView(DetailView, FormMixin):
+    """
+    View that displays an individual portfolio object and sets
+    active session portfolio to said portfolio when selected.
+    """
+
+    model = UserPortfolioPermission
+    template_name = "portfolio_organization_select.html"
+    context_object_name = "portfolio"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+    pk_url_kwarg = "portfolio_pk"
+
+    def get(self, request):
+        """
+        Prevent user from calling this view directly.
+        View already requires a form to change session and verifies user has permission
+        to call this on passed portfolio, but added for additional protections.
+        """
+        return JsonResponse({"error": "You cannot access this page directly"}, status=404)
+
+    def post(self, request):
+        """
+        Handles updating active portfolio in session.
+        """
+        self.form = self.get_form()
+        portfolio_name = self.form["set_session_portfolio_button"].value()
+        portfolio = Portfolio.objects.get(organization_name=portfolio_name)
+
+        # Verify user has permissions to access selected portfolio
+        portfolio_permission = UserPortfolioPermission.objects.filter(portfolio=portfolio, user=request.user).first()
+        if not portfolio_permission:
+            return JsonResponse({"error": "Invalid user portfolio permission"}, status=403)
+        if portfolio_permission.user != request.user:
+            return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
+
+        portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
+        request.session["portfolio"] = portfolio
+        logger.info(f"Successfully set active portfolio to {portfolio}")
+        return self._handle_success_response(request, portfolio)
+
+    def _handle_success_response(self, request, portfolio):
+        """
+        Return a success response (JSON or redirect with messages).
+        """
+        success_message = f"You set your active portfolio to {portfolio}."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        return redirect(reverse("domains"))

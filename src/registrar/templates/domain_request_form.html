@@ -5,43 +5,34 @@
 {% block content %}
 <div class="grid-container grid-container--widescreen">
   <div class="grid-row grid-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-    <div class="tablet:grid-col-3">
+    <div class="tablet:grid-col-3 grid-col--sidenav">
       {% include 'domain_request_sidebar.html' %}
     </div>
-    <div class="tablet:grid-col-9">
-      <main id="main-content" class="grid-container register-form-step">
+    <div class="tablet:grid-col register-form-step" id="main-content">
         <input type="hidden" class="display-none" id="wizard-domain-request-id" value="{{domain_request_id}}"/>
-        {% if steps.current == steps.first %}
-          {% if portfolio %}
-            {% url 'domain-requests' as url_2 %}
+         {% if portfolio %}
+            {% url 'domain-requests' as url%}
           {% else %}
-            {% url 'home' as url_2 %}
+            {% url 'home' as url %}
           {% endif %}
           <nav class="usa-breadcrumb padding-top-0" aria-label="Domain request breadcrumb">
             <ol class="usa-breadcrumb__list">
               <li class="usa-breadcrumb__list-item">
-                <a href="{{ url_2 }}" class="usa-breadcrumb__link">
+               <a href="{{ url }}" class="usa-breadcrumb__link">
                   <span>
-                    {% if portfolio%}Domain requests{%else%}Manage your domains{% endif%}
+                    {% if portfolio%}Domain requests{%else%}Home{% endif%}
                   </span>
                 </a>
               </li>
               <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
                 {% if requested_domain__name %}
-                <span>{{ requested_domain__name }}</span>
+                <span>{% if not portfolio %} Domain Request: {% endif %} {{ requested_domain__name }}</span>
                 {% else %}
                 <span>New domain request</span>
                 {% endif %}
               </li>
             </ol>
           </nav>
-        {% elif steps.prev %}
-        <a href="{% namespaced_url 'domain-request' steps.prev domain_request_pk=domain_request_id  %}" class="breadcrumb__back">
-          <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-            <use xlink:href="{%static 'img/sprite.svg'%}#arrow_back"></use>
-          </svg><span class="margin-left-05">Previous step</span>
-        </a>
-        {% endif %}
 
 {% block form_messages %}
           {% include "includes/form_messages.html" %}
@@ -95,6 +86,14 @@
 
 {% block form_buttons %}
           <div class="stepnav">
+            {% if steps.prev %}
+            <button
+              type="submit"
+              name="submit_button"
+              value="back"
+              class="usa-button  usa-button--outline"
+            >Back</button>
+            {% endif %}
             {% if steps.next %}
             <button
               type="submit"
@@ -112,7 +111,7 @@
             {% else %}
             <a
               href="#toggle-submit-domain-request"
-              class="usa-button usa-button--big dotgov-button--green"
+              class="usa-button usa-button dotgov-button--green"
               aria-controls="toggle-submit-domain-request"
               data-open-modal
               >Submit your domain request</a
@@ -142,8 +141,6 @@
         </form>
 
 {% block after_form_content %}{% endblock %}
-
-      </main>
     </div> 
   </div>
 </div>

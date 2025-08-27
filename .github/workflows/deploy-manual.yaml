@@ -12,26 +12,28 @@ on:
         default: 'backup'
         type: 'choice'
         options:
-          - ab
-          - backup
-          - el
-          - cb
-          - dk
-          - es
-          - gd
-          - ko
-          - ky
-          - nl
-          - rb
-          - rh
-          - rjm
-          - meoward
-          - bob
-          - hotgov
-          - litterbox
-          - ms
+          - aa
+          - acadia
           - ad
-          - ag
+          - backup
+          - testdb
+          - bob
+          - dg
+          - el
+          - es
+          - glacier
+          - hotgov
+          - kma
+          - litterbox
+          - meoward
+          - nl
+          - olympic
+          - potato
+          - product
+          - rh
+          - yellowstone
+          - zion
+
       # GitHub Actions has no "good" way yet to dynamically input branches
       branch:
         description: 'Branch to deploy'

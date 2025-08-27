@@ -1,7 +1,10 @@
 {
     "defaults": {
         "concurrency": 1,
-        "timeout": 30000
+        "timeout": 30000,
+        "chromeLaunchConfig": {
+            "executablePath": "/usr/bin/google-chrome"
+        }
     },
     "urls": [
         "http://localhost:8080/",
@@ -24,6 +27,9 @@
         "http://localhost:8080/request/requesting_entity/",
         "http://localhost:8080/user-profile/",
         "http://localhost:8080/members/",
-        "http://localhost:8080/members/new-member"
+        "http://localhost:8080/members/new-member",
+        "http://localhost:8080/organization",
+        "http://localhost:8080/organization/organization-info",
+        "http://localhost:8080/organization/senior-official"
     ]
 }

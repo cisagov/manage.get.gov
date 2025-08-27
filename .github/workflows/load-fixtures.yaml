@@ -10,26 +10,27 @@ on:
         description: Which environment should we load data for?
         type: 'choice'
         options:
-          - ab
           - backup
-          - el
-          - cb
-          - dk
-          - es
-          - gd
-          - ko
-          - ky
-          - nl
-          - rb
-          - rh
-          - rjm
+          - testdb
+          - acadia
+          - glacier
+          - olympic
+          - yellowstone
+          - zion
+          - potato
+          - product
           - meoward
           - bob
           - hotgov
           - litterbox
-          - ms
+          - aa
           - ad
-          - ag
+          - dg
+          - el
+          - es
+          - kma
+          - nl
+          - rh
 
 jobs:
   load-fixtures:

@@ -30,6 +30,9 @@
                 <a href={{ url }}>No senior official found. Create one now.</a>
             </div>
         {% endif %}
+
+    {% elif field.field.name == "requester" and adminform.form.show_contact_as_plain_text %}
+        <div class="readonly">{{ field.contents|striptags }}</div>
     {% else %}
         <div class="readonly">{{ field.contents }}</div>
     {% endif %}

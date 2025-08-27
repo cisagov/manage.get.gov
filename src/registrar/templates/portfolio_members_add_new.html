@@ -11,11 +11,7 @@
 {% block portfolio_content %}
 
 <div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
-  <!-- Form messages -->
-  {% include "includes/form_errors.html" with form=form %}
-  {% block messages %}
-    {% include "includes/form_messages.html" %}
-  {% endblock messages%}
+
 
 <!-- Navigation breadcrumbs -->
 <nav class="usa-breadcrumb padding-top-0 bg-gray-1" aria-label="Domain request breadcrumb">
@@ -28,6 +24,12 @@
     </li>
   </ol>
 </nav>
+
+  <!-- Form messages -->
+  {% block messages %}
+    {% include "includes/form_messages.html" %}
+  {% endblock messages%}
+  {% include "includes/form_errors.html" with form=form %}
 
   <!-- Page header -->
   <h1>Add a new member</h1>
@@ -52,10 +54,10 @@
     <!-- Member access radio buttons (Toggles other sections) -->
     <fieldset class="usa-fieldset margin-top-2">
       <legend>
-        <h2>What level of access would you like to grant this member?</h2>
+        <h2>What role would you like to grant this member?</h2>
       </legend>
 
-      <p class="margin-y-0">Select the level of access for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
+      <p class="margin-y-0">Select the role for this member. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
 
       {% with group_classes="margin-top-0" add_class="usa-radio__input--tile" add_legend_class="usa-sr-only" %}
         {% input_with_errors form.role %}
@@ -104,10 +106,10 @@
             <h2 class="usa-modal__heading" id="invite-member-heading">
                 Invite this member to the organization?
             </h2>
-            <h3>Member access and permissions</h3>
+            <h3>Member role and permissions</h3>
 
             <p class="margin-bottom-1"><strong class="text-primary-darker">Email:</strong> <span id="modalEmail"></span></p>
-            <p class="margin-top-0 margin-bottom-1"><strong class="text-primary-darker">Member access:</strong> <span id="modalAccessLevel"></span></p>
+            <p class="margin-top-0 margin-bottom-1"><strong class="text-primary-darker">Member role:</strong> <span id="modalAccessLevel"></span></p>
 
             <!-- Dynamic Permissions Details -->
             <div id="permission_details"></div>

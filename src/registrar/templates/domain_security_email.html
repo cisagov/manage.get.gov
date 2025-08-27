@@ -3,17 +3,17 @@
 
 {% block title %}Security email | {{ domain.name }} | {% endblock %}
 
-{% block domain_content %}
-
-  {% include "includes/form_errors.html" with form=form %}
 
   {% block breadcrumb %}
-  {% if portfolio %}
   <!-- Navigation breadcrumbs -->
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
+        {% if portfolio %}
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        {% else %}
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        {% endif %}
       </li>
       <li class="usa-breadcrumb__list-item">
         <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
@@ -23,8 +23,11 @@
       </li>
     </ol>
   </nav>
-  {% endif %}
   {% endblock breadcrumb %}
+
+{% block domain_content %}
+  <!-- Error message -->
+  {% include "includes/form_errors.html" with form=form %}
 
   <h1>Security email</h1>
 
@@ -40,7 +43,7 @@
     <button
       type="submit"
       class="usa-button"
-    >{% if form.security_email.value is None or form.security_email.value == "dotgov@cisa.dhs.gov" or form.security_email.value == "registrar@dotgov.gov"%}Add security email{% else %}Save{% endif %}</button>
+    >{% if form.security_email.value is None or form.security_email.value == "dotgov@cisa.dhs.gov" or form.security_email.value == "registrar@dotgov.gov" or form.security_email.value == "help@get.gov"%}Add security email{% else %}Save{% endif %}</button>
   </form>
 
 {% endblock %}  {# domain_content #}

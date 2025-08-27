@@ -3,7 +3,6 @@ from django.test import TestCase
 from unittest.mock import patch
 from unittest.mock import Mock
 from django.test import RequestFactory
-from waffle.models import get_waffle_flag_model
 from registrar.views.domain_request import DomainRequestWizard
 from registrar.models import (
     Contact,
@@ -379,12 +378,13 @@ class TestPortfolioInvitations(TestCase):
 
         # Test validation fails when portfolio present but no permissions
         invitation = PortfolioInvitation(email="test@example.com", roles=None, portfolio=self.portfolio)
-        with self.assertRaises(ValidationError) as err:
+        with self.assertLogs("registrar.models.utility.portfolio_helper", level="INFO") as cleaned_msg:
             invitation.clean()
-            self.assertEqual(
-                str(err.exception),
-                "When portfolio is assigned, portfolio roles or additional permissions are required.",
-            )
+
+        self.assertIn(
+            "User didn't provide both a valid email address and a role for the member",
+            "".join(cleaned_msg.output),
+        )
 
         # Test validation fails with forbidden permissions
         forbidden_member_roles = UserPortfolioPermission.FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS.get(
@@ -1222,7 +1222,6 @@ class TestUser(TestCase):
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS)
 
     @patch("registrar.models.User._has_portfolio_permission")
-    @override_flag("organization_requests", active=True)
     def test_has_any_requests_portfolio_permission(self, mock_has_permission):
         mock_has_permission.side_effect = [False, True]  # First permission false, second permission true
 
@@ -1394,7 +1393,6 @@ class TestUser(TestCase):
         self.assertFalse(self.user.has_contact_info())
 
     @less_console_noise_decorator
-    @override_flag("organization_requests", active=True)
     def test_has_portfolio_permission(self):
         """
         0. Returns False when user does not have a permission
@@ -1810,7 +1808,7 @@ class TestDomainInformationCustomSave(TestCase):
             is_election_board=True,
         )
 
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
 
     @less_console_noise_decorator
@@ -1823,7 +1821,7 @@ class TestDomainInformationCustomSave(TestCase):
             is_election_board=True,
         )
 
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
         self.assertEqual(domain_information.is_election_board, None)
 
@@ -1836,7 +1834,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=False,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.is_election_board = True
         domain_information.save()
 
@@ -1862,7 +1860,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=None,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.is_election_board = True
         domain_information.save()
 
@@ -1886,7 +1884,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=True,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
 
         domain_information.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         domain_information.save()
@@ -1902,7 +1900,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
             is_election_board=True,
         )
-        domain_information_tribal = DomainInformation.create_from_da(domain_request_tribal)
+        domain_information_tribal = DomainInformation.create_from_dr(domain_request_tribal)
         self.assertEqual(
             domain_information_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
         )
@@ -1929,7 +1927,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
             is_election_board=False,
         )
-        domain_information = DomainInformation.create_from_da(domain_request)
+        domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.save()
         self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
         self.assertEqual(domain_information.is_election_board, False)
@@ -1944,7 +1942,7 @@ class TestDomainInformationCustomSave(TestCase):
             is_election_board=True,
             organization_type=DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION,
         )
-        domain_information_election = DomainInformation.create_from_da(domain_request_election)
+        domain_information_election = DomainInformation.create_from_dr(domain_request_election)
 
         self.assertEqual(
             domain_information_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
@@ -2040,11 +2038,6 @@ class TestDomainRequestIncomplete(TestCase):
         self.wizard._domain_request = self.domain_request
         self.wizard.request = Mock(user=self.user, session={})
         self.wizard.kwargs = {"domain_request_pk": self.domain_request.id}
-
-        # We use both of these flags in the test. In the normal app these are generated normally.
-        # The alternative syntax is adding the decorator to each test.
-        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
-        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
 
     def tearDown(self):
         super().tearDown()
@@ -2385,18 +2378,18 @@ class TestDomainRequestIncomplete(TestCase):
             },
         ]
         for case in test_cases:
-            with self.subTest(case=case):
-                self.domain_request.has_cisa_representative = case["has_cisa_representative"]
-                self.domain_request.cisa_representative_email = case["cisa_representative_email"]
-                self.domain_request.has_anything_else_text = case["has_anything_else_text"]
-                self.domain_request.anything_else = case["anything_else"]
-                self.domain_request.save()
-                self.domain_request.refresh_from_db()
-                self.assertEqual(
-                    self.wizard.form_is_complete(),
-                    case["expected"],
-                    msg=f"Failed for case: {case}",
-                )
+            self.domain_request.has_cisa_representative = case["has_cisa_representative"]
+            self.domain_request.cisa_representative_email = case["cisa_representative_email"]
+            self.domain_request.has_anything_else_text = case["has_anything_else_text"]
+            self.domain_request.anything_else = case["anything_else"]
+            self.domain_request.save()
+            self.domain_request.refresh_from_db()
+            # Compare expected test result with actual result
+            result = self.wizard.form_is_complete()
+            expected = case["expected"]
+
+            if result != expected:
+                self.fail(f"\nTest Failed: {case}\nExpected: {expected}, Got: {result}\n")
 
     @less_console_noise_decorator
     def test_is_policy_acknowledgement_complete(self):

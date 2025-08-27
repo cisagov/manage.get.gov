@@ -51,7 +51,7 @@ Resolves #00
 
 #### Validated user-facing changes (if applicable)
 
-- [ ] Tag @dotgov-designers in this PR's Reviewers for design review. If code is not user-facing, delete design reviewer checklist
+- [ ] [Follow the process for requesting a design review](https://dhscisa.enterprise.slack.com/docs/T02QH7E1MHA/F06CZ6MRUKA). If code is not user-facing, delete design reviewer checklist
 - [ ] Verify new pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)

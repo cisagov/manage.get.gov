@@ -498,6 +498,51 @@ class TestDomainCreation(MockEppLib):
         with self.assertRaisesRegex(IntegrityError, "name"):
             Domain.objects.create(name="igorville.gov")
 
+    def test_duplicate_domain_name_not_allowed_if_not_deleted(self):
+        """Can't create domain if name is not unique AND not deleted."""
+
+        # 1. Mocking that it's in active state
+        mock_first_domain = MagicMock(name="meoward-is-cool.gov", state="active")
+
+        with patch.object(Domain.objects, "create") as mock_create:
+            # 2. Mock the outcomes of like we are from a "real DB":
+            # A. Simulate a domain in ACTIVE state (from #1)
+            # B. Simulate a Integrity Error due to the UniqueConstraint we added
+            mock_create.side_effect = [mock_first_domain, IntegrityError("mocked constraint")]
+
+            # 3. "Create" but actually mocking it and make sure that it's in correct (ACTIVE) state
+            domain_1 = Domain.objects.create(name="meoward-is-cool.gov", state="active")
+            self.assertEqual(domain_1.state, "active")
+            mock_create.assert_called_once_with(name="meoward-is-cool.gov", state="active")
+
+            # 4. Asserting that when we do create it again we get the mocked IntegrityError
+            with self.assertRaises(IntegrityError):
+                Domain.objects.create(name="meoward-is-cool.gov", state="active")
+
+    def test_duplicate_domain_name_allowed_if_one_is_deleted(self):
+        """Can create domain with same name if one is deleted."""
+        with patch.object(Domain.objects, "create") as mock_create:
+            # 1. Simulate the states for it to be:
+            # A. First call to be in DELETED state
+            # B. Second call for it to be in ACTIVE
+            mock_create.side_effect = [
+                MagicMock(name="meoward-is-cool.gov", state="deleted"),
+                MagicMock(name="meoward-is-cool.gov", state="active"),
+            ]
+
+            # 2. 1A in action (above comment), and verification for correct state (DELETED) below
+            domain_1 = Domain.objects.create(name="meoward-is-cool.gov", state="deleted")
+            self.assertEqual(domain_1.state, "deleted")
+            mock_create.assert_called_once_with(name="meoward-is-cool.gov", state="deleted")
+
+            # 3. 1B in action, and verification for correc state (ACTIVE) below)
+            try:
+                domain_2 = Domain.objects.create(name="meoward-is-cool.gov", state="active")
+                self.assertEqual(domain_2.state, "active")
+                mock_create.assert_any_call(name="meoward-is-cool.gov", state="active")
+            except IntegrityError:
+                self.fail("Should allow same name if one is deleted")
+
     def tearDown(self) -> None:
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
@@ -666,6 +711,107 @@ class TestDomainAvailable(MockEppLib):
             self.assertFalse(available)
             patcher.stop()
 
+    def test_is_pending_delete(self):
+        """
+        Scenario: Testing if a domain is in pendingDelete status from the registry
+            Should return True
+
+        * Mock EPP response with pendingDelete status
+        * Validate InfoDomain command is called
+        * Validate response given mock
+        """
+
+        with patch("registrar.models.domain.registry.send") as mocked_send, patch(
+            "registrar.models.domain.Domain._extract_data_from_response"
+        ) as mocked_extract:
+
+            # Mock the registry response
+            mock_response = MagicMock()
+            mock_response.res_data = [MagicMock(statuses=[MagicMock(state="pendingDelete")])]
+            mocked_send.return_value = mock_response
+
+            # Mock JSONified response
+            mocked_extract.return_value = {"statuses": ["pendingDelete"]}
+
+            result = Domain.is_pending_delete("is-pending-delete.gov")
+
+            mocked_send.assert_called_once_with(commands.InfoDomain("is-pending-delete.gov"), cleaned=True)
+            mocked_extract.assert_called_once()
+
+            self.assertTrue(result)
+
+    def test_is_not_pending_delete(self):
+        """
+        Scenario: Testing if a domain is NOT in pendingDelete status.
+            Should return False.
+
+        * Mock EPP response without pendingDelete status (isserverTransferProhibited)
+        * Validate response given mock
+        """
+
+        with patch("registrar.models.domain.registry.send") as mocked_send, patch(
+            "registrar.models.domain.Domain._extract_data_from_response"
+        ) as mocked_extract:
+
+            # Mock the registry response
+            mock_response = MagicMock()
+            mock_response.res_data = [
+                MagicMock(statuses=[MagicMock(state="serverTransferProhibited"), MagicMock(state="ok")])
+            ]
+            mocked_send.return_value = mock_response
+
+            # Mock JSONified response
+            mocked_extract.return_value = {"statuses": ["serverTransferProhibited", "ok"]}
+
+            result = Domain.is_pending_delete("is-not-pending.gov")
+
+            # Assertions
+            mocked_send.assert_called_once_with(commands.InfoDomain("is-not-pending.gov"), cleaned=True)
+            mocked_extract.assert_called_once()
+
+            self.assertFalse(result)
+
+    def test_is_not_deleted_returns_true_when_domain_exists(self):
+        """
+        TLDR: Domain is NOT DELETED
+
+        Scenario: Domain exists in the registry
+        Should return True
+
+        * Mock InfoDomain command to return valid res_data
+        * Validate send is called with correct domain
+        * Validate response is True
+        """
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            mock_response = MagicMock()
+            mock_response.res_data = [MagicMock()]  # non-empty res_data
+            mocked_send.return_value = mock_response
+
+            result = Domain.is_not_deleted("not-deleted.gov")
+
+            mocked_send.assert_called_once_with(commands.InfoDomain("not-deleted.gov"), cleaned=True)
+            self.assertTrue(result)
+
+    def test_is_not_deleted_returns_false_when_domain_does_not_exist(self):
+        """
+        TLDR: Domain IS DELETED
+
+        Scenario: Domain does not exist in the registry
+        Should return False
+
+        * Mock registry.send to raise RegistryError with code 2303
+        * Validate response is False
+        """
+        with patch("registrar.models.domain.registry.send") as mocked_send:
+            error = RegistryError("Object does not exist")
+            error.code = 2303
+            error.is_connection_error = MagicMock(return_value=False)
+            mocked_send.side_effect = error
+
+            result = Domain.is_not_deleted("deleted.gov")
+
+            self.assertFalse(result)
+
     def test_domain_available_with_invalid_error(self):
         """
         Scenario: Testing whether an invalid domain is available
@@ -722,6 +868,9 @@ class TestRegistrantContacts(MockEppLib):
         self.domain, _ = Domain.objects.get_or_create(name="security.gov")
         # Creates a domain with an associated contact
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+        DF = common.DiscloseField
+        excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
 
     def tearDown(self):
         super().tearDown()
@@ -758,7 +907,9 @@ class TestRegistrantContacts(MockEppLib):
                 contact_type=PublicContact.ContactTypeChoices.SECURITY,
             ).registry_id
             expectedSecContact.registry_id = id
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                expectedSecContact, disclose=False, disclose_fields=self.all_disclose_fields
+            )
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
@@ -788,7 +939,7 @@ class TestRegistrantContacts(MockEppLib):
             #  self.domain.security_contact=expectedSecContact
             expectedSecContact.save()
             # no longer the default email it should be disclosed
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose=False)
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
@@ -813,7 +964,9 @@ class TestRegistrantContacts(MockEppLib):
             security_contact.registry_id = "fail"
             security_contact.save()
             self.domain.security_contact = security_contact
-            expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                security_contact, disclose=False, disclose_fields=self.all_disclose_fields
+            )
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
@@ -846,7 +999,7 @@ class TestRegistrantContacts(MockEppLib):
             new_contact.registry_id = "fail"
             new_contact.email = ""
             self.domain.security_contact = new_contact
-            firstCreateContactCall = self._convertPublicContactToEpp(old_contact, disclose_email=True)
+            firstCreateContactCall = self._convertPublicContactToEpp(old_contact, disclose=False)
             updateDomainAddCall = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=old_contact.registry_id, type="security")],
@@ -856,7 +1009,7 @@ class TestRegistrantContacts(MockEppLib):
                 PublicContact.get_default_security().email,
             )
             # this one triggers the fail
-            secondCreateContact = self._convertPublicContactToEpp(new_contact, disclose_email=True)
+            secondCreateContact = self._convertPublicContactToEpp(new_contact, disclose=False)
             updateDomainRemCall = commands.UpdateDomain(
                 name=self.domain.name,
                 rem=[common.DomainContact(contact=old_contact.registry_id, type="security")],
@@ -864,7 +1017,9 @@ class TestRegistrantContacts(MockEppLib):
             defaultSecID = PublicContact.objects.filter(domain=self.domain).get().registry_id
             default_security = PublicContact.get_default_security()
             default_security.registry_id = defaultSecID
-            createDefaultContact = self._convertPublicContactToEpp(default_security, disclose_email=False)
+            createDefaultContact = self._convertPublicContactToEpp(
+                default_security, disclose=False, disclose_fields=self.all_disclose_fields
+            )
             updateDomainWDefault = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=defaultSecID, type="security")],
@@ -892,15 +1047,15 @@ class TestRegistrantContacts(MockEppLib):
             security_contact.email = "originalUserEmail@gmail.com"
             security_contact.registry_id = "fail"
             security_contact.save()
-            expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=True)
+            expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose=False)
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
             )
             security_contact.email = "changedEmail@email.com"
             security_contact.save()
-            expectedSecondCreateCommand = self._convertPublicContactToEpp(security_contact, disclose_email=True)
-            updateContact = self._convertPublicContactToEpp(security_contact, disclose_email=True, createContact=False)
+            expectedSecondCreateCommand = self._convertPublicContactToEpp(security_contact, disclose=False)
+            updateContact = self._convertPublicContactToEpp(security_contact, disclose=False, createContact=False)
             expected_calls = [
                 call(expectedCreateCommand, cleaned=True),
                 call(expectedUpdateDomain, cleaned=True),
@@ -988,9 +1143,23 @@ class TestRegistrantContacts(MockEppLib):
             for contact in contacts:
                 expected_contact = contact[0]
                 actual_contact = contact[1]
-                is_security = expected_contact.contact_type == "security"
-                expectedCreateCommand = self._convertPublicContactToEpp(expected_contact, disclose_email=is_security)
-                # Should only be disclosed if the type is security, as the email is valid
+                if expected_contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
+                    disclose_fields = self.all_disclose_fields - {"email"}
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact, disclose=False, disclose_fields=disclose_fields
+                    )
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
+                    disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact,
+                        disclose=False,
+                        disclose_fields=disclose_fields,
+                        disclose_types={"addr": "loc", "name": "loc"},
+                    )
+                else:
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact, disclose=False, disclose_fields=self.all_disclose_fields
+                    )
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
                 # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)
@@ -999,23 +1168,26 @@ class TestRegistrantContacts(MockEppLib):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
             dummy_contact = domain.get_default_security_contact()
-            test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=True).__dict__
-            test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose_email=False).__dict__
+            test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose=False).__dict__
+            test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose=False).__dict__
             # Separated for linter
-            disclose_email_field = {common.DiscloseField.EMAIL}
+            disclose_email_field = self.all_disclose_fields - {common.DiscloseField.EMAIL}
+            DF = common.DiscloseField
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                "disclose": common.Disclose(flag=True, fields=disclose_email_field, types=None),
-                "email": "dotgov@cisa.dhs.gov",
+                "disclose": common.Disclose(
+                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                ),
+                "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
                 "id": "ThIq2NcRIDN7PauO",
                 "ident": None,
                 "notify_email": None,
                 "postal_info": common.PostalInfo(
-                    name="Registry Customer Service",
+                    name="CSD/CB – Attn: .gov TLD",
                     addr=common.ContactAddr(
-                        street=["4200 Wilson Blvd.", None, None],
+                        street=["1110 N. Glebe Rd", None, None],
                         city="Arlington",
                         pc="22201",
                         cc="US",
@@ -1030,17 +1202,19 @@ class TestRegistrantContacts(MockEppLib):
             # Separated for linter
             expected_not_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-                "disclose": common.Disclose(flag=False, fields=disclose_email_field, types=None),
-                "email": "dotgov@cisa.dhs.gov",
+                "disclose": common.Disclose(
+                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                ),
+                "email": "help@get.gov",
                 "extensions": [],
                 "fax": None,
                 "id": "ThrECENCHI76PGLh",
                 "ident": None,
                 "notify_email": None,
                 "postal_info": common.PostalInfo(
-                    name="Registry Customer Service",
+                    name="CSD/CB – Attn: .gov TLD",
                     addr=common.ContactAddr(
-                        street=["4200 Wilson Blvd.", None, None],
+                        street=["1110 N. Glebe Rd", None, None],
                         city="Arlington",
                         pc="22201",
                         cc="US",
@@ -1058,6 +1232,39 @@ class TestRegistrantContacts(MockEppLib):
             self.assertEqual(test_disclose, expected_disclose)
             self.assertEqual(test_not_disclose, expected_not_disclose)
 
+    @less_console_noise_decorator
+    def test_convert_public_contact_with_custom_fields(self):
+        """Test converting a contact with custom disclosure fields."""
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+        dummy_contact = domain.get_default_administrative_contact()
+        DF = common.DiscloseField
+
+        # Create contact with multiple disclosure fields
+        result = self._convertPublicContactToEpp(
+            dummy_contact,
+            disclose=True,
+            disclose_fields={DF.EMAIL, DF.VOICE, DF.ADDR},
+            disclose_types={},
+        )
+        self.assertEqual(result.disclose.flag, True)
+        self.assertEqual(result.disclose.fields, {DF.EMAIL, DF.VOICE, DF.ADDR})
+        self.assertEqual(result.disclose.types, {})
+
+    @less_console_noise_decorator
+    def test_convert_public_contact_with_empty_fields(self):
+        """Test converting a contact with empty disclosure fields."""
+        domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+        dummy_contact = domain.get_default_security_contact()
+
+        DF = common.DiscloseField
+        # Create contact with empty fields list
+        result = self._convertPublicContactToEpp(dummy_contact, disclose=True, disclose_fields={DF.EMAIL})
+
+        # Verify disclosure settings
+        self.assertEqual(result.disclose.flag, True)
+        self.assertEqual(result.disclose.fields, {DF.EMAIL})
+        self.assertEqual(result.disclose.types, {DF.ADDR: "loc", DF.NAME: "loc"})
+
     def test_not_disclosed_on_default_security_contact(self):
         """
         Scenario: Registrant creates a new domain with no security email
@@ -1071,7 +1278,9 @@ class TestRegistrantContacts(MockEppLib):
             expectedSecContact.domain = domain
             expectedSecContact.registry_id = "defaultSec"
             domain.security_contact = expectedSecContact
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                expectedSecContact, disclose=False, disclose_fields=self.all_disclose_fields
+            )
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting a default email
             self.assertEqual(domain.security_contact.email, expectedSecContact.email)
@@ -1089,7 +1298,9 @@ class TestRegistrantContacts(MockEppLib):
             expectedTechContact.domain = domain
             expectedTechContact.registry_id = "defaultTech"
             domain.technical_contact = expectedTechContact
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedTechContact, disclose_email=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(
+                expectedTechContact, disclose=False, disclose_fields=self.all_disclose_fields
+            )
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting a default email
             self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
@@ -1108,7 +1319,7 @@ class TestRegistrantContacts(MockEppLib):
             expectedSecContact.domain = domain
             expectedSecContact.email = "security@mail.gov"
             domain.security_contact = expectedSecContact
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose_email=True)
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose=False)
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting the desired email
             self.assertEqual(domain.security_contact.email, expectedSecContact.email)
@@ -2694,6 +2905,7 @@ class TestAnalystDelete(MockEppLib):
         )
 
     def tearDown(self):
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
@@ -2898,6 +3110,57 @@ class TestAnalystDelete(MockEppLib):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
+    def test_delete_related_objects_cleans_database(self):
+        """
+        Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
+        should remove HostIP, Host, and non‑registrant contacts from the database
+        """
+
+        # 1. Create domain in db and mark it as deleted
+        domain, _ = Domain.objects.get_or_create(name="cleanup.gov", state=Domain.State.DELETED)
+
+        # 2. Create host and a HostIP
+        host = Host.objects.create(name="ns1.cleanup.gov", domain=domain)
+        HostIP.objects.get_or_create(host=host, address="192.0.2.1")
+
+        # 3. Create non‑registrant admin/tech/security contacts
+        PublicContact.objects.create(
+            domain=domain,
+            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            registry_id="admin-id",
+            email="admin@cleanup.gov",
+        )
+        PublicContact.objects.create(
+            domain=domain,
+            contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
+            registry_id="tech-id",
+            email="tech@cleanup.gov",
+        )
+        PublicContact.objects.create(
+            domain=domain,
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+            registry_id="security-id",
+            email="sec@cleanup.gov",
+        )
+
+        # Double check they all exist before cleaning up
+        self.assertTrue(Domain.objects.filter(name="cleanup.gov", state=Domain.State.DELETED).exists())
+        self.assertTrue(Host.objects.filter(domain=domain).exists())
+        self.assertTrue(HostIP.objects.filter(host__domain=domain).exists())
+        self.assertTrue(
+            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech", "security"]).exists()
+        )
+
+        # 4. Call the clean up method
+        domain._delete_related_objects_from_db()
+
+        # 5. Assert hostIP, host, non-registrant contacts  are cleared from DB
+        self.assertFalse(HostIP.objects.filter(host__domain=domain).exists())
+        self.assertFalse(Host.objects.filter(domain=domain).exists())
+        self.assertFalse(
+            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech", "security"]).exists(),
+        )
 
     @less_console_noise_decorator
     def test_deletion_ready_fsm_failure(self):

@@ -29,17 +29,25 @@ class LogCode(Enum):
     DEFAULT = 5
 
 
-class DefaultEmail(Enum):
+class DefaultEmail(StrEnum):
     """Stores the string values of default emails
 
     Overview of emails:
-    - PUBLIC_CONTACT_DEFAULT: "dotgov@cisa.dhs.gov"
+    - PUBLIC_CONTACT_DEFAULT: "help@get.gov"
+    - OLD_PUBLIC_CONTACT_DEFAULT: "dotgov@cisa.dhs.gov"
     - LEGACY_DEFAULT: "registrar@dotgov.gov"
-    - HELP_EMAIL: "help@get.gov"
     """
 
-    PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
+    PUBLIC_CONTACT_DEFAULT = "help@get.gov"
+    # We used to use this email for default public contacts.
+    # This is retained for data correctness, but it will be phased out.
+    # help@get.gov is the current email that we use for these now.
+    OLD_PUBLIC_CONTACT_DEFAULT = "dotgov@cisa.dhs.gov"
     LEGACY_DEFAULT = "registrar@dotgov.gov"
+
+    @classmethod
+    def get_all_emails(cls):
+        return [email for email in cls]
 
 
 class DefaultUserValues(StrEnum):
@@ -92,7 +100,6 @@ class PortfolioDomainRequestStep(StrEnum):
     # By default, these will redirect to the normal request flow views.
     # After creating a new view, you will need to add this to urls.py.
     REQUESTING_ENTITY = "portfolio_requesting_entity"
-    CURRENT_SITES = "current_sites"
     DOTGOV_DOMAIN = "dotgov_domain"
     PURPOSE = "purpose"
     ADDITIONAL_DETAILS = "portfolio_additional_details"

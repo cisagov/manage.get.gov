@@ -1,21 +1,31 @@
+import logging
 import functools
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, UserDomainRole
+from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_portfolio_permission import UserPortfolioPermission
+
+
+logger = logging.getLogger(__name__)
 
 # Constants for clarity
 ALL = "all"
 IS_STAFF = "is_staff"
+IS_CISA_ANALYST = "is_cisa_analyst"
+IS_OMB_ANALYST = "is_omb_analyst"
+IS_FULL_ACCESS = "is_full_access"
 IS_DOMAIN_MANAGER = "is_domain_manager"
 IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
+HAS_DOMAIN_REQUESTS_VIEW_ALL = "has_domain_requests_view_all"
 IS_PORTFOLIO_MEMBER = "is_portfolio_member"
+IS_MULTIPLE_PORTFOLIOS_MEMBER = "is_multiple_portfolios_member"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
 HAS_PORTFOLIO_DOMAINS_ANY_PERM = "has_portfolio_domains_any_perm"
 HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
-HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL = "has_portfolio_domain_requests_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
 HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
@@ -98,24 +108,42 @@ def _user_has_permission(user, request, rules, **kwargs):
     if not user.is_authenticated or user.is_restricted():
         return False
 
+    portfolio = request.session.get("portfolio")
     # Define permission checks
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
-        (IS_DOMAIN_MANAGER, lambda: _is_domain_manager(user, **kwargs)),
+        (IS_CISA_ANALYST, lambda: user.has_perm("registrar.analyst_access_permission")),
+        (IS_OMB_ANALYST, lambda: user.groups.filter(name="omb_analysts_group").exists()),
+        (IS_FULL_ACCESS, lambda: user.has_perm("registrar.full_access_permission")),
+        (
+            IS_DOMAIN_MANAGER,
+            lambda: (not user.is_org_user(request) and _is_domain_manager(user, **kwargs))
+            or (
+                user.is_org_user(request)
+                and _is_domain_manager(user, **kwargs)
+                and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk"))
+            ),
+        ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
+        (IS_MULTIPLE_PORTFOLIOS_MEMBER, lambda: user.is_multiple_orgs_user(request)),
         (
             HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
-            lambda: _has_portfolio_view_all_domains(request, kwargs.get("domain_pk")),
+            lambda: user.is_org_user(request)
+            and user.has_view_all_domains_portfolio_permission(portfolio)
+            and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk")),
         ),
         (
             HAS_PORTFOLIO_DOMAINS_ANY_PERM,
             lambda: user.is_org_user(request)
-            and user.has_any_domains_portfolio_permission(request.session.get("portfolio")),
+            and user.has_any_domains_portfolio_permission(portfolio)
+            and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk")),
         ),
         (
             IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
-            lambda: _is_domain_manager(user, **kwargs) and _is_portfolio_member(request),
+            lambda: _is_domain_manager(user, **kwargs)
+            and _is_portfolio_member(request)
+            and _domain_exists_under_portfolio(portfolio, kwargs.get("domain_pk")),
         ),
         (
             IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
@@ -127,36 +155,55 @@ def _user_has_permission(user, request, rules, **kwargs):
             and not _is_portfolio_member(request),
         ),
         (
-            HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
-            lambda: user.is_org_user(request)
-            and user.has_any_requests_portfolio_permission(request.session.get("portfolio")),
+            HAS_DOMAIN_REQUESTS_VIEW_ALL,
+            lambda: _can_view_all_domain_requests(user, request, kwargs.get("domain_request_pk")),
         ),
         (
-            HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
+            HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
             lambda: user.is_org_user(request)
-            and user.has_view_all_domain_requests_portfolio_permission(request.session.get("portfolio")),
+            and user.has_any_requests_portfolio_permission(portfolio)
+            and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
             HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-            lambda: _has_portfolio_domain_requests_edit(user, request, kwargs.get("domain_request_pk")),
+            lambda: _has_portfolio_domain_requests_edit(user, request, kwargs.get("domain_request_pk"))
+            and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_ANY_PERM,
             lambda: user.is_org_user(request)
             and (
-                user.has_view_members_portfolio_permission(request.session.get("portfolio"))
-                or user.has_edit_members_portfolio_permission(request.session.get("portfolio"))
+                user.has_view_members_portfolio_permission(portfolio)
+                or user.has_edit_members_portfolio_permission(portfolio)
+            )
+            and (
+                # AND rather than OR because these functions return true if the PK is not found.
+                # This adds support for if the view simply doesn't have said PK.
+                _member_exists_under_portfolio(portfolio, kwargs.get("member_pk"))
+                and _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
             ),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_EDIT,
             lambda: user.is_org_user(request)
-            and user.has_edit_members_portfolio_permission(request.session.get("portfolio")),
+            and user.has_edit_members_portfolio_permission(portfolio)
+            and (
+                # AND rather than OR because these functions return true if the PK is not found.
+                # This adds support for if the view simply doesn't have said PK.
+                _member_exists_under_portfolio(portfolio, kwargs.get("member_pk"))
+                and _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
+            ),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_VIEW,
             lambda: user.is_org_user(request)
-            and user.has_view_members_portfolio_permission(request.session.get("portfolio")),
+            and user.has_view_members_portfolio_permission(portfolio)
+            and (
+                # AND rather than OR because these functions return true if the PK is not found.
+                # This adds support for if the view simply doesn't have said PK.
+                _member_exists_under_portfolio(portfolio, kwargs.get("member_pk"))
+                and _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
+            ),
         ),
     ]
 
@@ -189,6 +236,70 @@ def _is_domain_manager(user, **kwargs):
     if domain_invitation_id:
         return DomainInvitation.objects.filter(id=domain_invitation_id, domain__permissions__user=user).exists()
     return False
+
+
+def _domain_exists_under_portfolio(portfolio, domain_pk):
+    """Checks to see if the given domain exists under the provided portfolio.
+    HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
+    """
+    # The view expects this, and the page will throw an error without this if it needs it.
+    # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
+    if not domain_pk:
+        logger.warning(
+            "_domain_exists_under_portfolio => Could not find domain_pk. "
+            "This is a non-issue if called from the right context."
+        )
+        return True
+    return Domain.objects.filter(domain_info__portfolio=portfolio, id=domain_pk).exists()
+
+
+def _domain_request_exists_under_portfolio(portfolio, domain_request_pk):
+    """Checks to see if the given domain request exists under the provided portfolio.
+    HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
+    """
+    # The view expects this, and the page will throw an error without this if it needs it.
+    # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
+    if not domain_request_pk:
+        logger.warning(
+            "_domain_request_exists_under_portfolio => Could not find domain_request_pk. "
+            "This is a non-issue if called from the right context."
+        )
+        return True
+    return DomainRequest.objects.filter(portfolio=portfolio, id=domain_request_pk).exists()
+
+
+def _member_exists_under_portfolio(portfolio, member_pk):
+    """Checks to see if the given UserPortfolioPermission exists under the provided portfolio.
+    HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
+    """
+    # The view expects this, and the page will throw an error without this if it needs it.
+    # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
+    if not member_pk:
+        logger.warning(
+            "_member_exists_under_portfolio => Could not find member_pk. "
+            "This is a non-issue if called from the right context."
+        )
+        return True
+    return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
+
+
+def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
+    """Checks to see if the given PortfolioInvitation exists under the provided portfolio.
+    HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
+    Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
+    """
+    # The view expects this, and the page will throw an error without this if it needs it.
+    # Thus, if it is none, we are not checking on a specific record and therefore there is nothing to check.
+    if not invitedmember_pk:
+        logger.warning(
+            "_member_invitation_exists_under_portfolio => Could not find invitedmember_pk. "
+            "This is a non-issue if called from the right context."
+        )
+        return True
+    return PortfolioInvitation.objects.filter(portfolio=portfolio, id=invitedmember_pk).exists()
 
 
 def _is_domain_request_creator(user, domain_request_pk):
@@ -288,13 +399,46 @@ def _is_staff_managing_domain(request, **kwargs):
     return True
 
 
-def _has_portfolio_view_all_domains(request, domain_pk):
-    """Returns whether the user in the request can access the domain
-    via portfolio view all domains permission."""
+def _can_view_all_domain_requests(user, request, domain_request_pk):
+    """
+    Determines if the user has view-all permission for domain requests.
+    This permission allows users to view domain request details without editing.
+    Handles both portfolio and non-portfolio domain requests.
+    """
+    if not domain_request_pk:
+        return False
+
     portfolio = request.session.get("portfolio")
-    if request.user.has_view_all_domains_portfolio_permission(portfolio):
-        if Domain.objects.filter(id=domain_pk).exists():
-            domain = Domain.objects.get(id=domain_pk)
-            if domain.domain_info.portfolio == portfolio:
-                return True
+    # Portfolio-based access
+    if user.is_org_user(request) and portfolio:
+        has_perm = user.has_view_all_domain_requests_portfolio_permission(portfolio)
+        exists = _domain_request_exists_under_portfolio(portfolio, domain_request_pk)
+        return has_perm and exists
+
+    # Check non-portfolio permissions
+    try:
+        domain_request = DomainRequest.objects.get(pk=domain_request_pk)
+    except DomainRequest.DoesNotExist:
+        return False
+
+    can_view = _has_legacy_domain_request_view_access(user, domain_request)
+    return can_view
+
+
+def _has_legacy_domain_request_view_access(user, domain_request):
+    """
+    All of the ways a user can view a non-portfolio aka only applies to legacy mode domain request:
+    Has the analyst_access_permission or
+    Is the creator of the request or
+    Has the full_access_permission
+    """
+    if user.has_perm("registrar.analyst_access_permission"):
+        return True
+
+    if domain_request.creator == user:
+        return True
+
+    if user.has_perm("registrar.full_access_permission"):
+        return True
+
     return False

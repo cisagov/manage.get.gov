@@ -22,6 +22,7 @@ from registrar.models.utility.portfolio_helper import (
     get_domains_display,
     get_members_description_display,
     get_members_display,
+    get_portfolio_invitation_associations,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
         required=True,
-        choices=DomainInformation.StateTerritoryChoices.choices,
+        choices=DomainInformation.StateTerritoryChoices.choices,  # type: ignore[misc]
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
@@ -123,13 +124,13 @@ class BasePortfolioMemberForm(forms.ModelForm):
     role = forms.ChoiceField(
         choices=[
             # Uses .value because the choice has a different label (on /admin)
-            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin access"),
-            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic access"),
+            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin"),
+            (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic"),
         ],
         widget=forms.RadioSelect,
         required=True,
         error_messages={
-            "required": "Select the level of access you would like to grant this member.",
+            "required": "Select the role you would like to grant this member.",
         },
     )
 
@@ -410,6 +411,27 @@ class PortfolioMemberForm(BasePortfolioMemberForm):
         model = UserPortfolioPermission
         fields = ["roles", "additional_permissions"]
 
+    def clean(self):
+        """
+        Override of clean to ensure that the user isn't removing themselves
+        if they're the only portfolio admin
+        """
+        super().clean()
+        role = self.cleaned_data.get("role")
+        if self.instance and hasattr(self.instance, "user") and hasattr(self.instance, "portfolio"):
+            if role and self.instance.user.is_only_admin_of_portfolio(self.instance.portfolio):
+                # This is how you associate a validation error to a particular field.
+                # The alternative is to do this in clean_role, but execution order matters.
+                raise forms.ValidationError(
+                    {
+                        "role": forms.ValidationError(
+                            "You can't change your member role because you're "
+                            "the only admin for this organization. "
+                            "To change your role, you'll need to add another admin."
+                        )
+                    }
+                )
+
 
 class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
     """
@@ -459,7 +481,14 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
             if hasattr(e, "code"):
                 field = "email" if "email" in self.fields else None
                 if e.code == "has_existing_permissions":
-                    self.add_error(field, f"{self.instance.email} is already a member of another .gov organization.")
+                    existing_permissions, existing_invitations = get_portfolio_invitation_associations(self.instance)
+
+                    same_portfolio_for_permissions = existing_permissions.exclude(portfolio=self.instance.portfolio)
+                    same_portfolio_for_invitations = existing_invitations.exclude(portfolio=self.instance.portfolio)
+                    if same_portfolio_for_permissions.exists() or same_portfolio_for_invitations.exists():
+                        self.add_error(
+                            field, f"{self.instance.email} is already a member of another .gov organization."
+                        )
                     override_error = True
                 elif e.code == "has_existing_invitations":
                     self.add_error(
@@ -470,3 +499,11 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
             # Errors denoted as "__all__" are special error types reserved for the model level clean function
             if override_error and "__all__" in self._errors:
                 del self._errors["__all__"]
+
+
+class PortfolioOrganizationSelectForm(forms.Form):
+    """
+    Form to update active session portfolio.
+    """
+
+    set_session_portfolio_button = forms.CharField()

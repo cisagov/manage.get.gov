@@ -3,7 +3,6 @@ import logging
 from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from registrar.models.portfolio import Portfolio
-from registrar.utility.waffle import flag_is_active_anywhere
 from django import forms
 from django.core.validators import RegexValidator, MaxLengthValidator
 from django.utils.safestring import mark_safe
@@ -86,7 +85,6 @@ class RequestingEntityForm(RegistrarForm):
             return {}
         # get the domain request as a dict, per usual method
         domain_request_dict = {name: getattr(obj, name) for name in cls.declared_fields.keys()}  # type: ignore
-
         # set sub_organization to 'other' if is_requesting_new_suborganization is True
         if isinstance(obj, DomainRequest) and obj.is_requesting_new_suborganization():
             domain_request_dict["sub_organization"] = "other"
@@ -288,6 +286,11 @@ class OrganizationFederalForm(RegistrarForm):
         error_messages={"required": ("Select the part of the federal government your organization is in.")},
     )
 
+    def to_database(self, domain_request):
+        federal_type = self.cleaned_data.get("federal_type")
+        domain_request.federal_type = federal_type
+        domain_request.save(update_fields=["federal_type"])
+
 
 class OrganizationElectionForm(RegistrarForm):
     is_election_board = forms.NullBooleanField(
@@ -348,7 +351,7 @@ class OrganizationContactForm(RegistrarForm):
         error_messages={
             "required": ("Select the state, territory, or military post where your organization is located.")
         },
-        widget=ComboboxWidget,
+        widget=ComboboxWidget(attrs={"required": True}),
     )
     zipcode = forms.CharField(
         label="Zip code",
@@ -369,13 +372,12 @@ class OrganizationContactForm(RegistrarForm):
         super().__init__(*args, **kwargs)
 
         # Set the queryset for federal agency.
-        # If the organization_requests flag is active, We want to exclude agencies with a portfolio.
         federal_agency_queryset = FederalAgency.objects.exclude(agency__in=self.excluded_agencies)
-        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
-            # Exclude both predefined agencies and those matching portfolio records in one query
-            federal_agency_queryset = federal_agency_queryset.exclude(
-                id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
-            )
+
+        # Exclude both predefined agencies and those matching portfolio records in one query
+        federal_agency_queryset = federal_agency_queryset.exclude(
+            id__in=Portfolio.objects.values_list("federal_agency__id", flat=True)
+        )
 
         self.fields["federal_agency"].queryset = federal_agency_queryset
 
@@ -447,7 +449,7 @@ class SeniorOfficialForm(RegistrarForm):
         error_messages={"required": ("Enter the last name / family name of your senior official.")},
     )
     title = forms.CharField(
-        label="Title or role in your organization",
+        label="Title or role",
         error_messages={
             "required": (
                 "Enter the title or role your senior official has in your"
@@ -608,12 +610,16 @@ class DotGovDomainForm(RegistrarForm):
     )
 
 
-class PurposeForm(RegistrarForm):
+class PurposeDetailsForm(BaseDeletableRegistrarForm):
+
+    field_name = "purpose"
+
     purpose = forms.CharField(
         label="Purpose",
         widget=forms.Textarea(
             attrs={
-                "aria-label": "What is the purpose of your requested domain? Describe how you’ll use your .gov domain. \
+                "aria-label": "What is the purpose of your requested domain? \
+                Describe how you’ll use your .gov domain. \
                 Will it be used for a website, email, or something else?"
             }
         ),
@@ -661,10 +667,10 @@ class OtherContactsForm(RegistrarForm):
         error_messages={"required": "Enter the last name / family name of this contact."},
     )
     title = forms.CharField(
-        label="Title or role in your organization",
+        label="Title or role",
         error_messages={
             "required": (
-                "Enter the title or role in your organization of this contact (e.g., Chief Information Officer)."
+                "Enter the title or role of this contact in your organization (e.g., Chief Information Officer)."
             )
         },
     )
@@ -868,6 +874,7 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
 
     form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
     field_name = "has_cisa_representative"
+    aria_labelledby = "cisa-representative-heading"
 
 
 class AnythingElseForm(BaseDeletableRegistrarForm):
@@ -916,9 +923,11 @@ class AnythingElseYesNoForm(BaseYesNoForm):
     # Note that these can be set as functions/init if you need more fine-grained control.
     form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
     field_name = "has_anything_else_text"
+    aria_labelledby = "anything-else-heading"
 
 
 class RequirementsForm(RegistrarForm):
+
     is_policy_acknowledged = forms.BooleanField(
         label="I read and agree to the requirements for operating a .gov domain.",
         error_messages={

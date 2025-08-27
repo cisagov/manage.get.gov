@@ -9,28 +9,29 @@ on:
 jobs:
   variables: 
     if: | 
-      startsWith(github.head_ref, 'ab/')
+      startsWith(github.head_ref, 'backup/')
+        || startsWith(github.head_ref, 'testdb')
+        || startsWith(github.head_ref, 'acadia')
+        || startsWith(github.head_ref, 'glacier')
+        || startsWith(github.head_ref, 'olympic')
+        || startsWith(github.head_ref, 'yellowstone')
+        || startsWith(github.head_ref, 'zion')
+        || startsWith(github.head_ref, 'potato')
+        || startsWith(github.head_ref, 'product')
         || startsWith(github.head_ref, 'bl/')
-        || startsWith(github.head_ref, 'rjm/')
-        || startsWith(github.head_ref, 'rb/')
-        || startsWith(github.head_ref, 'ko/')
-        || startsWith(github.head_ref, 'gd/')
-        || startsWith(github.head_ref, 'za/')
         || startsWith(github.head_ref, 'rh/')
         || startsWith(github.head_ref, 'nl/')
-        || startsWith(github.head_ref, 'dk/')
+        || startsWith(github.head_ref, 'kma/')
         || startsWith(github.head_ref, 'es/')
-        || startsWith(github.head_ref, 'ky/')
-        || startsWith(github.head_ref, 'backup/')
         || startsWith(github.head_ref, 'meoward/')
         || startsWith(github.head_ref, 'bob/')
-        || startsWith(github.head_ref, 'cb/')
         || startsWith(github.head_ref, 'hotgov/')
         || startsWith(github.head_ref, 'litterbox/')
-        || startsWith(github.head_ref, 'ag/')
-        || startsWith(github.head_ref, 'ms/')
         || startsWith(github.head_ref, 'ad/')
         || startsWith(github.head_ref, 'el/')
+        || startsWith(github.head_ref, 'dg/')
+        || startsWith(github.head_ref, 'aa/')
+
     outputs:
       environment: ${{ steps.var.outputs.environment}}
     runs-on: "ubuntu-latest"

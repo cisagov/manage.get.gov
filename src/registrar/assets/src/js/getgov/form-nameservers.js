@@ -176,6 +176,15 @@ export class NameserverForm {
                 this.executeCallback();
             });
         }
+        const cancel_changes_modal = document.getElementById('cancel-changes-modal');
+        if (cancel_changes_modal) {
+            const submitButton = document.getElementById('cancel-changes-click-button');
+            const closeButton = cancel_changes_modal.querySelector('.usa-modal__close');
+            submitButton.addEventListener('click', () => {
+                closeButton.click();
+                this.executeCallback();
+            });
+        }
         const delete_modal = document.getElementById('delete-modal');
         if (delete_modal) {
             const submitButton = document.getElementById('delete-click-button');
@@ -338,7 +347,18 @@ export class NameserverForm {
      * @param {Event} event - Click event
      */
     handleCancelAddFormClick(event) {
-        this.resetAddNameserversForm();
+        this.callback = () => {
+            this.resetAddNameserversForm();
+        }
+        if (this.formChanged) {
+            // Show the cancel changes confirmation modal
+            let modalTrigger = document.querySelector("#cancel_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
+        } else {
+            this.executeCallback();
+        }
     }
 
     /**
@@ -354,10 +374,21 @@ export class NameserverForm {
         let cancelButton = event.target;
         // find the closest table row that contains the cancel button
         let editRow = cancelButton.closest('tr');
-        if (editRow) {
-            this.resetEditRowAndFormAndCollapseEditRow(editRow);
+        this.callback = () => {
+            if (editRow) {
+                this.resetEditRowAndFormAndCollapseEditRow(editRow);
+            } else {
+                console.warn("Expected DOM element but did not find it");
+            }
+        }
+        if (this.formChanged) {
+            // Show the cancel changes confirmation modal
+            let modalTrigger = document.querySelector("#cancel_changes_trigger");
+            if (modalTrigger) {
+                modalTrigger.click();
+            }
         } else {
-            console.warn("Expected DOM element but did not find it");
+            this.executeCallback();
         }
     }
 

@@ -16,27 +16,27 @@ on:
         options:
           - staging
           - development
+          - testdb
+          - acadia
+          - glacier
+          - olympic
+          - yellowstone
+          - zion
+          - potato
+          - product
+          - aa
           - el
           - ad
-          - ms
-          - ag
           - litterbox
           - hotgov
-          - cb
           - bob
           - meoward
           - backup
-          - ky
           - es
           - nl
           - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
-          - dk
+          - kma
+          - dg
 
 jobs:
   reset-db:

@@ -1,7 +1,8 @@
 from datetime import datetime
 from django.forms import ValidationError
 from django.utils import timezone
-from waffle.testutils import override_flag
+from registrar.models.federal_agency import FederalAgency
+from registrar.utility.constants import BranchChoices
 import re
 from django.test import RequestFactory, Client, TestCase, override_settings
 from django.contrib.admin.sites import AdminSite
@@ -37,6 +38,7 @@ from .common import (
     less_console_noise,
     create_superuser,
     create_user,
+    create_omb_analyst_user,
     multiple_unalphabetical_domain_objects,
     MockEppLib,
     GenericTestHelper,
@@ -47,6 +49,7 @@ from unittest.mock import ANY, patch
 from django.conf import settings
 import boto3_mocking  # type: ignore
 import logging
+from django.contrib.messages.storage.fallback import FallbackStorage
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +71,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.admin = DomainRequestAdmin(model=DomainRequest, admin_site=self.site)
         self.superuser = create_superuser()
         self.staffuser = create_user()
+        self.ombanalyst = create_omb_analyst_user()
         self.client = Client(HTTP_HOST="localhost:8080")
         self.test_helper = GenericTestHelper(
             factory=self.factory,
@@ -79,6 +83,12 @@ class TestDomainRequestAdmin(MockEppLib):
         self.mock_client = MockSESClient()
         allowed_emails = [AllowedEmail(email="mayor@igorville.gov"), AllowedEmail(email="help@get.gov")]
         AllowedEmail.objects.bulk_create(allowed_emails)
+
+    def setUp(self):
+        super().setUp()
+        self.fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
 
     def tearDown(self):
         super().tearDown()
@@ -92,6 +102,7 @@ class TestDomainRequestAdmin(MockEppLib):
         SeniorOfficial.objects.all().delete()
         Suborganization.objects.all().delete()
         Portfolio.objects.all().delete()
+        self.fed_agency.delete()
         self.mock_client.EMAILS_SENT.clear()
 
     @classmethod
@@ -100,7 +111,70 @@ class TestDomainRequestAdmin(MockEppLib):
         User.objects.all().delete()
         AllowedEmail.objects.all().delete()
 
-    @override_flag("organization_feature", active=True)
+    @less_console_noise_decorator
+    def test_omb_analyst_view(self):
+        """Ensure OMB analysts can view domain request list."""
+        febportfolio = Portfolio.objects.create(
+            organization_name="new portfolio",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.fed_agency,
+            creator=self.ombanalyst,
+        )
+        nonfebportfolio = Portfolio.objects.create(
+            organization_name="non feb portfolio",
+            creator=self.ombanalyst,
+        )
+        nonfebdomainrequest = completed_domain_request(
+            name="test1234nonfeb.gov",
+            portfolio=nonfebportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        febdomainrequest = completed_domain_request(
+            name="test1234feb.gov",
+            portfolio=febportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        self.client.force_login(self.ombanalyst)
+        response = self.client.get(reverse("admin:registrar_domainrequest_changelist"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, febdomainrequest.requested_domain.name)
+        self.assertNotContains(response, nonfebdomainrequest.requested_domain.name)
+        self.assertNotContains(response, ">Import<")
+        self.assertNotContains(response, ">Export<")
+
+    @less_console_noise_decorator
+    def test_omb_analyst_change(self):
+        """Ensure OMB analysts can view/edit federal executive branch domain requests."""
+        self.client.force_login(self.ombanalyst)
+        febportfolio = Portfolio.objects.create(
+            organization_name="new portfolio",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            federal_agency=self.fed_agency,
+            creator=self.ombanalyst,
+        )
+        nonfebportfolio = Portfolio.objects.create(
+            organization_name="non feb portfolio",
+            creator=self.ombanalyst,
+        )
+        nonfebdomainrequest = completed_domain_request(
+            name="test1234nonfeb.gov",
+            portfolio=nonfebportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        febdomainrequest = completed_domain_request(
+            name="test1234feb.gov",
+            portfolio=febportfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+        response = self.client.get(reverse("admin:registrar_domainrequest_change", args=[nonfebdomainrequest.id]))
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(reverse("admin:registrar_domainrequest_change", args=[febdomainrequest.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, febdomainrequest.requested_domain.name)
+        # test buttons
+        self.assertContains(response, "Save")
+        self.assertNotContains(response, ">Delete<")
+
     @less_console_noise_decorator
     def test_clean_validates_duplicate_suborganization(self):
         """Tests that clean() prevents duplicate suborganization names within the same portfolio"""
@@ -131,7 +205,6 @@ class TestDomainRequestAdmin(MockEppLib):
         domain_request.clean()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_clean_validates_partial_suborganization_fields(self):
         """Tests that clean() enforces all-or-nothing rule for suborganization fields"""
         portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
@@ -217,7 +290,7 @@ class TestDomainRequestAdmin(MockEppLib):
         self.assertEqual(response.status_code, 200)
 
         # Test for a description snippet
-        self.assertContains(response, "This table contains all domain requests")
+        self.assertContains(response, "This table contains all .gov domain requests")
         self.assertContains(response, "Show more")
 
     @less_console_noise_decorator
@@ -662,7 +735,7 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=55)
+        self.assertContains(response, "Federal", count=56)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
@@ -1981,7 +2054,14 @@ class TestDomainRequestAdmin(MockEppLib):
             "senior_official",
             "approved_domain",
             "requested_domain",
+            "feb_naming_requirements",
+            "feb_naming_requirements_details",
+            "feb_purpose_choice",
             "purpose",
+            "has_timeframe",
+            "time_frame_details",
+            "is_interagency_initiative",
+            "interagency_initiative_details",
             "no_other_contacts_rationale",
             "anything_else",
             "has_anything_else_text",
@@ -2061,6 +2141,86 @@ class TestDomainRequestAdmin(MockEppLib):
                 "alternative_domains",
                 "is_election_board",
                 "status_history",
+            ]
+
+            self.assertEqual(readonly_fields, expected_fields)
+
+    def test_readonly_fields_for_omb_analyst(self):
+        with less_console_noise():
+            request = self.factory.get("/")  # Use the correct method and path
+            request.user = self.ombanalyst
+
+            readonly_fields = self.admin.get_readonly_fields(request)
+
+            expected_fields = [
+                "portfolio_senior_official",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
+                "other_contacts",
+                "current_websites",
+                "alternative_domains",
+                "is_election_board",
+                "status_history",
+                "federal_agency",
+                "creator",
+                "about_your_organization",
+                "requested_domain",
+                "approved_domain",
+                "alternative_domains",
+                "purpose",
+                "no_other_contacts_rationale",
+                "anything_else",
+                "is_policy_acknowledged",
+                "cisa_representative_first_name",
+                "cisa_representative_last_name",
+                "cisa_representative_email",
+                "status",
+                "investigator",
+                "notes",
+                "senior_official",
+                "organization_type",
+                "organization_name",
+                "state_territory",
+                "address_line1",
+                "address_line2",
+                "city",
+                "zipcode",
+                "urbanization",
+                "portfolio_organization_type",
+                "portfolio_federal_type",
+                "portfolio_organization_name",
+                "portfolio_federal_agency",
+                "portfolio_state_territory",
+                "portfolio_address_line1",
+                "portfolio_address_line2",
+                "portfolio_city",
+                "portfolio_zipcode",
+                "portfolio_urbanization",
+                "is_election_board",
+                "organization_type",
+                "federal_type",
+                "federal_agency",
+                "tribe_name",
+                "federally_recognized_tribe",
+                "state_recognized_tribe",
+                "about_your_organization",
+                "rejection_reason",
+                "rejection_reason_email",
+                "action_needed_reason",
+                "action_needed_reason_email",
+                "portfolio",
+                "sub_organization",
+                "requested_suborganization",
+                "suborganization_city",
+                "suborganization_state_territory",
             ]
 
             self.assertEqual(readonly_fields, expected_fields)
@@ -2148,7 +2308,6 @@ class TestDomainRequestAdmin(MockEppLib):
 
         Used to test errors when saving a change with an active domain, also used to test side effects
         when saving a change goes through."""
-
         with less_console_noise():
             # Create an instance of the model
             domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.APPROVED)
@@ -2259,6 +2418,44 @@ class TestDomainRequestAdmin(MockEppLib):
             messages.error.assert_called_once_with(
                 request,
                 "Cannot approve. Requested domain is already in use.",
+            )
+
+    def test_error_when_approving_domain_in_pending_delete_state(self):
+        """If in pendingDelete state from in review -> approve not allowed."""
+
+        # 1. Create domain
+        to_be_in_pending_deleted = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, name="meoward1.gov"
+        )
+        to_be_in_pending_deleted.creator = self.superuser
+
+        # 2. Put domain into in-review state
+        to_be_in_pending_deleted.status = DomainRequest.DomainRequestStatus.IN_REVIEW
+        to_be_in_pending_deleted.save()
+
+        # 3. Update request as a superuser
+        request = self.factory.post(f"/admin/registrar/domainrequest/{to_be_in_pending_deleted.pk}/change/")
+        request.user = self.superuser
+        request.session = {}
+
+        setattr(request, "_messages", FallbackStorage(request))
+
+        # 4. Use ExitStack for combine patching like above
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client), ExitStack() as stack:
+            # Patch django.contrib.messages.error
+            stack.enter_context(patch.object(messages, "error"))
+
+            with patch("registrar.models.domain.Domain.is_pending_delete", return_value=True):
+                # Attempt to approve to_be_in_pending_deleted
+                # (which should fail due is_pending_delete == True so nothing can get approved)
+                to_be_in_pending_deleted.status = DomainRequest.DomainRequestStatus.APPROVED
+
+                # Save the model with the patched request
+                self.admin.save_model(request, to_be_in_pending_deleted, None, True)
+
+            messages.error.assert_called_once_with(
+                request,
+                "Domain of same name is currently in pending delete state.",
             )
 
     @less_console_noise

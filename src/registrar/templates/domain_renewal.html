@@ -2,26 +2,13 @@
 {% load static url_helpers %}
 {% load custom_filters %}
 
-{% block domain_content %}
   {% block breadcrumb %}
 
-  <!-- Banner for if_policy_acknowledged -->
-  {% if form.is_policy_acknowledged.errors %}
-    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert">
-      <div class="usa-alert__body">
-        {% for error in form.is_policy_acknowledged.errors %}
-          <p class="usa-alert__text">{{ error }}</p>
-        {% endfor %}
-      </div>
-    </div>
-  {% endif %}
-
-  {% if portfolio %}
   <!-- Navigation breadcrumbs -->
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
         <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{domain.name}}</span></a>
@@ -32,8 +19,19 @@
 
     </ol>
   </nav>
-  {% endif %}
   {% endblock breadcrumb %}
+
+  {% block domain_content %}
+   <!-- Banner for if_policy_acknowledged -->
+  {% if form.is_policy_acknowledged.errors %}
+    <div class="usa-alert usa-alert--error usa-alert--slim margin-bottom-2" role="alert">
+      <div class="usa-alert__body">
+        {% for error in form.is_policy_acknowledged.errors %}
+          <p class="usa-alert__text">{{ error }}</p>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
 
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">

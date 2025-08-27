@@ -5,6 +5,7 @@ export class DomainsTable extends BaseTable {
 
   constructor() {
     super('domain');
+    this.currentSortBy = 'name';
   }
   getBaseUrl() {
     return document.getElementById("get_domains_json_url");
@@ -27,7 +28,7 @@ export class DomainsTable extends BaseTable {
 
     if (this.portfolioValue) {
       markupForSuborganizationRow = `
-        <td>
+        <td data-label="Suborganization">
             <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">${suborganization}</span>
         </td>
       `
@@ -56,7 +57,7 @@ export class DomainsTable extends BaseTable {
         </svg>
       </td>
       ${markupForSuborganizationRow}
-      <td class="width--action-column">
+      <td data-label="Action" class="width--action-column margin-bottom-3">
         <div class="tablet:display-flex tablet:flex-row flex-align-center margin-right-2">
           <a href="${actionUrl}">
             <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">

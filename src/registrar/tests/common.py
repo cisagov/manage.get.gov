@@ -51,6 +51,19 @@ from api.tests.common import less_console_noise_decorator
 logger = logging.getLogger(__name__)
 
 
+def get_ap_style_month(month):
+    AP_STYLE_MONTH = {
+        "January": "Jan.",
+        "February": "Feb.",
+        "August": "Aug.",
+        "September": "Sept.",
+        "October": "Oct.",
+        "November": "Nov.",
+        "December": "Dec.",
+    }
+    return AP_STYLE_MONTH[month]
+
+
 def get_handlers():
     """Obtain pointers to all StreamHandlers."""
     handlers = {}
@@ -224,6 +237,52 @@ class GenericTestHelper(TestCase):
             follow=True,
         )
         return response
+
+    @staticmethod
+    def switch_to_enterprise_mode_wrapper(role=UserPortfolioRoleChoices.ORGANIZATION_ADMIN):
+        """
+        Use this decorator for all tests where we want to be in Enterprise mode.
+
+        By default, our test mock data has users that do not have portfolio permissions.
+        This decorator grants portfolio permissions temporarily for the function
+        it decorates.
+
+        NOTE: This decorator (in general) should appear at the top of any other decorators.
+
+        USE CASE:
+        # Default role (ORGANIZATION_ADMIN)
+        @GenericTestHelper.switch_to_enterprise_mode_wrapper()
+        @other_decorator
+        @other_decorator
+        def test_admin_role(self):
+            ...
+
+        # Custom role
+        @GenericTestHelper.switch_to_enterprise_mode_wrapper(UserPortfolioRoleChoices.ORGANIZATION_MEMBER)
+        @other_decorator
+        @other_decorator
+        def test_member_role(self):
+            ...
+        """
+
+        # NOTE: "self" in this function is not GenericTestHelper.  Instead,
+        # "self" refers to the parent class of the function passed into the decorator.
+        def decorator(func):
+            def wrapper(self, *args, **kwargs):
+                """Switches to enterprise mode with the specified role"""
+                UserPortfolioPermission.objects.get_or_create(
+                    user=self.user, portfolio=self.portfolio, defaults={"roles": [role]}
+                )
+                try:
+                    return func(self, *args, **kwargs)
+                finally:
+                    """Essentially switches to legacy mode by
+                    stripping the user of portfolio permissions"""
+                    UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+
+            return wrapper
+
+        return decorator
 
 
 class MockUserLogin:
@@ -1010,6 +1069,27 @@ def create_user(**kwargs):
     return user
 
 
+def create_omb_analyst_user(**kwargs):
+    """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
+    User = get_user_model()
+    p = "userpass"
+    user = User.objects.create_user(
+        username=kwargs.get("username", "ombanalystuser"),
+        email=kwargs.get("email", "ombanalyst@example.com"),
+        first_name=kwargs.get("first_name", "first"),
+        last_name=kwargs.get("last_name", "last"),
+        is_staff=kwargs.get("is_staff", True),
+        title=kwargs.get("title", "title"),
+        password=kwargs.get("password", p),
+        phone=kwargs.get("phone", "8003111234"),
+    )
+    # Retrieve the group or create it if it doesn't exist
+    group, _ = UserGroup.objects.get_or_create(name="omb_analysts_group")
+    # Add the user to the group
+    user.groups.set([group])
+    return user
+
+
 def create_test_user():
     username = "test_user"
     first_name = "First"
@@ -1017,6 +1097,24 @@ def create_test_user():
     email = "info@example.com"
     phone = "8003111234"
     title = "test title"
+    user = get_user_model().objects.create(
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        title=title,
+    )
+    return user
+
+
+def create_test_user_not_in_portfolio():
+    username = "test_user_not_in_portfolio"
+    first_name = "First"
+    last_name = "Last"
+    email = "not_in_portfolio@example.com"
+    phone = "1234567890"
+    title = "tester not in portfolio"
     user = get_user_model().objects.create(
         username=username,
         first_name=first_name,
@@ -1071,7 +1169,7 @@ def completed_domain_request(  # noqa
         email="testy@town.com",
         phone="(555) 555 5555",
     )
-    domain, _ = DraftDomain.objects.get_or_create(name=name)
+    domain = DraftDomain.objects.create(name=name)
     other, _ = Contact.objects.get_or_create(
         first_name="Testy",
         last_name="Tester",
@@ -1423,10 +1521,8 @@ class MockEppLib(TestCase):
         ],
     )
 
-    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData(
-        "defaultTech", "dotgov@cisa.dhs.gov"
-    )
-    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "dotgov@cisa.dhs.gov")
+    mockDefaultTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultTech", "help@get.gov")
+    mockDefaultSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("defaultSec", "help@get.gov")
     mockSecurityContact = InfoDomainWithContacts.dummyInfoContactResultData("securityContact", "security@mail.gov")
     mockTechnicalContact = InfoDomainWithContacts.dummyInfoContactResultData("technicalContact", "tech@mail.gov")
     mockAdministrativeContact = InfoDomainWithContacts.dummyInfoContactResultData("adminContact", "admin@mail.gov")
@@ -1912,7 +2008,14 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[mocked_result])
 
     def mockCreateContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail" and self.mockedSendFunction.call_count == 3:
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists and self.mockedSendFunction.call_count == 3:
             # use this for when a contact is being updated
             # sets the second send() to fail
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
@@ -1927,7 +2030,14 @@ class MockEppLib(TestCase):
         return MagicMock(res_data=[self.mockDataInfoHosts])
 
     def mockDeleteContactCommands(self, _request, cleaned):
-        if getattr(_request, "id", None) == "fail":
+        ids_to_throw_already_exists = [
+            "failAdmin1234567",
+            "failTech12345678",
+            "failSec123456789",
+            "failReg123456789",
+            "fail",
+        ]
+        if getattr(_request, "id", None) in ids_to_throw_already_exists:
             raise RegistryError(code=ErrorCode.OBJECT_EXISTS)
         else:
             return MagicMock(
@@ -1941,14 +2051,23 @@ class MockEppLib(TestCase):
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
 
-    def _convertPublicContactToEpp(self, contact: PublicContact, disclose_email=False, createContact=True):
+    def _convertPublicContactToEpp(
+        self,
+        contact: PublicContact,
+        disclose=False,
+        createContact=True,
+        disclose_fields=None,
+        disclose_types=None,
+    ):
         DF = common.DiscloseField
-        fields = {DF.EMAIL}
+        if disclose_fields is None:
+            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
+            disclose_fields = {field for field in DF} - fields
 
-        di = common.Disclose(
-            flag=disclose_email,
-            fields=fields,
-        )
+        if disclose_types is None:
+            disclose_types = {DF.ADDR: "loc", DF.NAME: "loc"}
+
+        di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
         # check docs here looks like we may have more than one address field but
         addr = common.ContactAddr(

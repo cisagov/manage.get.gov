@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django_webtest import WebTest  # type: ignore
@@ -191,7 +191,7 @@ class HomeTests(TestWithUser):
             with self.subTest(domain_name=domain_name, state=state, expected_message=expected_message):
                 # Create a domain and a UserRole with the given params
                 test_domain, _ = Domain.objects.get_or_create(name=domain_name, state=state)
-                test_domain.expiration_date = date.today()
+                test_domain.expiration_date = date.today() + timedelta(days=61)
                 test_domain.save()
 
                 user_role, _ = UserDomainRole.objects.get_or_create(
@@ -231,6 +231,30 @@ class HomeTests(TestWithUser):
 
         # Check that we have the right text content.
         self.assertContains(response, expired_text, count=1)
+
+        test_role.delete()
+        test_domain.delete()
+
+    @less_console_noise_decorator
+    def test_state_help_text_is_expiring(self):
+        """Tests if each domain state has help text when expired"""
+        is_expiring_text = "This domain is expiring soon"
+        test_domain, _ = Domain.objects.get_or_create(name="is-expiring.gov", state=Domain.State.READY)
+        test_domain.expiration_date = date.today()
+        test_domain.save()
+
+        test_role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user, domain=test_domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Grab the json response of the domains list
+        response = self.client.get("/get-domains-json/")
+
+        # Make sure the domain is in the response
+        self.assertContains(response, "is-expiring.gov", count=1)
+
+        # Check that we have the right text content.
+        self.assertContains(response, is_expiring_text, count=1)
 
         test_role.delete()
         test_domain.delete()
@@ -867,7 +891,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
         # We need to assert that logo is not clickable and links to manage your domain are not present
         # NOTE: "anage" is not a typo.  It is to accomodate the fact that the "m" is uppercase in one
         # instance and lowercase in the other.
-        self.assertContains(save_page, "anage your domains", count=2)
+        self.assertContains(save_page, "anage your domains", count=1)
         self.assertNotContains(save_page, "Before you can manage your domains, we need you to add contact information")
         # Assert that modal does not appear on subsequent submits
         self.assertNotContains(save_page, "domain registrants must maintain accurate contact information")
@@ -1036,13 +1060,12 @@ class PortfoliosTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_no_redirect_when_user_has_no_portfolios(self):
         """No redirect so no follow,
-        implicitely test for the presense of the h2 by looking up its id"""
+        implicitly test for the presense of the h2 by looking up its id"""
         self.portfolio.delete()
         self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            home_page = self.app.get(reverse("home"))
-            self._set_session_cookie()
+        home_page = self.app.get(reverse("home"))
+        self._set_session_cookie()
 
-            self.assertNotContains(home_page, self.portfolio.organization_name)
+        self.assertNotContains(home_page, self.portfolio.organization_name)
 
-            self.assertContains(home_page, 'id="domain-requests-header"')
+        self.assertContains(home_page, 'id="domain-requests-header"')

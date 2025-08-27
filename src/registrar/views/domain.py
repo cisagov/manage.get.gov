@@ -15,6 +15,7 @@ from registrar.decorators import (
     IS_DOMAIN_MANAGER,
     IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
     IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
+    IS_STAFF,
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
@@ -25,7 +26,6 @@ from registrar.models import (
     DomainInformation,
     DomainInvitation,
     PortfolioInvitation,
-    User,
     UserDomainRole,
     PublicContact,
 )
@@ -68,7 +68,11 @@ from epplibwrapper import (
 )
 
 from ..utility.email import send_templated_email, EmailSendingError
-from ..utility.email_invitations import send_domain_invitation_email, send_portfolio_invitation_email
+from ..utility.email_invitations import (
+    send_domain_invitation_email,
+    send_domain_manager_removal_emails_to_domain_managers,
+    send_portfolio_invitation_email,
+)
 from django import forms
 
 logger = logging.getLogger(__name__)
@@ -328,7 +332,8 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 if form.__class__ in check_for_portfolio:
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
-                    if not info or info.portfolio:
+                    is_org_user = self.request.user.is_org_user(self.request)
+                    if is_org_user and (not info or info.portfolio):
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -362,45 +367,39 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         Will log a warning if the email fails to send for any reason, but will not raise an error.
         """
-        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
-            "user", flat=True
-        )
-        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
-        try:
-            # Remove the current user so they aren't CC'ed, since they will be the "to_address"
-            emails.remove(self.request.user.email)  # type: ignore
-        except ValueError:
-            pass
+        manager_roles = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER)
 
-        try:
-            send_templated_email(
-                template,
-                subject_template,
-                to_address=self.request.user.email,  # type: ignore
-                context=context,
-                cc_addresses=emails,
-            )
-        except EmailSendingError:
-            logger.warning(
-                "Could not sent notification email to %s for domain %s",
-                emails,
-                domain.name,
-                exc_info=True,
-            )
+        for role in manager_roles:
+            manager = role.user
+            context["recipient"] = manager
+            try:
+                send_templated_email(template, subject_template, to_addresses=[manager.email], context=context)
+            except EmailSendingError as err:
+                logger.error(
+                    "Failed to send notification email:\n"
+                    f"  Subject template: {subject_template}\n"
+                    f"  To: {manager.email}\n"
+                    f"  Domain: {domain.name}\n"
+                    f"  Error: {err}",
+                    exc_info=True,
+                )
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
-    """Domain detail overview page."""
+    """Domain detail overview page"""
 
     template_name = "domain_detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
+        context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
+            user=self.request.user, portfolio=self.request.session.get("portfolio")
+        ).first()
 
         security_email = self.object.get_security_email()
         if security_email is None or security_email in default_emails:
@@ -456,7 +455,7 @@ class DomainRenewalView(DomainBaseView):
 
         context = super().get_context_data(**kwargs)
 
-        default_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        default_emails = DefaultEmail.get_all_emails()
 
         context["hidden_security_emails"] = default_emails
 
@@ -703,6 +702,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
     )
 
 
+@grant_access(IS_STAFF)
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
@@ -1060,10 +1060,6 @@ class DomainDsDataView(DomainFormBaseView):
                 for record in dnssecdata.dsData
             )
 
-        # Ensure at least 1 record, filled or empty
-        while len(initial_data) == 0:
-            initial_data.append({})
-
         return initial_data
 
     def get_success_url(self):
@@ -1082,29 +1078,8 @@ class DomainDsDataView(DomainFormBaseView):
         """Formset submission posts to this view."""
         self._get_domain(request)
         formset = self.get_form()
-        override = False
 
-        # This is called by the form cancel button,
-        # and also by the modal's X and cancel buttons
-        if "btn-cancel-click" in request.POST:
-            url = self.get_success_url()
-            return HttpResponseRedirect(url)
-
-        # This is called by the Disable DNSSEC modal to override
-        if "disable-override-click" in request.POST:
-            override = True
-
-        # This is called when all DNSSEC data has been deleted and the
-        # Save button is pressed
-        if len(formset) == 0 and formset.initial != [{}] and override is False:
-            # trigger the modal
-            # get context data from super() rather than self
-            # to preserve the context["form"]
-            context = super().get_context_data(form=formset)
-            context["trigger_modal"] = True
-            return self.render_to_response(context)
-
-        if formset.is_valid() or override:
+        if formset.is_valid():
             return self.form_valid(formset)
         else:
             return self.form_invalid(formset)
@@ -1116,11 +1091,12 @@ class DomainDsDataView(DomainFormBaseView):
         dnssecdata = extensions.DNSSECExtension()
 
         for form in formset:
+            if form.cleaned_data.get("DELETE"):  # Check if form is marked for deletion
+                continue  # Skip processing this form
+
             try:
-                # if 'delete' not in form.cleaned_data
-                # or form.cleaned_data['delete'] == False:
                 dsrecord = {
-                    "keyTag": form.cleaned_data["key_tag"],
+                    "keyTag": int(form.cleaned_data["key_tag"]),
                     "alg": int(form.cleaned_data["algorithm"]),
                     "digestType": int(form.cleaned_data["digest_type"]),
                     "digest": form.cleaned_data["digest"],
@@ -1166,7 +1142,7 @@ class DomainSecurityEmailView(DomainFormBaseView):
         initial = super().get_initial()
         security_contact = self.object.security_contact
 
-        invalid_emails = [DefaultEmail.PUBLIC_CONTACT_DEFAULT.value, DefaultEmail.LEGACY_DEFAULT.value]
+        invalid_emails = DefaultEmail.get_all_emails()
         if security_contact is None or security_contact.email in invalid_emails:
             initial["security_email"] = None
             return initial
@@ -1347,8 +1323,9 @@ class DomainAddUserView(DomainFormBaseView):
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view
+            is_org_user = self.request.user.is_org_user(self.request)
             if (
-                flag_is_active_for_user(requestor, "organization_feature")
+                is_org_user
                 and not flag_is_active_for_user(requestor, "multiple_portfolios")
                 and domain_org is not None
                 and requestor_can_update_portfolio
@@ -1474,47 +1451,16 @@ class DomainDeleteUserView(DeleteView):
         super().form_valid(form)
 
         # Email all domain managers that domain manager has been removed
-        domain = self.object.domain
-
-        context = {
-            "domain": domain,
-            "removed_by": self.request.user,
-            "manager_removed": self.object.user,
-            "date": date.today(),
-            "changes": "Domain Manager",
-        }
-        self.email_domain_managers(
-            domain,
-            "emails/domain_manager_deleted_notification.txt",
-            "emails/domain_manager_deleted_notification_subject.txt",
-            context,
+        send_domain_manager_removal_emails_to_domain_managers(
+            removed_by_user=self.request.user,
+            manager_removed=self.object.user,
+            manager_removed_email=self.object.user.email,
+            domain=self.object.domain,
         )
 
         # Add a success message
         messages.success(self.request, self.get_success_message())
         return redirect(self.get_success_url())
-
-    def email_domain_managers(self, domain: Domain, template: str, subject_template: str, context={}):
-        manager_pks = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER).values_list(
-            "user", flat=True
-        )
-        emails = list(User.objects.filter(pk__in=manager_pks).values_list("email", flat=True))
-
-        for email in emails:
-            try:
-                send_templated_email(
-                    template,
-                    subject_template,
-                    to_address=email,
-                    context=context,
-                )
-            except EmailSendingError:
-                logger.warning(
-                    "Could not send notification email to %s for domain %s",
-                    email,
-                    domain.name,
-                    exc_info=True,
-                )
 
     def post(self, request, *args, **kwargs):
         """Custom post implementation to ensure last userdomainrole is not removed and to

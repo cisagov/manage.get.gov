@@ -15,7 +15,6 @@ from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
-from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
@@ -53,6 +52,16 @@ class DomainRequest(TimeStampedModel):
         def get_status_label(cls, status_name: str):
             """Returns the associated label for a given status name"""
             return cls(status_name).label if status_name else None
+
+    class FEBPurposeChoices(models.TextChoices):
+        WEBSITE = "new", "Used for a new website"
+        REDIRECT = "redirect", "Used as a redirect for an existing or new website"
+        OTHER = "other", "Not for a website"
+
+        @classmethod
+        def get_purpose_label(cls, purpose_name: str | None):
+            """Returns the associated label for a given purpose name"""
+            return cls(purpose_name).label if purpose_name else None
 
     class StateTerritoryChoices(models.TextChoices):
         ALABAMA = "AL", "Alabama (AL)"
@@ -501,16 +510,61 @@ class DomainRequest(TimeStampedModel):
         on_delete=models.PROTECT,
     )
 
+    # Fields specific to Federal Executive Branch agencies, used by OMB for reviewing requests
+    feb_naming_requirements = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name="Meets naming requirements",
+    )
+
+    feb_naming_requirements_details = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Required if requested domain that doesn't meet naming requirements",
+        verbose_name="Domain name rationale",
+    )
+
+    feb_purpose_choice = models.CharField(
+        null=True,
+        blank=True,
+        choices=FEBPurposeChoices.choices,
+        verbose_name="Purpose type",
+    )
+
+    # This field is alternately used for generic domain purpose explanations
+    # and for explanations of the specific purpose chosen with feb_purpose_choice
+    purpose = models.TextField(
+        null=True,
+        blank=True,
+    )
+
+    has_timeframe = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    time_frame_details = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Target time frame",
+    )
+
+    is_interagency_initiative = models.BooleanField(
+        null=True,
+        blank=True,
+    )
+
+    interagency_initiative_details = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Interagency initiative",
+    )
+
     alternative_domains = models.ManyToManyField(
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
         help_text="Other domain names the creator provided for consideration",
-    )
-
-    purpose = models.TextField(
-        null=True,
-        blank=True,
     )
 
     other_contacts = models.ManyToManyField(
@@ -945,13 +999,16 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
-                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
-                is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
+                is_org_user = self.portfolio is not None and recipient.has_view_portfolio_permission(self.portfolio)
+                requires_feb_questions = self.is_feb() and is_org_user
+                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
                     "domain_request": self,
                     # This is the user that we refer to in the email
                     "recipient": recipient,
                     "is_org_user": is_org_user,
+                    "requires_feb_questions": requires_feb_questions,
+                    "purpose_label": purpose_label,
                 }
 
             if custom_email_content:
@@ -966,15 +1023,24 @@ class DomainRequest(TimeStampedModel):
             send_templated_email(
                 email_template,
                 email_template_subject,
-                recipient.email,
+                [recipient.email],
                 context=context,
                 bcc_address=bcc_address,
                 cc_addresses=cc_addresses,
                 wrap_email=wrap_email,
             )
             logger.info(f"The {new_status} email sent to: {recipient.email}")
-        except EmailSendingError:
-            logger.warning("Failed to send confirmation email", exc_info=True)
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send status update to creator email:\n"
+                f"  Type: {new_status}\n"
+                f"  Subject template: {email_template_subject}\n"
+                f"  To: {recipient.email}\n"
+                f"  CC: {', '.join(cc_addresses)}\n"
+                f"  BCC: {bcc_address}"
+                f"  Error: {err}",
+                exc_info=True,
+            )
 
     def investigator_exists_and_is_staff(self):
         """Checks if the current investigator is in a valid state for a state transition"""
@@ -1140,8 +1206,13 @@ class DomainRequest(TimeStampedModel):
         # create the domain
         Domain = apps.get_model("registrar.Domain")
 
-        # == Check that the domain_request is valid == #
-        if Domain.objects.filter(name=self.requested_domain.name).exists():
+        """
+        Checks that the domain_request:
+        1. Filters by specific domain name
+        2. Excludes any domain in the DELETED state
+        3. Check if there are any non DELETED state domains with same name
+        """
+        if Domain.objects.filter(name=self.requested_domain.name).exclude(state=Domain.State.DELETED).exists():
             raise FSMDomainRequestError(code=FSMErrorCodes.APPROVE_DOMAIN_IN_USE)
 
         # == Create the domain and related components == #
@@ -1150,7 +1221,7 @@ class DomainRequest(TimeStampedModel):
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
-        DomainInformation.create_from_da(domain_request=self, domain=created_domain)
+        DomainInformation.create_from_dr(domain_request=self, domain=created_domain)
 
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
@@ -1267,7 +1338,7 @@ class DomainRequest(TimeStampedModel):
     def is_requesting_new_suborganization(self) -> bool:
         """Determines if a user is trying to request
         a new suborganization using the domain request form, rather than one that already exists.
-        Used for the RequestingEntity page and on DomainInformation.create_from_da().
+        Used for the RequestingEntity page and on DomainInformation.create_from_dr().
 
         Returns True if a sub_organization does not exist and if requested_suborganization,
         suborganization_city, and suborganization_state_territory all exist.
@@ -1291,7 +1362,7 @@ class DomainRequest(TimeStampedModel):
 
     def unlock_requesting_entity(self) -> bool:
         """Unlocks the requesting entity step. Used for the RequestingEntity page.
-        Returns true if requesting_entity_is_suborganization() and requesting_entity_is_portfolio().
+        Returns true if requesting_entity_is_suborganization() or requesting_entity_is_portfolio().
         Returns False otherwise.
         """
         if self.requesting_entity_is_suborganization() or self.requesting_entity_is_portfolio():
@@ -1300,17 +1371,16 @@ class DomainRequest(TimeStampedModel):
 
     def unlock_organization_contact(self) -> bool:
         """Unlocks the organization_contact step."""
-        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
-            # Check if the current federal agency is an outlawed one
-            if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
-                Portfolio = apps.get_model("registrar.Portfolio")
-                return (
-                    FederalAgency.objects.exclude(
-                        id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
-                    )
-                    .filter(id=self.federal_agency.id)
-                    .exists()
+        # Check if the current federal agency is an outlawed one
+        if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
+            Portfolio = apps.get_model("registrar.Portfolio")
+            return (
+                FederalAgency.objects.exclude(
+                    id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
                 )
+                .filter(id=self.federal_agency.id)
+                .exists()
+            )
         return bool(
             self.federal_agency is not None
             or self.organization_name is not None
@@ -1389,6 +1459,12 @@ class DomainRequest(TimeStampedModel):
             has_details = False
         return has_details
 
+    def is_feb(self) -> bool:
+        """Is this domain request for a Federal Executive Branch agency?"""
+        if self.portfolio:
+            return self.portfolio.federal_type == BranchChoices.EXECUTIVE
+        return False
+
     def is_federal(self) -> Union[bool, None]:
         """Is this domain request for a federal agency?
 
@@ -1454,7 +1530,9 @@ class DomainRequest(TimeStampedModel):
     def converted_federal_type(self):
         if self.portfolio:
             return self.portfolio.federal_type
-        return self.federal_type
+        elif self.federal_agency:
+            return self.federal_agency.federal_type
+        return None
 
     @property
     def converted_address_line1(self):

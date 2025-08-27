@@ -23,8 +23,10 @@ def input_with_errors(context, field=None):  # noqa: C901
         add_required_class: like `add_class` but only if field is required
         add_label_class: append to input element's label's `class` attribute
         add_legend_class: append to input element's legend's `class` attribute
+        add_legend_heading: sets the text for the legend associated with this element
         add_group_class: append to input element's surrounding tag's `class` attribute
         add_aria_label: append to input element's `aria_label` attribute
+        add_aria_describedby: appends to input element's `aria-describedby` attribute
         attr_* - adds or replaces any single html attribute for the input
         add_error_attr_* - like `attr_*` but only if field.errors is not empty
         toggleable_input: shows a simple edit button, and adds display-none to the input field.
@@ -106,6 +108,8 @@ def input_with_errors(context, field=None):  # noqa: C901
 
         elif key == "add_aria_label":
             aria_labels.append(value)
+        elif key == "add_aria_describedby":
+            described_by.append(value)
 
         elif key == "sublabel_text":
             sublabel_text.append(value)
@@ -114,7 +118,7 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     # do some work for various edge cases
 
-    if "maxlength" in attrs:
+    if "maxlength" in attrs and "hide_character_count" not in attrs:
         # associate the field programmatically with its hint text
         described_by.append(f"{attrs['id']}__message")
 
@@ -175,7 +179,7 @@ def input_with_errors(context, field=None):  # noqa: C901
 
     # Conditionally add the data-initial-value attribute
     if context.get("add_initial_value_attr", False):
-        attrs["data-initial-value"] = field.initial or ""
+        attrs["data-initial-value"] = field.initial if field.initial is not None else ""
 
     # ask Django to give us the widget dict
     # see Widget.get_context() on

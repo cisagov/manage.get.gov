@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -9,18 +10,21 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
 from registrar.decorators import (
+    HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-    HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL,
     IS_DOMAIN_REQUEST_CREATOR,
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
+from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
+from registrar.views.utility.invitation_helper import get_org_membership
+from ..utility.email import send_templated_email, EmailSendingError
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +82,6 @@ class DomainRequestWizard(TemplateView):
     # Titles for the portfolio context
     PORTFOLIO_TITLES = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: _("Requesting entity"),
-        PortfolioDomainRequestStep.CURRENT_SITES: _("Current websites"),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: _(".gov domain"),
         PortfolioDomainRequestStep.PURPOSE: _("Purpose of your domain"),
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: _("Additional details"),
@@ -111,7 +114,7 @@ class DomainRequestWizard(TemplateView):
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
         Step.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
+            self.domain_request.current_websites.exists() or self.domain_request.senior_official is not None
         ),
         Step.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         Step.PURPOSE: lambda self: self.domain_request.purpose is not None,
@@ -129,9 +132,6 @@ class DomainRequestWizard(TemplateView):
 
     PORTFOLIO_UNLOCKING_STEPS = {
         PortfolioDomainRequestStep.REQUESTING_ENTITY: lambda w: w.from_model("unlock_requesting_entity", False),
-        PortfolioDomainRequestStep.CURRENT_SITES: lambda self: (
-            self.domain_request.current_websites.exists() or self.domain_request.requested_domain is not None
-        ),
         PortfolioDomainRequestStep.DOTGOV_DOMAIN: lambda self: self.domain_request.requested_domain is not None,
         PortfolioDomainRequestStep.PURPOSE: lambda self: self.domain_request.purpose is not None,
         PortfolioDomainRequestStep.ADDITIONAL_DETAILS: lambda self: self.domain_request.anything_else is not None,
@@ -180,6 +180,12 @@ class DomainRequestWizard(TemplateView):
         """Determines which step enum we should use for the wizard"""
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
+    def requires_feb_questions(self) -> bool:
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            return self.domain_request.is_feb()
+        return False
+
     @property
     def prefix(self):
         """Namespace the wizard to avoid clashes in session variable names."""
@@ -222,8 +228,6 @@ class DomainRequestWizard(TemplateView):
                 creator=self.request.user,
                 portfolio=portfolio,
             )
-
-            # Question for reviewers: we should probably be doing this right?
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
@@ -258,6 +262,12 @@ class DomainRequestWizard(TemplateView):
         self.domain_request.submit()  # change the status to submitted
         self.domain_request.save()
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
+        # Notify OMB if an FEB request has been submitted
+        if self.requires_feb_questions():
+            try:
+                self.send_omb_submission_email()
+            except Exception:
+                logger.warning(self.domain_request, "Could not send email confirmation to OMB.")
         return redirect(reverse(f"{self.URL_NAMESPACE}:finished"))
 
     def from_model(self, attribute: str, default, *args, **kwargs):
@@ -285,7 +295,7 @@ class DomainRequestWizard(TemplateView):
         """This method handles GET requests."""
 
         self.kwargs = kwargs
-        if not self.is_portfolio and self.request.user.is_org_user(request):
+        if self.request.user.is_org_user(request):
             self.is_portfolio = True
             # Configure titles, wizard_conditions, unlocking_steps, and steps
             self.configure_step_options()
@@ -322,7 +332,9 @@ class DomainRequestWizard(TemplateView):
         # if pending requests exist and user does not have approved domains,
         # present message that domain request cannot be submitted
         pending_requests = self.pending_requests()
-        if len(pending_requests) > 0:
+        portfolio = self.request.session.get("portfolio")
+        _, member_of_this_org = get_org_membership(portfolio, self.request.user.email, self.request.user)
+        if not member_of_this_org and len(pending_requests) > 0:
             message_header = "You cannot submit this request yet"
             message_content = (
                 f"<h4 class='usa-alert__heading'>{message_header}</h4> "
@@ -518,6 +530,8 @@ class DomainRequestWizard(TemplateView):
             context["forms"] = forms
             return render(request, self.template_name, context)
 
+        if button == "back":
+            return self.goto(self.steps.prev)
         # if user opted to save their progress,
         # return them to the page they were already on
         if button == "save":
@@ -593,14 +607,50 @@ class RequestingEntity(DomainRequestWizard):
                     "suborganization_state_territory": None,
                 }
             )
-
         super().save(forms)
 
 
 class PortfolioAdditionalDetails(DomainRequestWizard):
     template_name = "portfolio_domain_request_additional_details.html"
 
-    forms = [forms.PortfolioAnythingElseForm]
+    forms = [
+        feb.FEBAnythingElseYesNoForm,
+        forms.PortfolioAnythingElseForm,
+    ]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+
+    def is_valid(self, forms: list) -> bool:
+        """
+        Validates the forms for portfolio additional details.
+
+        Expected order of forms_list:
+            0: FEBAnythingElseYesNoForm
+            1: PortfolioAnythingElseForm
+        """
+        feb_anything_else_yes_no_form = forms[0]
+        portfolio_anything_else_form = forms[1]
+
+        if not self.requires_feb_questions():
+            for i in range(1):
+                forms[i].mark_form_for_deletion()
+            # If FEB questions aren't required, validate only the anything else form
+            return feb_anything_else_yes_no_form.is_valid()
+        anything_else_forms_valid = True
+        if not portfolio_anything_else_form.is_valid():
+            feb_anything_else_yes_no_form.mark_form_for_deletion()
+            anything_else_forms_valid = False
+        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
+            feb_anything_else_yes_no_form.fields["anything_else"].required = True
+            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
+                "required"
+            ] = "Please provide additional details you'd like us to know. \
+                If you have nothing to add, select 'No'."
+            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
+        return anything_else_forms_valid
 
 
 # Non-portfolio pages
@@ -652,18 +702,130 @@ class CurrentSites(DomainRequestWizard):
 
 class DotgovDomain(DomainRequestWizard):
     template_name = "domain_request_dotgov_domain.html"
-    forms = [forms.DotGovDomainForm, forms.AlternativeDomainFormSet]
+    forms = [
+        forms.DotGovDomainForm,
+        forms.AlternativeDomainFormSet,
+        feb.ExecutiveNamingRequirementsYesNoForm,
+        feb.ExecutiveNamingRequirementsDetailsForm,
+    ]
 
     def get_context_data(self):
         context = super().get_context_data()
         context["generic_org_type"] = self.domain_request.generic_org_type
         context["federal_type"] = self.domain_request.federal_type
+        context["requires_feb_questions"] = self.requires_feb_questions()
         return context
+
+    def is_valid(self, forms_list: list) -> bool:
+        """
+        Expected order of forms_list:
+          0: DotGovDomainForm
+          1: AlternativeDomainFormSet
+          2: ExecutiveNamingRequirementsYesNoForm
+          3: ExecutiveNamingRequirementsDetailsForm
+        """
+        logger.debug("Validating dotgov domain form")
+        # If FEB questions aren't required, validate only non-FEB forms
+        if not self.requires_feb_questions():
+            forms_list[2].mark_form_for_deletion()
+            forms_list[3].mark_form_for_deletion()
+            return forms_list[0].is_valid() and forms_list[1].is_valid()
+
+        if not forms_list[2].is_valid():
+            logger.debug("Dotgov domain form is invalid")
+            # mark details form for deletion so that its errors don't show up
+            forms_list[3].mark_form_for_deletion()
+            return False
+
+        if forms_list[2].cleaned_data.get("feb_naming_requirements", None):
+            logger.debug("Marking details form for deletion")
+            # If the user selects "yes" or has made no selection, no details are needed.
+            forms_list[3].mark_form_for_deletion()
+            valid = all(form.is_valid() for i, form in enumerate(forms_list) if i != 3)
+        else:
+            # "No" was selected – details are required.
+            valid = all(form.is_valid() for form in forms_list)
+        return valid
 
 
 class Purpose(DomainRequestWizard):
     template_name = "domain_request_purpose.html"
-    forms = [forms.PurposeForm]
+
+    forms = [
+        feb.FEBPurposeOptionsForm,
+        forms.PurposeDetailsForm,
+        feb.FEBTimeFrameYesNoForm,
+        feb.FEBTimeFrameDetailsForm,
+        feb.FEBInteragencyInitiativeYesNoForm,
+        feb.FEBInteragencyInitiativeDetailsForm,
+    ]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+
+    def is_valid(self, forms_list: list) -> bool:
+        """
+        Expected order of forms_list:
+          0: FEBPurposeOptionsForm
+          1: PurposeDetailsForm
+          2: FEBTimeFrameYesNoForm
+          3: FEBTimeFrameDetailsForm
+          4: FEBInteragencyInitiativeYesNoForm
+          5: FEBInteragencyInitiativeDetailsForm
+        """
+
+        feb_purpose_options_form = forms_list[0]
+        purpose_details_form = forms_list[1]
+        feb_timeframe_yes_no_form = forms_list[2]
+        feb_timeframe_details_form = forms_list[3]
+        feb_initiative_yes_no_form = forms_list[4]
+        feb_initiative_details_form = forms_list[5]
+
+        if not self.requires_feb_questions():
+            # if FEB questions don't apply, mark those forms for deletion
+            feb_purpose_options_form.mark_form_for_deletion()
+            feb_timeframe_yes_no_form.mark_form_for_deletion()
+            feb_timeframe_details_form.mark_form_for_deletion()
+            feb_initiative_yes_no_form.mark_form_for_deletion()
+            feb_initiative_details_form.mark_form_for_deletion()
+            # we only care about the purpose details form in this case since it's used in both instances
+            return purpose_details_form.is_valid()
+
+        if feb_purpose_options_form.is_valid():
+            option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
+            if option == "new":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Provide details on why a new domain is required."
+                }
+            elif option == "redirect":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Provide details on why a redirect is necessary."
+                }
+            elif option == "other":
+                purpose_details_form.fields["purpose"].error_messages = {
+                    "required": "Provide details on how this domain will be used."
+                }
+            # If somehow none of these are true use the default error message
+        else:
+            # Ensure details form doesn't throw errors if it's not showing
+            purpose_details_form.mark_form_for_deletion()
+
+        feb_timeframe_valid = feb_timeframe_yes_no_form.is_valid()
+        feb_initiative_valid = feb_initiative_yes_no_form.is_valid()
+
+        if not feb_timeframe_valid or not feb_timeframe_yes_no_form.cleaned_data.get("has_timeframe"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_timeframe_details_form.mark_form_for_deletion()
+
+        if not feb_initiative_valid or not feb_initiative_yes_no_form.cleaned_data.get("is_interagency_initiative"):
+            # Ensure details form doesn't throw errors if it's not showing
+            feb_initiative_details_form.mark_form_for_deletion()
+
+        valid = all(form.is_valid() for form in forms_list if not form.form_data_marked_for_deletion)
+
+        return valid
 
 
 class OtherContacts(DomainRequestWizard):
@@ -711,9 +873,7 @@ class OtherContacts(DomainRequestWizard):
 
 
 class AdditionalDetails(DomainRequestWizard):
-
     template_name = "domain_request_additional_details.html"
-
     forms = [
         forms.CisaRepresentativeYesNoForm,
         forms.CisaRepresentativeForm,
@@ -774,6 +934,24 @@ class Requirements(DomainRequestWizard):
     template_name = "domain_request_requirements.html"
     forms = [forms.RequirementsForm]
 
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        return context
+
+    # Override the get_forms method to set the policy acknowledgement label conditionally based on feb status
+    def get_forms(self, step=None, use_post=False, use_db=False, files=None):
+        forms_list = super().get_forms(step, use_post, use_db, files)
+
+        # Pass the is_federal context to the form
+        for form in forms_list:
+            if isinstance(form, forms.RequirementsForm):
+                form.fields["is_policy_acknowledged"].label = (
+                    "I read and agree to the requirements for operating a .gov domain."  # noqa: E501
+                )
+
+        return forms_list
+
 
 class Review(DomainRequestWizard):
     template_name = "domain_request_review.html"
@@ -786,10 +964,14 @@ class Review(DomainRequestWizard):
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
+        context["request"] = self.request
+        context["requires_feb_questions"] = self.requires_feb_questions()
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(
+            self.domain_request.feb_purpose_choice
+        )
         return context
 
     def goto_next_step(self):
-        return self.done()
         # TODO: validate before saving, show errors
         # Extra info:
         #
@@ -810,17 +992,54 @@ class Review(DomainRequestWizard):
         #     # TODO: errors to let users know why this isn't working
         #     return self.goto(self.steps.current)
 
+        return self.done()
+
+    def send_omb_submission_email(self):
+        """Send a notification to OMB that a domain request has been submitted.
+        Uses omb_submission_confirmation.txt template.
+        """
+        is_analyst_action = (
+            "analyst_action" in self.request.session and "analyst_action_location" in self.request.session
+        )
+        if is_analyst_action:
+            logger.debug("No notification sent: Action was conducted by an analyst")
+            return
+
+        try:
+            purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.domain_request.feb_purpose_choice)
+            # requires_feb_questions and purpose_label used to pass into portfolio_domain_request_summary template
+            context = {
+                "domain_request": self.domain_request,
+                "date": date.today(),
+                "requires_feb_questions": True,
+                "purpose_label": purpose_label,
+            }
+
+            send_templated_email(
+                "emails/omb_submission_confirmation.txt",
+                "emails/omb_submission_confirmation_subject.txt",
+                "ombdotgov@omb.eop.gov",
+                context=context,
+            )
+            logger.info("A submission confirmation email was sent to ombdotgov@omb.eop.gov")
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send OMB submission confirmation email:\n"
+                f"  Subject template: omb_submission_confirmation_subject.txt\n"
+                f"  To: ombdotgov@omb.eop.gov\n"
+                f"  Error: {err}",
+                exc_info=True,
+            )
+
 
 class Finished(DomainRequestWizard):
     template_name = "domain_request_done.html"
     forms = []  # type: ignore
 
     def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
-        context["domain_request_id"] = self.domain_request.id
         # clean up this wizard session, because we are done with it
         del self.storage
-        return render(self.request, self.template_name, context)
+        return render(self.request, self.template_name)
 
 
 @grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
@@ -985,9 +1204,20 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
         return duplicates
 
 
-# region Portfolio views
-@grant_access(HAS_PORTFOLIO_DOMAIN_REQUESTS_VIEW_ALL)
-class PortfolioDomainRequestStatusViewOnly(DetailView):
+@grant_access(HAS_DOMAIN_REQUESTS_VIEW_ALL)
+class DomainRequestStatusViewOnly(DetailView):
+    """
+    View-only access for domain requests both on enterprise-mode portfolios and legacy mode.
+
+    This view provides read-only access to domain request details for users who have
+    view permissions but not edit permissions.
+
+    Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
+    - Portfolio members with view-all domain requests permission
+    - Non-portfolio users who are creators of the domain request
+    - Analysts with appropriate permissions
+    """
+
     template_name = "portfolio_domain_request_status_viewonly.html"
     model = DomainRequest
     pk_url_kwarg = "domain_request_pk"
@@ -995,12 +1225,33 @@ class PortfolioDomainRequestStatusViewOnly(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Create a temp wizard object to grab the step list
-        wizard = PortfolioDomainRequestWizard()
-        wizard.request = self.request
-        context["Step"] = PortfolioDomainRequestStep.__members__
-        context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
-        context["form_titles"] = wizard.titles
+        domain_request = self.object
+
+        # Determine if this is a portfolio request or if user is org user
+        is_portfolio = domain_request.portfolio is not None or self.request.user.is_org_user(self.request)
+
+        if is_portfolio:
+            # Create a temp wizard object to grab the step list
+            wizard = PortfolioDomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = PortfolioDomainRequestStep.__members__
+            context["steps"] = request_step_list(wizard, PortfolioDomainRequestStep)
+            context["form_titles"] = wizard.titles
+        else:
+            # For non-portfolio requests
+            wizard = DomainRequestWizard()
+            wizard.request = self.request
+            context["Step"] = Step.__members__
+            context["steps"] = request_step_list(wizard, Step)
+            context["form_titles"] = wizard.titles
+
+        # Common context
+        context["requires_feb_questions"] = domain_request.is_feb()
+        context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
+        context["view_only_mode"] = True
+        context["is_portfolio"] = is_portfolio
+        context["portfolio"] = self.request.session.get("portfolio")
+
         return context
 
 

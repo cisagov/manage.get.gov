@@ -6,10 +6,9 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.email import EmailSendingError
-from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, create_user  # type: ignore
+from .common import GenericTestHelper, MockEppLib, create_user, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -375,7 +374,6 @@ class TestDomainDetail(TestDomainOverview):
             )
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
@@ -416,7 +414,6 @@ class TestDomainDetail(TestDomainOverview):
         self.assertNotContains(detail_page, "Invited domain managers")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page_for_org_admin_not_manager(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
@@ -441,10 +438,11 @@ class TestDomainDetail(TestDomainOverview):
         user.refresh_from_db()
         self.client.force_login(user)
         detail_page = self.client.get(f"/domain/{domain.id}")
-        # Check that alert message displays properly
+        # Check that alert message displays properly.
+        # This message is different for one user on the portfolio vs multiple.
         self.assertContains(
             detail_page,
-            "If you need to make updates, contact one of the listed domain managers.",
+            "If you need to become a domain manager, edit the domain assignments",
         )
         # Check that user does not have option to Edit domain
         self.assertNotContains(detail_page, "Edit")
@@ -522,7 +520,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertNotContains(detail_page, "DNS needed")
             self.assertNotContains(detail_page, "Expired")
 
-    @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
         """In org model: If a user is NOT a domain manager and their domain is expiring soon,
         user be notified to contact a domain manager in the domain overview detail box."""
@@ -559,7 +556,6 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             )
             self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
 
-    @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
         """Inorg model: If a user is a domain manager and their domain is expiring soon,
         user should be able to see the "Renew to maintain access" link domain overview detail box."""
@@ -739,7 +735,11 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}))
 
             # Check for the updated expiration
-            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime("%B %-d, %Y")
+            expiration_month = datetime.today().strftime("%B")
+            # Format month to AP style if necessary
+            ap_month = get_ap_style_month(expiration_month) or expiration_month
+            ap_date_format = f"{ap_month} %-d, %Y"
+            formatted_new_expiration_date = self.expiration_date_one_year_out().strftime(ap_date_format)
             redirect_response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_ip.id}), follow=True
             )
@@ -765,10 +765,6 @@ class TestDomainManagers(TestDomainOverview):
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
         self.domain_information.save()
-        # Add portfolio perms to the user object
-        self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
 
     @classmethod
     def tearDownClass(cls):
@@ -793,8 +789,8 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotContains(response, "Admin")
         self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_managers_portfolio_view(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
@@ -842,8 +838,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -899,8 +895,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -950,7 +946,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "notauser@igorville.gov")
 
-    @override_flag("organization_feature", active=True)
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -984,8 +980,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1034,8 +1030,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1084,8 +1080,8 @@ class TestDomainManagers(TestDomainOverview):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_templated_email")
-    def test_domain_remove_manager(self, mock_send_templated_email):
+    @patch("registrar.views.domain.send_domain_manager_removal_emails_to_domain_managers")
+    def test_domain_remove_manager(self, mock_send_email):
         """Removing a domain manager sends notification email to other domain managers."""
         self.manager, _ = User.objects.get_or_create(email="mayor@igorville.com", first_name="Hello", last_name="World")
         self.manager_domain_permission, _ = UserDomainRole.objects.get_or_create(user=self.manager, domain=self.domain)
@@ -1094,11 +1090,11 @@ class TestDomainManagers(TestDomainOverview):
         )
 
         # Verify that the notification emails were sent to domain manager
-        mock_send_templated_email.assert_called_once_with(
-            "emails/domain_manager_deleted_notification.txt",
-            "emails/domain_manager_deleted_notification_subject.txt",
-            to_address="info@example.com",
-            context=ANY,
+        mock_send_email.assert_called_once_with(
+            removed_by_user=self.user,
+            manager_removed=self.manager,
+            manager_removed_email=self.manager.email,
+            domain=self.domain,
         )
 
     @less_console_noise_decorator
@@ -2233,34 +2229,53 @@ class TestDomainOrganization(TestDomainOverview):
 class TestDomainSuborganization(TestDomainOverview):
     """Tests the Suborganization page for portfolio users"""
 
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_edit_suborganization_field(self):
-        """Ensure that org admins can edit the suborganization field"""
+    def setUp(self):
+        super().setUp()
         # Create a portfolio and two suborgs
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        self.suborg = Suborganization.objects.create(portfolio=self.portfolio, name="Vanilla")
+        self.suborg_2 = Suborganization.objects.create(portfolio=self.portfolio, name="Chocolate")
 
         # Create an unrelated portfolio
-        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+        self.unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        self.unrelated_suborg = Suborganization.objects.create(portfolio=self.unrelated_portfolio, name="Apple")
 
         # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-        self.domain_information.sub_organization = suborg
+        self.domain_information.portfolio = self.portfolio
+        self.domain_information.sub_organization = self.suborg
 
         # Add a organization_name to test if the old value still displays
         self.domain_information.organization_name = "Broccoli"
         self.domain_information.save()
         self.domain_information.refresh_from_db()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    def tearDown(self):
+        """Ensure that the user has its original permissions"""
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+        # Unlink suborgs to avoid ProtectedError
+        DomainInformation.objects.update(sub_organization=None)
+        Suborganization.objects.all().delete()
+
+        User.objects.exclude(id=self.user.id).delete()
+        super().tearDown()
+
+    @less_console_noise_decorator
+    def test_edit_suborganization_field(self):
+        """Ensure that org admins can edit the suborganization field"""
+
         # Add portfolio perms to the user object
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
-        self.assertEqual(self.domain_information.sub_organization, suborg)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg)
 
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
@@ -2268,57 +2283,34 @@ class TestDomainSuborganization(TestDomainOverview):
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
         self.assertContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
 
         # Assert that the right option is selected. This component uses data-default-value.
-        self.assertContains(page, f'data-default-value="{suborg.id}"')
+        self.assertContains(page, f'data-default-value="{self.suborg.id}"')
 
         # Try changing the suborg
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        page.form["sub_organization"] = suborg_2.id
+        page.form["sub_organization"] = self.suborg_2.id
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = page.form.submit().follow()
 
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
         self.assertContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
 
         # Assert that the right option is selected
-        self.assertContains(page, f'data-default-value="{suborg_2.id}"')
+        self.assertContains(page, f'data-default-value="{self.suborg_2.id}"')
 
         self.domain_information.refresh_from_db()
-        self.assertEqual(self.domain_information.sub_organization, suborg_2)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg_2)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_view_suborganization_field(self):
         """Only org admins can edit the suborg field, ensure that others cannot"""
 
-        # Create a portfolio and two suborgs
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
-
-        # Create an unrelated portfolio
-        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
-
-        # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-        self.domain_information.sub_organization = suborg
-
-        # Add a organization_name to test if the old value still displays
-        self.domain_information.organization_name = "Broccoli"
-        self.domain_information.save()
-        self.domain_information.refresh_from_db()
-
-        # Add portfolio perms to the user object
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-        )
-
-        self.assertEqual(self.domain_information.sub_organization, suborg)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg)
 
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
@@ -2328,35 +2320,19 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # The page shouldn't contain these choices
         self.assertNotContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
         self.assertNotContains(page, "Save")
 
         self.assertContains(
             page, "The suborganization for this domain can only be updated by a organization administrator."
         )
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
         and displays correctly on the domain overview page"""
 
-        # Create a portfolio
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-
-        # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-
-        # Add a organization_name to test if the old value still displays
-        self.domain_information.organization_name = "Broccoli"
-        self.domain_information.save()
-        self.domain_information.refresh_from_db()
-
-        # Add portfolio perms to the user object
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
         self.user.refresh_from_db()
 
         # Navigate to the domain overview page
@@ -2364,18 +2340,12 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Test for the title change
         self.assertContains(page, "Suborganization")
-        self.assertNotContains(page, "Organization")
 
         # Test for the good value
         self.assertContains(page, "Ice Cream")
 
         # Test for the bad value
         self.assertNotContains(page, "Broccoli")
-
-        # Cleanup
-        self.domain_information.delete()
-        suborg.delete()
-        portfolio.delete()
 
 
 class TestDomainSecurityEmail(TestDomainOverview):
@@ -2547,8 +2517,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         domain DNSSEC data and shows a button to Add new record"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dnssec_none.id}))
-        self.assertContains(page, "You have no DS data added")
-        self.assertContains(page, "Add new record")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Add DS record")
 
     @less_console_noise_decorator
     def test_ds_form_loads_with_ds_data(self):
@@ -2556,26 +2526,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         domain DNSSEC DS data and shows the data"""
 
         page = self.client.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
-        self.assertContains(page, "DS data record 1")
-
-    @less_console_noise_decorator
-    def test_ds_data_form_modal(self):
-        """When user clicks on save, a modal pops up."""
-        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
-        # Assert that a hidden trigger for the modal does not exist.
-        # This hidden trigger will pop on the page when certain condition are met:
-        # 1) Initial form contained DS data, 2) All data is deleted and form is
-        # submitted.
-        self.assertNotContains(add_data_page, "Trigger Disable DNSSEC Modal")
-        # Simulate a delete all data
-        form_data = {}
-        response = self.client.post(
-            reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}),
-            data=form_data,
-        )
-        self.assertEqual(response.status_code, 200)  # Adjust status code as needed
-        # Now check to see whether the JS trigger for the modal is present on the page
-        self.assertContains(response, "Trigger Disable DNSSEC Modal")
+        self.assertContains(page, "Add DS record")  # assert add form is present
+        self.assertContains(page, "Action")  # assert table is present
 
     @less_console_noise_decorator
     def test_ds_data_form_submits(self):
@@ -2621,6 +2573,32 @@ class TestDomainDNSSEC(TestDomainOverview):
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
     @less_console_noise_decorator
+    def test_ds_data_form_duplicate(self):
+        """DS data form errors with invalid data (duplicate DS)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # all four form fields are required, so will test with each blank
+        add_data_page.forms[0]["form-0-key_tag"] = 1234
+        add_data_page.forms[0]["form-0-algorithm"] = 3
+        add_data_page.forms[0]["form-0-digest_type"] = 1
+        add_data_page.forms[0]["form-0-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        add_data_page.forms[0]["form-1-key_tag"] = 1234
+        add_data_page.forms[0]["form-1-algorithm"] = 3
+        add_data_page.forms[0]["form-1-digest_type"] = 1
+        add_data_page.forms[0]["form-1-digest"] = "ec0bdd990b39feead889f0ba613db4adec0bdd99"
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
     def test_ds_data_form_invalid_keytag(self):
         """DS data form errors with invalid data (key tag too large)
 
@@ -2641,6 +2619,29 @@ class TestDomainDNSSEC(TestDomainOverview):
         # the field.
         self.assertContains(
             result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_SIZE)), count=2, status_code=200
+        )
+
+    @less_console_noise_decorator
+    def test_ds_data_form_invalid_keytag_chars(self):
+        """DS data form errors with invalid data (key tag not numeric)
+
+        Uses self.app WebTest because we need to interact with forms.
+        """
+        add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # first two nameservers are required, so if we empty one out we should
+        # get a form error
+        add_data_page.forms[0]["form-0-key_tag"] = "invalid"  # not numeric
+        add_data_page.forms[0]["form-0-algorithm"] = ""
+        add_data_page.forms[0]["form-0-digest_type"] = ""
+        add_data_page.forms[0]["form-0-digest"] = ""
+        result = add_data_page.forms[0].submit()
+        # form submission was a post with an error, response should be a 200
+        # error text appears twice, once at the top of the page, once around
+        # the field.
+        self.assertContains(
+            result, str(DsDataError(code=DsDataErrorCodes.INVALID_KEYTAG_CHARS)), count=2, status_code=200
         )
 
     @less_console_noise_decorator
@@ -2698,8 +2699,6 @@ class TestDomainDNSSEC(TestDomainOverview):
         add_data_page = self.app.get(reverse("domain-dns-dnssec-dsdata", kwargs={"domain_pk": self.domain_dsdata.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        # first two nameservers are required, so if we empty one out we should
-        # get a form error
         add_data_page.forms[0]["form-0-key_tag"] = "1234"
         add_data_page.forms[0]["form-0-algorithm"] = "3"
         add_data_page.forms[0]["form-0-digest_type"] = "2"  # SHA-256
@@ -2771,10 +2770,10 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_org_name_change_with_portfolio(self):
@@ -2853,7 +2852,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Security email", body)
 
@@ -2886,7 +2884,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2915,7 +2912,6 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: DNSSEC / DS Data", body)
 
@@ -2946,10 +2942,10 @@ class TestDomainChangeNotifications(TestDomainOverview):
         _, kwargs = self.mock_client.send_email.call_args
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
-        self.assertIn("DOMAIN: igorville.gov", body)
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
     def test_no_notification_on_senior_official_when_portfolio(self):
@@ -3074,17 +3070,17 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_single_domain_w_org_feature_flag(self):
+    def test_single_domain_w_org_feature_on(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_with_mulitple_domains_w_org_feature_flag(self):
+    def test_with_mulitple_domains_w_org_feature_on(self):
         today = datetime.now()
         expiring_date = (today + timedelta(days=31)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
@@ -3099,9 +3095,9 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_no_expiring_domains_w_org_feature_flag(self):
+    def test_no_expiring_domains_w_org_feature_on(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)

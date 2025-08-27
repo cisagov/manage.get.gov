@@ -37,7 +37,6 @@ from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
-from registrar.models.utility.orm_helper import ArrayRemoveNull
 from registrar.templatetags.custom_filters import get_region
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DefaultEmail, DefaultUserValues
@@ -392,10 +391,17 @@ class MemberExport(BaseExport):
         )
 
         # Invitations
-        domain_invitations = DomainInvitation.objects.filter(
-            email=OuterRef("email"),  # Check if email matches the OuterRef("email")
-            domain__domain_info__portfolio=portfolio,  # Check if the domain's portfolio matches the given portfolio
-        ).annotate(domain_info=F("domain__name"))
+        domain_invitations = Subquery(
+            DomainInvitation.objects.filter(
+                email=OuterRef("email"),
+                domain__domain_info__portfolio=portfolio,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            )
+            .values("email")  # Select a stable field
+            .annotate(domain_list=ArrayAgg("domain__name", distinct=True))  # Aggregate within subquery
+            .values("domain_list")  # Ensure only one value is returned
+        )
+
         invitations = (
             PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
             .filter(portfolio=portfolio)
@@ -407,23 +413,19 @@ class MemberExport(BaseExport):
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
                 # Use ArrayRemove to return an empty list when no domain invitations are found
-                domain_info=ArrayRemoveNull(
-                    ArrayAgg(
-                        Subquery(domain_invitations.values("domain_info")),
-                        distinct=True,
-                    )
-                ),
+                domain_info=domain_invitations,
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
                 invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
             )
             .values(*shared_columns)
         )
+
         # Adding a order_by increases output predictability.
         # Doesn't matter as much for normal use, but makes tests easier.
         # We should also just be ordering by default anyway.
         members = permissions.union(invitations).order_by("email_display", "member_display", "first_name", "last_name")
-        return convert_queryset_to_dict(members, is_model=False)
+        return convert_queryset_to_dict(members, is_model=False, key="email_display")
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):
@@ -484,7 +486,7 @@ class MemberExport(BaseExport):
         """
         return [
             "Email",
-            "Member access",
+            "Member role",
             "Invited by",
             "Joined date",
             "Last active",
@@ -508,7 +510,7 @@ class MemberExport(BaseExport):
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
-            "Member access": get_role_display(roles),
+            "Member role": get_role_display(roles),
             "Invited by": model.get("invited_by"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
@@ -579,8 +581,8 @@ class DomainExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -740,7 +742,7 @@ class DomainExport(BaseExport):
             domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
 
         security_contact_email = model.get("security_contact_email")
-        invalid_emails = {DefaultEmail.LEGACY_DEFAULT.value, DefaultEmail.PUBLIC_CONTACT_DEFAULT.value}
+        invalid_emails = DefaultEmail.get_all_emails()
         if (
             not security_contact_email
             or not isinstance(security_contact_email, str)
@@ -1654,8 +1656,8 @@ class DomainRequestExport(BaseExport):
                     Q(portfolio__isnull=False) & Q(portfolio__federal_agency__isnull=False),
                     then=F("portfolio__federal_agency__federal_type"),
                 ),
-                # Otherwise, return the natively assigned value
-                default=F("federal_type"),
+                # Otherwise, return the federal type from federal agency
+                default=F("federal_agency__federal_type"),
                 output_field=CharField(),
             ),
             "converted_organization_name": Case(
@@ -1839,6 +1841,12 @@ class DomainRequestExport(BaseExport):
         details = [cisa_rep, model.get("anything_else")]
         additional_details = " | ".join([field for field in details if field])
 
+        # FEB fields
+        purpose_type = model.get("feb_purpose_choice")
+        purpose_type_display = (
+            DomainRequest.FEBPurposeChoices.get_purpose_label(purpose_type) if purpose_type else "N/A"
+        )
+
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
         FIELDS = {
@@ -1880,6 +1888,11 @@ class DomainRequestExport(BaseExport):
             "Last submitted date": model.get("last_submitted_date"),
             "First submitted date": model.get("first_submitted_date"),
             "Last status update": model.get("last_status_update"),
+            # FEB only fields
+            "Purpose": purpose_type_display,
+            "Domain name rationale": model.get("feb_naming_requirements_details", None),
+            "Target time frame": model.get("time_frame_details", None),
+            "Interagency initiative": model.get("interagency_initiative_details", None),
         }
 
         row = [FIELDS.get(column, "") for column in columns]
@@ -1925,6 +1938,10 @@ class DomainRequestDataType(DomainRequestExport):
             "Last submitted date",
             "First submitted date",
             "Last status update",
+            "Purpose",
+            "Domain name rationale",
+            "Target time frame",
+            "Interagency initiative",
         ]
 
     @classmethod
@@ -2069,6 +2086,10 @@ class DomainRequestDataFull(DomainRequestExport):
             "CISA regional representative",
             "Current websites",
             "Investigator",
+            "Purpose",
+            "Domain name rationale",
+            "Target time frame",
+            "Interagency initiative",
         ]
 
     @classmethod

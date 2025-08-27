@@ -9,7 +9,7 @@
 <div class="grid-container grid-container--widescreen">
 
   <div class="grid-row grid-gap {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-    <div class="tablet:grid-col-3 ">
+    <div class="tablet:grid-col-3 grid-col--sidenav">
       <p class="font-body-md margin-top-0 margin-bottom-2
                 text-primary-darker text-semibold string-wrap"
       >
@@ -21,8 +21,13 @@
       {% endif %}
     </div>
 
-    <div class="tablet:grid-col-9">
-      <main id="main-content" class="grid-container">
+      <main id="main-content" class="grid-container tablet:grid-col">
+
+        <!-- Navigation breadcrumbs -->
+        {% block breadcrumb %}
+        {% endblock breadcrumb %}
+
+        <!-- Alert messages -->
       {% if not domain.domain_info %}
         <div class="usa-alert usa-alert--error margin-bottom-2">
           <div class="usa-alert__body">
@@ -58,13 +63,12 @@
         {% if request.path|endswith:"renewal"%}
         <h1>Renew {{domain.name}} </h1>
         {%else%}
-        <h1 class="break-word">Domain Overview</h1>
+        <h1 class="break-word">Domain overview</h1>
         {% endif%}
 
         {% endblock %}  {# domain_content #}
       {% endif %}
       </main>
-    </div>
   </div>
 </div>
 {% endblock %}  {# content #}

@@ -19,6 +19,7 @@ import { initDynamicDomainInformationFields } from './domain-information-form.js
 import { initDynamicDomainFields } from './domain-form.js';
 import { initAnalyticsDashboard } from './analytics.js';
 import { initButtonLinks } from './button-utils.js';
+import { initAriaInjectionsForSelect2Dropdowns } from './andi.js'
 
 // General
 initModals();
@@ -26,6 +27,7 @@ initCopyToClipboard();
 initFilterHorizontalWidget();
 initDescriptions();
 initSubmitBar();
+initAriaInjectionsForSelect2Dropdowns();
 initButtonLinks();
 
 // Domain request

@@ -11,8 +11,8 @@ There are a handful of things we do not commit to the repository:
 
 ## Branch naming convention
 
-For developers, you can auto-deploy your code to your sandbox (if applicable) by naming your branch thusly: jsd/123-feature-description
-Where 'jsd' stands for your initials and sandbox environment name (if you were called John Smith Doe), and 123 matches the ticket number if applicable.
+Name your branches in the format `your_initials/issue_number-description`. For example: `ab/1234-update-documentation`.
+If your branch name starts with `your_initials/`, the (deploy-sandbox)[.github/workflows/deploy-sandbox.yaml] workflow will auto-deploy your pushed branch code to your sandbox if your branch has a PR.
 
 ## Project Management
 
@@ -28,6 +28,3 @@ Every issue in this respository and on the project board should be appropriately
 
 We also have labels for each discipline and for research and project management related tasks. While this repository and project board track development work, we try to document all work related to the project here as well. 
 
-## Branch Naming
-
-Our branch naming convention is `name/issue_no-description`, for example: `lmm/1234-add-contributing-doc`. 

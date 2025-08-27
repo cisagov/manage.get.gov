@@ -10,9 +10,9 @@ If you're new to Django, see [Getting Started with Django](https://www.djangopro
 
   ```shell
   cd src
-  docker-compose build
+  docker compose build
   ```
-* Run the server: `docker-compose up`
+* Run the server: `docker compose up`
 
   Press Ctrl-c when you'd like to exit or pass `-d` to run in detached mode.
 
@@ -21,16 +21,10 @@ Visit the running application at [http://localhost:8080](http://localhost:8080).
 
 ### Troubleshooting 
 
+#### Line endings and manage.py
 * If you are using Windows, you may need to change your [line endings](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). If not, you may not be able to run manage.py. 
 * Unix based operating systems (like macOS or Linux) handle line separators [differently than Windows does](https://superuser.com/questions/374028/how-are-n-and-r-handled-differently-on-linux-and-windows). This can break bash scripts in particular. In the case of manage.py, it uses *#!/usr/bin/env python* to access the Python executable. Since the script is still thinking in terms of unix line seperators, it may look for the executable *python\r* rather than *python* (since Windows cannot read the carriage return on its own) - thus leading to the error `usr/bin/env: 'python\r' no such file or directory` 
 * If you'd rather not change this globally, add a `.gitattributes` file in the project root with `* text eol=lf` as the text content, and [refresh the repo](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings#refreshing-a-repository-after-changing-line-endings)
-* If you are using a Mac with a M1 chip, and see this error `The chromium binary is not available for arm64.` or an error involving `puppeteer`, try adding this line below into your `.bashrc` or `.zshrc`. 
-
-```
-export DOCKER_DEFAULT_PLATFORM=linux/amd64
-```
-
-When completed, don't forget to rerun `docker-compose up`! 
 
 ## Branch Conventions
 
@@ -56,7 +50,7 @@ Resources:
 
 ## Setting Vars
 
-Non-secret environment variables for local development are set in [src/docker-compose.yml](../../src/docker-compose.yml).
+Non-secret environment variables for local development are set in [src/docker compose.yml](../../src/docker compose.yml).
 
 Secrets (for example, if you'd like to have a working Login.gov authentication) go in `.env` in [src/](../../src/) with contents like this:
 
@@ -84,7 +78,7 @@ While on production (the sandbox referred to as `stable`), an existing analyst o
 
  To get access to /admin on every non-production sandbox and to use /admin in local development, do the following:
 
-1. Login via login.gov
+1. Login to a sandbox environment (like staging at https://getgov-staging.app.cloud.gov/) via identity sandbox login.gov
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that your UUID is not authorized (it shows a very long string, this is your UUID). Copy that UUID for use in 4.
 4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Please see the "Adding an Analyst to /admin" section below to complete similiar steps if you also desire an `analyst` user account. Engineers will handle the remaining steps for designers, stop here.
@@ -109,7 +103,7 @@ While on production (the sandbox referred to as `stable`), an existing analyst o
 ### Adding an analyst-level user to /admin
 Analysts are a variant of the admin role with limited permissions. The process for adding an Analyst is much the same as adding an admin:
 
-1. Login via login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
+1. Login to a sandbox environment (like staging at https://getgov-staging.app.cloud.gov/) via identity sandbox login.gov (if you already exist as an admin, you will need to create a separate login.gov account for this: i.e. first.last+1@email.com)
 2. Go to the home page and make sure you can see the part where you can submit a domain request
 3. Go to /admin and it will tell you that UUID is not authorized, copy that UUID for use in 4 (this will be a different UUID than the one obtained from creating an admin)
 4. (Designers) Message in #getgov-dev that you need access to admin as a `superuser` and send them this UUID along with your desired email address. Engineers will handle the remaining steps for designers, stop here.
@@ -165,15 +159,15 @@ The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull
 
 ## Viewing Logs
 
-If you run via `docker-compose up`, you'll see the logs in your terminal.
+If you run via `docker compose up`, you'll see the logs in your terminal.
 
-If you run via `docker-compose up -d`, you can get logs with `docker-compose logs -f`.
+If you run via `docker compose up -d`, you can get logs with `docker compose logs -f`.
 
 You can change the logging verbosity, if needed. Do a web search for "django log level".
 
 ## Mock data
 
-[load.py](../../src/registrar/management/commands/load.py) called from docker-compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures/fixtures_users.py) and the rest of the data-loading fixtures in that fixtures folder, giving you some test data to play with while developing.
+[load.py](../../src/registrar/management/commands/load.py) called from docker compose (locally) and reset-db.yml (upper) loads the fixtures from [fixtures_user.py](../../src/registrar/fixtures/fixtures_users.py) and the rest of the data-loading fixtures in that fixtures folder, giving you some test data to play with while developing.
 
 See the [database-access README](./database-access.md) for information on how to pull data to update these fixtures.
 
@@ -185,26 +179,37 @@ To get a container running:
 
 ```shell
 cd src
-docker-compose build
-docker-compose up -d
+docker compose build
+docker compose up -d
 ```
 
 Django's test suite:
 
 ```shell
-docker-compose exec app ./manage.py test
+docker compose exec app ./manage.py test
 ```
 
 OR
 
 ```shell
-docker-compose exec app python -Wa ./manage.py test  # view deprecation warnings
+docker compose exec app python -Wa ./manage.py test  # view deprecation warnings
 ```
 
 Linters:
 
 ```shell
-docker-compose exec app ./manage.py lint
+docker compose exec app ./manage.py lint
+```
+
+### Get availability for domain requests to work locally
+
+If you're on local (localhost:8080) and want to submit a domain request, and keep getting the "We’re experiencing a system error. Please wait a few minutes and try again. If you continue to get this error, contact help@get.gov." error, you can get past the availability check by updating the available() function in registrar/models/domain.py to return True and comment everything else out - see below for reference!
+
+```
+@classmethod
+def available(cls, domain: str) -> bool:
+  # Comment everything else out in the function
+  return True 
 ```
 
 ### Testing behind logged in pages
@@ -261,7 +266,7 @@ accessibility rules. The scan runs as part of our CI setup (see
 type
 
 ```shell
-docker-compose run pa11y npm run pa11y-ci
+docker compose run pa11y npm run pa11y-ci
 ```
 
 The URLs that `pa11y-ci` will scan are configured in `src/.pa11yci`. When new
@@ -275,7 +280,7 @@ security rules. The scan runs as part of our CI setup (see
 type
 
 ```shell
-docker-compose run owasp
+docker compose run owasp
 ```
 
 ## Images, stylesheets, and JavaScript
@@ -292,7 +297,7 @@ We utilize the [uswds-compile tool](https://designsystem.digital.gov/documentati
 
 ### Making and viewing style changes
 
-When you run `docker-compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
+When you run `docker compose up` the `node` service in the container will begin to watch for changes in the `registrar/assets` folder, and will recompile once any changes are made.
 
 Within the `registrar/assets` folder, the `_theme` folder contains three files initially generated by `uswds-compile`:
 1. `_uswds-theme-custom-styles` contains all the custom styles created for this application
@@ -305,15 +310,15 @@ You can also compile the **Sass** at any time using `npx gulp compile`. Similarl
 
 We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming convention for our custom classes. This is in line with how USWDS [approaches](https://designsystem.digital.gov/whats-new/updates/2019/04/08/introducing-uswds-2-0/) their CSS class architecture and helps keep our code cohesive and readable.
 
-### Upgrading USWDS and other JavaScript packages
+### Updating USWDS
 
 1. Version numbers can be manually controlled in `package.json`. Edit that, if desired.
-2. Now run `docker-compose run node npm update`.
-3. Then run `docker-compose up` to recompile and recopy the assets, or run `docker-compose updateUswds` if your docker is already up.
-4. Make note of the dotgov changes in uswds-edited.js.
-5. Copy over the newly compiled code from uswds.js into uswds-edited.js.
-6. Put back the dotgov changes you made note of into uswds-edited.js.
-7. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+2. Now run `npx gulp updateUswds`. Refer to [official docs](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) to see what this is doing.
+3. Make note of the dotgov changes in uswds-edited.js (Ctrl-F DOTGOV for modifications to USWDS compiled code).
+4. Copy over the newly compiled code from uswds.js into uswds-edited.js.
+5. Put back the dotgov changes you made note of into uswds-edited.js.
+6. Examine the results in the running application (remember to empty your cache!) and commit `package.json` and `package-lock.json` if all is well.
+7. Read the [release notes](https://github.com/uswds/uswds/releases) for the new versions installed, note 'Breaking' and 'Markup change' and make adjustments to the code base as needed.
 
 ## Finite State Machines
 
@@ -377,7 +382,7 @@ Then, copy the variables under the section labled `s3`.
 
 ## Request Flow FSM Diagram
 
-The [.gov Domain Request & Domain Status Digram](https://miro.com/app/board/uXjVMuqbLOk=/?moveToWidget=3458764594819017396&cot=14) visualizes the domain request flow and resulting domain objects.
+The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaenterprise3850/m/cisaenterprise3850/1743613581103/eeff220faf8db79d54624cef49d40f66cf85bfd6) visualizes the domain request flow and resulting domain objects.
 
 
 ## Testing the prototype add DNS record feature (delete this after we are done testing!)

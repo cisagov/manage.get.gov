@@ -89,52 +89,52 @@ urlpatterns = [
         name="members",
     ),
     path(
-        "member/<int:pk>",
+        "member/<int:member_pk>",
         views.PortfolioMemberView.as_view(),
         name="member",
     ),
     path(
-        "member/<int:pk>/delete",
+        "member/<int:member_pk>/delete",
         views.PortfolioMemberDeleteView.as_view(),
         name="member-delete",
     ),
     path(
-        "member/<int:pk>/permissions",
+        "member/<int:member_pk>/permissions",
         views.PortfolioMemberEditView.as_view(),
         name="member-permissions",
     ),
     path(
-        "member/<int:pk>/domains",
+        "member/<int:member_pk>/domains",
         views.PortfolioMemberDomainsView.as_view(),
         name="member-domains",
     ),
     path(
-        "member/<int:pk>/domains/edit",
+        "member/<int:member_pk>/domains/edit",
         views.PortfolioMemberDomainsEditView.as_view(),
         name="member-domains-edit",
     ),
     path(
-        "invitedmember/<int:pk>",
+        "invitedmember/<int:invitedmember_pk>",
         views.PortfolioInvitedMemberView.as_view(),
         name="invitedmember",
     ),
     path(
-        "invitedmember/<int:pk>/delete",
+        "invitedmember/<int:invitedmember_pk>/delete",
         views.PortfolioInvitedMemberDeleteView.as_view(),
         name="invitedmember-delete",
     ),
     path(
-        "invitedmember/<int:pk>/permissions",
+        "invitedmember/<int:invitedmember_pk>/permissions",
         views.PortfolioInvitedMemberEditView.as_view(),
         name="invitedmember-permissions",
     ),
     path(
-        "invitedmember/<int:pk>/domains",
+        "invitedmember/<int:invitedmember_pk>/domains",
         views.PortfolioInvitedMemberDomainsView.as_view(),
         name="invitedmember-domains",
     ),
     path(
-        "invitedmember/<int:pk>/domains/edit",
+        "invitedmember/<int:invitedmember_pk>/domains/edit",
         views.PortfolioInvitedMemberDomainsEditView.as_view(),
         name="invitedmember-domains-edit",
     ),
@@ -164,13 +164,14 @@ urlpatterns = [
         name="organization",
     ),
     path(
-        "senior-official/",
-        views.PortfolioSeniorOfficialView.as_view(),
-        name="senior-official",
+        "organization/organization-info",
+        views.PortfolioOrganizationInfoView.as_view(),
+        name="organization-info",
     ),
     path(
-        "admin/logout/",
-        RedirectView.as_view(pattern_name="logout", permanent=False),
+        "organization/senior-official",
+        views.PortfolioSeniorOfficialView.as_view(),
+        name="organization-senior-official",
     ),
     path(
         "admin/analytics/export_data_type/",
@@ -271,7 +272,7 @@ urlpatterns = [
     ),
     path(
         "domain-request/viewonly/<int:domain_request_pk>",
-        views.PortfolioDomainRequestStatusViewOnly.as_view(),
+        views.DomainRequestStatusViewOnly.as_view(),
         name="domain-request-status-viewonly",
     ),
     path(
@@ -382,6 +383,12 @@ urlpatterns = [
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
     path("get-portfolio-members-json/", views.PortfolioMembersJson.as_view(), name="get_portfolio_members_json"),
     path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
+    path("your-portfolios/", views.PortfolioOrganizationsView.as_view(), name="your-portfolios"),
+    path(
+        "set-session-portfolio/",
+        views.PortfolioOrganizationSelectView.as_view(),
+        name="set-session-portfolio",
+    ),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

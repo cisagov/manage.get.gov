@@ -1,7 +1,7 @@
 import logging
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
-from registrar.decorators import IS_STAFF, grant_access
+from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, grant_access
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
@@ -10,15 +10,9 @@ from registrar.utility.constants import BranchChoices
 logger = logging.getLogger(__name__)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
 def get_senior_official_from_federal_agency_json(request):
     """Returns federal_agency information as a JSON"""
-
-    # This API is only accessible to admins and analysts
-    superuser_perm = request.user.has_perm("registrar.full_access_permission")
-    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
-        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     agency_name = request.GET.get("agency_name")
     agency = FederalAgency.objects.filter(agency=agency_name).first()
@@ -37,15 +31,9 @@ def get_senior_official_from_federal_agency_json(request):
         return JsonResponse({"error": "Senior Official not found"}, status=404)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
 def get_portfolio_json(request):
     """Returns portfolio information as a JSON"""
-
-    # This API is only accessible to admins and analysts
-    superuser_perm = request.user.has_perm("registrar.full_access_permission")
-    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
-        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     portfolio_id = request.GET.get("id")
     try:
@@ -93,15 +81,9 @@ def get_portfolio_json(request):
     return JsonResponse(portfolio_dict)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
 def get_suborganization_list_json(request):
     """Returns suborganization list information for a portfolio as a JSON"""
-
-    # This API is only accessible to admins and analysts
-    superuser_perm = request.user.has_perm("registrar.full_access_permission")
-    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
-        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     portfolio_id = request.GET.get("portfolio_id")
     try:
@@ -110,21 +92,15 @@ def get_suborganization_list_json(request):
         return JsonResponse({"error": "Portfolio not found"}, status=404)
 
     # Add suborganizations related to this portfolio
-    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name")
+    suborganizations = portfolio.portfolio_suborganizations.all().values("id", "name").order_by("name")
     results = [{"id": sub["id"], "text": sub["name"]} for sub in suborganizations]
     return JsonResponse({"results": results, "pagination": {"more": False}})
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
 def get_federal_and_portfolio_types_from_federal_agency_json(request):
     """Returns specific portfolio information as a JSON. Request must have
     both agency_name and organization_type."""
-
-    # This API is only accessible to admins and analysts
-    superuser_perm = request.user.has_perm("registrar.full_access_permission")
-    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
-        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     federal_type = None
     portfolio_type = None
@@ -143,15 +119,9 @@ def get_federal_and_portfolio_types_from_federal_agency_json(request):
     return JsonResponse(response_data)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
 def get_action_needed_email_for_user_json(request):
     """Returns a default action needed email for a given user"""
-
-    # This API is only accessible to admins and analysts
-    superuser_perm = request.user.has_perm("registrar.full_access_permission")
-    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
-        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     reason = request.GET.get("reason")
     domain_request_id = request.GET.get("domain_request_id")
@@ -167,15 +137,9 @@ def get_action_needed_email_for_user_json(request):
     return JsonResponse({"email": email}, status=200)
 
 
-@grant_access(IS_STAFF)
+@grant_access(IS_CISA_ANALYST, IS_OMB_ANALYST, IS_FULL_ACCESS)
 def get_rejection_email_for_user_json(request):
     """Returns a default rejection email for a given user"""
-
-    # This API is only accessible to admins and analysts
-    superuser_perm = request.user.has_perm("registrar.full_access_permission")
-    analyst_perm = request.user.has_perm("registrar.analyst_access_permission")
-    if not request.user.is_authenticated or not any([analyst_perm, superuser_perm]):
-        return JsonResponse({"error": "You do not have access to this resource"}, status=403)
 
     reason = request.GET.get("reason")
     domain_request_id = request.GET.get("domain_request_id")

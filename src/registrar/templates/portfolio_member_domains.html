@@ -7,19 +7,14 @@
 
 {% block portfolio_content %}
 <div id="main-content" class=" {% if not is_widescreen_centered %}desktop:grid-offset-2{% endif %}">
-    <!-- Form messages -->
-    {% include "includes/form_errors.html" with form=form %}
-    {% block messages %}
-      {% include "includes/form_messages.html" %}
-    {% endblock messages%}
 
     {% url 'members' as url %}
     {% if portfolio_permission %}
-        {% url 'member' pk=portfolio_permission.id as url2 %}
-        {% url 'member-domains-edit' pk=portfolio_permission.id as url3 %}
+        {% url 'member' member_pk=portfolio_permission.id as url2 %}
+        {% url 'member-domains-edit' member_pk=portfolio_permission.id as url3 %}
     {% else %}
-        {% url 'invitedmember' pk=portfolio_invitation.id as url2 %}
-        {% url 'invitedmember-domains-edit' pk=portfolio_invitation.id as url3 %}
+        {% url 'invitedmember' invitedmember_pk=portfolio_invitation.id as url2 %}
+        {% url 'invitedmember-domains-edit' invitedmember_pk=portfolio_invitation.id as url3 %}
     {% endif %}
     <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio member breadcrumb">
     <ol class="usa-breadcrumb__list">
@@ -34,6 +29,13 @@
         </li>
     </ol>
     </nav>
+
+    <!-- Form messages -->
+    {% block messages %}
+      {% include "includes/form_messages.html" %}
+    {% endblock messages%}
+    {% include "includes/form_errors.html" with form=form %}
+
 
     <div class="grid-row grid-gap">
         <div class="mobile:grid-col-12 tablet:grid-col-7">

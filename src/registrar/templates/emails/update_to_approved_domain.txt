@@ -1,9 +1,8 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 
-Hi,
-An update was made to a domain you manage.
+Hi, {{recipient.first_name}}.
+An update was made to {{domain}}.
 
-DOMAIN: {{domain}}
 UPDATED BY: {{user}}
 UPDATED ON: {{date}}
 INFORMATION UPDATED: {{changes}}

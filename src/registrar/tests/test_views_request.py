@@ -5,10 +5,10 @@ from django.utils import timezone
 from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
+from registrar.utility.constants import BranchChoices
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
-from waffle.testutils import override_flag
 
 from registrar.models import (
     DomainRequest,
@@ -53,6 +53,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         UserPortfolioPermission.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        FederalAgency.objects.all().delete()
 
     @less_console_noise_decorator
     def test_domain_request_form_intro_acknowledgement(self):
@@ -2546,6 +2547,189 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
+    # @less_console_noise_decorator
+    def test_domain_request_FEB_questions(self):
+        """
+        Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
+        contains additional questions for OMB.
+        """
+        agency, _ = FederalAgency.objects.get_or_create(
+            agency="US Treasury Dept",
+            federal_type=BranchChoices.EXECUTIVE,
+        )
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            creator=self.user,
+            organization_name="Test Portfolio",
+            organization_type=Portfolio.OrganizationChoices.FEDERAL,
+            federal_agency=agency,
+        )
+
+        portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        intro_page = self.app.get(reverse("domain-request:start"))
+        # django-webtest does not handle cookie-based sessions well because it keeps
+        # resetting the session key on each new request, thus destroying the concept
+        # of a "session". We are going to do it manually, saving the session ID here
+        # and then setting the cookie on each request.
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        intro_form = intro_page.forms[0]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        intro_result = intro_form.submit()
+
+        # follow first redirect
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        portfolio_requesting_entity = intro_result.follow()
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        # ---- REQUESTING ENTITY PAGE  ----
+        requesting_entity_form = portfolio_requesting_entity.forms[0]
+        requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
+
+        # test next button
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requesting_entity_result = requesting_entity_form.submit()
+
+        # ---- DOTGOV DOMAIN PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        dotgov_page = requesting_entity_result.follow()
+
+        # separate out these tests for readability
+        self.feb_dotgov_domain_tests(dotgov_page)
+
+        domain_form = dotgov_page.forms[0]
+        domain = "test.gov"
+        domain_form["dotgov_domain-requested_domain"] = domain
+        domain_form["dotgov_domain-feb_naming_requirements"] = "False"
+        domain_form["dotgov_domain-feb_naming_requirements_details"] = "Because this is a test"
+        with patch(
+            "registrar.forms.domain_request_wizard.DotGovDomainForm.clean_requested_domain", return_value=domain
+        ):  # noqa
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            domain_result = domain_form.submit()
+
+        # ---- PURPOSE PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_page = domain_result.follow()
+
+        self.feb_purpose_page_tests(purpose_page)
+
+        purpose_form = purpose_page.forms[0]
+        purpose_form["purpose-feb_purpose_choice"] = "redirect"
+        purpose_form["purpose-purpose"] = "testPurpose123"
+        purpose_form["purpose-has_timeframe"] = "True"
+        purpose_form["purpose-time_frame_details"] = "1/2/2025 - 1/2/2026"
+        purpose_form["purpose-is_interagency_initiative"] = "True"
+        purpose_form["purpose-interagency_initiative_details"] = "FakeInteragencyInitiative"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        purpose_result = purpose_form.submit()
+
+        # ---- ADDITIONAL DETAILS PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_page = purpose_result.follow()
+        self.feb_additional_details_page_tests(additional_details_page)
+
+        additional_details_form = additional_details_page.forms[0]
+        additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
+        additional_details_form["portfolio_additional_details-anything_else"] = "test"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        additional_details_result = additional_details_form.submit()
+
+        # ---- REQUIREMENTS PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = additional_details_result.follow()
+        self.feb_requirements_page_tests(requirements_page)
+
+        requirements_form = requirements_page.forms[0]
+        requirements_form["requirements-is_policy_acknowledged"] = "True"
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_result = requirements_form.submit()
+
+        # ---- REVIEW PAGE  ----
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        review_page = requirements_result.follow()
+        self.feb_review_page_tests(review_page)
+
+    def feb_purpose_page_tests(self, purpose_page):
+        # Check for the 21st Century IDEA Act links
+        self.assertContains(purpose_page, "https://digital.gov/resources/delivering-digital-first-public-experience/")
+        self.assertContains(
+            purpose_page,
+            "https://whitehouse.gov/wp-content/uploads/2023/09/M-23-22-Delivering-a-Digital-First-Public-Experience.pdf",  # noqa
+        )
+
+        self.assertContains(purpose_page, "What is the purpose of your requested domain?")
+
+        # Make sure the purpose selector form is present
+        self.assertContains(purpose_page, "feb_purpose_choice")
+
+        # Make sure the purpose details form is present
+        self.assertContains(purpose_page, "purpose-details")
+
+        # Make sure the timeframe yes/no form is present
+        self.assertContains(purpose_page, "purpose-has_timeframe")
+
+        # Make sure the timeframe details form is present
+        self.assertContains(purpose_page, "purpose-time_frame_details")
+
+        # Make sure the interagency initiative yes/no form is present
+        self.assertContains(purpose_page, "purpose-is_interagency_initiative")
+
+        # Make sure the interagency initiative details form is present
+        self.assertContains(purpose_page, "purpose-interagency_initiative_details")
+
+    def feb_dotgov_domain_tests(self, dotgov_page):
+        # Make sure the dynamic example content doesn't show
+        self.assertNotContains(dotgov_page, "medicare.gov")
+
+        # Make sure the link at the top directs to OPM FEB guidance
+        self.assertContains(dotgov_page, "https://get.gov/domains/executive-branch-guidance/")
+
+        # Check for header of first FEB form
+        self.assertContains(dotgov_page, "Does this submission meet each domain naming requirement?")
+
+        # Check for label of second FEB form
+        self.assertContains(dotgov_page, "Provide details")
+
+        # Check that the yes/no form was included
+        self.assertContains(dotgov_page, "feb_naming_requirements")
+
+        # Check that the details form was included
+        self.assertContains(dotgov_page, "feb_naming_requirements_details")
+
+    def feb_additional_details_page_tests(self, additional_details_page):
+
+        # Make sure the additional details form is present
+        self.assertContains(additional_details_page, "additional_details-has_anything_else_text")
+        self.assertContains(additional_details_page, "additional_details-anything_else")
+
+    def feb_requirements_page_tests(self, requirements_page):
+
+        # Check for the policy acknowledgement form
+        self.assertContains(requirements_page, "is_policy_acknowledged")
+        self.assertContains(
+            requirements_page,
+            "I read and agree to the requirements for operating a .gov domain.",
+        )
+
+    def feb_review_page_tests(self, review_page):
+        # Meets naming requirements
+        self.assertContains(review_page, "Meets naming requirements")
+        self.assertContains(review_page, "No")
+        self.assertContains(review_page, "Because this is a test")
+        # Purpose
+        self.assertContains(review_page, "Purpose")
+        self.assertContains(review_page, "Used as a redirect for an existing or new website")
+        self.assertContains(review_page, "testPurpose123")
+        # Target time frame
+        self.assertContains(review_page, "Target time frame")
+        self.assertContains(review_page, "1/2/2025 - 1/2/2026")
+        # Interagency initiative
+        self.assertContains(review_page, "Interagency initiative")
+        self.assertContains(review_page, "FakeInteragencyInitiative")
+
     @less_console_noise_decorator
     def test_domain_request_formsets(self):
         """Users are able to add more than one of some fields."""
@@ -2756,8 +2940,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_missing_edit_permissions(self):
         """Tests that a portfolio user without edit request permissions cannot edit or add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -2779,8 +2961,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         portfolio_perm.delete()
         portfolio.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_with_edit_permissions(self):
         """Tests that a portfolio user with edit request permissions can edit and add new requests"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -2796,7 +2976,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEqual(intro_page.status_code, 200)
 
         # This user should also be allowed to edit existing ones
-        domain_request = completed_domain_request(user=self.user)
+        domain_request = completed_domain_request(user=self.user, portfolio=portfolio)
         edit_page = self.app.get(
             reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         ).follow()
@@ -2894,7 +3074,6 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(response, "Withdrawn")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_withdraw_portfolio_redirects_correctly(self):
         """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -2904,7 +3083,9 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user, portfolio=portfolio
+        )
         domain_request.save()
 
         detail_page = self.app.get(f"/domain-request/{domain_request.id}")
@@ -3020,7 +3201,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         self.assertContains(start_page, '<ol class="usa-breadcrumb__list">')
         self.assertContains(start_page, "city.gov")
         self.assertContains(start_page, 'href="/"')
-        self.assertContains(start_page, "Manage your domains")
+        self.assertContains(start_page, "Home")
         self.assertNotContains(start_page, "Previous step")
 
         # Move to next step
@@ -3029,31 +3210,32 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         # Verify that the back button appears
-        self.assertContains(next_page, "Previous step")
-        self.assertContains(next_page, "#arrow_back")
+        self.assertContains(next_page, "Back")
 
-        # Test with portfolio flag
-        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
-            portfolio = Portfolio.objects.create(
-                creator=self.user,
-                organization_name="test portfolio",
-            )
-            permission = UserPortfolioPermission.objects.create(
-                user=self.user,
-                portfolio=portfolio,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
-            )
+        portfolio = Portfolio.objects.create(
+            creator=self.user,
+            organization_name="test portfolio",
+        )
+        permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+        domain_request.portfolio = portfolio
+        domain_request.save()
+        domain_request.refresh_from_db()
 
-            # Check portfolio-specific breadcrumb
-            portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # Check portfolio-specific breadcrumb
+        portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-            self.assertContains(portfolio_page, "Domain requests")
-
-            # Clean up portfolio
-            permission.delete()
-            portfolio.delete()
+        self.assertContains(portfolio_page, "Domain requests")
+        domain_request.portfolio = None
+        domain_request.save()
+        # Clean up portfolio
+        permission.delete()
+        portfolio.delete()
 
         # Clean up
         domain_request.delete()
@@ -3165,8 +3347,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_wizard_steps_portfolio(self):
         """
         Tests the behavior of the domain request wizard for portfolios.
@@ -3176,15 +3356,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         - The user lands on the "Requesting entity" page
         - The user does not see the Domain and Domain requests buttons
         """
-
-        # This should unlock 4 steps by default.
-        # Purpose, .gov domain, current websites, and requirements for operating
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            user=self.user,
-        )
-        domain_request.anything_else = None
-        domain_request.save()
 
         federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
         # Add a portfolio
@@ -3203,6 +3374,14 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             ],
         )
 
+        # This should unlock 4 steps by default.
+        # Purpose, .gov domain, current websites, and requirements for operating
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, portfolio=portfolio
+        )
+        domain_request.anything_else = None
+        domain_request.save()
+
         response = self.app.get(f"/domain-request/{domain_request.id}/edit/")
         # django-webtest does not handle cookie-based sessions well because it keeps
         # resetting the session key on each new request, thus destroying the concept
@@ -3216,7 +3395,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # Follow the redirect manually
             try:
                 detail_page = response.follow()
-
                 self.wizard.get_context_data()
             except Exception as err:
                 # Handle any potential errors while following the redirect
@@ -3229,13 +3407,13 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.assertContains(detail_page, portfolio.organization_name)
 
             # We should only see one unlocked step
-            self.assertContains(detail_page, "#check_circle", count=4)
+            self.assertContains(detail_page, "#check_circle", count=3)
 
             # One pages should still be locked (additional details)
             self.assertContains(detail_page, "#lock", 1)
 
             # The current option should be selected
-            self.assertContains(detail_page, "usa-current", count=2)
+            self.assertContains(detail_page, "usa-current", count=3)
 
             # We default to the requesting entity page
             expected_url = reverse(
@@ -3247,13 +3425,13 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
         # Data cleanup
+        domain_request.portfolio = None
+        domain_request.save()
         user_portfolio_permission.delete()
         portfolio.delete()
         federal_agency.delete()
         domain_request.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_enabled(self):
         """Tests unlock_organization_contact when agency exists in a portfolio"""
@@ -3269,8 +3447,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertFalse(domain_request.unlock_organization_contact())
 
-    @override_flag("organization_feature", active=False)
-    @override_flag("organization_requests", active=False)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_disabled(self):
         """Tests unlock_organization_contact when organization flags are disabled"""
@@ -3303,7 +3479,6 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
         self.federal_agency.delete()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_viewonly_displays_correct_fields(self):
         """Tests that the viewonly page displays different fields"""
         portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
@@ -3311,7 +3486,9 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         dummy_user, _ = User.objects.get_or_create(username="testusername123456")
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user, portfolio=portfolio
+        )
         domain_request.save()
 
         detail_page = self.app.get(f"/domain-request/viewonly/{domain_request.id}")

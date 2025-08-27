@@ -1,0 +1,99 @@
+{% extends 'portfolio_base.html' %}
+{% load static field_helpers%}
+
+{% block title %}Organization name and mailing address | {{ portfolio }}{% endblock %}
+
+{% load static %}
+
+{% block portfolio_organization_content %}
+<div class="grid-row grid-gap max-width--grid-container">
+    <div class="tablet:grid-col-3 grid-col--sidenav">
+        <p class="font-body-md margin-top-0 margin-bottom-2
+                    text-primary-darker text-semibold"
+        >
+            <span class="usa-sr-only"> Portfolio name:</span> {{ portfolio }}
+        </p>
+
+        {% include 'portfolio_organization_sidebar.html' %}
+    </div>
+
+    <div class="tablet:grid-col" id="main-content">
+        {% block breadcrumb %}
+        <!-- Navigation breadcrumbs -->
+        <nav class="usa-breadcrumb padding-top-0" aria-label="Portfolio organization breadcrumb">
+            <ol class="usa-breadcrumb__list">
+                <li class="usa-breadcrumb__list-item">
+                <a href="{% url 'organization' %}" class="usa-breadcrumb__link"><span>{{ portfolio }}</span></a>
+                </li>
+                <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+                <span>Organization</span>
+                </li>
+            </ol>
+        </nav>
+        {% endblock breadcrumb %}
+
+        <!-- Form messages -->
+        {% include "includes/form_errors.html" with form=form %}
+        {% block messages %}
+        {% include "includes/form_messages.html" %}
+        {% endblock messages%}
+
+        <h1>Organization</h1>
+        <div class="margin-top-2 tablet:grid-col-10">
+            <p>The name of your organization will be publicly listed as the domain registrant.</p>
+
+            {% if has_edit_portfolio_permission %}
+            <p>
+                Your organization name can’t be updated here.
+                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+            </p>
+            {% endif %}
+            <h2>Organization admins</h2>
+            <ul class="usa-list usa-list--unstyled margin-top-2 margin-bottom-0">
+            {% for admin in portfolio_admins %}
+                <li>
+                    <p class="margin-bottom-0">{{admin.first_name}} {{admin.last_name}}</p>
+                    <p class="margin-top-0">{{admin.email}}</p>
+                </li>    
+            {% endfor %}
+            </ul>
+            
+            <h2>Organization name and address</h2>
+            
+            {% if has_edit_portfolio_permission %}
+            {% include "includes/required_fields.html" with remove_margin_top=True %}
+            <form class="usa-form usa-form--large" method="post" novalidate>
+                {% csrf_token %}
+                <p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>
+                <p class="margin-top-0">
+                    {% if portfolio.organization_name %}
+                    {{ portfolio.organization_name }}
+                    {% else %}
+                    {{ portfolio.federal_agency }}
+                    {% endif %}
+                </p>
+                {% input_with_errors form.address_line1 %}
+                {% input_with_errors form.address_line2 %}
+                {% input_with_errors form.city %}
+                {% input_with_errors form.state_territory %}
+                {% with add_class="usa-input--small" sublabel_text="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789." %}
+                    {% input_with_errors form.zipcode %}
+                {% endwith %}
+                <button type="submit" class="usa-button">
+                Save
+                </button>
+            </form>
+            {% else %}
+            <div class="margin-top-2">
+            {% include "includes/organization_address.html" with organization=portfolio %}
+            </div>
+            {% endif %}
+
+            {% if organization_type %}
+                <h3>Organization type</h3>
+                {{ organization_type }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

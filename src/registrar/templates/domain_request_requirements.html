@@ -4,7 +4,7 @@
 
 {% block form_instructions %}
   <p>Please read this page. Check the box at the bottom to show that you agree to the requirements for operating a .gov domain.</p>
-<p>The .gov domain space exists to support a broad diversity of government missions. Generally, we don’t review or audit how government organizations use their registered domains. However, misuse of a .gov domain can reflect upon the integrity of the entire .gov space. There are categories of misuse that are statutorily prohibited or abusive in nature.</p>
+  <p>The .gov domain space exists to support a broad diversity of government missions. Generally, we don’t review or audit how government organizations use their registered domains. However, misuse of a .gov domain can reflect upon the integrity of the entire .gov space. There are categories of misuse that are statutorily prohibited or abusive in nature.</p>
 
 
   <h2>What you can’t do with a .gov domain</h2>
@@ -49,23 +49,36 @@
 
   <h2>Domain renewal</h2>
   
-  <p>.Gov domains are registered for a one-year period. To renew your domain, you'll be asked to verify your organization’s eligibility and your contact information. </p>
+  <p>.Gov domains are registered for a one-year period. To renew the domain, you’ll be asked to verify your contact information and some details about the domain.</p>
   
   <p>Though a domain may expire, it will not automatically be put on hold or deleted. We’ll make extensive efforts to contact your organization before holding or deleting a domain.</p>
+  {% endblock %}
 
-{% endblock %}
+  {% block form_required_fields_help_text %}
+  {# commented out so it does not appear on this page #}
+  {% endblock %}
+  
+  {% block form_fields %}
+    {% if requires_feb_questions %}
+      <h2>Required and prohibited activities</h2>
+      <h3>Prohibitions on non-governmental use</h3>
 
-{% block form_required_fields_help_text %}
-{# commented out so it does not appear on this page #}
-{% endblock %}
+      <p>Agencies may not use a .gov domain name:
+        <ul class="usa-list"> 
+          <li>On behalf of a non-federal executive branch entity</li>
+          <li>For a non-governmental purpose</li>
+        </ul>
+      </p>
 
-{% block form_fields %}
-    <fieldset class="usa-fieldset">
-      <legend>
-        <h2>Acknowledgement of .gov domain requirements</h2>
-      </legend>
-
+      <h2>Acknowledgement of .gov domain requirements</h2>
       {% input_with_errors forms.0.is_policy_acknowledged %}
+    {% else %}
+      <fieldset class="usa-fieldset">
+        <legend>
+          <h2>Acknowledgement of .gov domain requirements</h2>
+        </legend>
 
-    </fieldset>
+        {% input_with_errors forms.0.is_policy_acknowledged %}
+      </fieldset>
+    {% endif %}
 {% endblock %}

@@ -3,19 +3,18 @@
 
 {% block title %}DS data | {{ domain.name }} | {% endblock %}
 
-{% block domain_content %}
-
-  {% for form in formset %}
-    {% include "includes/form_errors.html" with form=form %}
-  {% endfor %}
 
   {% block breadcrumb %}
-  {% if portfolio %}
   <!-- Navigation breadcrumbs -->
+   {% if portfolio %}
+    {% url 'domains' as url %}
+   {% else %}
+     {% url 'home' as url %}
+   {% endif %}
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
         <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
@@ -31,125 +30,385 @@
       </li>
     </ol>
   </nav>
-  {% endif %}
   {% endblock breadcrumb %}
 
-  {% if domain.dnssecdata is None %}
-  <div class="usa-alert usa-alert--info usa-alert--slim margin-bottom-3">
-    <div class="usa-alert__body">
-      You have no DS data added. Enable DNSSEC by adding DS data.
+  {% block domain_content %}
+
+  <!-- Error message -->
+  {% for form in formset %}
+      {% include "includes/form_errors.html" with form=form %}
+  {% endfor %}
+
+  <div class="grid-row grid-gap">
+    <div class="tablet:grid-col-6">
+      <h1 class="tablet:margin-bottom-1" id="domain-dsdata">DS data</h1>
+    </div>
+    
+    <div class="tablet:grid-col-6 text-right--tablet">
+      <button type="button" class="usa-button margin-bottom-1 tablet:float-right" id="dsdata-add-button">
+        Add DS data
+      </button>
     </div>
   </div>
+
+  <p>In order to enable DNSSEC, you must first configure it with your DNS provider.</p>
+
+  <p>Click “Add DS data” and enter the values given by your DNS provider for DS (Delegation Signer) data. You can add a maximum of 8 DS records.</p>
+
+  {% comment %}
+  This template supports the rendering of three different DS data forms, conditionally displayed:
+  1 - Add DS Data form (rendered when there are no existing DS data records defined for the domain)
+  2 - DS Data table (rendered when the domain has existing DS data, which can be viewed and edited)
+  3 - Add DS Data form (rendered above the DS Data table to add a single additional DS Data record)
+  {% endcomment %}
+
+  {% if formset.initial and formset.forms.0.initial %}
+    
+    {% comment %}This section renders both the DS Data table and the Add DS Data form {% endcomment %}
+
+    {% include "includes/required_fields.html" %}
+
+    <form class="usa-form usa-form--extra-large ds-data-form" method="post" novalidate id="form-container">
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      {% for form in formset %}
+        {% if forloop.last and not form.initial %}
+
+          {% comment %}
+          This section renders the Add DS data form.
+          This section does not render if the last form has initial data (this occurs if 8 DS data records already exist)
+          {% endcomment %}
+          
+          <section class="add-dsdata-form display-none section-outlined section-outlined--extra-padding">
+            <h2 class="margin-top-0">Add DS record</h2>
+            <div class="repeatable-form">
+              <div class="grid-row grid-gap-2 flex-end">
+                <div class="tablet:grid-col-4">
+                  {% with sublabel_text="Numbers (0-9) only." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% input_with_errors form.key_tag %}
+                    {% endwith %}
+                  {% endwith %}
+                </div>
+                <div class="tablet:grid-col-4">
+                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors form.algorithm %}
+                  {% endwith %}
+                </div>
+                <div class="tablet:grid-col-4">
+                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors form.digest_type %}
+                  {% endwith %}
+                </div>
+              </div>
+        
+              <div class="grid-row">
+                <div class="grid-col">
+                  {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% input_with_errors form.digest %}
+                    {% endwith %}
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+            <div class="margin-top-2">
+              <button
+                type="button"
+                class="usa-button usa-button--outline dsdata-cancel-add-form"
+                name="btn-cancel-click"
+                aria-label="Reset the data in the DS records to the registry state (undo changes)"
+              >Cancel
+              </button>
+              <button
+                id="save-ds-data"
+                type="submit"
+                class="usa-button"
+              >Save
+              </button>
+            </div>
+          </section>
+        {% endif %}
+      {% endfor %}
+
+      <div class="usa-table-container--scrollable usa-table-container--override-overflow usa-table-container--override-scrollable padding-top-5 margin-top-0" tabindex="0">
+        <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked dotgov-table--cell-padding-2-2-2-0" id="dsdata-table">
+          <caption class="sr-only">Your DS data records</caption>
+          <thead>
+            <tr>
+              <th scope="col" role="columnheader" class="text-bottom">Key tag</th>
+              <th scope="col" role="columnheader" class="text-bottom">Algorithm</th>
+              <th scope="col" role="columnheader"  class="text-bottom">Digest type</th>
+              <th scope="col" role="columnheader" class="text-bottom">Digest</th>
+              <th scope="col" role="columnheader" class="text-bottom width-0 padding-right-0">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+              {% if not forloop.last or form.initial %}
+
+                {% comment %}
+                This section renders table rows for each existing DS data records. Two rows are rendered, a readonly row
+                and an edit row. Only one of which is displayed at a time.
+                {% endcomment %}
+                
+                <!-- Readonly row -->
+                <tr class="view-only-row">
+                  <td data-label="Key tag">{{ form.key_tag.value }}</td>
+                  <td data-label="Algorithm">
+                    <span class="ellipsis ellipsis--15">
+                      {% for value, label in form.algorithm.field.choices %}
+                        {% if value|stringformat:"s" == form.algorithm.value|stringformat:"s" %}
+                          {{ label }}
+                        {% endif %}
+                      {% endfor %}
+                    </span>
+                  </td>
+                  <td data-label="Digest type">
+                    {% for value, label in form.digest_type.field.choices %}
+                      {% if value|stringformat:"s" == form.digest_type.value|stringformat:"s" %}
+                        {{ label }}
+                      {% endif %}
+                    {% endfor %}
+                  </td>
+                  <td data-label="Digest">
+                    <span class="ellipsis ellipsis--23">{{ form.digest.value }}</span>
+                  </td>
+                  <td class="padding-right-0" data-label="Action">
+                    <div class="tablet:display-flex tablet:flex-row">
+                      <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0 dsdata-edit'>
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                          <use xlink:href="/public/img/sprite.svg#edit"></use>
+                        </svg>
+                        Edit <span class="usa-sr-only">DS record {{forloop.counter}}</span>
+                      </button>
+
+                      <a 
+                        role="button" 
+                        id="button-trigger-delete-dsdata-{{ forloop.counter }}"
+                        class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex dsdata-delete-kebab"
+                      >
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                          <use xlink:href="/public/img/sprite.svg#delete"></use>
+                        </svg>
+                        Delete
+                      </a>
+
+                      <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                        <div class="usa-accordion__heading">
+                          <button
+                            type="button"
+                            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
+                            aria-expanded="false"
+                            aria-controls="more-actions-dsdata-{{ forloop.counter }}"
+                            aria-label="More Actions for DS record {{ forloop.counter }}"
+                          >
+                            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                              <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                            </svg>
+                          </button>
+                        </div>
+                        <div id="more-actions-dsdata-{{ forloop.counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                          <h2>More options</h2>
+                          <button 
+                            type="button" 
+                            class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger line-height-sans-5 text-secondary dsdata-delete-kebab margin-top-2"
+                            name="btn-delete-kebab-click"
+                            aria-label="Delete DS record {{ forloop.counter }} from the registry"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Edit row -->
+                <tr class="edit-row display-none">
+                  <td class="text-bottom">
+                    {% with sublabel_text="(0-65535)." %}
+                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
+                        {% input_with_errors form.key_tag %}
+                      {% endwith %}
+                    {% endwith %}
+                  </td>
+                  <td class="text-bottom">
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
+                        {% input_with_errors form.algorithm %}
+                      {% endwith %}
+                  </td>
+                  <td class="text-bottom">
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
+                        {% input_with_errors form.digest_type %}
+                      {% endwith %}
+                  </td>
+                  <td class="text-bottom">
+                    {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                      {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error margin-top-0" use_small_sublabel_text=True inline_error_class="font-body-xs" %}
+                        {% input_with_errors form.digest %}
+                      {% endwith %}
+                    {% endwith %}
+                  </td>
+                  <td class="padding-right-0 text-bottom" data-label="Action">
+                    <button class="usa-button usa-button--unstyled display-block margin-top-1" type="submit">Save</button>
+                    
+                    <button
+                          type="button"
+                          class="usa-button usa-button--unstyled display-block dsdata-cancel"
+                          name="btn-cancel-click"
+                          aria-label="Reset the data in the DS record form to the registry state (undo changes)"
+                      >Cancel
+                    </button>
+                    <button
+                          type="button"
+                          class="usa-button usa-button--unstyled display-block text-secondary dsdata-delete"
+                          name="btn-delete-click"
+                          aria-label="Delete the DS record from the registry"
+                      >Delete
+                    </button>
+                    <div class="display-none">{{ form.DELETE }}</div>
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+
+  {% else %}
+
+    {% comment %}
+    This section renders Add DS Data form which renders when there are no existing
+    DS records defined on the domain.
+    {% endcomment %} 
+
+    <div class="add-dsdata-form display-none">
+      {% include "includes/required_fields.html" %} 
+      <section class="section-outlined section-outlined--extra-padding">
+        <form class="usa-form usa-form--extra-large" method="post" novalidate>
+          <h2>Add DS record</h2>
+          {% csrf_token %}
+          {{ formset.management_form }}
+          {% for form in formset %}
+          <div class="repeatable-form">
+            <div class="grid-row grid-gap-2 flex-end">
+              <div class="tablet:grid-col-4">
+                {% with sublabel_text="Numbers (0-9) only." %}
+                  {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors form.key_tag %}
+                  {% endwith %}
+                {% endwith %}
+              </div>
+              <div class="tablet:grid-col-4">
+                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% input_with_errors form.algorithm %}
+                {% endwith %}
+              </div>
+              <div class="tablet:grid-col-4">
+                {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                  {% input_with_errors form.digest_type %}
+                {% endwith %}
+              </div>
+            </div>
+    
+            <div class="grid-row">
+              <div class="grid-col">
+                {% with sublabel_text="Numbers (0-9) and letters (a-f) only. SHA-1: 40 chars, SHA-256: 64 chars." %}
+                  {% with hide_character_count=True %}
+                    {% with attr_required=True add_initial_value_attr=True add_group_class="usa-form-group--unstyled-error" %}
+                      {% input_with_errors form.digest %}
+                    {% endwith %}
+                  {% endwith %}
+                {% endwith %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+          <div class="margin-top-2">
+            <button
+              type="button"
+              class="usa-button usa-button--outline dsdata-cancel-add-form"
+              name="btn-cancel-click"
+              aria-label="Reset the data in the DS records to the registry state (undo changes)"
+            >Cancel
+            </button>
+            <button
+              id="save-ds-data"
+              type="submit"
+              class="usa-button"
+            >Save
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
   {% endif %}
 
-  <h1 id="domain-dsdata">DS data</h1>
-
-  <p>In order to enable DNSSEC, you must first configure it with your DNS hosting service.</p>
-
-  <p>Enter the values given by your DNS provider for DS data.</p>
-
-  {% include "includes/required_fields.html" %}
-
-  <form class="usa-form usa-form--extra-large ds-data-form" method="post" novalidate id="form-container">
-    {% csrf_token %}
-    {{ formset.management_form }}
-
-    {% for form in formset %}
-    <fieldset class="repeatable-form">
-
-      <legend class="sr-only">DS data record {{forloop.counter}}</legend>
-
-      <h2 class="margin-top-0">DS data record {{forloop.counter}}</h2>
-
-      <div class="grid-row grid-gap-2 flex-end">
-        <div class="tablet:grid-col-4">
-          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
-            {% input_with_errors form.key_tag %}
-          {% endwith %}
-        </div>
-        <div class="tablet:grid-col-4">
-          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
-            {% input_with_errors form.algorithm %}
-          {% endwith %}
-        </div>
-        <div class="tablet:grid-col-4">
-          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
-            {% input_with_errors form.digest_type %}
-          {% endwith %}
-        </div>
-      </div>
-
-      <div class="grid-row">
-        <div class="grid-col">
-          {% with attr_required=True add_group_class="usa-form-group--unstyled-error" %}
-            {% input_with_errors form.digest %}
-          {% endwith %}
-        </div>
-      </div>
-
-      <div class="grid-row margin-top-1">
-        <div class="grid-col">
-            <button type="button" id="button label" class="usa-button usa-button--unstyled usa-button--with-icon float-right-tablet delete-record text-secondary line-height-sans-5">
-              <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-                <use xlink:href="{%static 'img/sprite.svg'%}#delete"></use>
-              </svg>Delete
-              <span class="sr-only">DS data record {{forloop.counter}}</span>
-            </button>
-        </div>
-      </div>
-
-    </fieldset>
-    {% endfor %}
-
-    <button type="button" class="usa-button usa-button--unstyled usa-button--with-icon margin-bottom-2" id="add-form">
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#add_circle"></use>
-      </svg>Add new record
-    </button>
-
-    <button
-          id="save-ds-data"
-          type="submit"
-          class="usa-button"
-      >Save
-    </button>
-
-    <button
-          type="submit"
-          class="usa-button usa-button--outline"
-          name="btn-cancel-click"
-          aria-label="Reset the data in the DS records to the registry state (undo changes)"
-      >Cancel
-    </button>
-  </form>
-
-  {% if trigger_modal %}
   <a
-      id="ds-toggle-dnssec-alert"
-      href="#toggle-dnssec-alert"
+    id="unsaved_changes_trigger"
+    href="#unsaved-changes-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="unsaved-changes-modal"
+    data-open-modal
+    >Trigger unsaved changes modal</a>
+  <div 
+    class="usa-modal"
+    id="unsaved-changes-modal"
+    aria-labelledby="Are you sure you want to continue?"
+    aria-describedby="You have unsaved changes that will be lost."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_id="unsaved-changes-click-button" modal_button_text="Continue without saving" cancel_button_text="Go back" %}
+  </div>
+
+  <a
+    id="cancel_changes_trigger"
+    href="#cancel-changes-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="cancel-changes-modal"
+    data-open-modal
+    >Trigger cancel changes modal</a>
+  <div 
+    class="usa-modal"
+    id="cancel-changes-modal"
+    aria-labelledby="Are you sure you want to cancel your changes?"
+    aria-describedby="This action cannot be undone."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="This action cannot be undone." modal_button_id="cancel-changes-click-button" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
+  </div>
+
+  <a
+    id="delete_trigger"
+    href="#delete-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="delete-modal"
+    data-open-modal
+    >Trigger delete modal</a>
+  <div 
+    class="usa-modal"
+    id="delete-modal"
+    aria-labelledby="Are you sure you want to delete this DS data record?"
+    aria-describedby="This action cannot be undone."
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete this DS data record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
+  </div>
+
+  <a
+      id="disable_dnssec_trigger"
+      href="#disable-dnssec-modal"
       class="usa-button usa-button--outline margin-top-1 display-none"
-      aria-controls="toggle-dnssec-alert"
+      aria-controls="disable-dnssec-modal"
       data-open-modal
       >Trigger Disable DNSSEC Modal</a
     >
-  {% endif %}
-  {# Use data-force-action to take esc out of the equation and pass cancel_button_resets_ds_form to effectuate a reset in the view #}
   <div
     class="usa-modal"
-    id="toggle-dnssec-alert"
+    id="disable-dnssec-modal"
     aria-labelledby="Are you sure you want to continue?"
     aria-describedby="Your DNSSEC records will be deleted from the registry."
-    data-force-action
   >
-      {% include 'includes/modal.html' with cancel_button_resets_ds_form=True modal_heading="Warning: You are about to remove all DS records on your domain." modal_description="To fully disable DNSSEC: In addition to removing your DS records here, you’ll need to delete the DS records at your DNS host. To avoid causing your domain to appear offline, you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button_id="disable-override-click-button" modal_button_text="Remove all DS data" modal_button_class="usa-button--secondary" %}
+    {% include 'includes/modal.html' with modal_heading="Warning: You are about to remove all DS records on your domain." modal_description="To fully disable DNSSEC: In addition to removing your DS records here, you’ll need to delete the DS records at your DNS host. To avoid causing your domain to appear offline, you should wait to delete your DS records at your DNS host until the Time to Live (TTL) expires. This is often less than 24 hours, but confirm with your provider." modal_button_id="disable-dnssec-click-button" modal_button_text="Remove all DS data" modal_button_class="usa-button--secondary" %}
   </div>
-  <form method="post" id="disable-override-click-form">
-    {% csrf_token %}
-    <input type="hidden" name="disable-override-click" value="1">
-  </form>
-  <form method="post" id="btn-cancel-click-form">
-    {% csrf_token %}
-    <input type="hidden" name="btn-cancel-click" value="1">
-  </form>
 
 {% endblock %}  {# domain_content #}

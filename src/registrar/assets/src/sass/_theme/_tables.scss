@@ -20,16 +20,6 @@ th {
     border-top: none;
   }
 
-  tr {
-    border-bottom: none;
-    border-top: 2px solid color('base-lighter');
-    margin-top: units(2);
-
-    &:first-child {
-      margin-top: 0;
-    }
-  }
-
   td[data-label]:before,
   th[data-label]:before {
     color: color('primary-darker');
@@ -51,48 +41,53 @@ th {
 .dotgov-table {
   width: 100%;
 
-  tbody th {
-    word-break: break-word;
-  }
 
   @include at-media(mobile-lg) {
+    margin-top: units(1); //this doesn't appear to do anything
 
-    margin-top: units(1);
-
-    tr {
-      border: none;
+    //Table header work-break
+    tbody th {
+      word-break: break-word;
     }
 
-    tr:not(.hide-td-borders):not(:last-child) td,
-    tr:not(.hide-td-borders):not(:last-child) th {
-      border-bottom: 1px solid color('base-lighter');
-    }
+  }
+  
+  //Table Borders
+  tr {
+    border: none;
+  }
 
-    thead th,
-    thead th[aria-sort] {
-      color: color('primary-darker');
-      border-bottom: 2px solid color('base-light');
-    }
+  tr:not(.hide-td-borders) {
+    border-bottom: 1px solid color('base-lighter');
+  }
 
-    tbody tr:last-of-type {
-      td, th {
-        border-bottom: 0;
-      }
-    }
+  thead th,
+  thead th[aria-sort] {
+    color: color('primary-darker');
+    border-bottom: 2px solid color('base-light');
+  }
 
+  //No border for the very top element
+  thead tr:first-child th:first-child {
+    border-top: none;
+  }
+
+  //No border for very bottom element
+  tbody tr:last-of-type {
     td, th {
-      padding: units(2) units(4) units(2) 0;
-    }
-
-    // Hack fix to the overly specific selector above that broke utility class usefulness
-    .padding-right-105 {
-      padding-right: .75rem;
-    }
-
-    thead tr:first-child th:first-child {
-      border-top: none;
+      border-bottom: 0;
     }
   }
+
+  td, th {
+    padding: units(2) units(4) units(2) 0;
+  }
+
+  // Hack fix to the overly specific selector above that broke utility class usefulness
+  .padding-right-105 {
+    padding-right: .75rem;
+  }
+
 
   // Sortable headers
   th[data-sortable][aria-sort=ascending],
@@ -142,6 +137,14 @@ th {
   }
 }
 
+.dotgov-table--cell-padding-2-2-2-0 {
+  @include at-media(mobile-lg) {
+    td, th {
+      padding: units(2) units(2) units(2) 0;
+    }
+  }
+}
+
 .usa-table--striped tbody tr:nth-child(odd) th,
 .usa-table--striped tbody tr:nth-child(odd) td {
   background-color: color('primary-lightest');
@@ -164,5 +167,9 @@ th {
 @include at-media(desktop) {
   .usa-table-container--scrollable.usa-table-container--override-overflow {
       overflow-y: visible;
+  }
+
+  .usa-table-container--override-scrollable td {
+    white-space: normal;
   }
 }

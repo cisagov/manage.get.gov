@@ -17,18 +17,26 @@ on:
           - staging
           - development
           - backup
-          - ky
+          - testdb
+          - acadia
+          - glacier
+          - olympic
+          - yellowstone
+          - zion
+          - potato
+          - product
+          - meoward
+          - bob
+          - hotgov
+          - litterbox
+          - aa
+          - ad
+          - dg
+          - el
           - es
+          - kma
           - nl
           - rh
-          - za
-          - gd
-          - rb
-          - ko
-          - ab
-          - rjm
-          - dk
-          - ms
 
 jobs:
   createcachetable:

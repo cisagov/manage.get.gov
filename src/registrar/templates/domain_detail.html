@@ -2,26 +2,24 @@
 {% load static url_helpers %}
 {% load custom_filters %}
 
-{% block domain_content %}
   {% block breadcrumb %}
-  {% if portfolio %}
   <!-- Navigation breadcrumbs -->
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>{{ domain.name }}</span>
       </li>
     </ol>
   </nav>
-  {% endif %}
   {% endblock breadcrumb %}
 
+{% block domain_content %}
   {{ block.super }}
-  <div class="margin-top-4 tablet:grid-col-10">
-    <h2 class="string-wrap">{{ domain.name }}</h2>
+  <div class="margin-top-2 tablet:grid-col-10">
+    <h2 class="string-wrap margin-top-2">{{ domain.name }}</h2>
     <div
         class="usa-summary-box padding-y-2 margin-bottom-1"
         role="region"
@@ -73,9 +71,16 @@
       {% if is_portfolio_user and not is_domain_manager %}
       <div class="usa-alert usa-alert--info usa-alert--slim">
         <div class="usa-alert__body">
+          {% if not is_portfolio_admin %}
           <p class="usa-alert__text ">
             You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
           </p>
+          {% else %}
+          {% url 'member' member_pk=user_portfolio_permission.id as edit_member_url %}
+          <p class="usa-alert__text ">
+            You don't have access to manage {{domain.name}}. If you need to become a domain manager, edit the domain assignments in your <a href="{{edit_member_url}}">member profile</a>.
+          </p>
+          {% endif %}
         </div>
       </div>
       {% endif %}
@@ -99,9 +104,9 @@
     {% if domain.dnssecdata is not None %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
     {% else %}
-      {% include "includes/summary_item.html" with title='DNSSEC' value='Not Enabled' edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='DNSSEC' value='Not enabled' edit_link=url editable=is_editable %}
     {% endif %}
-
+    
     {% if portfolio %}
       {% if has_any_domains_portfolio_permission and has_edit_portfolio_permission %}
         {% url 'domain-suborganization' domain_pk=domain.id as url %}
