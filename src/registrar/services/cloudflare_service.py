@@ -19,7 +19,7 @@ class CloudflareService:
             "X-Auth-Key": self.tenant_key,
             "Content-Type": "application/json",
         }
-    # POST account
+
     def create_account(self, account_name):
         url = f"{self.base_url}/accounts"
         data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
@@ -31,7 +31,6 @@ class CloudflareService:
 
         return response['data']
 
-    # POST zone
     def create_zone(self, zone_name, account_id):   
         url = f"{self.base_url}/zones"
         data = {"name": zone_name, "account": {"id": account_id }}
@@ -44,7 +43,6 @@ class CloudflareService:
 
         return response['data']
 
-    # POST dns_record
     def create_dns_record(self, zone_id, record_data):
         url = f"{self.base_url}/zones/{zone_id}/dns_records"
         logger.debug(f'attempting to create record for zone {zone_id} with this data: {json.dumps(record_data)}')
@@ -56,7 +54,6 @@ class CloudflareService:
 
         return response['data']
     
-    # GET accounts
     def get_all_accounts(self):
         '''Gets all accounts under specified tenant. Must include pagination paramenters'''
         # TODO: adapt fn to check each page until found or doesn't exist
@@ -69,7 +66,6 @@ class CloudflareService:
 
         return response['data']
     
-    # GET zones
     def get_all_zones(self):
         '''Gets all zones under all(?!) tenants'''
         url = f"{self.base_url}/zones"
@@ -81,7 +77,6 @@ class CloudflareService:
 
         return response['data']
  
-    # GET dns record for zone
     def get_dns_record(self, zone_id, record_id):
         url = f"{self.base_url}/zones/{zone_id}/dns_records/{record_id}"
         response = make_api_request(url=url, method="GET", headers=self.headers )
