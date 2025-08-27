@@ -51,5 +51,6 @@ runs:
           echo "Matched python files:"
           echo "$PY_CHANGED"
         else
+          echo "No python file changed"
           echo "any=false" >> "$GITHUB_OUTPUT"
         fi
