@@ -31,6 +31,7 @@ runs:
         echo "-------DEBUG (detector)--------"
         echo "BASE_SHA: ${BASE_SHA}, HEAD=$(git rev-parse HEAD)"
         echo "HEAD_SHA: ${HEAD_SHA}"
+        echo "GITHUB_SHA: ${GITHUB_SHA}"
         git diff --name-status "${BASE_SHA}..HEAD"
         echo "-------------------------------"
 
