@@ -26,6 +26,7 @@ on:
             - nl
             - olympic
             - potato
+            - my
             - product
             - rh
             - yellowstone
@@ -35,12 +36,15 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       # must be the github secrets for the receiving sandbox
-      CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
-      CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
+      CF_USERNAME: ${{ github.event.inputs.environment }}USERNAME
+      CF_PASSWORD: ${{ github.event.inputs.environment }}PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
-      SOURCE_ENVIRONMENT: test_db
+      SOURCE_ENVIRONMENT: testdb
     steps:
         - name: Clone Database
+          env:
+            cf_username: ${{ secrets[env.CF_USERNAME] }}
+            cf_password: ${{ secrets[env.CF_PASSWORD] }}
           run: |
             # install cf cli and other tools
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
@@ -54,7 +58,8 @@ jobs:
             
             # Authenticate and target CF org and space.
             cf api api.fr.cloud.gov
-            cf auth "$CF_USERNAME" "$CF_PASSWORD"
+            echo "$cf_username" 
+            echo "$cf_password"
             cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
             
             # share the target db with the source space
