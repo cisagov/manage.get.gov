@@ -61,8 +61,9 @@ class CloudflareService:
 
     def get_all_accounts(self):
         """Gets all accounts under specified tenant. Must include pagination paramenters"""
-        # TODO: adapt fn to check each page until found or doesn't exist
-        url = f"{self.base_url}/tenants/{self.tenant_id}/accounts?page=1&per_page=50"
+        # TODO: adapt fn to check accounts by tenant to check each page until found or doesn't exist
+        # url = f"{self.base_url}/tenants/{self.tenant_id}/accounts?page=1&per_page=50"
+        url = f"{self.base_url}/accounts"
         response = make_api_request(url=url, method="GET", headers=self.headers)
 
         if not response["success"]:
