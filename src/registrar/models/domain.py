@@ -1658,17 +1658,17 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
-    @property
+    @Cache
     def on_hold_date(self):
         """
         Grabbing date of when domain was put on hold via audit log
 
         NOTE:
-        Please are hoping to have a state table in the future, so for now
+        We are hoping to have a state table in the future, so for now
         we are pulling from audit log as we didn't want to add extra stuff to the DB.
 
-        Usually we would not go with this approach if we had to run this query for every domain
-        (ie for getting date of the last state transition date)
+        This approach will query the db, but we are ok doing this as there are only a few domains
+        in the hold state simultaneously
         """
         if self.state != Domain.State.ON_HOLD:
             return None

@@ -4065,9 +4065,27 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     fieldsets = (
         (
             None,
-            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
+            {
+                "fields": [
+                    "state",
+                    "expiration_date",
+                    "first_ready",
+                    "on_hold_date_display",
+                    "days_on_hold_display",
+                    "deleted",
+                    "dnssecdata",
+                    "nameservers",
+                ]
+            },
         ),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        """Add computed display methods to readonly_fields"""
+        return super().get_readonly_fields(request, obj) + (
+            "on_hold_date_display",
+            "days_on_hold_display",
+        )
 
     # ------- Domain Information Fields
 
@@ -4145,14 +4163,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
-    # --- On Hold Date / Days On Hold
-    @admin.display(description=_("On Hold Date"))
+    # --- On hold date / days on hold
+    @admin.display(description=_("On hold date"))
     def on_hold_date_display(self, obj):
         """Display the date the domain was put on hold"""
         date = obj.on_hold_date
         return date
 
-    @admin.display(description=_("Days On Hold"))
+    @admin.display(description=_("Days on hold"))
     def days_on_hold_display(self, obj):
         """Display how many days the domain has been on hold"""
         days = obj.days_on_hold

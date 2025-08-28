@@ -567,8 +567,8 @@ class TestDomainAdminAsStaff(MockEppLib):
             self.assertIsInstance(days_on_hold_display, int)
 
             # 5. Confirm headers are correct
-            self.assertEqual(self.admin.on_hold_date_display.short_description, "On Hold Date")
-            self.assertEqual(self.admin.days_on_hold_display.short_description, "Days On Hold")
+            self.assertEqual(self.admin.on_hold_date_display.short_description, "On hold date")
+            self.assertEqual(self.admin.days_on_hold_display.short_description, "Days on hold")
 
         # 6. Remove hold, domain transitions back to READY
         domain.revert_client_hold(ignoreEPP=True)
