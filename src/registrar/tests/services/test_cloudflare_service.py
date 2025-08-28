@@ -158,7 +158,7 @@ class TestCloudflareService(SimpleTestCase):
         
     @patch('registrar.services.cloudflare_service.make_api_request')
     def test_get_account_zones_success(self, mock_make_request):
-        """Test successful get_all_zones call"""
+        """Test successful get_account_zones call"""
         account_id = '55555'
         
         mock_make_request.return_value = {
@@ -180,7 +180,7 @@ class TestCloudflareService(SimpleTestCase):
     
     @patch('registrar.services.cloudflare_service.make_api_request')
     def test_get_account_zones_failure(self, mock_make_request):
-        """Test get_all_zones with API failure"""
+        """Test get_account_zones with API failure"""
         
         account_id = '44444'
         mock_make_request.return_value = {
