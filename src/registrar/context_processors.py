@@ -1,5 +1,4 @@
 from django.conf import settings
-from registrar.models import UserPortfolioPermission
 
 
 def language_code(request):
@@ -67,14 +66,10 @@ def portfolio_permissions(request):
         "is_portfolio_user": False,
         "is_portfolio_admin": False,
         "has_multiple_portfolios": False,
-        "user_portfolio_permissions": None,
     }
     try:
         portfolio = request.session.get("portfolio")
         if portfolio:
-            user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=request.user).order_by(
-            "portfolio"
-            )
             return {
                 "has_view_portfolio_permission": request.user.has_view_portfolio_permission(portfolio),
                 "has_edit_portfolio_permission": request.user.has_edit_portfolio_permission(portfolio),
@@ -87,7 +82,6 @@ def portfolio_permissions(request):
                 "is_portfolio_user": True,
                 "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
                 "has_multiple_portfolios": request.user.is_multiple_orgs_user(request),
-                "user_portfolio_permissions": user_portfolio_permissions
             }
         # Active portfolio may not be set yet, but indicate if user is a member of multiple portfolios
         portfolio_context["has_multiple_portfolios"] = request.user.is_multiple_orgs_user(request)
