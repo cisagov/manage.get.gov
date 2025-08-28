@@ -469,7 +469,7 @@ class TestPortfolio(WebTest):
         self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
         self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
         self.assertContains(portfolio_page, reverse("domains"))
-        self.assertContains(portfolio_page, reverse("domain-requests"))
+        self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))

@@ -6,7 +6,7 @@ have VIEW_MANAGED_DOMAINS permission.
 import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import Exists, OuterRef
+from django.db.models import OuterRef
 from registrar.models import UserPortfolioPermission, UserDomainRole
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 
@@ -75,14 +75,6 @@ class Command(BaseCommand):
 
     def _find_members_needing_permission(self):
         """Find ORGANIZATION_MEMBER users who need VIEW_MANAGED_DOMAINS permission."""
-
-        # Create a subquery to check if the user manages any domains in the portfolio
-        manages_domains_in_portfolio = UserDomainRole.objects.filter(
-            user=OuterRef("user"),
-            role=UserDomainRole.Roles.MANAGER,
-            domain__domain_info__portfolio=OuterRef("portfolio"),
-        )
-
         return (
             UserPortfolioPermission.objects.filter(
                 # Must be an org member
