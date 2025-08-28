@@ -66,9 +66,9 @@ class CloudflareService:
 
         return response['data']
     
-    def get_all_zones(self):
-        '''Gets all zones under all(?!) tenants'''
-        url = f"{self.base_url}/zones"
+    def get_account_zones(self, account_id):
+        '''Gets all zones under a particular account'''
+        url = f"{self.base_url}/zones?account.id={account_id}"
         response = make_api_request(url=url, method="GET", headers=self.headers )
 
         if not response['success']:

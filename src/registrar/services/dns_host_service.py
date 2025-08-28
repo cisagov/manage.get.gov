@@ -20,7 +20,9 @@ class DnsHostService:
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)
 
-        zone_id = self._find_existing_zone(zone_name)
+        zone_id = None
+        if account_id:
+            zone_id = self._find_existing_zone(zone_name, account_id)
         has_zone = bool(zone_id)
 
         if not has_account:
@@ -73,9 +75,9 @@ class DnsHostService:
         
         return account_id
     
-    def _find_existing_zone(self, zone_name):
+    def _find_existing_zone(self, zone_name, account_id):
         try:
-            all_zones_data = self.dns_vendor_service.get_all_zones()
+            all_zones_data = self.dns_vendor_service.get_account_zones(account_id)
             zones = all_zones_data['result']
             zone_id = self._find_by_name(zones, zone_name)
         except APIError as e:

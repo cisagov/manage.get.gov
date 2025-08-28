@@ -26,7 +26,7 @@ class TestCloudflareService(SimpleTestCase):
         account_name = ' '
         mock_make_request.return_value = {
             'success': False,
-            'message': 'Cannot be empty'
+            'details': 'Cannot be empty'
         }
         
         with self.assertRaises(APIError) as context:
@@ -53,13 +53,15 @@ class TestCloudflareService(SimpleTestCase):
         account_id = "12345"
         mock_make_request.return_value = {
             'success': False,
-            'message': 'invalid'
+            'message': 'invalid',
+            'errors': ['you failed'],
+            'details': 'A bit more info!'
         }
         
         with self.assertRaises(APIError) as context:
             self.service.create_zone(account_name, account_id)
         
-        self.assertIn(f"Failed to create zone for {account_name}: invalid", str(context.exception))
+        self.assertIn(f"Failed to create zone for account {account_id}: errors: ['you failed'] message: invalid details: A bit more info!", str(context.exception))
 
     @patch('registrar.services.cloudflare_service.make_api_request')
     def test_create_dns_record_success(self, mock_make_request):
@@ -111,16 +113,17 @@ class TestCloudflareService(SimpleTestCase):
         }
         mock_make_request.return_value = {
             'success': False,
-            'message': 'missing content field'
+            'message': 'missing content field',
+            'details': 'more detail'
         }
         
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, record_data_missing_content)
         
-        self.assertIn(f"Failed to create dns record for zone {zone_id}: missing content field", str(context.exception))
+        self.assertIn(f"Failed to create dns record for zone {zone_id}: message: missing content field details: more detail", str(context.exception))
 
     @patch('registrar.services.cloudflare_service.make_api_request')
-    def test_get_accounts_success(self, mock_make_request):
+    def test_get_all_accounts_success(self, mock_make_request):
         """Test successful get_all_accounts call"""
         mock_make_request.return_value = {
             'success': True,
@@ -144,7 +147,8 @@ class TestCloudflareService(SimpleTestCase):
         """Test get_all_accounts with API failure"""
         mock_make_request.return_value = {
             'success': False,
-            'message': 'Something is wrong'
+            'message': 'Something is wrong',
+            'details': 'More info here'
         }
         
         with self.assertRaises(APIError) as context:
@@ -153,8 +157,10 @@ class TestCloudflareService(SimpleTestCase):
         self.assertIn('Failed to get accounts', str(context.exception))
         
     @patch('registrar.services.cloudflare_service.make_api_request')
-    def test_get_zones_success(self, mock_make_request):
+    def test_get_account_zones_success(self, mock_make_request):
         """Test successful get_all_zones call"""
+        account_id = '55555'
+        
         mock_make_request.return_value = {
             'success': True,
             'data': {'result': [
@@ -164,7 +170,7 @@ class TestCloudflareService(SimpleTestCase):
             }
         }
         
-        result = self.service.get_all_zones()
+        result = self.service.get_account_zones(account_id)
         
         self.assertEqual(result, {'result': [
                 {'id': 1, 'name': 'test zone 1', 'status': 'active'},
@@ -173,15 +179,17 @@ class TestCloudflareService(SimpleTestCase):
             })
     
     @patch('registrar.services.cloudflare_service.make_api_request')
-    def test_get_all_zones_failure(self, mock_make_request):
+    def test_get_account_zones_failure(self, mock_make_request):
         """Test get_all_zones with API failure"""
+        
+        account_id = '44444'
         mock_make_request.return_value = {
             'success': False,
             'message': 'Something is wrong'
         }
         
         with self.assertRaises(APIError) as context:
-            self.service.get_all_zones()
+            self.service.get_account_zones(account_id)
         
         self.assertIn('Failed to get zones', str(context.exception))
         
@@ -210,10 +218,11 @@ class TestCloudflareService(SimpleTestCase):
         record_id = '45454'
         mock_make_request.return_value = {
             'success': False,
-            'message': 'whomp, whomp'
+            'message': 'whomp, whomp',
+            'details': 'That means disappointment'
         }
 
         with self.assertRaises(APIError) as context:
             self.service.get_dns_record(zone_id, record_id)
 
-        self.assertIn(f"Failed to get dns record: whomp, whomp", str(context.exception))
+        self.assertIn(f"Failed to get dns record: message: whomp, whomp, details: That means disappointment", str(context.exception))
