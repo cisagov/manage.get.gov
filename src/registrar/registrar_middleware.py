@@ -151,31 +151,28 @@ class CheckPortfolioMiddleware:
             return None
 
         # if multiple portfolios are allowed for this user
-        if flag_is_active(request, "organization_feature"):
+        if request.user.get_first_portfolio():
             self.set_portfolio_in_session(request)
-        elif request.session.get("portfolio"):
-            # Edge case: User disables flag while already logged in
-            request.session["portfolio"] = None
-        elif "portfolio" not in request.session:
+        else:
             # Set the portfolio in the session if its not already in it
             request.session["portfolio"] = None
 
-        if request.user.is_org_user(request):
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        if request.user.is_org_user(request) and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
 
     def set_portfolio_in_session(self, request):
         # NOTE: we will want to change later to have a workflow for selecting
         # portfolio and another for switching portfolio; for now, select first
-        if flag_is_active(request, "multiple_portfolios"):
-            request.session["portfolio"] = request.user.get_first_portfolio()
-        else:
+        # TODO #3776: Add logic to redirect user to Select Organization page if
+        # portfolio is none. For now, default portfolio to first portfolio
+        # as in production.
+        if not flag_is_active(request, "multiple_portfolios") or not request.session.get("portfolio"):
             request.session["portfolio"] = request.user.get_first_portfolio()
 
 

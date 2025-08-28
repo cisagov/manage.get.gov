@@ -70,13 +70,10 @@ class Command(BaseCommand):
                 )
 
                 # -- GRAB PORTFOLIO ADMIN EMAILS --
-                user_ids = UserDomainRole.objects.filter(domain=domain).values_list("user", flat=True)
-                portfolio_ids = UserPortfolioPermission.objects.filter(user__in=user_ids).values_list(
-                    "portfolio", flat=True
-                )
+                portfolio_id = domain.domain_info.portfolio_id
                 portfolio_admin_emails = list(
                     UserPortfolioPermission.objects.filter(
-                        portfolio__in=portfolio_ids,
+                        portfolio_id=portfolio_id,
                         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
                     )
                     .values_list("user__email", flat=True)

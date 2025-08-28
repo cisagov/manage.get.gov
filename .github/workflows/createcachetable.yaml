@@ -17,6 +17,7 @@ on:
           - staging
           - development
           - backup
+          - testdb
           - acadia
           - glacier
           - olympic

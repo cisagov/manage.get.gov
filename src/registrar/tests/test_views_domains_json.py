@@ -7,7 +7,6 @@ from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_date
 from api.tests.common import less_console_noise_decorator
-from waffle.testutils import override_flag
 from datetime import datetime, timedelta
 
 
@@ -131,7 +130,6 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(svg_icon_expected, svg_icons[i])
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_get_domains_json_with_portfolio_view_managed_domains(self):
         """Test that an authenticated user gets the list of 1 domain for portfolio. The 1 domain
         is the domain that they manage within the portfolio."""
@@ -217,7 +215,6 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
             self.assertEqual(svg_icon_expected, svg_icons[i])
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_get_domains_json_with_portfolio_view_all_domains(self):
         """Test that an authenticated user gets the list of 2 domains for portfolio. One is a domain which
         they manage within the portfolio. The other is a domain which they don't manage within the

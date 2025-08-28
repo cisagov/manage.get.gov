@@ -21,7 +21,6 @@ from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 from registrar.views.utility.invitation_helper import get_org_membership
@@ -182,7 +181,10 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            return self.domain_request.is_feb()
+        return False
 
     @property
     def prefix(self):
@@ -226,7 +228,6 @@ class DomainRequestWizard(TemplateView):
                 creator=self.request.user,
                 portfolio=portfolio,
             )
-            # Question for reviewers: we should probably be doing this right?
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
@@ -294,7 +295,7 @@ class DomainRequestWizard(TemplateView):
         """This method handles GET requests."""
 
         self.kwargs = kwargs
-        if not self.is_portfolio and self.request.user.is_org_user(request):
+        if self.request.user.is_org_user(request):
             self.is_portfolio = True
             # Configure titles, wizard_conditions, unlocking_steps, and steps
             self.configure_step_options()
@@ -963,6 +964,7 @@ class Review(DomainRequestWizard):
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
+        context["request"] = self.request
         context["requires_feb_questions"] = self.requires_feb_questions()
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(
             self.domain_request.feb_purpose_choice
@@ -1244,9 +1246,7 @@ class DomainRequestStatusViewOnly(DetailView):
             context["form_titles"] = wizard.titles
 
         # Common context
-        context["requires_feb_questions"] = domain_request.is_feb() and flag_is_active_for_user(
-            self.request.user, "organization_feature"
-        )
+        context["requires_feb_questions"] = domain_request.is_feb()
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
         context["view_only_mode"] = True
         context["is_portfolio"] = is_portfolio
