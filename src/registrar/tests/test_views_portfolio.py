@@ -1183,12 +1183,12 @@ class TestPortfolio(WebTest):
         self.assertContains(portfolio_landing_page, "no-organization-requests/")
         # dropdown
         self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
-        # link to requests
-        self.assertContains(portfolio_landing_page, 'href="/requests/')
-        # link to create request
+        # nav does not include link to requests
+        self.assertNotContains(portfolio_landing_page, 'href="/requests/')
+        # nav does not include link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
-        # link to members
-        self.assertContains(portfolio_landing_page, 'href="/members/')
+        # nav does not include link to members
+        self.assertNotContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     def test_main_nav_when_user_has_all_permissions(self):
