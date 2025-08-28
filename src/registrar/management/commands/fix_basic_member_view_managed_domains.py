@@ -6,8 +6,7 @@ have VIEW_MANAGED_DOMAINS permission.
 import logging
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import OuterRef
-from registrar.models import UserPortfolioPermission, UserDomainRole
+from registrar.models import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 
 logger = logging.getLogger(__name__)
