@@ -1,9 +1,10 @@
 import logging
 
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import APIError   
+from registrar.utility.errors import APIError
 
 logger = logging.getLogger(__name__)
+
 
 class DnsHostService:
 
@@ -16,7 +17,7 @@ class DnsHostService:
 
     def dns_setup(self, account_name, zone_name):
         """Creates an account and zone in the dns host vendor tenant"""
-        
+
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)
 
@@ -67,22 +68,21 @@ class DnsHostService:
     def _find_existing_account(self, account_name):
         try:
             all_accounts_data = self.dns_vendor_service.get_all_accounts()
-            accounts = all_accounts_data['result']
+            accounts = all_accounts_data["result"]
             account_id = self._find_by_name(accounts, account_name)
         except APIError as e:
             logger.error(f"Error fetching accounts: {str(e)}")
             raise
-        
+
         return account_id
-    
+
     def _find_existing_zone(self, zone_name, account_id):
         try:
             all_zones_data = self.dns_vendor_service.get_account_zones(account_id)
-            zones = all_zones_data['result']
+            zones = all_zones_data["result"]
             zone_id = self._find_by_name(zones, zone_name)
         except APIError as e:
             logger.error(f"Error fetching zones: {str(e)}")
             raise
-        
-        return zone_id
 
+        return zone_id

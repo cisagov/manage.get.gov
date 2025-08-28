@@ -1,16 +1,11 @@
 import requests
 import logging
-from requests.exceptions import (
-    RequestException, 
-    ConnectionError, 
-    HTTPError, 
-    Timeout, 
-    TooManyRedirects
-)
+from requests.exceptions import RequestException, ConnectionError, HTTPError, Timeout, TooManyRedirects
 
 from enum import IntEnum
 
 logger = logging.getLogger(__name__)
+
 
 class BlankValueError(ValueError):
     pass
@@ -319,6 +314,8 @@ class SecurityEmailError(Exception):
     def __str__(self):
         return f"{self.message}"
 
+
 class APIError(Exception):
     """Custom exception for API-related errors"""
+
     pass

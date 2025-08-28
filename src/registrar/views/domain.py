@@ -83,6 +83,8 @@ from django import forms
 logger = logging.getLogger(__name__)
 
 context_dns_record = ContextVar("context_dns_record", default=None)
+
+
 class DomainBaseView(PermissionRequiredMixin, DetailView):
     """
     Base View for the Domain. Handles getting and setting the domain
@@ -761,24 +763,24 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         f"Can only create DNS records for: {self.valid_domains}."
                         " Create one in a test environment if it doesn't already exist."
                     )
-                
+
                 record_data = {
-                                "type": "A",
-                                "name": form.cleaned_data["name"], # record name
-                                "content": form.cleaned_data["content"], # IPv4
-                                "ttl": int(form.cleaned_data["ttl"]),
-                                "comment": "Test record",
-                            }
+                    "type": "A",
+                    "name": form.cleaned_data["name"],  # record name
+                    "content": form.cleaned_data["content"],  # IPv4
+                    "ttl": int(form.cleaned_data["ttl"]),
+                    "comment": "Test record",
+                }
 
                 account_name = f"account-{self.object.name}"
-                zone_name = f"{self.object.name}" # must be a domain name
+                zone_name = f"{self.object.name}"  # must be a domain name
                 zone_id = ""
-            
+
                 try:
-                 _, zone_id = self.dns_host_service.dns_setup(account_name, zone_name)
+                    _, zone_id = self.dns_host_service.dns_setup(account_name, zone_name)
                 except APIError as e:
                     logger.error(f"API error in view: {str(e)}")
-                
+
                 if zone_id:
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)
@@ -794,6 +796,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
