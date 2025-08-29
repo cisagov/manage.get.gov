@@ -34,7 +34,7 @@ on:
 jobs:
   clone-database:
     runs-on: ubuntu-24.04
-    with:
+    env:
       # must be the github secrets for the receiving sandbox
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
@@ -45,9 +45,6 @@ jobs:
           env:
             cf_username: ${{ secrets[env.CF_USERNAME] }}
             cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          run: 
+          run: |
             echo "CF is set (length: ${#cf_username})"
-            
-        - name: Cleanup
-          if: always()
-          run: cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT -f
+            echo "${{secrets[env.CF_PASSWORD]}}"
