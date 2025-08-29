@@ -49,23 +49,11 @@ jobs:
           run: |
             # Convert environment to uppercase for variable construction
             env_upper=$(echo "$DESTINATION_ENVIRONMENT" | tr '[:lower:]' '[:upper:]') 
-            username_var = "CF_${env_upper}_USERNAME"
-            password_var = "CF_${env_upper}_PASSWORD"
+            username_var="CF_${env_upper}_USERNAME"
+            password_var="CF_${env_upper}_PASSWORD"
 
-            CF_USERNAME = "${!username_var}"
-            CF_PASSWORD = "${!password_var}"
+            CF_USERNAME="${!username_var}"
+            CF_PASSWORD="${!password_var}"
             echo "CF USERNAME length is (length: ${#CF_USERNAME})"
             echo "CF PASSWORD length is (length: ${#CF_PASSWORD})"
-        
-        - name: Load Fixtures
-          uses: cloud-gov/cg-cli-tools@main
-          with:
-            cf_username: CF_${{ github.event.inputs.environment }}_USERNAME
-            cf_password: CF_${{ github.event.inputs.environment }}_PASSWORD
-            cf_org: cisa-dotgov
-            cf_space: ${{ env.DESTINATION_ENVIRONMENT }}
-            cf_command: "run-task getgov-testdb --command 'python manage.py load' --name fixtures"
-
-        - name: Cleanup
-          if: always()
-          run: cf unshare-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT -f
+      
