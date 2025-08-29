@@ -34,17 +34,15 @@ on:
 jobs:
   clone-database:
     runs-on: ubuntu-24.04
-    env:
-      # must be the github secrets for the receiving sandbox
-      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
-      DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
-      SOURCE_ENVIRONMENT: testdb
     steps:
-        - name: Clone Database
+        - name: Check secret length
           env:
-            cf_username: ${{ secrets[env.CF_USERNAME] }}
-            cf_password: ${{ secrets[env.CF_PASSWORD] }}
+            # must be the github secrets for the receiving sandbox
+            CF_USERNAME: ${{ github.event.inputs.environment }}_USERNAME
+            DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
+            SOURCE_ENVIRONMENT: testdb
+          with:
+            cf_username: ${{secrets[env.CF_USERNAME]}}
           run: |
             echo "CF is set (length: ${#cf_username})"
-            echo "${{secrets[env.CF_PASSWORD]}}"
+            echo "${{secrets.CF_USERNAME}}"
