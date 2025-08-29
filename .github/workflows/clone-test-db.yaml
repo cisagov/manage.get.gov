@@ -34,12 +34,15 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       # must be the github secrets for the receiving sandbox
-      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+      CF_USERNAME_KEY: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD_KEY: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
       SOURCE_ENVIRONMENT: test_db
     steps:
         - name: Clone Test Database
+          env:
+            CF_USERNAME: ${{ secrets[env.CF_USERNAME_KEY] }}
+            CF_PASSWORD: ${{ secrets[env.CF_PASSWORD_KEY] }}
           run: |
             # install cf cli and other tools
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
