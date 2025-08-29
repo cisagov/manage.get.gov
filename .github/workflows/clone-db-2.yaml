@@ -58,7 +58,7 @@ jobs:
             echo "CF_PASSWORD_FOR_CLONE_TESTDB=$CF_PASSWORD" >> $GITHUB_ENV
         - name: Echo length
           run: |
-            echo "CF USERNAME length is (length: ${#CF_USERNAME_FOR_CLONE_TESTDB)"
+            echo "CF USERNAME length is (length: ${#CF_USERNAME_FOR_CLONE_TESTDB})"
             echo "CF PASSWORD length is (length: ${#CF_PASSWORD_FOR_CLONE_TESTDB})"
 
   
