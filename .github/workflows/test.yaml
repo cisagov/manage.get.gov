@@ -24,17 +24,6 @@ jobs:
           id: det
           uses: ./.github/actions/detect-python-changes
 
-        - name: Show changed files
-          run: |
-            echo "---DEBUG---"
-            echo "Event name: ${{ github.event_name }}"
-            echo "Before SHA: ${{ github.event.before }}"
-            echo "Head SHA: ${{ github.sha }}"
-            echo "Detector output: any=${{ steps.det.outputs.any }}"
-            echo "Detector output: list: "
-            echo "${{ steps.det.outputs.list }}"
-            echo "---------"
-
   python-linting:
     needs: detect-python-changes
     if: needs.detect-python-changes.outputs.any == 'true'
