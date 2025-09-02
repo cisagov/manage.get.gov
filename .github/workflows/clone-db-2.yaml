@@ -39,14 +39,10 @@ jobs:
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
       SOURCE_ENVIRONMENT: testdb
       steps:
-        - name: Clone Test Database
-          env:
-            CF_USERNAME: ${{ secrets[env.CF_USERNAME_KEY] }}
-            CF_PASSWORD: ${{ secrets[env.CF_PASSWORD_KEY] }}
         - name: Echo length
           run: |
-            echo "CF USERNAME length is (length: ${#CF_USERNAME})"
-            echo "CF PASSWORD length is (length: ${#CF_PASSWORD})"
+            echo "CF USERNAME length is (length: ${#CF_USERNAME_KEY})"
+            echo "CF PASSWORD length is (length: ${#CF_PASSWORD_KEY})"
 
   
       
