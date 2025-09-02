@@ -31,35 +31,22 @@ on:
             - zion
 jobs:
   clone-test-database:
-    runs-on: ubuntu-24.04
-    env:
+      runs-on: ubuntu-24.04
+      env:
       # must be the github secrets for the receiving sandbox
-      CF_ACADIA_USERNAME: ${{ secrets.CF_ACADIA_USERNAME }}
-      CF_ACADIA_PASSWORD: ${{ secrets.CF_ACADIA_PASSWORD }}
-      CF_AD_USERNAME: ${{ secrets.CF_AD_USERNAME }}
-      CF_AD_PASSWORD: ${{ secrets.CF_AD_PASSWORD }}
-      CF_RH_USERNAME: ${{ secrets.CF_RH_USERNAME }}
-      CF_RH_PASSWORD: ${{ secrets.CF_RH_PASSWORD }}
-      CF_ZION_USERNAME: ${{ secrets.CF_ZION_USERNAME }}
-      CF_ZION_PASSWORD: ${{ secrets.CF_ZION_PASSWORD }}
+      CF_USERNAME_KEY: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD_KEY: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
       SOURCE_ENVIRONMENT: testdb
-    steps:
+      steps:
         - name: Clone Test Database
-          run: |
-            # Convert environment to uppercase for variable construction
-            env_upper=$(echo "$DESTINATION_ENVIRONMENT" | tr '[:lower:]' '[:upper:]') 
-            username_var="CF_${env_upper}_USERNAME"
-            password_var="CF_${env_upper}_PASSWORD"
-
-            CF_USERNAME="${!username_var}"
-            CF_PASSWORD="${!password_var}"
-            echo "CF_USERNAME_FOR_CLONE_TESTDB=$CF_USERNAME" >> $GITHUB_ENV
-            echo "CF_PASSWORD_FOR_CLONE_TESTDB=$CF_PASSWORD" >> $GITHUB_ENV
+          env:
+            CF_USERNAME: ${{ secrets[env.CF_USERNAME_KEY] }}
+            CF_PASSWORD: ${{ secrets[env.CF_PASSWORD_KEY] }}
         - name: Echo length
           run: |
-            echo "CF USERNAME length is (length: ${#CF_USERNAME_FOR_CLONE_TESTDB})"
-            echo "CF PASSWORD length is (length: ${#CF_PASSWORD_FOR_CLONE_TESTDB})"
+            echo "CF USERNAME length is (length: ${#CF_USERNAME})"
+            echo "CF PASSWORD length is (length: ${#CF_PASSWORD})"
 
   
       
