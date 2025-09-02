@@ -33,14 +33,13 @@ jobs:
   clone-test-database:
     runs-on: ubuntu-24.04
     env:
-      # must be the github secrets for the receiving sandbox
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
       SOURCE_ENVIRONMENT: test_db
     steps:
         - name: test secrets
-        - env:
+          env:
             cf_username: ${{ secrets[env.CF_USERNAME] }}
             cf_password: ${{ secrets[env.CF_PASSWORD] }}
           run: |
