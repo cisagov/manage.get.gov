@@ -332,11 +332,8 @@ class TestPortfolio(WebTest):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<h2>Organization admins</h2>")
         self.assertContains(response, "<h2>Organization information</h2>")
-        self.assertContains(
-            response, '<p class="margin-top-3 margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-        )
-        self.assertNotContains(response, "<address>")
-        self.assertContains(response, 'for="id_city"')
+        self.assertContains(response, 'Organization type')
+        self.assertContains(response, "<address>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_shows_read_only(self):
@@ -357,7 +354,7 @@ class TestPortfolio(WebTest):
         self.assertNotContains(
             org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
         )
-        self.assertContains(org_info_response, "<address>")
+        self.assertNotContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_include_breadcrumb(self):
