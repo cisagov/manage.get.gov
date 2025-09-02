@@ -323,6 +323,7 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ],
         )
+        self.portfolio.address_line1 = "123 Testing Lane"
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
 
@@ -334,6 +335,7 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "<h2>Organization information</h2>")
         self.assertContains(response, 'Organization type')
         self.assertContains(response, "<address>")
+        self.assertContains(response, "Your organization name can’t be updated here.")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_shows_read_only(self):
@@ -351,10 +353,8 @@ class TestPortfolio(WebTest):
 
         org_info_response = self.app.get(reverse("organization-info"))
         # We don't use the label "Organization name" in the view-only view
-        self.assertNotContains(
-            org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-        )
-        self.assertNotContains(org_info_response, "<address>")
+        self.assertNotContains(org_info_response, "Your organization name can’t be updated here.")
+        self.assertContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_include_breadcrumb(self):
