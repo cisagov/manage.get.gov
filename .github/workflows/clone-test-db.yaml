@@ -36,7 +36,7 @@ jobs:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
-      SOURCE_ENVIRONMENT: test_db
+      SOURCE_ENVIRONMENT: testdb
     steps: 
         - name: Install CF CLI and cg-manage-rds
           run: | 
