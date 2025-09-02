@@ -33,63 +33,11 @@ jobs:
   clone-test-database:
     runs-on: ubuntu-24.04
     env:
-      # must be the github secrets for the receiving sandbox
-      CF_AA_USERNAME: ${{ secrets.CF_AA_USERNAME }}
-      CF_AA_PASSWORD: ${{ secrets.CF_AA_PASSWORD }}
-      CF_ACADIA_USERNAME: ${{ secrets.CF_ACADIA_USERNAME }}
-      CF_ACADIA_PASSWORD: ${{ secrets.CF_ACADIA_PASSWORD }}
-      CF_AD_USERNAME: ${{ secrets.CF_AD_USERNAME }}
-      CF_AD_PASSWORD: ${{ secrets.CF_AD_PASSWORD }}
-      CF_BACKUP_USERNAME: ${{ secrets.CF_BACKUP_USERNAME }}
-      CF_BACKUP_PASSWORD: ${{ secrets.CF_BACKUP_PASSWORD }}
-      CF_BOB_USERNAME: ${{ secrets.CF_BOB_USERNAME }}
-      CF_BOB_PASSWORD: ${{ secrets.CF_BOB_PASSWORD }}
-      CF_DG_USERNAME: ${{ secrets.CF_DG_USERNAME }}
-      CF_DG_PASSWORD: ${{ secrets.CF_DG_PASSWORD }}
-      CF_EL_USERNAME: ${{ secrets.CF_EL_USERNAME }}
-      CF_EL_PASSWORD: ${{ secrets.CF_EL_PASSWORD }}
-      CF_ES_USERNAME: ${{ secrets.CF_ES_USERNAME }}
-      CF_ES_PASSWORD: ${{ secrets.CF_ES_PASSWORD }}
-      CF_GLACIER_USERNAME: ${{ secrets.CF_GLACIER_USERNAME }}
-      CF_GLACIER_PASSWORD: ${{ secrets.CF_GLACIER_PASSWORD }}
-      CF_HOTGOV_USERNAME: ${{ secrets.CF_HOTGOV_USERNAME }}
-      CF_HOTGOV_PASSWORD: ${{ secrets.CF_HOTGOV_PASSWORD }}
-      CF_KMA_USERNAME: ${{ secrets.CF_KMA_USERNAME }}
-      CF_KMA_PASSWORD: ${{ secrets.CF_KMA_PASSWORD }}
-      CF_LITTERBOX_USERNAME: ${{ secrets.CF_LITTERBOX_USERNAME }}
-      CF_LITTERBOX_PASSWORD: ${{ secrets.CF_LITTERBOX_PASSWORD }}
-      CF_MEOWARD_USERNAME: ${{ secrets.CF_MEOWARD_USERNAME }}
-      CF_MEOWARD_PASSWORD: ${{ secrets.CF_MEOWARD_PASSWORD }}
-      CF_NL_USERNAME: ${{ secrets.CF_NL_USERNAME }}
-      CF_NL_PASSWORD: ${{ secrets.CF_NL_PASSWORD }}
-      CF_OLYMPIC_USERNAME: ${{ secrets.CF_OLYMPIC_USERNAME }}
-      CF_OLYMPIC_PASSWORD: ${{ secrets.CF_OLYMPIC_PASSWORD }}
-      CF_POTATO_USERNAME: ${{ secrets.CF_POTATO_USERNAME }}
-      CF_POTATO_PASSWORD: ${{ secrets.CF_POTATO_PASSWORD }}
-      CF_PRODUCT_USERNAME: ${{ secrets.CF_PRODUCT_USERNAME }}
-      CF_PRODUCT_PASSWORD: ${{ secrets.CF_PRODUCT_PASSWORD }}
-      CF_RH_USERNAME: ${{ secrets.CF_RH_USERNAME }}
-      CF_RH_PASSWORD: ${{ secrets.CF_RH_PASSWORD }}
-      CF_YELLOWSTONE_USERNAME: ${{ secrets.CF_YELLOWSTONE_USERNAME }}
-      CF_YELLOWSTONE_PASSWORD: ${{ secrets.CF_YELLOWSTONE_PASSWORD }}
-      CF_ZION_USERNAME: ${{ secrets.CF_ZION_USERNAME }}
-      CF_ZION_PASSWORD: ${{ secrets.CF_ZION_PASSWORD }}
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
-      SOURCE_ENVIRONMENT: testdb
-    steps:
-        - name: Clone Test Database
-          run: |
-            # Convert environment to uppercase for variable construction
-            env_upper=$(echo "$DESTINATION_ENVIRONMENT" | tr '[:lower:]' '[:upper:]') 
-            username_var = "CF_${env_upper}_USERNAME"
-            password_var = "CF_${env_upper}_PASSWORD"
-
-            CF_USERNAME = "${!username_var}"
-            CF_PASSWORD = "${!password_var}"
-
-            echo "CF_USERNAME_FOR_CLONE_TESTDB=$CF_USERNAME" >> $GITHUB_ENV
-            echo "CF_PASSWORD_FOR_CLONE_TESTDB=$CF_PASSWORD" >> $GITHUB_ENV
-    
+      SOURCE_ENVIRONMENT: test_db
+    steps: 
         - name: Install CF CLI and cg-manage-rds
           run: | 
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
@@ -100,12 +48,15 @@ jobs:
             
             # install cg-manage-rds tool
             pip install git+https://github.com/cloud-gov/cg-manage-rds.git
-
+        
         - name: Clone Test Database
+          env:
+            cf_username: ${{ secrets[env.CF_USERNAME] }}
+            cf_password: ${{ secrets[env.CF_PASSWORD] }}
           run: |
             # Authenticate and target CF org and space.
             cf api api.fr.cloud.gov
-            cf auth "$CF_USERNAME_FOR_CLONE_TESTDB" "$CF_PASSWORD_FOR_CLONE_TESTDB"
+            cf auth "$cf_username" "$cf_password"
             cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
             
             # clone from source to destination
@@ -115,8 +66,8 @@ jobs:
         - name: Load Fixtures
           uses: cloud-gov/cg-cli-tools@main
           with:
-            cf_username: ${{ env.CF_USERNAME_FOR_CLONE_TESTDB}}
-            cf_password: ${{ env.CF_PASSWORD_FOR_CLONE_TESTDB}}
+            cf_username: ${{ secrets[env.CF_USERNAME] }}
+            cf_password: ${{ secrets[env.CF_PASSWORD] }}
             cf_org: cisa-dotgov
             cf_space: ${{ env.DESTINATION_ENVIRONMENT }}
             cf_command: "run-task getgov-${{ env.DESTINATION_ENVIRONMENT }} --command 'python manage.py load' --name fixtures"
