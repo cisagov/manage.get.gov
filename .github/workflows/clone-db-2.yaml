@@ -31,18 +31,17 @@ on:
             - zion
 jobs:
   clone-test-database:
-      runs-on: ubuntu-24.04
-      env:
+    runs-on: ubuntu-24.04
+    env:
       # must be the github secrets for the receiving sandbox
-      CF_USERNAME_KEY: CF_${{ github.event.inputs.environment }}_USERNAME
-      CF_PASSWORD_KEY: CF_${{ github.event.inputs.environment }}_PASSWORD
+      CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+      CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
       DESTINATION_ENVIRONMENT: ${{ github.event.inputs.environment}}
-      SOURCE_ENVIRONMENT: testdb
-      steps:
+      SOURCE_ENVIRONMENT: test_db
+    steps:
         - name: Echo length
           run: |
-            echo "CF USERNAME length is (length: ${#CF_USERNAME_KEY})"
-            echo "CF PASSWORD length is (length: ${#CF_PASSWORD_KEY})"
-
-  
-      
+            echo "STARTING"
+            echo "CF USERNAME length is (length: ${#CF_USERNAME)"
+            echo "CF PASSWORD length is (length: ${#CF_PASSWORD})"
+          
