@@ -23,7 +23,7 @@ runs:
 
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
-        git fetch origin "${DEFAULT_BRANCH}:${DEFAULT_BRANCH}"
+        git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
 
         BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
         
