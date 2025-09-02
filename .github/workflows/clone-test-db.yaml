@@ -59,6 +59,9 @@ jobs:
             cf auth "$cf_username" "$cf_password"
             cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT
             
+            # share the target db with the source space
+            cf share-service getgov-$DESTINATION_ENVIRONMENT-database -s $SOURCE_ENVIRONMENT
+           
             # clone from source to destination
             cf target -s $SOURCE_ENVIRONMENT
             cg-manage-rds clone getgov-$SOURCE_ENVIRONMENT-database getgov-$DESTINATION_ENVIRONMENT-database
