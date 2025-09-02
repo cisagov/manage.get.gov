@@ -64,8 +64,8 @@ class TestCloudflareService(SimpleTestCase):
             self.service.create_zone(account_name, account_id)
 
         self.assertIn(
-            f"Failed to create zone for account {account_id}: errors: ['you failed'] message: invalid details:" 
-            "+ A bit more info!",
+            f"Failed to create zone for account {account_id}: errors: ['you failed'] message: invalid details:" +
+            " A bit more info!",
             str(context.exception),
         )
 
