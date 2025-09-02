@@ -1,7 +1,6 @@
 from datetime import date
 import logging
 from contextvars import ContextVar
-import requests
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -52,7 +51,6 @@ from registrar.views.utility.invitation_helper import (
     handle_invitation_exceptions,
 )
 
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.dns_host_service import DnsHostService
 
 from ..forms import (
@@ -714,7 +712,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "dns1.gov", "dns2.gov"]
-    dns_vendor_service = CloudflareService()
     dns_host_service = DnsHostService()
 
     def __init__(self):

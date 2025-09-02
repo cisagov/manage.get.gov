@@ -1,6 +1,6 @@
 from unittest.mock import patch, Mock
 from django.test import SimpleTestCase
-from requests.exceptions import ConnectionError, Timeout, HTTPError, RequestException
+from requests.exceptions import ConnectionError, Timeout, HTTPError
 from registrar.utility.api_helpers import make_api_request
 
 

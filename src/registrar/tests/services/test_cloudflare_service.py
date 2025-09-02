@@ -64,7 +64,8 @@ class TestCloudflareService(SimpleTestCase):
             self.service.create_zone(account_name, account_id)
 
         self.assertIn(
-            f"Failed to create zone for account {account_id}: errors: ['you failed'] message: invalid details: A bit more info!",
+            f"Failed to create zone for account {account_id}: errors: ['you failed'] message: invalid details:" 
+            "+ A bit more info!",
             str(context.exception),
         )
 
@@ -240,6 +241,6 @@ class TestCloudflareService(SimpleTestCase):
             self.service.get_dns_record(zone_id, record_id)
 
         self.assertIn(
-            f"Failed to get dns record: message: whomp, whomp, details: That means disappointment",
+            "Failed to get dns record: message: whomp, whomp, details: That means disappointment",
             str(context.exception),
         )

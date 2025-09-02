@@ -40,7 +40,8 @@ class CloudflareService:
         if not response["success"]:
 
             raise APIError(
-                f"Failed to create zone for account {account_id}: errors: {errors} message: {response['message']} details: {response['details']}"
+                f"Failed to create zone for account {account_id}: errors: {errors} message:" +
+                  f"{response['message']} details: {response['details']}"
             )
         logger.info(f"Created zone {zone_name} for account with id {account_id}: {response['data']}")
 
@@ -53,7 +54,8 @@ class CloudflareService:
 
         if not response["success"]:
             raise APIError(
-                f"Failed to create dns record for zone {zone_id}: message: {response['message']} details: {response['details']}"
+                f"Failed to create dns record for zone {zone_id}: message: {response['message']} details:" +
+                f" {response['details']}"
             )
         logger.info(f"Created dns_record for zone {zone_id}: {response['data']}")
 

@@ -1,7 +1,6 @@
 from unittest.mock import patch
 from django.test import SimpleTestCase
 
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.dns_host_service import DnsHostService
 from registrar.utility.errors import APIError
 

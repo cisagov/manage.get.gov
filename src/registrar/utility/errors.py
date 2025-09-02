@@ -1,6 +1,4 @@
-import requests
 import logging
-from requests.exceptions import RequestException, ConnectionError, HTTPError, Timeout, TooManyRedirects
 
 from enum import IntEnum
 
