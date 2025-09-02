@@ -12,9 +12,9 @@ class CloudflareService:
 
     def __init__(self):
         self.base_url = "https://api.cloudflare.com/client/v4"
-        self.service_email = settings.SECRET_REGISTRY_SERVICE_EMAIL
-        self.tenant_key = settings.SECRET_REGISTRY_TENANT_KEY
-        self.tenant_id = settings.SECRET_DOTGOV_TENANT_ID
+        self.service_email = settings.SECRET_DNS_SERVICE_EMAIL
+        self.tenant_key = settings.SECRET_DNS_TENANT_KEY
+        self.tenant_id = settings.SECRET_DNS_TENANT_ID
         self.headers = {
             "X-Auth-Email": self.service_email,
             "X-Auth-Key": self.tenant_key,
