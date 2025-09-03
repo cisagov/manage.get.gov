@@ -606,8 +606,8 @@ class TestPortfolio(WebTest):
         mock_send_organization_update_email.assert_called_once()
 
     @less_console_noise_decorator
-    def test_portfolio_in_session(self):
-        """When the user has a portfolio, the portfolio should be set in session."""
+    def test_portfolio_in_session_for_single_portfolio_users(self):
+        """When the user has only one portfolio, the portfolio should be set in session."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
