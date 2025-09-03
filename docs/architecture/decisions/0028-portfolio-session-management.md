@@ -49,12 +49,10 @@ Allows us to fully set session portfolio within a view without relying on making
 Switching our session portfolio through the form requires switching through the HTML value passed into our form. This exposes our portfolio id’s since we are grabbing the portfolio value we want to select by data in our HTML form elements, which users can access through browser dev tools.
 
 Alternative approaches: 
-Pass in portfolio name as form value. Change the form input value to another identifying field of the portfolio that does not expose database information, for example the portfolio’s name. This approach will not work if we have multiple portfolios with the same portfolio name.
-
-**Update:** Ended up going with this option after we updated our registrar to have unique organization names.
+Pass in portfolio name as form value. Change the form input value to another identifying field of the portfolio that does not expose database information, for example the portfolio’s name. Recently we updated our registrar to have unique organization names, so this could be a working identifier that does not expose the id's and instead uses public info.
 
 
-**Option 1:** Call a URL path that passes in id of selected session portfolio
+**Option 2:** Call a URL path that passes in id of selected session portfolio
 We create a method (either in API views or a Django view) that handles switching the session portfolio by taking the id of the portfolio we want to switch to. That method is then added to our list of accessible paths in urls.py.
 
 **urls.py**
