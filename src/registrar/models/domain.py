@@ -491,7 +491,7 @@ class Domain(TimeStampedModel, DomainHelper):
         regex = re.compile(full_pattern)
         return bool(regex.match(nameserver))
 
-    @classmethod
+    @classmethod 
     def isValidHost(cls, nameserver: str):
         """Checks for validity of nameserver string based on these rules:
         - first character is alpha or digit
@@ -1672,6 +1672,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         if self.state != Domain.State.ON_HOLD:
             return None
+
+        logger.info("On hold date called (after state check)")
 
         last_on_hold = (
             LogEntry.objects.filter(
