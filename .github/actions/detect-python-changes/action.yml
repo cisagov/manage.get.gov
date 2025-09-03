@@ -25,6 +25,8 @@ runs:
 
         git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
 
+        echo "DEBUG - HEAD_SHA: $(git rev-parse HEAD)"
+
         BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
         
         echo "-------DEBUG (detector)--------"
