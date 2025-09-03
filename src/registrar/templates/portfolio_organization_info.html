@@ -90,6 +90,9 @@
             {% else %}
                 <div class="usa-prose margin-top-2">
                     Organization type: {{ organization_type }}
+                    {% if federal_type %}
+                        - {{ federal_type }}
+                    {% endif %}
                     {% include "includes/organization_address.html" with organization=portfolio %}
                 </div>
             {% endif %}
