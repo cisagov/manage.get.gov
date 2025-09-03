@@ -1673,7 +1673,8 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.state != Domain.State.ON_HOLD:
             return None
 
-        logger.info("On hold date called (after state check)")
+        logger.info(f"Check cache on hold date called (after state check): {self.name}")
+        
 
         last_on_hold = (
             LogEntry.objects.filter(
