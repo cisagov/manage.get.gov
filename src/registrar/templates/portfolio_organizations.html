@@ -5,14 +5,20 @@
 
 {# Disable the redirect  #}
 {% block header %}
-    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
+    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup hide_portfolio_navbar=True %}
 {% endblock %}
-
 {% block portfolio_content %}
 <div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-1{% endif %}">
-    <div class="grid-row usa-banner__guidance">
-        <img class="usa-banner__icon usa-media-block__img" src="{% static 'img/organizations_img.svg' %}" role="img" alt="" aria-hidden="true"/>
-        <h1>Your organizations</h1>
+    <div class="grid-row usa-banner__guidance margin-bottom-2 flex-align-center">
+        <img 
+        class="" 
+        src="{% static 'img/organizations_img.svg' %}" 
+        role="img" 
+        alt="" 
+        width="72"
+        aria-hidden="true"
+        />
+        <h1 class="margin-bottom-0">Your organizations</h1>
     </div>
 
     <div class="display-none margin-top-0" id="portfolios_list-wrapper">
@@ -26,5 +32,9 @@
         Don’t see your organization here? If you believe you should have access to an organization, 
         contact us at <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
     </p>
+
 </div>
+{% endblock %}
+{% block footer %}
+    {% include "includes/footer.html" with show_manage_your_domains=False %}
 {% endblock %}
