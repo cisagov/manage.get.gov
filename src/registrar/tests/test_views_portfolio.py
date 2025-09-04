@@ -61,6 +61,11 @@ class TestPortfolio(WebTest):
         User.objects.all().delete()
         super().tearDown()
 
+    def set_session_portfolio(self, portfolio=None):
+        session = self.client.session
+        session["portfolio"] = self.portfolio
+        session.save()
+
     @less_console_noise_decorator
     def test_portfolio_senior_official(self):
         """Tests that the senior official page on portfolio contains the content we expect"""
@@ -323,6 +328,7 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ],
         )
+        self.portfolio.address_line1 = "123 Testing Lane"
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
 
@@ -331,10 +337,10 @@ class TestPortfolio(WebTest):
         # Assert the response is a 200
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<h2>Organization admins</h2>")
-        self.assertContains(response, "<h2>Organization name and address</h2>")
-        self.assertContains(response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>')
-        self.assertNotContains(response, "<address>")
-        self.assertContains(response, 'for="id_city"')
+        self.assertContains(response, "<h2>Organization information</h2>")
+        self.assertContains(response, "Organization type")
+        self.assertContains(response, "<address>")
+        self.assertContains(response, "Your organization name can’t be updated here.")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_shows_read_only(self):
@@ -352,9 +358,7 @@ class TestPortfolio(WebTest):
 
         org_info_response = self.app.get(reverse("organization-info"))
         # We don't use the label "Organization name" in the view-only view
-        self.assertNotContains(
-            org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-        )
+        self.assertNotContains(org_info_response, "Your organization name can’t be updated here.")
         self.assertContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
@@ -388,15 +392,22 @@ class TestPortfolio(WebTest):
         """Tests which pages are accessible when user does not have portfolio permissions"""
         self.app.set_user(self.user.username)
         portfolio_additional_permissions = [
-            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
             UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
             UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
         ]
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, additional_permissions=portfolio_additional_permissions
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            defaults={"additional_permissions": portfolio_additional_permissions},
         )
+
+        # Update if already exists
+        if portfolio_permission.additional_permissions != portfolio_additional_permissions:
+            portfolio_permission.additional_permissions = portfolio_additional_permissions
+            portfolio_permission.save()
+
         # This will redirect the user to the portfolio page.
-        # Follow implicity checks if our redirect is working.
         portfolio_page = self.app.get(reverse("home")).follow()
         # Assert that we're on the right page
         self.assertContains(portfolio_page, self.portfolio.organization_name)
@@ -405,9 +416,9 @@ class TestPortfolio(WebTest):
         self.assertContains(portfolio_page, reverse("domains"))
         self.assertContains(portfolio_page, reverse("domain-requests"))
 
-        # removing non-basic portfolio perms, which should remove domains
-        # and domain requests from nav
-        portfolio_permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_PORTFOLIO]
+        # Remove additional permissions, leaving only the base role permissions
+        # ORGANIZATION_MEMBER now includes VIEW_MANAGED_DOMAINS by default
+        portfolio_permission.additional_permissions = []
         portfolio_permission.save()
         portfolio_permission.refresh_from_db()
 
@@ -417,16 +428,17 @@ class TestPortfolio(WebTest):
         self.assertContains(portfolio_page, self.portfolio.organization_name)
         self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
         self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-        self.assertContains(portfolio_page, "You aren’t managing any domains")
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
         self.assertContains(org_page, self.portfolio.organization_name)
         self.assertContains(org_page, "<h1>Organization overview</h1>")
 
-        # Both domain pages should not be accessible
-        domain_page = self.app.get(reverse("domains"), expect_errors=True)
-        self.assertEquals(domain_page.status_code, 403)
+        # Domain page should be accessible (they have VIEW_MANAGED_DOMAINS from role)
+        domain_page = self.app.get(reverse("domains"))
+        self.assertEquals(domain_page.status_code, 200)
+
+        # Domain request page should not be accessible (no domain request permissions)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
         self.assertEquals(domain_request_page.status_code, 403)
 
@@ -460,9 +472,8 @@ class TestPortfolio(WebTest):
         self.assertContains(portfolio_page, self.portfolio.organization_name)
         self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
         self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-        self.assertContains(portfolio_page, "You aren’t managing any domains")
-        self.assertContains(portfolio_page, reverse("no-portfolio-domains"))
-        self.assertContains(portfolio_page, reverse("no-portfolio-requests"))
+        self.assertContains(portfolio_page, reverse("domains"))
+        self.assertNotContains(portfolio_page, reverse("domain-requests"))
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
@@ -471,7 +482,7 @@ class TestPortfolio(WebTest):
 
         # Both domain pages should not be accessible
         domain_page = self.app.get(reverse("domains"), expect_errors=True)
-        self.assertEquals(domain_page.status_code, 403)
+        self.assertEquals(domain_page.status_code, 200)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
         self.assertEquals(domain_request_page.status_code, 403)
 
@@ -602,8 +613,8 @@ class TestPortfolio(WebTest):
         mock_send_organization_update_email.assert_called_once()
 
     @less_console_noise_decorator
-    def test_portfolio_in_session(self):
-        """When the user has a portfolio, the portfolio should be set in session."""
+    def test_portfolio_in_session_for_single_portfolio_users(self):
+        """When the user has only one portfolio, the portfolio should be set in session."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
@@ -635,11 +646,10 @@ class TestPortfolio(WebTest):
         # Check the value of the 'portfolio' session variable
         self.assertIsNone(session["portfolio"])
 
-    # TODO: Remove or update test in #3776 to test portfolio redirect
     @less_console_noise_decorator
-    def test_portfolio_in_session_when_multiple_portfolios_active(self):
-        """When multiple_portfolios flag is true and user has a portfolio,
-        the portfolio should be set in session."""
+    def test_portfolio_resets_on_login_when_multiple_portfolios_active(self):
+        """When multiple_portfolios flag is true and user has multiple portfolios,
+        there should be no active portfolio set in session."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
@@ -651,10 +661,8 @@ class TestPortfolio(WebTest):
             response.wsgi_request.session.save()
             # Access the session via the request
             session = response.wsgi_request.session
-            # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+            # Check the 'portfolio' session variable does not exist in new login session
+            self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_multiple_portfolios_active_and_no_portfolio(self):
@@ -676,25 +684,27 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_org_member_can_only_see_domains_with_appropriate_permissions(self):
-        """A user with the role organization_member should not have access to the domains page
-        if they do not have the right permissions.
+        """A user with the role organization_member should have limited domain access based on their permissions.
+        Note: ORGANIZATION_MEMBER role now includes VIEW_MANAGED_DOMAINS by default.
         """
-
         permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            defaults={"additional_permissions": []},  # No additional permissions
         )
 
-        # A default organization member should not be able to see any domains
+        # An organization member now has VIEW_MANAGED_DOMAINS by default from their role
         self.client.force_login(self.user)
         response = self.client.get(reverse("home"), follow=True)
 
-        self.assertFalse(self.user.has_any_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
+        # User should have domain permissions now (VIEW_MANAGED_DOMAINS from role)
+        self.assertTrue(self.user.has_any_domains_portfolio_permission(response.wsgi_request.session.get("portfolio")))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "You aren")
 
-        # Test the domains page - this user should not have access
+        # Test the domains page - this user should have access (limited to managed domains)
         response = self.client.get(reverse("domains"))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
         # Ensure that this user can see domains with the right permissions
         permission.additional_permissions = [UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS]
@@ -2443,9 +2453,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
             email=cls.invited_member_email,
             portfolio=cls.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-            additional_permissions=[
-                UserPortfolioPermissionChoices.VIEW_MEMBERS,
-            ],
+            additional_permissions=[],
         )
 
         # Assign permissions to the user making requests
@@ -2508,6 +2516,43 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    def test_invited_member_has_view_managed_domains_by_default(self):
+        """Tests that an invited ORGANIZATION_MEMBER has VIEW_MANAGED_DOMAINS permission by default.
+        This verifies the fix for the issue where basic members couldn't see domains they manage.
+        """
+        invitation_permissions = self.invitation.get_portfolio_permissions()
+        self.assertIn(
+            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
+            invitation_permissions,
+            "ORGANIZATION_MEMBER role should include VIEW_MANAGED_DOMAINS by default",
+        )
+        self.assertIn(
+            UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            invitation_permissions,
+            "ORGANIZATION_MEMBER role should include VIEW_PORTFOLIO by default",
+        )
+        self.assertNotIn(
+            UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            invitation_permissions,
+            "ORGANIZATION_MEMBER should not have VIEW_ALL_DOMAINS",
+        )
+        self.assertNotIn(
+            UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            invitation_permissions,
+            "ORGANIZATION_MEMBER should not have EDIT_MEMBERS",
+        )
+        self.assertNotIn(
+            UserPortfolioPermissionChoices.EDIT_REQUESTS,
+            invitation_permissions,
+            "ORGANIZATION_MEMBER should not have EDIT_REQUESTS",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("invitedmember-domains", kwargs={"invitedmember_pk": self.invitation.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.invited_member_email)
 
 
 class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
