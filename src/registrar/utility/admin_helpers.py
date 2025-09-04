@@ -35,7 +35,7 @@ def _get_default_email(domain_request, file_path, reason, excluded_reasons=None)
     if excluded_reasons and reason in excluded_reasons:
         return None
 
-    recipient = domain_request.creator
+    recipient = domain_request.requester
     env_base_url = settings.BASE_URL
     # If NOT in prod, update instances of "manage.get.gov" links to point to
     # current environment, ie "getgov-rh.app.cloud.gov"

@@ -176,7 +176,7 @@ class Command(BaseCommand):
                     organization_name=federal_agency.agency,
                     federal_agency=federal_agency,
                     organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-                    creator=User.get_default_user(),
+                    requester=User.get_default_user(),
                     notes="Auto-generated record",
                     senior_official=federal_agency.so_federal_agency.first(),
                 )

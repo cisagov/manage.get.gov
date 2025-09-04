@@ -264,8 +264,8 @@ class TestEmails(TestCase):
     def test_submission_confirmation_other_contacts_spacing(self):
         """Test line spacing with other contacts."""
 
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
@@ -274,7 +274,7 @@ class TestEmails(TestCase):
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(has_other_contacts=True, user=_creator)
+        domain_request = completed_domain_request(has_other_contacts=True, user=_requester)
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
             domain_request.submit()
         _, kwargs = self.mock_client.send_email.call_args
@@ -495,8 +495,8 @@ class SendExpirationEmailsTests(TestCase):
             state=Domain.State.READY,
             expiration_date=self.fixed_today + timedelta(days=30),
         )
-        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expiring Soon")
-        DomainInformation.objects.create(domain=domain_ready, portfolio=portfolio, creator=self.manager)
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expiring Soon")
+        DomainInformation.objects.create(domain=domain_ready, portfolio=portfolio, requester=self.manager)
 
         UserDomainRole.objects.create(user=self.manager, domain=domain_ready, role="manager")
 
@@ -542,8 +542,8 @@ class SendExpirationEmailsTests(TestCase):
             state=Domain.State.DNS_NEEDED,
             expiration_date=self.fixed_today + timedelta(days=7),
         )
-        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expiring Soon")
-        DomainInformation.objects.create(domain=domain_dns, portfolio=portfolio, creator=self.manager)
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expiring Soon")
+        DomainInformation.objects.create(domain=domain_dns, portfolio=portfolio, requester=self.manager)
 
         UserDomainRole.objects.create(user=self.manager, domain=domain_dns, role="manager")
 
@@ -589,8 +589,8 @@ class SendExpirationEmailsTests(TestCase):
             state=Domain.State.UNKNOWN,
             expiration_date=self.fixed_today + timedelta(days=7),
         )
-        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expiring Soon")
-        DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, creator=self.manager)
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expiring Soon")
+        DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, requester=self.manager)
 
         UserDomainRole.objects.create(user=self.manager, domain=domain_unknown, role="manager")
 
@@ -675,12 +675,12 @@ class SendExpirationEmailsTests(TestCase):
             expiration_date=self.fixed_today - timedelta(days=1),
         )
 
-        portfolio = Portfolio.objects.create(creator=self.admin, organization_name="Expired Domains Portfolio")
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expired Domains Portfolio")
 
         DomainInformation.objects.create(
             domain=expired_domain,
             portfolio=portfolio,
-            creator=self.manager,
+            requester=self.manager,
         )
 
         UserDomainRole.objects.create(user=self.manager, domain=expired_domain, role="manager")

@@ -4,7 +4,7 @@ Hi, {{ recipient.first_name }}.
 Your .gov domain request has been withdrawn and will not be reviewed by our team.
 
 DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
-REQUESTED BY: {{ domain_request.creator.email }}
+REQUESTED BY: {{ domain_request.requester.email }}
 REQUEST RECEIVED ON: {{ domain_request.last_submitted_date|date }}
 STATUS: Withdrawn
 
