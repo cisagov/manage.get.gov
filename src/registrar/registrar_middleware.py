@@ -140,6 +140,24 @@ class CheckPortfolioMiddleware:
         self.get_response = get_response
         self.home = reverse("home")
 
+        self.select_portfolios_page = reverse("your-portfolios")
+        self.set_portfolio_page = reverse("set-session-portfolio")
+        self.setup_page = reverse("finish-user-profile-setup")
+        self.profile_page = reverse("user-profile")
+        self.logout_page = reverse("logout")
+
+        self.excluded_pages = [
+            self.setup_page,
+            self.logout_page,
+            self.profile_page,
+            self.select_portfolios_page,
+            self.set_portfolio_page,
+            "/admin",
+            # These are here as there is a bug with this middleware that breaks djangos built in debug console.
+            # The debug console uses this directory, but since this overrides that, it throws errors.
+            "/__debug__",
+        ]
+
     def __call__(self, request):
         response = self.get_response(request)
         return response
@@ -157,12 +175,19 @@ class CheckPortfolioMiddleware:
             # Set the portfolio in the session if its not already in it
             request.session["portfolio"] = None
 
-        if request.user.is_org_user(request) and current_path == self.home:
-            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                portfolio_redirect = reverse("domains")
-            else:
-                portfolio_redirect = reverse("no-portfolio-domains")
-            return HttpResponseRedirect(portfolio_redirect)
+        # Don't redirect on excluded pages (such as the setup page itself)
+        if not any(request.path.startswith(page) for page in self.excluded_pages):
+            # Redirect user to org select page if no active portfolio
+            if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
+                org_select_redirect = reverse("your-portfolios")
+                return HttpResponseRedirect(org_select_redirect)
+        if request.user.is_org_user(request):
+            if current_path == self.home:
+                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                    portfolio_redirect = reverse("domains")
+                else:
+                    portfolio_redirect = reverse("no-portfolio-domains")
+                return HttpResponseRedirect(portfolio_redirect)
 
         return None
 
@@ -172,7 +197,7 @@ class CheckPortfolioMiddleware:
         # TODO #3776: Add logic to redirect user to Select Organization page if
         # portfolio is none. For now, default portfolio to first portfolio
         # as in production.
-        if not flag_is_active(request, "multiple_portfolios") or not request.session.get("portfolio"):
+        if not flag_is_active(request, "multiple_portfolios"):
             request.session["portfolio"] = request.user.get_first_portfolio()
 
 
