@@ -9,6 +9,7 @@ from typing import Optional
 from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
+from django.utils.functional import cached_property
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
@@ -1658,7 +1659,7 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
-    @Cache
+    @cached_property
     def on_hold_date(self):
         """
         Grabbing date of when domain was put on hold via audit log
@@ -2393,6 +2394,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
         self._cache = {}
+        delattr(self, 'on_hold_date') if hasattr(self, 'on_hold_date') else None
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
