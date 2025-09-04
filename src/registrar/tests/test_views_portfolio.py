@@ -61,6 +61,11 @@ class TestPortfolio(WebTest):
         User.objects.all().delete()
         super().tearDown()
 
+    def set_session_portfolio(self, portfolio=None):
+        session = self.client.session
+        session["portfolio"] = self.portfolio
+        session.save()
+
     @less_console_noise_decorator
     def test_portfolio_senior_official(self):
         """Tests that the senior official page on portfolio contains the content we expect"""
@@ -323,6 +328,7 @@ class TestPortfolio(WebTest):
                 UserPortfolioPermissionChoices.EDIT_PORTFOLIO,
             ],
         )
+        self.portfolio.address_line1 = "123 Testing Lane"
         self.portfolio.city = "Los Angeles"
         self.portfolio.save()
 
@@ -331,10 +337,10 @@ class TestPortfolio(WebTest):
         # Assert the response is a 200
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<h2>Organization admins</h2>")
-        self.assertContains(response, "<h2>Organization name and address</h2>")
-        self.assertContains(response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>')
-        self.assertNotContains(response, "<address>")
-        self.assertContains(response, 'for="id_city"')
+        self.assertContains(response, "<h2>Organization information</h2>")
+        self.assertContains(response, "Organization type")
+        self.assertContains(response, "<address>")
+        self.assertContains(response, "Your organization name can’t be updated here.")
 
     @less_console_noise_decorator
     def test_portfolio_organization_detail_pages_shows_read_only(self):
@@ -352,9 +358,7 @@ class TestPortfolio(WebTest):
 
         org_info_response = self.app.get(reverse("organization-info"))
         # We don't use the label "Organization name" in the view-only view
-        self.assertNotContains(
-            org_info_response, '<p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>'
-        )
+        self.assertNotContains(org_info_response, "Your organization name can’t be updated here.")
         self.assertContains(org_info_response, "<address>")
 
     @less_console_noise_decorator
@@ -602,8 +606,8 @@ class TestPortfolio(WebTest):
         mock_send_organization_update_email.assert_called_once()
 
     @less_console_noise_decorator
-    def test_portfolio_in_session(self):
-        """When the user has a portfolio, the portfolio should be set in session."""
+    def test_portfolio_in_session_for_single_portfolio_users(self):
+        """When the user has only one portfolio, the portfolio should be set in session."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
@@ -635,11 +639,10 @@ class TestPortfolio(WebTest):
         # Check the value of the 'portfolio' session variable
         self.assertIsNone(session["portfolio"])
 
-    # TODO: Remove or update test in #3776 to test portfolio redirect
     @less_console_noise_decorator
-    def test_portfolio_in_session_when_multiple_portfolios_active(self):
-        """When multiple_portfolios flag is true and user has a portfolio,
-        the portfolio should be set in session."""
+    def test_portfolio_resets_on_login_when_multiple_portfolios_active(self):
+        """When multiple_portfolios flag is true and user has multiple portfolios,
+        there should be no active portfolio set in session."""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
@@ -651,10 +654,8 @@ class TestPortfolio(WebTest):
             response.wsgi_request.session.save()
             # Access the session via the request
             session = response.wsgi_request.session
-            # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+            # Check the 'portfolio' session variable does not exist in new login session
+            self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_multiple_portfolios_active_and_no_portfolio(self):
