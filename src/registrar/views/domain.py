@@ -444,6 +444,20 @@ class DomainView(DomainBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainAdvancedSettingView(DomainBaseView):
+
+    template_name = "domain_advanced_setting.html"
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        # context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        # context["is_valid_domain"] = self.object.name in self.valid_domains
+        return context
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -503,6 +517,61 @@ class DomainRenewalView(DomainBaseView):
         return render(
             request,
             "domain_renewal.html",
+            {
+                "domain": domain,
+                "form": form,
+                "is_editable": True,
+                "is_domain_manager": True,
+            },
+        )
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainDeleteView(DomainBaseView):
+    """Domain delete page."""
+
+    template_name = "domain_delete.html"
+
+    def get_context_data(self, **kwargs):
+        """Grabs the security email information and adds security_email to the renewal form context
+        sets it to None if it uses a default email"""
+
+        context = super().get_context_data(**kwargs)
+
+        default_emails = DefaultEmail.get_all_emails()
+
+        context["hidden_security_emails"] = default_emails
+
+        security_email = self.object.get_security_email()
+        context["security_email"] = security_email
+        return context
+
+    def post(self, request, domain_pk):
+
+        domain = get_object_or_404(Domain, id=domain_pk)
+
+        form = DomainRenewalForm(request.POST)
+
+        if form.is_valid():
+
+            # check for key in the post request data
+            if "submit_button" in request.POST:
+                try:
+                    domain.renew_domain()
+                    messages.success(request, "This domain has been renewed for one year.")
+                except Exception:
+                    messages.error(
+                        request,
+                        "This domain has not been renewed for one year, "
+                        "please email help@get.gov if this problem persists.",
+                    )
+            return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
+
+        # if not valid, render the template with error messages
+        # passing editable and is_editable for re-render
+        return render(
+            request,
+            "domain_delete.html",
             {
                 "domain": domain,
                 "form": form,

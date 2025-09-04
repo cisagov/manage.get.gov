@@ -17,7 +17,7 @@
         <a href="{% url 'domain-advanced-setting' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>Advanced Settings</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Renewal Form</span>
+        <span>Delete Domain</span>
       </li>
 
     </ol>
@@ -38,31 +38,10 @@
 
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
-    <h2 class="domain-name-wrap">Confirm the following information for accuracy</h2>
-    <p>Review the details below. We <a href="https://get.gov/domains/requirements/#what-.gov-domain-registrants-must-do" class="usa-link" target="_blank">
-      require</a> that you maintain accurate information for the domain.
-      The details you provide will only be used to support the administration of .gov and won't be made public.
-    </p>
-    <p>If you would like to retire your domain instead, please <a href="https://get.gov/contact/" class="usa-link" target="_blank">
-      contact us</a>. </p>
-    <p><em>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
+    <h2 class="domain-name-wrap">Some title here</h2>
+    <p>Some text here about domain retirement, I'd also like to retire too
     </p>
 
-
-    {% url 'user-profile' as url %}
-    {% include "includes/summary_item.html" with title='Your contact information' value=request.user edit_link=url editable=is_editable  contact='true' %}
-  
-    {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
-      {% if is_portfolio_user and not is_domain_manager %}
-      <div class="usa-alert usa-alert--info usa-alert--slim">
-        <div class="usa-alert__body">
-          <p class="usa-alert__text ">
-            You don't have access to manage {{domain.name}}. If you need to make updates, contact one of the listed domain managers.
-          </p>
-        </div>
-      </div>
-      {% endif %}
-    {% endif %}
 
     {% url 'domain-security-email' domain_pk=domain.id as url %}
     {% if security_email is not None and security_email not in hidden_security_emails%}
@@ -130,7 +109,7 @@
             name="submit_button"
             value="next"
             class="usa-button margin-top-3"
-          > Submit and renew
+          > Request delete
           </button>
         </form>
       </fieldset>
