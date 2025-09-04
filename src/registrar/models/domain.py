@@ -2394,6 +2394,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _invalidate_cache(self):
         """Remove cache data when updates are made."""
         self._cache = {}
+        logging.info(f"Delete hold date on {self.name}")
         delattr(self, 'on_hold_date') if hasattr(self, 'on_hold_date') else None
 
     def _get_property(self, property):
