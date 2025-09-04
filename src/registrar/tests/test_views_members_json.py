@@ -56,7 +56,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.email7 = "sixth@example.com"
 
         # Create Portfolio
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
 
         # Assign permissions
 
@@ -242,7 +242,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain1.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain,
             portfolio=self.portfolio,
         )
@@ -257,7 +257,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="thissecondpermtestsmultipleperms@lets.notbreak",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain2,
             portfolio=self.portfolio,
         )
@@ -272,7 +272,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain3.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain3,
         )
         UserDomainRole.objects.create(
@@ -327,7 +327,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain1.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain,
             portfolio=self.portfolio,
         )
@@ -341,7 +341,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="thissecondinvitetestsasubqueryinjson@lets.notbreak",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain2,
             portfolio=self.portfolio,
         )
@@ -355,7 +355,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain3.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain3,
         )
         DomainInvitation.objects.create(
@@ -369,7 +369,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain4.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain4,
         )
         DomainInvitation.objects.create(

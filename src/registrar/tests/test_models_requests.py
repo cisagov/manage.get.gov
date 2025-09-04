@@ -191,14 +191,14 @@ class TestDomainRequest(TestCase):
         """Can't create a completely empty domain request."""
         with less_console_noise():
             with transaction.atomic():
-                with self.assertRaisesRegex(IntegrityError, "creator"):
+                with self.assertRaisesRegex(IntegrityError, "requester"):
                     DomainRequest.objects.create()
 
     @less_console_noise_decorator
     def test_minimal_create(self):
-        """Can create with just a creator."""
+        """Can create with just a requester."""
         user, _ = User.objects.get_or_create(username="testy")
-        domain_request = DomainRequest.objects.create(creator=user)
+        domain_request = DomainRequest.objects.create(requester=user)
         self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.STARTED)
 
     @less_console_noise_decorator
@@ -210,7 +210,7 @@ class TestDomainRequest(TestCase):
         gov_website, _ = Website.objects.get_or_create(website="igorville.gov")
         domain, _ = DraftDomain.objects.get_or_create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=user,
+            requester=user,
             investigator=user,
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_type=BranchChoices.EXECUTIVE,
@@ -238,7 +238,7 @@ class TestDomainRequest(TestCase):
         contact = Contact.objects.create()
         domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         information = DomainInformation.objects.create(
-            creator=user,
+            requester=user,
             generic_org_type=DomainInformation.OrganizationChoices.FEDERAL,
             federal_type=BranchChoices.EXECUTIVE,
             is_election_board=False,
@@ -261,7 +261,7 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_status_fsm_submit_fail(self):
         user, _ = User.objects.get_or_create(username="testy")
-        domain_request = DomainRequest.objects.create(creator=user)
+        domain_request = DomainRequest.objects.create(requester=user)
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -273,9 +273,9 @@ class TestDomainRequest(TestCase):
     def test_status_fsm_submit_succeed(self):
         user, _ = User.objects.get_or_create(username="testy")
         site = DraftDomain.objects.create(name="igorville.gov")
-        domain_request = DomainRequest.objects.create(creator=user, requested_domain=site)
+        domain_request = DomainRequest.objects.create(requester=user, requested_domain=site)
 
-        # no email sent to creator so this emits a log warning
+        # no email sent to requester so this emits a log warning
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             with less_console_noise():
@@ -321,8 +321,8 @@ class TestDomainRequest(TestCase):
         email_allowed.delete()
 
     @less_console_noise_decorator
-    def test_submit_from_started_sends_email_to_creator(self):
-        """tests that we send an email to the creator"""
+    def test_submit_from_started_sends_email_to_requester(self):
+        """tests that we send an email to the requester"""
         msg = "Create a domain request and submit it and see if email was sent when the feature flag is on."
         domain_request = completed_domain_request(user=self.dummy_user_2)
         self.check_email_sent(
@@ -1080,7 +1080,7 @@ class TestDomainRequest(TestCase):
         fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
         portfolio = Portfolio.objects.create(
             organization_name="Test Portfolio",
-            creator=self.dummy_user_2,
+            requester=self.dummy_user_2,
             federal_agency=fed_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
@@ -1102,7 +1102,7 @@ class TestDomainRequest(TestCase):
         fed_agency = FederalAgency.objects.filter(agency="Non-Federal Agency").first()
         portfolio = Portfolio.objects.create(
             organization_name="Test Portfolio",
-            creator=self.dummy_user_2,
+            requester=self.dummy_user_2,
             federal_agency=fed_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
@@ -1146,7 +1146,7 @@ class TestDomainRequestSuborganization(TestCase):
     @less_console_noise_decorator
     def test_approve_creates_requested_suborganization(self):
         """Test that approving a domain request with a requested suborganization creates it"""
-        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        portfolio = Portfolio.objects.create(organization_name="Test Org", requester=self.user)
 
         domain_request = completed_domain_request(
             name="test.gov",
@@ -1174,7 +1174,7 @@ class TestDomainRequestSuborganization(TestCase):
     @less_console_noise_decorator
     def test_approve_without_requested_suborganization_makes_no_changes(self):
         """Test that approving without a requested suborganization doesn't create one"""
-        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        portfolio = Portfolio.objects.create(organization_name="Test Org", requester=self.user)
 
         domain_request = completed_domain_request(
             name="test.gov",
@@ -1193,7 +1193,7 @@ class TestDomainRequestSuborganization(TestCase):
     @less_console_noise_decorator
     def test_approve_with_existing_suborganization_makes_no_changes(self):
         """Test that approving with an existing suborganization doesn't create a new one"""
-        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        portfolio = Portfolio.objects.create(organization_name="Test Org", requester=self.user)
         existing_suborg = Suborganization.objects.create(name="Existing Division", portfolio=portfolio)
 
         domain_request = completed_domain_request(
@@ -1214,7 +1214,7 @@ class TestDomainRequestSuborganization(TestCase):
     @less_console_noise_decorator
     def test_cleanup_dangling_suborg_with_single_reference(self):
         """Test that a suborganization is deleted when it's only referenced once"""
-        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        portfolio = Portfolio.objects.create(organization_name="Test Org", requester=self.user)
         suborg = Suborganization.objects.create(name="Test Division", portfolio=portfolio)
 
         domain_request = completed_domain_request(
@@ -1236,7 +1236,7 @@ class TestDomainRequestSuborganization(TestCase):
     @less_console_noise_decorator
     def test_cleanup_dangling_suborg_with_multiple_references(self):
         """Test that a suborganization is preserved when it has multiple references"""
-        portfolio = Portfolio.objects.create(organization_name="Test Org", creator=self.user)
+        portfolio = Portfolio.objects.create(organization_name="Test Org", requester=self.user)
         suborg = Suborganization.objects.create(name="Test Division", portfolio=portfolio)
 
         # Create two domain requests using the same suborganization

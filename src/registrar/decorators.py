@@ -16,7 +16,7 @@ IS_CISA_ANALYST = "is_cisa_analyst"
 IS_OMB_ANALYST = "is_omb_analyst"
 IS_FULL_ACCESS = "is_full_access"
 IS_DOMAIN_MANAGER = "is_domain_manager"
-IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
+IS_DOMAIN_REQUEST_REQUESTER = "is_domain_request_requester"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
 HAS_DOMAIN_REQUESTS_VIEW_ALL = "has_domain_requests_view_all"
 IS_PORTFOLIO_MEMBER = "is_portfolio_member"
@@ -150,8 +150,8 @@ def _user_has_permission(user, request, rules, **kwargs):
             lambda: _is_domain_manager(user, **kwargs) and not _is_portfolio_member(request),
         ),
         (
-            IS_DOMAIN_REQUEST_CREATOR,
-            lambda: _is_domain_request_creator(user, kwargs.get("domain_request_pk"))
+            IS_DOMAIN_REQUEST_REQUESTER,
+            lambda: _is_domain_request_requester(user, kwargs.get("domain_request_pk"))
             and not _is_portfolio_member(request),
         ),
         (
@@ -212,7 +212,7 @@ def _user_has_permission(user, request, rules, **kwargs):
 
 
 def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
-    if domain_request_id and not _is_domain_request_creator(user, domain_request_id):
+    if domain_request_id and not _is_domain_request_requester(user, domain_request_id):
         return False
     return user.is_org_user(request) and user.has_edit_request_portfolio_permission(request.session.get("portfolio"))
 
@@ -302,11 +302,11 @@ def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     return PortfolioInvitation.objects.filter(portfolio=portfolio, id=invitedmember_pk).exists()
 
 
-def _is_domain_request_creator(user, domain_request_pk):
-    """Checks to see if the user is the creator of a domain request
+def _is_domain_request_requester(user, domain_request_pk):
+    """Checks to see if the user is the requester of a domain request
     with domain_request_pk."""
     if domain_request_pk:
-        return DomainRequest.objects.filter(creator=user, id=domain_request_pk).exists()
+        return DomainRequest.objects.filter(requester=user, id=domain_request_pk).exists()
     return True
 
 
@@ -429,13 +429,13 @@ def _has_legacy_domain_request_view_access(user, domain_request):
     """
     All of the ways a user can view a non-portfolio aka only applies to legacy mode domain request:
     Has the analyst_access_permission or
-    Is the creator of the request or
+    Is the requester of the request or
     Has the full_access_permission
     """
     if user.has_perm("registrar.analyst_access_permission"):
         return True
 
-    if domain_request.creator == user:
+    if domain_request.requester == user:
         return True
 
     if user.has_perm("registrar.full_access_permission"):

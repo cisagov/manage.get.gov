@@ -77,7 +77,7 @@ class DomainFixture(DomainRequestFixture):
         for user in users:
             # Get the latest and second-to-last domain requests
             domain_requests = DomainRequest.objects.filter(
-                creator=user, status=DomainRequest.DomainRequestStatus.IN_REVIEW
+                requester=user, status=DomainRequest.DomainRequestStatus.IN_REVIEW
             ).order_by("-id")[:2]
 
             # Latest domain request

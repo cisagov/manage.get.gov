@@ -46,7 +46,7 @@ class TestPortfolio(WebTest):
         self.client = Client()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
@@ -1338,7 +1338,7 @@ class TestPortfolio(WebTest):
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             portfolio=self.portfolio,
         )
-        domain_request.creator = self.user
+        domain_request.requester = self.user
         domain_request.save()
 
         self.client.force_login(self.user)
@@ -1372,7 +1372,7 @@ class TestPortfolio(WebTest):
             status=DomainRequest.DomainRequestStatus.STARTED,
             portfolio=self.portfolio,
         )
-        domain_request.creator = self.user
+        domain_request.requester = self.user
         domain_request.save()
 
         self.client.force_login(self.user)
@@ -1407,7 +1407,7 @@ class TestPortfolio(WebTest):
             status=DomainRequest.DomainRequestStatus.STARTED,
             portfolio=self.portfolio,
         )
-        domain_request.creator = other_user
+        domain_request.requester = other_user
         domain_request.save()
 
         self.client.force_login(self.user)
@@ -1663,9 +1663,9 @@ class TestPortfolioMemberDeleteView(WebTest):
         self.client = Client()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         self.domain_information, _ = DomainInformation.objects.get_or_create(
-            creator=self.user, domain=self.domain, portfolio=self.portfolio
+            requester=self.user, domain=self.domain, portfolio=self.portfolio
         )
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -2099,7 +2099,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
         self.client = Client()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
@@ -2347,7 +2347,7 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
         )
 
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
         # Assign permissions to the user making requests
         cls.portfolio_permission = UserPortfolioPermission.objects.create(
@@ -2434,7 +2434,7 @@ class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
         )
 
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
         # Add an invited member who has been invited to manage domains
         cls.invited_member_email = "invited@example.com"
@@ -2514,7 +2514,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
     def setUpClass(cls):
         super().setUpClass()
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
         # Create domains for testing
         cls.domain1 = Domain.objects.create(name="1.gov")
         cls.domain2 = Domain.objects.create(name="2.gov")
@@ -2788,7 +2788,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
     def setUpClass(cls):
         super().setUpClass()
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
         # Create domains for testing
         cls.domain1 = Domain.objects.create(name="1.gov")
         cls.domain2 = Domain.objects.create(name="2.gov")
@@ -3123,8 +3123,8 @@ class TestRequestingEntity(WebTest):
         super().setUp()
         self.client = Client()
         self.user = create_user()
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-        self.portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel Alaska")
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
+        self.portfolio_2, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel Alaska")
         self.suborganization, _ = Suborganization.objects.get_or_create(
             name="Rocky road",
             portfolio=self.portfolio,
@@ -3453,7 +3453,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.user = create_test_user()
 
         # Create Portfolio
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
 
         # Add an invited member who has been invited to manage domains
         self.invited_member_email = "invited@example.com"
@@ -4025,7 +4025,7 @@ class TestPortfolioMemberEditView(WebTest):
     def setUp(self):
         self.user = create_user()
         # Create Portfolio
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
 
         # Add an invited member who has been invited to manage domains
         self.invited_member_email = "invited@example.com"
@@ -4498,7 +4498,7 @@ class TestPortfolioInvitedMemberEditView(WebTest):
     def setUp(self):
         self.user = create_user()
         # Create Portfolio
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
 
         # Add an invited member who has been invited to manage domains
         self.invited_member_email = "invited@example.com"
@@ -4768,8 +4768,8 @@ class TestPortfolioSelectOrganizationView(WebTest):
         super().setUp()
         self.user = create_user()
         # Create Portfolio
-        self.portfolio_1 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 1")
-        self.portfolio_2 = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio 2")
+        self.portfolio_1 = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio 1")
+        self.portfolio_2 = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio 2")
         self.app.set_user(self.user.username)
         self.client.force_login(self.user)
 

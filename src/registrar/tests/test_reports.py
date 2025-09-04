@@ -337,7 +337,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         """Tests DomainDataTypeUser export with portfolio permissions"""
 
         # Create a portfolio and assign it to the user
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
@@ -405,7 +405,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         """Tests DomainRequestsDataType export with portfolio permissions"""
 
         # Create a portfolio and assign it to the user
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         # Create DraftDomain objects
@@ -414,9 +414,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         dd_3 = DraftDomain.objects.create(name="example3.com")
 
         # Create some domain requests
-        dr_1 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_1, portfolio=portfolio)
-        dr_2 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_2)
-        dr_3 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_3, portfolio=portfolio)
+        dr_1 = DomainRequest.objects.create(requester=self.user, requested_domain=dd_1, portfolio=portfolio)
+        dr_2 = DomainRequest.objects.create(requester=self.user, requested_domain=dd_2)
+        dr_3 = DomainRequest.objects.create(requester=self.user, requested_domain=dd_3, portfolio=portfolio)
 
         # Set up user permissions
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -737,11 +737,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Requested suborg",
             "Suborg city",
             "Suborg state/territory",
-            "Creator first name",
-            "Creator last name",
-            "Creator email",
-            "Creator approved domains count",
-            "Creator active requests count",
+            "Requester first name",
+            "Requester last name",
+            "Requester email",
+            "Requester approved domains count",
+            "Requester active requests count",
             "Alternative domains",
             "SO first name",
             "SO last name",
@@ -768,8 +768,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 # Header
                 "Domain request,Status,Domain type,Portfolio,Federal type,Federal agency,Organization name,"
                 "Election office,City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
-                "Suborg state/territory,Creator first name,Creator last name,Creator email,"
-                "Creator approved domains count,Creator active requests count,Alternative domains,SO first name,"
+                "Suborg state/territory,Requester first name,Requester last name,Requester email,"
+                "Requester approved domains count,Requester active requests count,Alternative domains,SO first name,"
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content

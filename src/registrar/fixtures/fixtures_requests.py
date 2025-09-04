@@ -326,7 +326,7 @@ class DomainRequestFixture:
                 # Prepare DomainRequest objects
                 try:
                     domain_request = DomainRequest(
-                        creator=user,
+                        requester=user,
                         organization_name=request_data["organization_name"],
                     )
                     cls._set_non_foreign_key_fields(domain_request, request_data)
@@ -343,7 +343,7 @@ class DomainRequestFixture:
                         random_request_type = random.choice(cls.DOMAINREQUESTS)  # nosec
                         # Prepare DomainRequest objects
                         domain_request = DomainRequest(
-                            creator=random_user,
+                            requester=random_user,
                             organization_name=random_request_type["organization_name"],
                         )
                         cls._set_non_foreign_key_fields(domain_request, random_request_type)

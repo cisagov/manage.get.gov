@@ -454,7 +454,7 @@ class TestBasePortfolioMemberForms(TestCase):
         super().setUp()
         self.user = create_user()
         self.portfolio, _ = Portfolio.objects.get_or_create(
-            creator_id=self.user.id, organization_name="Hotel California"
+            requester_id=self.user.id, organization_name="Hotel California"
         )
 
     def tearDown(self):

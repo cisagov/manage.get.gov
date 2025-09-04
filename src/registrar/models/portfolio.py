@@ -24,12 +24,12 @@ class Portfolio(TimeStampedModel):
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
-    # Stores who created this model. If no creator is specified in DJA,
-    # then the creator will default to the current request user"""
-    creator = models.ForeignKey(
+    # Stores who created this model. If no requester is specified in DJA,
+    # then the requester will default to the current request user"""
+    requester = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
-        verbose_name="Portfolio creator",
+        verbose_name="Portfolio requester",
         related_name="created_portfolios",
         unique=False,
     )

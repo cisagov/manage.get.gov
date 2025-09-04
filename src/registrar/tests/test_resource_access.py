@@ -32,9 +32,9 @@ class TestPortfolioResourceAccess(MockDbForIndividualTests):
         super().setUp()
 
         # Create portfolios
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
         self.other_portfolio = Portfolio.objects.create(
-            creator=self.custom_staffuser, organization_name="Other Portfolio"
+            requester=self.custom_staffuser, organization_name="Other Portfolio"
         )
 
         # Create domain requests
@@ -160,8 +160,8 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
         self.client.force_login(self.user)
 
         # Create portfolios
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
-        self.other_portfolio = Portfolio.objects.create(creator=self.tired_user, organization_name="Other Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
+        self.other_portfolio = Portfolio.objects.create(requester=self.tired_user, organization_name="Other Portfolio")
 
         # Create domain requests
         self.domain_request = completed_domain_request(
@@ -244,8 +244,8 @@ class TestPortfolioDomainViewAccess(MockDbForIndividualTests):
         self.client.force_login(self.user)
 
         # Create portfolios
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
-        self.other_portfolio = Portfolio.objects.create(creator=self.tired_user, organization_name="Other Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
+        self.other_portfolio = Portfolio.objects.create(requester=self.tired_user, organization_name="Other Portfolio")
 
         # Create domains through domain requests
         self.domain_request = completed_domain_request(
@@ -301,8 +301,8 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
         self.client.force_login(self.user)
 
         # Create portfolios
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
-        self.other_portfolio = Portfolio.objects.create(creator=self.tired_user, organization_name="Other Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
+        self.other_portfolio = Portfolio.objects.create(requester=self.tired_user, organization_name="Other Portfolio")
 
         # Create portfolio permissions
         self.member_permission = UserPortfolioPermission.objects.create(

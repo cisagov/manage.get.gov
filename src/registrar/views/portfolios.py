@@ -990,7 +990,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
     def form_valid(self, form):
         """Handle the case when the form is valid."""
         self.object = form.save(commit=False)
-        self.object.creator = self.request.user
+        self.object.requester = self.request.user
         self.object.save()
         messages.success(self.request, "The organization information for this portfolio has been updated.")
         return super().form_valid(form)
@@ -1061,7 +1061,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
     def form_valid(self, form):
         """Handle the case when the form is valid."""
         self.object = form.save(commit=False)
-        self.object.creator = self.request.user
+        self.object.requester = self.request.user
         self.object.save()
         messages.success(self.request, "The senior official information for this portfolio has been updated.")
         return super().form_valid(form)
