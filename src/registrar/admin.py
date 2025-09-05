@@ -4057,15 +4057,35 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "expiration_date",
         "created_at",
         "first_ready",
+        "on_hold_date_display",
+        "days_on_hold_display",
         "deleted",
     ]
 
     fieldsets = (
         (
             None,
-            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
+            {
+                "fields": [
+                    "state",
+                    "expiration_date",
+                    "first_ready",
+                    "on_hold_date_display",
+                    "days_on_hold_display",
+                    "deleted",
+                    "dnssecdata",
+                    "nameservers",
+                ]
+            },
         ),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        """Add computed display methods to readonly_fields"""
+        return super().get_readonly_fields(request, obj) + (
+            "on_hold_date_display",
+            "days_on_hold_display",
+        )
 
     # ------- Domain Information Fields
 
@@ -4142,6 +4162,19 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Use native value for the change form
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
+
+    # --- On hold date / days on hold
+    @admin.display(description=_("On hold date"))
+    def on_hold_date_display(self, obj):
+        """Display the date the domain was put on hold"""
+        date = obj.on_hold_date
+        return date
+
+    @admin.display(description=_("Days on hold"))
+    def days_on_hold_display(self, obj):
+        """Display how many days the domain has been on hold"""
+        days = obj.days_on_hold
+        return days
 
     def dnssecdata(self, obj):
         return "No" if obj.state == Domain.State.UNKNOWN or not obj.dnssecdata else "Yes"
