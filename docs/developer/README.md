@@ -385,16 +385,26 @@ Then, copy the variables under the section labled `s3`.
 The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaenterprise3850/m/cisaenterprise3850/1743613581103/eeff220faf8db79d54624cef49d40f66cf85bfd6) visualizes the domain request flow and resulting domain objects.
 
 
-## Testing the prototype add DNS record feature (delete this after we are done testing!)
+## Testing the prototype add DNS record feature (update as testing instructions change)
 We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
 `prototype_dns_flag` waffle flag and navigate to `igorville.gov`, `dns.gov`, or `domainops.gov`. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
 
 Before we can send data to cloudflare, you will need these values in your .env file:
 ```
-REGISTRY_TENANT_KEY = {tenant key}
-REGISTRY_SERVICE_EMAIL = {An email address}
-REGISTRY_TENANT_NAME = {Name of the bucket, i.e. "CISA" }
+DNS_TENANT_KEY = {tenant key}
+DNS_SERVICE_EMAIL = {An email address}
+DNS_TENANT_NAME = {Name of the bucket, i.e. "CISA" }
+DNS_TEST_TENANT_ID = {id of the test tenant (as opposed to the prod tenant)}
 ```
-You can obtain these by following the steps outlined in the [dns hosting discovery doc](https://docs.google.com/document/d/1Yq5d2M3MgM2vPhUBZ0k5wOmCQst4vND9-2qEZ55-h-Y/edit?tab=t.0), BUT it is far easier to just get these from someone else. Reach out to Zander for this information if you do not have it.
-
+You can obtain these by going to cloud.gov and looking at the variables in the getgov-kma application (for now)
 Alternatively, if you are testing on a sandbox, you will need to add those to getgov-credentials.
+
+To manually test locally:
+
+   - Add env't vars to your .env
+   - From localhost:8080 in Enterprise view, go to domains and find one for which you are a domain manager (look for "Manage" under "Action"). Go to that domain's detail page
+   - Add (temporarily) that domain to the list of valid_domains in both the DomainDNSView and PrototypeDomainDNSRecordView. This will allow you to follow a link to a DNS Record page
+   - Click on "DNS" on the left nav menu
+   - Click the link below DNSEC: "Prototype DNS record creator"
+   - You should see a form for adding DNS records
+
