@@ -2,6 +2,7 @@ import logging
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError
+from registrar.models.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -86,3 +87,26 @@ class DnsHostService:
             raise
 
         return zone_id
+
+    def create_ns_records(self, zone_id, domain_name, nameservers):
+        for server_name in nameservers:
+            record_data = {
+                "type": "NS",
+                "name": domain_name,
+                "content": server_name,
+                "ttl": 1,
+            }
+            try:
+                self.create_record(zone_id, record_data)
+                logger.info(f"Created NS record for zone {domain_name}")
+            except APIError as e:
+                logger.error(f"Error creating NS record for zone {domain_name}")
+
+
+    def register_nameservers(self, domain_name, nameservers):
+        # call epp service to post nameservers to registry
+        domain = Domain.objects.filter(domain_name)
+        # TODO: first check domain state? or status? to ensure it's in the registry?
+        nameserver_tups = [tuple([n]) for n in nameservers]
+
+        domain.nameservers(nameserver_tups)
