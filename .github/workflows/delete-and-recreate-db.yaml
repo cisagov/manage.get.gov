@@ -19,6 +19,7 @@ on:
           - bob
           - meoward
           - backup
+          - cw
           - testdb
           - acadia
           - glacier
