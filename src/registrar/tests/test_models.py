@@ -261,7 +261,9 @@ class TestPortfolioInvitations(TestCase):
         # Arrange
         # domain_in_portfolio should not be included in the count
         domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_in_portfolio, portfolio=self.portfolio)
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=domain_in_portfolio, portfolio=self.portfolio
+        )
         # domain_in_portfolio_and_invited should be included in the count
         domain_in_portfolio_and_invited, _ = Domain.objects.get_or_create(
             name="domain_in_portfolio_and_invited.gov", state=Domain.State.READY

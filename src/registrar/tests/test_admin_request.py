@@ -1014,7 +1014,10 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test Withdrawn Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.WITHDRAWN)
         self.assert_email_is_accurate(
-            "Your .gov domain request has been withdrawn and will not be reviewed by our team.", 1, _requester.email, True
+            "Your .gov domain request has been withdrawn and will not be reviewed by our team.",
+            1,
+            _requester.email,
+            True,
         )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
@@ -1132,7 +1135,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Test Submitted Status
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 0, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 0, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 1)
 
         # Test Withdrawn Status
@@ -1182,7 +1187,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1220,7 +1227,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1255,7 +1264,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1294,7 +1305,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1332,7 +1345,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1366,7 +1381,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator
@@ -1399,7 +1416,9 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Approve
         self.transition_state_and_send_email(domain_request, DomainRequest.DomainRequestStatus.APPROVED)
-        self.assert_email_is_accurate("Congratulations! Your .gov domain request has been approved.", 1, _requester.email)
+        self.assert_email_is_accurate(
+            "Congratulations! Your .gov domain request has been approved.", 1, _requester.email
+        )
         self.assertEqual(len(self.mock_client.EMAILS_SENT), 2)
 
     @less_console_noise_decorator

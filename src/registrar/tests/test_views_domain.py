@@ -278,7 +278,9 @@ class TestDomainDetail(TestDomainOverview):
             UserDomainRole.objects.all().delete()
 
             self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-            self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
+            self.domain_information, _ = DomainInformation.objects.get_or_create(
+                requester=self.user, domain=self.domain
+            )
             self.role, _ = UserDomainRole.objects.get_or_create(
                 user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
             )
