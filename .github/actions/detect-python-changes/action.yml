@@ -39,7 +39,7 @@ runs:
         # PY_CHANGED includes all python files changed when you merge main into your branch. 
         ###########################
         CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..HEAD" | tr -d '\r' | sort -u)"
-        PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\(.py|html)$' || true)"
+        PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.(py|html)$' || true)"
         
         # multi-line output
         echo "list<<EOF" >> "$GITHUB_OUTPUT"
