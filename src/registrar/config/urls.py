@@ -357,6 +357,11 @@ urlpatterns = [
     path(
         "domain/<int:domain_pk>/delete",
         views.DomainDeleteView.as_view(),
+        name="domain-delete"
+    )
+    path(
+        "domain/<int:domain_pk>/delete",
+        views.DomainDeleteView.as_view(),
         name="domain-delete",
     ),
     path(
@@ -398,7 +403,7 @@ urlpatterns = [
         "set-session-portfolio/",
         views.PortfolioOrganizationSelectView.as_view(),
         name="set-session-portfolio",
-    ),
+    )
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
