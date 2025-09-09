@@ -14,14 +14,4 @@
 
 .usa-card__heading {
     color: #{$dhs-blue};
-
-    //These let icons align with header text
-    align-items: center;
-    display: flex;
-    column-gap: 5px;
-
-    //Prevents icon from shrinking on super thin mobile screens
-    .usa-icon {
-        min-width: 2rem;
-    }
 }

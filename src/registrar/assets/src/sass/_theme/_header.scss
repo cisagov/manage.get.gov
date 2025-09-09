@@ -43,10 +43,6 @@ $-expand-less-icon: (
     color: #{$dhs-dark-gray-85};
 }
 
-.usa-nav__light {
-    background-color: color('primary-lightest');
-}
-
 .usa-header {
     .usa-logo {
         @include at-media(desktop) {
@@ -117,10 +113,13 @@ $-expand-less-icon: (
         .usa-logo__text button:hover {
             color: color('white');
         }
+        .usa-nav {
+            background-color: color('primary-lightest');
+        }
         .usa-nav__primary-item:last-child {
             margin-left: auto;
             .usa-nav-link {
-                margin-right: -2rem;
+                margin-right: units(-2);
             }
         }
         .usa-nav__primary {
@@ -146,8 +145,10 @@ $-expand-less-icon: (
             }
         }
         .usa-nav__secondary {
+            right: 1rem;
+            padding-right: $widescreen-x-padding;
             color: color('white');
-            position: revert;
+            bottom: 4.3rem;
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
@@ -163,6 +164,7 @@ $-expand-less-icon: (
                     font-weight: normal;
                 }
             }
+            transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
         > .usa-navbar {
             // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
@@ -179,7 +181,6 @@ $-expand-less-icon: (
 
 .usa-nav__secondary-links {
     line-height: line-height($theme-navigation-font-family, 2);
-    align-self: center;
 
     // Remove column gap to account for padding in secondary nav buttons
     @include at-media($theme-header-min-width) {
@@ -410,5 +411,18 @@ $-expand-less-icon: (
                 }
             }
         }
+    }
+}
+
+// Extended header only displaying topmost navigation
+.usa-header__top-level-only {
+    border-bottom-width: 0;
+
+    .usa-nav {
+        background-color: white !important;
+    }
+
+    .usa-nav__primary {
+        visibility: hidden;
     }
 }
