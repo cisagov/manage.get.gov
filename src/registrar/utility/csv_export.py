@@ -647,19 +647,24 @@ class DomainExport(BaseExport):
                 default=Value(""),
                 output_field=CharField(),
             ),
+            "location_source": Case(
+                When(Q(sub_organization__isnull=False) & Q(sub_organization__city__isnull=False) & Q(sub_organization__state_territory__isnull=False), then=Value("sub_organization")),
+                When(Q(portfolio__isnull=False) & Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False), then=Value("portfolio")),
+                default=Value("base"),
+                output_field=CharField()
+            ),
             "converted_city": Case(
-                When(Q(sub_organization__isnull=False) & Q(sub_organization__city__isnull=False) & Q(sub_organization__state_territory__isnull=False), then=F("sub_organization__city")),
-                When(Q(portfolio__isnull=False) & Q(portfolio__city__isnull=False) & Q(portfolio__city__isnull=False), then=F("portfolio__city")),
+                When(location_source="sub_organization", then=F("sub_organization__city")),
+                When(location_source="portfolio", then=F("portfolio__city")),
                 default=F("city"),
                 output_field=CharField(),
             ),
             "converted_state_territory": Case(
-                When(
-                    Q(sub_organization__isnull=False) & Q(sub_organization__city__isnull=False) & Q(sub_organization__state_territory__isnull=False),
+                When(location_source="sub_organization", 
                     then=F("sub_organization__state_territory"),
                 ),
-                When(
-                    Q(portfolio__isnull=False) & Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False), then=F("portfolio__state_territory")
+                When(location_source="portfolio", 
+                then=F("portfolio__state_territory")
                 ),
                 default=F("state_territory"),
                 output_field=CharField(),
