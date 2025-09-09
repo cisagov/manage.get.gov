@@ -12,19 +12,27 @@ class DnsHostService:
     def __init__(self):
         self.dns_vendor_service = CloudflareService()
 
+    def _find_by_pubname(self, items, name):
+        """Find an item by name in a list of dictionaries."""
+        return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
+    
     def _find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def dns_setup(self, account_name, zone_name):
-        """Creates an account and zone in the dns host vendor tenant"""
+    def _find_nameservers_by_zone_id(self, items, zone_id):
+        """Find an item by name in a list of dictionaries."""
+        return next((item.get("name_servers") for item in items if item.get("id") == zone_id), None)
+
+    def dns_setup(self, account_name, domain_name):
+        """Creates an account and zone in the dns host vendor tenant. Registers nameservers and creates NS records after zone creation"""
 
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)
 
         zone_id = None
         if account_id:
-            zone_id = self._find_existing_zone(zone_name, account_id)
+            zone_id, nameservers = self._find_existing_zone(domain_name, account_id)
         has_zone = bool(zone_id)
 
         if not has_account:
@@ -37,22 +45,37 @@ class DnsHostService:
                 raise
 
             try:
-                zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
+                zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
                 zone_name = zone_data["result"].get("name")
-                logger.info(f"Successfully created zone {zone_name}")
+                logger.info(f"Successfully created zone {domain_name}")
                 zone_id = zone_data["result"]["id"]
+                nameservers = zone_data["result"].get("name_servers")
+                try:
+                    self._register_nameservers(domain_name, nameservers)
+                except:
+                    raise 
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
                 raise
 
         elif has_account and not has_zone:
             try:
-                zone_data = self.dns_vendor_service.create_zone(zone_name, account_id)
+                zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
                 logger.info("Successfully created zone")
+                zone_name = zone_data["result"].get("name")
                 zone_id = zone_data["result"]["id"]
+                nameservers = zone_data["result"].get("name_servers")
+                try:
+                    self._register_nameservers(domain_name, nameservers)
+                except:
+                    raise 
             except APIError as e:
-                logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
+                logger.error(f"DNS setup failed to create zone: {str(e)}")
                 raise
+        try:
+            self._register_nameservers(domain_name, nameservers)
+        except:
+            raise
 
         return account_id, zone_id
 
@@ -67,14 +90,25 @@ class DnsHostService:
         return record
 
     def _find_existing_account(self, account_name):
-        try:
-            all_accounts_data = self.dns_vendor_service.get_all_accounts()
-            accounts = all_accounts_data["result"]
-            account_id = self._find_by_name(accounts, account_name)
-        except APIError as e:
-            logger.error(f"Error fetching accounts: {str(e)}")
-            raise
+        per_page = 10
+        page = 0
+        is_last_page = False
+        while (is_last_page == False):
+            page += 1
+            try:
+                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
+                accounts = page_accounts_data["result"]
+                account_id = self._find_by_pubname(accounts, account_name)
+                if account_id:
+                    break
+                total_count = page_accounts_data["result_info"].get("total_count")
+                is_last_page = total_count <= page * per_page
+                print(f"IS LAST PAGE {is_last_page}")
 
+            except APIError as e:
+                logger.error(f"Error fetching accounts: {str(e)}")
+                raise
+            
         return account_id
 
     def _find_existing_zone(self, zone_name, account_id):
@@ -82,31 +116,22 @@ class DnsHostService:
             all_zones_data = self.dns_vendor_service.get_account_zones(account_id)
             zones = all_zones_data["result"]
             zone_id = self._find_by_name(zones, zone_name)
+            nameservers = self._find_nameservers_by_zone_id(zones, zone_id)
         except APIError as e:
             logger.error(f"Error fetching zones: {str(e)}")
             raise
 
-        return zone_id
-
-    def create_ns_records(self, zone_id, domain_name, nameservers):
-        for server_name in nameservers:
-            record_data = {
-                "type": "NS",
-                "name": domain_name,
-                "content": server_name,
-                "ttl": 1,
-            }
-            try:
-                self.create_record(zone_id, record_data)
-                logger.info(f"Created NS record for zone {domain_name}")
-            except APIError as e:
-                logger.error(f"Error creating NS record for zone {domain_name}")
+        return zone_id, nameservers
 
 
-    def register_nameservers(self, domain_name, nameservers):
+    def _register_nameservers(self, domain_name, nameservers):
         # call epp service to post nameservers to registry
-        domain = Domain.objects.filter(domain_name)
+        domain = Domain.objects.get(name=domain_name)
         # TODO: first check domain state? or status? to ensure it's in the registry?
         nameserver_tups = [tuple([n]) for n in nameservers]
 
-        domain.nameservers(nameserver_tups)
+        try:
+            logger.debug("attempting to register nameservers")
+            domain.nameservers = nameserver_tups # TODO fix this line
+        except:
+            raise
