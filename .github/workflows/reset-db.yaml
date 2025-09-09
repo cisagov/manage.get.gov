@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - development
+          - cw
           - testdb
           - acadia
           - glacier
