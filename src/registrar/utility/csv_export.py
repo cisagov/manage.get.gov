@@ -659,7 +659,7 @@ class DomainExport(BaseExport):
                     then=F("sub_organization__state_territory"),
                 ),
                 When(
-                    Q(portfolio__isnull=False) & Q(portfolio__isnull=False) & Q(portfolio__state_territory__isnull=False), then=F("portfolio__state_territory")
+                    Q(portfolio__isnull=False) & Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False), then=F("portfolio__state_territory")
                 ),
                 default=F("state_territory"),
                 output_field=CharField(),
