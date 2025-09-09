@@ -125,13 +125,12 @@ class DnsHostService:
 
 
     def _register_nameservers(self, domain_name, nameservers):
-        # call epp service to post nameservers to registry
         domain = Domain.objects.get(name=domain_name)
         # TODO: first check domain state? or status? to ensure it's in the registry?
         nameserver_tups = [tuple([n]) for n in nameservers]
 
         try:
-            logger.debug("attempting to register nameservers")
-            domain.nameservers = nameserver_tups # TODO fix this line
+            logger.info("Attempting to register nameservers. . .")
+            domain.nameservers = nameserver_tups # calls epp service to post nameservers to registry
         except:
             raise
