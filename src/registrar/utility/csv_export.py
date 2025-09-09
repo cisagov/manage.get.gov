@@ -648,18 +648,18 @@ class DomainExport(BaseExport):
                 output_field=CharField(),
             ),
             "converted_city": Case(
-                When(sub_organization__isnull=False, then=F("sub_organization__city")),
-                When(portfolio__isnull=False, then=F("portfolio__city")),
+                When(Q(sub_organization__isnull=False) & Q(sub_organization__city__isnull=False) & Q(sub_organization__state_territory__isnull=False), then=F("sub_organization__city")),
+                When(Q(portfolio__isnull=False) & Q(portfolio__city__isnull=False) & Q(portfolio__city__isnull=False), then=F("portfolio__city")),
                 default=F("city"),
                 output_field=CharField(),
             ),
             "converted_state_territory": Case(
                 When(
-                    Q(sub_organization__isnull=False) & ~Q(sub_organization__state_territory=""),
+                    Q(sub_organization__isnull=False) & Q(sub_organization__city__isnull=False) & Q(sub_organization__state_territory__isnull=False),
                     then=F("sub_organization__state_territory"),
                 ),
                 When(
-                    Q(portfolio__isnull=False) & ~Q(portfolio__state_territory=""), then=F("portfolio__state_territory")
+                    Q(portfolio__isnull=False) & Q(portfolio__isnull=False) & Q(portfolio__state_territory__isnull=False), then=F("portfolio__state_territory")
                 ),
                 default=F("state_territory"),
                 output_field=CharField(),
@@ -794,12 +794,7 @@ class DomainExport(BaseExport):
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
-
-    # NOTE - this override is temporary.
-    # We are running into a problem where DomainDataFull and DomainDataFederal are
-    # pulling the wrong data.
-    # For example, the portfolio name, rather than the suborganization name.
-    # This can be removed after that gets fixed.
+    
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
