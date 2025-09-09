@@ -27,9 +27,9 @@
 
       <h2>Next steps in this process</h2>
 
-      <p> We’ll review your request. This review period can take 30 business days. Due to the volume of requests, the wait time is longer than usual. We appreciate your patience.</p> 
+      <p> We’ll review your request. This review period usually takes around 10 business days.</p> 
       
-      {% if has_organization_feature_flag %}
+      {% if is_portfolio_user %}
       <p>During our review, we’ll verify that your requested domain meets our naming requirements.</p> 
       {% else %}
         <p>During our review, we’ll verify that:</p> 
