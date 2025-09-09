@@ -648,10 +648,20 @@ class DomainExport(BaseExport):
                 output_field=CharField(),
             ),
             "location_source": Case(
-                When(Q(sub_organization__isnull=False) & Q(sub_organization__city__isnull=False) & Q(sub_organization__state_territory__isnull=False), then=Value("sub_organization")),
-                When(Q(portfolio__isnull=False) & Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False), then=Value("portfolio")),
+                When(
+                    Q(sub_organization__isnull=False)
+                    & Q(sub_organization__city__isnull=False)
+                    & Q(sub_organization__state_territory__isnull=False),
+                    then=Value("sub_organization"),
+                ),
+                When(
+                    Q(portfolio__isnull=False)
+                    & Q(portfolio__city__isnull=False)
+                    & Q(portfolio__state_territory__isnull=False),
+                    then=Value("portfolio"),
+                ),
                 default=Value("base"),
-                output_field=CharField()
+                output_field=CharField(),
             ),
             "converted_city": Case(
                 When(location_source="sub_organization", then=F("sub_organization__city")),
@@ -660,12 +670,11 @@ class DomainExport(BaseExport):
                 output_field=CharField(),
             ),
             "converted_state_territory": Case(
-                When(location_source="sub_organization", 
+                When(
+                    location_source="sub_organization",
                     then=F("sub_organization__state_territory"),
                 ),
-                When(location_source="portfolio", 
-                then=F("portfolio__state_territory")
-                ),
+                When(location_source="portfolio", then=F("portfolio__state_territory")),
                 default=F("state_territory"),
                 output_field=CharField(),
             ),
@@ -799,7 +808,7 @@ class DomainExport(BaseExport):
 
         row = [FIELDS.get(column, "") for column in columns]
         return row
-    
+
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
