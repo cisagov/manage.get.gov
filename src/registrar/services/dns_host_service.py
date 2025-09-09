@@ -50,10 +50,7 @@ class DnsHostService:
                 logger.info(f"Successfully created zone {domain_name}")
                 zone_id = zone_data["result"]["id"]
                 nameservers = zone_data["result"].get("name_servers")
-                try:
-                    self._register_nameservers(domain_name, nameservers)
-                except:
-                    raise 
+                
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
                 raise
@@ -65,17 +62,15 @@ class DnsHostService:
                 zone_name = zone_data["result"].get("name")
                 zone_id = zone_data["result"]["id"]
                 nameservers = zone_data["result"].get("name_servers")
-                try:
-                    self._register_nameservers(domain_name, nameservers)
-                except:
-                    raise 
+            
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone: {str(e)}")
                 raise
+
         try:
             self._register_nameservers(domain_name, nameservers)
         except:
-            raise
+            logger.info("Unable to register nameservers")
 
         return account_id, zone_id
 
@@ -103,7 +98,6 @@ class DnsHostService:
                     break
                 total_count = page_accounts_data["result_info"].get("total_count")
                 is_last_page = total_count <= page * per_page
-                print(f"IS LAST PAGE {is_last_page}")
 
             except APIError as e:
                 logger.error(f"Error fetching accounts: {str(e)}")
