@@ -43,6 +43,10 @@ $-expand-less-icon: (
     color: #{$dhs-dark-gray-85};
 }
 
+.usa-nav__light {
+    background-color: color('primary-lightest');
+}
+
 .usa-header {
     .usa-logo {
         @include at-media(desktop) {
@@ -113,13 +117,10 @@ $-expand-less-icon: (
         .usa-logo__text button:hover {
             color: color('white');
         }
-        .usa-nav {
-            background-color: color('primary-lightest');
-        }
         .usa-nav__primary-item:last-child {
             margin-left: auto;
             .usa-nav-link {
-                margin-right: units(-2);
+                margin-right: -2rem;
             }
         }
         .usa-nav__primary {
@@ -145,10 +146,8 @@ $-expand-less-icon: (
             }
         }
         .usa-nav__secondary {
-            right: 1rem;
-            padding-right: $widescreen-x-padding;
             color: color('white');
-            bottom: 4.3rem;
+            position: revert;
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
@@ -164,7 +163,6 @@ $-expand-less-icon: (
                     font-weight: normal;
                 }
             }
-            transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
         > .usa-navbar {
             // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
@@ -181,6 +179,7 @@ $-expand-less-icon: (
 
 .usa-nav__secondary-links {
     line-height: line-height($theme-navigation-font-family, 2);
+    align-self: center;
 
     // Remove column gap to account for padding in secondary nav buttons
     @include at-media($theme-header-min-width) {
@@ -201,13 +200,9 @@ $-expand-less-icon: (
             vertical-align: middle;
         }
 
-        // a {
-        a, .usa-nav-link {
+        a {
             padding-top: 0.75rem;
             padding-bottom: 0.75rem;
-            &:not:hover {
-                text-decoration: none;
-            }
         }
 
         // Override USWDS defaults
@@ -221,8 +216,7 @@ $-expand-less-icon: (
 
     @include at-media-max($theme-header-min-width) {
         @include nav-list("nav");
-        // a {
-        a, .usa-nav-link {
+        a {
           @include u-padding-y(1.5);
         }
     }
@@ -255,8 +249,7 @@ $-expand-less-icon: (
     }
 
     // ...and their direct links
-    // > a {
-    > .usa-nav-link {
+    > a {
         @include at-media($theme-header-min-width) {
             line-height: line-height($theme-navigation-font-family, 2) !important;
             padding: units(2);            
@@ -267,8 +260,7 @@ $-expand-less-icon: (
     }
 
     > button,
-    > .usa-nav-link {
-    // > a {
+    > a {
             @include at-media($theme-header-min-width) {
             height: 100%;
         }
@@ -282,8 +274,7 @@ $-expand-less-icon: (
         }
     }
 
-    // a {
-    .usa-nav-link {
+    a {
         @include at-media($theme-header-min-width) {
             @include u-padding-y(1.5);
             line-height: 1.1;
@@ -312,9 +303,7 @@ $-expand-less-icon: (
                 background-color: var(--border-color);
                 color: #{$theme-color-primary};
             }
-            // a {
-            a, .usa-nav-link {
-
+            a {
                 @include u-padding-y(1.5);
             }
         }
@@ -421,18 +410,5 @@ $-expand-less-icon: (
                 }
             }
         }
-    }
-}
-
-// Extended header only displaying topmost navigation
-.usa-header__top-level-only {
-    border-bottom-width: 0;
-
-    .usa-nav {
-        background-color: white !important;
-    }
-
-    .usa-nav__primary {
-        visibility: hidden;
     }
 }
