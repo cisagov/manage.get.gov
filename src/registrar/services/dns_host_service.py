@@ -85,7 +85,7 @@ class DnsHostService:
         return record
 
     def _find_existing_account(self, account_name):
-        per_page = 10
+        per_page = 50
         page = 0
         is_last_page = False
         while (is_last_page == False):
