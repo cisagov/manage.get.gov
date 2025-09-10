@@ -54,7 +54,7 @@
         Acknowledgement </h2>          
         </legend>
     
-        <form method="post" action="{% url 'domain-renewal' domain_pk=domain.id %}"> 
+        <form method="post" action="{% url 'domain-delete' domain_pk=domain.id %}"> 
           {% csrf_token %}
           <div class="usa-checkbox">
 
@@ -74,45 +74,49 @@
 
           <input 
             class="usa-checkbox__input" 
-            id="renewal-checkbox" 
+            id="delete-domain-checkbox" 
             type="checkbox" 
             name="is_policy_acknowledged"
             value="True"
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
-            <label class="usa-checkbox__label" for="renewal-checkbox">
+            <label class="usa-checkbox__label" for="delete-domain-checkbox">
               I read and agree to the 
               <a href="https://get.gov/domains/requirements/" class="usa-link" target="_blank">
               requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
           </div>
 
-          <button
-            type="submit"
-            name="submit_button"
-            value="next"
+          <a
+            href="#toggle-delete-domain"
             class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
-          > Request deletion
-          </button>
+            aria-controls="toggle-delete-domain"
+            data-open-modal
+          >
+            Request deletion
+          </a>
+
         </form>
       </fieldset>
     </div>  <!-- End of the acknowledgement section div -->
   </div>
-          <div
-          class="usa-modal"
-          id="toggle-submit-domain-request"
-          aria-labelledby="Are you sure you want to submit a domain request?"
-          aria-describedby="Are you sure you want to submit a domain request?"
-          data-force-action
-        >
-          {% if review_form_is_complete %}
-            {% include 'includes/modal.html' with modal_heading="You are about to submit a domain request for " domain_name_modal=requested_domain__name modal_description="Once you submit this request, you won’t be able to edit it until we review it. You’ll only be able to withdraw your request." modal_button_id="domain-request-form-submit-button" modal_button_text="Submit request" %}
-          {% else %}
-            {% include 'includes/modal.html' with modal_heading="Your request form is incomplete" modal_description='This request cannot be submitted yet. Return to the request and visit the steps that are marked as "incomplete."' modal_button_text="Return to request" cancel_button_only=True %}
-          {% endif %}
-        </div>
+      {% if form.is_policy_acknowledged.value %}
+      <div
+        class="usa-modal"
+        id="toggle-submit-domain-request"
+        aria-labelledby="Are you sure you want to delete this domain?"
+        aria-describedby="Are you sure you want to delete this domain?"
+        data-force-action
+      >
+        {% include 'includes/modal.html' with
+            modal_heading="You are about to delete this domain"
+            modal_description="Once you submit this request, it cannot be undone."
+            modal_button_id="domain-deletion-submit-button"
+            modal_button_text="Confirm deletion" %}
+      </div>
+      {% endif %}
 
-        <form method="post" id="submit-domain-request-form">
+        <form method="post" id="submit-domain-deletion-form">
           {% csrf_token %}
         </form>
 {% endblock %}  {# domain_content #}
