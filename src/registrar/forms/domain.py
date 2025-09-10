@@ -760,7 +760,7 @@ class DomainRenewalForm(forms.Form):
     )
 
 class DomainDeleteForm(forms.Form):
-    """Form making sure domain renewal ack is checked"""
+    """Form making sure domain deletion ack is checked"""
 
     is_policy_acknowledged = forms.BooleanField(
         required=True,

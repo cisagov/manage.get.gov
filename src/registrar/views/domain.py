@@ -62,6 +62,7 @@ from ..forms import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+    DomainDeleteForm
 )
 
 from epplibwrapper import (
@@ -538,9 +539,7 @@ class DomainDeleteView(DomainBaseView):
     template_name = "domain_delete.html"
 
     def get_context_data(self, **kwargs):
-        """Grabs the security email information and adds security_email to the renewal form context
-        sets it to None if it uses a default email"""
-
+        
         context = super().get_context_data(**kwargs)
 
         default_emails = DefaultEmail.get_all_emails()
@@ -555,15 +554,15 @@ class DomainDeleteView(DomainBaseView):
 
         domain = get_object_or_404(Domain, id=domain_pk)
 
-        form = DomainRenewalForm(request.POST)
+        form = DomainDeleteForm(request.POST)
 
         if form.is_valid():
 
             # check for key in the post request data
+            print(request)
             if "submit_button" in request.POST:
                 try:
-                    domain.renew_domain()
-                    messages.success(request, "This domain has been renewed for one year.")
+                    messages.success(request, "This domain is being processed for deletion.")
                 except Exception:
                     messages.error(
                         request,
@@ -571,6 +570,7 @@ class DomainDeleteView(DomainBaseView):
                         "please email help@get.gov if this problem persists.",
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
+
 
         # if not valid, render the template with error messages
         # passing editable and is_editable for re-render

@@ -54,7 +54,7 @@
         Acknowledgement </h2>          
         </legend>
     
-        <form method="post" action="{% url 'domain-delete' domain_pk=domain.id %}"> 
+        <form method="post" action="{% url 'domain-delete' domain_pk=domain.id %}" id="submit-domain-deletion-form"> 
           {% csrf_token %}
           <div class="usa-checkbox">
 
@@ -85,12 +85,13 @@
               <a href="https://get.gov/domains/requirements/" class="usa-link" target="_blank">
               requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
-          </div>
+
 
           <a
             href="#toggle-delete-domain"
             class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
             aria-controls="toggle-delete-domain"
+            id="domain-deletion-submit-button"
             data-open-modal
           >
             Request deletion
@@ -116,7 +117,4 @@
       </div>
       {% endif %}
 
-        <form method="post" id="submit-domain-deletion-form">
-          {% csrf_token %}
-        </form>
 {% endblock %}  {# domain_content #}
