@@ -15,7 +15,7 @@ class DnsHostService:
     def _find_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
-    
+
     def _find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
@@ -50,7 +50,7 @@ class DnsHostService:
                 logger.info(f"Successfully created zone {domain_name}")
                 zone_id = zone_data["result"]["id"]
                 nameservers = zone_data["result"].get("name_servers")
-                
+
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
                 raise
@@ -62,7 +62,7 @@ class DnsHostService:
                 zone_name = zone_data["result"].get("name")
                 zone_id = zone_data["result"]["id"]
                 nameservers = zone_data["result"].get("name_servers")
-            
+
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone: {str(e)}")
                 raise
@@ -88,7 +88,7 @@ class DnsHostService:
         per_page = 50
         page = 0
         is_last_page = False
-        while (is_last_page == False):
+        while is_last_page == False:
             page += 1
             try:
                 page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
@@ -102,7 +102,7 @@ class DnsHostService:
             except APIError as e:
                 logger.error(f"Error fetching accounts: {str(e)}")
                 raise
-            
+
         return account_id
 
     def _find_existing_zone(self, zone_name, account_id):
@@ -117,7 +117,6 @@ class DnsHostService:
 
         return zone_id, nameservers
 
-
     def _register_nameservers(self, domain_name, nameservers):
         domain = Domain.objects.get(name=domain_name)
         # TODO: first check domain state? or status? to ensure it's in the registry?
@@ -125,6 +124,6 @@ class DnsHostService:
 
         try:
             logger.info("Attempting to register nameservers. . .")
-            domain.nameservers = nameserver_tups # calls epp service to post nameservers to registry
+            domain.nameservers = nameserver_tups  # calls epp service to post nameservers to registry
         except:
             raise

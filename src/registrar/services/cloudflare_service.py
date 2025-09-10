@@ -71,7 +71,7 @@ class CloudflareService:
         if not response["success"]:
             raise APIError(f"Failed to get accounts: message: {response['message']}, details: {response['details']}")
         logger.info(f"Retrieved page accounts: {response['data']['result']}")
-        
+
         return response["data"]
 
     def get_account_zones(self, account_id):
