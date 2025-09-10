@@ -14,7 +14,7 @@
 - Starting Location: Home page
 - Workflow: (Domain requests Table) Manage domain
 - Workflow Step: Click "Manage" -> Click "Withdraw request" -> (confirmation prompt) -> Click "Withdraw request" (inside prompt)
-- Notes: You can also do this through Django Admin by switching a domain of status "submitted" to "withdrawn", but you need to be the creator.
+- Notes: You can also do this through Django Admin by switching a domain of status "submitted" to "withdrawn", but you need to be the requester.
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/domain_request_withdrawn.txt)
 
 ### Domain Request Withdrawn Subject
@@ -25,7 +25,7 @@
 - Starting Location: Django Admin
 - Workflow: Analyst Admin
 - Workflow Step: Click "domain requests" -> Click a domain request in a status of "submitted", "In review", "rejected", or "ineligible" -> Click status dropdown -> (select "approved") -> click "Save"
-- Notes: Note that this will send an email to the creator. To test this with your own email, you need to create a domain request, then set the status to "approved". This will send you an email.
+- Notes: Note that this will send an email to the requester. To test this with your own email, you need to create a domain request, then set the status to "approved". This will send you an email.
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_approved.txt)
 
 ### Status Change Approved Subject
@@ -36,7 +36,7 @@
 - Starting Location: Django Admin
 - Workflow: Analyst Admin
 - Workflow Step: Click "domain requests" -> Click a domain request in a status of "In review", or "approved" -> Click status dropdown -> (select "rejected") -> click "Save"
-- Notes: Note that this will send an email to the creator. To test this with your own email, you need to create a domain request, then set the status to "in review" (and click save). Then, go back to the same application and set the status to "rejected". This will send you an email.
+- Notes: Note that this will send an email to the requester. To test this with your own email, you need to create a domain request, then set the status to "in review" (and click save). Then, go back to the same application and set the status to "rejected". This will send you an email.
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/status_change_rejected.txt)
 
 ### Status Change Rejected Subject
@@ -47,7 +47,7 @@
 - Starting Location: Home Page
 - Workflow: Start domain request
 - Workflow Step: Click "Start a new domain request" -> (fill out the form) -> On the last step ("Review and submit your domain request "), click "Submit your domain request"
-- Notes: Note that this will send an email to the creator.
+- Notes: Note that this will send an email to the requester.
 - [Email Content](https://github.com/cisagov/manage.get.gov/blob/main/src/registrar/templates/emails/submission_confirmation.txt)
 
 ### Submission Confirmation Subject

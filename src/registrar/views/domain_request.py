@@ -1214,7 +1214,7 @@ class DomainRequestStatusViewOnly(DetailView):
 
     Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
     - Portfolio members with view-all domain requests permission
-    - Non-portfolio users who are creators of the domain request
+    - Non-portfolio users who are requesters
     - Analysts with appropriate permissions
     """
 
