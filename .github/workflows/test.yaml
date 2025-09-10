@@ -11,7 +11,7 @@ on:
 
 jobs:
   detect-python-changes:
-    name: Detect Python changes
+    name: Detect Python and HTML changes
     runs-on: ubuntu-latest
     outputs:
       any: ${{ steps.det.outputs.any }}
