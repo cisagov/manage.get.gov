@@ -745,7 +745,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs): # noqa: C901
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
@@ -779,7 +779,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     logger.error(f"API error in view: {str(e)}")
 
                 if zone_id:
-                     # post nameservers to registry
+                    # post nameservers to registry
                     try:
                         self._register_nameservers(zone_name, nameservers)
                     except RegistrySystemError as e:

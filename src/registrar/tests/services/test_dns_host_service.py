@@ -53,11 +53,12 @@ class TestDnsHostService(SimpleTestCase):
 
                 mock_create_zone.return_value = {"result": {"id": case["zone_id"], "name": case["zone_name"]}}
 
-                mock_get_page_accounts.return_value = {"result": [{"id": case.get("found_account_id")}], "result_info": {"total_count": 18}}
+                mock_get_page_accounts.return_value = {"result": [{"id": case.get("found_account_id")}],
+                    "result_info": {"total_count": 18}}
 
                 mock_get_account_zones.return_value = {"result": [{"id": case.get("found_zone_id")}]}
 
-                returned_account_id, returned_zone_id = self.service.dns_setup(case["account_name"], case["zone_name"])
+                returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["account_name"], case["zone_name"])
                 self.assertEqual(returned_account_id, case["account_id"])
                 self.assertEqual(returned_zone_id, case["zone_id"])
 
@@ -92,7 +93,6 @@ class TestDnsHostService(SimpleTestCase):
         mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
         mock_create_account.return_value = {"result": {"id": account_id}}
         mock_create_account.side_effect = APIError("DNS setup failed to create zone")
-        
 
         with self.assertRaises(APIError) as context:
             self.service.dns_setup(account_name, zone_name)
