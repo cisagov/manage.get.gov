@@ -360,11 +360,6 @@ urlpatterns = [
         name="domain-delete"
     ),
     path(
-        "domain/<int:domain_pk>/delete",
-        views.DomainDeleteView.as_view(),
-        name="domain-delete",
-    ),
-    path(
         "domain/<int:domain_pk>/users/add",
         views.DomainAddUserView.as_view(),
         name="domain-users-add",
