@@ -32,7 +32,7 @@ from .common import (
     MockEppLib,
     GenericTestHelper,
 )
-from unittest.mock import ANY, call, patch
+from unittest.mock import ANY, call, patch, PropertyMock
 
 import boto3_mocking  # type: ignore
 import logging
@@ -532,6 +532,55 @@ class TestDomainAdminAsStaff(MockEppLib):
             ]
 
             self.assertEqual(filters, expected_filters)
+
+    def test_on_hold_columns_display(self):
+        """Test that 'on hold date' and 'days on hold' columns display correctly in Domain in /admin
+        when a domain is put on hold, and when the hold is removed.
+        We are using PropertyMock as on_hold_date and days_on_hold are both properties"""
+        fixed_on_hold_day = date(2025, 5, 29)
+
+        with patch.object(Domain, "on_hold_date", new_callable=PropertyMock) as mock_on_hold_date, patch.object(
+            Domain, "days_on_hold", new_callable=PropertyMock
+        ) as mock_days_on_hold:
+
+            mock_on_hold_date.return_value = fixed_on_hold_day
+            mock_days_on_hold.return_value = 0
+
+            # 1. Create domain in READY state
+            domain = Domain.objects.create(
+                name="put-on-hold-then-remove-hold.gov",
+                state=Domain.State.READY,
+            )
+
+            # 2. Transition domain to ON_HOLD
+            domain.place_client_hold(ignoreEPP=True)
+            domain.save()
+
+            # 3. Grab the admin display values for on hold date + days on hold
+            on_hold_date_display = self.admin.on_hold_date_display(domain)
+            days_on_hold_display = self.admin.days_on_hold_display(domain)
+
+            # 4. Check for correct date, count, and type
+            self.assertEqual(on_hold_date_display, fixed_on_hold_day)
+            self.assertEqual(days_on_hold_display, 0)
+            self.assertIsInstance(on_hold_date_display, date)
+            self.assertIsInstance(days_on_hold_display, int)
+
+            # 5. Confirm headers are correct
+            self.assertEqual(self.admin.on_hold_date_display.short_description, "On hold date")
+            self.assertEqual(self.admin.days_on_hold_display.short_description, "Days on hold")
+
+        # 6. Remove hold, domain transitions back to READY
+        domain.revert_client_hold(ignoreEPP=True)
+        domain.save()
+
+        # 7. Grab the admin display values for on hold date + days on hold
+        on_hold_date_display = self.admin.on_hold_date_display(domain)
+        days_on_hold_display = self.admin.days_on_hold_display(domain)
+
+        # 8. Since hold is removed, both should return None
+        self.assertIsNone(on_hold_date_display)
+        self.assertIsNone(days_on_hold_display)
 
 
 class TestDomainInformationInline(MockEppLib):

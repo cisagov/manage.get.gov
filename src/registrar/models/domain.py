@@ -3,11 +3,13 @@ import logging
 import ipaddress
 import re
 import time
+from auditlog.models import LogEntry
 from datetime import date, timedelta
 from typing import Optional
 from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
+from functools import cached_property
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
@@ -1657,6 +1659,45 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
+    @cached_property
+    def on_hold_date(self):
+        """
+        Grabbing date of when domain was put on hold via audit log
+
+        NOTE:
+        We are hoping to have a state table in the future, so for now
+        we are pulling from audit log as we didn't want to add extra stuff to the DB.
+
+        This approach will query the db, but we are ok doing this as there are only a few domains
+        in the hold state simultaneously
+        """
+        if self.state != Domain.State.ON_HOLD:
+            return None
+
+        last_on_hold = (
+            LogEntry.objects.filter(
+                object_pk=str(self.pk),
+                action=LogEntry.Action.UPDATE,
+                changes__contains={"state": ["ready", "on hold"]},
+                # match when the state goes from ready to on hold
+            )
+            .order_by("-timestamp")
+            .first()
+        )
+
+        if last_on_hold:
+            return last_on_hold.timestamp.date()
+
+        return None
+
+    @property
+    def days_on_hold(self):
+        """Return how many days the domain has been on hold, or None if not on hold."""
+        date_on_hold = self.on_hold_date
+        if date_on_hold:
+            return (timezone.now().date() - date_on_hold).days
+        return None
+
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD)
     def place_client_hold(self, ignoreEPP=False):
         """place a clienthold on a domain (no longer should resolve)
@@ -1670,6 +1711,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # include this ignoreEPP flag
         if not ignoreEPP:
             self._place_client_hold()
+        self.save(update_fields=["state"])
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
     def revert_client_hold(self, ignoreEPP=False):
@@ -1681,6 +1723,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if not ignoreEPP:
             self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
+        self.save(update_fields=["state"])
 
     @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
     def deletedInEpp(self):
@@ -2346,8 +2389,12 @@ class Domain(TimeStampedModel, DomainHelper):
         return self._get_or_create_public_contact(mapped_object)
 
     def _invalidate_cache(self):
-        """Remove cache data when updates are made."""
+        """Remove cache data when updates are made.
+        NOTE: The "on hold date" property is a one off addition - we want to
+        make sure that when there is state change we delete the on hold date as well."""
         self._cache = {}
+        logging.info(f"Delete hold date on {self.name}")
+        delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
