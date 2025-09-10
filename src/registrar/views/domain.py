@@ -745,7 +745,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def post(self, request, *args, **kwargs): # noqa: C901
+    def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
