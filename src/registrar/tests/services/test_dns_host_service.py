@@ -54,7 +54,7 @@ class TestDnsHostService(SimpleTestCase):
                 mock_create_zone.return_value = {"result": {"id": case["zone_id"], "name": case["zone_name"]}}
 
                 mock_get_page_accounts.return_value = {"result": [{"id": case.get("found_account_id")}],
-                                            "result_info": {"total_count": 18}}
+                                                       "result_info": {"total_count": 18}}
 
                 mock_get_account_zones.return_value = {"result": [{"id": case.get("found_zone_id")}]}
 
