@@ -1,8 +1,8 @@
 import logging
 
-from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import APIError
 from registrar.models.domain import Domain
+from registrar.services.cloudflare_service import CloudflareService
+from registrar.utility.errors import APIError, RegistrySystemError
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,8 @@ class DnsHostService:
         return next((item.get("name_servers") for item in items if item.get("id") == zone_id), None)
 
     def dns_setup(self, account_name, domain_name):
-        """Creates an account and zone in the dns host vendor tenant. Registers nameservers and creates NS records after zone creation"""
+        """Creates an account and zone in the dns host vendor tenant. Registers nameservers and creates NS records
+        after zone creation"""
 
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)
@@ -67,12 +68,7 @@ class DnsHostService:
                 logger.error(f"DNS setup failed to create zone: {str(e)}")
                 raise
 
-        try:
-            self._register_nameservers(domain_name, nameservers)
-        except:
-            logger.info("Unable to register nameservers")
-
-        return account_id, zone_id
+        return account_id, zone_id, nameservers
 
     def create_record(self, zone_id, record_data):
         """Calls create method of vendor serivce to create a DNS record"""
@@ -88,7 +84,7 @@ class DnsHostService:
         per_page = 50
         page = 0
         is_last_page = False
-        while is_last_page == False:
+        while is_last_page is False:
             page += 1
             try:
                 page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
@@ -125,5 +121,5 @@ class DnsHostService:
         try:
             logger.info("Attempting to register nameservers. . .")
             domain.nameservers = nameserver_tups  # calls epp service to post nameservers to registry
-        except:
+        except RegistrySystemError:
             raise

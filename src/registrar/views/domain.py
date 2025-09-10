@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -774,11 +774,17 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 zone_id = ""
 
                 try:
-                    _, zone_id = self.dns_host_service.dns_setup(account_name, zone_name)
+                    _, zone_id, nameservers = self.dns_host_service.dns_setup(account_name, zone_name)
                 except APIError as e:
                     logger.error(f"API error in view: {str(e)}")
 
                 if zone_id:
+                     # post nameservers to registry
+                    try:
+                        self._register_nameservers(zone_name, nameservers)
+                    except RegistrySystemError as e:
+                        logger.error(f"Unable to register nameservers {e}")
+
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
