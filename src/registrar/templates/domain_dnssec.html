@@ -79,7 +79,10 @@
     aria-labelledby="Are you sure you want to continue?"
     aria-describedby="Your DNSSEC records will be deleted from the registry."
   >
-      {% include 'includes/modal.html' with modal_heading="Are you sure you want to disable DNSSEC?" modal_button_id="disable-dnssec-button" modal_button_text="Confirm" modal_button_class="usa-button--secondary" %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to disable DNSSEC?"
+       modal_button_id="disable-dnssec-button" 
+       modal_button_text="Confirm" 
+       modal_button_class="usa-button--secondary" %}
   </div>
   <form method="post" id="disable-dnssec-form">
     {% csrf_token %}

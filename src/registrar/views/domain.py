@@ -539,7 +539,7 @@ class DomainDeleteView(DomainBaseView):
     template_name = "domain_delete.html"
 
     def get_context_data(self, **kwargs):
-        
+
         context = super().get_context_data(**kwargs)
 
         default_emails = DefaultEmail.get_all_emails()
@@ -555,11 +555,11 @@ class DomainDeleteView(DomainBaseView):
         domain = get_object_or_404(Domain, id=domain_pk)
 
         form = DomainDeleteForm(request.POST)
-
+        show_modal = False
         if form.is_valid():
 
             # check for key in the post request data
-            print(request)
+            show_modal = True
             if "submit_button" in request.POST:
                 try:
                     messages.success(request, "This domain is being processed for deletion.")
@@ -569,7 +569,7 @@ class DomainDeleteView(DomainBaseView):
                         "This domain has not been renewed for one year, "
                         "please email help@get.gov if this problem persists.",
                     )
-            return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
+            # return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
 
         # if not valid, render the template with error messages
@@ -582,6 +582,7 @@ class DomainDeleteView(DomainBaseView):
                 "form": form,
                 "is_editable": True,
                 "is_domain_manager": True,
+                "show_modal" : show_modal
             },
         )
 
