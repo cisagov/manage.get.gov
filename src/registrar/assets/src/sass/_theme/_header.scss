@@ -314,6 +314,7 @@ $-expand-less-icon: (
         text-decoration: none;
         width: 100%;
         border-radius: 0;
+        outline-offset: 0;
 
         @include at-media-max($theme-header-min-width) {
             justify-content: flex-start;
@@ -459,13 +460,15 @@ $-expand-less-icon: (
         font-size: 1rem;
         font-weight: font-weight("normal");
         justify-content: flex-start;
+        border-radius: 0;
+        outline-offset: 0;
         padding: 0 0;
         margin-right: 0;
         width: 100%;
         a {
             margin-right: auto;
+            text-align: left;
+            width: 100%;
         }
-
-        
     }
 }
