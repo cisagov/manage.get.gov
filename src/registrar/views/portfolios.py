@@ -1210,7 +1210,6 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
         user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
             "portfolio"
         )
-        print("user portfolio permissions: ", user_portfolio_permissions)
         context["user_portfolio_permissions"] = user_portfolio_permissions
         return context
 
@@ -1272,12 +1271,15 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         """
         return JsonResponse({"error": "You cannot access this page directly"}, status=404)
 
-    def post(self, request):
+    def post(self, request, portolio_pk=None):
         """
         Handles updating active portfolio in session.
         """
+
         self.form = self.get_form()
-        portfolio_name = self.form["set_session_portfolio_button"].value()
+        portfolio_button = self.form["set_session_portfolio_button"]
+        # portfolio_name = portfolio_button.value() or portfolio_button.getAttribute("value")
+        portfolio_name = portfolio_button.value()
         portfolio = Portfolio.objects.get(organization_name=portfolio_name)
 
         # Verify user has permissions to access selected portfolio

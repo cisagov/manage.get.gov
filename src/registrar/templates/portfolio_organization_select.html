@@ -2,6 +2,7 @@
     id="set-session-portfolio-form-{{ forloop.counter }}" 
     method="post"
     action="{% url 'set-session-portfolio' %}"
+    name="{{portfolio.organization_name}}"
 >
     {% csrf_token %}
     {% if type == "organizations_page" %}
@@ -21,6 +22,14 @@
             </div>
     </button>
     {% elif type == "organizations_nav_menu" %}
+        <!-- <a
+            class="usa-nav-link"
+            id="set-session-portfolio-link-{{ forloop.counter }}"
+            value="{{portfolio.organization_name}}"
+            name="set_session_portfolio_button"
+        >
+            {{portfolio.organization_name}}
+        </a> -->
         <button
         type="submit"
         class="usa-button usa-nav-link organization-button"

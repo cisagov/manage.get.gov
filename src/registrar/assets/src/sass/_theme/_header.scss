@@ -163,6 +163,11 @@ $-expand-less-icon: (
                 .usa-nav-link:active {
                     font-weight: normal;
                 }
+                button {
+                    padding: 0 0;
+                    margin-right: 0;
+                    width: 100%;
+                }
             }
             transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
@@ -424,5 +429,20 @@ $-expand-less-icon: (
 
     .usa-nav__primary {
         visibility: hidden;
+    }
+}
+
+#organizations-submenu {
+    button,
+    button:hover {
+        background-color: inherit;
+    }
+
+    button {
+        font-size: 1rem;
+        justify-content: flex-start;
+        &:hover {
+            text-decoration: underline;
+        }
     }
 }
