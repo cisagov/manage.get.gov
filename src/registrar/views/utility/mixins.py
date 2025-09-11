@@ -72,12 +72,12 @@ class OrderableFieldsMixin:
         Or for fields with multiple order_fields:
 
         ```
-        def get_sortable_creator(self, obj):
-            return obj.creator
+        def get_sortable_requester(self, obj):
+            return obj.requester
         # Allows column order sorting
-        get_sortable_creator.admin_order_field = ["creator__first_name", "creator__last_name"]
+        get_sortable_requester.admin_order_field = ["requester__first_name", "requester__last_name"]
         # Sets column's header
-        get_sortable_creator.short_description = "creator"
+        get_sortable_requester.short_description = "requester"
         ```
 
         Parameters:
@@ -86,7 +86,7 @@ class OrderableFieldsMixin:
         field: A string representing the name of the attribute that
         the dynamic method will fetch from the model instance.
         sort_field: A string or list of strings representing the
-        field(s) to sort by (ex: "name" or "creator")
+        field(s) to sort by (ex: "name" or "requester")
 
         Returns:
         method: The dynamically created method.
@@ -105,8 +105,8 @@ class OrderableFieldsMixin:
 
             Returns (example):
             ```
-            def get_creator(self, obj):
-                return obj.creator
+            def get_requester(self, obj):
+                return obj.requester
             ```
             """
             attr = getattr(obj, field)
@@ -125,7 +125,7 @@ class OrderableFieldsMixin:
                 order_field_string = f"{field}__{sort_field_item}"
                 sort_list.append(order_field_string)
             # If its a list, return an array of fields to sort on.
-            # For instance, ["creator__first_name", "creator__last_name"]
+            # For instance, ["requester__first_name", "requester__last_name"]
             method.admin_order_field = sort_list
         else:
             # If its not a list, just return a string

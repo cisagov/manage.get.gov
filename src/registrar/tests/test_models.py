@@ -59,7 +59,7 @@ class TestDomainInformation(TestCase):
         user, _ = User.objects.get_or_create()
         investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
         domain_request = DomainRequest.objects.create(
-            creator=user, requested_domain=draft_domain, notes="test notes", investigator=investigator
+            requester=user, requested_domain=draft_domain, notes="test notes", investigator=investigator
         )
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
@@ -75,7 +75,7 @@ class TestDomainInformation(TestCase):
             # Test that both objects are what we expect
             current_domain_information = domain_information.get().__dict__
             expected_domain_information = DomainInformation(
-                creator=user,
+                requester=user,
                 domain=domain,
                 notes="test notes",
                 domain_request=domain_request,
@@ -142,10 +142,10 @@ class TestPortfolioInvitations(TestCase):
     @less_console_noise_decorator
     def setUp(self):
         self.email = "mayor@igorville.gov"
-        self.email2 = "creator@igorville.gov"
+        self.email2 = "requester@igorville.gov"
         self.user, _ = User.objects.get_or_create(email=self.email)
-        self.user2, _ = User.objects.get_or_create(email=self.email2, username="creator")
-        self.portfolio, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Hotel California")
+        self.user2, _ = User.objects.get_or_create(email=self.email2, username="requester")
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user2, organization_name="Hotel California")
         self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
         self.portfolio_role_admin = UserPortfolioRoleChoices.ORGANIZATION_ADMIN
         self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
@@ -211,7 +211,7 @@ class TestPortfolioInvitations(TestCase):
     def test_retrieve_user_multiple_invitations(self):
         """Retrieve user portfolio invitations when there are multiple and multiple_options flag true."""
         # create a 2nd portfolio and a 2nd portfolio invitation to self.user
-        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Take It Easy")
+        portfolio2, _ = Portfolio.objects.get_or_create(requester=self.user2, organization_name="Take It Easy")
         PortfolioInvitation.objects.get_or_create(
             email=self.email,
             portfolio=portfolio2,
@@ -235,7 +235,7 @@ class TestPortfolioInvitations(TestCase):
         """Attempt to retrieve user portfolio invitations when there are multiple
         but multiple_portfolios flag set to False"""
         # create a 2nd portfolio and a 2nd portfolio invitation to self.user
-        portfolio2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Take It Easy")
+        portfolio2, _ = Portfolio.objects.get_or_create(requester=self.user2, organization_name="Take It Easy")
         PortfolioInvitation.objects.get_or_create(
             email=self.email,
             portfolio=portfolio2,
@@ -261,18 +261,20 @@ class TestPortfolioInvitations(TestCase):
         # Arrange
         # domain_in_portfolio should not be included in the count
         domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio, portfolio=self.portfolio)
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=domain_in_portfolio, portfolio=self.portfolio
+        )
         # domain_in_portfolio_and_invited should be included in the count
         domain_in_portfolio_and_invited, _ = Domain.objects.get_or_create(
             name="domain_in_portfolio_and_invited.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_and_invited, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_and_invited, portfolio=self.portfolio
         )
         DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_and_invited)
         # domain_invited should not be included in the count
         domain_invited, _ = Domain.objects.get_or_create(name="domain_invited.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_invited)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_invited)
         DomainInvitation.objects.get_or_create(email=self.email, domain=domain_invited)
 
         # Assert
@@ -307,7 +309,7 @@ class TestPortfolioInvitations(TestCase):
         )
 
         # Test a second portfolio permission object (should fail)
-        second_portfolio = Portfolio.objects.create(organization_name="Second Portfolio", creator=self.superuser)
+        second_portfolio = Portfolio.objects.create(organization_name="Second Portfolio", requester=self.superuser)
         second_permission = UserPortfolioPermission(
             user=self.superuser, portfolio=second_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -317,7 +319,7 @@ class TestPortfolioInvitations(TestCase):
         self.assertIn("users cannot be assigned to multiple portfolios", str(err.exception))
 
         # Test that adding a new portfolio invitation also fails
-        third_portfolio = Portfolio.objects.create(organization_name="Third Portfolio", creator=self.superuser)
+        third_portfolio = Portfolio.objects.create(organization_name="Third Portfolio", requester=self.superuser)
         invitation = PortfolioInvitation(
             email=self.superuser.email, portfolio=third_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -336,7 +338,7 @@ class TestPortfolioInvitations(TestCase):
         )
 
         # Second portfolio permission should succeed
-        second_portfolio = Portfolio.objects.create(organization_name="Second Portfolio", creator=self.superuser)
+        second_portfolio = Portfolio.objects.create(organization_name="Second Portfolio", requester=self.superuser)
         second_permission = UserPortfolioPermission(
             user=self.superuser, portfolio=second_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -348,7 +350,7 @@ class TestPortfolioInvitations(TestCase):
         self.assertEqual(user_permissions.count(), 2)
 
         # Portfolio invitation should also succeed
-        third_portfolio = Portfolio.objects.create(organization_name="Third Portfolio", creator=self.superuser)
+        third_portfolio = Portfolio.objects.create(organization_name="Third Portfolio", requester=self.superuser)
         invitation = PortfolioInvitation(
             email=self.superuser.email, portfolio=third_portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -455,7 +457,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_1.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
         )
         invite_1, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_in_portfolio_1)
 
@@ -463,14 +465,14 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
         )
         invite_2, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_in_portfolio_2)
 
         domain_not_in_portfolio, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio)
         invite_3, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_not_in_portfolio)
 
         invitation_of_email_with_no_user, _ = PortfolioInvitation.objects.get_or_create(
@@ -508,7 +510,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_1.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
         )
         invite_1, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_1)
 
@@ -516,7 +518,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
         )
         invite_2, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_2)
 
@@ -524,7 +526,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_3.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
@@ -534,7 +536,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
@@ -543,13 +545,13 @@ class TestPortfolioInvitations(TestCase):
         domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio_1)
         invite_3, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_not_in_portfolio_1)
 
         domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio_2)
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
         )
@@ -624,7 +626,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_1.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
         )
         invite_1, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_1)
 
@@ -632,7 +634,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
         )
         invite_2, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_in_portfolio_2)
 
@@ -640,7 +642,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_3.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
@@ -650,7 +652,7 @@ class TestPortfolioInvitations(TestCase):
             name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
@@ -659,13 +661,13 @@ class TestPortfolioInvitations(TestCase):
         domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio_1)
         invite_3, _ = DomainInvitation.objects.get_or_create(email=self.email, domain=domain_not_in_portfolio_1)
 
         domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio_2)
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
         )
@@ -737,7 +739,7 @@ class TestUserPortfolioPermission(TestCase):
     @less_console_noise_decorator
     def setUp(self):
         self.superuser = create_superuser()
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
         self.user, _ = User.objects.get_or_create(email="mayor@igorville.gov")
         self.user2, _ = User.objects.get_or_create(email="user2@igorville.gov", username="user2")
         super().setUp()
@@ -759,8 +761,8 @@ class TestUserPortfolioPermission(TestCase):
     def test_clean_on_multiple_portfolios_when_flag_active(self):
         """Ensures that a user can create multiple portfolio permission objects when the flag is enabled"""
         # Create an instance of User with a portfolio but no roles or additional permissions
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
-        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Motel California")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -780,11 +782,11 @@ class TestUserPortfolioPermission(TestCase):
     def test_clean_on_creates_multiple_portfolios(self):
         """Ensures that a user cannot create multiple portfolio permission objects when the flag is disabled"""
         # Create an instance of User with a single portfolio
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Motel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Motel California")
         portfolio_permission_2 = UserPortfolioPermission(
             portfolio=portfolio_2, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -808,11 +810,11 @@ class TestUserPortfolioPermission(TestCase):
     def test_multiple_portfolio_reassignment(self):
         """Ensures that a user cannot be assigned to multiple portfolios based on reassignment"""
         # Create an instance of two users with separate portfolios
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        portfolio_2, _ = Portfolio.objects.get_or_create(creator=self.user2, organization_name="Motel California")
+        portfolio_2, _ = Portfolio.objects.get_or_create(requester=self.user2, organization_name="Motel California")
         portfolio_permission_2 = UserPortfolioPermission(
             portfolio=portfolio_2, user=self.user2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -843,27 +845,27 @@ class TestUserPortfolioPermission(TestCase):
         # one which is in the portfolio and not managed by the user,
         # and one which is managed by the user and not in the portfolio.
         # Arrange
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         test_user = create_test_user()
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=test_user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         # domain_in_portfolio should not be included in the count
         domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain_in_portfolio.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_in_portfolio, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_in_portfolio, portfolio=portfolio)
         # domain_in_portfolio_and_managed should be included in the count
         domain_in_portfolio_and_managed, _ = Domain.objects.get_or_create(
             name="domain_in_portfolio_and_managed.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_and_managed, portfolio=portfolio
+            requester=self.user, domain=domain_in_portfolio_and_managed, portfolio=portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=test_user, domain=domain_in_portfolio_and_managed, role=UserDomainRole.Roles.MANAGER
         )
         # domain_managed should not be included in the count
         domain_managed, _ = Domain.objects.get_or_create(name="domain_managed.gov", state=Domain.State.READY)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_managed)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_managed)
         UserDomainRole.objects.get_or_create(user=test_user, domain=domain_managed, role=UserDomainRole.Roles.MANAGER)
 
         # Assert
@@ -943,7 +945,7 @@ class TestUserPortfolioPermission(TestCase):
         """Test validation of multiple_portfolios flag.
         Scenario 2: Flag is inactive, and the user has existing portfolio invitation to another portfolio"""
 
-        portfolio2 = Portfolio.objects.create(creator=self.superuser, organization_name="Joey go away")
+        portfolio2 = Portfolio.objects.create(requester=self.superuser, organization_name="Joey go away")
 
         PortfolioInvitation.objects.create(
             email=self.superuser.email, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], portfolio=portfolio2
@@ -995,7 +997,7 @@ class TestUserPortfolioPermission(TestCase):
         """Test validation of multiple_portfolios flag.
         Scenario 4: Flag is active, and the user has existing portfolio invitation to another portfolio"""
 
-        portfolio2 = Portfolio.objects.create(creator=self.superuser, organization_name="Joey go away")
+        portfolio2 = Portfolio.objects.create(requester=self.superuser, organization_name="Joey go away")
 
         PortfolioInvitation.objects.create(
             email=self.superuser.email, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], portfolio=portfolio2
@@ -1051,7 +1053,7 @@ class TestUserPortfolioPermission(TestCase):
             name="domain_in_portfolio_1.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
         )
         invite_1, _ = DomainInvitation.objects.get_or_create(email=self.user.email, domain=domain_in_portfolio_1)
 
@@ -1059,7 +1061,7 @@ class TestUserPortfolioPermission(TestCase):
             name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_2, portfolio=self.portfolio
         )
         invite_2, _ = DomainInvitation.objects.get_or_create(email=self.user.email, domain=domain_in_portfolio_2)
 
@@ -1067,7 +1069,7 @@ class TestUserPortfolioPermission(TestCase):
             name="domain_in_portfolio_3.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_3, portfolio=self.portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_in_portfolio_3, role=UserDomainRole.Roles.MANAGER
@@ -1077,7 +1079,7 @@ class TestUserPortfolioPermission(TestCase):
             name="domain_in_portfolio_and_invited_4.gov", state=Domain.State.READY
         )
         DomainInformation.objects.get_or_create(
-            creator=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
+            requester=self.user, domain=domain_in_portfolio_4, portfolio=self.portfolio
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_in_portfolio_4, role=UserDomainRole.Roles.MANAGER
@@ -1086,13 +1088,13 @@ class TestUserPortfolioPermission(TestCase):
         domain_not_in_portfolio_1, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_1)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio_1)
         invite_3, _ = DomainInvitation.objects.get_or_create(email=self.user.email, domain=domain_not_in_portfolio_1)
 
         domain_not_in_portfolio_2, _ = Domain.objects.get_or_create(
             name="domain_not_in_portfolio_2.gov", state=Domain.State.READY
         )
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_not_in_portfolio_2)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_not_in_portfolio_2)
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=domain_not_in_portfolio_2, role=UserDomainRole.Roles.MANAGER
         )
@@ -1176,7 +1178,7 @@ class TestUser(TestCase):
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.user, _ = User.objects.get_or_create(email=self.email)
         self.factory = RequestFactory()
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.user)
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.user)
 
     def tearDown(self):
         super().tearDown()
@@ -1335,25 +1337,25 @@ class TestUser(TestCase):
         # with one active request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
-            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
+            requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
         )
         self.assertEquals(self.user.get_active_requests_count(), 1)
         # with two active requests, expect this to return 2
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville2.gov")
         DomainRequest.objects.create(
-            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.IN_REVIEW
+            requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
         self.assertEquals(self.user.get_active_requests_count(), 2)
         # with three active requests, expect this to return 3
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville3.gov")
         DomainRequest.objects.create(
-            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.ACTION_NEEDED
+            requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.ACTION_NEEDED
         )
         self.assertEquals(self.user.get_active_requests_count(), 3)
         # with three active requests, expect this to return 3 (STARTED is not considered active)
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville4.gov")
         DomainRequest.objects.create(
-            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.STARTED
+            requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.STARTED
         )
         self.assertEquals(self.user.get_active_requests_count(), 3)
 
@@ -1365,7 +1367,7 @@ class TestUser(TestCase):
         # with one rejected request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
-            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.REJECTED
+            requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.REJECTED
         )
         self.assertEquals(self.user.get_rejected_requests_count(), 1)
 
@@ -1377,7 +1379,7 @@ class TestUser(TestCase):
         # with one ineligible request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
-            creator=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.INELIGIBLE
+            requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.INELIGIBLE
         )
         self.assertEquals(self.user.get_ineligible_requests_count(), 1)
 
@@ -1403,7 +1405,7 @@ class TestUser(TestCase):
         Note: This tests _get_portfolio_permissions as a side effect
         """
 
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
 
         user_can_view_all_domains = self.user.has_any_domains_portfolio_permission(portfolio)
         user_can_view_all_requests = self.user.has_any_requests_portfolio_permission(portfolio)
@@ -1449,7 +1451,7 @@ class TestUser(TestCase):
     @less_console_noise_decorator
     def test_user_with_portfolio_but_no_roles(self):
         # Create an instance of User with a portfolio but no roles or additional permissions
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         # Try to remove the role
@@ -1467,7 +1469,7 @@ class TestUser(TestCase):
 
     @less_console_noise_decorator
     def test_user_with_portfolio_roles_but_no_portfolio(self):
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -1486,7 +1488,7 @@ class TestUser(TestCase):
 
     @less_console_noise_decorator
     def test_user_with_admin_portfolio_role(self):
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Hotel California")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
         self.assertFalse(self.user.is_portfolio_admin(portfolio))
         UserPortfolioPermission.objects.get_or_create(
             portfolio=portfolio, user=self.user, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -1515,25 +1517,25 @@ class TestUser(TestCase):
 
         # Create 3 active requests + 1 that isn't
         DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=domain_1,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             portfolio=self.portfolio,
         )
         DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=domain_2,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
             portfolio=self.portfolio,
         )
         DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=domain_3,
             status=DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             portfolio=self.portfolio,
         )
         DomainRequest.objects.create(  # This one should not be counted
-            creator=self.user,
+            requester=self.user,
             requested_domain=domain_4,
             status=DomainRequest.DomainRequestStatus.REJECTED,
             portfolio=self.portfolio,
@@ -1593,7 +1595,7 @@ class TestContact(TestCase):
         )
 
         self.contact_as_so, _ = Contact.objects.get_or_create(email="newguy@igorville.gov")
-        self.domain_request = DomainRequest.objects.create(creator=self.user, senior_official=self.contact_as_so)
+        self.domain_request = DomainRequest.objects.create(requester=self.user, senior_official=self.contact_as_so)
 
     def tearDown(self):
         super().tearDown()
@@ -2028,7 +2030,7 @@ class TestDomainRequestIncomplete(TestCase):
             has_anything_else_text=True,
             anything_else="Anything else",
             is_policy_acknowledged=True,
-            creator=self.user,
+            requester=self.user,
             city="fake",
         )
         self.domain_request.other_contacts.add(other)
@@ -2432,7 +2434,7 @@ class TestPortfolio(TestCase):
         Otherwise, this field should be empty."""
         # Start out as PR, then change the field
         portfolio = Portfolio.objects.create(
-            creator=self.user,
+            requester=self.user,
             organization_name="Test Portfolio",
             state_territory=DomainRequest.StateTerritoryChoices.PUERTO_RICO,
             urbanization="test",
@@ -2452,7 +2454,7 @@ class TestPortfolio(TestCase):
         """Ensures that you can populate the urbanization field when conditions are right"""
         # Create a portfolio that cannot have this field
         portfolio = Portfolio.objects.create(
-            creator=self.user,
+            requester=self.user,
             organization_name="Test Portfolio",
             state_territory=DomainRequest.StateTerritoryChoices.ALABAMA,
             urbanization="test",
@@ -2473,7 +2475,7 @@ class TestPortfolio(TestCase):
     def test_organization_name_updates_for_federal_agency(self):
         # Create a Portfolio instance with a federal agency
         portfolio = Portfolio(
-            creator=self.user,
+            requester=self.user,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.federal_agency,
         )
@@ -2486,7 +2488,7 @@ class TestPortfolio(TestCase):
     def test_organization_name_does_not_update_for_non_federal_agency(self):
         # Create a Portfolio instance with a non-federal agency
         portfolio = Portfolio(
-            creator=self.user,
+            requester=self.user,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.non_federal_agency,
         )

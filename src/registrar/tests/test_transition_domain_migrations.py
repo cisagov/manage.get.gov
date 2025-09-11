@@ -94,7 +94,7 @@ class TestProcessedMigrations(TestCase):
                 expiration_date=datetime.date(2000, 1, 1),
             )
             unchanged_domain_information, _ = DomainInformation.objects.get_or_create(
-                domain=unchanged_domain, organization_name="test org name", creator=self.user
+                domain=unchanged_domain, organization_name="test org name", requester=self.user
             )
             self.run_load_domains()
 
@@ -157,7 +157,7 @@ class TestProcessedMigrations(TestCase):
                 expiration_date=datetime.date(2000, 1, 1),
             )
             unchanged_domain_information, _ = DomainInformation.objects.get_or_create(
-                domain=unchanged_domain, organization_name="test org name", creator=self.user
+                domain=unchanged_domain, organization_name="test org name", requester=self.user
             )
             self.run_load_domains()
 
@@ -396,12 +396,12 @@ class TestOrganizationMigration(TestCase):
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
 
-            expected_creator = User.objects.filter(username="System").get()
+            expected_requester = User.objects.filter(username="System").get()
             expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
             ).get()
             expected_domain_information = DomainInformation(
-                creator=expected_creator,
+                requester=expected_requester,
                 generic_org_type="federal",
                 federal_agency=self.federal_agency,
                 federal_type="executive",
@@ -451,12 +451,12 @@ class TestOrganizationMigration(TestCase):
             _domain = Domain.objects.filter(name="fakewebsite2.gov").get()
             domain_information = DomainInformation.objects.filter(domain=_domain).get()
 
-            expected_creator = User.objects.filter(username="System").get()
+            expected_requester = User.objects.filter(username="System").get()
             expected_so = Contact.objects.filter(
                 first_name="Seline", middle_name="testmiddle2", last_name="Tower"
             ).get()
             expected_domain_information = DomainInformation(
-                creator=expected_creator,
+                requester=expected_requester,
                 generic_org_type="federal",
                 federal_agency=self.federal_agency,
                 federal_type="executive",

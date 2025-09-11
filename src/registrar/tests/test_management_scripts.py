@@ -565,7 +565,7 @@ class TestPatchAgencyInfo(TestCase):
     def setUp(self):
         self.user, _ = User.objects.get_or_create(username="testuser")
         self.domain, _ = Domain.objects.get_or_create(name="testdomain.gov")
-        self.domain_info, _ = DomainInformation.objects.get_or_create(domain=self.domain, creator=self.user)
+        self.domain_info, _ = DomainInformation.objects.get_or_create(domain=self.domain, requester=self.user)
         self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="test agency")
         self.transition_domain, _ = TransitionDomain.objects.get_or_create(
             domain_name="testdomain.gov", federal_agency=self.federal_agency
@@ -1535,7 +1535,7 @@ class TestCreateFederalPortfolio(TestCase):
         federal_agency_2 = FederalAgency.objects.create(agency="Sugarcane", federal_type=BranchChoices.EXECUTIVE)
 
         # Test records with portfolios and no org names
-        portfolio = Portfolio.objects.create(organization_name="Sugarcane", creator=self.user)
+        portfolio = Portfolio.objects.create(organization_name="Sugarcane", requester=self.user)
         # Create a domain request with matching org name
         matching_request = completed_domain_request(
             name="matching.gov",
@@ -1618,7 +1618,7 @@ class TestCreateFederalPortfolio(TestCase):
         portfolio = Portfolio.objects.get(federal_agency=self.federal_agency)
         self.assertEqual(portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
-        self.assertEqual(portfolio.creator, User.get_default_user())
+        self.assertEqual(portfolio.requester, User.get_default_user())
         self.assertEqual(portfolio.notes, "Auto-generated record")
 
         # Test the suborgs
@@ -1644,17 +1644,17 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(portfolios.count(), 2)
 
         # Test that all created portfolios have the correct values
-        org_names, org_types, creators, notes = [], [], [], []
+        org_names, org_types, requesters, notes = [], [], [], []
         for portfolio in portfolios:
             org_names.append(portfolio.organization_name)
             org_types.append(portfolio.organization_type)
-            creators.append(portfolio.creator)
+            requesters.append(portfolio.requester)
             notes.append(portfolio.notes)
 
-        # Test organization_name, organization_type, creator, and notes (in that order)
+        # Test organization_name, organization_type, requester, and notes (in that order)
         self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
         self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
-        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([requester == User.get_default_user() for requester in requesters]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
     @less_console_noise_decorator
@@ -1672,17 +1672,17 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(portfolios.count(), 2)
 
         # Test that all created portfolios have the correct values
-        org_names, org_types, creators, notes = [], [], [], []
+        org_names, org_types, requesters, notes = [], [], [], []
         for portfolio in portfolios:
             org_names.append(portfolio.organization_name)
             org_types.append(portfolio.organization_type)
-            creators.append(portfolio.creator)
+            requesters.append(portfolio.requester)
             notes.append(portfolio.notes)
 
-        # Test organization_name, organization_type, creator, and notes (in that order)
+        # Test organization_name, organization_type, requester, and notes (in that order)
         self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
         self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
-        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([requester == User.get_default_user() for requester in requesters]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
     @less_console_noise_decorator
@@ -1732,18 +1732,18 @@ class TestCreateFederalPortfolio(TestCase):
         self.assertEqual(portfolios.count(), 3)
 
         # Test that all created portfolios have the correct values
-        org_names, org_types, creators, notes, senior_officials = [], [], [], [], []
+        org_names, org_types, requesters, notes, senior_officials = [], [], [], [], []
         for portfolio in portfolios:
             org_names.append(portfolio.organization_name)
             org_types.append(portfolio.organization_type)
-            creators.append(portfolio.creator)
+            requesters.append(portfolio.requester)
             notes.append(portfolio.notes)
             senior_officials.append(portfolio.senior_official)
 
-        # Test organization_name, organization_type, creator, and notes (in that order)
+        # Test organization_name, organization_type, requester, and notes (in that order)
         self.assertTrue(all([org_name in expected_portfolio_names for org_name in org_names]))
         self.assertTrue(all([org_type == federal_choice for org_type in org_types]))
-        self.assertTrue(all([creator == User.get_default_user() for creator in creators]))
+        self.assertTrue(all([requester == User.get_default_user() for requester in requesters]))
         self.assertTrue(all([note == "Auto-generated record" for note in notes]))
 
         # Test senior officials were assigned correctly
@@ -1848,7 +1848,7 @@ class TestCreateFederalPortfolio(TestCase):
             federal_agency=self.federal_agency,
             organization_name="Test Federal Agency",
             organization_type=DomainRequest.OrganizationChoices.CITY,
-            creator=self.user,
+            requester=self.user,
             notes="Old notes",
         )
 
@@ -1859,11 +1859,11 @@ class TestCreateFederalPortfolio(TestCase):
         # if this case fails, it means we are overriding data (and not simply just other weirdness)
         self.assertNotEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
-        # Notes and creator should be untouched
+        # Notes and requester should be untouched
         self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
-        self.assertEqual(existing_portfolio.creator, self.user)
+        self.assertEqual(existing_portfolio.requester, self.user)
 
     @less_console_noise_decorator
     def test_add_managers_from_domains(self):
@@ -1938,7 +1938,7 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Create a pre-existing portfolio
         self.portfolio = Portfolio.objects.create(
-            organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user
+            organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, requester=self.user
         )
 
         # Manually add the manager to the portfolio
@@ -1961,7 +1961,7 @@ class TestCreateFederalPortfolio(TestCase):
 
         # Create a pre-existing portfolio
         self.portfolio = Portfolio.objects.create(
-            organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, creator=self.user
+            organization_name=self.federal_agency.agency, federal_agency=self.federal_agency, requester=self.user
         )
 
         domain_request_1 = completed_domain_request(
@@ -2014,7 +2014,7 @@ class TestCreateFederalPortfolio(TestCase):
             federal_agency=self.federal_agency,
             organization_name="Test Federal Agency",
             organization_type=DomainRequest.OrganizationChoices.CITY,
-            creator=self.user,
+            requester=self.user,
             notes="Old notes",
         )
 
@@ -2050,11 +2050,11 @@ class TestCreateFederalPortfolio(TestCase):
         # if this case fails, it means we are overriding data (and not simply just other weirdness)
         self.assertNotEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
-        # Notes and creator should be untouched
+        # Notes and requester should be untouched
         self.assertEqual(existing_portfolio.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(existing_portfolio.organization_name, self.federal_agency.agency)
         self.assertEqual(existing_portfolio.notes, "Old notes")
-        self.assertEqual(existing_portfolio.creator, self.user)
+        self.assertEqual(existing_portfolio.requester, self.user)
 
         # Verify suborganization wasn't modified
         self.assertEqual(existing_suborg.city, "Old City")
@@ -2408,21 +2408,21 @@ class TestRemovePortfolios(TestCase):
 
         # Create mock database objects
         self.portfolio_ok = Portfolio.objects.create(
-            organization_name="Department of Veterans Affairs", creator=self.user
+            organization_name="Department of Veterans Affairs", requester=self.user
         )
         self.unused_portfolio_with_related_objects = Portfolio.objects.create(
-            organization_name="Test with orphaned objects", creator=self.user
+            organization_name="Test with orphaned objects", requester=self.user
         )
         self.unused_portfolio_with_suborgs = Portfolio.objects.create(
-            organization_name="Test with suborg", creator=self.user
+            organization_name="Test with suborg", requester=self.user
         )
 
         # Create related objects for unused_portfolio_with_related_objects
         self.domain_information = DomainInformation.objects.create(
-            portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+            portfolio=self.unused_portfolio_with_related_objects, requester=self.user
         )
         self.domain_request = DomainRequest.objects.create(
-            portfolio=self.unused_portfolio_with_related_objects, creator=self.user
+            portfolio=self.unused_portfolio_with_related_objects, requester=self.user
         )
         self.inv = PortfolioInvitation.objects.create(portfolio=self.unused_portfolio_with_related_objects)
         self.group = DomainGroup.objects.create(
@@ -2437,7 +2437,7 @@ class TestRemovePortfolios(TestCase):
             portfolio=self.unused_portfolio_with_suborgs, name="Test Suborg"
         )
         self.suborg_domain_information = DomainInformation.objects.create(
-            sub_organization=self.suborganization, creator=self.user
+            sub_organization=self.suborganization, requester=self.user
         )
 
     def tearDown(self):

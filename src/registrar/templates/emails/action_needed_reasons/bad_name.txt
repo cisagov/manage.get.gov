@@ -4,7 +4,7 @@ Hi, {{ recipient.first_name }}.
 We've identified an action that you’ll need to complete before we continue reviewing your .gov domain request.
 
 DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
-REQUESTED BY: {{ domain_request.creator.email }}
+REQUESTED BY: {{ domain_request.requester.email }}
 REQUEST RECEIVED ON: {{ domain_request.last_submitted_date|date }}
 STATUS: Action needed
 

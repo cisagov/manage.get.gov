@@ -39,7 +39,7 @@ left to right direction
 class DomainRequest {
   Request for a domain
   --
-  creator (User)
+  requester (User)
   investigator (User)
   senior_official (Contact)
   other_contacts (Contacts)
@@ -65,7 +65,7 @@ note left of User
   <b>username</b> is the Login UUID
 end note
 
-DomainRequest -l- User : creator, investigator
+DomainRequest -l- User : requester, investigator
 
 class Contact {
   Contact info for a person

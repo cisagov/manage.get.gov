@@ -161,7 +161,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                 <p>No additional members found.</p>
             {% endif %}
         </div>
-    {% elif field.field.name == "creator" and adminform.form.show_contact_as_plain_text %}
+    {% elif field.field.name == "requester" and adminform.form.show_contact_as_plain_text %}
         <div class="readonly">{{ field.contents|striptags }}</div>
     {% elif field.field.name == "senior_official" and adminform.form.show_contact_as_plain_text %}
         <div class="readonly">{{ field.contents|striptags }}</div>
@@ -206,7 +206,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             class="usa-modal"
             id="action-needed-email-already-sent-modal"
             aria-labelledby="Are you sure you want to edit this email?"
-            aria-describedby="The creator of this request already received an email"
+            aria-describedby="The requester of this request already received an email"
             >
             <div class="usa-modal__content">
                 <div class="usa-modal__main">
@@ -215,7 +215,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     </h2>
                     <div class="usa-prose">
                         <p>
-                            The creator of this request already received an email for this status/reason: 
+                            The requester already received an email for this status/reason: 
                         </p>
                         <ul>
                             <li class="font-body-sm">Status: <b>Action needed</b></li>
@@ -223,7 +223,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         </ul>
                         <p>
                             If you edit this email's text, <b>the system will send another email</b> to
-                            the creator after you “save” your changes.  If you do not want to send another email, click “cancel” below.
+                            the requester after you “save” your changes.  If you do not want to send another email, click “cancel” below.
                         </p>
                     </div>
 
@@ -294,7 +294,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
             class="usa-modal"
             id="rejection-reason-email-already-sent-modal"
             aria-labelledby="Are you sure you want to edit this email?"
-            aria-describedby="The creator of this request already received an email"
+            aria-describedby="The requester already received an email"
             >
             <div class="usa-modal__content">
                 <div class="usa-modal__main">
@@ -303,7 +303,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                     </h2>
                     <div class="usa-prose">
                         <p>
-                            The creator of this request already received an email for this status/reason: 
+                            The requester already received an email for this status/reason: 
                         </p>
                         <ul>
                             <li class="font-body-sm">Status: <b>Rejected</b></li>
@@ -311,7 +311,7 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
                         </ul>
                         <p>
                             If you edit this email's text, <b>the system will send another email</b> to
-                            the creator after you “save” your changes.  If you do not want to send another email, click “cancel” below.
+                            the requester after you “save” your changes.  If you do not want to send another email, click “cancel” below.
                         </p>
                     </div>
 
@@ -379,13 +379,13 @@ This is using a custom implementation fieldset.html (see admin/fieldset.html)
 {% endblock field_other %}
 
 {% block after_help_text %}
-    {% if field.field.name == "creator" %}
+    {% if field.field.name == "requester" %}
         <div class="flex-container tablet:margin-top-2">
-        <label aria-label="Creator contact details"></label>
-            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly user_verification_type=original_object.creator.get_verification_type_display%}
+        <label aria-label="Requester contact details"></label>
+            {% include "django/admin/includes/contact_detail_list.html" with user=original_object.requester no_title_top_padding=field.is_readonly user_verification_type=original_object.requester.get_verification_type_display%}
         </div>
         {% if not skip_additional_contact_info %}
-            {% include "django/admin/includes/user_detail_list.html" with user=original_object.creator no_title_top_padding=field.is_readonly %}
+            {% include "django/admin/includes/user_detail_list.html" with user=original_object.requester no_title_top_padding=field.is_readonly %}
         {% endif%}
     {% elif field.field.name == "senior_official" %}
         <div class="flex-container">

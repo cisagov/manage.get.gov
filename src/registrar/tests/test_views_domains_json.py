@@ -36,11 +36,11 @@ class GetDomainsJsonTest(TestWithUser, WebTest):
         UserDomainRole.objects.create(user=self.user, domain=self.domain6)
 
         # Create Portfolio
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Example org")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Example org")
 
         # Add domain3 and domain4 to portfolio
-        DomainInformation.objects.create(creator=self.user, domain=self.domain3, portfolio=self.portfolio)
-        DomainInformation.objects.create(creator=self.user, domain=self.domain4, portfolio=self.portfolio)
+        DomainInformation.objects.create(requester=self.user, domain=self.domain3, portfolio=self.portfolio)
+        DomainInformation.objects.create(requester=self.user, domain=self.domain4, portfolio=self.portfolio)
 
     def tearDown(self):
         UserDomainRole.objects.all().delete()

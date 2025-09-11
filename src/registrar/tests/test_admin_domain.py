@@ -70,14 +70,14 @@ class TestDomainAdminAsStaff(MockEppLib):
             organization_name="new portfolio",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.fed_agency,
-            creator=self.staffuser,
+            requester=self.staffuser,
         )
         self.domain_info = DomainInformation.objects.create(
-            domain=self.febdomain, portfolio=self.portfolio, creator=self.staffuser
+            domain=self.febdomain, portfolio=self.portfolio, requester=self.staffuser
         )
         self.nonfebportfolio = Portfolio.objects.create(
             organization_name="non feb portfolio",
-            creator=self.staffuser,
+            requester=self.staffuser,
         )
         super().setUp()
 
@@ -130,7 +130,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         # test whether fields are readonly or editable
         self.assertNotContains(response, "id_domain_info-0-portfolio")
         self.assertNotContains(response, "id_domain_info-0-sub_organization")
-        self.assertNotContains(response, "id_domain_info-0-creator")
+        self.assertNotContains(response, "id_domain_info-0-requester")
         self.assertNotContains(response, "id_domain_info-0-federal_agency")
         self.assertNotContains(response, "id_domain_info-0-about_your_organization")
         self.assertNotContains(response, "id_domain_info-0-anything_else")
@@ -189,7 +189,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         # test whether fields are readonly or editable
         self.assertContains(response, "id_domain_info-0-portfolio")
         self.assertContains(response, "id_domain_info-0-sub_organization")
-        self.assertContains(response, "id_domain_info-0-creator")
+        self.assertContains(response, "id_domain_info-0-requester")
         self.assertContains(response, "id_domain_info-0-federal_agency")
         self.assertContains(response, "id_domain_info-0-about_your_organization")
         self.assertContains(response, "id_domain_info-0-anything_else")
@@ -282,15 +282,15 @@ class TestDomainAdminAsStaff(MockEppLib):
     def test_analyst_can_see_inline_domain_information_in_domain_change_form(self):
         """Tests if an analyst can still see the inline domain information form"""
 
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
         )
 
         # Create a fake domain request
-        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
 
         # Creates a Domain and DomainInformation object
         _domain_request.approve()
@@ -864,8 +864,8 @@ class TestDomainAdminWithClient(TestCase):
         """Tests if the contact fields in the inlined Domain information have the detail table
         which displays title, email, and phone"""
 
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
@@ -875,7 +875,7 @@ class TestDomainAdminWithClient(TestCase):
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         domain_request.approve()
         _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
         domain = Domain.objects.filter(domain_info=_domain_info).get()
@@ -906,7 +906,7 @@ class TestDomainAdminWithClient(TestCase):
         domain.delete()
         _domain_info.delete()
         domain_request.delete()
-        _creator.delete()
+        _requester.delete()
 
     @less_console_noise_decorator
     def test_domains_by_portfolio(self):
@@ -914,7 +914,7 @@ class TestDomainAdminWithClient(TestCase):
         Tests that domains display for a portfolio.  And that domains outside the portfolio do not display.
         """
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.superuser)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", requester=self.superuser)
         # Create a fake domain request and domain
         _domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.IN_REVIEW, portfolio=portfolio
@@ -987,7 +987,7 @@ class TestDomainAdminWithClient(TestCase):
         deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
 
         # We don't need to check for all text content, just a portion of it
-        expected_unknown_domain_message = "The creator of the associated domain request has not logged in to"
+        expected_unknown_domain_message = "The requester of the associated domain request has not logged in to"
         expected_dns_message = "Before this domain can be used, name server addresses need"
         expected_hold_message = "While on hold, this domain"
         expected_deleted_message = "This domain was permanently removed from the registry."
@@ -1015,15 +1015,15 @@ class TestDomainAdminWithClient(TestCase):
     @less_console_noise_decorator
     def test_admin_can_see_inline_domain_information_in_domain_change_form(self):
         """Tests if an admin can still see the inline domain information form"""
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
         )
 
         # Create a fake domain request
-        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
 
         # Creates a Domain and DomainInformation object
         _domain_request.approve()
@@ -1052,7 +1052,7 @@ class TestDomainAdminWithClient(TestCase):
         domain.delete()
         domain_information.delete()
         _domain_request.delete()
-        _creator.delete()
+        _requester.delete()
 
     @less_console_noise_decorator
     def test_custom_delete_confirmation_page_table(self):

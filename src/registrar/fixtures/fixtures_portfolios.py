@@ -102,7 +102,7 @@ class PortfolioFixture:
 
         try:
             portfolio = Portfolio(
-                creator=user,
+                requester=user,
                 organization_name=portfolio_data["organization_name"],
             )
             cls._set_non_foreign_key_fields(portfolio, portfolio_data)
