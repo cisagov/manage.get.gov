@@ -52,15 +52,24 @@
     </p>
     {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
       {# attr_validate / validate="domain" invokes code in getgov.min.js #}
-      {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
+      {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" attr_hx_swap="delete" attr_hx_trigger="input changed" attr_hx_target="#htmx-error-here"%}
         {% input_with_errors forms.0.requested_domain %}
       {% endwith %}
     {% endwith %}
     <button
-      type="button"
-      class="usa-button usa-button--outline"
-      validate-for="{{ forms.0.requested_domain.auto_id }}"
+    type="button"
+    class="usa-button usa-button--outline"
+    validate-for="{{ forms.0.requested_domain.auto_id }}"
     >Check availability</button>
+    
+    <p id="htmx_error_here"></p>
+    <button
+    class="usa-button usa-button--outline"
+    hx-trigger="click"
+    hx-get="/api/v1/availablehtml"
+    hx-include="[name='dotgov_domain-requested_domain']"
+    hx-target="#htmx_error_here"
+    >Check availability 2</button>
   </fieldset>
 
   {{ forms.1.management_form }}
