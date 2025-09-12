@@ -136,7 +136,7 @@ function runValidators(el) {
     for (const validator of validators) {
         switch (validator) {
         case "domain":
-            checkDomainAvailability(el);
+            // checkDomainAvailability(el);
             break;
         }
     }
@@ -151,7 +151,7 @@ function clearValidators(el) {
     for (const validator of validators) {
         switch (validator) {
         case "domain":
-            clearDomainAvailability(el);
+            // clearDomainAvailability(el); 
             break;
         }
     }

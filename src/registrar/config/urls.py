@@ -38,7 +38,7 @@ from registrar.views.utility.api_views import (
 from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
-from api.views import available, rdap, get_current_federal, get_current_full
+from api.views import available, availablehtml, rdap, get_current_federal, get_current_full
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -289,6 +289,7 @@ urlpatterns = [
     path("openid/", include("djangooidc.urls")),
     path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
+    path("api/v1/availablehtml/", availablehtml, name="availablehtml"),
     path("api/v1/rdap/", rdap, name="rdap"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),
