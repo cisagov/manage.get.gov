@@ -90,7 +90,7 @@ def rdap(request, domain=""):
     rdap_data = requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
     return JsonResponse(rdap_data)
 
-
+# Test Comment
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_full(request, file_name="current-full.csv"):
