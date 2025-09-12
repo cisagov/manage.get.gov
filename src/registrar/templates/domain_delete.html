@@ -85,22 +85,21 @@
               requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
         </form>
-
-          <a
-            href="#toggle-delete-domain"
-            id="request-domain-deletion-button"
-            class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
-            data-open-modal
-          >
-          Request deletion
+        <a
+          href="#toggle-delete-domain"
+          id="request-domain-deletion-button"
+          class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
+          data-open-modal
+        >
+        Request deletion
         </a>
       </fieldset>
     </div>  <!-- End of the acknowledgement section div -->
     <div
       class="usa-modal"
       id="toggle-delete-domain"
-      aria-labelledby="Are you sure you want to delete this domain?"
-      aria-describedby="Are you sure you want to delete this domain?"
+      aria-labelledby="domain-deletion-confirm-button-heading"
+      aria-describedby="domain-deletion-confirm-button-desc"
     >
       {% include 'includes/modal.html' with modal_heading="You are about to delete this domain" modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary"  %}  
     </div>
