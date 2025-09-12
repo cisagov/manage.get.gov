@@ -17,83 +17,44 @@
 //     } 
 // }
 
-// import { submitForm } from './form-helpers.js';
-
-// export function domainDeletionEventListener() {
-//   const checkbox = document.getElementById("delete-domain-checkbox"); 
-//   const modal = document.getElementById("toggle-delete-domain");
-//   const requestButton = document.getElementById("request-domain-deletion-button");
-//   const confirmButton = document.getElementById("domain-deletion-confirm-button");
-
-//   // Stops the JS from crashing if any of the properties are null
-//   if (!checkbox || !modal || !requestButton || !confirmButton) return;
-
-//   /*
-//   1. Unchecked checkbox -> Click "request delete" button -> submit directly, no modal, display error
-//   2. Checked checkbox -> Click "request delete" button -> modal opens via USWDS which isn't working
-//   because data-open-modal is not working as it should be intended and we're forcing function here with modal to do so.
-//   2a. Once modal is open, if user clicks confirm, submit and close modal automatically.
-//   FYI the modal stuff is replicating what USWDS's data-open-modal should do
-//    */
-//   // REQUEST DELETION BUTTON
-//   requestButton.addEventListener("click", (e) => {
-//     if (!checkbox.checked) {
-//       e.preventDefault();
-//       console.log("Checkbox not checked --> submit form for error");
-//       submitForm("submit-domain-deletion-form");
-//     } else {
-//       e.preventDefault();
-//       console.log("Checkbox checked --> show modal");
-//       modal.classList.remove("is-hidden"); // Shows the modal after submit
-//       modal.setAttribute("aria-hidden", "false");
-//     }
-//   });
-
-//   // CONFIRM DELETION BUTTON INSIDE MODAL
-//   confirmButton.addEventListener("click", (e) => {
-//     e.preventDefault();
-//     console.log("Confirm deletion clicked --> submit form");
-//     submitForm("submit-domain-deletion-form");
-//     modal.classList.add("is-hidden"); // Hides modal after submit
-//     modal.setAttribute("aria-hidden", "true");
-//   });
-// }
-
 import { submitForm } from './form-helpers.js';
 
 export function domainDeletionEventListener() {
-    const checkbox = document.getElementById("delete-domain-checkbox");
+    const checkbox = document.getElementById("delete-domain-checkbox"); 
+    const modal = document.getElementById("toggle-delete-domain");
     const requestButton = document.getElementById("request-domain-deletion-button");
     const confirmButton = document.getElementById("domain-deletion-confirm-button");
-    const modal = document.getElementById("toggle-delete-domain");
 
+    // Stops the JS from crashing if any of the properties are null
+    if (!checkbox || !modal || !requestButton || !confirmButton) return;
 
-  // Stop if any essential elements are missing
-  if (!checkbox || !requestButton || !confirmButton) return;
+    /*
+    1. Unchecked checkbox -> Click "request delete" button -> submit directly, no modal, display error
+    2. Checked checkbox -> Click "request delete" button -> modal opens
+    2a. Once modal is open, if user clicks confirm, submit and close modal automatically.
+    https://github.com/uswds/uswds/blob/9999d08fe6c8e7f0aaa3f24b86ba37b281c25b54/packages/usa-modal/src/index.js#L26
+    */
+    // REQUEST DELETION BUTTON
+    requestButton.addEventListener("click", (e) => {
 
-  // --- Request deletion button ---
-  requestButton.addEventListener("click", (e) => {
     if (!checkbox.checked) {
-        // Checkbox not checked -> submit form/get error
-        e.preventDefault();
-        // Prevent modal from displaying from aria-controls 
-        console.log("Checkbox not checked -> submit form for error");
-        submitForm("submit-domain-deletion-form");
+      e.preventDefault();
+      console.log("Checkbox not checked --> submit form for error");
+      submitForm("submit-domain-deletion-form");
     } else {
-        // modal.setAttribute('aria-hidden', 'false');
-        //Otherwise aria-controls opens the modal
-        modal.setAttribute('aria-controls', 'toggle-delete-domain')
-        console.log("~ IN ELSE: and that the modal should open right")
+      e.preventDefault();
+      console.log("+ Checkbox checked --> show modal");
+      modal.classList.remove("is-hidden"); // Shows modal after submit
+      modal.setAttribute("aria-hidden", "false");
     }
-  });
+    });
 
-  // --- Confirm deletion button inside modal ---
-  confirmButton.addEventListener("click", (e) => {
-    e.preventDefault();
-    console.log("Confirm deletion clicked → submit form");
-
-    // Submit the form
-    submitForm("submit-domain-deletion-form");
-
-  });
+    // CONFIRM DELETION BUTTON INSIDE MODAL
+    confirmButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        console.log("Confirm deletion clicked --> submit form");
+        submitForm("submit-domain-deletion-form");
+        modal.classList.add("is-hidden"); // Hides modal after submit
+        modal.setAttribute("aria-hidden", "true");
+    });
 }
