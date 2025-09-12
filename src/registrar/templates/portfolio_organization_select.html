@@ -1,24 +1,34 @@
-<div class="grid-row margin-bottom-1">
-    <form 
-        id="set-session-portfolio-form-{{ forloop.counter }}" 
-        method="post"
-        action="{% url 'set-session-portfolio' %}"
+<form 
+    id="set-session-portfolio-form-{{ forloop.counter }}" 
+    method="post"
+    action="{% url 'set-session-portfolio' %}"
+    name="{{portfolio.organization_name}}"
+>
+    {% csrf_token %}
+    {% if type == "organizations_page" %}
+    <button
+        type="submit"
+        class="usa-card__container margin-left-0"
+        name="set_session_portfolio_button"
+        value="{{portfolio.organization_name}}"
     >
-        {% csrf_token %}
+            <div class="usa-card__header">
+                <h2 class="usa-card__heading">
+                    {{portfolio}}
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="28">
+                        <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
+                    </svg>
+                </h2>
+            </div>
+    </button>
+    {% elif type == "organizations_nav_menu" %}
         <button
-            type="submit"
-            class="usa-card__container margin-left-0"
-            name="set_session_portfolio_button"
-            value="{{portfolio.organization_name}}"
+        type="submit"
+        class="usa-button usa-nav-link organization-button"
+        name="set_session_portfolio_button"
+        value="{{portfolio.organization_name}}"
         >
-                <div class="usa-card__header">
-                    <h2 class="usa-card__heading">
-                        {{portfolio}}
-                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="28">
-                            <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
-                        </svg>
-                    </h2>
-                </div>
+            <a>{{portfolio}}</a>
         </button>
-    </form>
-</div>
+    {% endif %}
+</form>

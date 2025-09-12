@@ -18,6 +18,7 @@ import { initDomainDNSSEC } from './domain-dnssec.js';
 import { initFormErrorHandling } from './form-errors.js';
 import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 import { initButtonLinks } from '../getgov-admin/button-utils.js';
+import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 
 initDomainValidators();
 
@@ -63,3 +64,6 @@ initPortfolioNewMemberPageToggle();
 initAddNewMemberPageListeners();
 
 initButtonLinks();
+
+// Init the portfolios nav dropdown
+initOrganizationsNavDropdown();
