@@ -65,7 +65,7 @@ class DnsHostService:
                 nameservers = zone_data["result"].get("name_servers")
 
             except APIError as e:
-                logger.error(f"DNS setup failed to create zone: {str(e)}")
+                logger.error(f"DNS setup failed to create zone {domain_name}: {str(e)}")
                 raise
 
         return account_id, zone_id, nameservers
