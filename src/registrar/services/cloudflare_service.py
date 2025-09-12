@@ -34,7 +34,7 @@ class CloudflareService:
             except RequestError as e:
                 logger.error(f"Failed to create account for {account_name}: {e}")
             except HTTPStatusError as e:
-                logger.error(f"Error {e.response.status_code} while requesting account: {e}")
+                logger.error(f"Error {e.response.status_code} while creating account: {e}")
 
         return resp.json()
 
@@ -49,22 +49,21 @@ class CloudflareService:
             except RequestError as e:
                 logger.error(f"Failed to create zone {zone_name} for account {account_id}: {e}")
             except HTTPStatusError as e:
-                logger.error(f"Error {e.response.status_code} while requesting account: {e}")
+                logger.error(f"Error {e.response.status_code} while creating zone: {e}")
         return resp.json()
 
     def create_dns_record(self, zone_id, record_data):
-        url = f"{self.base_url}/zones/{zone_id}/dns_records"
-        logger.debug(f"attempting to create record for zone {zone_id} with this data: {json.dumps(record_data)}")
-        response = make_api_request(url=url, method="POST", headers=self.headers, data=record_data)
-
-        if not response["success"]:
-            raise APIError(
-                f"Failed to create dns record for zone {zone_id}: message: {response['message']} details:"
-                + f" {response['details']}"
-            )
-        logger.info(f"Created dns_record for zone {zone_id}: {response['data']}")
-
-        return response["data"]
+        appended_url = f"/zones/{zone_id}/dns_records"
+        with self.client:
+            try:
+                resp = self.client.post(appended_url, json=record_data)
+                resp.raise_for_status()
+                logger.info(f"Created dns record for zone {zone_id}")
+            except RequestError as e:
+                logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
+            except HTTPStatusError as e:
+                logger.error(f"Error {e.response.status_code} while creating dns record: {e}")
+        return resp.json()
 
     def get_page_accounts(self, page, per_page):
         """Gets all accounts under specified tenant. Must include pagination paramenters"""
