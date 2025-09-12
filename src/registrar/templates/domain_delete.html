@@ -100,7 +100,7 @@
       aria-labelledby="domain-deletion-confirm-button-heading"
       aria-describedby="domain-deletion-confirm-button-desc"
     >
-      {% include 'includes/modal.html' with modal_heading="You are about to delete this domain" modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary"  %}  
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete "|add:domain.name modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary"  %}  
     </div>
 
 {% endblock %}  {# domain_content #}
