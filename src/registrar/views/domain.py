@@ -781,9 +781,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 if zone_id:
                     # post nameservers to registry
                     try:
-                        self._register_nameservers(zone_name, nameservers)
-                    except RegistrySystemError as e:
-                        logger.error(f"Unable to register nameservers {e}")
+                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                    except (RegistryError, RegistrySystemError, Exception) as e:
+                        logger.error(f"Error updating registry: {e}")
 
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)
