@@ -1,3 +1,4 @@
+from httpx import Client, RequestError, HTTPStatusError
 import json
 import logging
 from django.conf import settings
@@ -20,32 +21,36 @@ class CloudflareService:
             "X-Auth-Key": self.tenant_key,
             "Content-Type": "application/json",
         }
+        self.client = Client(base_url=self.base_url, headers=self.headers)
 
     def create_account(self, account_name):
-        url = f"{self.base_url}/accounts"
+        appended_url = "/accounts"
         data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
-        response = make_api_request(url=url, method="POST", headers=self.headers, data=data)
-        if not response["success"]:
-            raise APIError(f"Failed to create account for {account_name}: {response['details']}")
+        with self.client:
+            try:
+                resp = self.client.post(appended_url, json=data)
+                resp.raise_for_status()
+                logger.info(f"Created host account {account_name}")
+            except RequestError as e:
+                logger.error(f"Failed to create account for {account_name}: {e}")
+            except HTTPStatusError as e:
+                logger.error(f"Error {e.response.status_code} while requesting account: {e}")
 
-        logger.info(f"Created host account: {response['data']}")
-
-        return response["data"]
+        return resp.json()
 
     def create_zone(self, zone_name, account_id):
-        url = f"{self.base_url}/zones"
+        appended_url = "/zones"
         data = {"name": zone_name, "account": {"id": account_id}}
-        response = make_api_request(url=url, method="POST", headers=self.headers, data=data)
-        errors = response.get("errors")
-        if not response["success"]:
-
-            raise APIError(
-                f"Failed to create zone for account {account_id}: errors: {errors} message: "
-                + f"{response['message']} details: {response['details']}"
-            )
-        logger.info(f"Created zone {zone_name} for account with id {account_id}: {response['data']}")
-
-        return response["data"]
+        with self.client:
+            try:
+                resp = self.client.post(appended_url, json=data)
+                resp.raise_for_status()
+                logger.info(f"Created zone {zone_name}")
+            except RequestError as e:
+                logger.error(f"Failed to create zone {zone_name} for account {account_id}: {e}")
+            except HTTPStatusError as e:
+                logger.error(f"Error {e.response.status_code} while requesting account: {e}")
+        return resp.json()
 
     def create_dns_record(self, zone_id, record_data):
         url = f"{self.base_url}/zones/{zone_id}/dns_records"
