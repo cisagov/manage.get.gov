@@ -23,22 +23,32 @@ runs:
 
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
-        git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
+        git fetch --no-tags --depth=2 origin "${DEFAULT_BRANCH}"
 
         echo "DEBUG - HEAD_SHA: $(git rev-parse HEAD)"
 
         BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
         
+        CURRENT_BRANCH="$(git branch --show-current)"
+
+        if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]
+        then
+          COMPARE_SHA="$(git rev-parse HEAD^)"
+        else
+          COMPARE_SHA=${BASE_SHA}
+        fi
+
         echo "-------DEBUG (detector)--------"
         echo "BASE_SHA: ${BASE_SHA}, HEAD=$(git rev-parse HEAD)"
-        git diff --name-status "${BASE_SHA}..HEAD"
+        echo "COMPARE_SHA: ${COMPARE_SHA}, CURRENT_BRANCH=${CURRENT_BRANCH}"
+        git diff --name-status "${COMPARE_SHA}..HEAD"
         echo "-------------------------------"
 
         ###########################
         # CHANGED_ALL shows every file different between my branch's HEAD and the merge-base with main.
         # MATCHED_CHANGES includes all python and HTML files changed when you merge main into your branch. 
         ###########################
-        CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..HEAD" | tr -d '\r' | sort -u)"
+        CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${COMPARE_SHA}..HEAD" | tr -d '\r' | sort -u)"
         MATCHED_CHANGES="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.(py|html)$' || true)"
         
         # multi-line output
