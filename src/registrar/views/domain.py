@@ -62,7 +62,7 @@ from ..forms import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
-    DomainDeleteForm
+    DomainDeleteForm,
 )
 
 from epplibwrapper import (
@@ -571,19 +571,12 @@ class DomainDeleteView(DomainBaseView):
                     )
             # return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
-
         # if not valid, render the template with error messages
         # passing editable and is_editable for re-render
         return render(
             request,
             "domain_delete.html",
-            {
-                "domain": domain,
-                "form": form,
-                "is_editable": True,
-                "is_domain_manager": True,
-                "show_modal" : show_modal
-            },
+            {"domain": domain, "form": form, "is_editable": True, "is_domain_manager": True, "show_modal": show_modal},
         )
 
 
@@ -1478,3 +1471,13 @@ class DomainDeleteUserView(DeleteView):
             return redirect(reverse("home"))
 
         return response
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainDeletionView(DomainFormBaseView):
+    """Domain deletion view."""
+
+    template_name = "domain_delete.html"
+    form_class = DomainDeleteForm
+
+    # Do deletion somewhere in here

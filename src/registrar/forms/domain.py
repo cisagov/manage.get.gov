@@ -759,6 +759,7 @@ class DomainRenewalForm(forms.Form):
         },
     )
 
+
 class DomainDeleteForm(forms.Form):
     """Form making sure domain deletion ack is checked"""
 
