@@ -86,9 +86,12 @@
             </label>
 
 
-          <a
+          <a 
+            href=""
+            aria-controls=""
             class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
             id="domain-deletion-submit-button"
+            data-open-modal
           >
             Request deletion
           </a>
@@ -96,6 +99,7 @@
         </form>
       </fieldset>
     </div>  <!-- End of the acknowledgement section div -->
+   
       <div
         class="usa-modal"
         id="toggle-delete-domain"
@@ -110,6 +114,7 @@
             modal_button_class="usa-button--secondary" 
             modal_button_text="Confirm deletion" %}
       </div>
+
   
        <form method="post" id="submit-domain-request-form">
           {% csrf_token %}
