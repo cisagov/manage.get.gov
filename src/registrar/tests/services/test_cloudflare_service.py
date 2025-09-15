@@ -79,8 +79,8 @@ class TestCloudflareService(SimpleTestCase):
             str(context.exception),
         )
 
-    @patch("registrar.services.cloudflare_service.make_api_request")
-    def test_create_dns_record_success(self, mock_make_request):
+    @patch("registrar.services.cloudflare_service.Client.post")
+    def test_create_dns_record_success(self, mock_post):
         """Test successful create_dns_record call"""
         zone_id = "54321"
         record_data = {
@@ -91,9 +91,10 @@ class TestCloudflareService(SimpleTestCase):
             "comment": "Test domain name",
             "ttl": 3600,
         }
-        mock_make_request.return_value = {
-            "success": True,
-            "data": {
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
                 "result": {
                     "content": "198.51.100.4",
                     "name": "democracy.gov",
@@ -102,13 +103,14 @@ class TestCloudflareService(SimpleTestCase):
                     "comment": "Test domain name",
                     "ttl": 3600,
                 }
-            },
         }
-        result = self.service.create_dns_record(zone_id, record_data)
-        self.assertEqual(result["result"]["name"], "democracy.gov")
-        self.assertEqual(result["result"]["content"], "198.51.100.4")
+
+        mock_post.return_value = mock_response
+        resp = self.service.create_dns_record(zone_id, record_data)
+        self.assertEqual(resp["result"]["name"], "democracy.gov")
+        self.assertEqual(resp["result"]["content"], "198.51.100.4")
         self.assertEqual(
-            result["result"],
+            resp["result"],
             {
                 "content": "198.51.100.4",
                 "name": "democracy.gov",
@@ -119,8 +121,8 @@ class TestCloudflareService(SimpleTestCase):
             },
         )
 
-    @patch("registrar.services.cloudflare_service.make_api_request")
-    def test_create_dns_record_failure(self, mock_make_request):
+    @patch("registrar.services.cloudflare_service.Client.post")
+    def test_create_dns_record_failure(self, mock_post):
         """Test create_zone with API failure"""
         zone_id = "54321"
         record_data_missing_content = {
@@ -130,17 +132,18 @@ class TestCloudflareService(SimpleTestCase):
             "comment": "Test domain name",
             "ttl": 3600,
         }
-        mock_make_request.return_value = {
-            "success": False,
-            "message": "missing content field",
-            "details": "more detail",
-        }
+        mock_response = Mock()
+        mock_response.status_code = 400
+        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error creating DNS record")
+        http_error.response = mock_response
+        mock_post.return_value = mock_response
+        mock_response.raise_for_status.side_effect = http_error
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(HTTPStatusError) as context:
             self.service.create_dns_record(zone_id, record_data_missing_content)
 
         self.assertIn(
-            f"Failed to create dns record for zone {zone_id}: message: missing content field details: more detail",
+            f"Error creating DNS record",
             str(context.exception),
         )
 
