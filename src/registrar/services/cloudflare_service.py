@@ -33,8 +33,10 @@ class CloudflareService:
                 logger.info(f"Created host account {account_name}")
             except RequestError as e:
                 logger.error(f"Failed to create account for {account_name}: {e}")
+                raise
             except HTTPStatusError as e:
                 logger.error(f"Error {e.response.status_code} while creating account: {e}")
+                raise
 
         return resp.json()
 
@@ -48,8 +50,10 @@ class CloudflareService:
                 logger.info(f"Created zone {zone_name}")
             except RequestError as e:
                 logger.error(f"Failed to create zone {zone_name} for account {account_id}: {e}")
+                raise
             except HTTPStatusError as e:
                 logger.error(f"Error {e.response.status_code} while creating zone: {e}")
+                raise
         return resp.json()
 
     def create_dns_record(self, zone_id, record_data):
@@ -61,38 +65,70 @@ class CloudflareService:
                 logger.info(f"Created dns record for zone {zone_id}")
             except RequestError as e:
                 logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
+                raise
             except HTTPStatusError as e:
                 logger.error(f"Error {e.response.status_code} while creating dns record: {e}")
+                raise
         return resp.json()
 
     def get_page_accounts(self, page, per_page):
         """Gets all accounts under specified tenant. Must include pagination paramenters"""
-        url = f"{self.base_url}/tenants/{self.tenant_id}/accounts?page={page}&per_page={per_page}"
-        response = make_api_request(url=url, method="GET", headers=self.headers)
-
-        if not response["success"]:
-            raise APIError(f"Failed to get accounts: message: {response['message']}, details: {response['details']}")
-        logger.info(f"Retrieved page accounts: {response['data']['result']}")
-
-        return response["data"]
+        appended_url = f"/tenants/{self.tenant_id}/accounts"
+        params={
+                "page": page,
+                "per_page": per_page
+            }
+        with self.client:
+            try:
+                logger.info(f"Getting all tenant accounts on page {page}")
+                resp = self.client.get(appended_url, params=params)
+                resp.raise_for_status()
+            except RequestError as e:
+                logger.error(f"Failed to get tenant accounts: {e}")
+                raise
+            except HTTPStatusError as e:
+                logger.error(f"Error {e.response.status_code} while fetching tenant accounts: {e}")
+                raise
+        return resp.json()
 
     def get_account_zones(self, account_id):
         """Gets all zones under a particular account"""
-        url = f"{self.base_url}/zones?account.id={account_id}"
-        response = make_api_request(url=url, method="GET", headers=self.headers)
+        appended_url = f"/zones?account.id={account_id}"
+        with self.client:
+            try:
+                logger.info(f"Getting all account zones")
+                resp = self.client.get(appended_url)
+                resp.raise_for_status()
+            except RequestError as e:
+                logger.error(f"Failed to get account zones: {e}")
+                raise
+            except HTTPStatusError as e:
+                logger.error(f"Error {e.response.status_code} while fetching account zones: {e}")
+                raise
+            logger.info(f"Retrieved all zones: {resp}")
+        return resp.json()
+        # url = f"{self.base_url}/zones?account.id={account_id}"
+        # response = make_api_request(url=url, method="GET", headers=self.headers)
 
-        if not response["success"]:
-            raise APIError(f"Failed to get zones: {response['message']}")
-        logger.info(f"Retrieved all zones: {response['data']}")
+        # if not response["success"]:
+        #     raise APIError(f"Failed to get zones: {response['message']}")
+        # logger.info(f"Retrieved all zones: {response['data']}")
 
-        return response["data"]
+        # return response["data"]
 
     def get_dns_record(self, zone_id, record_id):
-        url = f"{self.base_url}/zones/{zone_id}/dns_records/{record_id}"
-        response = make_api_request(url=url, method="GET", headers=self.headers)
+        appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
+        with self.client:
+            try:
+                resp = self.client.get(appended_url, headers=self.headers)
+                logger.info("Fetching dns record. . .")
+                resp.raise_for_status()
+            except RequestError as e:
+                logger.error("Failed to get dns record")
+                raise
+            except HTTPStatusError as e:
+                logger.error(f"Error {e.response.status_code} while fetching dns record: {e}")
+                raise
+            logger.info(f"Retrieved record {record_id} from {zone_id}: {resp}")
 
-        if not response["success"]:
-            raise APIError(f"Failed to get dns record: message: {response['message']}, details: {response['details']}")
-        logger.info(f"Retrieved record {record_id} from {zone_id}: {response['data']}")
-
-        return response["data"]
+        return resp.json()
