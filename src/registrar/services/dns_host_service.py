@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 class DnsHostService:
 
-    def __init__(self):
-        self.dns_vendor_service = CloudflareService()
+    def __init__(self, client):
+        self.dns_vendor_service = CloudflareService(client)
 
     def _find_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -25,8 +25,7 @@ class DnsHostService:
         return next((item.get("name_servers") for item in items if item.get("id") == zone_id), None)
 
     def dns_setup(self, account_name, domain_name):
-        """Creates an account and zone in the dns host vendor tenant. Registers nameservers and creates NS records
-        after zone creation"""
+        """Creates an account and zone in the dns host vendor tenant. Registers nameservers after zone creation"""
 
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)

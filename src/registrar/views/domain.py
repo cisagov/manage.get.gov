@@ -1,4 +1,5 @@
 from datetime import date
+from httpx import Client
 import logging
 from contextvars import ContextVar
 from django.contrib import messages
@@ -669,7 +670,7 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "chance-especially.gov", "coach-whether-allow.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -711,11 +712,13 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
-    dns_host_service = DnsHostService()
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "chance-especially.gov", "coach-whether-allow.gov"]
+    
 
     def __init__(self):
         self.dns_record = None
+        self.client = Client()
+        self.dns_host_service = DnsHostService(client=self.client)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -772,7 +775,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 account_name = f"account-{self.object.name}"
                 zone_name = f"{self.object.name}"  # must be a domain name
                 zone_id = ""
-
                 try:
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(account_name, zone_name)
                 except APIError as e:
@@ -796,6 +798,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 context_dns_record.set(self.dns_record)
             finally:
+                self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
