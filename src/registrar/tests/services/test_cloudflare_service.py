@@ -1,5 +1,6 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from django.test import SimpleTestCase
+from httpx import HTTPStatusError
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError
@@ -11,24 +12,34 @@ class TestCloudflareService(SimpleTestCase):
     def setUp(self):
         self.service = CloudflareService()
 
-    @patch("registrar.services.cloudflare_service.make_api_request")
-    def test_create_account_success(self, mock_make_request):
+    @patch("registrar.services.cloudflare_service.Client.post")
+    def test_create_account_success(self, mock_post):
         """Test successful create_account call"""
         account_name = "test.gov test account"
-        mock_make_request.return_value = {"success": True, "data": {"result": {"name": account_name, "id": "12345"}}}
+        mock_response = Mock()
+        mock_response.json.return_value = {"result": {"name": account_name, "id": "12345"}}
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+       
         result = self.service.create_account(account_name)
         self.assertEqual(result["result"]["name"], account_name)
 
-    @patch("registrar.services.cloudflare_service.make_api_request")
-    def test_create_account_failure(self, mock_make_request):
+    @patch("registrar.services.cloudflare_service.Client.post")
+    def test_create_account_failure(self, mock_post):
         """Test create_account with API failure"""
         account_name = " "
-        mock_make_request.return_value = {"success": False, "details": "Cannot be empty"}
+        mock_response = Mock()
+        mock_response.status_code = 400
+        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Cannot be empty")
+        http_error.response = mock_response
+        mock_post.return_value = mock_response
+        mock_response.raise_for_status.side_effect = http_error
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(HTTPStatusError) as context:
             self.service.create_account(account_name)
 
-        self.assertIn(f"Failed to create account for {account_name}: Cannot be empty", str(context.exception))
+        self.assertIn(f"Cannot be empty", str(context.exception))
 
     @patch("registrar.services.cloudflare_service.make_api_request")
     def test_create_zone_success(self, mock_make_request):
