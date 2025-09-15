@@ -1193,6 +1193,7 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
     View for Organizations dropdown.
     Actual session switching is handled in PortfolioOrganizationSelectView.
     """
+
     model = UserPortfolioPermission
     template_name = "portfolio_organizations_dropdown.html"
     context_object_name = "portfolio"
@@ -1202,7 +1203,7 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
     def get(self, request):
         """Add additional context data to the template."""
         return render(request, "portfolio_organizations.html", context=self.get_context_data())
-    
+
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         # We can override the base class. This view only needs this item.
