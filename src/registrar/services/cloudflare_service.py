@@ -4,7 +4,6 @@ import logging
 from django.conf import settings
 
 from registrar.utility.errors import APIError
-from registrar.utility.api_helpers import make_api_request
 
 logger = logging.getLogger(__name__)
 
