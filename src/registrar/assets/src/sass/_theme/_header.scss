@@ -63,7 +63,6 @@ $-expand-less-icon: (
         padding-top: 0 !important;
         padding-bottom: 0 !important;
     }
-    z-index: 2;
 }
 
 button {
@@ -176,6 +175,7 @@ button {
             overflow: visible;
         }
     }
+    z-index: 2;
 }
 
 .usa-nav__inner--widescreen,
