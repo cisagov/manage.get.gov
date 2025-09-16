@@ -1,7 +1,7 @@
 """Loads user portfolio data to display on Organizations nav dropdown."""
 
 from django import template
-from registrar.models import UserPortfolioPermission, User
+from registrar.models import UserPortfolioPermission
 
 register = template.Library()
 
