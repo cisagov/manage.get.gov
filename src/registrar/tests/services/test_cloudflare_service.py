@@ -9,23 +9,26 @@ class TestCloudflareService(SimpleTestCase):
     """Test cases for the CloudflareService class"""
 
     failure_cases = [
-            {"test_name": "HTTPStatusError", "error": {"exception": HTTPStatusError, "response": "400 Server Error", "message": "Error doing the thing"}},
-            {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}}
-        ]
-    
+        {
+            "test_name": "HTTPStatusError",
+            "error": {"exception": HTTPStatusError, "response": "400 Server Error", "message": "Error doing the thing"},
+        },
+        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}},
+    ]
+
     def setUp(self):
         mock_client = Client()
         mock_client.post = Mock()
         mock_client.get = Mock()
         self.service = CloudflareService(client=mock_client)
-    
+
     def _setUpSuccessMockResponse(self, return_value=None, raise_value=None):
         mock_response = Mock()
         mock_response.json.return_value = return_value
         mock_response.status_code = 200
         mock_response.raise_for_status.return_value = raise_value
         return mock_response
-    
+
     def _setUpFailureMockResponse(self, error, status_code=400):
         mock_response = Mock()
         mock_response.status_code = status_code
@@ -37,7 +40,7 @@ class TestCloudflareService(SimpleTestCase):
         http_error.response = mock_response
         mock_response.raise_for_status.side_effect = http_error
         return mock_response
-                
+
     def test_create_account_success(self):
         """Test successful create_account call"""
         account_name = "test.gov test account"
@@ -83,14 +86,13 @@ class TestCloudflareService(SimpleTestCase):
         """Test create_zone with API failure"""
         zone_name = "test.gov"
         account_id = "12345"
-        
+
         for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
                 mock_response = self._setUpFailureMockResponse(error)
-        
-                self.service.client.post.return_value = mock_response
 
+                self.service.client.post.return_value = mock_response
 
                 with self.assertRaises(error["exception"]) as context:
                     self.service.create_zone(zone_name, account_id)
@@ -110,7 +112,6 @@ class TestCloudflareService(SimpleTestCase):
             "comment": "Test domain name",
             "ttl": 3600,
         }
-    
         return_value = {
             "result": {
                 "content": "198.51.100.4",
@@ -148,14 +149,13 @@ class TestCloudflareService(SimpleTestCase):
             "comment": "Test domain name",
             "ttl": 3600,
         }
-        
+
         for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
                 mock_response = self._setUpFailureMockResponse(error)
-        
-                self.service.client.post.return_value = mock_response
 
+                self.service.client.post.return_value = mock_response
 
                 with self.assertRaises(error["exception"]) as context:
                     self.service.create_dns_record(zone_id, record_data_missing_content)
