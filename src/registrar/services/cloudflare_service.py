@@ -73,10 +73,7 @@ class CloudflareService:
     def get_page_accounts(self, page, per_page):
         """Gets all accounts under specified tenant. Must include pagination paramenters"""
         appended_url = f"/tenants/{self.tenant_id}/accounts"
-        params={
-                "page": page,
-                "per_page": per_page
-            }
+        params = {"page": page, "per_page": per_page}
         try:
             logger.info(f"Getting all tenant accounts on page {page}")
             resp = self.client.get(appended_url, params=params)

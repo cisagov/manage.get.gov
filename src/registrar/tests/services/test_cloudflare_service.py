@@ -14,7 +14,6 @@ class TestCloudflareService(SimpleTestCase):
         mock_client.post = Mock()
         mock_client.get = Mock()
         self.service = CloudflareService(client=mock_client)
-    
 
     # @patch("registrar.services.cloudflare_service.CloudflareService.client.post")
     def test_create_account_success(self):
@@ -25,7 +24,7 @@ class TestCloudflareService(SimpleTestCase):
         mock_response.status_code = 200
         mock_response.raise_for_status.return_value = None
         self.service.client.post.return_value = mock_response
-       
+
         resp = self.service.create_account(account_name)
         self.assertEqual(resp["result"]["name"], account_name)
 
@@ -95,14 +94,14 @@ class TestCloudflareService(SimpleTestCase):
         mock_response.status_code = 200
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
-                "result": {
-                    "content": "198.51.100.4",
-                    "name": "democracy.gov",
-                    "proxied": False,
-                    "type": "A",
-                    "comment": "Test domain name",
-                    "ttl": 3600,
-                }
+            "result": {
+                "content": "198.51.100.4",
+                "name": "democracy.gov",
+                "proxied": False,
+                "type": "A",
+                "comment": "Test domain name",
+                "ttl": 3600,
+            }
         }
 
         self.service.client.post.return_value = mock_response
@@ -133,7 +132,9 @@ class TestCloudflareService(SimpleTestCase):
         }
         mock_response = Mock()
         mock_response.status_code = 400
-        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error creating DNS record")
+        http_error = HTTPStatusError(
+            request="something", response="400 Server Error", message="Error creating DNS record"
+        )
         http_error.response = mock_response
         self.service.client.post.return_value = mock_response
         mock_response.raise_for_status.side_effect = http_error
@@ -175,7 +176,9 @@ class TestCloudflareService(SimpleTestCase):
 
         mock_response = Mock()
         mock_response.status_code = 400
-        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error fetching accounts")
+        http_error = HTTPStatusError(
+            request="something", response="400 Server Error", message="Error fetching accounts"
+        )
         http_error.response = mock_response
         self.service.client.get.return_value = mock_response
         mock_response.raise_for_status.side_effect = http_error
@@ -251,7 +254,9 @@ class TestCloudflareService(SimpleTestCase):
 
         mock_response = Mock()
         mock_response.status_code = 400
-        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error fetching dns record")
+        http_error = HTTPStatusError(
+            request="something", response="400 Server Error", message="Error fetching dns record"
+        )
         http_error.response = mock_response
         self.service.client.get.return_value = mock_response
         mock_response.raise_for_status.side_effect = http_error
