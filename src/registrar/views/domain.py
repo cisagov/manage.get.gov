@@ -533,51 +533,33 @@ class DomainRenewalView(DomainBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
-class DomainDeleteView(DomainBaseView):
-    """Domain delete page."""
+class DomainDeleteView(DomainFormBaseView):
+    # """Domain delete page."""
 
     template_name = "domain_delete.html"
-
-    def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-
-        default_emails = DefaultEmail.get_all_emails()
-
-        context["hidden_security_emails"] = default_emails
-
-        security_email = self.object.get_security_email()
-        context["security_email"] = security_email
-        return context
+    form_class = DomainDeleteForm
 
     def post(self, request, domain_pk):
-
-        domain = get_object_or_404(Domain, id=domain_pk)
-
-        form = DomainDeleteForm(request.POST)
-        show_modal = False
+        domain = get_object_or_404(Domain, pk=domain_pk)
+        self.object = domain
+        form = self.form_class(request.POST)
+        confirmed = request.POST.get("confirmed") == "True"
+        print("!!! Before form.is_valid")
         if form.is_valid():
+            print("!!! In form.is_valid")
+            if domain.state != "READY":
+                form.add_error(None, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+                print("Return error")
+                return self.render_to_response(self.get_context_data(form=form))
+            if confirmed:
+                domain.place_client_hold()
+                messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
+                # redirect to domain overview
+                return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
+            return self.render_to_response(self.get_context_data(form=form))
 
-            # check for key in the post request data
-            show_modal = True
-            if "submit_button" in request.POST:
-                try:
-                    messages.success(request, "This domain is being processed for deletion.")
-                except Exception:
-                    messages.error(
-                        request,
-                        "This domain has not been renewed for one year, "
-                        "please email help@get.gov if this problem persists.",
-                    )
-            # return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
-
-        # if not valid, render the template with error messages
-        # passing editable and is_editable for re-render
-        return render(
-            request,
-            "domain_delete.html",
-            {"domain": domain, "form": form, "is_editable": True, "is_domain_manager": True, "show_modal": show_modal},
-        )
+        # Form not valid -> redisplay with errors
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1471,13 +1453,3 @@ class DomainDeleteUserView(DeleteView):
             return redirect(reverse("home"))
 
         return response
-
-
-@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
-class DomainDeletionView(DomainFormBaseView):
-    """Domain deletion view."""
-
-    template_name = "domain_delete.html"
-    form_class = DomainDeleteForm
-
-    # Do deletion somewhere in here

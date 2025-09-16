@@ -66,10 +66,7 @@
               <span class="margin-left-05">{{ error }}</span>
             </div>
             {% endfor %}
-            </div>
         {% endif %}
-
-          <input type="hidden" name="is_policy_acknowledged" value="False">
 
           <input 
             class="usa-checkbox__input" 
@@ -84,24 +81,36 @@
               <a href="https://get.gov/domains/requirements/" class="usa-link" target="_blank">
               requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
-        </form>
-        <a
-          href="#toggle-delete-domain"
+          </div>
+
+        <button
+          type="button" 
           id="request-domain-deletion-button"
           class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
         >
-        Request deletion
-        </a>
+          Request deletion
+        </button>
+
+      </form>
       </fieldset>
     </div>  <!-- End of the acknowledgement section div -->
+    
     <div
-      class="usa-modal"
-      id="toggle-delete-domain"
-      aria-labelledby="domain-deletion-confirm-button-heading"
-      aria-describedby="domain-deletion-confirm-button-desc"
-    >
-      {% url 'domain' domain_pk=domain.id as domain_url %}
-      {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete "|add:domain.name modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary" modal_button_data_domain_url=domain_url %}  
-    </div>
+    class="usa-modal"
+    id="toggle-delete-domain"
+    aria-labelledby="domain-deletion-confirm-button-heading"
+    aria-describedby="domain-deletion-confirm-button-desc"
+  >
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete "|add:domain.name modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary" %}  
+  </div>
+  
+ <!-- hidden modal trigger-->
+  <a
+  id="open-delete-domain-modal"
+  href="#toggle-delete-domain"
+  class="display-none"
+  aria-controls="toggle-delete-domain"
+  data-open-modal
+>Open Delete Domain Modal</a>
 
 {% endblock %}  {# domain_content #}
