@@ -1,6 +1,5 @@
 {% extends "domain_base.html" %}
-{% load static url_helpers %}
-{% load custom_filters %}
+{% load static field_helpers url_helpers %}
 
   {% block breadcrumb %}
 
@@ -54,7 +53,7 @@
         Acknowledgement </h2>          
         </legend>
     
-        <form method="post" action="{% url 'domain-delete' domain_pk=domain.id %}" id="submit-domain-deletion-form" onsubmit="return false"> 
+        <form method="post" action="{% url 'domain-delete' domain_pk=domain.id %}" id="submit-domain-deletion-form"> 
           {% csrf_token %}
           <div class="usa-checkbox">
 
@@ -77,6 +76,7 @@
             id="delete-domain-checkbox" 
             type="checkbox" 
             name="is_policy_acknowledged"
+            value="True"
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
             <label class="usa-checkbox__label" for="delete-domain-checkbox">
@@ -84,40 +84,24 @@
               <a href="https://get.gov/domains/requirements/" class="usa-link" target="_blank">
               requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
-
-
-          <a 
-            href=""
-            aria-controls=""
-            class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
-            id="domain-deletion-submit-button"
-            data-open-modal
-          >
-            Request deletion
-          </a>
-
         </form>
+        <a
+          href="#toggle-delete-domain"
+          id="request-domain-deletion-button"
+          class="usa-button usa-button--outline usa-button--outline-red margin-top-3"
+        >
+        Request deletion
+        </a>
       </fieldset>
     </div>  <!-- End of the acknowledgement section div -->
-   
-      <div
-        class="usa-modal"
-        id="toggle-delete-domain"
-        aria-labelledby="Are you sure you want to delete this domain?"
-        aria-describedby="Are you sure you want to delete this domain?"
-
-      >
-        {% include 'includes/modal.html' with
-            modal_heading="You are about to delete this domain"
-            modal_description="Once you submit this request, it cannot be undone."
-            modal_button_id="domain-deletion-submit-button"
-            modal_button_class="usa-button--secondary" 
-            modal_button_text="Confirm deletion" %}
-      </div>
-
-  
-       <form method="post" id="submit-domain-request-form">
-          {% csrf_token %}
-        </form>
+    <div
+      class="usa-modal"
+      id="toggle-delete-domain"
+      aria-labelledby="domain-deletion-confirm-button-heading"
+      aria-describedby="domain-deletion-confirm-button-desc"
+    >
+      {% url 'domain' domain_pk=domain.id as domain_url %}
+      {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete "|add:domain.name modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary" modal_button_data_domain_url=domain_url %}  
+    </div>
 
 {% endblock %}  {# domain_content #}
