@@ -1,9 +1,6 @@
 from httpx import RequestError, HTTPStatusError
-import json
 import logging
 from django.conf import settings
-
-from registrar.utility.errors import APIError
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +84,10 @@ class CloudflareService:
 
     def get_account_zones(self, account_id):
         """Gets all zones under a particular account"""
-        appended_url = f"/zones"
+        appended_url = "/zones"
         params = f"account.id={account_id}"
         try:
-            logger.info(f"Getting all account zones")
+            logger.info("Getting all account zones")
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
         except RequestError as e:
@@ -109,7 +106,7 @@ class CloudflareService:
             logger.info("Fetching dns record. . .")
             resp.raise_for_status()
         except RequestError as e:
-            logger.error("Failed to get dns record")
+            logger.error(f"Failed to get dns record {e}")
             raise
         except HTTPStatusError as e:
             logger.error(f"Error {e.response.status_code} while fetching dns record: {e}")
