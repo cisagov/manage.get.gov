@@ -1,4 +1,4 @@
-from httpx import Client, RequestError, HTTPStatusError
+from httpx import RequestError, HTTPStatusError
 import json
 import logging
 from django.conf import settings
