@@ -548,7 +548,7 @@ class DomainDeleteView(DomainFormBaseView):
         if form.is_valid():
             print("!!! In form.is_valid")
             if domain.state != "READY":
-                form.add_error(None, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+                messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
                 print("Return error")
                 return self.render_to_response(self.get_context_data(form=form))
             if is_policy_acknowleged:
