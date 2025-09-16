@@ -263,7 +263,6 @@ class User(AbstractUser):
         return None
 
     def get_num_portfolios(self):
-        print("portfolios: ", self.get_portfolios())
         return self.get_portfolios().count()
 
     def get_portfolios(self):
