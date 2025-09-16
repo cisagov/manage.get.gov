@@ -167,23 +167,6 @@ button {
                 .usa-nav-link:active {
                     font-weight: normal;
                 }
-
-                // Organizations submenu items use button instead of link
-                // button,
-                // button:hover {
-                //     background-color: inherit;
-                // }
-            
-                // button {
-                //     padding: 0 0;
-                //     margin-right: 0;
-                //     width: 100%;
-                //     font-size: 1rem;
-                //     justify-content: flex-start;
-                //     &:hover {
-                //         text-decoration: underline;
-                //     }
-                // }
             }
             transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
