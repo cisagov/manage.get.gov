@@ -539,20 +539,20 @@ class DomainDeleteView(DomainFormBaseView):
     template_name = "domain_delete.html"
     form_class = DomainDeleteForm
 
+    
     def post(self, request, domain_pk):
         domain = get_object_or_404(Domain, pk=domain_pk)
         self.object = domain
         form = self.form_class(request.POST)
-        confirmed = request.POST.get("confirmed") == "True"
-        print("!!! Before form.is_valid")
+        is_policy_acknowleged = request.POST.get('is_policy_acknowledged', 'False')
         if form.is_valid():
             print("!!! In form.is_valid")
             if domain.state != "READY":
                 form.add_error(None, f"Cannot delete domain {domain.name} from current state {domain.state}.")
                 print("Return error")
                 return self.render_to_response(self.get_context_data(form=form))
-            if confirmed:
-                domain.place_client_hold()
+            if is_policy_acknowleged:
+                # domain.place_client_hold()
                 messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
