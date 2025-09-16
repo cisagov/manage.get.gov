@@ -1,4 +1,3 @@
-# registrar/management/commands/restore_approved_requests.py
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
@@ -250,10 +249,23 @@ class Command(BaseCommand):
             old_status = dr.status
             dr.approved_domain = dom
             dr.status = S.APPROVED
+
             if approval_log:
-                try:
-                    dr.last_status_update = approval_log.timestamp.date()
-                except Exception:
-                    pass
+                ts = getattr(approval_log, "timestamp", None)
+                if ts is None:
+                    self.stdout.write(
+                        self.style.WARNING(f"[{name}] approval_log has no timestamp; last_status_update unchanged.")
+                    )
+                else:
+                    try:
+                        # ts is usually a datetime; accept date too.
+                        dr.last_status_update = ts.date() if hasattr(ts, "date") else ts
+                    except (AttributeError, TypeError, ValueError) as e:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"[{name}] could not find last_status_update from approval_log timestamp ({ts!r}): {e}"
+                            )
+                        )
+
             dr.save(update_fields=["approved_domain", "status", "last_status_update", "updated_at"])
             self.stdout.write(f"[status] {old_status} → {dr.status}")
