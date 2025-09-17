@@ -1,5 +1,5 @@
-# test.yaml
-name: Testing
+# test-manual.yaml
+name: TestManual
 
 on:
   workflow_dispatch:
