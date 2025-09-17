@@ -157,7 +157,7 @@ INSTALLED_APPS = [
     # Our internal API application
     "api",
     # Only for generating documentation, uncomment to run manage.py generate_puml
-    "puml_generator",
+    # "puml_generator",
     # supports necessary headers for Django cross origin
     "corsheaders",
     # library for multiple choice filters in django admin

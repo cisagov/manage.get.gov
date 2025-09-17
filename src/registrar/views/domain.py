@@ -539,20 +539,23 @@ class DomainDeleteView(DomainFormBaseView):
     template_name = "domain_delete.html"
     form_class = DomainDeleteForm
 
-    
     def post(self, request, domain_pk):
         domain = get_object_or_404(Domain, pk=domain_pk)
         self.object = domain
         form = self.form_class(request.POST)
-        is_policy_acknowleged = request.POST.get('is_policy_acknowledged', 'False')
+        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
         if form.is_valid():
             print("!!! In form.is_valid")
-            if domain.state != "READY":
+            print("!!! domain.state is ", domain.state)
+            if domain.state != "ready":
+                print("!!! In first if statement")
                 messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
-                print("Return error")
+                print("!!! Return error")
                 return self.render_to_response(self.get_context_data(form=form))
-            if is_policy_acknowleged:
-                # domain.place_client_hold()
+            if is_policy_acknowledged and domain.state == "ready":
+                print("!!! In second if statement")
+                domain.place_client_hold()
                 messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
@@ -560,6 +563,21 @@ class DomainDeleteView(DomainFormBaseView):
 
         # Form not valid -> redisplay with errors
         return self.render_to_response(self.get_context_data(form=form))
+
+
+"""
+12:16:38.656: [APP/PROC/WEB.0] [17/Sep/2025 19:16:38] INFO [registrar.models.domain:1710] clientHold()-> inside clientHold
+12:16:39.167: [APP/PROC/WEB.0] [17/Sep/2025 19:16:39] INFO [root:2398] Delete hold date on judicial1.gov
+12:16:39.276: [APP/PROC/WEB.0] [17/Sep/2025 19:16:39] INFO [registrar.models.domain:1071] get_security_email-> getting the contact
+12:16:39.173: [APP/PROC/WEB.0] [17/Sep/2025 19:16:39] INFO [registrar.registrar_middleware:305] DB_CONN_END: req_id=unknown, queries=0, duration=0.534s, total_queries=0, status=302, path=/domain/424/delete
+
+
+12:20:42.247: [APP/PROC/WEB.0] [17/Sep/2025 19:20:42] INFO [registrar.registrar_middleware:296] DB_CONN_START: queries_executed=0
+12:20:42.387: [APP/PROC/WEB.0] [17/Sep/2025 19:20:42] INFO [registrar.models.domain:1710] clientHold()-> inside clientHold
+12:20:43.013: [APP/PROC/WEB.0] [17/Sep/2025 19:20:43] INFO [root:2398] Delete hold date on judicial1.gov
+12:20:43.102: [APP/PROC/WEB.0] [17/Sep/2025 19:20:43] INFO [registrar.registrar_middleware:296] DB_CONN_START: queries_executed=0
+12:20:43.026: [APP/PROC/WEB.0] [17/Sep/2025 19:20:43] INFO [registrar.registrar_middleware:305] DB_CONN_END: req_id=unknown, queries=0, duration=0.778s, total_queries=0, status=302, path=/admin/registrar/domain/424/change/
+"""
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
