@@ -181,13 +181,15 @@ class CheckPortfolioMiddleware:
             if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
                 org_select_redirect = reverse("your-portfolios")
                 return HttpResponseRedirect(org_select_redirect)
-        if request.user.is_any_org_user():
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        # Remove second condition when we turn on multiple portfolios flag everywhere
+        has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") \
+            and request.user.is_any_org_user()) or request.user.is_org_user(request)
+        if has_portfolio_domains and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
 
