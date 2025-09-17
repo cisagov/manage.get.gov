@@ -121,8 +121,8 @@ a.usa-button--outline:active {
 }
 
 // Red outline button variant
-a.usa-button--outline-red,
-a.usa-button--outline-red:visited {
+.usa-button--outline-red,
+.usa-button--outline-red:visited {
   border-color: color('red-50'); // Button border colour
   box-shadow: inset 0 0 0 2px color('red-50'); // The button shadow colour
   color: color('red-50'); // For the text 
@@ -131,15 +131,15 @@ a.usa-button--outline-red:visited {
   display: inline-block;
 }
 
-a.usa-button--outline-red:hover,
-a.usa-button--outline-red:focus {
+.usa-button--outline-red:hover,
+.usa-button--outline-red:focus {
   border-color: color('red-60');
   box-shadow: inset 0 0 0 2px color('red-60');
   color: color('red-60');
   background-color: transparent;
 }
 
-a.usa-button--outline-red:active {
+.usa-button--outline-red:active {
   border-color: color('red-70');
   box-shadow: inset 0 0 0 2px color('red-70');
   color: color('red-70');
