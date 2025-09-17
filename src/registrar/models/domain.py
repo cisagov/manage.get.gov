@@ -1086,7 +1086,6 @@ class Domain(TimeStampedModel, DomainHelper):
     def _place_client_hold(self):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
-        print("In _place_client_hold function")
         request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
         try:
             registry.send(request, cleaned=True)
@@ -1095,8 +1094,6 @@ class Domain(TimeStampedModel, DomainHelper):
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"registry error placing client hold: {err}")
             raise (err)
-        except Exception as e:
-            logger.error(f"!!!! registry general error placing client hold: {e}")
 
     def _remove_client_hold(self):
         """This domain is okay to be active.
