@@ -1,11 +1,11 @@
-name: Detect Python changes
-description: Outputs whether *.py files changed and their list
+name: Detect Python and HTML changes
+description: Outputs whether *.py or HTML files changed and their list
 outputs:
   any:
     description: "true/false if any matched files changed"
     value: ${{ steps.detect.outputs.any }}
   list:
-    description: "newline-separated list of changed *.py files"
+    description: "newline-separated list of changed *.py and HTML files"
     value: ${{ steps.detect.outputs.list }}
 runs:
   using: "composite"
@@ -23,34 +23,44 @@ runs:
 
         DEFAULT_BRANCH="${{ github.event.repository.default_branch || 'main' }}"
 
-        git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
+        git fetch --no-tags --depth=2 origin "${DEFAULT_BRANCH}"
 
         echo "DEBUG - HEAD_SHA: $(git rev-parse HEAD)"
 
         BASE_SHA="$(git merge-base "origin/${DEFAULT_BRANCH}" HEAD)"
         
+        CURRENT_BRANCH="$(git branch --show-current)"
+
+        if [ "$CURRENT_BRANCH" = "$DEFAULT_BRANCH" ]
+        then
+          COMPARE_SHA="$(git rev-parse HEAD^)"
+        else
+          COMPARE_SHA=${BASE_SHA}
+        fi
+
         echo "-------DEBUG (detector)--------"
         echo "BASE_SHA: ${BASE_SHA}, HEAD=$(git rev-parse HEAD)"
-        git diff --name-status "${BASE_SHA}..HEAD"
+        echo "COMPARE_SHA: ${COMPARE_SHA}, CURRENT_BRANCH=${CURRENT_BRANCH}"
+        git diff --name-status "${COMPARE_SHA}..HEAD"
         echo "-------------------------------"
 
         ###########################
         # CHANGED_ALL shows every file different between my branch's HEAD and the merge-base with main.
-        # PY_CHANGED includes all python files changed when you merge main into your branch. 
+        # MATCHED_CHANGES includes all python and HTML files changed when you merge main into your branch. 
         ###########################
-        CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${BASE_SHA}..HEAD" | tr -d '\r' | sort -u)"
-        PY_CHANGED="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.py$' || true)"
+        CHANGED_ALL="$(git diff --name-only --diff-filter=ACMRDT "${COMPARE_SHA}..HEAD" | tr -d '\r' | sort -u)"
+        MATCHED_CHANGES="$(printf '%s\n' "$CHANGED_ALL" | grep -Ei '\.(py|html)$' || true)"
         
         # multi-line output
         echo "list<<EOF" >> "$GITHUB_OUTPUT"
-        printf '%s\n' "$PY_CHANGED" >> "$GITHUB_OUTPUT"
+        printf '%s\n' "$MATCHED_CHANGES" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
 
-        if [ -n "$PY_CHANGED" ]
+        if [ -n "$MATCHED_CHANGES" ]
         then
           echo "any=true" >> "$GITHUB_OUTPUT"
-          echo "Matched python files:"
-          echo "$PY_CHANGED"
+          echo "Matched python and HTML files:"
+          echo "$MATCHED_CHANGES"
         else
           echo "any=false" >> "$GITHUB_OUTPUT"
           

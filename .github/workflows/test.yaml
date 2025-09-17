@@ -10,8 +10,8 @@ on:
       - main
 
 jobs:
-  detect-python-changes:
-    name: Detect Python changes
+  detect-file-changes:
+    name: Detect Python and HTML changes
     runs-on: ubuntu-latest
     outputs:
       any: ${{ steps.det.outputs.any }}
@@ -22,11 +22,11 @@ jobs:
 
         - name: Detect
           id: det
-          uses: ./.github/actions/detect-python-changes
+          uses: ./.github/actions/detect-file-changes
 
   python-linting:
-    needs: detect-python-changes
-    if: needs.detect-python-changes.outputs.any == 'true'
+    needs: detect-file-changes
+    if: needs.detect-file-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -38,8 +38,8 @@ jobs:
         run: docker compose run app python manage.py lint
 
   python-test:
-    needs: detect-python-changes
-    if: needs.detect-python-changes.outputs.any == 'true'
+    needs: detect-file-changes
+    if: needs.detect-file-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -49,8 +49,8 @@ jobs:
         run: docker compose run app python manage.py test --parallel
 
   django-migrations-complete:
-    needs: detect-python-changes
-    if: needs.detect-python-changes.outputs.any == 'true'
+    needs: detect-file-changes
+    if: needs.detect-file-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

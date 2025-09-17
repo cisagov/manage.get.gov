@@ -694,9 +694,9 @@ class MockDb(TestCase):
             domain=cls.domain_1,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_1,
+            sub_organization=cls.suborganization_1,
             federal_type="executive",
             is_election_board=False,
-            portfolio=cls.portfolio_1,
         )
         cls.domain_information_2, _ = DomainInformation.objects.get_or_create(
             creator=cls.user,
