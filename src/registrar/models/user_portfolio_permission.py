@@ -39,6 +39,7 @@ class UserPortfolioPermission(TimeStampedModel):
         # NOTE: Check FORBIDDEN_PORTFOLIO_ROLE_PERMISSIONS before adding roles here.
         UserPortfolioRoleChoices.ORGANIZATION_MEMBER: [
             UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+            UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS,
         ],
     }
 

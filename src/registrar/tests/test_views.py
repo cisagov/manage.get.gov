@@ -1060,13 +1060,12 @@ class PortfoliosTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_no_redirect_when_user_has_no_portfolios(self):
         """No redirect so no follow,
-        implicitely test for the presense of the h2 by looking up its id"""
+        implicitly test for the presense of the h2 by looking up its id"""
         self.portfolio.delete()
         self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            home_page = self.app.get(reverse("home"))
-            self._set_session_cookie()
+        home_page = self.app.get(reverse("home"))
+        self._set_session_cookie()
 
-            self.assertNotContains(home_page, self.portfolio.organization_name)
+        self.assertNotContains(home_page, self.portfolio.organization_name)
 
-            self.assertContains(home_page, 'id="domain-requests-header"')
+        self.assertContains(home_page, 'id="domain-requests-header"')

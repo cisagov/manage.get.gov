@@ -1,7 +1,11 @@
 {% load static %}
 {% load custom_filters %}
 
+{% if hide_portfolio_navbar %}
+<header class="usa-header usa-header--extended usa-header__top-level-only">
+{% else %}
 <header class="usa-header usa-header--extended">
+{% endif %}
     <div class="usa-navbar usa-navbar--widescreen padding-x--widescreen">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
         <button type="button" class="usa-menu-btn">Menu</button>
@@ -9,6 +13,7 @@
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
         <div class="usa-nav__inner usa-nav__inner--widescreen padding-x--widescreen">
+        
             <button type="button" class="usa-nav__close">
                 <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
             </button>
@@ -66,7 +71,7 @@
                 </a>
             </li> -->
 
-                {% if has_organization_requests_flag %}
+            {% if is_portfolio_user %}
                 <li class="usa-nav__primary-item">
                     <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
                     {% if has_edit_request_portfolio_permission %}
@@ -105,16 +110,13 @@
                         </a>
                     {% endif %}
                 </li>
-                {% endif %}
 
-                {% if has_organization_members_flag %}
-                    {% if has_view_members_portfolio_permission %}
-                    <li class="usa-nav__primary-item">
-                        <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
-                            Members
-                        </a>
-                    </li>
-                    {% endif %}
+                {% if has_view_members_portfolio_permission %}
+                <li class="usa-nav__primary-item">
+                    <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
+                        Members
+                    </a>
+                </li>
                 {% endif %}
 
                 <li class="usa-nav__primary-item">
@@ -129,5 +131,6 @@
             </ul>
         </div>
     </nav>
+    {% endif %}
     {% endblock %}
 </header>

@@ -11,7 +11,7 @@ STATUS: Submitted
 ----------------------------------------------------------------
 
 NEXT STEPS
-We’ll review your request. This review period can take 30 business days. Due to the volume of requests, the wait time is longer than usual. We appreciate your patience.  
+We’ll review your request. This review period can take 10 business days.  
 {% if is_org_user %}
 During our review we’ll verify that your requested domain meets our naming requirements.
 {% else %}

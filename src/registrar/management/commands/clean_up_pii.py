@@ -14,7 +14,6 @@ PII_FIELDS = {
     "User": ["email", "first_name", "last_name"],
     "PublicContact": ["email", "first_name", "last_name", "phone"],
     "DomainInvitation": ["email"],
-    "PortfolioInvitation": ["email"],
     "SeniorOfficial": ["email", "first_name", "last_name"],
 }
 

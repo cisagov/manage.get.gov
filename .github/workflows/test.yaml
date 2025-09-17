@@ -6,15 +6,27 @@ on:
     branches:
       - main
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.gitignore'
     branches:
       - main
 
 jobs:
+  detect-file-changes:
+    name: Detect Python and HTML changes
+    runs-on: ubuntu-latest
+    outputs:
+      any: ${{ steps.det.outputs.any }}
+      list: ${{ steps.det.outputs.list }}
+    steps:
+        - name: Checkout repo (required for local actions)
+          uses: actions/checkout@v4
+
+        - name: Detect
+          id: det
+          uses: ./.github/actions/detect-file-changes
+
   python-linting:
+    needs: detect-file-changes
+    if: needs.detect-file-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,6 +38,8 @@ jobs:
         run: docker compose run app python manage.py lint
 
   python-test:
+    needs: detect-file-changes
+    if: needs.detect-file-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -35,6 +49,8 @@ jobs:
         run: docker compose run app python manage.py test --parallel
 
   django-migrations-complete:
+    needs: detect-file-changes
+    if: needs.detect-file-changes.outputs.any == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

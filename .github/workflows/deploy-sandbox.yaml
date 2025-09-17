@@ -10,6 +10,7 @@ jobs:
   variables: 
     if: | 
       startsWith(github.head_ref, 'backup/')
+        || startsWith(github.head_ref, 'cw')
         || startsWith(github.head_ref, 'testdb')
         || startsWith(github.head_ref, 'acadia')
         || startsWith(github.head_ref, 'glacier')

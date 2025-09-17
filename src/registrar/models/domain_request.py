@@ -15,7 +15,6 @@ from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
-from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
@@ -1000,8 +999,7 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
-                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
-                is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
+                is_org_user = self.portfolio is not None and recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
                 purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
@@ -1373,17 +1371,16 @@ class DomainRequest(TimeStampedModel):
 
     def unlock_organization_contact(self) -> bool:
         """Unlocks the organization_contact step."""
-        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
-            # Check if the current federal agency is an outlawed one
-            if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
-                Portfolio = apps.get_model("registrar.Portfolio")
-                return (
-                    FederalAgency.objects.exclude(
-                        id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
-                    )
-                    .filter(id=self.federal_agency.id)
-                    .exists()
+        # Check if the current federal agency is an outlawed one
+        if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
+            Portfolio = apps.get_model("registrar.Portfolio")
+            return (
+                FederalAgency.objects.exclude(
+                    id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
                 )
+                .filter(id=self.federal_agency.id)
+                .exists()
+            )
         return bool(
             self.federal_agency is not None
             or self.organization_name is not None

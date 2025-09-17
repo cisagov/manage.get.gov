@@ -92,9 +92,10 @@ secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # PROTOTYPE: Used for DNS hosting
-secret_registry_tenant_key = secret("REGISTRY_TENANT_KEY", None)
-secret_registry_tenant_name = secret("REGISTRY_TENANT_NAME", None)
-secret_registry_service_email = secret("REGISTRY_SERVICE_EMAIL", None)
+secret_dns_tenant_key = secret("DNS_TENANT_KEY", None)
+secret_dns_tenant_name = secret("DNS_TENANT_NAME", None)
+secret_registry_service_email = secret("DNS_SERVICE_EMAIL", None)
+secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", None)
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -808,9 +809,10 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
-SECRET_REGISTRY_TENANT_KEY = secret_registry_tenant_key
-SECRET_REGISTRY_TENANT_NAME = secret_registry_tenant_name
-SECRET_REGISTRY_SERVICE_EMAIL = secret_registry_service_email
+SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
+SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
+SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
+SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
@@ -849,6 +851,8 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-cw.app.cloud.gov",
+    "getgov-cw.app.cloud.gov",
     "getgov-testdb.app.cloud.gov",
     "getgov-acadia.app.cloud.gov",
     "getgov-glacier.app.cloud.gov",

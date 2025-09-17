@@ -25,7 +25,6 @@ from registrar.forms.portfolio import (
     PortfolioMemberForm,
     PortfolioNewMemberForm,
 )
-from waffle.models import get_waffle_flag_model
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -41,10 +40,6 @@ class TestFormValidation(MockEppLib):
         self.API_BASE_PATH = "/api/v1/available/?domain="
         self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
-        # We use both of these flags in the test. In the normal app these are generated normally.
-        # The alternative syntax is adding the decorator to each test.
-        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
-        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
 
     @less_console_noise_decorator
     def test_org_contact_zip_invalid(self):

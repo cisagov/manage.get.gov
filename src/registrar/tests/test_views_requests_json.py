@@ -9,7 +9,6 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 from django.utils.dateparse import parse_datetime
-from waffle.testutils import override_flag
 
 
 class GetRequestsJsonTest(TestWithUser, WebTest):
@@ -288,7 +287,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         for expected_value, actual_value in zip(expected_domain_values, requested_domains):
             self.assertEqual(expected_value, actual_value)
 
-    @override_flag("organization_feature", active=True)
     def test_get_domain_requests_json_with_portfolio_view_all_requests(self):
         """Test that an authenticated user gets the list of 3 requests for portfolio. The 3 requests
         are the requests that are associated with the portfolio."""
@@ -363,7 +361,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
                 )
                 self.assertEqual("settings", svg_icons[i])
 
-    @override_flag("organization_feature", active=True)
     def test_get_domain_requests_json_with_portfolio_edit_requests(self):
         """Test that an authenticated user gets the list of 2 requests for portfolio. The 2 requests
         are the requests that are associated with the portfolio and owned by self.user."""
@@ -479,29 +476,25 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
 
         # Test search with portfolio (including creator search)
         self.client.force_login(self.user)
-        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
-            user_perm, _ = UserPortfolioPermission.objects.get_or_create(
-                user=self.user,
-                portfolio=self.portfolio,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-            )
-            response = self.app.get(
-                reverse("get_domain_requests_json"), {"search_term": "info", "portfolio": self.portfolio.id}
-            )
-            self.assertEqual(response.status_code, 200)
-            data = response.json
-            self.assertTrue(any(req["creator"].startswith("info") for req in data["domain_requests"]))
+        user_perm, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        response = self.app.get(
+            reverse("get_domain_requests_json"), {"search_term": "info", "portfolio": self.portfolio.id}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertTrue(any(req["creator"].startswith("info") for req in data["domain_requests"]))
 
         # Test search without portfolio (should not search on creator)
-        with override_flag("organization_feature", active=False), override_flag("organization_requests", active=False):
-            user_perm.delete()
-            response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "info"})
-            self.assertEqual(response.status_code, 200)
-            data = response.json
-            self.assertEqual(len(data["domain_requests"]), 0)
+        user_perm.delete()
+        response = self.app.get(reverse("get_domain_requests_json"), {"search_term": "info"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertEqual(len(data["domain_requests"]), 0)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_status_filter(self):
         """Test that status filtering works properly"""
         # Test a single status
@@ -516,8 +509,6 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         data = response.json
         self.assertEqual(len(data["domain_requests"]), 0)
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_combined_filtering_and_sorting(self):
         """Test that combining filters and sorting works properly"""
         user_perm, _ = UserPortfolioPermission.objects.get_or_create(

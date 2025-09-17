@@ -1,4 +1,8 @@
+import logging
+
 from enum import IntEnum
+
+logger = logging.getLogger(__name__)
 
 
 class BlankValueError(ValueError):
@@ -307,3 +311,9 @@ class SecurityEmailError(Exception):
 
     def __str__(self):
         return f"{self.message}"
+
+
+class APIError(Exception):
+    """Custom exception for API-related errors"""
+
+    pass

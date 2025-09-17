@@ -1168,12 +1168,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            if flag_is_active(request, "organization_feature"):
+            if request.user.is_org_user(request):
                 # show analyst_fieldsets for analysts
                 return self.analyst_fieldsets
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_fieldsets_no_portfolio
+            return self.analyst_fieldsets_no_portfolio
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -1187,11 +1185,9 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            if flag_is_active(request, "organization_feature"):
+            if request.user.is_org_user(request):
                 return self.analyst_readonly_fields
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_readonly_fields_no_portfolio
+            return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
@@ -1870,7 +1866,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 
             try:
                 if (
-                    flag_is_active(request, "organization_feature")
+                    request.user.is_org_user(request)
                     and not flag_is_active(request, "multiple_portfolios")
                     and domain_org is not None
                     and not member_of_this_org
@@ -3076,14 +3072,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "suborganization_state_territory",
         ]
 
-        org_flag = flag_is_active_for_user(request.user, "organization_requests")
         # Hide FEB fields for non-FEB requests
         if not (obj and obj.portfolio and obj.is_feb()):
             excluded_fields.update(feb_fields)
 
-        # Hide certain portfolio and suborg fields behind the organization requests flag
-        # if it is not enabled
-        if not org_flag:
+        # Hide certain portfolio and suborg fields for users that are not in a portfolio
+        if not request.user.is_org_user(request):
             excluded_fields.update(org_fields)
             excluded_fields.update(feb_fields)
 
@@ -4063,15 +4057,35 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "expiration_date",
         "created_at",
         "first_ready",
+        "on_hold_date_display",
+        "days_on_hold_display",
         "deleted",
     ]
 
     fieldsets = (
         (
             None,
-            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
+            {
+                "fields": [
+                    "state",
+                    "expiration_date",
+                    "first_ready",
+                    "on_hold_date_display",
+                    "days_on_hold_display",
+                    "deleted",
+                    "dnssecdata",
+                    "nameservers",
+                ]
+            },
         ),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        """Add computed display methods to readonly_fields"""
+        return super().get_readonly_fields(request, obj) + (
+            "on_hold_date_display",
+            "days_on_hold_display",
+        )
 
     # ------- Domain Information Fields
 
@@ -4148,6 +4162,19 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Use native value for the change form
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
+
+    # --- On hold date / days on hold
+    @admin.display(description=_("On hold date"))
+    def on_hold_date_display(self, obj):
+        """Display the date the domain was put on hold"""
+        date = obj.on_hold_date
+        return date
+
+    @admin.display(description=_("Days on hold"))
+    def days_on_hold_display(self, obj):
+        """Display how many days the domain has been on hold"""
+        days = obj.days_on_hold
+        return days
 
     def dnssecdata(self, obj):
         return "No" if obj.state == Domain.State.UNKNOWN or not obj.dnssecdata else "Yes"

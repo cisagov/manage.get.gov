@@ -60,9 +60,10 @@ services:
       - AWS_S3_BUCKET_NAME
       # File encryption credentials
       - SECRET_ENCRYPT_METADATA
-      - REGISTRY_TENANT_KEY
-      - REGISTRY_SERVICE_EMAIL
-      - REGISTRY_TENANT_NAME
+      - DNS_TENANT_KEY
+      - DNS_SERVICE_EMAIL
+      - DNS_TENANT_NAME
+      - DNS_TEST_TENANT_ID
     stdin_open: true
     tty: true
     ports:
