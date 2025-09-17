@@ -192,8 +192,8 @@ class CheckPortfolioMiddleware:
         return None
 
     def set_portfolio_in_session(self, request):
-        # If multiple portfolios flag not enabled, default to first portfolio
-        if not flag_is_active(request, "multiple_portfolios"):
+        # If multiple portfolios flag not enabled or user has 1 portfolio, default to first portfolio
+        if not flag_is_active(request, "multiple_portfolios") or request.user.get_num_portfolios() == 1:
             request.session["portfolio"] = request.user.get_first_portfolio()
 
 
