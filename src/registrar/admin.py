@@ -13,6 +13,7 @@ from django.db.models import (
 )
 
 from django.db.models.functions import Concat, Coalesce
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -4309,6 +4310,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "Error connecting to the registry. No expiration date was found.",
                 messages.ERROR,
+            )
+        except ValidationError:
+            self.message_user(
+                request,
+                "A newer version of this form exists please refresh the page and try again.",
+                messages.WARNING,
             )
         except Exception as err:
             logger.error(err, stack_info=True)

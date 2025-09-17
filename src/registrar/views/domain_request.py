@@ -3,12 +3,14 @@ from datetime import date
 from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
+from django.utils.dateparse import parse_datetime
 from registrar.decorators import (
     HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
@@ -346,6 +348,10 @@ class DomainRequestWizard(TemplateView):
             context["pending_requests_message"] = mark_safe(message_content)  # nosec
 
         context["pending_requests_exist"] = len(pending_requests) > 0
+        # capture the snapshot of the record the user is looking at
+        self.storage["snapshot_updated_at"] = (
+            self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else None
+        )
 
         return render(request, self.template_name, context)
 
@@ -522,13 +528,25 @@ class DomainRequestWizard(TemplateView):
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
-        if self.is_valid(forms):
-            # always save progress
-            self.save(forms)
-        else:
+        # pull the snapshot from session storage (set during GET)
+        snap = self.storage.get("snapshot_updated_at")
+        if snap:
+            # ensure optimistic lock compares against what the user saw on GET
+            parsed = parse_datetime(snap)
+            self.domain_request._original_updated_at = parsed
+        if not self.is_valid(forms):
             context = self.get_context_data()
             context["forms"] = forms
             return render(request, self.template_name, context)
+        try:
+            self.save(forms)  # this calls RegistrarForm.to_database(...) which calls obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.domain_request.refresh_from_db()
+            # DO NOT persist the POST; show the latest DB state
+            messages.warning(
+                request, "A newer version of this form exists. Please try again."
+            )
+            return self.goto(self.steps.current)
 
         if button == "back":
             return self.goto(self.steps.prev)
@@ -559,9 +577,12 @@ class DomainRequestWizard(TemplateView):
 
         Saves the domain request to the database.
         """
-        for form in forms:
-            if form is not None and hasattr(form, "to_database"):
-                form.to_database(self.domain_request)
+        try:
+            for form in forms:
+                if form is not None and hasattr(form, "to_database"):
+                    form.to_database(self.domain_request)
+        except ValidationError:
+            raise
 
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
