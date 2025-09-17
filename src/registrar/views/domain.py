@@ -543,8 +543,7 @@ class DomainDeleteView(DomainFormBaseView):
         domain = get_object_or_404(Domain, pk=domain_pk)
         self.object = domain
         form = self.form_class(request.POST)
-        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
-
+        is_policy_acknowledged = request.POST.get('is_policy_acknowledged', 'False') == 'True'
         if form.is_valid():
             print("!!! In form.is_valid")
             print("!!! domain.state is ", domain.state)
@@ -555,7 +554,6 @@ class DomainDeleteView(DomainFormBaseView):
                 return self.render_to_response(self.get_context_data(form=form))
             if is_policy_acknowledged and domain.state == "ready":
                 print("!!! In second if statement")
-                domain.place_client_hold()
                 messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
