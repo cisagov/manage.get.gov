@@ -1,0 +1,43 @@
+# test.yaml
+name: Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+        type: string
+
+jobs:
+  python-linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Linting
+        working-directory: ./src
+        # all of our linting is configured in
+        # registrar/management/commands/lint.py
+        run: docker compose run app python manage.py lint
+
+  python-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Unit tests
+        working-directory: ./src
+        run: docker compose run app python manage.py test --parallel
+
+  django-migrations-complete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for complete migrations
+        working-directory: ./src
+        run:  |
+          docker compose run app ./manage.py makemigrations --dry-run --verbosity 3 && \
+          docker compose run app ./manage.py makemigrations --check
