@@ -765,8 +765,8 @@ class DomainDeleteForm(forms.Form):
 
     is_policy_acknowledged = forms.BooleanField(
         required=True,
-        label="I understand that my domain will be deleted within 7 days of my request. After that, it cannnot be recovered ",
+        label="I understand that my domain will be deleted within 7 days of my request. After that, it cannnot be recovered.",
         error_messages={
-            "required": "Check the box if you read and agree to the requirements for operating a .gov domain."
+            "required": "Check the box if you understand that your domain will be deleted within 7 days of making this request."
         },
     )

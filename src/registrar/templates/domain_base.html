@@ -63,7 +63,7 @@
         {% if request.path|endswith:"renewal"%}
         <h1>Renew {{domain.name}} </h1>
         {% elif request.path|endswith:"delete"%}
-        <h1>Delete {{domain.name}} </h1>
+        <h1>Request to delete {{domain.name}} </h1>
         {%else%}
         <h1 class="break-word">Domain overview</h1>
         {% endif%}

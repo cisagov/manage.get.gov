@@ -37,8 +37,24 @@
 
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
-    <h2 class="domain-name-wrap">Some title here</h2>
-    <p>Some text here about domain retirement, I'd also like to retire too
+    <!-- <h2 class="domain-name-wrap">Request to delete {{domain}}</h2> -->
+    <p>If you would like to delete this domain, you can request to delete it at any time.
+      Check the box at the bottom to indicate you understand that your domain will be deleted and
+      unable to be recovered after 7 days of making this request.
+      <ul class="usa-list">
+      <li>Once you request to delete this domain, it will be placed "on hold" in the .gov registry for 7 days before deletion.</li>
+      <li>A domain manager can cancel the request for deletion at any time within 7 days of the request. If will
+        immediately be placed back in "ready" status.
+      </li>
+      <li>When your domain is deleted, it will be removed from the .gov registry. 
+        This means that websites and emails associated with the domain will no longer work.
+      </li>
+      <li>After the domain is deleted from the .gov registry, it cannot be recoevered.
+        To obtain the same domain name, a domain manager will have to make a new request for the domain.
+      </li>
+
+    
+    </ul>
     </p>
 
 
@@ -60,7 +76,7 @@
             {% if form.is_policy_acknowledged.errors %}
             {% for error in form.is_policy_acknowledged.errors %}
             <div class="usa-error-message display-flex" role="alert">
-              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error: Check the box if you read and agree to the requirements for operating a .gov domain.">
+              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error: Check the box if you understand that your domain will be deleted within 7 days of making this request.">
                 <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
               </svg>
               <span class="margin-left-05">{{ error }}</span>
@@ -77,9 +93,7 @@
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
             <label class="usa-checkbox__label" for="delete-domain-checkbox">
-              I read and agree to the 
-              <a href="https://get.gov/domains/requirements/" class="usa-link" target="_blank">
-              requirements for operating a .gov domain</a>.<abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+              I understand that my domain will be deleted within 7 days of my request for deletion. After that, it cannot be recovered. <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
           </div>
 
@@ -90,7 +104,7 @@
         >
           Request deletion
         </button>
-        
+
       </form>
       </fieldset>
     </div>  <!-- End of the acknowledgement section div -->
@@ -101,7 +115,7 @@
     aria-labelledby="domain-deletion-confirm-button-heading"
     aria-describedby="domain-deletion-confirm-button-desc"
   >
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to delete "|add:domain.name modal_description="Once you submit this request, it cannot be undone." modal_button_id="domain-deletion-confirm-button" modal_button_text="Confirm deletion" modal_button_class="usa-button--secondary" %}  
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to request to delete "|add:domain.name modal_description="Once you request domain deletion, your domain will be placed on hold for 7 days. After that, it will be deleted form the .gov registry. Websites and emails will no longer work for the domain. If you change your mind, you can cancel this request within 7 days of making your request by emailing help@get.gov." modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
   </div>
   
  <!-- hidden modal trigger-->
