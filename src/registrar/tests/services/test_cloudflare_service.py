@@ -135,7 +135,7 @@ class TestCloudflareService(SimpleTestCase):
         )
 
     @patch("registrar.services.cloudflare_service.make_api_request")
-    def test_get_all_accounts_success(self, mock_make_request):
+    def test_get_page_accounts_success(self, mock_make_request):
         """Test successful get_all_accounts call"""
         mock_make_request.return_value = {
             "success": True,
@@ -147,7 +147,7 @@ class TestCloudflareService(SimpleTestCase):
             },
         }
 
-        result = self.service.get_all_accounts()
+        result = self.service.get_page_accounts(1, 10)
 
         self.assertEqual(
             result,
@@ -160,7 +160,7 @@ class TestCloudflareService(SimpleTestCase):
         )
 
     @patch("registrar.services.cloudflare_service.make_api_request")
-    def test_get_all_accounts_failure(self, mock_make_request):
+    def test_get_page_accounts_failure(self, mock_make_request):
         """Test get_all_accounts with API failure"""
         mock_make_request.return_value = {
             "success": False,
@@ -169,7 +169,7 @@ class TestCloudflareService(SimpleTestCase):
         }
 
         with self.assertRaises(APIError) as context:
-            self.service.get_all_accounts()
+            self.service.get_page_accounts(1, 10)
 
         self.assertIn("Failed to get accounts", str(context.exception))
 
