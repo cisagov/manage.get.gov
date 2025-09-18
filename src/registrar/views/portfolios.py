@@ -1188,6 +1188,34 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationsDropdownView(ListView, FormMixin):
+    """
+    View for Organizations dropdown.
+    Actual session switching is handled in PortfolioOrganizationSelectView.
+    """
+
+    model = UserPortfolioPermission
+    template_name = "portfolio_organizations_dropdown.html"
+    context_object_name = "portfolio"
+    pk_url_kwarg = "portfolio_pk"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html", context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
+            "portfolio"
+        )
+        context["user_portfolio_permissions"] = user_portfolio_permissions
+        return context
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
 class PortfolioOrganizationsView(ListView, FormMixin):
     """
     View for Select Portfolio Organization page when the user does not
@@ -1249,7 +1277,8 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
         Handles updating active portfolio in session.
         """
         self.form = self.get_form()
-        portfolio_name = self.form["set_session_portfolio_button"].value()
+        portfolio_button = self.form["set_session_portfolio_button"]
+        portfolio_name = portfolio_button.value()
         portfolio = Portfolio.objects.get(organization_name=portfolio_name)
 
         # Verify user has permissions to access selected portfolio

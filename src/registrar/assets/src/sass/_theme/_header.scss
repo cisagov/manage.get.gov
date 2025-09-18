@@ -65,6 +65,10 @@ $-expand-less-icon: (
     }
 }
 
+button {
+    outline-offset: 0;
+}
+
 .usa-header--basic {
     .usa-logo__text {
         color: color('primary-darker');
@@ -171,6 +175,7 @@ $-expand-less-icon: (
             overflow: visible;
         }
     }
+    z-index: 2;
 }
 
 .usa-nav__inner--widescreen,
@@ -424,5 +429,33 @@ $-expand-less-icon: (
 
     .usa-nav__primary {
         visibility: hidden;
+    }
+}
+
+#organizations-submenu {
+    button,
+    button:hover {
+        background-color: inherit;
+    }
+
+    button {
+        @include at-media($theme-header-min-width) {
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+        font-size: 1rem;
+        font-weight: font-weight("normal");
+        justify-content: flex-start;
+        border-radius: 0;
+        outline-offset: 0;
+        padding: 0 0;
+        margin-right: 0;
+        width: 100%;
+        a {
+            margin-right: auto;
+            text-align: left;
+            width: 100%;
+        }
     }
 }
