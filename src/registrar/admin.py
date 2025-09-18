@@ -1563,6 +1563,15 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     get_roles.short_description = "Member access"  # type: ignore
 
+    def delete_model(self, request, obj):
+        """
+        When user permission for the current session portfolio is deleted,
+        clear the session variable after deleting the user permission.
+        """
+        obj.delete()
+        if obj.portfolio_id == request.session["portfolio"].id:
+            del request.session["portfolio"]
+
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
         When deleting in DJA, if you select multiple items in a table using checkboxes and apply a delete action
@@ -1570,6 +1579,9 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         This override makes sure our code in the model gets executed in these situations."""
         for obj in queryset:
             obj.delete()  # Calls the overridden delete method on each instance
+            # If user was removed from current session portfolio, clear session portfolio 
+            if obj.portfolio_id == request.session["portfolio"].id:
+                del request.session["portfolio"]
 
 
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):

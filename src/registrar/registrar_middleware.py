@@ -168,12 +168,17 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        # if multiple portfolios are allowed for this user
-        if request.user.get_first_portfolio():
-            self.set_portfolio_in_session(request)
-        else:
-            # Set the portfolio in the session if its not already in it
-            request.session["portfolio"] = None
+        # Assign user portfolio if:
+        # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
+        # 2. User has only 1 portfolio
+        # Remove condition 1 when we remove multiple portfolios feature flag
+        if not flag_is_active(request, "multiple_portfolios") or request.user.get_num_portfolios() == 1:
+            request.session["portfolio"] = request.user.get_first_portfolio()
+        # If user no longer has permission to session portfolio,
+        # eg their user portfolio permission deleted or replaced,
+        # delete session portfolio since user no longer can access that portfolio
+        if request.session.get("portfolio") and not request.user.is_org_user(request):
+            del request.session["portfolio"]
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.excluded_pages):
@@ -193,11 +198,6 @@ class CheckPortfolioMiddleware:
             return HttpResponseRedirect(portfolio_redirect)
 
         return None
-
-    def set_portfolio_in_session(self, request):
-        # If multiple portfolios flag not enabled or user has 1 portfolio, default to first portfolio
-        if not flag_is_active(request, "multiple_portfolios") or request.user.get_num_portfolios() == 1:
-            request.session["portfolio"] = request.user.get_first_portfolio()
 
 
 class RestrictAccessMiddleware:
