@@ -114,8 +114,7 @@
     aria-labelledby="domain-deletion-confirm-button-heading"
     aria-describedby="domain-deletion-confirm-button-desc"
   >
-  <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to request to delete "|add:domain.name modal_description="Once you request domain deletion, your domain will be placed on hold for 7 days. After that, it will be deleted form the .gov registry. Websites and emails will no longer work for the domain. If you change your mind, you can cancel this request within 7 days of making your request by emailing <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>." modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to request to delete "|add:domain.name modal_description="Once you request domain deletion, your domain will be placed on hold for 7 days. After that, it will be deleted form the .gov registry. Websites and emails will no longer work for the domain. If you change your mind, you can cancel this request within 7 days of making your request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>."|safe modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
   </div>
   
  <!-- hidden modal trigger-->
