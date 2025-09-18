@@ -172,14 +172,15 @@ class CheckPortfolioMiddleware:
         # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
         # 2. User has only 1 portfolio
         # Remove condition 1 when we remove multiple portfolios feature flag
-        if (not flag_is_active(request, "multiple_portfolios")
-            and request.user.get_first_portfolio()) or request.user.get_num_portfolios() == 1:
+        if (
+            not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
+        ) or request.user.get_num_portfolios() == 1:
             request.session["portfolio"] = request.user.get_first_portfolio()
         # If user no longer has permission to session portfolio,
         # eg their user portfolio permission deleted or replaced,
         # delete session portfolio since user no longer can access that portfolio.
         # The user should get redirected to the Select organization page.
-        if request.session.get("portfolio") and not request.user.is_org_user(request):
+        elif request.session.get("portfolio") and not request.user.is_org_user(request):
             del request.session["portfolio"]
 
         # Don't redirect on excluded pages (such as the setup page itself)

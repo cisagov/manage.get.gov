@@ -665,9 +665,7 @@ class TestPortfolio(WebTest):
         # Access the session via the request
         session = response.wsgi_request.session
         # Check if the 'portfolio' session variable exists
-        self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-        # Check the value of the 'portfolio' session variable
-        self.assertIsNone(session["portfolio"])
+        self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_portfolio_resets_on_login_for_multiple_portfolios_users(self):
@@ -705,9 +703,7 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertIsNone(session["portfolio"])
+            self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_org_member_can_only_see_domains_with_appropriate_permissions(self):
