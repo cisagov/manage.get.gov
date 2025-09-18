@@ -743,22 +743,27 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_page = additional_details_result.follow()
         requirements_form = requirements_page.forms[0]
 
-        requirements_form["requirements-is_policy_acknowledged"] = True
-
         # Before we go to the review page, let's remove some of the data from the request:
         domain_request = DomainRequest.objects.get()  # there's only one
 
         domain_request.generic_org_type = None
         domain_request.save()
-
-        # test next button
+        
+        # Refresh the Requirements page so snapshot matches the new updated_at
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = self.app.get(
+            reverse("domain-request:requirements", args=[domain_request.id])
+        )
+        requirements_form = requirements_page.forms[0]
+        requirements_form["requirements-is_policy_acknowledged"] = True
+        
+        # Submit and test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()
         # validate that data from this step are being saved
-
         domain_request.refresh_from_db()
-
         self.assertEqual(domain_request.is_policy_acknowledged, True)
+        
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)

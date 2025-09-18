@@ -4314,7 +4314,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         except ValidationError:
             self.message_user(
                 request,
-                "A newer version of this form exists please refresh the page and try again.",
+                "A newer version of this form exists. Please refresh the page.",
                 messages.WARNING,
             )
         except Exception as err:

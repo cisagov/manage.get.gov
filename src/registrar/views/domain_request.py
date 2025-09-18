@@ -543,9 +543,7 @@ class DomainRequestWizard(TemplateView):
         except ValidationError:
             self.domain_request.refresh_from_db()
             # DO NOT persist the POST; show the latest DB state
-            messages.warning(
-                request, "A newer version of this form exists. Please try again."
-            )
+            messages.warning(request, "A newer version of this form exists. Please try again.")
             return self.goto(self.steps.current)
 
         if button == "back":
