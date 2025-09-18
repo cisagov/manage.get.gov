@@ -2418,7 +2418,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
@@ -2530,8 +2531,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "medicare.gov")
 
         # Go back to organization type page and change type
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()

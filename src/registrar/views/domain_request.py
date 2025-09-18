@@ -27,7 +27,6 @@ from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 from registrar.views.utility.invitation_helper import get_org_membership
 from ..utility.email import send_templated_email, EmailSendingError
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -349,10 +348,6 @@ class DomainRequestWizard(TemplateView):
             context["pending_requests_message"] = mark_safe(message_content)  # nosec
 
         context["pending_requests_exist"] = len(pending_requests) > 0
-        # capture the snapshot of the record the user is looking at
-        self.storage["snapshot_updated_at"] = (
-            self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else None
-        )
 
         return render(request, self.template_name, context)
 
@@ -485,6 +480,7 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
             }
         context["domain_request_id"] = self.domain_request.id
+        context["version_token"] = self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else ""
         return context
 
     def get_step_list(self) -> list:
@@ -526,7 +522,7 @@ class DomainRequestWizard(TemplateView):
 
         forms = self.get_forms(use_post=True)
         # pull the snapshot from session storage (set during GET)
-        self.apply_optimistic_lock()
+        self.apply_optimistic_lock(request)
 
         if not self.is_valid(forms):
             return self.render_invalid(request, forms)
@@ -547,11 +543,11 @@ class DomainRequestWizard(TemplateView):
             self.is_portfolio = True
             self.configure_step_options()
 
-    def apply_optimistic_lock(self) -> None:
-        """Apply optimistic locking using the GET-time snapshot."""
-        snap: Optional[str] = self.storage.get("snapshot_updated_at")
-        if snap:
-            parsed = parse_datetime(snap)
+    def apply_optimistic_lock(self, request) -> None:
+        """Apply optimistic locking comparing against version in the submitted form."""
+        version_str = request.POST.get("version")
+        if version_str:
+            parsed = parse_datetime(version_str)
             self.domain_request._original_updated_at = parsed
 
     def render_invalid(self, request, forms: list) -> HttpResponse:
