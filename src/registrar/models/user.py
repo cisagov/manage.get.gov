@@ -413,6 +413,9 @@ class User(AbstractUser):
         portfolio = request.session.get("portfolio")
         return portfolio is not None and self.has_view_portfolio_permission(portfolio)
 
+    def is_any_org_user(self):
+        return self.get_num_portfolios() > 0
+
     def is_multiple_orgs_user(self, request):
         has_multiple_portfolios_feature_flag = flag_is_active(request, "multiple_portfolios")
         num_portfolios = self.get_num_portfolios()

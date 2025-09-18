@@ -631,25 +631,11 @@ class TestPortfolio(WebTest):
         self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
-    def test_portfolio_in_session_is_none_and_no_portfolio(self):
-        """When user does not have a portfolio, the portfolio should be set to None in session."""
-        self.client.force_login(self.user)
-        response = self.client.get(reverse("home"))
-        # Ensure that middleware processes the session
-        session_middleware = SessionMiddleware(lambda request: None)
-        session_middleware.process_request(response.wsgi_request)
-        response.wsgi_request.session.save()
-        # Access the session via the request
-        session = response.wsgi_request.session
-        # Check if the 'portfolio' session variable exists
-        self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-        # Check the value of the 'portfolio' session variable
-        self.assertIsNone(session["portfolio"])
-
-    @less_console_noise_decorator
-    def test_portfolio_resets_on_login_when_multiple_portfolios_active(self):
-        """When multiple_portfolios flag is true and user has multiple portfolios,
-        there should be no active portfolio set in session."""
+    def test_portfolio_in_session_for_single_portfolio_users_with_multiple_portfolios_flag(self):
+        """When multiple_portfolios flag is true and user has only one portfolio,
+        the session portfolio should set to that one portfolio when the user logs in.
+        We can delete this test after we remove the multiple_portfolios flag to
+        reduce redunancy with the above test"""
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
@@ -661,8 +647,49 @@ class TestPortfolio(WebTest):
             response.wsgi_request.session.save()
             # Access the session via the request
             session = response.wsgi_request.session
+            # Check the 'portfolio' session variable exists in new login session
+            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
+            # Check the value of the 'portfolio' session variable
+            self.assertIsNotNone(session["portfolio"])
+            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+
+    @less_console_noise_decorator
+    def test_portfolio_in_session_is_none_and_no_portfolio(self):
+        """When user does not have a portfolio, the portfolio should be set to None in session."""
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("home"))
+        # Ensure that middleware processes the session
+        session_middleware = SessionMiddleware(lambda request: None)
+        session_middleware.process_request(response.wsgi_request)
+        response.wsgi_request.session.save()
+        # Access the session via the request
+        session = response.wsgi_request.session
+        # Check if the 'portfolio' session variable exists
+        self.assertNotIn("portfolio", session, "Portfolio session variable should not exist. User has no porfolios.")
+
+    @less_console_noise_decorator
+    def test_portfolio_resets_on_login_for_multiple_portfolios_users(self):
+        """When multiple_portfolios flag is true and user has multiple portfolios,
+        there should be no active portfolio set in session when the user logs in."""
+        self.client.force_login(self.user)
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        self.portfolio_2 = self.portfolio_2, _ = Portfolio.objects.get_or_create(
+            creator=self.user, organization_name="Second Portfolio"
+        )
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
+        UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio_2, roles=roles)
+        with override_flag("multiple_portfolios", active=True):
+            response = self.client.get(reverse("home"))
+            # Ensure that middleware processes the session
+            session_middleware = SessionMiddleware(lambda request: None)
+            session_middleware.process_request(response.wsgi_request)
+            response.wsgi_request.session.save()
+            # Access the session via the request
+            session = response.wsgi_request.session
             # Check the 'portfolio' session variable does not exist in new login session
-            self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
+            self.assertNotIn(
+                "portfolio", session, "Portfolio session variable should not exist. User has no porfolios."
+            )
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_multiple_portfolios_active_and_no_portfolio(self):
@@ -678,9 +705,7 @@ class TestPortfolio(WebTest):
             # Access the session via the request
             session = response.wsgi_request.session
             # Check if the 'portfolio' session variable exists
-            self.assertIn("portfolio", session, "Portfolio session variable should exist.")
-            # Check the value of the 'portfolio' session variable
-            self.assertIsNone(session["portfolio"])
+            self.assertNotIn("portfolio", session, "Portfolio session variable should not exist yet.")
 
     @less_console_noise_decorator
     def test_org_member_can_only_see_domains_with_appropriate_permissions(self):
