@@ -27,6 +27,7 @@ from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 from registrar.views.utility.invitation_helper import get_org_membership
 from ..utility.email import send_templated_email, EmailSendingError
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -510,18 +511,14 @@ class DomainRequestWizard(TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
-            self.is_portfolio = True
-            # Configure titles, wizard_conditions, unlocking_steps, and steps
-            self.configure_step_options()
+        self.ensure_portfolio_mode(request)
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
-            # Split into a function: C901 'DomainRequestWizard.post' is too complex (11)
-            self.handle_intro_acknowledge(request)
+            return self.handle_intro_acknowledge(request)
 
         # if accessing this class directly, redirect to the first step
         if self.__class__ == DomainRequestWizard:
@@ -529,15 +526,11 @@ class DomainRequestWizard(TemplateView):
 
         forms = self.get_forms(use_post=True)
         # pull the snapshot from session storage (set during GET)
-        snap = self.storage.get("snapshot_updated_at")
-        if snap:
-            # ensure optimistic lock compares against what the user saw on GET
-            parsed = parse_datetime(snap)
-            self.domain_request._original_updated_at = parsed
+        self.apply_optimistic_lock()
+
         if not self.is_valid(forms):
-            context = self.get_context_data()
-            context["forms"] = forms
-            return render(request, self.template_name, context)
+            return self.render_invalid(request, forms)
+
         try:
             self.save(forms)  # this calls RegistrarForm.to_database(...) which calls obj.save(optimistic_lock=True)
         except ValidationError:
@@ -546,6 +539,35 @@ class DomainRequestWizard(TemplateView):
             messages.warning(request, "A newer version of this form exists. Please try again.")
             return self.goto(self.steps.current)
 
+        return self.dispatch_next(button, request)
+
+    def ensure_portfolio_mode(self, request) -> None:
+        """Enable portfolio mode if applicable and reconfigure steps."""
+        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
+            self.is_portfolio = True
+            self.configure_step_options()
+
+    def apply_optimistic_lock(self) -> None:
+        """Apply optimistic locking using the GET-time snapshot."""
+        snap: Optional[str] = self.storage.get("snapshot_updated_at")
+        if snap:
+            parsed = parse_datetime(snap)
+            self.domain_request._original_updated_at = parsed
+
+    def render_invalid(self, request, forms: list) -> HttpResponse:
+        """Render the template with invalid forms and context."""
+        context = self.get_context_data()
+        context["forms"] = forms
+        return render(request, self.template_name, context)
+
+    def redirect_after_save(self, request) -> HttpResponse:
+        """Redirect after 'save_and_return' depending on user type."""
+        if request.user.is_org_user(request):
+            return HttpResponseRedirect(reverse("domain-requests"))
+        return HttpResponseRedirect(reverse("home"))
+
+    def dispatch_next(self, button: str, request) -> HttpResponse:
+        """Route to the appropriate next page based on the pressed button."""
         if button == "back":
             return self.goto(self.steps.prev)
         # if user opted to save their progress,
@@ -556,11 +578,7 @@ class DomainRequestWizard(TemplateView):
         # if user opted to save progress and return,
         # return them to the home page
         if button == "save_and_return":
-            if request.user.is_org_user(request):
-                return HttpResponseRedirect(reverse("domain-requests"))
-            else:
-                return HttpResponseRedirect(reverse("home"))
-
+            return self.redirect_after_save(request)
         # otherwise, proceed as normal
         return self.goto_next_step()
 
