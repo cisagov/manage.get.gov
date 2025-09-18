@@ -176,7 +176,8 @@ class CheckPortfolioMiddleware:
             request.session["portfolio"] = request.user.get_first_portfolio()
         # If user no longer has permission to session portfolio,
         # eg their user portfolio permission deleted or replaced,
-        # delete session portfolio since user no longer can access that portfolio
+        # delete session portfolio since user no longer can access that portfolio.
+        # The user should get redirected to the Select organization page.
         if request.session.get("portfolio") and not request.user.is_org_user(request):
             del request.session["portfolio"]
 
