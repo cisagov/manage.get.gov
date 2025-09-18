@@ -275,7 +275,7 @@ class DomainInformation(TimeStampedModel):
             if self.domain and self.domain.name:
                 return self.domain.name
             else:
-                return f"domain info set up and created by {self.requester}"
+                return f"domain info set up and requested by {self.requester}"
         except Exception:
             return ""
 

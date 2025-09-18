@@ -60,7 +60,7 @@
             {% if portfolio %}
                 {% if DomainRequest.requester %}
                 <p>
-                    <strong class="text-primary-dark">Created by:</strong> {{DomainRequest.requester.email|default:DomainRequest.requester.get_formatted_name }}
+                    <strong class="text-primary-dark">Requested by:</strong> {{DomainRequest.requester.email|default:DomainRequest.requester.get_formatted_name }}
                 </p>
                 {% else %}
                 <p>

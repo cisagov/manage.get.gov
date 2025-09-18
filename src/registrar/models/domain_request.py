@@ -894,7 +894,7 @@ class DomainRequest(TimeStampedModel):
             if self.requested_domain and self.requested_domain.name:
                 return self.requested_domain.name
             else:
-                return f"{self.status} domain request created by {self.requester}"
+                return f"{self.status} domain request requested by {self.requester}"
         except Exception:
             return ""
 

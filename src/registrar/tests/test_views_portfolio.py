@@ -1291,7 +1291,7 @@ class TestPortfolio(WebTest):
         domain_requests = self.app.get(reverse("domain-requests"))
         self.assertEqual(domain_requests.status_code, 200)
 
-        self.assertContains(domain_requests, "Created by")
+        self.assertContains(domain_requests, "Requested by")
 
     @less_console_noise_decorator
     def test_no_org_requests_no_additional_column(self):
@@ -1301,7 +1301,7 @@ class TestPortfolio(WebTest):
         home = self.app.get(reverse("home"))
 
         self.assertContains(home, "Domain requests")
-        self.assertNotContains(home, "Created by")
+        self.assertNotContains(home, "Requested by")
 
     @less_console_noise_decorator
     def test_portfolio_cache_updates_when_modified(self):
