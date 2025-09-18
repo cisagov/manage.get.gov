@@ -107,13 +107,12 @@
           {% endif %}
         {% endif %}
 
-
-        <!-- To be delete domain -->
+        <!-- Request deletion form -->
         <li class="usa-sidenav__item">
           <a href="{{ domain_delete_url }}"
             {% if request.path|startswith:domain_delete_url %}class="usa-current"{% endif %}
           >
-            Delete domain
+            Request deletion
           </a>
         </li>
     

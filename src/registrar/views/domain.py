@@ -534,7 +534,7 @@ class DomainRenewalView(DomainBaseView):
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDeleteView(DomainFormBaseView):
-    # """Domain delete page."""
+    """Domain delete page."""
 
     template_name = "domain_delete.html"
     form_class = DomainDeleteForm
