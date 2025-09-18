@@ -674,7 +674,7 @@ class TestPortfolio(WebTest):
         self.client.force_login(self.user)
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         self.portfolio_2 = self.portfolio_2, _ = Portfolio.objects.get_or_create(
-            creator=self.user, organization_name="Second Portfolio"
+            requester=self.user, organization_name="Second Portfolio"
         )
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio, roles=roles)
         UserPortfolioPermission.objects.get_or_create(user=self.user, portfolio=self.portfolio_2, roles=roles)
