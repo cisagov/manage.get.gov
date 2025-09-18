@@ -688,7 +688,8 @@ class TestPortfolio(WebTest):
             session = response.wsgi_request.session
             # Check the 'portfolio' session variable does not exist in new login session
             self.assertNotIn(
-                "portfolio", session, "Portfolio session variable should not exist. User has no porfolios.")
+                "portfolio", session, "Portfolio session variable should not exist. User has no porfolios."
+            )
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_when_multiple_portfolios_active_and_no_portfolio(self):
