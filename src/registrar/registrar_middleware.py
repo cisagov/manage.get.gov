@@ -172,7 +172,8 @@ class CheckPortfolioMiddleware:
         # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
         # 2. User has only 1 portfolio
         # Remove condition 1 when we remove multiple portfolios feature flag
-        if not flag_is_active(request, "multiple_portfolios") or request.user.get_num_portfolios() == 1:
+        if (not flag_is_active(request, "multiple_portfolios")
+            and request.user.get_first_porttfolio()) or request.user.get_num_portfolios() == 1:
             request.session["portfolio"] = request.user.get_first_portfolio()
         # If user no longer has permission to session portfolio,
         # eg their user portfolio permission deleted or replaced,
