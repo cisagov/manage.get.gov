@@ -135,8 +135,8 @@ class User(AbstractUser):
     @classmethod
     def get_default_user(cls):
         """Returns the default "system" user"""
-        default_creator, _ = User.objects.get_or_create(username="System")
-        return default_creator
+        default_requester, _ = User.objects.get_or_create(username="System")
+        return default_requester
 
     def restrict_user(self):
         self.status = self.RESTRICTED
