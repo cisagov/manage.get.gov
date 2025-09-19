@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from django.test import SimpleTestCase
 
 from registrar.services.dns_host_service import DnsHostService
@@ -8,7 +8,8 @@ from registrar.utility.errors import APIError
 class TestDnsHostService(SimpleTestCase):
 
     def setUp(self):
-        self.service = DnsHostService()
+        mock_client = Mock()
+        self.service = DnsHostService(client=mock_client)
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
