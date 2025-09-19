@@ -227,7 +227,7 @@ class UserPortfolioPermission(TimeStampedModel):
         Returns a string representation of the user's access to domain requests.
 
         Uses the `get_domain_requests_display` function to determine if the user
-        is a "Creator" (can create and edit requests), a "Viewer" (can only view requests),
+        is a "Requester" (can create and edit requests), a "Viewer" (can only view requests),
         or has "No access" to domain requests.
 
         Returns:
