@@ -11,5 +11,6 @@ from .domain import (
     DomainDsdataForm,
     DomainSuborganizationForm,
     DomainRenewalForm,
+    DomainDeleteForm,
 )
 from .portfolio import PortfolioOrgAddressForm, PortfolioMemberForm, PortfolioOrganizationSelectForm

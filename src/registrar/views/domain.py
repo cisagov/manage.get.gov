@@ -62,6 +62,7 @@ from ..forms import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+    DomainDeleteForm,
 )
 
 from epplibwrapper import (
@@ -134,6 +135,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
+        context["domain_deletion"] = flag_is_active_for_user(self.request.user, "domain_deletion")
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
@@ -449,6 +451,17 @@ class DomainView(DomainBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainAdvancedSettingView(DomainBaseView):
+
+    template_name = "domain_advanced_setting.html"
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -515,6 +528,35 @@ class DomainRenewalView(DomainBaseView):
                 "is_domain_manager": True,
             },
         )
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainDeleteView(DomainFormBaseView):
+    """Domain delete page."""
+
+    template_name = "domain_delete.html"
+    form_class = DomainDeleteForm
+
+    def post(self, request, domain_pk):
+        domain = get_object_or_404(Domain, pk=domain_pk)
+        self.object = domain
+        form = self.form_class(request.POST)
+        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
+        if form.is_valid():
+            if domain.state != "ready":
+                messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+                return self.render_to_response(self.get_context_data(form=form))
+            if is_policy_acknowledged:
+                domain.place_client_hold()
+                domain.save()
+                messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
+                # redirect to domain overview
+                return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
+            return self.render_to_response(self.get_context_data(form=form))
+
+        # Form not valid -> redisplay with errors
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
