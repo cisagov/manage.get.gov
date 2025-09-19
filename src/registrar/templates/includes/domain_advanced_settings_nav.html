@@ -1,0 +1,38 @@
+    {% url 'domain-advanced-setting' domain_pk=domain.id as advanced_settings_url %}
+    {% url 'domain-renewal' domain_pk=domain.id as domain_renewal_url %}
+    {% url 'domain-delete' domain_pk=domain.id as  domain_delete_url %}
+   
+   <a href="{{ advanced_settings_url }}" {% if request.path == advanced_settings_url or request.path == domain_renewal_url or request.path == domain_delete_url%}class="usa-current"{% endif %}>
+        Advanced settings
+      </a>
+
+      {% if request.path == advanced_settings_url or request.path == domain_renewal_url or request.path == domain_delete_url %}
+      <ul class="usa-sidenav__sublist">
+        
+     
+        {% if is_domain_manager %}
+          {% if domain.is_expiring or domain.is_expired %}
+          <li class="usa-sidenav__item">  
+            <a href="{{ domain_renewal_url }}"
+              {% if request.path == domain_renewal_url %}class="usa-current"{% endif %}
+            >
+            Renewal form
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}
+
+   
+        <li class="usa-sidenav__item">
+          <a href="{{ domain_delete_url }}"
+            {% if request.path == domain_delete_url %}class="usa-current"{% endif %}
+          >
+            Request deletion
+          </a>
+        </li>
+      </ul>
+      {% endif%}
+
+      
+
+

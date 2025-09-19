@@ -120,6 +120,32 @@ a.usa-button--outline:active {
   color: color('primary-darker');
 }
 
+// Red outline button variant
+.usa-button--outline-red,
+.usa-button--outline-red:visited {
+  border-color: color('red-50'); // Button border colour
+  box-shadow: inset 0 0 0 2px color('red-50'); // The button shadow colour
+  color: color('red-50'); // For the text 
+  background-color: transparent; // So there's no fill
+  text-decoration: none;   // For the <a> tag
+  display: inline-block;
+}
+
+.usa-button--outline-red:hover,
+.usa-button--outline-red:focus {
+  border-color: color('red-60');
+  box-shadow: inset 0 0 0 2px color('red-60');
+  color: color('red-60');
+  background-color: transparent;
+}
+
+.usa-button--outline-red:active {
+  border-color: color('red-70');
+  box-shadow: inset 0 0 0 2px color('red-70');
+  color: color('red-70');
+  background-color: transparent;
+}
+
 // Used on: Domain request withdraw confirmation
 a.withdraw {
   background-color: color('error');
