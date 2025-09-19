@@ -16,3 +16,16 @@
 .usa-card__heading {
     color: #{$dhs-blue};
 }
+
+/* ----------------------------------
+Custom tag for Enterprise pill
+---------------------------------- */
+.usa-tag--enterprise {
+    @extend .usa-tag;
+    background-color: #{$dhs-blue-10};
+    border: 1px solid #{$dhs-blue-30};
+    color: #{$dhs-blue}; 
+    font-weight: 600; // semi-bold
+    padding: 1px 0.5rem;
+    font-size: font-size("body", "sm");
+}   
