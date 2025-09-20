@@ -279,6 +279,10 @@ class RequestLoggingMiddleware:
         return self.get_response(request)
 
 
+# used for tracking db reuse
+_LAST_DB_PID = None
+
+
 class DatabaseConnectionMiddleware:
     """
     Middleware to track database connection metrics and query performance.
@@ -287,28 +291,75 @@ class DatabaseConnectionMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self._skip_paths = {"/health", "/metrics"}
 
     def __call__(self, request):
-        request._db_start_time = time.time()
-        request._db_queries_start = len(connections["default"].queries)
+        for p in self._skip_paths:
+            if request.path.startswith(p):
+                return self.get_response(request)
 
-        # Log connection state
-        connection = connections["default"]
-        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
+        start = time.perf_counter()
+        q_before = len(connections["default"].queries)  # 0 unless debug cursor enabled
+
+        pid_start = _get_backend_pid_safe()
+
+        logger.info(
+            f"DB_CONN_START pid_start={pid_start} queries_before={q_before} path={request.path}",
+            extra={"evt": "db_conn_start", "pid_start": pid_start, "queries_before": q_before, "path": request.path},
+        )
+
         response = self.get_response(request)
-        if hasattr(request, "_db_start_time"):
-            connection = connections["default"]
-            query_count = len(connection.queries) - request._db_queries_start
-            duration = time.time() - request._db_start_time
 
-            # Get request ID for correlation
-            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
-            logger.info(
-                f"DB_CONN_END: req_id={request_id}, "
-                f"queries={query_count}, "
-                f"duration={duration:.3f}s, "
-                f"total_queries={len(connection.queries)}, "
-                f"status={response.status_code}, "
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        q_after = len(connections["default"].queries)
+        q_delta = q_after - q_before
+
+        pid_end = _get_backend_pid_safe()
+
+        global _LAST_DB_PID
+        reused = pid_end is not None and _LAST_DB_PID == pid_end
+        if pid_end is not None:
+            _LAST_DB_PID = pid_end
+
+        logger.info(
+            (
+                "DB_CONN_END "
+                f"req_id={request.META.get('HTTP_X_REQUEST_ID','unknown')} "
+                f"status={getattr(response,'status_code',None)} "
+                f"duration_ms={duration_ms} "
+                f"queries_delta={q_delta} "
+                f"pid_end={pid_end} "
+                f"db_reused={reused} "
                 f"path={request.path}"
-            )
+            ),
+            extra={
+                "evt": "db_conn_end",
+                "req_id": request.META.get("HTTP_X_REQUEST_ID", "unknown"),
+                "status": getattr(response, "status_code", None),
+                "duration_ms": duration_ms,
+                "queries_delta": q_delta,
+                "pid_end": pid_end,
+                "db_reused": reused,
+                "path": request.path,
+            },
+        )
+
         return response
+
+
+def _get_backend_pid_safe():
+    """
+    Return the PostgreSQL backend PID if available, else None.
+    Avoids forcing a connection open.
+    """
+    try:
+        conn_wrapper = connections["default"]
+        # If the DB connection is already opened
+        raw = getattr(conn_wrapper, "connection", None)
+        if raw is None:
+            return None
+        # psycopg2/psycopg3 expose get_backend_pid()
+        getpid = getattr(raw, "get_backend_pid", None)
+        return getpid() if callable(getpid) else None
+    except Exception:
+        return None
