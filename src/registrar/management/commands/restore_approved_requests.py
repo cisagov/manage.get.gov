@@ -56,7 +56,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--fallback-manager-email",
-            help="Email of a user to assign MANAGER if the DomainRequest has no creator "
+            help="Email of a user to assign MANAGER if the DomainRequest has no requester "
             "(e.g. cameron.dixon@cisa.dhs.gov).",
         )
 
@@ -116,7 +116,7 @@ class Command(BaseCommand):
         return user
 
     def _build_queryset(self, domains: list[str] | None, ct_id: int):
-        base = DomainRequest.objects.select_related("requested_domain", "approved_domain", "creator")
+        base = DomainRequest.objects.select_related("requested_domain", "approved_domain", "requester")
         if domains:
             return base.filter(requested_domain__name__in=domains).exclude(status=S.APPROVED).order_by("-updated_at")
         approved_once_ids = (
@@ -160,7 +160,7 @@ class Command(BaseCommand):
         elif existing_dom and info_exists:
             self.stdout.write(f"[{name}] Found DomainInformation for Domain id={existing_dom.id}.")
 
-        manager_user = dr.creator if dr.creator_id else fallback_user
+        manager_user = dr.requester if dr.requester_id else fallback_user
         manager_desc = f"user_id={manager_user.id} ({manager_user.email})" if manager_user else "none (skip)"
         role_exists = bool(
             manager_user
@@ -234,7 +234,7 @@ class Command(BaseCommand):
                     + f"MANAGER role for user_id={manager_user.id} ({manager_user.email}) on {name}"
                 )
             else:
-                self.stdout.write("[skip] MANAGER role (no creator and no fallback user)")
+                self.stdout.write("[skip] MANAGER role (no requester and no fallback user)")
 
             # Relink & status
             existing_for_domain = DomainRequest.objects.filter(approved_domain=dom).exclude(pk=dr.pk).first()
