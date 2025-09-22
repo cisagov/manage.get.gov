@@ -189,7 +189,7 @@ class Domain(TimeStampedModel, DomainHelper):
             """Returns a help message for a desired state for /admin. If none is found, an empty string is returned"""
             admin_help_texts = {
                 cls.UNKNOWN: (
-                    "The creator of the associated domain request has not logged in to "
+                    "The requester of the associated domain request has not logged in to "
                     "manage the domain since it was approved. "
                     'The state will switch to "DNS needed" after they access the domain in the registrar.'
                 ),

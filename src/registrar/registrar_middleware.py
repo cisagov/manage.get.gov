@@ -168,12 +168,20 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        # if multiple portfolios are allowed for this user
-        if request.user.get_first_portfolio():
-            self.set_portfolio_in_session(request)
-        else:
-            # Set the portfolio in the session if its not already in it
-            request.session["portfolio"] = None
+        # Assign user portfolio if:
+        # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
+        # 2. User has only 1 portfolio
+        # Remove condition 1 when we remove multiple portfolios feature flag
+        if (
+            not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
+        ) or request.user.get_num_portfolios() == 1:
+            request.session["portfolio"] = request.user.get_first_portfolio()
+        # If user no longer has permission to session portfolio,
+        # eg their user portfolio permission deleted or replaced,
+        # delete session portfolio since user no longer can access that portfolio.
+        # The user should get redirected to the Select organization page.
+        elif request.session.get("portfolio") and not request.user.is_org_user(request):
+            del request.session["portfolio"]
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.excluded_pages):
@@ -181,24 +189,17 @@ class CheckPortfolioMiddleware:
             if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
                 org_select_redirect = reverse("your-portfolios")
                 return HttpResponseRedirect(org_select_redirect)
-        if request.user.is_org_user(request):
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        has_portfolio_domains = (
+            flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
+        ) or request.user.is_org_user(request)
+        if has_portfolio_domains and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
-
-    def set_portfolio_in_session(self, request):
-        # NOTE: we will want to change later to have a workflow for selecting
-        # portfolio and another for switching portfolio; for now, select first
-        # TODO #3776: Add logic to redirect user to Select Organization page if
-        # portfolio is none. For now, default portfolio to first portfolio
-        # as in production.
-        if not flag_is_active(request, "multiple_portfolios"):
-            request.session["portfolio"] = request.user.get_first_portfolio()
 
 
 class RestrictAccessMiddleware:

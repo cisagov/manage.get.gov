@@ -50,12 +50,12 @@ def _get_domain_request_ids_from_request(request):
     Otherwise, return domain request ids associated with request.user.
     """
     portfolio = request.GET.get("portfolio")
-    filter_condition = Q(creator=request.user)
+    filter_condition = Q(requester=request.user)
     if portfolio:
         if request.user.is_org_user(request) and request.user.has_view_all_requests_portfolio_permission(portfolio):
             filter_condition = Q(portfolio=portfolio)
         else:
-            filter_condition = Q(portfolio=portfolio, creator=request.user)
+            filter_condition = Q(portfolio=portfolio, requester=request.user)
     domain_requests = DomainRequest.objects.filter(filter_condition).exclude(
         status=DomainRequest.DomainRequestStatus.APPROVED
     )
@@ -80,9 +80,9 @@ def _apply_search(queryset, request):
         elif is_portfolio:
             queryset = queryset.filter(
                 Q(requested_domain__name__icontains=search_term)
-                | Q(creator__first_name__icontains=search_term)
-                | Q(creator__last_name__icontains=search_term)
-                | Q(creator__email__icontains=search_term)
+                | Q(requester__first_name__icontains=search_term)
+                | Q(requester__last_name__icontains=search_term)
+                | Q(requester__email__icontains=search_term)
             )
         # For non org users
         else:
@@ -109,9 +109,9 @@ def _apply_sorting(queryset, request):
     sort_by = request.GET.get("sort_by", "id")  # Default to 'id'
     order = request.GET.get("order", "asc")  # Default to 'asc'
 
-    # Handle special case for 'creator'
-    if sort_by == "creator":
-        sort_by = "creator__email"
+    # Handle special case for 'requester'
+    if sort_by == "requester":
+        sort_by = "requester__email"
 
     if order == "desc":
         sort_by = f"-{sort_by}"
@@ -138,7 +138,7 @@ def _serialize_domain_request(request, domain_request, user):
     ]
 
     # No portfolio action_label
-    if domain_request.creator == user:
+    if domain_request.requester == user:
         if domain_request.status in editable_statuses:
             action_label = "Edit"
         elif domain_request.status in view_only_statuses:
@@ -156,8 +156,8 @@ def _serialize_domain_request(request, domain_request, user):
         portfolio = request.session.get("portfolio")
         is_deletable = (
             domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
-        ) and domain_request.creator == user
-        if user.has_edit_request_portfolio_permission(portfolio) and domain_request.creator == user:
+        ) and domain_request.requester == user
+        if user.has_edit_request_portfolio_permission(portfolio) and domain_request.requester == user:
             if domain_request.status in editable_statuses:
                 action_label = "Edit"
             elif domain_request.status in view_only_statuses:
@@ -181,7 +181,7 @@ def _serialize_domain_request(request, domain_request, user):
         "last_submitted_date": domain_request.last_submitted_date,
         "status": domain_request.get_status_display(),
         "created_at": format(domain_request.created_at, "c"),  # Serialize to ISO 8601
-        "creator": domain_request.creator.email,
+        "requester": domain_request.requester.email,
         "id": domain_request.id,
         "is_deletable": is_deletable,
         "action_url": action_url_map.get(action_label),

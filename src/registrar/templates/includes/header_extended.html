@@ -19,6 +19,10 @@
             </button>
             <div class="usa-nav__secondary">
                 <ul class="usa-nav__secondary-links">
+                    {% if has_multiple_portfolios %}
+                    {% load nav_header %}
+                    {% portfolio_organizations_dropdown %}
+                    {% endif %}
                     {% if user.is_authenticated %}
                     <li class="usa-nav__secondary-item">
                         <div class="usa-accordion">

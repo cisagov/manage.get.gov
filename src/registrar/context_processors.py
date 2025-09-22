@@ -65,6 +65,7 @@ def portfolio_permissions(request):
         "portfolio": None,
         "is_portfolio_user": False,
         "is_portfolio_admin": False,
+        "has_multiple_portfolios": False,
     }
     try:
         portfolio = request.session.get("portfolio")
@@ -80,7 +81,10 @@ def portfolio_permissions(request):
                 "portfolio": portfolio,
                 "is_portfolio_user": True,
                 "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
+                "has_multiple_portfolios": request.user.is_multiple_orgs_user(request),
             }
+        # Active portfolio may not be set yet, but indicate if user is a member of multiple portfolios
+        portfolio_context["has_multiple_portfolios"] = request.user.is_multiple_orgs_user(request)
         return portfolio_context
 
     except AttributeError:

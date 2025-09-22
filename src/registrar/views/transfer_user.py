@@ -188,7 +188,7 @@ class TransferUserView(View):
     @classmethod
     def get_domain_requests(cls, user):
         """A simplified version of domain_requests_json"""
-        domain_requests = DomainRequest.objects.filter(creator=user)
+        domain_requests = DomainRequest.objects.filter(requester=user)
 
         return domain_requests
 
