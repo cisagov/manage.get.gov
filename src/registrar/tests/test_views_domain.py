@@ -90,21 +90,21 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_with_twelve_nameservers, _ = Domain.objects.get_or_create(name="twelvenameserversdomain.gov")
         self.domain_with_thirteen_nameservers, _ = Domain.objects.get_or_create(name="thirteennameserversdomain.gov")
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_thirteen_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_twelve_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_three_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_no_nameserver)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dns_needed)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dsdata)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_multdsdata)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_thirteen_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_twelve_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_four_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_three_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_ip)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_just_nameserver)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_no_nameserver)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_on_hold)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_deleted)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dns_needed)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -279,7 +279,9 @@ class TestDomainDetail(TestDomainOverview):
             UserDomainRole.objects.all().delete()
 
             self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-            self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+            self.domain_information, _ = DomainInformation.objects.get_or_create(
+                requester=self.user, domain=self.domain
+            )
             self.role, _ = UserDomainRole.objects.get_or_create(
                 user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
             )
@@ -379,7 +381,7 @@ class TestDomainDetail(TestDomainOverview):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
         # need to create a different user than self.user because the user needs permission assignments
         user = get_user_model().objects.create(
             first_name="Test",
@@ -389,7 +391,7 @@ class TestDomainDetail(TestDomainOverview):
             title="test title",
         )
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
-        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
             user=user,
@@ -419,7 +421,7 @@ class TestDomainDetail(TestDomainOverview):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
         # need to create a different user than self.user because the user needs permission assignments
         user = get_user_model().objects.create(
             first_name="Test",
@@ -429,7 +431,7 @@ class TestDomainDetail(TestDomainOverview):
             title="test title",
         )
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
-        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
             user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -479,9 +481,9 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             user=self.user, domain=self.domain_to_renew, role=UserDomainRole.Roles.MANAGER
         )
 
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_to_renew)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_to_renew)
 
-        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
 
         self.user.save()
 
@@ -524,7 +526,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
         """In org model: If a user is NOT a domain manager and their domain is expiring soon,
         user be notified to contact a domain manager in the domain overview detail box."""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
         non_dom_manage_user = get_user_model().objects.create(
             first_name="Non Domain",
             last_name="Manager",
@@ -545,7 +547,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         )
         domain_to_renew2, _ = Domain.objects.get_or_create(name="bogusdomain2.gov")
         DomainInformation.objects.get_or_create(
-            creator=non_dom_manage_user, domain=domain_to_renew2, portfolio=self.portfolio
+            requester=non_dom_manage_user, domain=domain_to_renew2, portfolio=self.portfolio
         )
         non_dom_manage_user.refresh_from_db()
         self.client.force_login(non_dom_manage_user)
@@ -560,12 +562,12 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
         """Inorg model: If a user is a domain manager and their domain is expiring soon,
         user should be able to see the "Renew to maintain access" link domain overview detail box."""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", requester=self.user)
 
         domain_to_renew3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain_to_renew3, role=UserDomainRole.Roles.MANAGER)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_to_renew3, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_to_renew3, portfolio=portfolio)
         self.user.refresh_from_db()
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
@@ -762,7 +764,7 @@ class TestDomainManagers(TestDomainOverview):
     def setUp(self):
         super().setUp()
         # Add portfolio in order to test portfolio view
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Ice Cream")
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
         self.domain_information.save()
@@ -1110,7 +1112,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1143,7 +1145,7 @@ class TestDomainManagers(TestDomainOverview):
         caps_email_address = "MAYOR@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1172,7 +1174,7 @@ class TestDomainManagers(TestDomainOverview):
         allowed_email, _ = AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1199,7 +1201,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1238,7 +1240,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1282,7 +1284,7 @@ class TestDomainManagers(TestDomainOverview):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1317,7 +1319,7 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_email_validation_blocks_bad_email(self):
         """Inviting a bad email blocks at validation."""
         email_address = "mayor"
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1340,7 +1342,7 @@ class TestDomainManagers(TestDomainOverview):
         self.user.is_staff = False
         self.user.save()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         with patch("django.contrib.messages.error") as mock_error:
             add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
@@ -1414,7 +1416,7 @@ class TestDomainManagers(TestDomainOverview):
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
@@ -2233,12 +2235,12 @@ class TestDomainSuborganization(TestDomainOverview):
     def setUp(self):
         super().setUp()
         # Create a portfolio and two suborgs
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Ice Cream")
         self.suborg = Suborganization.objects.create(portfolio=self.portfolio, name="Vanilla")
         self.suborg_2 = Suborganization.objects.create(portfolio=self.portfolio, name="Chocolate")
 
         # Create an unrelated portfolio
-        self.unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
+        self.unrelated_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Fruit")
         self.unrelated_suborg = Suborganization.objects.create(portfolio=self.unrelated_portfolio, name="Apple")
 
         # Add the portfolio to the domain_information object
@@ -2780,7 +2782,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_on_org_name_change_with_portfolio(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
 
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.address_line1 = "123 Main St"
@@ -2807,7 +2809,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_on_change_by_analyst(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
 
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.address_line1 = "123 Main St"
@@ -2958,7 +2960,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         )
         portfolio, _ = Portfolio.objects.get_or_create(
             organization_name="portfolio",
-            creator=self.user,
+            requester=self.user,
         )
         self.domain_information.portfolio = portfolio
         self.domain_information.save()

@@ -40,7 +40,7 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         )
 
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
         # Assign permissions to the user making requests
         UserPortfolioPermission.objects.create(
@@ -60,10 +60,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         cls.domain4 = Domain.objects.create(name="example4.com", expiration_date="2024-03-01", state="ready")
 
         # Add domain1 and domain2 to portfolio
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain1, portfolio=cls.portfolio)
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain2, portfolio=cls.portfolio)
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain3, portfolio=cls.portfolio)
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain4, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain1, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain2, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain3, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain4, portfolio=cls.portfolio)
 
         # Assign user_member to view all domains
         UserPortfolioPermission.objects.create(

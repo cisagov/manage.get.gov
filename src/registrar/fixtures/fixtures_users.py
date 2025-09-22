@@ -150,6 +150,13 @@ class UserFixture:
             "last_name": "Kolden",
             "email": "tara.kolden@contractors.truss.works",
         },
+        {
+            "username": "742ea84a-9450-44a4-9d3f-dca56a0a8597",
+            "first_name": "Charlie",
+            "last_name": "Wells",
+            "email": "charles.wells@ecstech.com",
+            "title": "ADMIN",
+        },
     ]
 
     STAFF = [
@@ -252,6 +259,13 @@ class UserFixture:
             "first_name": "Tara-Analyst",
             "last_name": "Kolden-Analyst",
             "email": "tara.kolden+1@contractors.truss.works",
+        },
+        {
+            "username": "25fe3e87-4a20-4709-a0cf-72725e7b1f26",
+            "first_name": "Charlie",
+            "last_name": "Wells",
+            "email": "charles.wells.analyst@ecstech.com",
+            "title": "ANALYST",
         },
     ]
 
