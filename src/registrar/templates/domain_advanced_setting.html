@@ -34,8 +34,10 @@
             {% endif %}
         {% endif %}
 
-        {% url 'domain-delete' domain_pk=domain.id as url %}
-        <li><a href="{{ url }}">Delete domain</a></li>
+        {% if domain.state == "READY" %}
+          {% url 'domain-delete' domain_pk=domain.id as url %}
+          <li><a href="{{ url }}">Delete domain</a></li>
+        {% endif %}
 
     </ul>
 
