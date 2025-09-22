@@ -3125,11 +3125,13 @@ class TestDomainDeletion(TestWithUser):
         expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
 
         self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
-            name="igorville.gov", expiration_date=expiring_date
+            name="igorville.gov", state=Domain.State.READY, expiration_date=expiring_date
         )
 
         self.domain_not_expiring, _ = Domain.objects.get_or_create(
-            name="domainnotexpiring.gov", expiration_date=timezone.now().date() + timedelta(days=65)
+            name="domainnotexpiring.gov",
+            state=Domain.State.READY,
+            expiration_date=timezone.now().date() + timedelta(days=65),
         )
 
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_expiring_soon_date)

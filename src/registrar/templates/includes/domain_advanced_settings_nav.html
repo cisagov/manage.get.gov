@@ -23,7 +23,7 @@
       {% endif %}
 
 
-      {% if domain.state == "READY" %}
+      {% if domain.state == domain.State.READY %}
         <li class="usa-sidenav__item">
           <a href="{{ domain_delete_url }}"
             {% if request.path == domain_delete_url %}class="usa-current"{% endif %}
