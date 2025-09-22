@@ -11,6 +11,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from .common import GenericTestHelper, MockEppLib, create_user, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
+from waffle.testutils import override_flag
 
 from registrar.utility.errors import (
     NameserverError,
@@ -3103,3 +3104,43 @@ class TestDomainRenewal(TestWithUser):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
+
+class TestDomainDeletion(TestWithUser):
+    def setUp(self):
+        super().setUp()
+        today = datetime.now()
+        expiring_date = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+
+        self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
+            name="igorville.gov", expiration_date=expiring_date
+        )
+        
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_with_expiring_soon_date, role=UserDomainRole.Roles.MANAGER
+        )
+
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=False)
+    def test_advanced_settings_does_not_appear_with_inactive_domain_deletion_flag(self):
+        self.client.force_login(self.user)
+        detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
+        self.assertNotContains(detail_page, "Advanced Settings")
+        self.assertContains(detail_page, "Renewal form")
+    
+    @override_flag("domain_deletion", active=True)
+    @less_console_noise_decorator
+    def test_advanced_settings_appears_with_active_domain_deletion_flag(self):
+        self.client.force_login(self.user)
+        detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
+        self.assertContains(detail_page,"Renewal form")
+        self.assertContains(detail_page, "Delete domain")
+    
+    @override_flag("domain_deletion", active=True)
+    def test_if_acknowledged_is_checked(self):
+        self.client.force_login(self.user)
+        message = self.client.post(reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
+
+        self.assertContains(message, "Check the box if you understand that your domain will be deleted within 7 days of "
+            "making this request.")
+    

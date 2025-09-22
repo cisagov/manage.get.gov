@@ -1044,7 +1044,7 @@ class DomainDsDataView(DomainFormBaseView):
         """Formset submission posts to this view."""
         self._get_domain(request)
         formset = self.get_form()
-
+    
         if formset.is_valid():
             return self.form_valid(formset)
         else:

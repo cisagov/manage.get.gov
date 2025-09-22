@@ -1,7 +1,7 @@
     {% url 'domain-advanced-setting' domain_pk=domain.id as advanced_settings_url %}
     {% url 'domain-renewal' domain_pk=domain.id as domain_renewal_url %}
     {% url 'domain-delete' domain_pk=domain.id as  domain_delete_url %}
-   
+   <li class="usa-sidenav__item">
    <a href="{{ advanced_settings_url }}" {% if request.path == advanced_settings_url or request.path == domain_renewal_url or request.path == domain_delete_url%}class="usa-current"{% endif %}>
         Advanced settings
       </a>
@@ -32,6 +32,7 @@
         </li>
       </ul>
       {% endif%}
+    </li>
 
       
 
