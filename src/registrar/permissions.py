@@ -136,8 +136,8 @@ URL_PERMISSIONS = {
     "review": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "portfolio_requesting_entity": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "portfolio_additional_details": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
-    "domain-delete": [IS_DOMAIN_MANAGER],
-    "domain-advanced-setting": [IS_DOMAIN_MANAGER],
+    "domain-delete": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
+    "domain-advanced-setting": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
 }
 
 UNCHECKED_URLS = [

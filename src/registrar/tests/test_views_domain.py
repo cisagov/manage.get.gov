@@ -3111,32 +3111,123 @@ class TestDomainRenewal(TestWithUser):
 class TestDomainDeletion(TestWithUser):
     def setUp(self):
         super().setUp()
-        today = datetime.now()
-        expiring_date = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+
+        self.user = get_user_model().objects.create(
+            first_name="User",
+            last_name="Test",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+            username="usertest",
+        )
+
+        today = datetime.now().date()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
 
         self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
             name="igorville.gov", expiration_date=expiring_date
         )
 
+        self.domain_not_expiring, _ = Domain.objects.get_or_create(
+            name="domainnotexpiring.gov", expiration_date=timezone.now().date() + timedelta(days=65)
+        )
+
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_expiring_soon_date)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_not_expiring)
+
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_with_expiring_soon_date, role=UserDomainRole.Roles.MANAGER
         )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_not_expiring, role=UserDomainRole.Roles.MANAGER
+        )
+
+        self.user.save()
+
+    def custom_is_expiring(self):
+        return True
+
+    def custom_is_expired_false(self):
+        return False
+
+    def custom_is_expired_true(self):
+        return True
 
     @less_console_noise_decorator
     @override_flag("domain_deletion", active=False)
-    def test_advanced_settings_does_not_appear_with_inactive_domain_deletion_flag(self):
-        self.client.force_login(self.user)
-        detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
-        self.assertNotContains(detail_page, "Advanced Settings")
-        self.assertContains(detail_page, "Renewal form")
+    def test_advanced_settings_does_not_appear_with_inactive_domain_deletion_flag_and_no_expiring_domain(self):
+        """
+        Only when we have the deletion flag can we see advanced settings
+        * No deletion flag
+        * User does NOT has an expiring domain
+        * Should NOT see advanced settings, renewal form, or delete doain
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
 
-    @override_flag("domain_deletion", active=True)
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
+            )
+
+            self.assertNotContains(response, "Advanced settings")
+            self.assertNotContains(response, "Delete domain")
+            self.assertNotContains(response, "Renewal form")
+
     @less_console_noise_decorator
-    def test_advanced_settings_appears_with_active_domain_deletion_flag(self):
+    @override_flag("domain_deletion", active=False)
+    def test_advanced_settings_does_not_appear_with_inactive_domain_deletion_flag_but_has_expiring_domain(self):
+        """
+        Only when we have the deletion flag can we see advanced settings
+        * No deletion flag
+        * User has an expiring domain
+        * Shoudl see renewal form, but no advanced settings and no delete domain
+        """
         self.client.force_login(self.user)
-        detail_page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
-        self.assertContains(detail_page, "Renewal form")
-        self.assertContains(detail_page, "Delete domain")
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
+            )
+            self.assertNotContains(detail_page, "Advanced settings")
+            self.assertNotContains(detail_page, "Delete domain")
+            self.assertContains(detail_page, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_advanced_settings_appears_with_active_domain_deletion_flag(self):
+        """
+        * We have deletion flag on so can see advanced settings
+        * And user has expiring domain
+        * Should see advanced settings, renewal form, delete domain
+        """
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
+            Domain, "is_expiring", self.custom_is_expiring
+        ):
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            )
+            self.assertContains(response, "Advanced settings")
+            self.assertContains(response, "Renewal form")
+            self.assertContains(response, "Delete domain")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_advanced_settings_appears_with_active_domain_deletion_flag_no_expiring_domain(self):
+        """
+        * We have deletion flag on so can see advanced settings
+        * And user doesnt have expiring domain
+        * Should see advanced settings, delete domain
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
+            )
+
+            self.assertContains(response, "Advanced settings")
+            self.assertContains(response, "Delete domain")
+            self.assertNotContains(response, "Renewal form")
 
     @override_flag("domain_deletion", active=True)
     def test_if_acknowledged_is_checked(self):

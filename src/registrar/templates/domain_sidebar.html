@@ -81,17 +81,15 @@
       {% endwith %}
 
       {% if domain_deletion %}
-          {% if is_domain_manager%}
-           {% include "includes/domain_advanced_settings_nav.html" %}
-          {% endif %}
-        {% else %}
-            {% if is_domain_manager%}
-                {% if domain.is_expiring or domain.is_expired %}
-            {% with url_name="domain-renewal" %}
-              {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
-            {% endwith %}
-          {% endif %}
+        {% if is_domain_manager %}
+          {% include "includes/domain_advanced_settings_nav.html" %}
         {% endif %}
+      {% endif %}
+    
+      {% if is_domain_manager and domain.is_expiring or is_domain_manager and domain.is_expired %}
+        {% with url_name="domain-renewal" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
+        {% endwith %}
       {% endif %}
       
       {% endif %}
