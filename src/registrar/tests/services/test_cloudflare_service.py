@@ -1,3 +1,5 @@
+import os
+from unittest import mock
 from unittest.mock import Mock
 from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
@@ -15,6 +17,14 @@ class TestCloudflareService(SimpleTestCase):
         },
         {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}},
     ]
+
+    @classmethod
+    def setUpClass(cls):
+        patcher = mock.patch.dict(os.environ, {"DNS_SERVICE_EMAIL": "test@test.gov", "DNS_TENANT_KEY": "12345"})
+        patcher.start()
+        cls.addClassCleanup(patcher.stop)
+
+        super().setUpClass()
 
     def setUp(self):
         mock_client = Client()
