@@ -71,13 +71,13 @@ export class DomainRequestsTable extends BaseTable {
     let modalTrigger =  `
     <span class="usa-sr-only">Domain request cannot be deleted now. Edit the request for more information.</span>`;
 
-    let markupCreatorRow = '';
+    let markupRequesterRow = '';
     
 
     if (this.portfolioValue) {
-      markupCreatorRow = `
+      markupRequesterRow = `
         <td data-label="Created by">
-            <span class="text-wrap break-word">${request.creator ? request.creator : ''}</span>
+            <span class="text-wrap break-word">${request.requester ? request.requester : ''}</span>
         </td>
       `
     }
@@ -115,7 +115,7 @@ export class DomainRequestsTable extends BaseTable {
       <td data-sort-value="${new Date(request.last_submitted_date).getTime()}" data-label="Date submitted">
         ${submissionDate}
       </td>
-      ${markupCreatorRow}
+      ${markupRequesterRow}
       <td data-label="Status">
         ${request.status}
       </td>
