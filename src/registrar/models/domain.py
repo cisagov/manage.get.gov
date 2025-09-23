@@ -1812,7 +1812,10 @@ class Domain(TimeStampedModel, DomainHelper):
         Returns custom content for when the domain itself is expired."""
 
         if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None:
-            help_text = "This domain is administratively paused, so it can't be edited and won't resolve in DNS. Contact help@get.gov for details."
+            help_text = (
+                "This domain is administratively paused, so it can't be edited and won't resolve in DNS. "
+                "Contact help@get.gov for details."
+            )
         elif self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
