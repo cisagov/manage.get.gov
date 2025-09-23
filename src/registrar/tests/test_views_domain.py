@@ -3133,16 +3133,32 @@ class TestDomainDeletion(TestWithUser):
             state=Domain.State.READY,
             expiration_date=timezone.now().date() + timedelta(days=65),
         )
-
-        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_expiring_soon_date)
-        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_not_expiring)
-
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_with_expiring_soon_date, role=UserDomainRole.Roles.MANAGER
+        self.dns_needed_not_expiring, _ = Domain.objects.get_or_create(
+            name="dnsneeded-nonexpiring.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=timezone.now().date() + timedelta(days=65),
         )
-        UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain_not_expiring, role=UserDomainRole.Roles.MANAGER
+        self.dns_needed_expiring, _ = Domain.objects.get_or_create(
+            name="dnsneeded-expiring.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=expiring_date,
         )
+
+        for domain in [
+            self.domain_with_expiring_soon_date,
+            self.domain_not_expiring,
+            self.dns_needed_not_expiring,
+            self.dns_needed_expiring,
+        ]:
+            DomainInformation.objects.update_or_create(requester=self.user, domain=domain)
+
+        for domain in [
+            self.domain_with_expiring_soon_date,
+            self.domain_not_expiring,
+            self.dns_needed_not_expiring,
+            self.dns_needed_expiring,
+        ]:
+            UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
 
         self.user.save()
 
@@ -3159,10 +3175,10 @@ class TestDomainDeletion(TestWithUser):
     @override_flag("domain_deletion", active=False)
     def test_advanced_settings_does_not_appear_with_inactive_domain_deletion_flag_and_no_expiring_domain(self):
         """
-        Only when we have the deletion flag can we see advanced settings
-        * No deletion flag
-        * User does NOT has an expiring domain
-        * Should NOT see advanced settings, renewal form, or delete doain
+        * Domain deletion flag is OFF
+        * Domain state = READY
+        * Domain is NOT expiring
+        * Should not see advanced settings, delete domain, or renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
@@ -3179,10 +3195,10 @@ class TestDomainDeletion(TestWithUser):
     @override_flag("domain_deletion", active=False)
     def test_advanced_settings_does_not_appear_with_inactive_domain_deletion_flag_but_has_expiring_domain(self):
         """
-        Only when we have the deletion flag can we see advanced settings
-        * No deletion flag
-        * User has an expiring domain
-        * Shoudl see renewal form, but no advanced settings and no delete domain
+        * Domain deletion flag is OFF
+        * Domain state = READY
+        * Domain IS expiring
+        * Should see renewal form, but NOT advanced settings or delete domain
         """
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
@@ -3197,17 +3213,17 @@ class TestDomainDeletion(TestWithUser):
     @override_flag("domain_deletion", active=True)
     def test_advanced_settings_appears_with_active_domain_deletion_flag(self):
         """
-        * We have deletion flag on so can see advanced settings
-        * And user has expiring domain
-        * Should see advanced settings, renewal form, delete domain
+        * Domain deletion flag is ON
+        * Domain state = READY
+        * Domain IS expiring
+        * Should see advanced settings, renewal form, and delete domain
         """
         self.client.force_login(self.user)
-        with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
-            Domain, "is_expiring", self.custom_is_expiring
-        ):
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
             response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
             )
+
             self.assertContains(response, "Advanced settings")
             self.assertContains(response, "Renewal form")
             self.assertContains(response, "Delete domain")
@@ -3216,9 +3232,10 @@ class TestDomainDeletion(TestWithUser):
     @override_flag("domain_deletion", active=True)
     def test_advanced_settings_appears_with_active_domain_deletion_flag_no_expiring_domain(self):
         """
-        * We have deletion flag on so can see advanced settings
-        * And user doesnt have expiring domain
-        * Should see advanced settings, delete domain
+        * Domain deletion flag is ON
+        * Domain state = READY
+        * Domain is NOT expiring
+        * Should see advanced settings, and delete domain, but NOT renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
@@ -3230,6 +3247,41 @@ class TestDomainDeletion(TestWithUser):
             self.assertContains(response, "Advanced settings")
             self.assertContains(response, "Delete domain")
             self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_advanced_settings_dns_needed_not_expiring(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = DNS_NEEDED
+        * Domain is NOT expiring
+        * Should NOT see advanced settings, delete domain, or renewal form
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
+
+            self.assertNotContains(response, "Advanced settings")
+            self.assertNotContains(response, "Delete domain")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_advanced_settings_dns_needed_expiring(self):
+        """
+        Domain deletion flag is ON
+        Domain state = DNS_NEEDED
+        Domain IS expiring
+        Should see advanced settings, renewal form, but NOT delete domain
+        """
+        # Patch is_expiring to True to simulate expiring domain
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            self.client.force_login(self.user)
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+
+            self.assertContains(response, "Advanced settings")
+            self.assertContains(response, "Renewal form")
+            self.assertNotContains(response, "Delete domain")
 
     @override_flag("domain_deletion", active=True)
     def test_if_acknowledged_is_checked(self):

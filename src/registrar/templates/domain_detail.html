@@ -44,7 +44,9 @@
 
           {% if domain.get_state_help_text %}
             <p class="margin-y-0 text-primary-darker">
-              {% if domain.is_expired and is_domain_manager %}
+              {% if domain_deletion and domain.days_on_hold >= 0 and is_domain_manager %}
+                meep meep
+              {% elif domain.is_expired and is_domain_manager %}
                 This domain has expired, but it is still online. 
                 {% url 'domain-renewal' domain_pk=domain.id as url %}
                 <a href="{{ url }}" class="usa-link">Renew to maintain access.</a>
