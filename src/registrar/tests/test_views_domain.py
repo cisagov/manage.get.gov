@@ -3284,8 +3284,13 @@ class TestDomainDeletion(TestWithUser):
             self.assertNotContains(response, "Delete domain")
 
     @override_flag("domain_deletion", active=True)
-    def test_if_acknowledged_is_checked(self):
+    def test_if_acknowledged_is_not_checked_error_resp(self):
+        """
+        * We have domain deletion waffle turned on
+        * if acknowlege is not checked, it should throw an error
+        """
         self.client.force_login(self.user)
+
         message = self.client.post(
             reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
         )
@@ -3294,3 +3299,62 @@ class TestDomainDeletion(TestWithUser):
             message,
             "Check the box if you understand that your domain will be deleted within 7 days of " "making this request.",
         )
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_successful(self):
+        """
+        * We have domain deletion waffle turned on
+        * Domain STATE is ready, should be successful
+        * Should render a success message, and redirect to domain overview page
+        """
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
+        self.assertContains(
+            response, f"The domain &#x27;{self.domain_with_expiring_soon_date.name}&#x27; was deleted successfully."
+        )
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_not_successful(self):
+        """
+        * We have domain deletion waffle turned on
+        * Domain Deletion only works if State is READY
+        * Created a Domain that is UNKNOWN
+        * Domain Deletion should fail
+        """
+        self.client.force_login(self.user)
+        domain, _ = Domain.objects.get_or_create(
+            name="domainwithunknownstatus.gov",
+            state=Domain.State.UNKNOWN,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain)
+
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+
+    @override_flag("domain_deletion", active=True)
+    def test_check_for_modal_trigger(self):
+        """
+        * We have no way to test that the modal trigger, since it occurs via JS
+        * This test checks for the buttom that triggers it
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_not_expiring.id}),
+        )
+        self.assertContains(response, "Request deletion")
