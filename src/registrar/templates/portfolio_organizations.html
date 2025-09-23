@@ -24,7 +24,7 @@
     <div class="display-none margin-top-0" id="portfolios_list-wrapper">
     </div>
     {% for user_portfolio_permission in user_portfolio_permissions %}
-        <div class="grid-row margin-bottom-1">
+        <div class="grid-row margin-bottom-2">
             {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_page" %}
         </div>
     {% endfor %}
