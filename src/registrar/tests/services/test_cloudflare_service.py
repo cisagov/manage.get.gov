@@ -1,6 +1,6 @@
 import os
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 
