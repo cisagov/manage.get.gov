@@ -288,6 +288,26 @@ IS_DEMO_SITE = True
 #     from django.db import transaction
 #     @transaction.non_atomic_requests
 env_db_url["ATOMIC_REQUESTS"] = True
+# Enable persistent connections (seconds).
+# 0 = disable persistence (new connection per request).
+# None = unlimited reuse.
+# 60 is a safe default for RDS + no pgbouncer.
+env_db_url["CONN_MAX_AGE"] = int(env.int("CONN_MAX_AGE", default=60))
+# Set backend connection options for PostgreSQL
+env_db_url.setdefault("OPTIONS", {})
+env_db_url["OPTIONS"].update(
+    {
+        # Fail fast if DB is unreachable
+        "connect_timeout": 10,
+        # Keep TCP socket alive to detect network drops
+        "keepalives": 1,
+        "keepalives_idle": 600,
+        "keepalives_interval": 30,
+        "keepalives_count": 3,
+        # Optional runtime parameters (timeouts)
+        "options": "-c statement_timeout=5000 " "-c idle_in_transaction_session_timeout=30000 " "-c lock_timeout=5000",
+    }
+)
 
 DATABASES = {
     # dj-database-url package takes the supplied Postgres connection string

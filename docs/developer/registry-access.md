@@ -129,7 +129,7 @@ from registrar.models import Domain
 domain = Domain.objects.get_or_create(name="<that-domain-here>")
 ```
 
-7. From `/admin` in your sandbox environment, locate the Domain record page of the domain you just created. In Domain Information, add a "creator" and "portfolio" for the org model. Note: To view the domain in the org model, it must be associated with a portfolio and viewed from within that portfolio. 
+7. From `/admin` in your sandbox environment, locate the Domain record page of the domain you just created. In Domain Information, add a "requester" and "portfolio" for the org model. Note: To view the domain in the org model, it must be associated with a portfolio and viewed from within that portfolio. 
 9. Click Manage Domain which will take you to the app
 10. In the Domain Managers section, add yourself as domain manager (Alternatively, you can assign yourself as a Domain Manager in `/admin`. Go to the User domain roles model, click the "Add user domain role +" button, and then add yourself to the domain as a manager.)
 11. You should now be able to access your expiring domain in the registrar.
