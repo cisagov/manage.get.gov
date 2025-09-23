@@ -6,17 +6,17 @@ logger = logging.getLogger(__name__)
 
 
 class CloudflareService:
-
+    base_url = "https://api.cloudflare.com/client/v4"
+    service_email = settings.SECRET_DNS_SERVICE_EMAIL
+    tenant_key = settings.SECRET_DNS_TENANT_KEY
+    tenant_id = settings.SECRET_DNS_TENANT_ID
+    headers = {
+        "X-Auth-Email": "test.gob",
+        "X-Auth-Key": "12321",
+        "Content-Type": "application/json",
+    }
+    
     def __init__(self, client):
-        self.base_url = "https://api.cloudflare.com/client/v4"
-        self.service_email = settings.SECRET_DNS_SERVICE_EMAIL
-        self.tenant_key = settings.SECRET_DNS_TENANT_KEY
-        self.tenant_id = settings.SECRET_DNS_TENANT_ID
-        self.headers = {
-            "X-Auth-Email": self.service_email,
-            "X-Auth-Key": self.tenant_key,
-            "Content-Type": "application/json",
-        }
         client.base_url = self.base_url
         client.headers = self.headers
         self.client = client
