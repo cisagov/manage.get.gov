@@ -14,7 +14,7 @@ from django.utils.dateparse import parse_datetime
 from registrar.decorators import (
     HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-    IS_DOMAIN_REQUEST_CREATOR,
+    IS_DOMAIN_REQUEST_REQUESTER,
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
@@ -31,7 +31,7 @@ from ..utility.email import send_templated_email, EmailSendingError
 logger = logging.getLogger(__name__)
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWizard(TemplateView):
     """
     A common set of methods and configuration.
@@ -207,16 +207,16 @@ class DomainRequestWizard(TemplateView):
 
         # For linter. The else block should never be hit, but if it does,
         # there may be a UI consideration. That will need to be handled in another ticket.
-        creator = None
+        requester = None
         if self.request.user is not None and isinstance(self.request.user, User):
-            creator = self.request.user
+            requester = self.request.user
         else:
             raise ValueError("Invalid value for User")
 
         if self.has_pk():
             try:
                 self._domain_request = DomainRequest.objects.get(
-                    creator=creator,
+                    requester=requester,
                     pk=self.kwargs.get("domain_request_pk"),
                 )
                 return self._domain_request
@@ -227,14 +227,14 @@ class DomainRequestWizard(TemplateView):
         if self.request.user.is_org_user(self.request):
             portfolio = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
-                creator=self.request.user,
+                requester=self.request.user,
                 portfolio=portfolio,
             )
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
         else:
-            self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+            self._domain_request = DomainRequest.objects.create(requester=self.request.user)
         return self._domain_request
 
     @property
@@ -407,9 +407,9 @@ class DomainRequestWizard(TemplateView):
             return self.pending_domain_requests()
 
     def approved_domain_requests_exist(self):
-        """Checks if user is creator of domain requests with DomainRequestStatus.APPROVED status"""
+        """Checks if user is requester of domain requests with DomainRequestStatus.APPROVED status"""
         approved_domain_request_count = DomainRequest.objects.filter(
-            creator=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
+            requester=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
         ).count()
         return approved_domain_request_count > 0
 
@@ -431,7 +431,7 @@ class DomainRequestWizard(TemplateView):
             DomainRequest.DomainRequestStatus.IN_REVIEW,
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         ]
-        return DomainRequest.objects.filter(creator=self.request.user, status__in=check_statuses)
+        return DomainRequest.objects.filter(requester=self.request.user, status__in=check_statuses)
 
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data.
@@ -1075,7 +1075,7 @@ class Finished(DomainRequestWizard):
         return render(self.request, self.template_name)
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestStatus(DetailView):
     template_name = "domain_request_status.html"
     model = DomainRequest
@@ -1095,12 +1095,12 @@ class DomainRequestStatus(DetailView):
         return context
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWithdrawConfirmation(DetailView):
     """This page will ask user to confirm if they want to withdraw
 
     Access is restricted so that only the
-    `creator` of the domain request may withdraw it.
+    `requester` of the domain request may withdraw it.
     """
 
     template_name = "domain_request_withdraw_confirmation.html"  # DetailView property for what model this is viewing
@@ -1109,7 +1109,7 @@ class DomainRequestWithdrawConfirmation(DetailView):
     context_object_name = "DomainRequest"
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWithdrawn(DetailView):
     # this view renders no template
     template_name = ""
@@ -1132,7 +1132,7 @@ class DomainRequestWithdrawn(DetailView):
             return HttpResponseRedirect(reverse("home"))
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
     """Delete view for home that allows the end user to delete DomainRequests"""
 
@@ -1174,7 +1174,7 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
-        # the edge case where the same user may be an SO, and a creator, for example.
+        # the edge case where the same user may be an SO, and a requester, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete).delete()
@@ -1187,7 +1187,7 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
         Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the domain request,
-        but not with any other domain_request. This includes the senior official, the creator,
+        but not with any other domain_request. This includes the senior official, the requester,
         and any other contacts linked to the domain_request.
 
         Parameters:
@@ -1247,7 +1247,7 @@ class DomainRequestStatusViewOnly(DetailView):
 
     Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
     - Portfolio members with view-all domain requests permission
-    - Non-portfolio users who are creators of the domain request
+    - Non-portfolio users who are requesters
     - Analysts with appropriate permissions
     """
 

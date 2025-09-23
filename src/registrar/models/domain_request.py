@@ -375,7 +375,7 @@ class DomainRequest(TimeStampedModel):
     )
 
     # This is the domain request user who created this domain request.
-    creator = models.ForeignKey(
+    requester = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="domain_requests_created",
@@ -564,7 +564,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
-        help_text="Other domain names the creator provided for consideration",
+        help_text="Other domain names the requester provided for consideration",
     )
 
     other_contacts = models.ManyToManyField(
@@ -577,7 +577,7 @@ class DomainRequest(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Required if creator does not list other employees",
+        help_text="Required if requester does not list other employees",
     )
 
     anything_else = models.TextField(
@@ -908,7 +908,7 @@ class DomainRequest(TimeStampedModel):
             if self.requested_domain and self.requested_domain.name:
                 return self.requested_domain.name
             else:
-                return f"{self.status} domain request created by {self.creator}"
+                return f"{self.status} domain request requested by {self.requester}"
         except Exception:
             return ""
 
@@ -977,10 +977,10 @@ class DomainRequest(TimeStampedModel):
         wrap_email=False,
         custom_email_content=None,
     ):
-        """Send a status update email to the creator.
+        """Send a status update email to the requester.
 
-        The email goes to the email address that the creator gave as their
-        contact information. If there is not creator information, then do
+        The email goes to the email address that the requester gave as their
+        contact information. If there is not requester information, then do
         nothing.
 
         Optional args:
@@ -997,10 +997,10 @@ class DomainRequest(TimeStampedModel):
         custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
-        recipient = self.creator
+        recipient = self.requester
         if recipient is None or recipient.email is None:
             logger.warning(
-                f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
+                f"Cannot send {new_status} email, no requester email address for domain request with pk: {self.pk}."
                 f" Name: {self.requested_domain.name}"
                 if self.requested_domain
                 else ""
@@ -1046,7 +1046,7 @@ class DomainRequest(TimeStampedModel):
             logger.info(f"The {new_status} email sent to: {recipient.email}")
         except EmailSendingError as err:
             logger.error(
-                "Failed to send status update to creator email:\n"
+                "Failed to send status update to requester email:\n"
                 f"  Type: {new_status}\n"
                 f"  Subject template: {email_template_subject}\n"
                 f"  To: {recipient.email}\n"
@@ -1240,7 +1240,7 @@ class DomainRequest(TimeStampedModel):
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
-            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
+            user=self.requester, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
         if self.status == self.DomainRequestStatus.REJECTED:
@@ -1327,7 +1327,7 @@ class DomainRequest(TimeStampedModel):
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
-        self.creator.restrict_user()
+        self.requester.restrict_user()
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization.

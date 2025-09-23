@@ -480,7 +480,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             # only set the available transitions if the user is not restricted
             # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not domain_request.creator.is_restricted() and "status" in self.fields:
+            if not domain_request.requester.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
 
     def get_custom_field_transitions(self, instance, field):
@@ -762,7 +762,7 @@ class AdminSortFields:
         # == Senior Official == #
         "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
-        "creator": (User, _name_sort),
+        "requester": (User, _name_sort),
         "user": (User, _name_sort),
         "investigator": (User, _name_sort),
         # == Website == #
@@ -1194,7 +1194,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         """Add user's related domains and requests to context"""
         obj = self.get_object(request, object_id)
 
-        domain_requests = DomainRequest.objects.filter(creator=obj).exclude(
+        domain_requests = DomainRequest.objects.filter(requester=obj).exclude(
             Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
         )
         sort_by = request.GET.get("sort_by", "requested_domain__name")
@@ -2178,7 +2178,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
-                    "creator",
+                    "requester",
                 ]
             },
         ),
@@ -2301,7 +2301,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "type_of_work",
         "more_organization_information",
         "domain",
@@ -2314,7 +2314,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for OMB Analysts
     omb_analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "about_your_organization",
         "anything_else",
         "cisa_representative_first_name",
@@ -2357,7 +2357,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
-        "creator",
+        "requester",
         "domain_request",
         "senior_official",
         "domain",
@@ -2788,11 +2788,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # NOTE: converted fields are included in the override for get_search_results
     search_fields = [
         "requested_domain__name",
-        "creator__email",
-        "creator__first_name",
-        "creator__last_name",
+        "requester__email",
+        "requester__first_name",
+        "requester__last_name",
     ]
-    search_help_text = "Search by domain, creator, or organization name."
+    search_help_text = "Search by domain, requester, or organization name."
 
     fieldsets = [
         (
@@ -2820,7 +2820,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "requested_suborganization",
                     "suborganization_city",
                     "suborganization_state_territory",
-                    "creator",
+                    "requester",
                 ]
             },
         ),
@@ -2967,7 +2967,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "about_your_organization",
         "requested_domain",
         "approved_domain",
@@ -2984,7 +2984,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for OMB Analysts
     omb_analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "about_your_organization",
         "requested_domain",
         "approved_domain",
@@ -3040,7 +3040,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
-        "creator",
+        "requester",
         "investigator",
         "portfolio",
         "sub_organization",
@@ -3108,13 +3108,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # If the user is restricted or we're saving an invalid model,
         # forbid this action.
-        if not obj or obj.creator.status == models.User.RESTRICTED:
+        if not obj or obj.requester.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
             messages.error(
                 request,
-                "This action is not permitted for domain requests with a restricted creator.",
+                "This action is not permitted for domain requests with a restricted requester.",
             )
 
             return None
@@ -3162,7 +3162,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         so we should display that information using this function.
 
         """
-        recipient = obj.creator
+        recipient = obj.requester
 
         # Displays a warning in admin when an email cannot be sent
         if recipient and recipient.email:
@@ -3290,13 +3290,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the domain request creator's status, so
+        admin user permissions and the domain request requester's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
 
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        # Check if the requester is restricted
+        if obj and obj.requester.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -3316,10 +3316,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return readonly_fields
 
     def display_restricted_warning(self, request, obj):
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        if obj and obj.requester.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit a domain request with a restricted creator.",
+                "Cannot edit a domain request with a restricted requester.",
             )
 
     def changelist_view(self, request, extra_context=None):
@@ -3802,7 +3802,7 @@ class DomainInformationInline(admin.StackedInline):
         for index, (title, options) in enumerate(modified_fieldsets):
             if title is None:
                 options["fields"] = [
-                    field for field in options["fields"] if field not in ["creator", "domain_request", "notes"]
+                    field for field in options["fields"] if field not in ["requester", "domain_request", "notes"]
                 ]
             elif title == "Contacts":
                 options["fields"] = [
@@ -4716,7 +4716,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["creator", "created_on", "notes"]}),
+        (None, {"fields": ["requester", "created_on", "notes"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -4750,7 +4750,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # This is the fieldset display when adding a new model
     add_fieldsets = [
-        (None, {"fields": ["creator", "notes"]}),
+        (None, {"fields": ["requester", "notes"]}),
         ("Type of organization", {"fields": ["organization_type"]}),
         (
             "Organization name and mailing address",
@@ -4770,7 +4770,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    list_display = ("organization_name", "organization_type", "federal_type", "creator")
+    list_display = ("organization_name", "organization_type", "federal_type", "requester")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
@@ -4785,7 +4785,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "suborganizations",
         "display_admins",
         "display_members",
-        "creator",
+        "requester",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
     ]
@@ -4916,7 +4916,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
-        "creator",
+        "requester",
         "federal_agency",
         "senior_official",
     ]
@@ -4931,13 +4931,13 @@ class PortfolioAdmin(ListHeaderAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the creator's status, so
+        admin user permissions and the requester's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
 
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        # Check if the requester is restricted
+        if obj and obj.requester.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -4996,10 +4996,10 @@ class PortfolioAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj: Portfolio, form, change):
-        if hasattr(obj, "creator") is False:
-            # ---- update creator ----
-            # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
+        if hasattr(obj, "requester") is False:
+            # ---- update requester ----
+            # Set the requester field to the current admin user
+            obj.requester = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -5090,7 +5090,7 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the domain request creator's status, so
+        admin user permissions and the domain request requester's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)

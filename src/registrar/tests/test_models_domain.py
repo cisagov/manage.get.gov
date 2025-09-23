@@ -428,7 +428,7 @@ class TestDomainCreation(MockEppLib):
             user, _ = User.objects.get_or_create()
             investigator, _ = User.objects.get_or_create(username="frenchtoast", is_staff=True)
             domain_request = DomainRequest.objects.create(
-                creator=user, requested_domain=draft_domain, investigator=investigator
+                requester=user, requested_domain=draft_domain, investigator=investigator
             )
 
             mock_client = MockSESClient()
