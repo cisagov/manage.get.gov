@@ -47,7 +47,7 @@
           {% if domain.get_state_help_text %}
             <p class="margin-y-0 text-primary-darker">
               {% if domain_deletion and domain.days_on_hold >= 0 %}
-                meep meep meep
+                This domain is administratively paused, so it can’t be edited and won’t resolve in DNS. Contact help@get.gov for details.
               {% elif domain.is_expired and is_domain_manager %}
                 This domain has expired, but it is still online. 
                 {% url 'domain-renewal' domain_pk=domain.id as url %}
