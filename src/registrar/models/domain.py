@@ -1350,7 +1350,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
-        if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None and self.days_on_hold >= 0:
+        if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None:
             return "On Hold"
         elif self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
