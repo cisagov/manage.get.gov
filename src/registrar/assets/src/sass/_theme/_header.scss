@@ -452,11 +452,11 @@ button {
         margin-right: 0;
         width: 100%;
         a {
-            font-size: 1rem;
             margin-right: auto;
             text-align: left;
             width: 100%;
             @include at-media($theme-header-min-width) {
+                font-size: 1rem;
                 color: #{$dhs-light-blue-15};
             }
         }
