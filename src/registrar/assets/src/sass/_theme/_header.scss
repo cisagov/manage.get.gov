@@ -175,7 +175,6 @@ button {
             overflow: visible;
         }
     }
-    // z-index: 2;
 }
 
 .usa-nav__inner--widescreen,
@@ -457,7 +456,9 @@ button {
             margin-right: auto;
             text-align: left;
             width: 100%;
-            color: #{$dhs-light-blue-15};
+            @include at-media($theme-header-min-width) {
+                color: #{$dhs-light-blue-15};
+            }
         }
     }
 }
