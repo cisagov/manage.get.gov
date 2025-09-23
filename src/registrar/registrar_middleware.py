@@ -140,7 +140,7 @@ class CheckPortfolioMiddleware:
         self.get_response = get_response
         self.home = reverse("home")
 
-        self.select_portfolios_page = reverse("your-portfolios")
+        self.select_portfolios_page = reverse("your-organizations")
         self.set_portfolio_page = reverse("set-session-portfolio")
         self.setup_page = reverse("finish-user-profile-setup")
         self.profile_page = reverse("user-profile")
@@ -187,7 +187,7 @@ class CheckPortfolioMiddleware:
         if not any(request.path.startswith(page) for page in self.excluded_pages):
             # Redirect user to org select page if no active portfolio
             if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
-                org_select_redirect = reverse("your-portfolios")
+                org_select_redirect = reverse("your-organizations")
                 return HttpResponseRedirect(org_select_redirect)
         has_portfolio_domains = (
             flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
