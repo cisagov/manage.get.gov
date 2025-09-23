@@ -1586,7 +1586,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
+        mock_messages_error.assert_called_once_with(request, "An unexpected error occurred: {email} could not be added to this domain. Try again and contact us if the problem persists.")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_admin_addition_emails")
