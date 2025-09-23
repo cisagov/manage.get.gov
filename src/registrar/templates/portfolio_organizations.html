@@ -28,6 +28,21 @@
             {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_page" %}
         </div>
     {% endfor %}
+    {% if has_personal_assets %}
+        <div class="grid-row margin-bottom-1">
+            <a class="usa-card__container margin-left-0 display-block text-no-underline"
+                href="{% url 'domains' %}">
+                <div class="usa-card__header">
+                    <h2 class="usa-card__heading">
+                    {{ request.user.email }}’s account
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="28">
+                        <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
+                    </svg>
+                    </h2>
+                </div>
+            </a>
+        </div>
+    {% endif %}
 </form>
 
     <p>

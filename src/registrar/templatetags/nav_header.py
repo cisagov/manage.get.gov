@@ -11,4 +11,11 @@ def portfolio_organizations_dropdown(context):
     user = context["user"]
     # Ignore incomplete MagicMock user created in test_login_callback_does_not_requires_step_up_auth
     if user.__class__.__name__ == "User":
-        return {"user_portfolio_permissions": UserPortfolioPermission.objects.filter(user=user).order_by("portfolio")}
+        request = context["request"]
+        user = request.user
+        perms = UserPortfolioPermission.objects.filter(user=user).order_by("portfolio")
+        return {
+            "request": request,  # pass request so templates can use request.user.email
+            "user_portfolio_permissions": perms,
+            "has_personal_assets": getattr(user, "has_personal_assets", lambda: False)(),
+        }
