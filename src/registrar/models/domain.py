@@ -1351,7 +1351,6 @@ class Domain(TimeStampedModel, DomainHelper):
     def state_display(self, request=None):
         """Return the display status of the domain."""
         if (self.state == self.State.ON_HOLD) and self.days_on_hold >= 0:
-            # TO UPDATE
             return "On Hold"
         elif self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
@@ -1812,12 +1811,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
-        if (self.state == self.State.ON_HOLD) and self.days_on_hold >= 0:
-            # Given this "on hold state" is not a phsyical state but is displayed so
-            # until deletion, we need custom text here
-            # TO UPDATE
-            help_text = "This domain is currently on hold and set to delete in 7 days."
-        elif self.is_expired() and self.state != self.State.UNKNOWN:
+        if self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = "This domain has expired. Complete the online renewal process to maintain access."
