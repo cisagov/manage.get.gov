@@ -3312,11 +3312,12 @@ class TestDomainDeletion(TestWithUser):
             data={"is_policy_acknowledged": "True"},
             follow=True,
         )
-
+        domain = Domain.objects.get(id=self.domain_with_expiring_soon_date.id)
         self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
         self.assertContains(
             response, f"The domain &#x27;{self.domain_with_expiring_soon_date.name}&#x27; was deleted successfully."
         )
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
 
     @override_flag("domain_deletion", active=True)
     def test_domain_post_not_successful(self):
