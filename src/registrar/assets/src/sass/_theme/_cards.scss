@@ -14,4 +14,6 @@
 
 .usa-card__heading {
     color: #{$dhs-blue};
+    display: flex;
+    align-items: center;
 }

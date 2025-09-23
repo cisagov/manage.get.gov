@@ -142,7 +142,7 @@ button {
                 font-weight: font-weight('bold');
             }
             button[aria-expanded="true"] {
-                color: color('white');
+                color: #{$dhs-light-blue-15};
             }
             button:not(.usa-current):hover::after  {
                 display: none!important;
@@ -151,14 +151,14 @@ button {
         .usa-nav__secondary {
             right: 1rem;
             padding-right: $widescreen-x-padding;
-            color: color('white');
+            color: #{$dhs-light-blue-15};
             bottom: 4.3rem;
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
                 font-weight: bold;
                 font-size: 16px;
-                color: color('white');
+                color: #{$dhs-light-blue-15};
             }
             // Submenu nav links have normal font weight 
             .usa-nav__submenu-item {
@@ -276,7 +276,7 @@ button {
         span {
             @include place-icon($-add-icon, "after");
             font-weight: font-weight('bold');
-            color: color('white');
+            color: #{$dhs-light-blue-15};
         }
     }
 
@@ -351,12 +351,12 @@ button {
               @include place-icon($-add-icon, "after");
       
               &::after:hover {
-                background-color: color('white');
+                background-color: #{$dhs-light-blue-15};
               }
             }
 
             &::after:hover {
-                background-color: color('white');
+                background-color: #{$dhs-light-blue-15};
             }
             
             @include at-media($theme-header-min-width) {
