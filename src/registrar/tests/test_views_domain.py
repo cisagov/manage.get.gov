@@ -3274,7 +3274,6 @@ class TestDomainDeletion(TestWithUser):
         Domain IS expiring
         Should see advanced settings, renewal form, but NOT delete domain
         """
-        # Patch is_expiring to True to simulate expiring domain
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
             self.client.force_login(self.user)
             response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_expiring.id}))
