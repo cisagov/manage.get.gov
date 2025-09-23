@@ -32,11 +32,11 @@ class TestCloudflareService(SimpleTestCase):
         mock_client.get = Mock()
 
         # Set class variable 'headers' to avoid double mocking
-        CloudflareService.headers={
-                    "X-Auth-Email": "test@test.gov",
-                    "X-Auth-Key": "12345",
-                    "Content-Type": "application/json",
-                }
+        CloudflareService.headers = {
+            "X-Auth-Email": "test@test.gov",
+            "X-Auth-Key": "12345",
+            "Content-Type": "application/json",
+        }
         self.service = CloudflareService(client=mock_client)
 
     def _setUpSuccessMockResponse(self, return_value=None, raise_value=None):

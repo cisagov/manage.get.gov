@@ -15,7 +15,7 @@ class CloudflareService:
         "X-Auth-Key": "12321",
         "Content-Type": "application/json",
     }
-    
+
     def __init__(self, client):
         client.base_url = self.base_url
         client.headers = self.headers
