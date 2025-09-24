@@ -18,7 +18,6 @@ on:
           - backup
           - cw
           - testdb
-          - bob
           - dg
           - el
           - es

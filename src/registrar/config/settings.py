@@ -886,7 +886,6 @@ ALLOWED_HOSTS = [
     "getgov-ad.app.cloud.gov",
     "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
-    "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
     "getgov-es.app.cloud.gov",
