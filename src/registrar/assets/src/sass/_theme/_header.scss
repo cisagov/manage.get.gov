@@ -152,7 +152,6 @@ button {
             right: 1rem;
             padding-right: $widescreen-x-padding;
             color: #{$dhs-light-blue-15};
-            bottom: 4.3rem;
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
@@ -168,7 +167,6 @@ button {
                     font-weight: normal;
                 }
             }
-            transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
         > .usa-navbar {
             // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
