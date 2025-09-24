@@ -13,50 +13,51 @@
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
         <div class="usa-nav__inner usa-nav__inner--widescreen padding-x--widescreen">
-        
-            <button type="button" class="usa-nav__close">
-                <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
-            </button>
-            <div class="usa-nav__secondary">
-                <ul class="usa-nav__secondary-links">
-                    {% if has_multiple_portfolios %}
-                    {% load nav_header %}
-                    {% portfolio_organizations_dropdown %}
-                    {% endif %}
-                    {% if user.is_authenticated %}
-                    <li class="usa-nav__secondary-item">
-                        <div class="usa-accordion">
-                            <div class="usa-accordion__heading usa-nav__secondary-menu">
-                                <button
-                                class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
-                                id="user-profile-menu"
-                                aria-controls="user-profile-submenu"
-                                aria-expanded="false"
-                                aria-label="user-profile-menu"
-                                >
-                                    <span class="ellipsis usa-nav__username">{{ user.email }}</span>
-                                </button>
-                            </div>
-                            <div id="user-profile-submenu" class="usa-nav__submenu">
-                                <div class="usa-nav__submenu-item">
-                                    {% url 'user-profile' as user_profile_url %}
-                                    {% url 'finish-user-profile-setup' as finish_setup_url %}
-                                    <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
-                                        Your profile
-                                    </a>
+            <div class="usa-nav__top-header">
+                <button type="button" class="usa-nav__close">
+                    <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
+                </button>
+                <div class="usa-nav__secondary">
+                    <ul class="usa-nav__secondary-links">
+                        {% if has_multiple_portfolios %}
+                        {% load nav_header %}
+                        {% portfolio_organizations_dropdown %}
+                        {% endif %}
+                        {% if user.is_authenticated %}
+                        <li class="usa-nav__secondary-item">
+                            <div class="usa-accordion">
+                                <div class="usa-accordion__heading usa-nav__secondary-menu">
+                                    <button
+                                    class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+                                    id="user-profile-menu"
+                                    aria-controls="user-profile-submenu"
+                                    aria-expanded="false"
+                                    aria-label="user-profile-menu"
+                                    >
+                                        <span class="ellipsis usa-nav__username">{{ user.email }}</span>
+                                    </button>
+                                </div>
+                                <div id="user-profile-submenu" class="usa-nav__submenu">
+                                    <div class="usa-nav__submenu-item">
+                                        {% url 'user-profile' as user_profile_url %}
+                                        {% url 'finish-user-profile-setup' as finish_setup_url %}
+                                        <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                                            Your profile
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </li> 
-                    <li class="usa-nav__secondary-item">
-                        <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
-                    </li>
-                    {% else %}
-                    <li class="usa-nav__secondary-item">
-                        <a class="usa-nav-link" href="{% url 'login' %}">Sign in</a>
-                    </li>
-                    {% endif %}
-                </ul>
+                        </li> 
+                        <li class="usa-nav__secondary-item">
+                            <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
+                        </li>
+                        {% else %}
+                        <li class="usa-nav__secondary-item">
+                            <a class="usa-nav-link" href="{% url 'login' %}">Sign in</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
             </div>
             <ul class="usa-nav__primary usa-accordion">
                 <li class="usa-nav__primary-item">
