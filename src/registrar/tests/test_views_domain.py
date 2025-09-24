@@ -3368,7 +3368,7 @@ class TestDomainDeletion(TestWithUser):
         * In the domains table, confirm domain exists + status in the table is "On Hold"
         """
         self.client.force_login(self.user)
-        response = self.client.post(
+        _ = self.client.post(
             reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
             data={"is_policy_acknowledged": "True"},
             follow=True,
