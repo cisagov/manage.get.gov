@@ -561,9 +561,9 @@ class DomainDeleteView(DomainFormBaseView):
                 domain.save()
 
                 # Email all domain managers that domain manager has been removed
-                # send_domain_manager_on_hold_email_to_domain_managers(
-                #     domain=self.object.domain,
-                # )
+                send_domain_manager_on_hold_email_to_domain_managers(
+                    domain=self.object.domain,
+                )
 
                 messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
                 # redirect to domain overview
