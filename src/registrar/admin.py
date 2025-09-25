@@ -1893,7 +1893,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
                 ):
-                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()

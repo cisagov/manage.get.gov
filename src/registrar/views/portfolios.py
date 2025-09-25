@@ -446,7 +446,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 is_member_of_different_org=member_of_a_different_org,
                 requested_user=member,
             ):
-                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+                messages.warning(self.request, "Could not send email notification to existing domain managers.")
             # Bulk create UserDomainRole instances for added domains
             UserDomainRole.objects.bulk_create(
                 [
@@ -777,7 +777,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 domains=added_domains,
                 is_member_of_different_org=member_of_a_different_org,
             ):
-                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+                messages.warning(self.request, "Could not send email notification to existing domain managers.")
 
             # Update existing invitations from CANCELED to INVITED
             existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)

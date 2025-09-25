@@ -1284,7 +1284,7 @@ class DomainAddUserView(DomainFormBaseView):
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
 
@@ -1297,7 +1297,7 @@ class DomainAddUserView(DomainFormBaseView):
             is_member_of_different_org=member_of_different_org,
             requested_user=requested_user,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         UserDomainRole.objects.create(
             user=requested_user,
             domain=self.object,
