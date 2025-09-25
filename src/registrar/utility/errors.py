@@ -53,7 +53,7 @@ class MissingEmailError(InvitationError):
     def __init__(self, email=None, domain=None, portfolio=None):
         # Default message if no additional info is provided
         message = "Can't send invitation email. No email is associated with your user account."
-        
+
         super().__init__(message)
 
 

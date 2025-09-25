@@ -76,7 +76,9 @@ def handle_invitation_exceptions(request, exception, email):
         messages.error(request, f"{email} is already a manager for this domain")
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-        messages.error(request, "Could not send email invitation.")
+        messages.error(
+            request, with_contact_link("An unexpected error occurred: {email} could not be added to this domain.")
+        )
 
 
 def with_contact_link(msg):
