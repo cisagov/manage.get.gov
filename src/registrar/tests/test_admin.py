@@ -1521,11 +1521,15 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
+        msg = (
+            'Email service unavailable. Try again and <a href="https://get.gov/contact"'
+            ' class="usa-link" target="_blank">contact us</a> if the problem persists.'
+        )
 
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(
             request,
-            'Email service unavailable. Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> if the problem persists.',
+            msg,
         )
 
     @less_console_noise_decorator
@@ -1588,10 +1592,16 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
+        msg = (
+            "An unexpected error occurred: {email} could not be added to this domain. "
+            'Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">'
+            "contact us</a> if the problem persists."
+        )
+
         # Assert that messages.error was called with the correct message
         mock_messages_error.assert_called_once_with(
             request,
-            'An unexpected error occurred: {email} could not be added to this domain. Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> if the problem persists.',
+            msg,
         )
 
     @less_console_noise_decorator

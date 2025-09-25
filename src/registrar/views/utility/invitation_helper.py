@@ -80,5 +80,10 @@ def handle_invitation_exceptions(request, exception, email):
         )
 
 
-def with_contact_link(msg):
-    return f'{msg} Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> if the problem persists.'
+def with_contact_link(error_message):
+    contact_msg = (
+        'Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">'
+        "docker compose exec app ./manage.py lint contact us"
+        "</a> if the problem persists."
+    )
+    return f"{error_message} {contact_msg}"
