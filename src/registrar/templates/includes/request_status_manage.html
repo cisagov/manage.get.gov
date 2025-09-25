@@ -58,13 +58,13 @@
             {% block status_metadata %}
 
             {% if portfolio %}
-                {% if DomainRequest.creator %}
+                {% if DomainRequest.requester %}
                 <p>
-                    <strong class="text-primary-dark">Created by:</strong> {{DomainRequest.creator.email|default:DomainRequest.creator.get_formatted_name }}
+                    <strong class="text-primary-dark">Requested by:</strong> {{DomainRequest.requester.email|default:DomainRequest.requester.get_formatted_name }}
                 </p>
                 {% else %}
                 <p>
-                    <strong class="text-primary-dark">No creator found:</strong> this is an error, please email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+                    <strong class="text-primary-dark">No requester found:</strong> this is an error, please email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
                 </p>
                 {% endif %}
             {% endif %}
@@ -185,8 +185,8 @@
                     {% include "includes/summary_item.html" with title='Purpose of your domain' value=DomainRequest.purpose %}
                 {% endif %}
 
-                {% if DomainRequest.creator %}
-                    {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.creator contact='true' %}
+                {% if DomainRequest.requester %}
+                    {% include "includes/summary_item.html" with title='Your contact information' value=DomainRequest.requester contact='true' %}
                 {% endif %}
 
                 {% if DomainRequest.other_contacts.all %}
