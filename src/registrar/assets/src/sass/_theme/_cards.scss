@@ -8,8 +8,10 @@
     border-radius: 0.25rem;
     cursor: pointer;
     vertical-align: bottom;
-    width: 588px;
     text-align: left;
+    @include at-media($theme-header-min-width) {
+        width: 588px;
+    }
 }
 
 .usa-card__heading {
