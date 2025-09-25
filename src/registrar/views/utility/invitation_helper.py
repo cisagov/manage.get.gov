@@ -9,7 +9,6 @@ from registrar.utility.errors import (
     MissingEmailError,
     OutsideOrgMemberError,
 )
-from django.utils.safestring import mark_safe
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +81,4 @@ def handle_invitation_exceptions(request, exception, email):
 
 
 def with_contact_link(msg):
-    return mark_safe(
-        f'{msg} Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> if the problem persists.'
-    )
+    return f'{msg} Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> if the problem persists.'
