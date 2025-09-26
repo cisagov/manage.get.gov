@@ -9,9 +9,8 @@
     cursor: pointer;
     vertical-align: bottom;
     text-align: left;
-    @include at-media($theme-header-min-width) {
-        width: 588px;
-    }
+    width: 100%;
+    max-width: 588px;
 }
 
 .usa-card__heading {
