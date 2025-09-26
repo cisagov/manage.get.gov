@@ -168,12 +168,20 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        # if multiple portfolios are allowed for this user
-        if request.user.get_first_portfolio():
-            self.set_portfolio_in_session(request)
-        else:
-            # Set the portfolio in the session if its not already in it
-            request.session["portfolio"] = None
+        # Assign user portfolio if:
+        # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
+        # 2. User has only 1 portfolio
+        # Remove condition 1 when we remove multiple portfolios feature flag
+        if (
+            not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
+        ) or request.user.get_num_portfolios() == 1:
+            request.session["portfolio"] = request.user.get_first_portfolio()
+        # If user no longer has permission to session portfolio,
+        # eg their user portfolio permission deleted or replaced,
+        # delete session portfolio since user no longer can access that portfolio.
+        # The user should get redirected to the Select organization page.
+        elif request.session.get("portfolio") and not request.user.is_org_user(request):
+            del request.session["portfolio"]
 
         # Don't redirect on excluded pages (such as the setup page itself)
         if not any(request.path.startswith(page) for page in self.excluded_pages):
@@ -181,24 +189,17 @@ class CheckPortfolioMiddleware:
             if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
                 org_select_redirect = reverse("your-portfolios")
                 return HttpResponseRedirect(org_select_redirect)
-        if request.user.is_org_user(request):
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        has_portfolio_domains = (
+            flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
+        ) or request.user.is_org_user(request)
+        if has_portfolio_domains and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
-
-    def set_portfolio_in_session(self, request):
-        # NOTE: we will want to change later to have a workflow for selecting
-        # portfolio and another for switching portfolio; for now, select first
-        # TODO #3776: Add logic to redirect user to Select Organization page if
-        # portfolio is none. For now, default portfolio to first portfolio
-        # as in production.
-        if not flag_is_active(request, "multiple_portfolios"):
-            request.session["portfolio"] = request.user.get_first_portfolio()
 
 
 class RestrictAccessMiddleware:
@@ -278,6 +279,10 @@ class RequestLoggingMiddleware:
         return self.get_response(request)
 
 
+# used for tracking db reuse
+_LAST_DB_PID = None
+
+
 class DatabaseConnectionMiddleware:
     """
     Middleware to track database connection metrics and query performance.
@@ -286,28 +291,75 @@ class DatabaseConnectionMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self._skip_paths = {"/health", "/metrics"}
 
     def __call__(self, request):
-        request._db_start_time = time.time()
-        request._db_queries_start = len(connections["default"].queries)
+        for p in self._skip_paths:
+            if request.path.startswith(p):
+                return self.get_response(request)
 
-        # Log connection state
-        connection = connections["default"]
-        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
+        start = time.perf_counter()
+        q_before = len(connections["default"].queries)  # 0 unless debug cursor enabled
+
+        pid_start = _get_backend_pid_safe()
+
+        logger.info(
+            f"DB_CONN_START pid_start={pid_start} queries_before={q_before} path={request.path}",
+            extra={"evt": "db_conn_start", "pid_start": pid_start, "queries_before": q_before, "path": request.path},
+        )
+
         response = self.get_response(request)
-        if hasattr(request, "_db_start_time"):
-            connection = connections["default"]
-            query_count = len(connection.queries) - request._db_queries_start
-            duration = time.time() - request._db_start_time
 
-            # Get request ID for correlation
-            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
-            logger.info(
-                f"DB_CONN_END: req_id={request_id}, "
-                f"queries={query_count}, "
-                f"duration={duration:.3f}s, "
-                f"total_queries={len(connection.queries)}, "
-                f"status={response.status_code}, "
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        q_after = len(connections["default"].queries)
+        q_delta = q_after - q_before
+
+        pid_end = _get_backend_pid_safe()
+
+        global _LAST_DB_PID
+        reused = pid_end is not None and _LAST_DB_PID == pid_end
+        if pid_end is not None:
+            _LAST_DB_PID = pid_end
+
+        logger.info(
+            (
+                "DB_CONN_END "
+                f"req_id={request.META.get('HTTP_X_REQUEST_ID','unknown')} "
+                f"status={getattr(response,'status_code',None)} "
+                f"duration_ms={duration_ms} "
+                f"queries_delta={q_delta} "
+                f"pid_end={pid_end} "
+                f"db_reused={reused} "
                 f"path={request.path}"
-            )
+            ),
+            extra={
+                "evt": "db_conn_end",
+                "req_id": request.META.get("HTTP_X_REQUEST_ID", "unknown"),
+                "status": getattr(response, "status_code", None),
+                "duration_ms": duration_ms,
+                "queries_delta": q_delta,
+                "pid_end": pid_end,
+                "db_reused": reused,
+                "path": request.path,
+            },
+        )
+
         return response
+
+
+def _get_backend_pid_safe():
+    """
+    Return the PostgreSQL backend PID if available, else None.
+    Avoids forcing a connection open.
+    """
+    try:
+        conn_wrapper = connections["default"]
+        # If the DB connection is already opened
+        raw = getattr(conn_wrapper, "connection", None)
+        if raw is None:
+            return None
+        # psycopg2/psycopg3 expose get_backend_pid()
+        getpid = getattr(raw, "get_backend_pid", None)
+        return getpid() if callable(getpid) else None
+    except Exception:
+        return None

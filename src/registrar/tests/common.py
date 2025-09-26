@@ -462,10 +462,10 @@ class AuditedAdminMockData:
                 about_your_organization: str = "e-Government",
                 anything_else: str = "There is more",
                 senior_official: Contact = self.dummy_contact(item_name, "senior_official"),
-                creator: User = self.dummy_user(item_name, "creator"),
+                requester: User = self.dummy_user(item_name, "requester"),
             }
         """  # noqa
-        creator = self.dummy_user(item_name, "creator")
+        requester = self.dummy_user(item_name, "requester")
         common_args = dict(
             generic_org_type=org_type,
             federal_type=federal_type,
@@ -479,7 +479,7 @@ class AuditedAdminMockData:
             about_your_organization="e-Government",
             anything_else="There is more",
             senior_official=self.dummy_contact(item_name, "senior_official"),
-            creator=creator,
+            requester=requester,
         )
         return common_args
 
@@ -634,7 +634,7 @@ class MockDb(TestCase):
         )
 
         cls.portfolio_1, _ = Portfolio.objects.get_or_create(
-            creator=cls.custom_superuser, federal_agency=cls.federal_agency_3, organization_type="federal"
+            requester=cls.custom_superuser, federal_agency=cls.federal_agency_3, organization_type="federal"
         )
 
         cls.suborganization_1, _ = Suborganization.objects.get_or_create(
@@ -690,7 +690,7 @@ class MockDb(TestCase):
         )
 
         cls.domain_information_1, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_1,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_1,
@@ -699,70 +699,70 @@ class MockDb(TestCase):
             portfolio=cls.portfolio_1,
         )
         cls.domain_information_2, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_2,
             generic_org_type="interstate",
             is_election_board=True,
             portfolio=cls.portfolio_1,
         )
         cls.domain_information_3, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_3,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_4, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_4,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_5, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_5,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_6, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_6,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_7, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_7,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_8, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_8,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_9, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_9,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_10, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_10,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_2,
             is_election_board=False,
         )
         cls.domain_information_11, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_11,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_1,
@@ -770,7 +770,7 @@ class MockDb(TestCase):
             is_election_board=False,
         )
         cls.domain_information_12, _ = DomainInformation.objects.get_or_create(
-            creator=cls.user,
+            requester=cls.user,
             domain=cls.domain_12,
             generic_org_type="interstate",
             is_election_board=False,
@@ -1198,7 +1198,7 @@ def completed_domain_request(  # noqa
         zipcode="10002",
         senior_official=so,
         requested_domain=domain,
-        creator=user,
+        requester=user,
         status=status,
         investigator=investigator,
         federal_agency=federal_agency,

@@ -1860,8 +1860,8 @@ class DomainRequestExport(BaseExport):
             "Portfolio": portfolio_display,
             "Request additional details": additional_details,
             # Annotated fields - passed into the request dict.
-            "Creator approved domains count": model.get("creator_approved_domains_count", 0),
-            "Creator active requests count": model.get("creator_active_requests_count", 0),
+            "Requester approved domains count": model.get("requester_approved_domains_count", 0),
+            "Requester active requests count": model.get("requester_active_requests_count", 0),
             "Alternative domains": model.get("all_alternative_domains"),
             "Other contacts": model.get("all_other_contacts"),
             "Current websites": model.get("all_current_websites"),
@@ -1875,9 +1875,9 @@ class DomainRequestExport(BaseExport):
             "SO last name": model.get("converted_senior_official_last_name"),
             "SO email": model.get("converted_so_email"),
             "SO title/role": model.get("converted_senior_official_title"),
-            "Creator first name": model.get("creator__first_name"),
-            "Creator last name": model.get("creator__last_name"),
-            "Creator email": model.get("creator__email"),
+            "Requester first name": model.get("requester__first_name"),
+            "Requester last name": model.get("requester__last_name"),
+            "Requester email": model.get("requester__email"),
             "Investigator": model.get("investigator__email"),
             # Untouched fields
             "Organization name": model.get("converted_organization_name"),
@@ -1917,8 +1917,8 @@ class DomainRequestDataType(DomainRequestExport):
             "Federal type",
             "Domain type",
             "Request additional details",
-            "Creator approved domains count",
-            "Creator active requests count",
+            "Requester approved domains count",
+            "Requester active requests count",
             "Alternative domains",
             "Other contacts",
             "Current websites",
@@ -1927,9 +1927,9 @@ class DomainRequestDataType(DomainRequestExport):
             "SO last name",
             "SO email",
             "SO title/role",
-            "Creator first name",
-            "Creator last name",
-            "Creator email",
+            "Requester first name",
+            "Requester last name",
+            "Requester email",
             "Organization name",
             "City",
             "State/territory",
@@ -1961,7 +1961,7 @@ class DomainRequestDataType(DomainRequestExport):
         """
         Get a list of tables to pass to select_related when building queryset.
         """
-        return ["creator", "senior_official", "federal_agency", "investigator", "requested_domain"]
+        return ["requester", "senior_official", "federal_agency", "investigator", "requested_domain"]
 
     @classmethod
     def get_prefetch_related(cls):
@@ -1982,9 +1982,9 @@ class DomainRequestDataType(DomainRequestExport):
             "senior_official__last_name",
             "senior_official__email",
             "senior_official__title",
-            "creator__first_name",
-            "creator__last_name",
-            "creator__email",
+            "requester__first_name",
+            "requester__last_name",
+            "requester__email",
             "investigator__email",
         ]
 
@@ -2070,11 +2070,11 @@ class DomainRequestDataFull(DomainRequestExport):
             "Requested suborg",
             "Suborg city",
             "Suborg state/territory",
-            "Creator first name",
-            "Creator last name",
-            "Creator email",
-            "Creator approved domains count",
-            "Creator active requests count",
+            "Requester first name",
+            "Requester last name",
+            "Requester email",
+            "Requester approved domains count",
+            "Requester active requests count",
             "Alternative domains",
             "SO first name",
             "SO last name",
@@ -2097,7 +2097,7 @@ class DomainRequestDataFull(DomainRequestExport):
         """
         Get a list of tables to pass to select_related when building queryset.
         """
-        return ["creator", "senior_official", "federal_agency", "investigator", "requested_domain"]
+        return ["requester", "senior_official", "federal_agency", "investigator", "requested_domain"]
 
     @classmethod
     def get_prefetch_related(cls):
@@ -2134,8 +2134,8 @@ class DomainRequestDataFull(DomainRequestExport):
         # Add additional computed fields
         computed_fields.update(
             {
-                "creator_approved_domains_count": cls.get_creator_approved_domains_count_query(),
-                "creator_active_requests_count": cls.get_creator_active_requests_count_query(),
+                "requester_approved_domains_count": cls.get_requester_approved_domains_count_query(),
+                "requester_active_requests_count": cls.get_requester_active_requests_count_query(),
                 "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
                 "all_alternative_domains": StringAgg(
                     "alternative_domains__website", delimiter=delimiter, distinct=True
@@ -2169,9 +2169,9 @@ class DomainRequestDataFull(DomainRequestExport):
             "senior_official__last_name",
             "senior_official__email",
             "senior_official__title",
-            "creator__first_name",
-            "creator__last_name",
-            "creator__email",
+            "requester__first_name",
+            "requester__last_name",
+            "requester__email",
             "investigator__email",
         ]
 
@@ -2181,34 +2181,34 @@ class DomainRequestDataFull(DomainRequestExport):
     # ============================================================= #
 
     @classmethod
-    def get_creator_approved_domains_count_query(cls):
+    def get_requester_approved_domains_count_query(cls):
         """
-        Generates a Count query for distinct approved domain requests per creator.
+        Generates a Count query for distinct approved domain requests per requester.
 
         Returns:
-            Count: Aggregates distinct 'APPROVED' domain requests by creator.
+            Count: Aggregates distinct 'APPROVED' domain requests by requester.
         """
 
         query = Count(
-            "creator__domain_requests_created__id",
-            filter=Q(creator__domain_requests_created__status=DomainRequest.DomainRequestStatus.APPROVED),
+            "requester__domain_requests_created__id",
+            filter=Q(requester__domain_requests_created__status=DomainRequest.DomainRequestStatus.APPROVED),
             distinct=True,
         )
         return query
 
     @classmethod
-    def get_creator_active_requests_count_query(cls):
+    def get_requester_active_requests_count_query(cls):
         """
-        Generates a Count query for distinct approved domain requests per creator.
+        Generates a Count query for distinct approved domain requests per requester.
 
         Returns:
-            Count: Aggregates distinct 'SUBMITTED', 'IN_REVIEW', and 'ACTION_NEEDED' domain requests by creator.
+            Count: Aggregates distinct 'SUBMITTED', 'IN_REVIEW', and 'ACTION_NEEDED' domain requests by requester.
         """
 
         query = Count(
-            "creator__domain_requests_created__id",
+            "requester__domain_requests_created__id",
             filter=Q(
-                creator__domain_requests_created__status__in=[
+                requester__domain_requests_created__status__in=[
                     DomainRequest.DomainRequestStatus.SUBMITTED,
                     DomainRequest.DomainRequestStatus.IN_REVIEW,
                     DomainRequest.DomainRequestStatus.ACTION_NEEDED,
