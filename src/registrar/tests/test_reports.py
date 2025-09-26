@@ -224,7 +224,6 @@ class CsvReportsTest(MockDbForSharedTests):
 class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     """Test the ExportData class from csv_export."""
 
-
     @less_console_noise_decorator
     def test_domain_data_type(self):
         """Shows security contacts, domain managers, so"""
