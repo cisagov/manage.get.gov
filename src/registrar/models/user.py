@@ -2,7 +2,7 @@ import logging
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 
 from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -474,3 +474,24 @@ class User(AbstractUser):
 
         # If there are other admins or the user is not the only one
         return False
+
+    def has_personal_assets(self) -> bool:
+        """
+        True if this user has any domain role on a domain whose DomainInformation.portfolio is NULL.
+        This ignores the current session/org and works even if the user ALSO has portfolios.
+        """
+        no_portfolio = DomainInformation.objects.filter(
+            domain_id=OuterRef("domain_id"),
+            portfolio__isnull=True,
+        )
+        return UserDomainRole.objects.filter(user=self).filter(Exists(no_portfolio)).exists()
+
+    def personal_domain_ids(self):
+        """
+        IDs of domains this user manages that are NOT in any portfolio.
+        """
+        return (
+            DomainInformation.objects.filter(portfolio__isnull=True, domain__userdomainrole__user=self)
+            .values_list("domain_id", flat=True)
+            .distinct()
+        )

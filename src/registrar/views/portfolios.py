@@ -1212,6 +1212,7 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_personal_assets"] = self.request.user.has_personal_assets()
         return context
 
 
@@ -1241,6 +1242,7 @@ class PortfolioOrganizationsView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_personal_assets"] = self.request.user.has_personal_assets()
         return context
 
     def post(self, request, *args, **kwargs):

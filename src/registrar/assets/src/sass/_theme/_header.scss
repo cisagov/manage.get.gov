@@ -69,43 +69,6 @@ button {
     outline-offset: 0;
 }
 
-.usa-header--basic {
-    .usa-logo__text {
-        color: color('primary-darker');
-    }
-    .usa-nav__username {
-        padding: units(1) units(2);
-        @include at-media(desktop) {
-            padding: units(2);
-        }
-    }
-    .usa-nav__primary {
-        margin-top:units(1);
-    }
-    @include at-media(desktop) {
-        .usa-nav__primary-item:not(:first-child) {
-            position: relative;
-        }
-        .usa-nav__primary-item:not(:first-child)::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 0; /* No width since it's a border */
-            height: 40%;
-            border-left: solid 1px color('base-light');
-            transform: translateY(-50%);
-        }
-    }
-
-    button {
-        padding-top: 0;
-        padding-bottom: 0;
-        padding-left: 0;
-        color: #{$dhs-blue};
-    }
-}
-
 .usa-header--extended {
     @include at-media(desktop) {
         background-color: color('primary-darker');
@@ -432,30 +395,72 @@ button {
     }
 }
 
+#organizations-submenu.usa-nav__submenu {
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+    padding-right: #{units(2)};
+}
+
+#organizations-submenu .usa-nav__submenu-item .usa-nav__link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: #{units(1)};
+    padding-right: #{units(2)}; 
+}
+
+#organizations-submenu .usa-tag {
+    flex: 0 0 auto; // do not stretch pill/tag
+}
+
 #organizations-submenu {
     button,
     button:hover {
         background-color: inherit;
     }
 
+    // moving plain declarations before the nested @include to avoid Sass warning
     button {
-        @include at-media($theme-header-min-width) {
-            &:hover {
-                text-decoration: underline;
-            }
-        }
         font-size: 1rem;
         font-weight: font-weight("normal");
         justify-content: flex-start;
         border-radius: 0;
         outline-offset: 0;
-        padding: 0 0;
+        padding: 0;
         margin-right: 0;
         width: 100%;
+
         a {
             margin-right: auto;
             text-align: left;
             width: 100%;
         }
+
+        @include at-media($theme-header-min-width) {
+            &:hover { text-decoration: underline; }
+        }
     }
+}
+
+/* Desktop and up: size submenu to content, prevent wrapping */
+@include at-media($theme-header-min-width) {
+  #organizations-submenu.usa-nav__submenu {
+    width: auto;
+    width: max-content; 
+    min-width: 15rem;
+    max-width: 90vw;
+    white-space: nowrap;
+  }
+
+  #organizations-submenu .usa-nav__submenu-item .usa-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: #{units(1)};
+    white-space: nowrap;
+  }
+
+  /* On desktop, let items auto-size */
+  #organizations-submenu button { width: auto; }
+  #organizations-submenu button a { width: auto; }
 }
