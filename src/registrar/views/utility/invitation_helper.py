@@ -83,7 +83,7 @@ def handle_invitation_exceptions(request, exception, email):
 
 def with_contact_link(error_message: str, contact_url: str = "https://get.gov/contact") -> str:
     return format_html(
-        '{} Try again and <a href="{}" class="usa-link" target="_blank">contact us</a> if the problem persists.',
+        '{} Please try again. If the problem persists, <a href="{}" class="usa-link" target="_blank">contact us</a>.',
         error_message,
         contact_url,
     )

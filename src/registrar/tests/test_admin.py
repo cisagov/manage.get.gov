@@ -1522,8 +1522,8 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
         msg = (
-            'Email service unavailable. Try again and <a href="https://get.gov/contact"'
-            ' class="usa-link" target="_blank">contact us</a> if the problem persists.'
+            'Email service unavailable. Please try again. If the problem persists, '
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
         )
 
         # Assert that messages.error was called with the correct message
@@ -1594,8 +1594,8 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         msg = (
             "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
-            'Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">'
-            "contact us</a> if the problem persists."
+            'Please try again. If the problem persists, <a href="https://get.gov/contact" '
+            'class="usa-link" target="_blank">contact us</a> if the problem persists.'
         )
 
         # Assert that messages.error was called with the correct message
