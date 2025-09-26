@@ -8,3 +8,5 @@ class RegistrarConfig(AppConfig):
 
     def ready(self):
         import registrar.signals  # noqa
+
+        from . import checks
