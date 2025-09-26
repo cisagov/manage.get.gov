@@ -335,7 +335,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
-       
 
     @less_console_noise_decorator
     def test_domain_data_type_user_with_portfolio(self):

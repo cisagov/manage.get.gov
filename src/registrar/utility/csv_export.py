@@ -761,7 +761,6 @@ class DomainExport(BaseExport):
 
         FIELDS = cls.get_fields(model)
 
-
         row = [FIELDS.get(column, "") for column in columns]
 
         return row
