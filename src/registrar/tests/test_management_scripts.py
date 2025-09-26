@@ -2329,7 +2329,6 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         """
         # Delete any other suborganizations defined in the initial test dataset
         DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
         Suborganization.objects.all().delete()
 
         Suborganization.objects.create(name="Test Organization ", portfolio=self.portfolio_1)
@@ -2347,7 +2346,6 @@ class TestPatchSuborganizations(MockDbForIndividualTests):
         """Tests that our hardcoded records update as we expect them to"""
         # Delete any other suborganizations defined in the initial test dataset
         DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
         Suborganization.objects.all().delete()
 
         # Create orgs with old and new name formats
