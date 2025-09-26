@@ -1593,7 +1593,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
         msg = (
-            "An unexpected error occurred: {email} could not be added to this domain. "
+            "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
             'Try again and <a href="https://get.gov/contact" class="usa-link" target="_blank">'
             "contact us</a> if the problem persists."
         )
