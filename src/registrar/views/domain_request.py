@@ -521,7 +521,7 @@ class DomainRequestWizard(TemplateView):
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
-        # pull the snapshot from session storage (set during GET)
+        # pull the snapshot from form (set during GET)
         self.apply_optimistic_lock(request)
 
         if not self.is_valid(forms):
