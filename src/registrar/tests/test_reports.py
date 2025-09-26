@@ -224,11 +224,6 @@ class CsvReportsTest(MockDbForSharedTests):
 class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     """Test the ExportData class from csv_export."""
 
-    def rows_from_expected_path(self, file):
-        expected_path = Path(__file__).parent / "fixtures" / file
-        with expected_path.open(newline="") as f:
-            rows = list(csv.reader(f))
-        return rows
 
     @less_console_noise_decorator
     def test_domain_data_type(self):
