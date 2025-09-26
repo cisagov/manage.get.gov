@@ -1265,7 +1265,7 @@ class DomainAddUserView(DomainFormBaseView):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)

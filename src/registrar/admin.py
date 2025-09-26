@@ -1884,7 +1884,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         portfolio_invitation.retrieve()
                         portfolio_invitation.save()
-                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+                    messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
                 if not send_domain_invitation_email(
                     email=requested_email,

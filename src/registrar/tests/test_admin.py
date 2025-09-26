@@ -399,7 +399,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "test@example.com has been invited to the organization: new portfolio"),
+                call(request, "test@example.com has been invited to become a member of new portfolio"),
                 call(request, "test@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -656,7 +656,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "test@example.com has been invited to the organization: new portfolio"
+            request, "test@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -784,7 +784,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
+                call(request, "nonexistent@example.com has been invited to become a member of new portfolio"),
                 call(request, "nonexistent@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -1018,7 +1018,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "nonexistent@example.com has been invited to the organization: new portfolio"
+            request, "nonexistent@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
