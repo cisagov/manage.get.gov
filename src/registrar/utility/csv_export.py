@@ -754,7 +754,6 @@ class DomainExport(BaseExport):
         model["first_ready_on"] = first_ready_on
         model["expiration_date"] = expiration_date
         model["domain_type"] = domain_type
-        model["domain_type"] = domain_type
         model["security_contact_email"] = security_contact_email
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
@@ -765,6 +764,11 @@ class DomainExport(BaseExport):
 
         return row
 
+    # NOTE - this override is temporary.
+    # We are running into a problem where DomainDataFull and DomainDataFederal are
+    # pulling the wrong data.
+    # For example, the portfolio name, rather than the suborganization name.
+    # This can be removed after that gets fixed.
     @classmethod
     def get_fields(cls, model):
         FIELDS = {

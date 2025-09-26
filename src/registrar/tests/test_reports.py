@@ -52,9 +52,6 @@ from .common import (
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
-import csv
-from pathlib import Path
-
 
 class CsvReportsTest(MockDbForSharedTests):
     """Tests to determine if we are uploading our reports correctly."""
