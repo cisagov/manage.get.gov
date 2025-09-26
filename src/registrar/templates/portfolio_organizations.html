@@ -3,9 +3,9 @@
 {% block title %} Your organizations | {% endblock title %}
 {% load static url_helpers %}
 
-{# Disable the redirect  #}
+{# Hide portfolio navigation header #}
 {% block header %}
-    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup hide_portfolio_navbar=True %}
+    {% include "includes/header_selector.html" with logo_clickable=True hide_portfolio_navbar=True %}
 {% endblock %}
 {% block portfolio_content %}
 <div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-1{% endif %}">

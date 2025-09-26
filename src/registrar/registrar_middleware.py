@@ -192,6 +192,15 @@ class CheckPortfolioMiddleware:
         has_portfolio_domains = (
             flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
         ) or request.user.is_org_user(request)
+
+        # If user has multiple portfolios, home page should redirect to Your organizations page.
+        # Redirect to domains page if user has one portfolio.
+        if request.user.is_multiple_orgs_user(request) and current_path == self.home:
+            home_redirect = reverse("your-organizations")
+            return HttpResponseRedirect(home_redirect)
+
+        # Redirect user to portfolio domains table if they manage domains in active portfolio.
+        # Redirect to Not managing domains page if they don't manage domains in active portfolio.
         if has_portfolio_domains and current_path == self.home:
             if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
                 portfolio_redirect = reverse("domains")
