@@ -152,6 +152,9 @@ button {
             right: 1rem;
             padding-right: $widescreen-x-padding;
             color: #{$dhs-light-blue-15};
+            @include at-media($theme-header-min-width) {
+                bottom: 3.75rem;
+            }
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
