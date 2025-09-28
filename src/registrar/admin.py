@@ -2752,7 +2752,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     status_history.short_description = "Status history"  # type: ignore
 
     # ------ OTHER fields ------
-    #Customize display
+    # Customize display
     @admin.display(description=_("Analyst"))
     def investigator(self, obj):
         return obj.investigator
