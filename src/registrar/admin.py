@@ -2775,12 +2775,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "investigator",
     ]
 
-    list_display_links = [
-        "custom_requested_domain",
-    ]
-
-    change_list_template = None
-
     orderable_fk_fields = [
         ("investigator", ["first_name", "last_name"]),
     ]
