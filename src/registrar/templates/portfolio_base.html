@@ -4,33 +4,34 @@
   {% block wrapperdiv %}
   <div id="wrapper" class="{% block wrapper_class %}wrapper--padding-top-6{% endblock %}">
   {% endblock wrapperdiv %}
-    {% block content %}
-        
-        <main class="grid-container grid-container--widescreen">
-            {% if user.is_authenticated %}
-            {# the entire logged in page goes here #}
 
-            {# portfolio organization page layout #}
-            {% block portfolio_organization_content %}{% endblock %}
-            
-            <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
-              <div class="desktop:grid-col-10{% if not is_widescreen_centered %} tablet:grid-col-11{% else %} tablet:grid-col-12 desktop:grid-offset-1{% endif %}">
-                {% block portfolio_content %}{% endblock %}
-            
-              </div>            
-              {% else %} {# not user.is_authenticated #}
-              {# the entire logged out page goes here #}
-              
-              <p><a class="usa-button" href="{% url 'login' %}">
-              Sign in
-              </a></p>
-              
-              {% endif %}
-            </div>
-           
-        </main>
+  {% block content %}
+      
+      <main class="grid-container grid-container--widescreen">
+          {% if user.is_authenticated %}
+          {# the entire logged in page goes here #}
 
-      {% endblock content%}
+          {# portfolio organization page layout #}
+          {% block portfolio_organization_content %}{% endblock %}
+          
+          <div class="grid-row {% if not is_widescreen_centered %}max-width--grid-container{% endif %}">
+            <div class="desktop:grid-col-10{% if not is_widescreen_centered %} tablet:grid-col-11{% else %} tablet:grid-col-12 desktop:grid-offset-1{% endif %}">
+              {% block portfolio_content %}{% endblock %}
+          
+            </div>            
+            {% else %} {# not user.is_authenticated #}
+            {# the entire logged out page goes here #}
+            
+            <p><a class="usa-button" href="{% url 'login' %}">
+            Sign in
+            </a></p>
+            
+            {% endif %}
+          </div>
+          
+      </main>
+
+    {% endblock content%}
     <div role="complementary">{% block complementary %}{% endblock %}</div>
     {% block content_bottom %}{% endblock %}
   </div>
