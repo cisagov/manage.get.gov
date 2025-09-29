@@ -37,13 +37,8 @@ body {
 }
 
 #wrapper.dashboard {
-  background-color: color('primary-lightest');
-  padding-top: units(5)!important;
-}
-
-#wrapper.dashboard--grey-1,
-.bg-gray-1 {
   background-color: color('gray-1');
+  padding-top: units(5)!important;
 }
 
 .section-outlined {

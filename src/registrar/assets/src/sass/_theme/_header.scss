@@ -69,43 +69,6 @@ button {
     outline-offset: 0;
 }
 
-.usa-header--basic {
-    .usa-logo__text {
-        color: color('primary-darker');
-    }
-    .usa-nav__username {
-        padding: units(1) units(2);
-        @include at-media(desktop) {
-            padding: units(2);
-        }
-    }
-    .usa-nav__primary {
-        margin-top:units(1);
-    }
-    @include at-media(desktop) {
-        .usa-nav__primary-item:not(:first-child) {
-            position: relative;
-        }
-        .usa-nav__primary-item:not(:first-child)::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 0; /* No width since it's a border */
-            height: 40%;
-            border-left: solid 1px color('base-light');
-            transform: translateY(-50%);
-        }
-    }
-
-    button {
-        padding-top: 0;
-        padding-bottom: 0;
-        padding-left: 0;
-        color: #{$dhs-blue};
-    }
-}
-
 .usa-header--extended {
     @include at-media(desktop) {
         background-color: color('primary-darker');
