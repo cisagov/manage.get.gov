@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block wrapper %}
+  {% block wrapperdiv %}
   <div id="wrapper" class="{% block wrapper_class %}wrapper--padding-top-6{% endblock %}">
+  {% endblock wrapperdiv %}
     {% block content %}
         
         <main class="grid-container grid-container--widescreen">

@@ -46,6 +46,16 @@ body {
   background-color: color('gray-1');
 }
 
+.organizations-page-wrapper {
+  @include at-media('desktop') {
+    background-image: url(../img/organizations_background.svg);
+    background-repeat: no-repeat;
+    background-position: right;
+    background-size: contain;
+    background-origin: content-box;
+  }
+}
+
 .section-outlined {
   background-color: color('white');
   border: 1px solid color('base-lighter');
