@@ -155,6 +155,7 @@ button {
             @include at-media($theme-header-min-width) {
                 bottom: 3.625rem;
             }
+
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
@@ -453,6 +454,7 @@ button {
         margin-right: 0;
         width: 100%;
         a {
+            line-height: 1.1;
             margin-right: auto;
             text-align: left;
             width: 100%;
