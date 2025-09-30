@@ -4883,7 +4883,7 @@ class TestPortfolioSelectOrganizationView(WebTest):
     @override_flag("multiple_portfolios", active=True)
     def test_select_portfolio_page_is_accessible(self):
         """Tests that users with multiple portfolios can access select portfolio page."""
-        response = self.client.get(reverse("your-portfolios"))
+        response = self.client.get(reverse("your-organizations"))
 
         # Make sure the page loaded, and that we're on the right page
         self.assertEqual(response.status_code, 200)
