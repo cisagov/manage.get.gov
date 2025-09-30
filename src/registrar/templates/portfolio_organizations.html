@@ -3,29 +3,37 @@
 {% block title %} Your organizations | {% endblock title %}
 {% load static url_helpers %}
 
-{# Disable the redirect  #}
+{# Hide portfolio navigation header #}
 {% block header %}
-    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup hide_portfolio_navbar=True %}
+    {% include "includes/header_selector.html" with logo_clickable=True hide_portfolio_navbar=True %}
 {% endblock %}
+
+{% comment %} Attach ID to wrapper page to add background image {% endcomment %}
+{% block wrapperdiv %}
+<div id="wrapper" class="wrapper--padding-top-6 organizations-page-wrapper">
+{% endblock wrapperdiv %}
+
 {% block portfolio_content %}
 <div id="main-content" class="{% if not is_widescreen_centered %}desktop:grid-offset-1{% endif %}">
-    <div class="grid-row usa-banner__guidance margin-bottom-2 flex-align-center">
+    <div class="grid-row usa-banner__guidance margin-bottom-3 flex-align-center">
         <img 
         class="" 
-        src="{% static 'img/organizations_img.svg' %}" 
+        src="{% static 'img/registrar/organizations_icon.svg' %}" 
         role="img" 
         alt="" 
         width="72"
         aria-hidden="true"
         />
-        <h1 class="margin-bottom-0">Your organizations</h1>
+        <h1 class="margin-bottom-0 margin-left-1">Your organizations</h1>
     </div>
 
     <div class="display-none margin-top-0" id="portfolios_list-wrapper">
     </div>
     {% for user_portfolio_permission in user_portfolio_permissions %}
-        <div class="grid-row margin-bottom-1">
-            {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_page" %}
+        <div class="grid-row margin-bottom-2">
+            <div class="grid-col-11 tablet:grid-col-11">
+                {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_page" %}
+            </div>
         </div>
     {% endfor %}
     {% if has_personal_assets %}
@@ -44,9 +52,8 @@
         </div>
     {% endif %}
 </form>
-
-    <p>
-        Don’t see your organization or account here? If you believe you should have access to an organization or account, 
+    <p class="font-ui-2xs margin-top-4"> 
+        Don’t see your organization here? If you believe you should have access to an organization, 
         contact us at <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
     </p>
 

@@ -8,25 +8,14 @@
     border-width: 1px;
     border-radius: 0.25rem;
     cursor: pointer;
-}
-
-.usa-card__header {
-    // padding: 2rem;
+    vertical-align: bottom;
+    text-align: left;
+    width: 100%;
+    max-width: 588px;
 }
 
 .usa-card__heading {
     color: #{$dhs-blue};
+    display: flex;
+    align-items: center;
 }
-
-/* ----------------------------------
-Custom tag for Enterprise pill
----------------------------------- */
-.usa-tag--enterprise {
-    @extend .usa-tag;
-    background-color: #{$dhs-blue-10};
-    border: 0.5px solid #{$dhs-blue-30};
-    color: #{$dhs-blue}; 
-    font-weight: 600; // semi-bold
-    padding: 1px 0.5rem;
-    font-size: .93rem;
-}   

@@ -1,4 +1,4 @@
-<form 
+<form
     id="set-session-portfolio-form-{{ forloop.counter }}" 
     method="post"
     action="{% url 'set-session-portfolio' %}"
@@ -15,7 +15,7 @@
             <div class="usa-card__header">
                 <h2 class="usa-card__heading">
                     {{portfolio}}
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="28">
+                    <svg class="margin-left-05 usa-icon organizations-arrow-icon" aria-hidden="true" focusable="false" role="img" width="28">
                         <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
                     </svg>
                     <span class="usa-tag usa-tag--enterprise margin-left-1">Enterprise</span>
@@ -29,8 +29,7 @@
         name="set_session_portfolio_button"
         value="{{portfolio.organization_name}}"
         >
-            <a>{{portfolio}}</a>
-            <span class="usa-tag usa-tag--enterprise">Enterprise</span>
-        </button>        
-  {% endif %}
+            <a class="font-ui-xs">{{portfolio}}</a>
+        </button>
+    {% endif %}
 </form>
