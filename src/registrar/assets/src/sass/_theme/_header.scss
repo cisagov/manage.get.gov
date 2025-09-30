@@ -223,6 +223,7 @@ button {
 
     @include at-media-max($theme-header-min-width) {
         @include nav-list("nav");
+        border-top: solid 1px color('base-lighter');
 
         a {
           @include u-padding-y(1.5);
@@ -286,15 +287,6 @@ button {
         @include at-media($theme-header-min-width) {
             @include u-padding-y(1.5);
             line-height: 1.1;
-        }
-    }
-
-    .usa-nav__secondary-item {
-        @include at-media-max($theme-header-min-width) {
-            // Add top and bottom borders to secondary buttons on mobile
-            .usa-accordion, a {
-                border-top: solid 1px color('base-lighter');
-            }
         }
     }
 
