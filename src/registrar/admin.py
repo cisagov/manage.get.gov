@@ -259,7 +259,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
         choices=[("", "---------")] + UserPortfolioRoleChoices.choices,
         required=True,
         widget=forms.Select(attrs={"class": "admin-dropdown"}),
-        label="Member access",
+        label="Member role",
         help_text="Only admins can manage member permissions and organization metadata.",
     )
 
@@ -1562,7 +1562,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Member access"  # type: ignore
+    get_roles.short_description = "Member role"  # type: ignore
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
@@ -1955,7 +1955,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Member access"  # type: ignore
+    get_roles.short_description = "Member role"  # type: ignore
 
     def save_model(self, request, obj, form, change):
         """
