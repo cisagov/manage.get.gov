@@ -1,7 +1,7 @@
 {% url 'your-portfolios' as your_portfolios_url %}
 <!-- Display extended header on Select organization page which displays when no active portfolio -->
 {% if not is_org_user and request.path != your_portfolios_url %}
-    {% include "includes/header_basic.html" with logo_clickable=logo_clickable %}
+    {% include "includes/header_extended.html" with logo_clickable=True hide_portfolio_navbar=True %}
 {% else %}
     {% include "includes/header_extended.html" with logo_clickable=logo_clickable hide_portfolio_navbar=hide_portfolio_navbar %}
 {% endif %}

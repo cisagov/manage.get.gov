@@ -871,10 +871,7 @@ class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
 
         # We need to assert that links to manage your domain are not present (in both body and footer)
         self.assertNotContains(user_profile_page, "Manage your domains")
-        # Assert the tooltip on the logo, indicating that the logo is not clickable
-        self.assertContains(
-            user_profile_page, 'title="Before you can manage your domains, we need you to add contact information."'
-        )
+        
         # Assert that modal does not appear on subsequent submits
         self.assertNotContains(user_profile_page, "domain registrants must maintain accurate contact information")
 
