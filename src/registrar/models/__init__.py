@@ -10,6 +10,10 @@ from .host import Host
 from .domain_invitation import DomainInvitation
 from .user_domain_role import UserDomainRole
 from .public_contact import PublicContact
+from .dns.dns_account import DnsAccount
+from .dns.dns_vendor import DnsVendor
+from .dns.vendor_dns_account import VendorDnsAccount
+from .dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 
 # IMPORTANT: UserPortfolioPermission must be before PortfolioInvitation.
 # PortfolioInvitation imports from UserPortfolioPermission, so you will get a circular import otherwise.
@@ -53,6 +57,10 @@ __all__ = [
     "SeniorOfficial",
     "UserPortfolioPermission",
     "AllowedEmail",
+    "DnsVendor"
+    "DnsAccount",
+    "VendorDnsAccount",
+    "DnsAccount_VendorDnsAccount"
 ]
 
 auditlog.register(Contact)
