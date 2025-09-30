@@ -63,28 +63,42 @@ def portfolio_permissions(request):
         "has_view_members_portfolio_permission": False,
         "has_edit_members_portfolio_permission": False,
         "portfolio": None,
+        "is_org_user": False,
         "is_portfolio_user": False,
         "is_portfolio_admin": False,
         "has_multiple_portfolios": False,
     }
     try:
-        portfolio = request.session.get("portfolio")
-        if portfolio:
-            return {
-                "has_view_portfolio_permission": request.user.has_view_portfolio_permission(portfolio),
-                "has_edit_portfolio_permission": request.user.has_edit_portfolio_permission(portfolio),
-                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
-                "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
-                "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(portfolio),
-                "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
-                "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
-                "portfolio": portfolio,
-                "is_portfolio_user": True,
-                "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
-                "has_multiple_portfolios": request.user.is_multiple_orgs_user(request),
-            }
+        user = request.user
+        if not getattr(user, "is_authenticated", False):
+            return portfolio_context
+
+        session_portfolio = request.session.get("portfolio")
         # Active portfolio may not be set yet, but indicate if user is a member of multiple portfolios
-        portfolio_context["has_multiple_portfolios"] = request.user.is_multiple_orgs_user(request)
+        portfolio_context["has_multiple_portfolios"] = user.is_multiple_orgs_user(request)
+
+        if not session_portfolio:
+            return portfolio_context
+
+        # Check min privilege to view portfolio
+        can_view = user.has_view_portfolio_permission(session_portfolio)
+        if not can_view:
+            return portfolio_context
+
+        # Basic User is an org user flags
+        portfolio_context["is_org_user"] = True
+        portfolio_context["is_portfolio_user"] = True
+        portfolio_context["portfolio"] = session_portfolio
+
+        # Now to compute the rest of the permissions
+        portfolio_context["has_edit_portfolio_permission"] = user.has_edit_portfolio_permission(session_portfolio)
+        portfolio_context["has_any_domains_portfolio_permission"] = user.has_any_domains_portfolio_permission(session_portfolio)
+        portfolio_context["has_any_requests_portfolio_permission"] = user.has_any_requests_portfolio_permission(session_portfolio)
+        portfolio_context["has_edit_request_portfolio_permission"] = user.has_edit_request_portfolio_permission(session_portfolio)
+        portfolio_context["has_view_members_portfolio_permission"] = user.has_view_members_portfolio_permission(session_portfolio)
+        portfolio_context["has_edit_members_portfolio_permission"] = user.has_edit_members_portfolio_permission(session_portfolio)
+        portfolio_context["is_portfolio_admin"] = user.is_portfolio_admin(session_portfolio)
+
         return portfolio_context
 
     except AttributeError:
