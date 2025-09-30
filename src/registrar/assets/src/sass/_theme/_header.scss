@@ -223,6 +223,7 @@ button {
 
     @include at-media-max($theme-header-min-width) {
         @include nav-list("nav");
+
         a {
           @include u-padding-y(1.5);
         }
@@ -288,6 +289,15 @@ button {
         }
     }
 
+    .usa-nav__secondary-item {
+        @include at-media-max($theme-header-min-width) {
+            // Add top and bottom borders to secondary buttons on mobile
+            .usa-accordion, a {
+                border-top: solid 1px color('base-lighter');
+            }
+        }
+    }
+
     button,
     .usa-accordion__button {
         $button-vertical-offset: 53%; // XXX: Magic number
@@ -306,6 +316,7 @@ button {
 
         @include at-media-max($theme-header-min-width) {
             justify-content: flex-start;
+
             &:hover {
                 background-color: var(--border-color);
                 color: #{$theme-color-primary};
