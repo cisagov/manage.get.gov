@@ -65,9 +65,9 @@ class OutsideOrgMemberError(InvitationError):
 
     def __init__(self, email=None):
         # Default message if no additional info is provided
-        message = "Can not invite member of a .gov organization to a different organization."
+        message = "Can not invite member to this organization."
         if email:
-            message = f"{email} is already a member of another organization."
+            message = f"{email} is not a member of this organization."
         super().__init__(message)
 
 
