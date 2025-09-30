@@ -3351,10 +3351,30 @@ class TestDomainDeletion(TestWithUser):
     def test_check_for_modal_trigger(self):
         """
         * We have no way to test that the modal trigger, since it occurs via JS
-        * This test checks for the buttom that triggers it
+        * This test checks for the button that triggers it
         """
         self.client.force_login(self.user)
         response = self.client.get(
             reverse("domain-delete", kwargs={"domain_pk": self.domain_not_expiring.id}),
         )
         self.assertContains(response, "Request deletion")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_successful_redirects_to_list_and_shows_on_hold(self):
+        """
+        * Domain deletion waffle flag is ON
+        * Domain state is READY and then do the POST "deletion"
+        * After "deletion", check the domains table
+        * In the domains table, confirm domain exists + status in the table is "On Hold"
+        """
+        self.client.force_login(self.user)
+        _ = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        json_response = self.client.get("/get-domains-json/")
+
+        self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
+        self.assertContains(json_response, "On Hold")
