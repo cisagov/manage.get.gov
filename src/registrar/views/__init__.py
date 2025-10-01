@@ -16,7 +16,7 @@ from .domain import (
     PrototypeDomainDNSRecordView,
     DomainRenewalView,
     DomainDeleteView,
-    DomainAdvancedSettingView,
+    DomainLifecycleView,
 )
 from .user_profile import UserProfileView, FinishProfileSetupView
 from .health import *

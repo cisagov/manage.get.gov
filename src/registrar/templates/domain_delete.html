@@ -13,7 +13,7 @@
         <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{domain.name}}</span></a>
       </li>
       <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-advanced-setting' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>Advanced Settings</span></a>
+        <a href="{% url 'domain-lifecycle' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>Domain Lifecycle</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
         <span>Request deletion</span>

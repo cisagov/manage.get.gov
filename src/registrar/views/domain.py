@@ -451,9 +451,9 @@ class DomainView(DomainBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
-class DomainAdvancedSettingView(DomainBaseView):
+class DomainLifecycleView(DomainBaseView):
 
-    template_name = "domain_advanced_setting.html"
+    template_name = "domain_lifecycle.html"
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""

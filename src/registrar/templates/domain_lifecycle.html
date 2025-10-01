@@ -1,7 +1,7 @@
 {% extends "domain_base.html" %}
 {% load static field_helpers url_helpers %}
 
-{% block title %}Advanced settings | {{ domain.name }} | {% endblock %}
+{% block title %}Domain lifecycle| {{ domain.name }} | {% endblock %}
 
   {% block breadcrumb %}
   <!-- Navigation breadcrumbs -->
@@ -14,7 +14,7 @@
         <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
       </li>
       <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Advanced settings</span>
+        <span>Domain lifecycle</span>
       </li>
     </ol>
   </nav>
