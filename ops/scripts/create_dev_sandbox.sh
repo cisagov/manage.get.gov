@@ -1,10 +1,6 @@
 # This script sets up a completely new Cloud.gov CF Space with all the corresponding
 # infrastructure needed to run get.gov. It can serve for documentation for running
 # NOTE: This script was written for MacOS and to be run at the root directory. 
-#
-# TO RUN (in terminal): 
-#   - Navigate to /getgov
-#   - Run "./ops/scripts/create_dev_sandbox.sh SANDBOX_NAME" (replace SANDBOX_NAME with the name of the sandbox to create)
 
 if [ -z "$1" ]; then
     echo 'Please specify a new space to create (i.e. lmm)' >&2
@@ -58,26 +54,7 @@ cf bind-security-group public_networks_egress cisa-dotgov --space $1
 cf bind-security-group trusted_local_networks_egress cisa-dotgov --space $1
 
 echo "Creating new cloud.gov DB for $1. This usually takes about 5 minutes..."
-cf create-service aws-rds micro-psql getgov-$1-database
-echo "(Waiting for database service getgov-$1-database to be ready...)"
-echo "."
-while true; do
-  STATUS=$(cf service getgov-$1-database \
-    | awk -F'status:[[:space:]]*' '/status:/ {print tolower($2)}' \
-    | xargs)
-  if [[ "$STATUS" == *succeeded* ]]; then
-    echo
-    echo "Database ready."
-    break
-  elif [[ "$STATUS" == *"in progress"* || "$STATUS" == create || "$STATUS" == update ]]; then
-    printf "."
-    sleep 10
-  else
-    echo
-    echo "Service in unexpected state: $STATUS"
-    break
-  fi
-done
+cf create-service aws-rds micro-psql getgov-$1-database -w
 
 echo "Creating new cloud.gov credentials for $1..."
 django_key=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
@@ -170,18 +147,18 @@ cf create-service cloud-gov-service-account space-deployer github-cd-account
 cf create-service-key github-cd-account github-cd-key
 cf service-key github-cd-account github-cd-key
 read -p "Please confirm we should set the above username and key to Github secrets. (y/n) " -n 1 -r
+echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     exit 1
 fi
 
-cf service-key github-cd-account github-cd-key \
-  | sed '1,2d' \
-  | jq -r '[.credentials.username, .credentials.password] | @tsv' \
-  | while IFS=$'\t' read -r username password; do
-      gh secret --repo cisagov/getgov set "CF_${upcase_name}_USERNAME" --body="$username"
-      gh secret --repo cisagov/getgov set "CF_${upcase_name}_PASSWORD" --body="$password"
-    done
+cf service-key github-cd-account github-cd-key | sed 1,2d  | jq -r '[.credentials.username, .credentials.password]|@tsv' |
+
+while read -r username password; do
+    gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username
+    gh secret --repo cisagov/getgov set CF_${upcase_name}_PASSWORD --body $password
+done
 
 read -p "All done! Should we open a PR with these changes? (y/n) " -n 1 -r
 echo
