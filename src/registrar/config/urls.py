@@ -393,7 +393,7 @@ urlpatterns = [
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
     path("get-portfolio-members-json/", views.PortfolioMembersJson.as_view(), name="get_portfolio_members_json"),
     path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
-    path("your-portfolios/", views.PortfolioOrganizationsView.as_view(), name="your-portfolios"),
+    path("your-organizations/", views.PortfolioOrganizationsView.as_view(), name="your-organizations"),
     path(
         "set-session-portfolio/",
         views.PortfolioOrganizationSelectView.as_view(),
