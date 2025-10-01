@@ -345,9 +345,9 @@ urlpatterns = [
         name="domain-security-email",
     ),
     path(
-        "domain/<int:domain_pk>/advanced-setting",
-        views.DomainAdvancedSettingView.as_view(),
-        name="domain-advanced-setting",
+        "domain/<int:domain_pk>/domain-lifecycle",
+        views.DomainLifecycleView.as_view(),
+        name="domain-lifecycle",
     ),
     path(
         "domain/<int:domain_pk>/renewal",
