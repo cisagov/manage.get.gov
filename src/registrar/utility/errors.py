@@ -37,7 +37,7 @@ class AlreadyDomainManagerError(InvitationError):
     """Raised when the user is already a manager for the domain."""
 
     def __init__(self, email):
-        super().__init__(f"An unexpected error occurred: {email} could not be added to this domain.")
+        super().__init__(f"{email} is already a manager for this domain.")
 
 
 class AlreadyDomainInvitedError(InvitationError):
