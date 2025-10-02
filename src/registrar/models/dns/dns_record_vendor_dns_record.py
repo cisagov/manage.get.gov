@@ -4,7 +4,7 @@ from ..utility.time_stamped_model import TimeStampedModel
 
 class DnsRecord_VendorDnsRecord(TimeStampedModel):
     dns_record = ForeignKey("registrar.DnsRecord", on_delete=CASCADE)
-    vendor_dns_record = ForeignKey("registrar.VendorDnsRecord", on_delete=CASCADE)
+    vendor_dns_record = ForeignKey("registrar.VendorDnsRecord", on_delete=CASCADE)  # type: ignore
     is_active = BooleanField(default=True)
 
     class Meta:
