@@ -72,7 +72,7 @@ __all__ = [
     "DnsZone_VendorDnsZone",
     "DnsRecord",
     "VendorDnsRecord",
-    "DnsRecord_VendorDnsRecord"
+    "DnsRecord_VendorDnsRecord",
 ]
 
 auditlog.register(Contact)

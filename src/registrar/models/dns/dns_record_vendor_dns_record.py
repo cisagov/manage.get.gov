@@ -9,5 +9,5 @@ class DnsRecord_VendorDnsRecord(Model):
 
     class Meta:
         constraints = [
-            UniqueConstraint(fields=['is_active'], condition=Q(is_active=True), name='unique_is_active_record')
+            UniqueConstraint(fields=["is_active"], condition=Q(is_active=True), name="unique_is_active_record")
         ]

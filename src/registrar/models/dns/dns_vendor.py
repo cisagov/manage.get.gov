@@ -1,6 +1,7 @@
 from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 
+
 class DnsVendor(TimeStampedModel):
     CF = "cloudflare"
     VENDORS = [(CF, "Cloudflare")]
