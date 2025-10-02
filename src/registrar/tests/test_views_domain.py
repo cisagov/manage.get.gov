@@ -3161,7 +3161,16 @@ class TestDomainDeletion(TestWithUser):
             UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
 
         self.user.save()
-
+    
+    def tearDown(self):
+        try:
+            UserDomainRole.objects.all().delete()
+            DomainInformation.objects.all().delete()
+            Domain.objects.all().delete()
+        except ValueError:
+            pass
+        super().tearDown()
+    
     def custom_is_expiring(self):
         return True
 
