@@ -84,7 +84,7 @@
           {% include "includes/domain_lifecycle_nav.html" %}
       {% endif %}
     
-      {% if not domain_deletion }
+      {% if not domain_deletion %}
         {% with url_name="domain-renewal" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
         {% endwith %}
