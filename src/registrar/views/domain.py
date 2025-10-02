@@ -126,14 +126,6 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         self.session[domain_pk] = self.object
 
-    def get_domain_deletion(self):
-        user = self.request.user
-        is_flag_on = flag_is_active_for_user(user, "domain_deletion")
-        is_domain_manager = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
-        is_domain_expiring_or_expired = self.object.is_expired() or self.object.is_expiring()
-        is_domain_in_ready_state = self.object.state == Domain.State.READY
-        return is_flag_on and is_domain_manager and (is_domain_expiring_or_expired or is_domain_in_ready_state)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -143,7 +135,8 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
-        context["domain_deletion"] = self.get_domain_deletion()
+        context["domain_deletion"] = flag_is_active_for_user(self.request.user, "domain_deletion")
+        # context["display_renewal_form"] = self.display_renewal_form_check()
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
