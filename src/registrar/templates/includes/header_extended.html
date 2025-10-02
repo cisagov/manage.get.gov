@@ -74,7 +74,6 @@
                 </a>
             </li> -->
 
-            {% if is_portfolio_user %}
                 <li class="usa-nav__primary-item">
                     <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
                     {% if has_edit_request_portfolio_permission %}
@@ -134,6 +133,5 @@
             </ul>
         </div>
     </nav>
-    {% endif %}
     {% endblock %}
 </header>

@@ -1,0 +1,34 @@
+---
+applications:
+- name: getgov-ap
+  buildpacks:
+    - python_buildpack
+  path: ../../src
+  instances: 1
+  memory: 512M
+  stack: cflinuxfs4
+  timeout: 180
+  command: ./run.sh
+  health-check-type: http
+  health-check-http-endpoint: /health
+  health-check-invocation-timeout: 40
+  env:
+    # Send stdout and stderr straight to the terminal without buffering
+    PYTHONUNBUFFERED: yup
+    # Tell Django where to find its configuration
+    DJANGO_SETTINGS_MODULE: registrar.config.settings
+    # Tell Django where it is being hosted
+    DJANGO_BASE_URL: https://getgov-ap.app.cloud.gov
+    # Tell Django how much stuff to log
+    DJANGO_LOG_LEVEL: INFO
+    # tell django what log format to use: console or json. See settings.py for more details.
+    DJANGO_LOG_FORMAT: console 
+    # default public site location
+    GETGOV_PUBLIC_SITE_URL: https://get.gov
+    # Flag to disable/enable features in prod environments
+    IS_PRODUCTION: False
+  routes:
+    - route: getgov-ap.app.cloud.gov
+  services:
+  - getgov-credentials
+  - getgov-ap-database

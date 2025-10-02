@@ -16,6 +16,7 @@ on:
           - stable
           - staging
           - development
+          - ap
           - cw
           - testdb
           - acadia

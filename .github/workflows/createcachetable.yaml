@@ -17,6 +17,7 @@ on:
           - staging
           - development
           - backup
+          - ap
           - cw
           - testdb
           - acadia
