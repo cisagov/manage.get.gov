@@ -3,7 +3,7 @@ export function domainDeletionEventListener() {
     checkbox: the policy acknowledgment checkbox
     modalTrigger: hidden trigger for the modal on the request deletion button
     requestButton: “request deletion” button that opens the modal
-    confirmButton: modals "yes, delete" or whatever it is button
+    confirmButton: modals "yes, request deletion" button
     form: the deletion form we'll submit
     */
     const checkbox = document.getElementById("delete-domain-checkbox"); 

@@ -29,7 +29,6 @@
         {% if is_domain_manager %}
             {% if domain.is_expiring or domain.is_expired %}
                 {% url 'domain-renewal' domain_pk=domain.id as url %}
-
                 <li><a href="{{ url }}">Renewal form</a></li>
             {% endif %}
         {% endif %}
