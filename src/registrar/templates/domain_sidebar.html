@@ -81,10 +81,12 @@
       {% endwith %}
 
       {% if domain_deletion %}
+        {% if is_domain_manager %}
           {% include "includes/domain_lifecycle_nav.html" %}
+        {% endif %}
       {% endif %}
     
-      {% if not domain_deletion %}
+      {% if is_domain_manager and domain.is_expiring and not domain_deletion or is_domain_manager and domain.is_expired and not domain_deletion %}
         {% with url_name="domain-renewal" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
         {% endwith %}

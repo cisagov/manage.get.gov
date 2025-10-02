@@ -126,17 +126,6 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         self.session[domain_pk] = self.object
 
-    def should_show_domain_nav(self):
-        """Check if domain lifecycle nav should be displayed"""
-        user = self.request.user
-        return(
-        flag_is_active_for_user(self.request.user, "domain_deletion") and
-         UserDomainRole.objects.filter(user=user, domain=self.object).exists() and
-         (self.object.state == Domain.State.READY) or 
-          self.object.is_expiring or
-          self.object.is_expired
-        )
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -146,7 +135,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
-        context["domain_deletion"] = self.should_show_domain_nav()
+        context["domain_deletion"] = flag_is_active_for_user(self.request.user, "domain_deletion")
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
