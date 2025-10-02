@@ -3165,10 +3165,9 @@ class TestDomainDeletion(TestWithUser):
     def tearDown(self):
         try:
             UserDomainRole.objects.all().delete()
-            DomainInvitation.objects.all().delete()
-            DomainRequest.objects.all().delete()
             DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
+            Domain.objects.all().delete()
         except ValueError:
             pass
         super().tearDown()
