@@ -126,6 +126,32 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
         self.session[domain_pk] = self.object
 
+    def display_domain_lifecycle_nav(self):
+        """
+        Domain actions (e.g., delete, renew) are available only when:
+        * the user is a domain manager
+        AND one of the following is true:
+        The domain is in READY state
+        OR the domain is expiring soon
+        OR the domain has already expired
+        """
+        user = self.request.user
+        domain = self.object
+
+        is_domain_manager = UserDomainRole.objects.filter(user=user, domain=domain).exists()
+
+        return is_domain_manager and (domain.state == Domain.State.READY or domain.is_expiring() or domain.is_expired())
+
+    def display_domain_renewal_only(self):
+        user = self.request.user
+        domain = self.object
+
+        is_domain_manager = UserDomainRole.objects.filter(user=user, domain=domain).exists()
+        is_expiring_or_expired = domain.is_expiring() or domain.is_expired()
+        is_deletion_flag_off = not flag_is_active_for_user(user, "domain_deletion")
+
+        return is_domain_manager and is_expiring_or_expired and is_deletion_flag_off
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -136,7 +162,8 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
         context["domain_deletion"] = flag_is_active_for_user(self.request.user, "domain_deletion")
-        # context["display_renewal_form"] = self.display_renewal_form_check()
+        context["display_domain_lifecycle_nav"] = self.display_domain_lifecycle_nav()
+        context["display_domain_renewal_only"] = self.display_domain_renewal_only()
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"

@@ -3164,7 +3164,6 @@ class TestDomainDeletion(TestWithUser):
 
     def tearDown(self):
         try:
-            # Always delete in reverse order of dependencies
             UserDomainRole.objects.all().delete()
             DomainInformation.objects.all().delete()
             PublicContact.objects.all().delete()
