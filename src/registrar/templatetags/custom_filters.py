@@ -201,6 +201,7 @@ def is_domain_subpage(path):
         "domain-org-name-address",
         "domain-senior-official",
         "domain-security-email",
+        "domain-suborganization",
         "domain-users-add",
         "domain-request-delete",
         "domain-user-delete",
