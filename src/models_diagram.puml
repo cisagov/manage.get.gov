@@ -394,6 +394,8 @@ class "registrar.DnsRecord_VendorDnsRecord <Registrar>" as registrar.DnsRecord_V
     dns record_ vendor dns record
     --
     + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
     ~ dns_record (ForeignKey)
     ~ vendor_dns_record (ForeignKey)
     + is_active (BooleanField)
