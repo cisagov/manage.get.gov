@@ -554,14 +554,12 @@ class DomainDeleteView(DomainFormBaseView):
         if form.is_valid():
             if domain.state != "ready":
                 messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
-                return self.render_to_response(self.get_context_data(form=form))
             if is_policy_acknowledged:
                 domain.place_client_hold()
                 domain.save()
                 messages.success(request, f"The domain '{domain.name}' was deleted successfully.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
-            return self.render_to_response(self.get_context_data(form=form))
 
         # Form not valid -> redisplay with errors
         return self.render_to_response(self.get_context_data(form=form))
