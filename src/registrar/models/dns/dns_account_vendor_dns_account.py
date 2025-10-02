@@ -1,4 +1,4 @@
-from django.db.models import Q, ForeignKey, BooleanField, UniqueConstraint, CASCADE, Model, DateTimeField
+from django.db.models import Q, ForeignKey, BooleanField, UniqueConstraint, CASCADE
 from ..utility.time_stamped_model import TimeStampedModel
 
 
