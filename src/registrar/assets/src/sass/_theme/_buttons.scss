@@ -122,20 +122,25 @@ a.usa-button--outline:active {
 
 // Used on: Domain request status (withdraw) and delete domain
 a.usa-button.usa-button--outline-secondary,
-a.usa-button.usa-button--outline-secondary:visited {
+a.usa-button.usa-button--outline-secondary:visited,
+button.usa-button.usa-button--outline-secondary,
+button.usa-button.usa-button--outline-secondary:visited {
   box-shadow: inset 0 0 0 2px color('error');
   background-color: transparent;
   color: color('error');
 }
 
 a.usa-button--outline-secondary:hover,
-a.usa-button.usa-button--outline-secondary:focus {
+a.usa-button.usa-button--outline-secondary:focus,
+button.usa-button.usa-button--outline-secondary:hover,
+button.usa-button.usa-button--outline-secondary:focus {
   box-shadow: inset 0 0 0 2px color('error-dark');
   background-color: transparent;
   color: color('error-dark');
 }
 
-a.usa-button.usa-button--outline-secondary:active {
+a.usa-button.usa-button--outline-secondary:active,
+button.usa-button.usa-button--outline-secondary:active {
   box-shadow: inset 0 0 0 2px color('error-darker');
   background-color: transparent;
   color: color('error-darker');

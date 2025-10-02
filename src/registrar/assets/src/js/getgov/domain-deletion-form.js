@@ -17,23 +17,19 @@ export function domainDeletionEventListener() {
 
     // "Request deletion" button
     requestButton.addEventListener("click", (e) => {
+        e.preventDefault()
 
         // Checkbox not checked -> submit form to default action (domain-delete)
         if (!checkbox.checked) {
-            console.log("!! Checkbox not checked")
             form.submit();
             return;
         } 
-
         // Checkbox checked -> manually "click" the hidden link/modaltrigger to let USWDS open modal
-        console.log("!! Checkbox checked")
         modalTrigger.click();
     });
 
     // Clicking "Yes, request deletion" inside modal that opens after checkbox checked + "request deletion" button clicked
     confirmButton.addEventListener("click", (e) => {
-        console.log("!! In confirm button for the modal")
-        console.log("!! Submitting form to:", form.action);
         form.submit();
     });
  }
