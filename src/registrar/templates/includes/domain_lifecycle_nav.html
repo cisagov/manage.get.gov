@@ -2,7 +2,7 @@
 {% url 'domain-renewal' domain_pk=domain.id as domain_renewal_url %}
 {% url 'domain-delete' domain_pk=domain.id as  domain_delete_url %}
 
-{% if is_domain_manager and domain.state == domain.State.READY or is_domain_manager and domain.is_expiring or is_domain_manager and domain.is_expired  %}
+{% if domain_deletion  %}
   <li class="usa-sidenav__item">
     <a href="{{ domain_lifecycle_url }}" 
       {% if request.path == domain_lifecycle_url or request.path == domain_renewal_url or request.path == domain_delete_url %}
