@@ -1,37 +1,4 @@
-# Complete model documentation
-
-This is an auto-generated diagram of our data models generated with the
-[django-model2puml](https://github.com/sen-den/django-model2puml) library.
-
-## How to generate the puml
-
-1. Uncomment `puml_generator` from  `INSTALLED_APPS` in settings.py and docker-compose down and up
-2. Run the following command to generate a puml file
-
-```bash
-docker compose exec app ./manage.py generate_puml --include registrar
-```
-
-![Complete data models diagram](./models_diagram.svg)
-
-<details>
-<summary>PlantUML source code</summary>
-
-## How To regenerate the database svg image
-
-1. Copy your puml file contents into the bottom of this file and replace the current code marked by `plantuml`
-2. Navigate to the `diagrams` folder and then run the following command below:
-
-```bash
-docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg models_diagram.md
-```
-
-3. Remove the puml file from earlier (if you still have it)
-4. Commit the new image and the md file
-
-
-```plantuml
-@startuml
+@startuml 
 class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
     contact
     --
