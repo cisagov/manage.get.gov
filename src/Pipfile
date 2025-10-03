@@ -36,6 +36,7 @@ django-import-export = "*"
 django-waffle = "*"
 cryptography = "*"
 rapidfuzz = "*"
+httpx = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"
