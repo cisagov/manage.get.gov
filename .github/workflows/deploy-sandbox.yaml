@@ -26,7 +26,6 @@ jobs:
         || startsWith(github.head_ref, 'kma/')
         || startsWith(github.head_ref, 'es/')
         || startsWith(github.head_ref, 'meoward/')
-        || startsWith(github.head_ref, 'bob/')
         || startsWith(github.head_ref, 'hotgov/')
         || startsWith(github.head_ref, 'litterbox/')
         || startsWith(github.head_ref, 'ad/')

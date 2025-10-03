@@ -19,7 +19,6 @@ on:
           - ap
           - cw
           - testdb
-          - bob
           - dg
           - el
           - es
