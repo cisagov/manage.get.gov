@@ -3095,24 +3095,19 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         Apply snapshot from the admin form and attempt to save the object.
         Returns True if saved, False if blocked due to conflict.
         """
-        
-        version = request.POST.get("version") 
+
+        version = request.POST.get("version")
         snap = parse_datetime(version) if version else None
-        current = (
-                    type(obj).objects.only("updated_at")
-                    .filter(pk=obj.pk)
-                    .values_list("updated_at", flat=True)
-                    .first()
-                )
+        current = type(obj).objects.only("updated_at").filter(pk=obj.pk).values_list("updated_at", flat=True).first()
 
         if snap and current and current != snap:
             messages.set_level(request, messages.ERROR)
             messages.error(request, "A newer version of this record exists. Please reload and try again.")
-            return False        
+            return False
         else:
             obj._original_updated_at = snap
-            return super().save_model(request, obj, form, change)            
-        
+            return super().save_model(request, obj, form, change)
+
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         """Custom save_model definition that handles edge cases"""
@@ -3163,15 +3158,15 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         # == Handle status == #
         if obj.status == original_obj.status:
             # If the status hasn't changed, let the base function take care of it
-            return self._locked_save(request, obj, form, change)                  
+            return self._locked_save(request, obj, form, change)
         else:
             # Run some checks on the current object for invalid status changes
             obj, should_save = self._handle_status_change(request, obj, original_obj)
 
             # We should only save if we don't display any errors in the steps above.
             if should_save:
-                return self._locked_save(request, obj, form, change)                  
-            
+                return self._locked_save(request, obj, form, change)
+
     def _handle_custom_emails(self, obj):
         if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
             if obj.action_needed_reason and not obj.action_needed_reason_email:
@@ -3881,7 +3876,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
-    
+
     # ------- FILTERS
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
@@ -4353,7 +4348,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def _get_current_date(self):
         """Gets the current date"""
         return date.today()
-    
+
     def _prime_lock(self, request, obj) -> bool:
         """
         Read the posted snapshot and ensure the record is fresh.
@@ -4366,10 +4361,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             messages.error(request, "Could not verify the record version. Please reload and try again.")
             return False
 
-        current = (type(obj).objects.only("updated_at")
-                   .filter(pk=obj.pk)
-                   .values_list("updated_at", flat=True)
-                   .first())
+        current = type(obj).objects.only("updated_at").filter(pk=obj.pk).values_list("updated_at", flat=True).first()
         if not current or current != snap:
             messages.error(request, "A newer version of this record exists. Please reload and try again.")
             return False
@@ -4384,7 +4376,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # We do not want to accidentally delete records.
             self.message_user(request, "Object is not of type Domain", messages.ERROR)
             return
-        
+
         if not self._prime_lock(request, obj):
             return HttpResponseRedirect(".")
 
@@ -4427,7 +4419,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     messages.ERROR,
                 )
         except ValidationError:
-            self.message_user(request, "A newer version of this form exists. Please refresh the page.", messages.WARNING)
+            self.message_user(
+                request, "A newer version of this form exists. Please refresh the page.", messages.WARNING
+            )
         except Exception:
             self.message_user(
                 request,
@@ -4461,7 +4455,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             obj.place_client_hold()
             obj.save(optimistic_lock=True)
         except ValidationError:
-            self.message_user(request, "A newer version of this form exists. Please refresh the page.", messages.WARNING)
+            self.message_user(
+                request, "A newer version of this form exists. Please refresh the page.", messages.WARNING
+            )
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -4494,7 +4490,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             obj.revert_client_hold()
             obj.save(optimistic_lock=True)
         except ValidationError:
-            self.message_user(request, "A newer version of this form exists. Please refresh the page.", messages.WARNING)
+            self.message_user(
+                request, "A newer version of this form exists. Please refresh the page.", messages.WARNING
+            )
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error

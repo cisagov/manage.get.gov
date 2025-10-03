@@ -292,7 +292,7 @@ env_db_url["ATOMIC_REQUESTS"] = True
 # 0 = disable persistence (new connection per request).
 # None = unlimited reuse.
 # 60 is a safe default for RDS + no pgbouncer.
-env_db_url["CONN_MAX_AGE"] = int(env.int("CONN_MAX_AGE", default=60))
+env_db_url["CONN_MAX_AGE"] = int(env.int("CONN_MAX_AGE", default=0))
 # Set backend connection options for PostgreSQL
 env_db_url.setdefault("OPTIONS", {})
 env_db_url["OPTIONS"].update(
@@ -305,7 +305,7 @@ env_db_url["OPTIONS"].update(
         "keepalives_interval": 30,
         "keepalives_count": 3,
         # Optional runtime parameters (timeouts)
-        "options": "-c statement_timeout=5000 " "-c idle_in_transaction_session_timeout=30000 " "-c lock_timeout=5000",
+        "options": "-c statement_timeout=0 " "-c idle_in_transaction_session_timeout=0 " "-c lock_timeout=0",
     }
 )
 
