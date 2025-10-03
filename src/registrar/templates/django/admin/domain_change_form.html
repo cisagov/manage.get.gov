@@ -46,6 +46,7 @@
     {% endif %}
 
     {% for fieldset in adminform %}
+        <input type="hidden" name="version" value="{{ original.updated_at|date:'c' }}">
         {% include "django/admin/includes/domain_fieldset.html" with state_help_message=state_help_message %}
     {% endfor %}
 {% endblock %}

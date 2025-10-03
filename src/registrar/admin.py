@@ -3881,7 +3881,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom domain admin class to add extra buttons."""
 
     resource_classes = [DomainResource]
-
+    
     # ------- FILTERS
     class ElectionOfficeFilter(admin.SimpleListFilter):
         """Define a custom filter for is_election_board"""
@@ -4353,6 +4353,29 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def _get_current_date(self):
         """Gets the current date"""
         return date.today()
+    
+    def _prime_lock(self, request, obj) -> bool:
+        """
+        Read the posted snapshot and ensure the record is fresh.
+        If fresh, set obj._original_updated_at so model.save(optimistic_lock=True) can enforce.
+        Returns True if fresh; False if stale or missing token.
+        """
+        token = request.POST.get("version")
+        snap = parse_datetime(token) if token else None
+        if not snap:
+            messages.error(request, "Could not verify the record version. Please reload and try again.")
+            return False
+
+        current = (type(obj).objects.only("updated_at")
+                   .filter(pk=obj.pk)
+                   .values_list("updated_at", flat=True)
+                   .first())
+        if not current or current != snap:
+            messages.error(request, "A newer version of this record exists. Please reload and try again.")
+            return False
+
+        obj._original_updated_at = snap
+        return True
 
     def do_delete_domain(self, request, obj):
         if not isinstance(obj, Domain):
@@ -4361,10 +4384,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # We do not want to accidentally delete records.
             self.message_user(request, "Object is not of type Domain", messages.ERROR)
             return
+        
+        if not self._prime_lock(request, obj):
+            return HttpResponseRedirect(".")
 
         try:
             obj.deletedInEpp()
-            obj.save()
+            obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
@@ -4400,6 +4426,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     ),
                     messages.ERROR,
                 )
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please refresh the page.", messages.WARNING)
         except Exception:
             self.message_user(
                 request,
@@ -4427,9 +4455,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
+        if not self._prime_lock(request, obj):
+            return HttpResponseRedirect(".")
         try:
             obj.place_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please refresh the page.", messages.WARNING)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -4456,9 +4488,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return HttpResponseRedirect(".")
 
     def do_remove_client_hold(self, request, obj):
+        if not self._prime_lock(request, obj):
+            return HttpResponseRedirect(".")
         try:
             obj.revert_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please refresh the page.", messages.WARNING)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
