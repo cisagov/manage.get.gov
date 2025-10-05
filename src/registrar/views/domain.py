@@ -135,7 +135,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
-        context["domain_deletion"] = flag_is_active_for_user(self.request.user, "domain_deletion")
+        context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["display_domain_lifecycle_nav"] = self.display_domain_lifecycle_nav()
         context["display_domain_renewal_only"] = self.display_domain_renewal_only()
         # Stored in a variable for the linter

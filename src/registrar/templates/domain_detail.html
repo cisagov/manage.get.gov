@@ -31,7 +31,7 @@
           <p class="font-sans-md margin-top-0 margin-bottom-05 text-primary-darker">
             <strong>Status:</strong>
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
-            {% if domain_deletion and domain.days_on_hold >= 0 %}
+            {% if domain_deletion_flag and domain.days_on_hold >= 0 %}
               On Hold
             {% elif domain.is_expired and domain.state != domain.State.UNKNOWN %}
               Expired
@@ -46,7 +46,7 @@
 
           {% if domain.get_state_help_text %}
             <p class="margin-y-0 text-primary-darker">
-              {% if domain_deletion and domain.days_on_hold >= 0 %}
+              {% if domain_deletion_flag and domain.days_on_hold >= 0 %}
                 This domain is administratively paused, so it can’t be edited and won’t resolve in DNS. Contact help@get.gov for details.
               {% elif domain.is_expired and is_domain_manager %}
                 This domain has expired, but it is still online. 
