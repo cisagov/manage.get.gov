@@ -86,7 +86,7 @@
         {% endif %}
       {% endif %}
     
-      {% if display_domain_renewal_only %}
+      {% if is_domain_manager and domain_is_expiring_or_expired and not domain_deletion_flag %}
         {% with url_name="domain-renewal" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
         {% endwith %}
