@@ -3163,15 +3163,11 @@ class TestDomainDeletion(TestWithUser):
         self.user.save()
 
     def tearDown(self):
-        try:
-            UserDomainRole.objects.all().delete()
-            DomainInformation.objects.all().delete()
-            PublicContact.objects.all().delete()
-            Host.objects.all().delete()
-            Domain.objects.all().delete()
-            get_user_model().objects.all().delete()
-        except Exception as e:
-            print(f"Error during tearDown: {e}")
+        UserDomainRole.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
+        Domain.objects.all().delete()
         super().tearDown()
 
     def custom_is_expiring(self):
