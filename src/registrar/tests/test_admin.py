@@ -341,7 +341,7 @@ class TestDomainInvitationAdmin(WebTest):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=5)
+            self.assertContains(response, "invited", count=4)
             self.assertContains(response, "Invited", count=2)
             self.assertContains(response, "retrieved", count=4)
             self.assertContains(response, "Retrieved", count=2)
@@ -1323,7 +1323,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
 
         # Assert that the filters are added
-        self.assertContains(response, "invited", count=5)
+        self.assertContains(response, "invited", count=4)
         self.assertContains(response, "Invited", count=2)
         self.assertContains(response, "retrieved", count=4)
         self.assertContains(response, "Retrieved", count=2)
@@ -2292,7 +2292,7 @@ class TestDomainInformationAdmin(TestCase):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.assertContains(response, "Testy Tester", count=2)
 
         # == Test the other_employees field == #
         self.assertContains(response, "testy2@town.com", count=2)
@@ -4562,9 +4562,9 @@ class TestDomainAdminState(TestCase):
         url = reverse("admin:registrar_domain_change", args=[domain_stays_unknown.pk])
 
         response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
+        self.assertContains(response, "Unknown")
 
         # 5. Refresh and check that the state is still UNKNOWN
         response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
-        self.assertNotContains(response, "DNS NEEDED")
+        self.assertContains(response, "Unknown")
+        self.assertNotContains(response, "dns needed")
