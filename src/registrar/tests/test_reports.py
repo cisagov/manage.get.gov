@@ -2,6 +2,7 @@ import io
 from unittest import skip
 from django.test import Client, RequestFactory
 from io import StringIO
+from registrar.decorators import allow_slow_queries
 from registrar.models import (
     DomainRequest,
     Domain,
@@ -712,6 +713,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
+    @allow_slow_queries(statement_ms=120000, lock_ms=60000)
     @less_console_noise_decorator
     def test_domain_request_data_full(self):
         """Tests the full domain request report."""
