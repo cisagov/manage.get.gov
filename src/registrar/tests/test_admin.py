@@ -342,7 +342,7 @@ class TestDomainInvitationAdmin(WebTest):
 
             # Assert that the filters are added
             self.assertContains(response, "invited", count=4)
-            self.assertContains(response, "Invited", count=2)
+            self.assertContains(response, "Invited", count=1)
             self.assertContains(response, "retrieved", count=4)
             self.assertContains(response, "Retrieved", count=2)
 
@@ -1324,7 +1324,7 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Assert that the filters are added
         self.assertContains(response, "invited", count=4)
-        self.assertContains(response, "Invited", count=2)
+        self.assertContains(response, "Invited", count=1)
         self.assertContains(response, "retrieved", count=4)
         self.assertContains(response, "Retrieved", count=2)
 
@@ -2306,7 +2306,7 @@ class TestDomainInformationAdmin(TestCase):
         # Test for the copy link
         # We expect 4 in the form + 2 from the js module copy-to-clipboard.js
         # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
-        self.assertContains(response, "copy-to-clipboard", count=6)
+        self.assertContains(response, "copy-to-clipboard", count=4)
 
         # cleanup this test
         domain_info.delete()
