@@ -3187,6 +3187,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain state = READY
         * Domain is NOT expiring
         * Should not see domain lifecycle, delete domain, or renewal form
+        * Test for verification that the flag is off, and will be deleted when flag is deleted
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
@@ -3207,6 +3208,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain state = READY
         * Domain IS expiring
         * Should see renewal form, but NOT domain lifecycle or delete domain
+        * Test for verification that the flag is off, and will be deleted when flag is deleted
         """
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
