@@ -558,7 +558,7 @@ class DomainDeleteView(DomainFormBaseView):
             if is_policy_acknowledged:
                 domain.place_client_hold()
                 domain.save()
-                messages.success(request, f"The deletion request for this domain has been submitted.")
+                messages.success(request, "The deletion request for this domain has been submitted.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
             return self.render_to_response(self.get_context_data(form=form))
