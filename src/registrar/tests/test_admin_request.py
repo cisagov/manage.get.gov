@@ -610,7 +610,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that our sort works correctly
         self.test_helper.assert_table_sorted(
-            "13",
+            "12",
             (
                 "requester__first_name",
                 "requester__last_name",
@@ -619,7 +619,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that sorting in reverse works correctly
         self.test_helper.assert_table_sorted(
-            "-13",
+            "-12",
             (
                 "-requester__first_name",
                 "-requester__last_name",
