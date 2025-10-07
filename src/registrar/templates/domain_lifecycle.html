@@ -24,7 +24,7 @@
 
   <h1>Domain lifecycle</h1>
 
-  <p>Domain lifecycle give you direct control over the lifecycle of your domain. These options can significantly affect your domain’s availability and services. Proceed carefully and review each action before making changes.</p>  
+  <p>These advanced settings give you direct control over the lifecycle of your domain. These options can significantly affect your domain’s availability and services. Proceed carefully and review each action before making changes.</p>  
     <ul class="usa-list">
         {% if is_domain_manager %}
             {% if domain.is_expiring or domain.is_expired %}
@@ -35,7 +35,7 @@
 
         {% if domain.state == domain.State.READY %}
           {% url 'domain-delete' domain_pk=domain.id as url %}
-          <li><a href="{{ url }}">Delete domain</a></li>
+          <li><a href="{{ url }}">Request deletion</a></li>
         {% endif %}
 
     </ul>
