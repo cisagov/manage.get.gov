@@ -2776,6 +2776,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     ]
 
     orderable_fk_fields = [
+        ("requester", ["first_name", "last_name"]),
         ("investigator", ["first_name", "last_name"]),
     ]
 
