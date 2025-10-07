@@ -1,3 +1,5 @@
+{% load static url_helpers %}
+
 {% url 'domain-lifecycle' domain_pk=domain.id as domain_lifecycle_url %}
 {% url 'domain-renewal' domain_pk=domain.id as domain_renewal_url %}
 {% url 'domain-delete' domain_pk=domain.id as  domain_delete_url %}
@@ -11,6 +13,7 @@
       Domain lifecycle
     </a>
 
+    {% if request.path|startswith:domain_lifecycle_url or request.path == domain_renewal_url or request.path == domain_delete_url %}
     <ul class="usa-sidenav__sublist">
       {% if domain.is_expiring or domain.is_expired %}
         <li class="usa-sidenav__item">  
@@ -32,6 +35,7 @@
         </li>
       {% endif %}
     </ul>
+  {% endif %}
   </li>
 {% endif%}
 
