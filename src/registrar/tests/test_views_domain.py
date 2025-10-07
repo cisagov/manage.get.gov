@@ -3186,7 +3186,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is OFF
         * Domain state = READY
         * Domain is NOT expiring
-        * Should not see domain lifecycle, delete domain, or renewal form
+        * Should not see domain lifecycle, request deletion, or renewal form
         * Test for verification that the flag is off, and will be deleted when flag is deleted
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
@@ -3197,7 +3197,7 @@ class TestDomainDeletion(TestWithUser):
             )
 
             self.assertNotContains(response, "Domain lifecycle")
-            self.assertNotContains(response, "Delete domain")
+            self.assertNotContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
 
     @less_console_noise_decorator
@@ -3207,7 +3207,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is OFF
         * Domain state = READY
         * Domain IS expiring
-        * Should see renewal form, but NOT domain lifecycle or delete domain
+        * Should see renewal form, but NOT domain lifecycle or request deletion
         * Test for verification that the flag is off, and will be deleted when flag is deleted
         """
         self.client.force_login(self.user)
@@ -3216,7 +3216,7 @@ class TestDomainDeletion(TestWithUser):
                 reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
             )
             self.assertNotContains(detail_page, "Domain lifecycle")
-            self.assertNotContains(detail_page, "Delete domain")
+            self.assertNotContains(detail_page, "Request deletion")
             self.assertContains(detail_page, "Renewal form")
 
     @less_console_noise_decorator
@@ -3226,7 +3226,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is ON
         * Domain state = READY
         * Domain IS expiring
-        * Should see domain lifecycle, renewal form, and delete domain
+        * Should see domain lifecycle, renewal form, and request deletion
         """
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
@@ -3236,7 +3236,7 @@ class TestDomainDeletion(TestWithUser):
 
             self.assertContains(response, "Domain lifecycle")
             self.assertContains(response, "Renewal form")
-            self.assertContains(response, "Delete domain")
+            self.assertContains(response, "Request deletion")
 
     @less_console_noise_decorator
     @override_flag("domain_deletion", active=True)
@@ -3245,7 +3245,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is ON
         * Domain state = READY
         * Domain is NOT expiring
-        * Should see domain lifecycle, and delete domain, but NOT renewal form
+        * Should see domain lifecycle, and request deletion, but NOT renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
@@ -3255,7 +3255,7 @@ class TestDomainDeletion(TestWithUser):
             )
 
             self.assertContains(response, "Domain lifecycle")
-            self.assertContains(response, "Delete domain")
+            self.assertContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
 
     @less_console_noise_decorator
@@ -3265,14 +3265,14 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is ON
         * Domain state = DNS_NEEDED
         * Domain is NOT expiring
-        * Should NOT see domain lifecycle, delete domain, or renewal form
+        * Should NOT see domain lifecycle, request deletion, or renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
             response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
 
             self.assertNotContains(response, "Domain lifecycle")
-            self.assertNotContains(response, "Delete domain")
+            self.assertNotContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
 
     @less_console_noise_decorator
@@ -3282,7 +3282,7 @@ class TestDomainDeletion(TestWithUser):
         Domain deletion flag is ON
         Domain state = DNS_NEEDED
         Domain IS expiring
-        Should see domain lifecycle, renewal form, but NOT delete domain
+        Should see domain lifecycle, renewal form, but NOT request deletion
         """
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
             self.client.force_login(self.user)
@@ -3290,7 +3290,7 @@ class TestDomainDeletion(TestWithUser):
 
             self.assertContains(response, "Domain lifecycle")
             self.assertContains(response, "Renewal form")
-            self.assertNotContains(response, "Delete domain")
+            self.assertNotContains(response, "Request deletion")
 
     @override_flag("domain_deletion", active=True)
     def test_if_acknowledged_is_not_checked_error_resp(self):
@@ -3324,9 +3324,7 @@ class TestDomainDeletion(TestWithUser):
         )
         domain = Domain.objects.get(id=self.domain_with_expiring_soon_date.id)
         self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
-        self.assertContains(
-            response, f"The domain &#x27;{self.domain_with_expiring_soon_date.name}&#x27; was deleted successfully."
-        )
+        self.assertContains(response, "The deletion request for this domain has been submitted.")
         self.assertEqual(domain.state, Domain.State.ON_HOLD)
 
     @override_flag("domain_deletion", active=True)

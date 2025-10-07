@@ -40,16 +40,16 @@
     <p>If you would like to delete this domain, you can request that it be deleted at any time. 
       Check the box at the bottom to indicate you understand that your domain will be deleted 7 days after the request.
       <ul class="usa-list">
-      <li>Once you request to delete this domain, it will be placed "on hold" in the .gov registry for 7 days before deletion.
+      <li>Once you request to delete this domain, it will be placed "on hold" for 7 days before deletion.
         While “on hold,” the domain will be administratively paused, so it can’t be edited and won’t resolve in DNS.
       </li>
       <li>When your domain is deleted, it will be removed from the .gov registry. 
         This means that websites and emails associated with the domain will no longer work.
       </li>
       <li>After the domain is deleted from the .gov registry, it cannot be recovered.
-        To obtain the same domain name, a domain manager will have to make a new request for the domain.
+        To obtain the same domain name, you will have to make a new request.
       </li>
-        <li>A domain manager can cancel the deletion request by email <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>.
+        <li>A domain manager can cancel the deletion request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>.
       </li>
       </ul>
     </p>
@@ -90,7 +90,7 @@
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
             <label class="usa-checkbox__label" for="delete-domain-checkbox">
-              I understand that my domain will be deleted within 7 days of my request for deletion. After that, it cannot be recovered. <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
+              I understand that my domain will be deleted 7 days after my request for deletion. After that, it cannot be recovered. <abbr class="usa-hint usa-hint--required" title="required">*</abbr>
             </label>
           </div>
 
@@ -113,7 +113,7 @@
     aria-labelledby="domain-deletion-confirm-button-heading"
     aria-describedby="domain-deletion-confirm-button-desc"
   >
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to request to delete "|add:domain.name modal_description="Once you request domain deletion, your domain will be placed on hold for 7 days. After that, it will be deleted form the .gov registry. Websites and emails will no longer work for the domain. If you change your mind, you can cancel this request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>."|safe modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
+    {% include 'includes/modal.html' with modal_heading="Are you sure you'd like to request to delete "|add:domain.name modal_description="Once you request to delete your domain, it will be placed on hold for 7 days. After that, it will be deleted form the .gov registry. Websites and emails will no longer work for the domain. If you change your mind, you can cancel this request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>."|safe modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
   </div>
   
  <!-- hidden modal trigger-->
