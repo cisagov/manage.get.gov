@@ -26,5 +26,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(remove_old_flags),
+        migrations.RunPython(
+            remove_old_flags,
+            reverse_code=migrations.RunPython.noop,
+            atomic=True,
+        ),
     ]
