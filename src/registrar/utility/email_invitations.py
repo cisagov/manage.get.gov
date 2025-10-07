@@ -254,7 +254,6 @@ def send_domain_manager_on_hold_email_to_domain_managers(
     for has been put on hold and set to be deleted in 7 days.
 
     Args:
-        TODO: Update the params above and update here as well
         domain(Domain): The domain that is going to be put on hold
 
     Returns:
@@ -278,12 +277,10 @@ def send_domain_manager_on_hold_email_to_domain_managers(
                     "domain_manager": user,
                     "domain": domain,
                     "date": date.today(),
-                    # TODO: Add more context pieces here depending on the email
                 },
             )
         except EmailSendingError as err:
             logger.error(
-                # TODO: Will need to update here as well pieces we need in the email
                 "Failed to send domain manager deleted notification email:\n"
                 f"  Subject template: domain_on_hold_notification_subject.txt\n"
                 f"  To: {user.email}\n"
