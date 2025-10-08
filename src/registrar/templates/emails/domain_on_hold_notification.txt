@@ -12,7 +12,7 @@ WHAT DOES “ON HOLD” MEAN?
 When a domain is placed on hold: 
 
 - The domain and its subdomains no longer resolve in DNS. 
-- Any infrastructure (like websites) are offline.
+- Any email or websites using the domain could become unavailable.
 - Domain managers can’t edit domain information.
 
 Although the domain is still registered to your organization, it’s administratively paused. These changes can be undone if the .gov team releases the hold.

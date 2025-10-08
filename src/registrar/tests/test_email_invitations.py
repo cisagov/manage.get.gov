@@ -1427,8 +1427,8 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             to_addresses=[self.dm1.user.email],
             bcc_address="",
             context={
-                "domain_manager": ANY,
-                "domain": ANY,
+                "domain_manager": self.dm1.user,
+                "domain": self.domain,
                 "date": date.today(),
             },
         )
@@ -1439,8 +1439,8 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             to_addresses=[self.dm2.user.email],
             bcc_address="",
             context={
-                "domain_manager": ANY,
-                "domain": ANY,
+                "domain_manager": self.dm2.user,
+                "domain": self.domain,
                 "date": date.today(),
             },
         )
