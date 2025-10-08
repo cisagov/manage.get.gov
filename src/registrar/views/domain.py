@@ -75,6 +75,7 @@ from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_invitation_email,
+    send_domain_renewal_notification_emails
 )
 from django import forms
 
@@ -488,6 +489,7 @@ class DomainRenewalView(DomainBaseView):
 
         form = DomainRenewalForm(request.POST)
 
+    
         if form.is_valid():
 
             # check for key in the post request data
@@ -495,6 +497,9 @@ class DomainRenewalView(DomainBaseView):
                 try:
                     domain.renew_domain()
                     messages.success(request, "This domain has been renewed for one year.")
+                    send_domain_renewal_notification_emails(domain=domain)  
+                except RegistryError as err:
+                    logger.error(f"Registry error renewing domain '{domain.name}': {err}")
                 except Exception:
                     messages.error(
                         request,

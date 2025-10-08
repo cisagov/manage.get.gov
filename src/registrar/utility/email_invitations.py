@@ -1,6 +1,6 @@
 from datetime import date
 from django.conf import settings
-from registrar.models import Domain, DomainInvitation, UserDomainRole
+from registrar.models import Domain, DomainInvitation, UserDomainRole, DomainInformation
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -601,3 +601,46 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
             )
             all_emails_sent = False
     return all_emails_sent
+
+def send_domain_renewal_notification_emails(domain: Domain):
+        """
+        Notifies domain managers and organization admins when a domain has been renewed
+
+        Returns:
+        Boolean indicating if all messages were sent successfully.
+        """
+        
+        all_emails_sent = True
+        emails = []
+        context = {
+            "domain": domain,
+            "expiration_date": domain.expiration_date
+        }
+       
+        domain_manager_emails = UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+
+        emails.extend(domain_manager_emails)
+
+        domain_info = DomainInformation.objects.filter(domain=domain).first()
+        portfolio = getattr(domain_info,'portfolio', None) 
+
+        if portfolio:
+            org_admins_emails = portfolio.portfolio_admin_users.values_list("email", flat=True).distinct()
+            emails.extend(org_admins_emails)
+        try:
+            send_templated_email(
+                            template_name="emails/domain_renewal_success.txt",
+                            subject_template_name="emails/domain_renewal_success_subject.txt",
+                            to_addresses=emails,
+                            context=context,
+            ) 
+        except EmailSendingError as err:
+            logger.error(
+                "Failed to send domain renewal:\n "
+                f"Subject template: emails/domain_renewal_success_subject.txt\n"
+                f"Domain: {domain.name}"
+                f"Error: {err}"
+            )
+            all_emails_sent = False
+
+        return all_emails_sent

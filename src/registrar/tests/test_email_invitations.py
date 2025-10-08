@@ -1388,3 +1388,10 @@ class TestDomainInvitationCleanupSignal(TestCase):
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
 
         self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
+
+class TestDomainRenewalNotificationEmail(unittest.TestCase):
+    """
+    Unit test for send_domain_renewal_notification_emails function
+    """
+    def setUp(self):
+        
