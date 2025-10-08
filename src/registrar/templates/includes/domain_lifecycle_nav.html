@@ -7,18 +7,17 @@
 {% if domain_is_deletable and domain_deletion_flag %}
   <li class="usa-sidenav__item">
     <a href="{{ domain_lifecycle_url }}" 
-      {% if request.path == domain_lifecycle_url or request.path == domain_renewal_url or request.path == domain_delete_url %}
+      {% if request.path|startswith:domain_lifecycle_url %}
         class="usa-current"
       {% endif %}>
       Domain lifecycle
     </a>
 
-    {% if request.path|startswith:domain_lifecycle_url or request.path == domain_renewal_url or request.path == domain_delete_url %}
     <ul class="usa-sidenav__sublist">
       {% if domain.is_expiring or domain.is_expired %}
         <li class="usa-sidenav__item">  
           <a href="{{ domain_renewal_url }}"
-            {% if request.path == domain_renewal_url %}class="usa-current"{% endif %}
+            {% if request.path|startswith:domain_renewal_url %}class="usa-current"{% endif %}
           >
           Renewal form
           </a>
@@ -28,14 +27,13 @@
       {% if domain.state == domain.State.READY %}
         <li class="usa-sidenav__item">
           <a href="{{ domain_delete_url }}"
-            {% if request.path == domain_delete_url %}class="usa-current"{% endif %}
+            {% if request.path|startswith:domain_delete_url %}class="usa-current"{% endif %}
           >
             Request deletion
           </a>
         </li>
       {% endif %}
     </ul>
-  {% endif %}
   </li>
 {% endif%}
 
