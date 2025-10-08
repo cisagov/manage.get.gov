@@ -13,7 +13,7 @@
       Domain lifecycle
     </a>
 
-    <ul class="usa-sidenav__sublist">
+    <ul class="usa-sidenav__sublist {% if not request.path|startswith:domain_lifecycle_url and not request.path|startswith:domain_delete_url and not request.path|startswith:domain_renewal_url %}display-none{% endif %}">
       {% if domain.is_expiring or domain.is_expired %}
         <li class="usa-sidenav__item">  
           <a href="{{ domain_renewal_url }}"
