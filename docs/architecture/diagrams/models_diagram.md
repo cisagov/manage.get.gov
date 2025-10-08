@@ -329,7 +329,7 @@ class "registrar.VendorDnsAccount <Registrar>" as registrar.VendorDnsAccount #d6
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     ~ dns_vendor (ForeignKey)
-    + account_xid (CharField)
+    + x_account_id (CharField)
     + x_created_at (DateTimeField)
     + x_updated_at (DateTimeField)
     --
@@ -345,7 +345,6 @@ class "registrar.DnsAccount_VendorDnsAccount <Registrar>" as registrar.DnsAccoun
     + updated_at (DateTimeField)
     ~ dns_account (ForeignKey)
     ~ vendor_dns_account (ForeignKey)
-    + is_active (BooleanField)
     --
 }
 registrar.DnsAccount_VendorDnsAccount -- registrar.DnsAccount
@@ -355,11 +354,10 @@ registrar.DnsAccount_VendorDnsAccount -- registrar.VendorDnsAccount
 class "registrar.DnsZone <Registrar>" as registrar.DnsZone #d6f4e9 {
     dns zone
     --
-    + id (BigAutoField)
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
     ~ dns_account (ForeignKey)
-    ~ domain (ForeignKey)
+    ~ domain (OneToOneField)
     # vendor_dns_zone (ManyToManyField)
     --
 }
@@ -374,7 +372,7 @@ class "registrar.VendorDnsZone <Registrar>" as registrar.VendorDnsZone #d6f4e9 {
     + id (BigAutoField)
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
-    + zone_xid (CharField)
+    + x_zone_id (CharField)
     + x_created_at (DateTimeField)
     + x_updated_at (DateTimeField)
     --
@@ -389,7 +387,6 @@ class "registrar.DnsZone_VendorDnsZone <Registrar>" as registrar.DnsZone_VendorD
     + updated_at (DateTimeField)
     ~ dns_zone (ForeignKey)
     ~ vendor_dns_zone (ForeignKey)
-    + is_active (BooleanField)
     --
 }
 registrar.DnsZone_VendorDnsZone -- registrar.DnsZone
@@ -416,7 +413,7 @@ class "registrar.VendorDnsRecord <Registrar>" as registrar.VendorDnsRecord #d6f4
     + id (BigAutoField)
     + created_at (DateTimeField)
     + updated_at (DateTimeField)
-    + record_xid (CharField)
+    + x_record_id (CharField)
     + x_created_at (DateTimeField)
     + x_updated_at (DateTimeField)
     --
@@ -431,7 +428,6 @@ class "registrar.DnsRecord_VendorDnsRecord <Registrar>" as registrar.DnsRecord_V
     + updated_at (DateTimeField)
     ~ dns_record (ForeignKey)
     ~ vendor_dns_record (ForeignKey)
-    + is_active (BooleanField)
     --
 }
 registrar.DnsRecord_VendorDnsRecord -- registrar.DnsRecord
