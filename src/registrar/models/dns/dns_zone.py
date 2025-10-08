@@ -7,4 +7,6 @@ class DnsZone(TimeStampedModel):
     vendor_dns_zone = models.ManyToManyField(
         "registrar.VendorDnsZone", through="DnsZone_VendorDnsZone", related_name="zones"
     )  # type: ignore
-    domain = models.OneToOneField("registrar.Domain", primary_key=True, null=False, on_delete=models.CASCADE)
+    domain = models.OneToOneField(
+        "registrar.Domain", primary_key=True, null=False, on_delete=models.CASCADE
+    )  # apex domain
