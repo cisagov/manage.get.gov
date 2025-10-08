@@ -1,4 +1,5 @@
 from datetime import date
+from httpx import Client
 import logging
 from contextvars import ContextVar
 from django.contrib import messages
@@ -712,10 +713,11 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
-    dns_host_service = DnsHostService()
 
     def __init__(self):
         self.dns_record = None
+        self.client = Client()
+        self.dns_host_service = DnsHostService(client=self.client)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -772,7 +774,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 account_name = f"account-{self.object.name}"
                 zone_name = f"{self.object.name}"  # must be a domain name
                 zone_id = ""
-
                 try:
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(account_name, zone_name)
                 except APIError as e:
@@ -781,9 +782,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 if zone_id:
                     # post nameservers to registry
                     try:
-                        self._register_nameservers(zone_name, nameservers)
-                    except RegistrySystemError as e:
-                        logger.error(f"Unable to register nameservers {e}")
+                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                    except (RegistryError, RegistrySystemError, Exception) as e:
+                        logger.error(f"Error updating registry: {e}")
 
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)
@@ -796,6 +797,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 context_dns_record.set(self.dns_record)
             finally:
+                self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
