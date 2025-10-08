@@ -1394,4 +1394,6 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
     Unit test for send_domain_renewal_notification_emails function
     """
     def setUp(self):
+        self.domain = MagicMock(spec=Domain)
+        self.manager_user1 = MagicMock(spec=User)
         
