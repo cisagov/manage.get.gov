@@ -611,27 +611,26 @@ def send_domain_renewal_notification_emails(domain: Domain):
         """
         
         all_emails_sent = True
-        emails = []
+    
         context = {
             "domain": domain,
             "expiration_date": domain.expiration_date
         }
        
         domain_manager_emails = UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
-        print("manager emails", domain_manager_emails)
-        emails.extend(domain_manager_emails)
+      
 
         domain_info = DomainInformation.objects.filter(domain=domain).first()
         portfolio = getattr(domain_info,'portfolio', None) 
 
         if portfolio:
             org_admins_emails = portfolio.portfolio_admin_users.values_list("email", flat=True).distinct()
-            emails.extend(org_admins_emails)
         try:
             send_templated_email(
                             template_name="emails/domain_renewal_success.txt",
                             subject_template_name="emails/domain_renewal_success_subject.txt",
-                            to_addresses=emails,
+                            to_addresses=domain_manager_emails,
+                            cc_addresses=org_admins_emails,
                             context=context,
             ) 
         except EmailSendingError as err:

@@ -1457,7 +1457,8 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
             subject_template_name="emails/domain_renewal_success_subject.txt",
-            to_addresses=[self.user_1.email, self.user_2.email],
+            to_addresses=[self.user_1.email],
+            cc_addresses=[self.user_2.email],
             context={
                 "domain": self.domain,
                 "expiration_date": self.domain.expiration_date
@@ -1465,3 +1466,4 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
 
         )
         self.assertTrue(result)
+    
