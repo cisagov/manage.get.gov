@@ -620,7 +620,7 @@ def send_domain_renewal_notification_emails(domain: Domain):
         domain_manager_emails = UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
       
 
-        domain_info = DomainInformation.objects.filter(domain=domain).first()
+        domain_info = DomainInformation.objects.select_related('portfolio').get(domain=domain)
         portfolio = getattr(domain_info,'portfolio', None) 
 
         if portfolio:
