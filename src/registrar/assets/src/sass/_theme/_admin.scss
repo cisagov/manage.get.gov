@@ -454,6 +454,10 @@ a.button:active, a.button:focus {
 .usa-modal {
     font-family: inherit;
 }
+// Make sure the modal doesn't pre-display when the page renders
+#toggle-delete-domain.usa-modal:not(.is-visible) {
+    display: none;
+  }
 input[type=submit].button--dja-toolbar {
     border: 1px solid var(--border-color);
     font-size: 0.8125rem;

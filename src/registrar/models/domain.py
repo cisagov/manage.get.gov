@@ -1350,7 +1350,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
-        if self.is_expired() and (self.state != self.State.UNKNOWN):
+        if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None:
+            return "On Hold"
+        elif self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
         elif self.is_expiring():
             return "Expiring soon"
@@ -1809,7 +1811,12 @@ class Domain(TimeStampedModel, DomainHelper):
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None:
+            help_text = (
+                "This domain is administratively paused, so it can't be edited and won't resolve in DNS. "
+                "Contact help@get.gov for details."
+            )
+        elif self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = "This domain has expired. Complete the online renewal process to maintain access."
