@@ -250,11 +250,11 @@ def send_domain_manager_on_hold_email_to_domain_managers(
     domain: Domain,
 ):
     """
-    Notifies all domain managers that a domain they are domain managers
+    Notifies all domain managers that a domain they are a domain manager
     for has been put on hold and set to be deleted in 7 days.
 
     Args:
-        domain(Domain): The domain that is going to be put on hold
+        domain (Domain): The domain that is going to be put on hold
 
     Returns:
         Boolean indicating if all messages were sent successfully.
