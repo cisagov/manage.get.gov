@@ -342,14 +342,13 @@ AWS_S3_SECRET_ACCESS_KEY = secret_aws_s3_key
 AWS_S3_REGION = aws_s3_region_name
 AWS_S3_BUCKET_NAME = secret_aws_s3_bucket_name
 # Configuration for uploading images to s3 using django-storages
-AWS_STORAGE_BUCKET_NAME = AWS_S3_BUCKET_NAME
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
             "access_key": AWS_S3_ACCESS_KEY_ID,
             "secret_key": AWS_S3_SECRET_ACCESS_KEY,
-            "bucket_name": AWS_STORAGE_BUCKET_NAME,
+            "bucket_name": AWS_S3_BUCKET_NAME,
             "region_name": AWS_S3_REGION
         },
     },
