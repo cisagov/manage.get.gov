@@ -1402,7 +1402,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
         self.user_2.email = "user2@example.gov"
 
         #domain 
-        self.domain = MagicMock()
+        self.domain = MagicMock(spec=Domain)
         self.domain.name = "domainrenewal.gov"
         self.domain.expiration_date = date.today()
         domain_role = MagicMock()
@@ -1426,35 +1426,37 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.filter")
-    @patch("registrar.utility.email_invitations.Portfolio.objects")
-    def test_send_email_success(self, mock_domain_role_filter, mock_domain_information_filter, mock_portfolio, mock_send_templated_email):
+    def test_send_email_success(self, mock_domain_information_filter, mock_domain_role_filter, mock_send_templated_email):
         """Test successful sending of domain renewal emails."""
-        mock_queryset_domain_role = MagicMock()
-        mock_queryset_domain_role.values_list.return_value.distinct.return_value = [self.user_1.email]
-        mock_domain_role_filter.return_value = mock_queryset_domain_role
+        #MOCK DOMAIN ROLE FILTER
+        mock_values_list_qs = MagicMock()
+        mock_values_list_qs.distinct.return_value = [self.user_1.email]
+        mock_domain_role_filter.return_value.values_list.return_value = mock_values_list_qs
     
-
+        #MOCK DOMAIN INFORMATION FILTER
         mock_queryset_domain_info = MagicMock()
-        mock_queryset_domain_info.first.return_value = [self.domain_info]
+        mock_queryset_domain_info.first.return_value = self.domain_info
         mock_domain_information_filter.return_value = mock_queryset_domain_info 
-        
-        mock_queryset_portfolio_admin = MagicMock()
-        mock_queryset_portfolio_admin.portfolio_admin_users.return_value.values_list.distinct.return_value = [self.user_2.email]
-        mock_portfolio.return_value = mock_queryset_portfolio_admin
 
+        mock_admins_qs = MagicMock()
+        mock_admins_qs.distinct.return_value = [self.user_2.email]
+        mock_portfolio_user_qs = MagicMock()
+        mock_portfolio_user_qs.values_list.return_value = mock_admins_qs
+
+        self.portfolio.portfolio_admin_users = mock_portfolio_user_qs
+        self.domain_info.portfolio = self.portfolio
 
         mock_send_templated_email.return_value = None  # No exception means success
 
         result = send_domain_renewal_notification_emails(
             domain=self.domain,
         )
-
+   
         mock_domain_role_filter.assert_called_once_with(domain=self.domain)
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
-        mock_portfolio.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
-            "emails/domain_renewal_success.txt",
-            "emails/domain_renewal_success_subject.txt",
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
             to_addresses=[self.user_1.email, self.user_2.email],
             context={
                 "domain": self.domain,

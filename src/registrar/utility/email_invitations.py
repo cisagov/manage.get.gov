@@ -618,7 +618,7 @@ def send_domain_renewal_notification_emails(domain: Domain):
         }
        
         domain_manager_emails = UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
-
+        print("manager emails", domain_manager_emails)
         emails.extend(domain_manager_emails)
 
         domain_info = DomainInformation.objects.filter(domain=domain).first()
