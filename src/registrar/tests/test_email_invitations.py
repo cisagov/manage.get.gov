@@ -22,6 +22,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
+    send_domain_renewal_notification_emails
 )
 
 from api.tests.common import less_console_noise_decorator
@@ -1394,6 +1395,37 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
     Unit test for send_domain_renewal_notification_emails function
     """
     def setUp(self):
-        self.domain = MagicMock(spec=Domain)
-        self.manager_user1 = MagicMock(spec=User)
+        self.domain = MagicMock(spec=Domain, expiration_date=date.today())
+        self.portfolio = MagicMock(spec=Portfolio)
+        self.domain_manager = MagicMock(spec=User, email="domain_manager@example.gov")
+        self.portfolio_admin_user = MagicMock(spec=User, email="portfolio_admin@example.gov")
+
+        self.portfolio_admin = MagicMock(spec=UserDomainRole)
+        self.portfolio_admin.user = self.portfolio_admin_user
+        self.portfolio_admin.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         
+        self.domain_manager_role = MagicMock(spec=UserDomainRole)
+        self.domain_manager_role.user = self.domain_manager
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_send_email_successful(self, mock_filter, mock_send_templated_email):
+        result = send_domain_renewal_notification_emails(domain=self.domain)
+        mock_send_templated_email.return_value = None
+
+        mock_filter.assert_called_once_with(domain=self.domain)
+
+        mock_send_templated_email.assert_any_call(
+                            "emails/domain_renewal_success.txt",
+                            "emails/domain_renewal_success_subject.txt",
+                            to_addresses=[self.domain_manager.email, self.portfolio_admin_user.email],
+                            bcc_address="",
+                            context={
+                                "domain":self.domain,
+                                "expiration_date": self.domain.expiration_date
+                            }
+
+        )
+
+        self.assertTrue(result)
+
