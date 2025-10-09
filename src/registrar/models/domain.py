@@ -1611,7 +1611,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.State.UNKNOWN:
-                    logger.info("_get_or_create_domain() -> Switching to dns_needed from unknown")
+                    logger.info("_get_or_create_domain_in_registry() -> Switching to dns_needed from unknown")
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
