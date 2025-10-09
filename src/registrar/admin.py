@@ -4709,7 +4709,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["requester", "created_on", "notes"]}),
+        (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",

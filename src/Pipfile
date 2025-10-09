@@ -37,6 +37,8 @@ django-waffle = "*"
 cryptography = "*"
 rapidfuzz = "*"
 httpx = "*"
+pillow = "*"
+django-storages = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

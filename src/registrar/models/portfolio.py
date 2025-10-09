@@ -4,10 +4,10 @@ from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.user import User
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from django.db.models import Q
 
 from .utility.time_stamped_model import TimeStampedModel
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 
 class Portfolio(TimeStampedModel):
@@ -115,6 +115,12 @@ class Portfolio(TimeStampedModel):
         max_length=320,
     )
 
+    agency_seal = models.ImageField(
+        null=True,
+        blank=True,
+        upload_to="media/"
+    )
+
     def __str__(self) -> str:
         return str(self.organization_name)
 
@@ -170,6 +176,14 @@ class Portfolio(TimeStampedModel):
         ).values_list("user__id", flat=True)
         return User.objects.filter(id__in=admin_ids)
 
+    @property
+    def agency_seal_url(self):
+        """Gets formatted URL of portfolio's agency seal image."""
+        env_base_url = settings.BASE_URL
+        if "localhost" in env_base_url:
+            return f"{env_base_url}{self.agency_seal.url}"
+        return self.agency_seal.url
+        
     def portfolio_users_with_permissions(self, permissions=[], include_admin=False):
         """Gets all users with specified additional permissions for this particular portfolio.
         Returns a queryset of User."""
