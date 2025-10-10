@@ -625,10 +625,11 @@ def send_domain_renewal_notification_emails(domain: Domain):
     # Get organization admins if the domain belongs to a portfolio
     domain_info = DomainInformation.objects.filter(domain=domain).first()
     portfolio = getattr(domain_info, "portfolio", None)
-    org_admins_emails = None
+    org_admins_emails = []
 
     if portfolio:
-        org_admins_emails = list(portfolio.portfolio_admin_users.values_list("email", flat=True).distinct())
+        emails = list(portfolio.portfolio_admin_users.values_list("email", flat=True).distinct())
+        org_admins_emails.extend(emails)
 
     try:
         send_templated_email(

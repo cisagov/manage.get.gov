@@ -1519,7 +1519,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             template_name="emails/domain_renewal_success.txt",
             subject_template_name="emails/domain_renewal_success_subject.txt",
             to_addresses=[self.user_1.email],
-            cc_addresses=None,
+            cc_addresses=[],
             context={"domain": self.domain, "expiration_date": self.domain.expiration_date},
         )
         self.assertTrue(result)
