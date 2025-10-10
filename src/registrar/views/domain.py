@@ -498,8 +498,6 @@ class DomainRenewalView(DomainBaseView):
                     domain.renew_domain()
                     messages.success(request, "This domain has been renewed for one year.")
                     send_domain_renewal_notification_emails(domain=domain)
-                except RegistryError as err:
-                    logger.error(f"Registry error renewing domain '{domain.name}': {err}")
                 except Exception:
                     messages.error(
                         request,
