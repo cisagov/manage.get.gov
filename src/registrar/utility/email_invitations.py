@@ -618,9 +618,9 @@ def send_domain_renewal_notification_emails(domain: Domain):
     context = {"domain": domain, "expiration_date": domain.expiration_date}
 
     # Get all the domain manager for this domain
-    domain_manager_emails = (
-        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
-    )
+    domain_manager_emails = list(UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct())
+    print("domain", domain_manager_emails)
+
 
     # Get organization admins if the domain belongs to a portfolio
     domain_info = DomainInformation.objects.filter(domain=domain).first()
@@ -628,7 +628,7 @@ def send_domain_renewal_notification_emails(domain: Domain):
     org_admins_emails = None
 
     if portfolio:
-        org_admins_emails = portfolio.portfolio_admin_users.values_list("email", flat=True).distinct()
+        org_admins_emails = list(portfolio.portfolio_admin_users.values_list("email", flat=True).distinct())
 
     try:
         send_templated_email(
