@@ -602,44 +602,49 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
             all_emails_sent = False
     return all_emails_sent
 
+
 def send_domain_renewal_notification_emails(domain: Domain):
-        """
-        Notifies domain managers and organization admins when a domain has been renewed
+    """
+    Notifies domain managers and organization admins when a domain has been renewed
+    Args:
+       domain: The Domain object that has been renewed
 
-        Returns:
-        Boolean indicating if all messages were sent successfully.
-        """
-        
-        all_emails_sent = True
-    
-        context = {
-            "domain": domain,
-            "expiration_date": domain.expiration_date
-        }
-       
-        domain_manager_emails = UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
-      
+    Returns:
+    Boolean indicating if all messages were sent successfully.
+    """
 
-        domain_info = DomainInformation.objects.select_related('portfolio').get(domain=domain)
-        portfolio = getattr(domain_info,'portfolio', None) 
+    all_emails_sent = True
 
-        if portfolio:
-            org_admins_emails = portfolio.portfolio_admin_users.values_list("email", flat=True).distinct()
-        try:
-            send_templated_email(
-                            template_name="emails/domain_renewal_success.txt",
-                            subject_template_name="emails/domain_renewal_success_subject.txt",
-                            to_addresses=domain_manager_emails,
-                            cc_addresses=org_admins_emails,
-                            context=context,
-            ) 
-        except EmailSendingError as err:
-            logger.error(
-                "Failed to send domain renewal:\n "
-                f"Subject template: emails/domain_renewal_success_subject.txt\n"
-                f"Domain: {domain.name}"
-                f"Error: {err}"
-            )
-            all_emails_sent = False
+    context = {"domain": domain, "expiration_date": domain.expiration_date}
 
-        return all_emails_sent
+    # Get all the domain manager for this domain
+    domain_manager_emails = (
+        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+    )
+
+    # Get organization admins if the domain belongs to a portfolio
+    domain_info = DomainInformation.objects.filter(domain=domain).first()
+    portfolio = getattr(domain_info, "portfolio", None)
+    org_admins_emails = None
+
+    if portfolio:
+        org_admins_emails = portfolio.portfolio_admin_users.values_list("email", flat=True).distinct()
+
+    try:
+        send_templated_email(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=domain_manager_emails,
+            cc_addresses=org_admins_emails,
+            context=context,
+        )
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send domain renewal:\n "
+            f"Subject template: emails/domain_renewal_success_subject.txt\n"
+            f"Domain: {domain.name}"
+            f"Error: {err}"
+        )
+        all_emails_sent = False
+
+    return all_emails_sent

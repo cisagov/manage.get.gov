@@ -76,7 +76,7 @@ from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_invitation_email,
-    send_domain_renewal_notification_emails
+    send_domain_renewal_notification_emails,
 )
 from django import forms
 
