@@ -1,0 +1,98 @@
+{% load static %}
+<div id="htmx-table">
+<div class="usa-table-container--scrollable usa-table-container--override-overflow margin-top-0" tabindex="0" id="domains__table-wrapper">
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+      <caption class="sr-only">Your registered domains</caption>
+      <thead>
+        <tr>
+          <th data-sortable="name" scope="col" role="columnheader">Domain name</th>
+          <th data-sortable="expiration_date" scope="col" role="columnheader">Expires</th>
+          <th data-sortable="state_display" scope="col" role="columnheader">Status</th>
+          <th data-sortable="domain_info__sub_organization" scope="col" role="columnheader">Suborganization</th>
+          <th 
+            scope="col" 
+            role="columnheader" 
+          >
+            Action
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for domain in domain_list %}
+        <tr>
+        <th scope="row" role="rowheader" data-label="Domain name">
+          {{domain.name}}
+        </th>
+        <td data-sort-value="" data-label="Expires">
+          {{domain.expiration_date}}
+        </td>
+        <td data-label="Status">
+          {{domain.state_display}}
+          <svg 
+            class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 text-accent-cool no-click-outline-and-cursor-help" 
+            data-position="top"
+            title={{domain.get_state_help_text}}
+            focusable="true"
+            aria-label={{domain.get_state_help_text}}
+            role="tooltip"
+          >
+          <use aria-hidden="true" xlink:href="/public/img/sprite.svg#info_outline"></use>
+          </svg>
+        </td>
+        <td data-label="Suborganization">
+          <span class="text-wrap" aria-label="${domain.suborganization ? suborganization : 'No suborganization'}">{{domain.domain_info__sub_organization}}</span>
+      </td>
+        <td data-label="Action" class="width--action-column margin-bottom-3">
+          <div class="tablet:display-flex tablet:flex-row flex-align-center margin-right-2">
+            <a href="{{domain.action_url}}">
+              <svg class="usa-icon top-1px" aria-hidden="true" focusable="false" role="img" width="24">
+                <use xlink:href="/public/img/sprite.svg#{{domain.svg_icon}}"></use>
+              </svg>
+              {{domain.action_label}} <span class="usa-sr-only">{{domain.name}}</span>
+            </a>
+          </div>
+        </td>
+      </tr>
+{% endfor %}
+
+      </tbody>
+    </table>
+    <div
+      class="usa-sr-only usa-table__announcement-region" id="domains__usa-table__announcement-region"
+      aria-live="polite"
+    ></div>
+  </div>
+  <div class="display-none" id="domains__no-data">
+    <p>You don't have any registered domains.</p>
+    <p class="maxw-none clearfix">
+      <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet usa-link usa-link--icon" target="_blank">
+        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+          <use xlink:href="{%static 'img/sprite.svg'%}#help_outline"></use>
+        </svg>
+        Why don't I see my domain when I sign in to the registrar?
+      </a>
+    </p>
+  </div>
+  <div class="display-none" id="domains__no-search-results">
+    <p>No results found</p>
+  </div>
+</section>
+<nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
+  <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
+    {{ unfiltered_total }} domains
+  </span>
+
+  {% if num_pages > 1 %}
+  <ul class="usa-pagination__list">
+    {% for page in page_range %}
+    <li class="usa-pagination__item usa-pagination__page-no">
+      <a hx-get="/get-domains-table-htmx" hx-trigger="click" hx-vals='{"page": "{{page}}", "portfolio": {{portfolio.id}}}' hx-target="#htmx-table" hx-swap="outerHTML"
+      class="usa-pagination__button usa-current" aria-label="Page {{page}}" aria-current="page">{{page}}</a>
+    </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+  </nav>
+
+</div>
+

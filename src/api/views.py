@@ -78,10 +78,6 @@ def available(request, domain=""):
         domain=domain,
         return_type=ValidationReturnType.JSON_RESPONSE,
     )
-
-    # print("HEEEELLLOKKK")
-    # print(f"response: {json.loads(json_response.content)} ")
-
     return json_response
 
 @require_http_methods(["GET"])

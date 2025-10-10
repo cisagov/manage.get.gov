@@ -75,18 +75,18 @@ export class DomainsTable extends BaseTable {
   }
 }
 
-export function initDomainsTable() {
-  document.addEventListener('DOMContentLoaded', function() {
-    const isDomainsPage = document.getElementById("domains") 
-    if (isDomainsPage){
-      const domainsTable = new DomainsTable();
-      if (domainsTable.tableWrapper) {
-        // Initial load
-        domainsTable.loadTable(1);
-      }
-    }
-  });
-}
+// export function initDomainsTable() {
+//   document.addEventListener('DOMContentLoaded', function() {
+//     const isDomainsPage = document.getElementById("domains") 
+//     if (isDomainsPage){
+//       const domainsTable = new DomainsTable();
+//       if (domainsTable.tableWrapper) {
+//         // Initial load
+//         domainsTable.loadTable(1);
+//       }
+//     }
+//   });
+// }
 
 // For clicking the "Expiring" checkbox
 document.addEventListener('DOMContentLoaded', () => {
