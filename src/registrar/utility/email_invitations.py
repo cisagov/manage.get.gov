@@ -618,9 +618,9 @@ def send_domain_renewal_notification_emails(domain: Domain):
     context = {"domain": domain, "expiration_date": domain.expiration_date}
 
     # Get all the domain manager for this domain
-    domain_manager_emails = list(UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct())
-    print("domain", domain_manager_emails)
-
+    domain_manager_emails = list(
+        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+    )
 
     # Get organization admins if the domain belongs to a portfolio
     domain_info = DomainInformation.objects.filter(domain=domain).first()
