@@ -434,7 +434,7 @@ class TestDomainCreation(MockEppLib):
             mock_client = MockSESClient()
             with boto3_mocking.clients.handler_for("sesv2", mock_client):
                 # skip using the submit method
-                domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+                domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
                 # transition to approve state
                 domain_request.approve()
             # should have information present for this domain
