@@ -644,6 +644,8 @@ def send_domain_renewal_notification_emails(domain: Domain):
             "Failed to send domain renewal:\n "
             f"Subject template: emails/domain_renewal_success_subject.txt\n"
             f"Domain: {domain.name}"
+            f"To addresses: {domain_manager_emails}"
+            f"CC addresses: {org_admins_emails}"
             f"Error: {err}"
         )
         all_emails_sent = False

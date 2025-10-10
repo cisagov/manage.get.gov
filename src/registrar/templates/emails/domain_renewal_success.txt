@@ -1,6 +1,6 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 
-The follow domain has been renewed: {{ domain }}
+The following domain has been renewed: {{ domain }}
 
 The new expiration date is {{ expiration_date }}
 
