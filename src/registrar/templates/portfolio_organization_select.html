@@ -14,6 +14,14 @@
     >
             <div class="usa-card__header">
                 <h2 class="usa-card__heading">
+                    {% if portfolio.agency_seal %}
+                    <img 
+                        src="{{portfolio.agency_seal_url }}"
+                        alt="{{portfolio.organization_name}} seal"
+                        class="margin-right-1 height-4"
+                    >
+                    {% endif %}
+                    
                     {{portfolio}}
                     <svg class="margin-left-05 usa-icon organizations-arrow-icon" aria-hidden="true" focusable="false" role="img" width="28">
                         <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
@@ -28,7 +36,16 @@
         name="set_session_portfolio_button"
         value="{{portfolio.organization_name}}"
         >
-            <a class="font-ui-xs">{{portfolio}}</a>
+            <a class="font-ui-xs">
+                {% if portfolio.agency_seal %}
+                <img 
+                    src="{{portfolio.agency_seal_url }}"
+                    alt="{{portfolio.organization_name}} seal"
+                    class="margin-right-1 height-3"
+                >
+                {% endif %}
+                {{portfolio}}
+            </a>
         </button>
     {% endif %}
 </form>

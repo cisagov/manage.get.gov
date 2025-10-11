@@ -118,8 +118,13 @@ class Portfolio(TimeStampedModel):
     agency_seal = models.ImageField(
         null=True,
         blank=True,
-        upload_to="media/"
+        upload_to=""
     )
+
+    @property
+    def agency_seal_url(self):
+        if self.agency_seal and hasattr(self.agency_seal, 'url'):
+            return f"/public/img/agency_seals{self.agency_seal.url}"
 
     def __str__(self) -> str:
         return str(self.organization_name)
@@ -175,14 +180,6 @@ class Portfolio(TimeStampedModel):
             ],
         ).values_list("user__id", flat=True)
         return User.objects.filter(id__in=admin_ids)
-
-    @property
-    def agency_seal_url(self):
-        """Gets formatted URL of portfolio's agency seal image."""
-        env_base_url = settings.BASE_URL
-        if "localhost" in env_base_url:
-            return f"{env_base_url}{self.agency_seal.url}"
-        return self.agency_seal.url
         
     def portfolio_users_with_permissions(self, permissions=[], include_admin=False):
         """Gets all users with specified additional permissions for this particular portfolio.

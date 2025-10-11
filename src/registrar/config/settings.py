@@ -28,6 +28,7 @@ import logging
 import traceback
 from django.utils.log import ServerFormatter
 from ..logging_context import get_user_log_context
+from django.contrib import admin
 
 from csp.constants import NONCE, SELF
 
@@ -342,20 +343,22 @@ AWS_S3_SECRET_ACCESS_KEY = secret_aws_s3_key
 AWS_S3_REGION = aws_s3_region_name
 AWS_S3_BUCKET_NAME = secret_aws_s3_bucket_name
 # Configuration for uploading images to s3 using django-storages
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
-        "OPTIONS": {
-            "access_key": AWS_S3_ACCESS_KEY_ID,
-            "secret_key": AWS_S3_SECRET_ACCESS_KEY,
-            "bucket_name": AWS_S3_BUCKET_NAME,
-            "region_name": AWS_S3_REGION
-        },
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+# MEDIA_ROOT = BASE_DIR / "registrar" / "media"
+# MEDIA_URL = "media/"
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+#         "OPTIONS": {
+#             "access_key": AWS_S3_ACCESS_KEY_ID,
+#             "secret_key": AWS_S3_SECRET_ACCESS_KEY,
+#             "bucket_name": AWS_S3_BUCKET_NAME,
+#             "region_name": AWS_S3_REGION
+#         },
+#     },
+#     "staticfiles": {
+#         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+#     },
+# }
 
 # https://boto3.amazonaws.com/v1/documentation/latest/guide/retries.html#standard-retry-mode
 AWS_RETRY_MODE: Final = "standard"
@@ -443,7 +446,7 @@ CONTENT_SECURITY_POLICY = {
 # Sets clients that allow access control to manage.get.gov
 # TODO: remove :8080 to see if we can have all localhost access
 CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "https://beta.get.gov", "https://get.gov"]
-CORS_ALLOWED_ORIGIN_REGEXES = [r"https://[\w-]+\.sites\.pages\.cloud\.gov"]
+CORS_ALLOWED_ORIGIN_REGEXES = [r"https://[\w-]+\.sites\.pages\.cloud\.gov", "*"]
 
 # Content-Length header is set by django.middleware.common.CommonMiddleware
 
