@@ -1,0 +1,29 @@
+name: Dependency Check
+
+on:
+  pull_request:
+    paths: 
+      - '**/Pipfile'
+      - '**/Pipfile.lock'
+      - '**/requirements*.txt'
+  push:
+    branches: [master]
+    paths:
+      - '**/Pipfile'
+      - '**/Pipfile.lock' 
+      - '**/requirements*.txt'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Verify dependencies
+      run: |
+        pip install pipenv
+        pipenv verify
+        pipenv requirements | diff requirements.txt -
+        echo "Dependencies verified"
