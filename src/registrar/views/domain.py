@@ -1286,7 +1286,7 @@ class DomainAddUserView(DomainFormBaseView):
         ):
             messages.warning(self.request, "Could not send email notification to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
-        messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
