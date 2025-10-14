@@ -1,0 +1,43 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers url_helpers %}
+
+{% block title %}Domain lifecycle| {{ domain.name }} | {% endblock %}
+
+  {% block breadcrumb %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Domain lifecycle</span>
+      </li>
+    </ol>
+  </nav>
+  {% endblock breadcrumb %}
+
+{% block domain_content %}
+
+  <h1>Domain lifecycle</h1>
+
+  <p>These advanced settings give you direct control over the lifecycle of your domain. These options can significantly affect your domain’s availability and services. Proceed carefully and review each action before making changes.</p>  
+    <ul class="usa-list">
+        {% if is_domain_manager %}
+            {% if domain.is_expiring or domain.is_expired %}
+                {% url 'domain-renewal' domain_pk=domain.id as url %}
+                <li><a href="{{ url }}">Renewal form</a></li>
+            {% endif %}
+        {% endif %}
+
+        {% if domain.state == domain.State.READY %}
+          {% url 'domain-delete' domain_pk=domain.id as url %}
+          <li><a href="{{ url }}">Request deletion</a></li>
+        {% endif %}
+
+    </ul>
+
+{% endblock %}  {# domain_content #}
