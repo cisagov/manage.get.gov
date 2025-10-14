@@ -475,7 +475,7 @@ class User(AbstractUser):
         # If there are other admins or the user is not the only one
         return False
 
-    def has_personal_assets(self) -> bool:
+    def has_legacy_domain(self) -> bool:
         """
         True if this user has any domain role on a domain whose DomainInformation.portfolio is NULL.
         This ignores the current session/org and works even if the user ALSO has portfolios.

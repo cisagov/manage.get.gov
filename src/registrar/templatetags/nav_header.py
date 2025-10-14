@@ -17,5 +17,5 @@ def portfolio_organizations_dropdown(context):
         return {
             "request": request,  # pass request so templates can use request.user.email
             "user_portfolio_permissions": perms,
-            "has_personal_assets": getattr(user, "has_personal_assets", lambda: False)(),
+            "has_legacy_domain": getattr(user, "has_legacy_domain", lambda: False)(),
         }

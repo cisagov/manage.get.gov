@@ -1211,8 +1211,8 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
         user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
             "portfolio"
         )
-        context["user_portfolio_permissions"] = user_portfolio_permissions
-        context["has_personal_assets"] = self.request.user.has_personal_assets()
+        # context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
 
@@ -1242,7 +1242,7 @@ class PortfolioOrganizationsView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
-        context["has_personal_assets"] = self.request.user.has_personal_assets()
+        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
     def post(self, request, *args, **kwargs):
