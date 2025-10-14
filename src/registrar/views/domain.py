@@ -77,6 +77,7 @@ from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_invitation_email,
+    send_domain_manager_on_hold_email_to_domain_managers,
 )
 from django import forms
 
@@ -559,6 +560,10 @@ class DomainDeleteView(DomainFormBaseView):
             if is_policy_acknowledged:
                 domain.place_client_hold()
                 domain.save()
+                # Email all domain managers that domain manager has been removed
+                send_domain_manager_on_hold_email_to_domain_managers(
+                    domain=domain,
+                )
                 messages.success(request, "The deletion request for this domain has been submitted.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
