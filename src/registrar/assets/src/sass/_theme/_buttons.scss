@@ -120,39 +120,31 @@ a.usa-button--outline:active {
   color: color('primary-darker');
 }
 
-// Used on: Domain request withdraw confirmation
-a.withdraw {
-  background-color: color('error');
-}
-
-a.withdraw:hover,
-a.withdraw:focus {
-  background-color: color('error-dark');
-}
-  
-a.withdraw:active {
-  background-color: color('error-darker');
-}
-
-// Used on: Domain request status
-//NOTE: Revise to BEM convention usa-button--outline-secondary
-a.withdraw_outline,
-a.withdraw_outline:visited {
+// Used on: Domain request status (withdraw) and delete domain
+a.usa-button.usa-button--outline-secondary,
+a.usa-button.usa-button--outline-secondary:visited,
+button.usa-button.usa-button--outline-secondary,
+button.usa-button.usa-button--outline-secondary:visited {
   box-shadow: inset 0 0 0 2px color('error');
+  background-color: transparent;
   color: color('error');
 }
-  
-a.withdraw_outline:hover,
-a.withdraw_outline:focus {
+
+a.usa-button--outline-secondary:hover,
+a.usa-button.usa-button--outline-secondary:focus,
+button.usa-button.usa-button--outline-secondary:hover,
+button.usa-button.usa-button--outline-secondary:focus {
   box-shadow: inset 0 0 0 2px color('error-dark');
+  background-color: transparent;
   color: color('error-dark');
 }
-  
-a.withdraw_outline:active {
+
+a.usa-button.usa-button--outline-secondary:active,
+button.usa-button.usa-button--outline-secondary:active {
   box-shadow: inset 0 0 0 2px color('error-darker');
+  background-color: transparent;
   color: color('error-darker');
 }
-
 
 // Used on: Domain request submit
 .dotgov-button--green {
