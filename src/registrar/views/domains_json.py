@@ -47,7 +47,6 @@ def get_domains_json(request):
 class DomainTableHtmxView(View):
 
     template_name = "domains_htmx_table.html"
-    
 
     def get(self, request):
         domain_ids = get_domain_ids_from_request(request)
@@ -65,8 +64,6 @@ class DomainTableHtmxView(View):
 
         domains = [serialize_domain(domain, request) for domain in page_obj.object_list]
 
-        logger.info("DOMAINS")
-        logger.info(domains)
         return render(request, 
                       "domains_htmx_table.html",
                       {
@@ -87,8 +84,6 @@ def get_domain_ids_from_request(request):
     Otherwise, return domain ids associated with request.user.
     """
     portfolio = request.GET.get("portfolio")
-    logger.info("PORTFOLIO")
-    logger.info(portfolio)
     if portfolio:
         current_user: User = request.user
         if current_user.is_org_user(request) and current_user.has_view_all_domains_portfolio_permission(portfolio):

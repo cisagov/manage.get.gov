@@ -89,14 +89,12 @@ def availablehtml(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("dotgov_domain-requested_domain", "")
 
-    print(f"DOMAINS: {domain}")
     _, json_response = Domain.validate_and_handle_errors(
         domain=domain,
         return_type=ValidationReturnType.JSON_RESPONSE,
     )
 
     response = json.loads(json_response.content)
-    print (f"response: {response} ")
 
     template = get_template("domain_available.html")
      
