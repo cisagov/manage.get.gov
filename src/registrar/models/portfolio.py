@@ -7,8 +7,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 
 from .utility.time_stamped_model import TimeStampedModel
 from django.core.exceptions import ValidationError
-from django.conf import settings
-
+from django.db.models import Q
 
 class Portfolio(TimeStampedModel):
     """
