@@ -11,8 +11,8 @@ class CloudflareService:
     tenant_key = settings.SECRET_DNS_TENANT_KEY
     tenant_id = settings.SECRET_DNS_TENANT_ID
     headers = {
-        "X-Auth-Email": "test.gob",
-        "X-Auth-Key": "12321",
+        "X-Auth-Email": service_email,
+        "X-Auth-Key": tenant_key,
         "Content-Type": "application/json",
     }
 
