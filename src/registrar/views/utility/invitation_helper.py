@@ -69,7 +69,7 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, OutsideOrgMemberError):
         messages.error(request, str(exception))
     elif isinstance(exception, AlreadyDomainManagerError):
-        messages.error(request, with_contact_link(str(exception)))
+        messages.error(request, str(exception))
     elif isinstance(exception, AlreadyDomainInvitedError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
