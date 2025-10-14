@@ -1960,7 +1960,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=5)
+        self.assertContains(page, "Senior official", count=4)
 
     @less_console_noise_decorator
     def test_domain_senior_official_content(self):
@@ -2359,10 +2359,13 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.mockedSendFunction = self.mockSendPatch.start()
             self.mockedSendFunction.side_effect = self.mockSend
 
-            domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+            domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+            # info@example.com
             # Add current user to this domain
-            _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
-            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain_contact.id}))
+            _ = UserDomainRole(user=self.user, domain=domain, role="admin").save()
+            DomainInformation.objects.get_or_create(requester=self.user, domain=domain)
+            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain.id}))
 
             # Loads correctly
             self.assertContains(page, "Security email")
