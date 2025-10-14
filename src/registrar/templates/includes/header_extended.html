@@ -125,14 +125,30 @@
                     {% url 'organization' as url %}
                     <!-- Move the padding from the a to the span so that the descenders do not get cut off -->
                     <a href="{{ url }}" class="usa-nav-link padding-y-0 {% if path|is_portfolio_subpage %} usa-current{% endif %}">
-                        <img 
-                            src="{{portfolio.agency_seal_url }}"
-                            alt="{{portfolio.organization_name}} seal"
-                            class="margin-right-1 height-3"
-                        >
-                        <span class="ellipsis ellipsis--23 ellipsis--desktop-50 padding-y-1 desktop:padding-y-2">
-                            {{ portfolio.organization_name }}
-                        </span>
+                        <div class="grid-container padding-left-0 padding-right-0">
+                            <div class="grid-row flex-align-center">
+                                <div class="grid-col-auto height-3">
+                                    {% if portfolio.agency_seal %}
+                                    <img 
+                                        src="{{portfolio.agency_seal_url }}"
+                                        alt="{{portfolio.organization_name}} seal"
+                                        class="margin-right-1 height-3"
+                                    >
+                                    {% else %}
+                                    <img 
+                                        src="/public/img/agency_seals/gov_Administration_logoBackground.png"
+                                        alt="{{portfolio.organization_name}} seal"
+                                        class="margin-right-1 height-3"
+                                    >
+                                    {% endif %}
+                                </div>
+                                <div class="grid-col">
+                                    <span class="ellipsis ellipsis--23 ellipsis--desktop-50 padding-y-1 desktop:padding-y-2">
+                                        {{ portfolio.organization_name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </a>
                 </li>
             </ul>

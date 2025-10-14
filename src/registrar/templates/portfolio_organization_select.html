@@ -20,8 +20,13 @@
                         alt="{{portfolio.organization_name}} seal"
                         class="margin-right-1 height-4"
                     >
+                    {% else %}
+                    <img 
+                        src="/public/img/agency_seals/gov_Administration_logoBackground.png"
+                        alt="{{portfolio.organization_name}} seal"
+                        class="margin-right-1 height-4"
+                    >
                     {% endif %}
-                    
                     {{portfolio}}
                     <svg class="margin-left-05 usa-icon organizations-arrow-icon" aria-hidden="true" focusable="false" role="img" width="28">
                         <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
@@ -37,14 +42,28 @@
         value="{{portfolio.organization_name}}"
         >
             <a class="font-ui-xs">
-                {% if portfolio.agency_seal %}
-                <img 
-                    src="{{portfolio.agency_seal_url }}"
-                    alt="{{portfolio.organization_name}} seal"
-                    class="margin-right-1 height-3"
-                >
-                {% endif %}
-                {{portfolio}}
+                <div class="grid-container padding-left-0 padding-right-0">
+                    <div class="grid-row flex-align-center">
+                        <div class="grid-col-auto height-3 flex-align-self-start">
+                            {% if portfolio.agency_seal %}
+                            <img 
+                                src="{{portfolio.agency_seal_url }}"
+                                alt="{{portfolio.organization_name}} seal"
+                                class="margin-right-1 height-3"
+                            >
+                            {% else %}
+                            <img 
+                                src="/public/img/agency_seals/gov_Administration_logoBackground.png"
+                                alt="{{portfolio.organization_name}} seal"
+                                class="margin-right-1 height-3"
+                            >
+                            {% endif %}
+                        </div>
+                        <div class="grid-col">
+                            {{portfolio}}
+                        </div>
+                    </div>
+                </div>
             </a>
         </button>
     {% endif %}

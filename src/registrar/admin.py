@@ -4781,6 +4781,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "requester",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
+        "agency_seal"
     ]
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
