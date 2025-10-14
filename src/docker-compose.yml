@@ -58,17 +58,12 @@ services:
       - AWS_S3_SECRET_ACCESS_KEY
       - AWS_S3_REGION
       - AWS_S3_BUCKET_NAME
-      # AWS django-storage credentials
-      - AWS_STORAGE_BUCKET_NAME
       # File encryption credentials
       - SECRET_ENCRYPT_METADATA
       - DNS_TENANT_KEY
       - DNS_SERVICE_EMAIL
       - DNS_TENANT_NAME
       - DNS_TEST_TENANT_ID
-      # localstack link to simulate AWS locally
-      - AWS_ENDPOINT=http://localstack:4566
-
     stdin_open: true
     tty: true
     ports:
@@ -137,19 +132,3 @@ services:
       - .:/zap/wrk/
     links: ["app"]
     profiles: ["owasp-scan"]
-
-  # localstack:
-  #   container_name: "localstack"
-  #   image: localstack/localstack
-  #   ports:
-  #     - "${DF_LISTEN_ADDRESS:-127.0.0.1}:4566:4566" # LocalStack Gateway
-  #     - "${DF_LISTEN_ADDRESS:-127.0.0.1}:4510-4559:4510-4559" # external services port range
-  #   environment:
-  #     # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
-  #     - DEBUG=${DEBUG:-0}
-  #     - LOCALSTACK_HOST=localstack
-  #     - SERVICES=s3
-  #     - DISABLE_EVENTS=1 # disable analytics
-  #   volumes:
-  #     - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-  #     - "/var/run/docker.sock:/var/run/docker.sock"
