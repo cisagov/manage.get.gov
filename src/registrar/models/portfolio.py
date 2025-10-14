@@ -179,7 +179,7 @@ class Portfolio(TimeStampedModel):
             ],
         ).values_list("user__id", flat=True)
         return User.objects.filter(id__in=admin_ids)
-        
+
     def portfolio_users_with_permissions(self, permissions=[], include_admin=False):
         """Gets all users with specified additional permissions for this particular portfolio.
         Returns a queryset of User."""
