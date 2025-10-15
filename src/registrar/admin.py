@@ -2550,7 +2550,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
-        title = "investigator"
+        title = "analyst"
         # Match the old param name to avoid unnecessary refactoring
         parameter_name = "investigator__id__exact"
 
@@ -2751,11 +2751,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     status_history.short_description = "Status history"  # type: ignore
 
-    # ------ OTHER fields ------
-    # Customize display
-    @admin.display(description=_("Analyst"))
-    def investigator(self, obj):
+    # ------ model fields ------
+    @admin.display(description=_("analyst"))
+    def analyst_as_investigator(self, obj):
         return obj.investigator
+    
+    analyst_as_investigator.admin_order_field = ['investigator__first_name','investigator__last_name']
+
 
     # Columns
     list_display = [
@@ -2772,12 +2774,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_federal_type",
         "converted_city",
         "converted_state_territory",
-        "investigator",
+        "analyst_as_investigator",
     ]
 
     orderable_fk_fields = [
         ("requester", ["first_name", "last_name"]),
-        ("investigator", ["first_name", "last_name"]),
     ]
 
     # Filters
