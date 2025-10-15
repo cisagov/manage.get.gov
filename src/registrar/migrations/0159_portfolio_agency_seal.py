@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0157_alter_portfolio_requester"),
+        ("registrar", "0158_dnsaccount_dnsrecord_dnsvendor_dnszone_and_more.py"),
     ]
 
     operations = [
