@@ -184,7 +184,9 @@ button {
                 width: 100%;
             }
 
-            &:hover {
+            &:hover,
+            &:focus,
+            &.usa-current {
                 .organization-nav-link {
                     white-space: normal;
                 }
