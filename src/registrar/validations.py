@@ -15,28 +15,10 @@ from registrar.validations import (
     get_max_length_attrs,
 )
 
-# Example (single-line text):
+# Example:
 # forms.CharField(
 #     validators=[get_max_length_validator(TEXT_EXTENDED)],
 #     widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
-# )
-
-# Example (textarea):
-# forms.CharField(
-#     validators=[get_max_length_validator(TEXTAREA_LONG)],
-#     widget=forms.Textarea(attrs=get_max_length_attrs(TEXTAREA_LONG)),
-# )
-
-# Example (email):
-# forms.EmailField(
-#     validators=[get_max_length_validator(EMAIL_MAX)],
-#     widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
-# )
-
-# Example (domain label like requested/alternative SLD):
-# forms.CharField(
-#     validators=[get_max_length_validator(DOMAIN_LABEL)],
-#     widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
 # )
 """
 
