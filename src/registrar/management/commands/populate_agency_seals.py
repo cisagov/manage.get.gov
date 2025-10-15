@@ -52,7 +52,8 @@ class Command(BaseCommand):
             if len(self.portfolios_with_updated_seals) > 0:
                 logger.info(
                     f"Successfully assigned agency seal images to"
-                    f"{len(self.portfolios_with_updated_seals)} portfolios: {', '.join(map(str, self.portfolios_with_updated_seals))}"
+                    f"{len(self.portfolios_with_updated_seals)} portfolios: "
+                    f"{', '.join(map(str, self.portfolios_with_updated_seals))}"
                 )
             if len(self.unmatched_seals) > 0:
                 logger.info(
