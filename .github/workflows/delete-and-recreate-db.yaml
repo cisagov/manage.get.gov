@@ -16,9 +16,9 @@ on:
           - ad
           - litterbox
           - hotgov
-          - bob
           - meoward
           - backup
+          - ap
           - cw
           - testdb
           - acadia

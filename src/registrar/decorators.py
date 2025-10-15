@@ -5,6 +5,8 @@ from django.utils.decorators import method_decorator
 from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, UserDomainRole
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from functools import wraps
+from registrar.utility.db_timeouts import pg_timeouts
 
 
 logger = logging.getLogger(__name__)
@@ -442,3 +444,15 @@ def _has_legacy_domain_request_view_access(user, domain_request):
         return True
 
     return False
+
+
+def allow_slow_queries(*, statement_ms=60000, lock_ms=60000, idle_tx_ms=None):
+    def deco(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            with pg_timeouts(statement_ms=statement_ms, lock_ms=lock_ms, idle_tx_ms=idle_tx_ms):
+                return view_func(*args, **kwargs)
+
+        return wrapper
+
+    return deco

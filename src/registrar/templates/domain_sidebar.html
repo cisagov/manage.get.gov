@@ -80,13 +80,16 @@
         {% include "includes/domain_sidenav_item.html" with item_text="Domain managers" %}
       {% endwith %}
 
-  
-      {% if is_domain_manager%}
-       {% if domain.is_expiring or domain.is_expired %}
-          {% with url_name="domain-renewal" %}
-            {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
-          {% endwith %}
+      {% if domain_deletion_flag %}
+        {% if is_domain_manager %}
+          {% include "includes/domain_lifecycle_nav.html" %}
         {% endif %}
+      {% endif %}
+    
+      {% if is_domain_manager and domain_is_expiring_or_expired and not domain_deletion_flag %}
+        {% with url_name="domain-renewal" %}
+          {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
+        {% endwith %}
       {% endif %}
       
       {% endif %}

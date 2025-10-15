@@ -22,6 +22,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
+    send_domain_manager_on_hold_email_to_domain_managers,
 )
 
 from api.tests.common import less_console_noise_decorator
@@ -1391,3 +1392,95 @@ class TestDomainInvitationCleanupSignal(TestCase):
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
 
         self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
+
+
+class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
+    """Unit tests for send_domain_manager_on_hold_email_to_domain_managers function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.domain = MagicMock(spec=Domain)
+        self.domain.name = "Test On Hold Domain"
+
+        self.dm1 = MagicMock(spec=UserDomainRole)
+        self.dm1.user = MagicMock(spec=User)
+        self.dm1.user.email = "domain_manager_1@example.com"
+
+        self.dm2 = MagicMock(spec=UserDomainRole)
+        self.dm2.user = MagicMock(spec=User)
+        self.dm2.user.email = "domain_manager_2@example.com"
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of domain manager removal emails."""
+
+        mock_filter.return_value = [self.dm1, self.dm2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_manager_on_hold_email_to_domain_managers(
+            domain=self.domain,
+        )
+
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm1.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm1.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm2.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm2.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_failure(self, mock_filter, mock_send_templated_email):
+        mock_filter.return_value = [self.dm1, self.dm2]
+
+        result = send_domain_manager_on_hold_email_to_domain_managers(
+            domain=self.domain,
+        )
+
+        self.assertFalse(result)
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm1.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm1.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm2.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm2.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
