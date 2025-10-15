@@ -25,7 +25,7 @@ EXCLUDE_CLASS_SUFFIXES = {
 }
 EXCLUDE_FIELD_NAMES: set[str] = set()
 
-
+# Check and helper for Models
 @register(Tags.models, MODELS_TAG)
 def validate_textfield_maxlength(app_configs, **kwargs):
     issues = []
@@ -52,13 +52,30 @@ def _validate_charfields_maxlength(model):
                 )
     return issues
 
-
+# Check and helpers for Forms
 @register(Tags.models, FORMS_TAG)
 def validate_forms_maxlength(app_configs, **kwargs):
     # Each module will report a single multi-line issue as a CheckMessage dictating any problem(s) found, collected here
     issues = []
+    for header_appconfig, modname, cls, form in _iter_instantiable_forms():
+        header_classname = cls.__name__
+        lines = _validate_form_fields(form)
+        if lines:
+            block = "\n".join(lines)
+            block = header_appconfig + "\n" + header_classname + "\n" + block
+            issues.append(
+                Info(
+                    block,
+                    hint="Add max_length= or a MaxLengthValidator to these fields.\n",
+                    obj=f"{modname}",
+                    id="DOTGOV.I002",
+                )
+            )
+    return issues
+
+# Yields an (app_label, modname, cls, form_instance) for forms we can check (skipping excluded modules/classes and those needing args)
+def _iter_instantiable_forms():
     for app_config in apps.get_app_configs():
-        # print(f"Checking app_config: {app_config}")
         modname = f"{app_config.name}.forms"
         if _module_excluded(modname):
             continue
@@ -68,46 +85,20 @@ def validate_forms_maxlength(app_configs, **kwargs):
             logger.debug("Skipping module for app %s (%s)", modname, e)
             continue
 
-        # Record header info for appconfig
-        header_appconfig = f"{app_config.label}"
-        for cname, cls in inspect.getmembers(mod, inspect.isclass):
+        for _, cls in inspect.getmembers(mod, inspect.isclass):
             if not issubclass(cls, forms.BaseForm) or cls in (forms.BaseForm, forms.Form):
                 continue
-
             if _class_excluded(cls):
                 continue
             try:
                 form = cls()
-            except Exception:
-                print(f"Exception encountered, Skipping forms module: {modname}.{cls.__name__}")
+            except TypeError as e:
+                # Some forms require args; only validate those instantiable without args
+                logger.debug("Skipping form %s.%s; cannot instantiate without args (%s)", modname, cls.__name__, e)
                 continue
+            yield app_config.label, modname, cls, form
 
-            # Record header info for class
-            header_classname = f"{cls.__name__}"
-            # Failures will be stored here as a list of strings
-            lines = []
-            lines.extend(_validate_form_fields(form))
-
-            # Check for one or more failures in previous class scan
-            if len(lines) > 0:
-                # Create a message block by joining all the lines
-                block = "\n".join(lines)
-                block = header_appconfig + "\n" + header_classname + "\n" + block
-
-                # Now that the failed checks have been joined, create a single CheckMessage for that module
-                issues.append(
-                    Info(
-                        block,
-                        hint="Add max_length= or a MaxLengthValidator to these fields.\n",
-                        obj=f"{modname}",
-                        id="DOTGOV.I002",
-                    )
-                )
-                lines = []  # reset for next class
-
-    return issues
-
-
+# Helper method that actually does the form and field check messages
 def _validate_form_fields(form):
     lines = []
     # Scan each field in the form class
