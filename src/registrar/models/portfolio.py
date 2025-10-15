@@ -120,7 +120,7 @@ class Portfolio(TimeStampedModel):
     @property
     def agency_seal_url(self):
         if self.agency_seal and hasattr(self.agency_seal, "url"):
-            return f"/public/img/agency_seals{self.agency_seal.url}"
+            return f"/public/img/registrar/agency_seals{self.agency_seal.url}"
 
     def __str__(self) -> str:
         return str(self.organization_name)
