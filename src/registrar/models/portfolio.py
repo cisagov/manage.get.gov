@@ -9,6 +9,7 @@ from .utility.time_stamped_model import TimeStampedModel
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
+
 class Portfolio(TimeStampedModel):
     """
     Portfolio is used for organizing domains/domain-requests into
@@ -114,15 +115,11 @@ class Portfolio(TimeStampedModel):
         max_length=320,
     )
 
-    agency_seal = models.ImageField(
-        null=True,
-        blank=True,
-        upload_to=""
-    )
+    agency_seal = models.ImageField(null=True, blank=True, upload_to="")
 
     @property
     def agency_seal_url(self):
-        if self.agency_seal and hasattr(self.agency_seal, 'url'):
+        if self.agency_seal and hasattr(self.agency_seal, "url"):
             return f"/public/img/agency_seals{self.agency_seal.url}"
 
     def __str__(self) -> str:

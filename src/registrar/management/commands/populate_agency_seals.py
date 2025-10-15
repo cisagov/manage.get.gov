@@ -13,10 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = (
-        "Uploads agency seal image(s) to our S3 bucket and populates corresponding Portfolio's "
-        "agency seal field."
-    )
+    help = "Uploads agency seal image(s) to our S3 bucket and populates corresponding Portfolio's " "agency seal field."
 
     def __init__(self):
         super().__init__()
@@ -26,9 +23,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         """Add our two filename arguments."""
         parser.add_argument(
-            "--directory", 
-            default="registrar/assets/img/registrar/agency_seals", 
-            help="Targeted image directory"
+            "--directory", default="registrar/assets/img/registrar/agency_seals", help="Targeted image directory"
         )
         parser.add_argument(
             "--checkpath",
@@ -43,7 +38,7 @@ class Command(BaseCommand):
         # Validate provided dir path
         if not os.path.isdir(agency_seals_dir_path):
             raise argparse.ArgumentTypeError(f"Invalid dir path '{agency_seals_dir_path}'")
-        
+
         # Ensures a slash is added
         directory = os.path.join(options.get("directory"), "")
         check_path = options.get("checkpath")
@@ -91,10 +86,10 @@ class Command(BaseCommand):
         """Given an image file name, search if a Portfolio with the same
         federal agency name exists and return if one exists."""
         # Extract agency name from image filename
-        image_file_agency = image_file_name[:image_file_name.rindex('_')]
+        image_file_agency = image_file_name[: image_file_name.rindex("_")]
         image_file_agency = image_file_agency.replace("_", " ")
         logger.info(f"Searching for portfolio with agency seal for {image_file_agency}")
 
-        # Annotate Portfolios with name removing whitespace 
+        # Annotate Portfolios with name removing whitespace
         matching_portfolio = Portfolio.objects.filter(organization_name__iexact=image_file_agency).first()
         return matching_portfolio
