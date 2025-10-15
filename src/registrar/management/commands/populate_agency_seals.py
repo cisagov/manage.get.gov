@@ -27,7 +27,7 @@ class Command(BaseCommand):
         """Add our two filename arguments."""
         parser.add_argument(
             "--directory", 
-            default="registrar/assets/img/agency_seals", 
+            default="registrar/assets/img/registrar/agency_seals", 
             help="Targeted image directory"
         )
         parser.add_argument(
@@ -36,7 +36,7 @@ class Command(BaseCommand):
             help="Flag that determines if we do a check for os.path.exists. Used for test cases",
         )
 
-    def handle(self, agency_seals_dir_path="registrar/assets/img/agency_seals", **options):
+    def handle(self, agency_seals_dir_path="registrar/assets/img/registrar/agency_seals", **options):
         """Process all images in agency seals folder and assign to corresponding portfolio's
         agency seal field."""
 
