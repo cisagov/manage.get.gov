@@ -6,6 +6,7 @@ docs/research/data/**
 !**/assets/src/js/
 !**/assets/src/sass/
 !**/assets/img/registrar/
+!**/assets/img/registrar/agency_seals
 public/
 credentials*
 
