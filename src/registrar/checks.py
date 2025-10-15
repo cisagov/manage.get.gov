@@ -1,5 +1,5 @@
 from django.apps import apps
-from django.core.checks import register, Warning, Tags, Info
+from django.core.checks import register, Tags, Info
 from django.db import models
 
 from django.core.validators import MaxLengthValidator
@@ -23,9 +23,7 @@ EXCLUDE_CLASS_SUFFIXES = {
     "RequestingEntityForm",  # Dynamic form, can't process at this time
     "RequestingEntityYesNoForm",  # Dynamic form, can't process at this time
 }
-EXCLUDE_FIELD_NAMES = {
-    # TBD
-}
+EXCLUDE_FIELD_NAMES: set[str] = set()
 
 
 @register(Tags.models, MODELS_TAG)
@@ -45,11 +43,11 @@ def _validate_charfields_maxlength(model):
             maxlen_method = getattr(field, "max_length", None)
             if maxlen_method is None:
                 issues.append(
-                    Warning(
+                    Info(
                         f"Model {model.__name__}.{field.name} is a CharField without max_length",
                         hint="Set max_length on CharField",
                         obj=field,
-                        id="DOTGOV.W001",
+                        id="DOTGOV.I001",
                     )
                 )
     return issues
@@ -98,11 +96,11 @@ def validate_forms_maxlength(app_configs, **kwargs):
 
                 # Now that the failed checks have been joined, create a single CheckMessage for that module
                 issues.append(
-                    Warning(
+                    Info(
                         block,
                         hint="Add max_length= or a MaxLengthValidator to these fields.\n",
                         obj=f"{modname}",
-                        id="DOTGOV.W002",
+                        id="DOTGOV.I002",
                     )
                 )
                 lines = []  # reset for next class
