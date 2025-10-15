@@ -114,7 +114,7 @@
 
             {% block modify_request %}
             {% if DomainRequest.is_withdrawable %}
-                <p><a href="{% url 'domain-request-withdraw-confirmation' domain_request_pk=DomainRequest.id %}" class="usa-button usa-button--outline withdraw_outline">
+                <p><a href="{% url 'domain-request-withdraw-confirmation' domain_request_pk=DomainRequest.id %}" class="usa-button usa-button--outline usa-button--outline-secondary">
                     Withdraw request</a>
                 </p>
             {% endif %}

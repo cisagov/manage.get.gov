@@ -1806,10 +1806,10 @@
         },
         "django-model2puml": {
             "hashes": [
-                "sha256:c7a986bb0e7ab22fd4dd18d6ff161c84e8c0a163dc783f17a9ca803ea5a747db"
+                "sha256:43598743c1d70a338d24118c37decd9e378cb4dc24bdc2cab4a575afada98723"
             ],
             "index": "pypi",
-            "version": "==0.6.1"
+            "version": "==0.5.0"
         },
         "django-stubs": {
             "hashes": [
