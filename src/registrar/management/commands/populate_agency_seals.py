@@ -51,11 +51,13 @@ class Command(BaseCommand):
         else:
             if len(self.portfolios_with_updated_seals) > 0:
                 logger.info(
-                    f"Successfully assigned agency seal images to {len(self.portfolios_with_updated_seals)} portfolios: {', '.join(map(str, self.portfolios_with_updated_seals))}"
+                    f"Successfully assigned agency seal images to"
+                    f"{len(self.portfolios_with_updated_seals)} portfolios: {', '.join(map(str, self.portfolios_with_updated_seals))}"
                 )
             if len(self.unmatched_seals) > 0:
                 logger.info(
-                    f"Failed to assign {len(self.unmatched_seals)} images in {agency_seals_dir_path}: {', '.join(self.unmatched_seals)}."
+                    f"Failed to assign {len(self.unmatched_seals)} images in "
+                    f"{agency_seals_dir_path}: {', '.join(self.unmatched_seals)}."
                 )
 
     def populate_agency_seals(self, directory, check_path):
