@@ -4,7 +4,7 @@ from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from registrar.models.portfolio import Portfolio
 from django import forms
-from django.core.validators import RegexValidator, MaxLengthValidator
+from django.core.validators import RegexValidator
 from django.utils.safestring import mark_safe
 
 from registrar.forms.utility.combobox import ComboboxWidget
@@ -19,6 +19,16 @@ from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.constants import BranchChoices
 from django.core.exceptions import ValidationError
+from registrar.validations import (
+    TEXT_SHORT,
+    TEXT_EXTENDED,
+    TEXTAREA_LONG,
+    TEXTAREA_SHORT,
+    EMAIL_MAX,
+    DOMAIN_LABEL,
+    get_max_length_validator,
+    get_max_length_attrs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +59,14 @@ class RequestingEntityForm(RegistrarForm):
     requested_suborganization = forms.CharField(
         label="Requested suborganization",
         required=False,
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     suborganization_city = forms.CharField(
         label="City",
         required=False,
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     suborganization_state_territory = forms.ChoiceField(
         label="State, territory, or military post",
@@ -256,6 +270,8 @@ class TribalGovernmentForm(RegistrarForm):
     tribe_name = forms.CharField(
         label="Name of tribe",
         error_messages={"required": "Enter the tribe you represent."},
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
 
     def clean(self):
@@ -332,18 +348,26 @@ class OrganizationContactForm(RegistrarForm):
     organization_name = forms.CharField(
         label="Organization name",
         error_messages={"required": "Enter the name of your organization."},
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     address_line1 = forms.CharField(
         label="Street address",
         error_messages={"required": "Enter the street address of your organization."},
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     address_line2 = forms.CharField(
         required=False,
         label="Street address line 2 (optional)",
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     city = forms.CharField(
         label="City",
         error_messages={"required": "Enter the city where your organization is located."},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     state_territory = forms.ChoiceField(
         label="State, territory, or military post",
@@ -366,6 +390,8 @@ class OrganizationContactForm(RegistrarForm):
     urbanization = forms.CharField(
         required=False,
         label="Urbanization (required for Puerto Rico only)",
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
 
     def __init__(self, *args, **kwargs):
@@ -406,13 +432,8 @@ class OrganizationContactForm(RegistrarForm):
 class AboutYourOrganizationForm(RegistrarForm):
     about_your_organization = forms.CharField(
         label="About your organization",
-        widget=forms.Textarea(),
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
+        widget=forms.Textarea(attrs=get_max_length_attrs(TEXTAREA_LONG)),
+        validators=[get_max_length_validator(TEXTAREA_LONG)],
         error_messages={"required": ("Enter more information about your organization.")},
     )
 
@@ -443,10 +464,14 @@ class SeniorOfficialForm(RegistrarForm):
     first_name = forms.CharField(
         label="First name / given name",
         error_messages={"required": ("Enter the first name / given name of your senior official.")},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     last_name = forms.CharField(
         label="Last name / family name",
         error_messages={"required": ("Enter the last name / family name of your senior official.")},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     title = forms.CharField(
         label="Title or role",
@@ -456,20 +481,17 @@ class SeniorOfficialForm(RegistrarForm):
                 " organization (e.g., Chief Information Officer)."
             )
         },
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     email = forms.EmailField(
         label="Email",
-        max_length=None,
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
+        validators=[get_max_length_validator(EMAIL_MAX)],
+        widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
     )
 
 
@@ -480,7 +502,13 @@ class CurrentSitesForm(RegistrarForm):
         error_messages={
             "invalid": ("Enter your organization's current website in the required format, like example.com.")
         },
-        widget=forms.URLInput(attrs={"aria-labelledby": "id_current_sites_header id_current_sites_body"}),
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.URLInput(
+            attrs={
+                "aria-labelledby": "id_current_sites_header id_current_sites_body",
+                **get_max_length_attrs(TEXT_EXTENDED),
+            }
+        ),
     )
 
 
@@ -523,6 +551,8 @@ class AlternativeDomainForm(RegistrarForm):
     alternative_domain = forms.CharField(
         required=False,
         label="Alternative domain",
+        validators=[get_max_length_validator(DOMAIN_LABEL)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
     )
 
 
@@ -607,6 +637,8 @@ class DotGovDomainForm(RegistrarForm):
         error_messages={
             "required": DOMAIN_API_MESSAGES["required"],
         },
+        validators=[get_max_length_validator(DOMAIN_LABEL)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
     )
 
 
@@ -620,15 +652,11 @@ class PurposeDetailsForm(BaseDeletableRegistrarForm):
             attrs={
                 "aria-label": "What is the purpose of your requested domain? \
                 Describe how you’ll use your .gov domain. \
-                Will it be used for a website, email, or something else?"
+                Will it be used for a website, email, or something else?",
+                **get_max_length_attrs(TEXTAREA_LONG),
             }
         ),
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
+        validators=[get_max_length_validator(TEXTAREA_LONG)],
         error_messages={"required": "Describe how you’ll use the .gov domain you’re requesting."},
     )
 
@@ -657,14 +685,20 @@ class OtherContactsForm(RegistrarForm):
     first_name = forms.CharField(
         label="First name / given name",
         error_messages={"required": "Enter the first name / given name of this contact."},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     middle_name = forms.CharField(
         required=False,
         label="Middle name (optional)",
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     last_name = forms.CharField(
         label="Last name / family name",
         error_messages={"required": "Enter the last name / family name of this contact."},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     title = forms.CharField(
         label="Title or role",
@@ -673,20 +707,17 @@ class OtherContactsForm(RegistrarForm):
                 "Enter the title or role of this contact in your organization (e.g., Chief Information Officer)."
             )
         },
+        validators=[get_max_length_validator(TEXT_EXTENDED)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
     email = forms.EmailField(
         label="Email",
-        max_length=None,
         error_messages={
             "required": ("Enter an email address in the required format, like name@example.com."),
             "invalid": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
+        validators=[get_max_length_validator(EMAIL_MAX)],
+        widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
         help_text="Enter an email address in the required format, like name@example.com.",
     )
     phone = PhoneNumberField(
@@ -830,15 +861,11 @@ class NoOtherContactsForm(BaseDeletableRegistrarForm):
             attrs={
                 "aria-label": "You don’t need to provide names of other employees now, \
                 but it may slow down our assessment of your eligibility. Describe \
-                why there are no other employees who can help verify your request."
+                why there are no other employees who can help verify your request.",
+                **get_max_length_attrs(TEXTAREA_SHORT),
             }
         ),
-        validators=[
-            MaxLengthValidator(
-                1000,
-                message="Response must be less than 1000 characters.",
-            )
-        ],
+        validators=[get_max_length_validator(TEXTAREA_SHORT)],
         error_messages={"required": ("Rationale for no other employees is required.")},
     )
 
@@ -847,25 +874,24 @@ class CisaRepresentativeForm(BaseDeletableRegistrarForm):
     cisa_representative_first_name = forms.CharField(
         label="First name / given name",
         error_messages={"required": "Enter the first name / given name of the CISA regional representative."},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     cisa_representative_last_name = forms.CharField(
         label="Last name / family name",
         error_messages={"required": "Enter the last name / family name of the CISA regional representative."},
+        validators=[get_max_length_validator(TEXT_SHORT)],
+        widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
     )
     cisa_representative_email = forms.EmailField(
         label="Your representative’s email (optional)",
-        max_length=None,
         required=False,
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
+        validators=[get_max_length_validator(EMAIL_MAX)],
+        widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
     )
 
 
@@ -884,15 +910,11 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
         widget=forms.Textarea(
             attrs={
                 "aria-label": "Is there anything else you’d like us to know about your domain request? \
-                    Provide details below. You can enter up to 2000 characters"
+                    Provide details below. You can enter up to 2000 characters",
+                **get_max_length_attrs(TEXTAREA_LONG),
             }
         ),
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
+        validators=[get_max_length_validator(TEXTAREA_LONG)],
         error_messages={
             "required": (
                 "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
@@ -907,13 +929,8 @@ class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=False,
         label="Anything else?",
-        widget=forms.Textarea(),
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
+        widget=forms.Textarea(attrs=get_max_length_attrs(TEXTAREA_LONG)),
+        validators=[get_max_length_validator(TEXTAREA_LONG)],
     )
 
 
