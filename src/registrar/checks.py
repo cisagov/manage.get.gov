@@ -6,8 +6,9 @@ from django.core.validators import MaxLengthValidator
 from django import forms
 import importlib
 import inspect
+import logging
 
-
+logger = logging.getLogger(__name__)
 MODELS_TAG = "dotgov_models"
 FORMS_TAG = "dotgov_forms"
 
@@ -65,7 +66,8 @@ def validate_forms_maxlength(app_configs, **kwargs):
             continue
         try:
             mod = importlib.import_module(modname)
-        except Exception:
+        except (ImportError, ModuleNotFoundError) as e:
+            logger.debug("Skipping module for app %s (%s)", modname, e)
             continue
 
         # Record header info for appconfig
