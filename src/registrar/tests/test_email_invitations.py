@@ -22,6 +22,8 @@ from registrar.utility.email_invitations import (
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
+    send_domain_manager_on_hold_email_to_domain_managers,
+    send_domain_renewal_notification_emails,
 )
 
 from api.tests.common import less_console_noise_decorator
@@ -1388,3 +1390,257 @@ class TestDomainInvitationCleanupSignal(TestCase):
         self.assertTrue(DomainInvitation.objects.filter(id=invitation.id).exists())
 
         self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
+
+
+class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
+    """Unit tests for send_domain_manager_on_hold_email_to_domain_managers function."""
+
+    def setUp(self):
+        """Set up test data."""
+        self.domain = MagicMock(spec=Domain)
+        self.domain.name = "Test On Hold Domain"
+
+        self.dm1 = MagicMock(spec=UserDomainRole)
+        self.dm1.user = MagicMock(spec=User)
+        self.dm1.user.email = "domain_manager_1@example.com"
+
+        self.dm2 = MagicMock(spec=UserDomainRole)
+        self.dm2.user = MagicMock(spec=User)
+        self.dm2.user.email = "domain_manager_2@example.com"
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+        """Test successful sending of domain manager removal emails."""
+
+        mock_filter.return_value = [self.dm1, self.dm2]
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_manager_on_hold_email_to_domain_managers(
+            domain=self.domain,
+        )
+
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm1.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm1.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm2.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm2.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    def test_send_email_failure(self, mock_filter, mock_send_templated_email):
+        mock_filter.return_value = [self.dm1, self.dm2]
+
+        result = send_domain_manager_on_hold_email_to_domain_managers(
+            domain=self.domain,
+        )
+
+        self.assertFalse(result)
+        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm1.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm1.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+        mock_send_templated_email.assert_any_call(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=[self.dm2.user.email],
+            bcc_address="",
+            context={
+                "domain_manager": self.dm2.user,
+                "domain": self.domain,
+                "date": date.today(),
+            },
+        )
+
+
+class TestDomainRenewalNotificationEmail(unittest.TestCase):
+    """
+    Unit tests for send_domain_renewal_notification_emails function
+    """
+
+    def setUp(self):
+        # Creates mock users with email addresses
+        self.user_1 = MagicMock()
+        self.user_1.email = "user1@example.gov"
+        self.user_2 = MagicMock(spec=User)
+        self.user_2.email = "user2@example.gov"
+
+        # Create mock domain
+        self.domain = MagicMock(spec=Domain)
+        self.domain.name = "domainrenewal.gov"
+        self.domain.expiration_date = date.today()
+
+        # Create mock portfolio
+        self.portfolio = MagicMock()
+
+        # Create mock domain information
+        self.domain_info = MagicMock()
+        self.domain_info.portfolio = self.portfolio
+
+    def _setup_mocks(self, mock_domain_information_filter, mock_domain_role_filter, has_portfolio=True):
+        """Helper method to configure common mocks for tests
+
+        Args:
+            mock_domain_information_filter: Mock for DomainInformation.objects.filter
+            mock_domain_role_filter: Mock for UserDomainRole.objects.filter
+            has_portfolio: Whether the domain should have an associated portfolio
+        """
+        # Mock the domain manager query chain
+        mock_values_list_qs = MagicMock()
+        mock_values_list_qs.distinct.return_value = [self.user_1.email]
+        mock_domain_role_filter.return_value.values_list.return_value = mock_values_list_qs
+
+        # Mock the domain information query
+        mock_queryset_domain_info = MagicMock()
+        mock_queryset_domain_info.first.return_value = self.domain_info
+        mock_domain_information_filter.return_value = mock_queryset_domain_info
+
+        if has_portfolio:
+            # Mock the portfolio admin users query chain
+            mock_admins_qs = MagicMock()
+            mock_admins_qs.distinct.return_value = [self.user_2.email]
+            mock_portfolio_user_qs = MagicMock()
+            mock_portfolio_user_qs.values_list.return_value = mock_admins_qs
+            self.portfolio.portfolio_admin_users = mock_portfolio_user_qs
+            self.domain_info.portfolio = self.portfolio
+        else:
+            # Domain has no assocated portfolio
+            self.domain_info.portfolio = None
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    @patch("registrar.utility.email_invitations.DomainInformation.objects.filter")
+    def test_send_email_success_with_org_admin_and_portfolio(
+        self, mock_domain_information_filter, mock_domain_role_filter, mock_send_templated_email
+    ):
+        """Test successful sending of domain renewal emails with a portfolio and an org admin"""
+
+        self._setup_mocks(mock_domain_information_filter, mock_domain_role_filter)
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_renewal_notification_emails(
+            domain=self.domain,
+        )
+
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_information_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=[self.user_1.email],
+            cc_addresses=[self.user_2.email],
+            context={"domain": self.domain, "expiration_date": self.domain.expiration_date},
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    @patch("registrar.utility.email_invitations.DomainInformation.objects.filter")
+    def test_send_email_success_with_portfolio_with_no_org_admin(
+        self, mock_domain_information_filter, mock_domain_role_filter, mock_send_templated_email
+    ):
+        """Test successful sending of domain renewal emails without org admins and a portfolio."""
+        self._setup_mocks(mock_domain_information_filter, mock_domain_role_filter, has_portfolio=False)
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        self.domain_info.portfolio = self.portfolio  # Attaches a portfolio with no org admin
+
+        result = send_domain_renewal_notification_emails(
+            domain=self.domain,
+        )
+
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_information_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=[self.user_1.email],
+            cc_addresses=[],
+            context={"domain": self.domain, "expiration_date": self.domain.expiration_date},
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    @patch("registrar.utility.email_invitations.DomainInformation.objects.filter")
+    def test_send_email_success_with_no_org_admins_and_no_portfolio(
+        self, mock_domain_information_filter, mock_domain_role_filter, mock_send_templated_email
+    ):
+        """Test successful sending of domain renewal emails without portfolio and any org admins."""
+        self._setup_mocks(mock_domain_information_filter, mock_domain_role_filter, has_portfolio=False)
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_renewal_notification_emails(
+            domain=self.domain,
+        )
+
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_information_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=[self.user_1.email],
+            cc_addresses=[],
+            context={"domain": self.domain, "expiration_date": self.domain.expiration_date},
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    @patch("registrar.utility.email_invitations.DomainInformation.objects.filter")
+    def test_send_email_failure(
+        self, mock_domain_information_filter, mock_domain_role_filter, mock_send_templated_email
+    ):
+        """Test failure sending of domain renewal emails."""
+        self._setup_mocks(mock_domain_information_filter, mock_domain_role_filter)
+        mock_send_templated_email.return_value = None  # No exception means success
+
+        result = send_domain_renewal_notification_emails(
+            domain=self.domain,
+        )
+
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_information_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=[self.user_1.email],
+            cc_addresses=[self.user_2.email],
+            context={"domain": self.domain, "expiration_date": self.domain.expiration_date},
+        )
+        self.assertFalse(result)
