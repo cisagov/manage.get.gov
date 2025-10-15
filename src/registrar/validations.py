@@ -23,16 +23,16 @@ from registrar.validations import (
 """
 
 # Short single-line text inputs like first_name, last_name, city, urbanization, etc.
-TEXT_SHORT = 100
+TEXT_SHORT = 50
 
 # Extended single-line text inputs like address_line1/2, tribe_name, organization_name, titles, etc.
-TEXT_EXTENDED = 255
+TEXT_EXTENDED = 100
 
 # Multi-line textarea inputs like purpose, about, etc.
-TEXTAREA_LONG = 2000
+TEXTAREA_LONG = 1000
 
 # Shorter textarea inputs like no_other_contacts_rationale
-TEXTAREA_SHORT = 1000
+TEXTAREA_SHORT = 500
 
 # Email maximum length per standards, like SeniorOfficialForm.email, etc.
 EMAIL_MAX = 320
