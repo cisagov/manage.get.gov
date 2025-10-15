@@ -40,9 +40,11 @@ EMAIL_MAX = 320
 # DNS single label max length per standards, like requested_domain, alternative_domain, etc.
 DOMAIN_LABEL = 63
 
+
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
     return MaxLengthValidator(limit, message=f"Response must be no more than {limit} characters.")
+
 
 # For use by the USWDS framework to display the max length to the user
 def get_max_length_attrs(limit: int) -> dict[str, str]:
