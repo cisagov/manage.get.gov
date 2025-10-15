@@ -2,7 +2,7 @@
     type="{{ widget.type }}"
     name="{{ widget.name }}"
     {# hint: spacing in the class string matters #}
-    class="{{ uswds_input_class }}{% if classes %} {{ classes }}{% endif %}"
+    class="{{ uswds_input_class }}{% if classes %} {{ classes }}{% endif %}{% if widget.attrs.maxlength and not widget.attrs.hide_character_count %} usa-character-count__field{% endif %}"
     {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %}
     {% if aria_label %}aria-label="{{ aria_label }} {{ label }}"{% endif %}
     {% include "django/forms/widgets/attrs.html" %}
