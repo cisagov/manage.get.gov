@@ -67,7 +67,7 @@ class CloudflareService:
         return resp.json()
 
     def get_page_accounts(self, page, per_page):
-        """Gets all accounts under specified tenant. Must include pagination paramenters"""
+        """Gets all accounts under specified tenant. Must include pagination parameters"""
         appended_url = f"/tenants/{self.tenant_id}/accounts"
         params = {"page": page, "per_page": per_page}
         try:

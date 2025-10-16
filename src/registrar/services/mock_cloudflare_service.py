@@ -48,7 +48,7 @@ class MockCloudflareService:
     def _register_account_mocks(self):
         print(f"😎😎😎😎 inside register_account_mocks")
         tenant_id = CloudflareService.tenant_id
-        # respx.get(f"{base_url}/tenants/{tenant_id}/accounts?page=1&per_page=50").mock(side_effect=self._mock_get_page_accounts_response)
+        respx.get(f"/tenants/{tenant_id}/accounts", params={"page": 1, "per_page": 50}).mock(side_effect=self._mock_get_page_accounts_response)
         respx.post(f"/accounts").mock(side_effect=self._mock_create_account_response)
 
     def _mock_get_page_accounts_response(self, request):
