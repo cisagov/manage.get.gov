@@ -640,10 +640,9 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     def test_approved_transition_allowed(self):
         """
-        Test that calling action_needed from allowable statuses does raises TransitionNotAllowed.
+        Test that calling approve from allowable statuses does not raise TransitionNotAllowed.
         """
         test_cases = [
-            (self.submitted_domain_request, TransitionNotAllowed),
             (self.in_review_domain_request, TransitionNotAllowed),
             (self.action_needed_domain_request, TransitionNotAllowed),
             (self.rejected_domain_request, TransitionNotAllowed),
@@ -694,6 +693,7 @@ class TestDomainRequest(TestCase):
         """
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
+            self.submitted_domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
             self.submitted_domain_request.approve(send_email=False)
 
         # Assert that no emails were sent
@@ -718,9 +718,9 @@ class TestDomainRequest(TestCase):
         Test that calling approve whith an already approved requested domain raises
         TransitionNotAllowed.
         """
-        Domain.objects.all().create(name=self.submitted_domain_request.requested_domain.name)
+        Domain.objects.all().create(name=self.in_review_domain_request.requested_domain.name)
         test_cases = [
-            (self.submitted_domain_request, FSMDomainRequestError),
+            (self.in_review_domain_request, FSMDomainRequestError),
         ]
         self.assert_fsm_transition_raises_error(test_cases, "approve")
 
@@ -910,7 +910,6 @@ class TestDomainRequest(TestCase):
         """
         test_cases = [
             (self.started_domain_request, TransitionNotAllowed),
-            (self.submitted_domain_request, TransitionNotAllowed),
             (self.withdrawn_domain_request, TransitionNotAllowed),
             (self.ineligible_domain_request, TransitionNotAllowed),
         ]

@@ -452,6 +452,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         labels = {
             "action_needed_reason_email": "Email",
             "rejection_reason_email": "Email",
+            "investigator": "Analyst",
         }
 
     def __init__(self, *args, **kwargs):
@@ -2075,7 +2076,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     form = DomainInformationAdminForm
 
     # Customize column header text
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
@@ -2549,7 +2550,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
-        title = "investigator"
+        title = "analyst"
         # Match the old param name to avoid unnecessary refactoring
         parameter_name = "investigator__id__exact"
 
@@ -2633,7 +2634,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
-        # Example: Show different icons based on `status`
+        # Show different icons based on `status`
         text = obj.requested_domain
         if obj.portfolio:
             return format_html(
@@ -2646,7 +2647,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # ------ Converted fields ------
     # These fields map to @Property methods and
     # require these custom definitions to work properly
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
@@ -2750,9 +2751,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     status_history.short_description = "Status history"  # type: ignore
 
+    # ------ model fields ------
+    @admin.display(description=_("analyst"))
+    def analyst_as_investigator(self, obj):
+        return obj.investigator
+
+    analyst_as_investigator.admin_order_field = ["investigator__first_name", "investigator__last_name"]  # type: ignore
+
     # Columns
     list_display = [
         "custom_requested_domain",
+        "requester",
         "first_submitted_date",
         "last_submitted_date",
         "last_status_update",
@@ -2764,12 +2773,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_federal_type",
         "converted_city",
         "converted_state_territory",
-        "investigator",
+        "analyst_as_investigator",
     ]
 
     orderable_fk_fields = [
-        ("requested_domain", "name"),
-        ("investigator", ["first_name", "last_name"]),
+        ("requester", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -4091,7 +4099,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     # --- Generic Org Type
     # Use converted value in the table
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.domain_info.converted_generic_org_type_display
 
