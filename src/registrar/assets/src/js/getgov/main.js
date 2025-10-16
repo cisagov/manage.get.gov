@@ -45,7 +45,7 @@ finishUserSetupListener();
 
 handleRequestingEntityFieldset();
 
-initDomainsTable();
+//initDomainsTable();
 initDomainRequestsTable();
 initMembersTable();
 initMemberDomainsTable();

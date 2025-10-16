@@ -5,6 +5,8 @@ from registrar.decorators import grant_access, ALL
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.urls import reverse
 from django.db.models import Q
+from django.views.generic import View
+from django.shortcuts import get_object_or_404, redirect, render
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,39 @@ def get_domains_json(request):
             "unfiltered_total": unfiltered_total,
         }
     )
+
+@grant_access(ALL)
+class DomainTableHtmxView(View):
+
+    template_name = "domains_htmx_table.html"
+
+    def get(self, request):
+        domain_ids = get_domain_ids_from_request(request)
+
+        objects = Domain.objects.filter(id__in=domain_ids).select_related("domain_info__sub_organization")
+        unfiltered_total = objects.count()
+
+        objects = apply_search(objects, request)
+        objects = apply_state_filter(objects, request)
+        objects = apply_sorting(objects, request)
+
+        paginator = Paginator(objects, 10)
+        page_number = request.GET.get("page")
+        page_obj = paginator.get_page(page_number)
+
+        domains = [serialize_domain(domain, request) for domain in page_obj.object_list]
+
+        return render(request, 
+                      "domains_htmx_table.html",
+                      {
+                        "domain_list":domains,
+                        "page": page_obj.number,
+                        "num_pages": paginator.num_pages,
+                        "page_range": range(1, paginator.num_pages),
+                        "has_previous": page_obj.has_previous(),
+                        "has_next": page_obj.has_next(),
+                        "total": paginator.count,
+                        "unfiltered_total": unfiltered_total,})
 
 
 def get_domain_ids_from_request(request):

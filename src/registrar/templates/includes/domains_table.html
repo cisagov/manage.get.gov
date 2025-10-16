@@ -2,10 +2,10 @@
 
 
 {% comment %} Stores the json endpoint in a url for easier access {% endcomment %}
-{% url 'get_domains_json' as url %}
+<!-- {% url 'get_domains_json' as url %} -->
 
 
-<span id="get_domains_json_url" class="display-none">{{url}}</span>
+<!-- <span id="get_domains_json_url" class="display-none">{{url}}</span> -->
 
 <!-- Org model banner (org manager can view, domain manager can edit)  -->
 {% if num_expiring_domains > 0 and has_any_domains_portfolio_permission %}
@@ -175,7 +175,13 @@
       </svg>
     </button>
   </div>
-  <div class="display-none usa-table-container--scrollable usa-table-container--override-overflow margin-top-0" tabindex="0" id="domains__table-wrapper">
+   <div
+      hx-trigger="load"
+      hx-get="/get-domains-table-htmx"]
+      hx-vals='{"portfolio": {{portfolio.id}} }'
+      ></div>
+   
+  <!-- <div class="display-none usa-table-container--scrollable usa-table-container--override-overflow margin-top-0" tabindex="0" id="domains__table-wrapper">
     <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
       <caption class="sr-only">Your registered domains</caption>
       <thead>
@@ -195,15 +201,15 @@
         </tr>
       </thead>
       <tbody>
-        <!-- AJAX will populate this tbody -->
+        
       </tbody>
     </table>
     <div
       class="usa-sr-only usa-table__announcement-region" id="domains__usa-table__announcement-region"
       aria-live="polite"
     ></div>
-  </div>
-  <div class="display-none" id="domains__no-data">
+  </div> -->
+  <!-- <div class="display-none" id="domains__no-data">
     <p>You don't have any registered domains.</p>
     <p class="maxw-none clearfix">
       <a href="https://get.gov/help/faq/#do-not-see-my-domain" class="float-right-tablet usa-link usa-link--icon" target="_blank">
@@ -219,10 +225,10 @@
   </div>
 </section>
 <nav aria-label="Pagination" class="usa-pagination flex-justify" id="domains-pagination">
-  <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
+  <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">  -->
     <!-- Count will be dynamically populated by JS -->
-  </span>
-  <ul class="usa-pagination__list">
+  <!-- </span>
+  <ul class="usa-pagination__list"> -->
     <!-- Pagination links will be dynamically populated by JS -->
-  </ul>
-</nav>
+  <!-- </ul> 
+</nav>-->

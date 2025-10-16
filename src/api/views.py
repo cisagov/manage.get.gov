@@ -1,9 +1,15 @@
 """Internal API views"""
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
 from django.utils.safestring import mark_safe
+from django.template.loader import get_template
 
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
@@ -73,6 +79,27 @@ def available(request, domain=""):
         return_type=ValidationReturnType.JSON_RESPONSE,
     )
     return json_response
+
+@require_http_methods(["GET"])
+@login_not_required
+def availablehtml(request, domain=""):
+    """Is a given domain available or not.
+    """
+    
+    Domain = apps.get_model("registrar.Domain")
+    domain = request.GET.get("dotgov_domain-requested_domain", "")
+
+    _, json_response = Domain.validate_and_handle_errors(
+        domain=domain,
+        return_type=ValidationReturnType.JSON_RESPONSE,
+    )
+
+    response = json.loads(json_response.content)
+
+    template = get_template("domain_available.html")
+     
+    return HttpResponse(template.render({'message':response.get('message'), 'success': response.get('available') }))
+# 
 
 
 @require_http_methods(["GET"])

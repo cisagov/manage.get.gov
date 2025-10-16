@@ -35,12 +35,12 @@ class DomainHelper:
         # Split into pieces for the linter
         domain = cls._validate_domain_string(domain, blank_ok)
 
-        if domain != "":
-            try:
-                if not check_domain_available(domain):
-                    raise errors.DomainUnavailableError()
-            except RegistryError as err:
-                raise errors.RegistrySystemError() from err
+        # if domain != "":
+        #     try:
+        #         if not check_domain_available(domain):
+        #             raise errors.DomainUnavailableError()
+        #     except RegistryError as err:
+        #         raise errors.RegistrySystemError() from err
         return domain
 
     @staticmethod

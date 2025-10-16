@@ -25,7 +25,7 @@ from registrar.views.report_views import (
 
 # --jsons
 from registrar.views.domain_requests_json import get_domain_requests_json
-from registrar.views.domains_json import get_domains_json
+from registrar.views.domains_json import get_domains_json, DomainTableHtmxView
 from registrar.views.utility.api_views import (
     get_senior_official_from_federal_agency_json,
     get_portfolio_json,
@@ -38,7 +38,7 @@ from registrar.views.utility.api_views import (
 from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
-from api.views import available, rdap, get_current_federal, get_current_full
+from api.views import available, availablehtml, rdap, get_current_federal, get_current_full
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -289,6 +289,7 @@ urlpatterns = [
     path("openid/", include("djangooidc.urls")),
     path("request/", include((domain_request_urls, DOMAIN_REQUEST_NAMESPACE))),
     path("api/v1/available/", available, name="available"),
+    path("api/v1/availablehtml/", availablehtml, name="availablehtml"),
     path("api/v1/rdap/", rdap, name="rdap"),
     path("api/v1/get-report/current-federal", get_current_federal, name="get-current-federal"),
     path("api/v1/get-report/current-full", get_current_full, name="get-current-full"),
@@ -390,6 +391,7 @@ urlpatterns = [
         name="domain-user-delete",
     ),
     path("get-domains-json/", get_domains_json, name="get_domains_json"),
+    path("get-domains-table-htmx/", DomainTableHtmxView.as_view(), name="get_domains_table_htmx"),
     path("get-domain-requests-json/", get_domain_requests_json, name="get_domain_requests_json"),
     path("get-portfolio-members-json/", views.PortfolioMembersJson.as_view(), name="get_portfolio_members_json"),
     path("get-member-domains-json/", views.PortfolioMemberDomainsJson.as_view(), name="get_member_domains_json"),
