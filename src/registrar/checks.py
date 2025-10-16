@@ -57,9 +57,9 @@ def _validate_charfields_maxlength(model):
 def validate_forms_maxlength(app_configs, **kwargs):
     # Each module will report a single multi-line issue as a CheckMessage dictating any problem(s) found, collected here
     issues = []
-    for header_appconfig, modname, cls, form in _iter_instantiable_forms():
+    for header_appconfig, modname, cls, fields in _iter_form_classes_with_fields():
         header_classname = cls.__name__
-        lines = _validate_form_fields(form)
+        lines = _validate_form_fields(fields)
         if lines:
             block = "\n".join(lines)
             block = header_appconfig + "\n" + header_classname + "\n" + block
@@ -73,16 +73,18 @@ def validate_forms_maxlength(app_configs, **kwargs):
             )
     return issues
 
-# Yields an (app_label, modname, cls, form_instance) for forms we can check (skipping excluded modules/classes and those needing args)
-def _iter_instantiable_forms():
+# Yields an (app_label, modname, cls, base_fields) for forms we can check (skipping excluded modules/classes and those needing args)
+def _iter_form_classes_with_fields():
     for app_config in apps.get_app_configs():
         modname = f"{app_config.name}.forms"
         if _module_excluded(modname):
             continue
+        mod = None
         try:
             mod = importlib.import_module(modname)
         except (ImportError, ModuleNotFoundError) as e:
             logger.debug("Skipping module for app %s (%s)", modname, e)
+        if mod is None:
             continue
 
         for _, cls in inspect.getmembers(mod, inspect.isclass):
@@ -90,19 +92,17 @@ def _iter_instantiable_forms():
                 continue
             if _class_excluded(cls):
                 continue
-            try:
-                form = cls()
-            except TypeError as e:
-                # Some forms require args; only validate those instantiable without args
-                logger.debug("Skipping form %s.%s; cannot instantiate without args (%s)", modname, cls.__name__, e)
+            fields = getattr(cls, "base_fields", None)
+            if not fields:
+                logger.debug("Skipping form %s.%s: No base_fields on class", modname, cls.__name__)
                 continue
-            yield app_config.label, modname, cls, form
+            yield app_config.label, modname, cls, fields
 
 # Helper method that actually does the form and field check messages
-def _validate_form_fields(form):
+def _validate_form_fields(fields):
     lines = []
-    # Scan each field in the form class
-    for fname, f in form.fields.items():
+    # Scan each field
+    for fname, f in fields.items():
         if _field_excluded(fname):
             continue
         if isinstance(f, forms.CharField):
