@@ -25,6 +25,7 @@ EXCLUDE_CLASS_SUFFIXES = {
 }
 EXCLUDE_FIELD_NAMES: set[str] = set()
 
+
 # Check and helper for Models
 @register(Tags.models, MODELS_TAG)
 def validate_textfield_maxlength(app_configs, **kwargs):
@@ -52,6 +53,7 @@ def _validate_charfields_maxlength(model):
                 )
     return issues
 
+
 # Check and helpers for Forms
 @register(Tags.models, FORMS_TAG)
 def validate_forms_maxlength(app_configs, **kwargs):
@@ -73,7 +75,9 @@ def validate_forms_maxlength(app_configs, **kwargs):
             )
     return issues
 
-# Yields an (app_label, modname, cls, base_fields) for forms we can check (skipping excluded modules/classes and those needing args)
+
+# Yields an (app_label, modname, cls, base_fields) for forms we can check
+# (skipping excluded modules/classes and those needing args)
 def _iter_form_classes_with_fields():
     for app_config in apps.get_app_configs():
         modname = f"{app_config.name}.forms"
@@ -97,6 +101,7 @@ def _iter_form_classes_with_fields():
                 logger.debug("Skipping form %s.%s: No base_fields on class", modname, cls.__name__)
                 continue
             yield app_config.label, modname, cls, fields
+
 
 # Helper method that actually does the form and field check messages
 def _validate_form_fields(fields):
