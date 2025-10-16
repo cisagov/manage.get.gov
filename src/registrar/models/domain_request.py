@@ -1173,7 +1173,6 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.REJECTED,
@@ -1293,6 +1292,7 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
+            DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.APPROVED,
