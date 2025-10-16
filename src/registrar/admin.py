@@ -2755,9 +2755,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     @admin.display(description=_("analyst"))
     def analyst_as_investigator(self, obj):
         return obj.investigator
-    
-    analyst_as_investigator.admin_order_field = ['investigator__first_name','investigator__last_name']
 
+    analyst_as_investigator.admin_order_field = ["investigator__first_name", "investigator__last_name"]  # type: ignore
 
     # Columns
     list_display = [
