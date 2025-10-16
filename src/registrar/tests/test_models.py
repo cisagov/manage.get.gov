@@ -64,7 +64,7 @@ class TestDomainInformation(TestCase):
 
         with boto3_mocking.clients.handler_for("sesv2", self.mock_client):
             # skip using the submit method
-            domain_request.status = DomainRequest.DomainRequestStatus.SUBMITTED
+            domain_request.status = DomainRequest.DomainRequestStatus.IN_REVIEW
             domain_request.approve()
 
             # should be an information present for this domain
