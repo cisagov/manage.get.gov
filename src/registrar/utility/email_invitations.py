@@ -1,6 +1,6 @@
 from datetime import date
 from django.conf import settings
-from registrar.models import Domain, DomainInvitation, UserDomainRole
+from registrar.models import Domain, DomainInvitation, UserDomainRole, DomainInformation
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -646,4 +646,54 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
                 exc_info=True,
             )
             all_emails_sent = False
+    return all_emails_sent
+
+
+def send_domain_renewal_notification_emails(domain: Domain):
+    """
+    Notifies domain managers and organization admins when a domain has been renewed
+    Args:
+       domain: The Domain object that has been renewed
+
+    Returns:
+    Boolean indicating if all messages were sent successfully.
+    """
+
+    all_emails_sent = True
+
+    context = {"domain": domain, "expiration_date": domain.expiration_date}
+
+    # Get all the domain manager for this domain
+    domain_manager_emails = list(
+        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+    )
+
+    # Get organization admins if the domain belongs to a portfolio
+    domain_info = DomainInformation.objects.filter(domain=domain).first()
+    portfolio = getattr(domain_info, "portfolio", None)
+    org_admins_emails = []
+
+    if portfolio:
+        emails = list(portfolio.portfolio_admin_users.values_list("email", flat=True).distinct())
+        org_admins_emails.extend(emails)
+
+    try:
+        send_templated_email(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=domain_manager_emails,
+            cc_addresses=org_admins_emails,
+            context=context,
+        )
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send domain renewal:\n "
+            f"Subject template: emails/domain_renewal_success_subject.txt\n"
+            f"Domain: {domain.name}"
+            f"To addresses: {domain_manager_emails}"
+            f"CC addresses: {org_admins_emails}"
+            f"Error: {err}"
+        )
+        all_emails_sent = False
+
     return all_emails_sent
