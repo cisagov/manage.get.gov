@@ -4,10 +4,10 @@ from registrar.models.domain_request import DomainRequest
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.user import User
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from django.db.models import Q
 
 from .utility.time_stamped_model import TimeStampedModel
 from django.core.exceptions import ValidationError
-from django.db.models import Q
 
 
 class Portfolio(TimeStampedModel):
