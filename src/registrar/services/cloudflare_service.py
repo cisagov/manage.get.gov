@@ -87,7 +87,7 @@ class CloudflareService:
         appended_url = "/zones"
         params = f"account.id={account_id}"
         try:
-            logger.info("Getting all account zones")
+            logger.info("Getting all of the account's zones")
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
         except RequestError as e:
