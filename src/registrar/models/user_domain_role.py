@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import Q
 from django.core.exceptions import ValidationError
 
 from .utility.time_stamped_model import TimeStampedModel
@@ -13,11 +12,6 @@ class UserDomainRole(TimeStampedModel):
             # a user can have only one role on a given domain, that is, there can
             # be only a single row with a certain (user, domain) pair.
             models.UniqueConstraint(fields=["user", "domain"], name="unique_user_domain_role"),
-            # user can be NULL only when status is invited (e.g. cannot be null when accepted)
-            models.CheckConstraint(
-                check=Q(user__isnull=False) | Q(status="invited"),
-                name="user_null_only_when_invited",
-            ),
         ]
 
     class Roles(models.TextChoices):
