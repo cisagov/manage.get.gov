@@ -388,6 +388,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="domain_requests_investigating",
+        verbose_name="analyst",
     )
 
     # ##### data fields from the initial form #####
