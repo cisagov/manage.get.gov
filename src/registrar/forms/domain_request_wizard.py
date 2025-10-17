@@ -580,7 +580,7 @@ class DotGovDomainForm(RegistrarForm):
             else:
                 requested_domain = DraftDomain.objects.create(name=f"{domain}.gov")
                 obj.requested_domain = requested_domain
-                obj.save()
+                obj.save(optimistic_lock=True)
 
         obj.save()
 
