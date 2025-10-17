@@ -252,7 +252,7 @@ class TestFormValidation(MockEppLib):
 
     @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):
-        """Response must be less than 2000 characters."""
+        """Response must be no more than 1000 characters."""
         form = PurposeDetailsForm(
             data={
                 "purpose": "Bacon ipsum dolor amet fatback strip steak pastrami"
@@ -295,12 +295,12 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["purpose"],
-            ["Response must be less than 2000 characters."],
+            ["Response must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
     def test_anything_else_form_about_your_organization_character_count_invalid(self):
-        """Response must be less than 2000 characters."""
+        """Response must be no more than 1000 characters."""
         form = AnythingElseForm(
             data={
                 "anything_else": "Bacon ipsum dolor amet fatback strip steak pastrami"
@@ -342,12 +342,12 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["anything_else"],
-            ["Response must be less than 2000 characters."],
+            ["Response must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
     def test_anything_else_form_character_count_invalid(self):
-        """Response must be less than 2000 characters."""
+        """Response must be no more than 1000 characters."""
         form = AboutYourOrganizationForm(
             data={
                 "about_your_organization": "Bacon ipsum dolor amet fatback"
@@ -391,7 +391,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["about_your_organization"],
-            ["Response must be less than 2000 characters."],
+            ["Response must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
