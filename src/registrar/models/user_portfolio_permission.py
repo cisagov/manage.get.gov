@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import Q
 from registrar.models.user_domain_role import UserDomainRole
 from django.core.exceptions import ValidationError
 from registrar.models.utility.portfolio_helper import (
@@ -27,12 +26,6 @@ class UserPortfolioPermission(TimeStampedModel):
 
     class Meta:
         unique_together = ["user", "portfolio"]
-        constraints = [
-            models.CheckConstraint(
-                check=Q(user__isnull=False) | Q(status="invited"),
-                name="user_null_only_when_invited",
-            )
-        ]
 
     PORTFOLIO_ROLE_PERMISSIONS = {
         UserPortfolioRoleChoices.ORGANIZATION_ADMIN: [
