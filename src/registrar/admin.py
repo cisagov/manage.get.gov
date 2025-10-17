@@ -4717,7 +4717,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["requester", "created_on", "notes"]}),
+        (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -4789,6 +4789,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "requester",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
+        "agency_seal",
     ]
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future

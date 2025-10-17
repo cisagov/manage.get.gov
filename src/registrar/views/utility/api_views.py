@@ -78,6 +78,11 @@ def get_portfolio_json(request):
     else:
         portfolio_dict["federal_agency"] = "-"
 
+    if portfolio.agency_seal:
+        portfolio_dict["agency_seal"] = portfolio.agency_seal.name
+    else:
+        portfolio_dict["agency_seal"] = "-"
+
     return JsonResponse(portfolio_dict)
 
 

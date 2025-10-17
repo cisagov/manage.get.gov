@@ -115,6 +115,13 @@ class Portfolio(TimeStampedModel):
         max_length=320,
     )
 
+    agency_seal = models.ImageField(null=True, blank=True, upload_to="")
+
+    @property
+    def agency_seal_url(self):
+        if self.agency_seal and hasattr(self.agency_seal, "url"):
+            return f"/public/img/registrar/agency_seals{self.agency_seal.url}"
+
     def __str__(self) -> str:
         return str(self.organization_name)
 
