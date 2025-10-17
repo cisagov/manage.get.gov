@@ -1885,7 +1885,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         portfolio_invitation.retrieve()
                         portfolio_invitation.save()
-                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+                    messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
                 if not send_domain_invitation_email(
                     email=requested_email,
@@ -1894,7 +1894,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
                 ):
-                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()
