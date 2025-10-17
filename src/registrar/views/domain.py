@@ -78,6 +78,7 @@ from ..utility.email_invitations import (
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_invitation_email,
     send_domain_manager_on_hold_email_to_domain_managers,
+    send_domain_renewal_notification_emails,
 )
 from django import forms
 
@@ -518,6 +519,7 @@ class DomainRenewalView(DomainBaseView):
                 try:
                     domain.renew_domain()
                     messages.success(request, "This domain has been renewed for one year.")
+                    send_domain_renewal_notification_emails(domain=domain)
                 except Exception:
                     messages.error(
                         request,
