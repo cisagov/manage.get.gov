@@ -119,6 +119,12 @@ jobs:
               echo "### Test Summary"
               [ -n "$ran" ] && echo "$ran"
               [ -n "$summary" ] && echo "$summary"
+              # If failed, include failure tracebacks for quick triage
+              if echo "$summary" | grep -q '^FAILED'; then
+                echo ""
+                echo "### Failure Details"
+                awk 'BEGIN{inblk=0;hdrset=0} /^={10,}/{ if(inblk){ print "```"; inblk=0 } hdrwait=1; next } hdrwait && /^(FAIL|ERROR): /{ header=$0; hdrwait=0; next } /^-{10,}/ && header { if(!hdrset){ print "\n### Failure Details"; hdrset=1 } if(!inblk){ print "#### " header; print "```text"; inblk=1 } next } inblk { print; next } END { if(inblk) print "```" }' test.out
+              fi
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
