@@ -1,151 +1,159 @@
-  - name: Set up Python
-    uses: actions/setup-python@v4
-    with:
-      python-version: '3.10'
+name: Experiment - Lint (cw/4167)
 
-  - name: Install dependencies (dev)
-    run: |
-      python -m pip install --upgrade pip
-      # Install project dev deps if you have a requirements-dev.txt
-      if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-      # install linters (redundant safe installs in case requirements don't include them)
-      pip install black mypy flake8 bandit
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - '.github/workflows/test-experiment-cw-4167.yaml'
 
-  - name: Run canonical lint wrapper (if present)
-    id: wrapper
-    continue-on-error: true
-    run: |
-      mkdir -p /tmp/ci
-      # Run your normal wrapper (if project uses it); keep output
-      if [ -x manage.py ]; then
-        python manage.py lint 2>&1 | tee /tmp/ci/manage_lint.out || true
-      else
-        echo "manage.py not found or not executable; skipping wrapper-run" | tee /tmp/ci/manage_lint.out
-      fi
+jobs:
+  experiment-lint:
+    name: Experiment - Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-  - name: Run Black (verbose + diff)
-    id: black
-    continue-on-error: true
-    run: |
-      mkdir -p /tmp/ci
-      # --check to preserve the gate behavior; --diff and --verbose to show affected files/diffs
-      black --check --diff --verbose . 2>&1 | tee /tmp/ci/black.out || true
-      grep -E 'would reformat|would be reformatted|reformatted' /tmp/ci/black.out > /tmp/ci/black_files.txt || true
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-  - name: Run mypy (verbose)
-    id: mypy
-    continue-on-error: true
-    run: |
-      mkdir -p /tmp/ci
-      # show-error-codes/pretty/column numbers to get more context
-      mypy --show-error-codes --pretty --show-column-numbers . 2>&1 | tee /tmp/ci/mypy.out || true
-      grep -E ':[0-9]+: .*error:' /tmp/ci/mypy.out > /tmp/ci/mypy_errors.txt || true
+      - name: Install dependencies (dev)
+        working-directory: ./src
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install black mypy flake8 bandit
 
-  - name: Run flake8 (verbose)
-    id: flake8
-    continue-on-error: true
-    run: |
-      mkdir -p /tmp/ci
-      # --show-source prints offending source lines; --statistics prints counts
-      flake8 --show-source --statistics . 2>&1 | tee /tmp/ci/flake8.out || true
-      # capture lines with filename:line
-      grep -E '^[^:]+:[0-9]+' /tmp/ci/flake8.out > /tmp/ci/flake8_errors.txt || true
-
-  - name: Run Bandit (verbose)
-    id: bandit
-    continue-on-error: true
-    run: |
-      mkdir -p /tmp/ci
-      # -r recurse, -lll maximum verbosity
-      bandit -r . -lll 2>&1 | tee /tmp/ci/bandit.out || true
-      grep -E '(^\[|Issue: )' /tmp/ci/bandit.out > /tmp/ci/bandit_issues.txt || true
-
-  - name: Emit annotations & step summary
-    run: |
-      LOG_SUM=/tmp/ci/summary.md
-      echo "## Experiment — Lint summary (cw/4167)" > $LOG_SUM
-
-      # Black
-      if [ -s /tmp/ci/black_files.txt ]; then
-        echo "### ❌ Black would reformat:" >> $LOG_SUM
-        sed -n '1,200p' /tmp/ci/black_files.txt >> $LOG_SUM
-        while IFS= read -r line; do
-          path=$(echo "$line" | sed -E 's/.*(reformat|reformatted|would be reformatted) //; s/^[[:space:]]+//')
-          if [ -n "$path" ]; then
-            echo "::warning file=${path}::Black would reformat this file. Run 'black ${path}' to fix."
+      - name: Run canonical lint wrapper (if present)
+        id: wrapper
+        continue-on-error: true
+        working-directory: ./src
+        run: |
+          mkdir -p /tmp/ci
+          if [ -x manage.py ]; then
+            python manage.py lint 2>&1 | tee /tmp/ci/manage_lint.out || true
           else
-            echo "::warning::${line}"
+            echo "manage.py not found or not executable; skipping wrapper-run" | tee /tmp/ci/manage_lint.out
           fi
-        done < /tmp/ci/black_files.txt
-      else
-        echo "Black: OK" >> $LOG_SUM
-      fi
 
-      # mypy
-      if [ -s /tmp/ci/mypy_errors.txt ]; then
-        echo "### ❌ mypy errors (first 200 lines):" >> $LOG_SUM
-        sed -n '1,200p' /tmp/ci/mypy_errors.txt >> $LOG_SUM
-        while IFS= read -r line; do
-          if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+)?:\ (.*) ]]; then
-            file="${BASH_REMATCH[1]}"
-            lineno="${BASH_REMATCH[2]}"
-            msg="${BASH_REMATCH[4]}"
-            echo "::error file=${file},line=${lineno}::${msg}"
+      - name: Run Black (verbose + diff)
+        id: black
+        continue-on-error: true
+        working-directory: ./src
+        run: |
+          mkdir -p /tmp/ci
+          black --check --diff --verbose . 2>&1 | tee /tmp/ci/black.out || true
+          grep -E 'would reformat|would be reformatted|reformatted' /tmp/ci/black.out > /tmp/ci/black_files.txt || true
+
+      - name: Run mypy (verbose)
+        id: mypy
+        continue-on-error: true
+        working-directory: ./src
+        run: |
+          mkdir -p /tmp/ci
+          mypy --show-error-codes --pretty --show-column-numbers . 2>&1 | tee /tmp/ci/mypy.out || true
+          grep -E ':[0-9]+: .*error:' /tmp/ci/mypy.out > /tmp/ci/mypy_errors.txt || true
+
+      - name: Run flake8 (verbose)
+        id: flake8
+        continue-on-error: true
+        working-directory: ./src
+        run: |
+          mkdir -p /tmp/ci
+          flake8 --show-source --statistics . 2>&1 | tee /tmp/ci/flake8.out || true
+          grep -E '^[^:]+:[0-9]+' /tmp/ci/flake8.out > /tmp/ci/flake8_errors.txt || true
+
+      - name: Run Bandit (verbose)
+        id: bandit
+        continue-on-error: true
+        working-directory: ./src
+        run: |
+          mkdir -p /tmp/ci
+          bandit -r . -lll 2>&1 | tee /tmp/ci/bandit.out || true
+          grep -E '(^\[|Issue: )' /tmp/ci/bandit.out > /tmp/ci/bandit_issues.txt || true
+
+      - name: Emit annotations & step summary
+        working-directory: ./src
+        run: |
+          LOG_SUM=/tmp/ci/summary.md
+          echo "## Experiment - Lint summary (cw/4167)" > "$LOG_SUM"
+
+          if [ -s /tmp/ci/black_files.txt ]; then
+            echo "### ❌ Black would reformat:" >> "$LOG_SUM"
+            sed -n '1,200p' /tmp/ci/black_files.txt >> "$LOG_SUM"
+            while IFS= read -r line; do
+              path=$(echo "$line" | sed -E 's/.*(reformat|reformatted|would be reformatted) //; s/^[[:space:]]+//')
+              if [ -n "$path" ]; then
+                echo "::warning file=${path}::Black would reformat this file. Run 'black ${path}' to fix."
+              else
+                echo "::warning::${line}"
+              fi
+            done < /tmp/ci/black_files.txt
           else
-            echo "::error::${line}"
+            echo "Black: OK" >> "$LOG_SUM"
           fi
-        done < /tmp/ci/mypy_errors.txt
-      else
-        echo "mypy: OK" >> $LOG_SUM
-      fi
 
-      # flake8
-      if [ -s /tmp/ci/flake8_errors.txt ]; then
-        echo "### ❌ flake8 errors (first 200 lines):" >> $LOG_SUM
-        sed -n '1,200p' /tmp/ci/flake8_errors.txt >> $LOG_SUM
-        while IFS= read -r line; do
-          if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+)?:\ (.*) ]]; then
-            file="${BASH_REMATCH[1]}"
-            lineno="${BASH_REMATCH[2]}"
-            msg="${BASH_REMATCH[4]}"
-            echo "::error file=${file},line=${lineno}::${msg}"
+          if [ -s /tmp/ci/mypy_errors.txt ]; then
+            echo "### ❌ mypy errors (first 200 lines):" >> "$LOG_SUM"
+            sed -n '1,200p' /tmp/ci/mypy_errors.txt >> "$LOG_SUM"
+            while IFS= read -r line; do
+              if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+)?:\ (.*) ]]; then
+                file="${BASH_REMATCH[1]}"
+                lineno="${BASH_REMATCH[2]}"
+                msg="${BASH_REMATCH[4]}"
+                echo "::error file=${file},line=${lineno}::${msg}"
+              else
+                echo "::error::${line}"
+              fi
+            done < /tmp/ci/mypy_errors.txt
           else
-            echo "::warning::${line}"
+            echo "mypy: OK" >> "$LOG_SUM"
           fi
-        done < /tmp/ci/flake8_errors.txt
-      else
-        echo "flake8: OK" >> $LOG_SUM
-      fi
 
-      # bandit
-      if [ -s /tmp/ci/bandit_issues.txt ]; then
-        echo "### ❌ bandit issues (first 200 lines):" >> $LOG_SUM
-        sed -n '1,200p' /tmp/ci/bandit_issues.txt >> $LOG_SUM
-        # bandit output is less structured for annotations; post a generic annotation
-        echo "::warning title=bandit issues::See workflow summary for Bandit output"
-      else
-        echo "bandit: OK" >> $LOG_SUM
-      fi
+          if [ -s /tmp/ci/flake8_errors.txt ]; then
+            echo "### ❌ flake8 errors (first 200 lines):" >> "$LOG_SUM"
+            sed -n '1,200p' /tmp/ci/flake8_errors.txt >> "$LOG_SUM"
+            while IFS= read -r line; do
+              if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+)?:\ (.*) ]]; then
+                file="${BASH_REMATCH[1]}"
+                lineno="${BASH_REMATCH[2]}"
+                msg="${BASH_REMATCH[4]}"
+                echo "::error file=${file},line=${lineno}::${msg}"
+              else
+                echo "::warning::${line}"
+              fi
+            done < /tmp/ci/flake8_errors.txt
+          else
+            echo "flake8: OK" >> "$LOG_SUM"
+          fi
 
-      # include canonical wrapper output if present
-      if [ -f /tmp/ci/manage_lint.out ]; then
-        echo "### canonical wrapper output (first 200 lines):" >> $LOG_SUM
-        sed -n '1,200p' /tmp/ci/manage_lint.out >> $LOG_SUM
-      fi
+          if [ -s /tmp/ci/bandit_issues.txt ]; then
+            echo "### ❌ bandit issues (first 200 lines):" >> "$LOG_SUM"
+            sed -n '1,200p' /tmp/ci/bandit_issues.txt >> "$LOG_SUM"
+            echo "::warning title=bandit issues::See workflow summary for Bandit output"
+          else
+            echo "bandit: OK" >> "$LOG_SUM"
+          fi
 
-      # append to GITHUB_STEP_SUMMARY if available
-      if [ -n "$GITHUB_STEP_SUMMARY" ]; then
-        cat $LOG_SUM >> $GITHUB_STEP_SUMMARY
-      else
-        cat $LOG_SUM
-      fi
+          if [ -f /tmp/ci/manage_lint.out ]; then
+            echo "### canonical wrapper output (first 200 lines):" >> "$LOG_SUM"
+            sed -n '1,200p' /tmp/ci/manage_lint.out >> "$LOG_SUM"
+          fi
 
-  - name: Fail job if linters found problems
-    if: always()
-    run: |
-      if [ -s /tmp/ci/black_files.txt ] || [ -s /tmp/ci/mypy_errors.txt ] || [ -s /tmp/ci/flake8_errors.txt ] || [ -s /tmp/ci/bandit_issues.txt ]; then
-        echo "Linters found problems; failing job."
-        exit 1
-      else
-        echo "No linter problems detected."
-      fi
+          if [ -n "$GITHUB_STEP_SUMMARY" ]; then
+            cat "$LOG_SUM" >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat "$LOG_SUM"
+          fi
+
+      - name: Fail job if linters found problems
+        if: always()
+        working-directory: ./src
+        run: |
+          if [ -s /tmp/ci/black_files.txt ] || [ -s /tmp/ci/mypy_errors.txt ] || [ -s /tmp/ci/flake8_errors.txt ] || [ -s /tmp/ci/bandit_issues.txt ]; then
+            echo "Linters found problems; failing job."
+            exit 1
+          else
+            echo "No linter problems detected."
+          fi
