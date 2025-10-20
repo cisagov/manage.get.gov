@@ -746,7 +746,7 @@ class Domain(TimeStampedModel, DomainHelper):
         user_domain_role = (
             UserDomainRole.objects.filter(domain=self, user__isnull=False).select_related("user").first()
         )
-        user_email = user_domain_role.user.email if user_domain_role else "unknown user"
+        user_email = user_domain_role.user.email if user_domain_role and user_domain_role.user else "unknown user"
 
         try:
             added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None
