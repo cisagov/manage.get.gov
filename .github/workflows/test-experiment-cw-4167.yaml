@@ -1,159 +1,170 @@
+# test.yaml
 name: Experiment - Lint (cw/4167)
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
-    paths:
-      - 'src/**'
-      - '.github/workflows/test-experiment-cw-4167.yaml'
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.gitignore'
+    branches:
+      - main
 
 jobs:
-  experiment-lint:
-    name: Experiment - Lint
+  python-linting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies (dev)
-        working-directory: ./src
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install black mypy flake8 bandit
-
-      - name: Run canonical lint wrapper (if present)
-        id: wrapper
-        continue-on-error: true
-        working-directory: ./src
-        run: |
-          mkdir -p /tmp/ci
-          if [ -x manage.py ]; then
-            python manage.py lint 2>&1 | tee /tmp/ci/manage_lint.out || true
-          else
-            echo "manage.py not found or not executable; skipping wrapper-run" | tee /tmp/ci/manage_lint.out
-          fi
-
-      - name: Run Black (verbose + diff)
-        id: black
-        continue-on-error: true
-        working-directory: ./src
-        run: |
-          mkdir -p /tmp/ci
-          black --check --diff --verbose . 2>&1 | tee /tmp/ci/black.out || true
-          grep -E 'would reformat|would be reformatted|reformatted' /tmp/ci/black.out > /tmp/ci/black_files.txt || true
-
-      - name: Run mypy (verbose)
-        id: mypy
-        continue-on-error: true
-        working-directory: ./src
-        run: |
-          mkdir -p /tmp/ci
-          mypy --show-error-codes --pretty --show-column-numbers . 2>&1 | tee /tmp/ci/mypy.out || true
-          grep -E ':[0-9]+: .*error:' /tmp/ci/mypy.out > /tmp/ci/mypy_errors.txt || true
-
-      - name: Run flake8 (verbose)
+      - name: "Lint: flake8"
         id: flake8
-        continue-on-error: true
         working-directory: ./src
+        continue-on-error: true
         run: |
-          mkdir -p /tmp/ci
-          flake8 --show-source --statistics . 2>&1 | tee /tmp/ci/flake8.out || true
-          grep -E '^[^:]+:[0-9]+' /tmp/ci/flake8.out > /tmp/ci/flake8_errors.txt || true
+          echo '::group::Flake8'
+          docker compose run --rm app sh -lc "flake8 . --count --format='::error file=src/%(path)s,line=%(row)d,col=%(col)d::%(code)s %(text)s'"
+          echo '::endgroup::'
 
-      - name: Run Bandit (verbose)
+      - name: "Lint: black"
+        id: black
+        working-directory: ./src
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo '::group::Black'
+          docker compose run --rm app black --check . 2>&1 | tee black.out
+          status=${PIPESTATUS[0]}
+          grep -E "^would reformat \S+" black.out | awk '{print $3}' | while read -r file; do
+            echo "::error file=src/${file}::Black would reformat ${file}"
+          done || true
+          echo '::endgroup::'
+          exit $status
+
+      - name: "Lint: mypy"
+        id: mypy
+        working-directory: ./src
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo '::group::Mypy'
+          docker compose run --rm app mypy . --error-format=json --no-error-summary --hide-error-context --no-color-output --show-column-numbers > mypy.out.json
+          python3 -c "import sys,json; d=json.load(open('mypy.out.json','r')); [print('::error file=src/{},line={},col={}::{} ({})'.format(e.get('path',''),e.get('line',1) or 1,e.get('column',1) or 1,e.get('message',''),e.get('code','mypy'))) for e in d.get('errors',[])]; sys.exit(1 if d.get('errorCount') else 0)"
+          echo '::endgroup::'
+
+      - name: "Lint: bandit"
         id: bandit
+        working-directory: ./src
+        shell: bash
         continue-on-error: true
-        working-directory: ./src
         run: |
-          mkdir -p /tmp/ci
-          bandit -r . -lll 2>&1 | tee /tmp/ci/bandit.out || true
-          grep -E '(^\[|Issue: )' /tmp/ci/bandit.out > /tmp/ci/bandit_issues.txt || true
+          echo '::group::Bandit'
+          docker compose run --rm app bandit -q -r . -f json > bandit.out.json
+          python3 -c "import sys,json; r=json.load(open('bandit.out.json','r')); bad=lambda s:(s or '').upper() in ('HIGH','MEDIUM'); [print('::{} file=src/{},line={}::{} {}: {}'.format(('error' if bad((i.get('issue_severity') or '').upper()) else 'warning'), i.get('filename',''), i.get('line_number',1) or 1, i.get('test_id','B000'), (i.get('issue_severity') or '').upper(), i.get('issue_text',''))) for i in r.get('results',[])]; sys.exit(1 if any(bad((i.get('issue_severity') or '').upper()) for i in r.get('results',[])) else 0)"
+          echo '::endgroup::'
 
-      - name: Emit annotations & step summary
-        working-directory: ./src
+      - name: Lint summary and fail if needed
+        if: ${{ always() }}
         run: |
-          LOG_SUM=/tmp/ci/summary.md
-          echo "## Experiment - Lint summary (cw/4167)" > "$LOG_SUM"
-
-          if [ -s /tmp/ci/black_files.txt ]; then
-            echo "### ❌ Black would reformat:" >> "$LOG_SUM"
-            sed -n '1,200p' /tmp/ci/black_files.txt >> "$LOG_SUM"
-            while IFS= read -r line; do
-              path=$(echo "$line" | sed -E 's/.*(reformat|reformatted|would be reformatted) //; s/^[[:space:]]+//')
-              if [ -n "$path" ]; then
-                echo "::warning file=${path}::Black would reformat this file. Run 'black ${path}' to fix."
-              else
-                echo "::warning::${line}"
-              fi
-            done < /tmp/ci/black_files.txt
-          else
-            echo "Black: OK" >> "$LOG_SUM"
-          fi
-
-          if [ -s /tmp/ci/mypy_errors.txt ]; then
-            echo "### ❌ mypy errors (first 200 lines):" >> "$LOG_SUM"
-            sed -n '1,200p' /tmp/ci/mypy_errors.txt >> "$LOG_SUM"
-            while IFS= read -r line; do
-              if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+)?:\ (.*) ]]; then
-                file="${BASH_REMATCH[1]}"
-                lineno="${BASH_REMATCH[2]}"
-                msg="${BASH_REMATCH[4]}"
-                echo "::error file=${file},line=${lineno}::${msg}"
-              else
-                echo "::error::${line}"
-              fi
-            done < /tmp/ci/mypy_errors.txt
-          else
-            echo "mypy: OK" >> "$LOG_SUM"
-          fi
-
-          if [ -s /tmp/ci/flake8_errors.txt ]; then
-            echo "### ❌ flake8 errors (first 200 lines):" >> "$LOG_SUM"
-            sed -n '1,200p' /tmp/ci/flake8_errors.txt >> "$LOG_SUM"
-            while IFS= read -r line; do
-              if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+)?:\ (.*) ]]; then
-                file="${BASH_REMATCH[1]}"
-                lineno="${BASH_REMATCH[2]}"
-                msg="${BASH_REMATCH[4]}"
-                echo "::error file=${file},line=${lineno}::${msg}"
-              else
-                echo "::warning::${line}"
-              fi
-            done < /tmp/ci/flake8_errors.txt
-          else
-            echo "flake8: OK" >> "$LOG_SUM"
-          fi
-
-          if [ -s /tmp/ci/bandit_issues.txt ]; then
-            echo "### ❌ bandit issues (first 200 lines):" >> "$LOG_SUM"
-            sed -n '1,200p' /tmp/ci/bandit_issues.txt >> "$LOG_SUM"
-            echo "::warning title=bandit issues::See workflow summary for Bandit output"
-          else
-            echo "bandit: OK" >> "$LOG_SUM"
-          fi
-
-          if [ -f /tmp/ci/manage_lint.out ]; then
-            echo "### canonical wrapper output (first 200 lines):" >> "$LOG_SUM"
-            sed -n '1,200p' /tmp/ci/manage_lint.out >> "$LOG_SUM"
-          fi
-
-          if [ -n "$GITHUB_STEP_SUMMARY" ]; then
-            cat "$LOG_SUM" >> "$GITHUB_STEP_SUMMARY"
-          else
-            cat "$LOG_SUM"
-          fi
-
-      - name: Fail job if linters found problems
-        if: always()
-        working-directory: ./src
-        run: |
-          if [ -s /tmp/ci/black_files.txt ] || [ -s /tmp/ci/mypy_errors.txt ] || [ -s /tmp/ci/flake8_errors.txt ] || [ -s /tmp/ci/bandit_issues.txt ]; then
-            echo "Linters found problems; failing job."
+          echo "Flake8: ${{ steps.flake8.outcome }}"
+          echo "Black:  ${{ steps.black.outcome }}"
+          echo "Mypy:   ${{ steps.mypy.outcome }}"
+          echo "Bandit: ${{ steps.bandit.outcome }}"
+          if [ "${{ steps.flake8.outcome }}" = "failure" ] || \
+             [ "${{ steps.black.outcome }}" = "failure" ] || \
+             [ "${{ steps.mypy.outcome }}" = "failure" ] || \
+             [ "${{ steps.bandit.outcome }}" = "failure" ]; then
+            echo "One or more linters failed. See annotations above."
             exit 1
-          else
-            echo "No linter problems detected."
           fi
+
+  python-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Run unit tests"
+        id: tests
+        working-directory: ./src
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo '::group::Django Tests'
+          docker compose run --rm app python manage.py test --parallel --verbosity 2 2>&1 | tee test.out
+          status=${PIPESTATUS[0]}
+          echo '::endgroup::'
+          exit $status
+
+      - name: "Annotate failures and summarize"
+        if: ${{ always() }}
+        working-directory: ./src
+        shell: bash
+        run: |
+          if [ -f test.out ]; then
+            # Emit annotations for FAIL/ERROR lines
+            grep -E '^(FAIL|ERROR): ' test.out | sed 's/\\/\\\\/g' | while read -r line; do
+              echo "::error ::${line}"
+            done || true
+            # Write a short summary
+            ran=$(grep -E '^Ran [0-9]+ tests?' test.out | tail -n 1 || true)
+            summary=$(grep -E '^(FAILED|OK)' test.out | tail -n 1 || true)
+            {
+              echo "### Test Summary"
+              [ -n "$ran" ] && echo "$ran"
+              [ -n "$summary" ] && echo "$summary"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: "Upload test log"
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-log
+          path: src/test.out
+
+      - name: "Fail if tests failed"
+        if: ${{ always() }}
+        run: |
+          if [ "${{ steps.tests.outcome }}" = "failure" ]; then
+            echo "Unit tests failed. See annotations and artifact."
+            exit 1
+          fi
+
+  django-migrations-complete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for complete migrations
+        working-directory: ./src
+        run:  |
+          docker compose run app ./manage.py makemigrations --dry-run --verbosity 3 && \
+          docker compose run app ./manage.py makemigrations --check
+
+  pa11y-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Disable Login
+        working-directory: ./src
+        # by adding MockUserLogin to settings.MIDDLEWARE
+        run: |
+          perl -pi -e 's/"django.contrib.auth.middleware.AuthenticationMiddleware",/$&"registrar.tests.common.MockUserLogin",/' registrar/config/settings.py
+
+      - name: Start container
+        working-directory: ./src
+        # leverage the docker compose setup that we already have for local development
+        run: docker compose up -d 
+
+      - name: run pa11y
+        working-directory: ./src
+        run: |
+          sleep 20;
+          npm i -g pa11y-ci
+          pa11y-ci 
