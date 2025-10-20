@@ -3,11 +3,12 @@
 import logging
 import os
 import argparse
+import re
 
 from django.core.management import BaseCommand
+from django.db.models import Value, F, Func
 from registrar.models import Portfolio
 from typing import List
-
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class Command(BaseCommand):
         else:
             if len(self.portfolios_with_updated_seals) > 0:
                 logger.info(
-                    f"Successfully assigned agency seal images to"
+                    f"Successfully assigned agency seal images to "
                     f"{len(self.portfolios_with_updated_seals)} portfolios: "
                     f"{', '.join(map(str, self.portfolios_with_updated_seals))}"
                 )
@@ -93,6 +94,17 @@ class Command(BaseCommand):
         image_file_agency = image_file_agency.replace("_", " ")
         logger.info(f"Searching for portfolio with agency seal for {image_file_agency}")
 
-        # Annotate Portfolios with name removing whitespace
-        matching_portfolio = Portfolio.objects.filter(organization_name__iexact=image_file_agency).first()
+        # Match organization name ignoring whitespace and special characters
+        matching_portfolio = Portfolio.objects.annotate(
+            alphanum_organization_name=Func(
+                F("organization_name"),
+                Value(r"[^\w ]"),
+                Value(""),
+                Value("g"),
+                function="REGEXP_REPLACE"
+            )
+        ).filter(
+            alphanum_organization_name__iexact=image_file_agency
+        ).first()
+
         return matching_portfolio
