@@ -3,7 +3,6 @@
 import logging
 import os
 import argparse
-import re
 
 from django.core.management import BaseCommand
 from django.db.models import Value, F, Func
