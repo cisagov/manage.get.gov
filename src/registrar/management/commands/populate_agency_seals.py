@@ -95,16 +95,14 @@ class Command(BaseCommand):
         logger.info(f"Searching for portfolio with agency seal for {image_file_agency}")
 
         # Match organization name ignoring whitespace and special characters
-        matching_portfolio = Portfolio.objects.annotate(
-            alphanum_organization_name=Func(
-                F("organization_name"),
-                Value(r"[^\w ]"),
-                Value(""),
-                Value("g"),
-                function="REGEXP_REPLACE"
+        matching_portfolio = (
+            Portfolio.objects.annotate(
+                alphanum_organization_name=Func(
+                    F("organization_name"), Value(r"[^\w ]"), Value(""), Value("g"), function="REGEXP_REPLACE"
+                )
             )
-        ).filter(
-            alphanum_organization_name__iexact=image_file_agency
-        ).first()
+            .filter(alphanum_organization_name__iexact=image_file_agency)
+            .first()
+        )
 
         return matching_portfolio
