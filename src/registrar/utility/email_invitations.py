@@ -160,8 +160,8 @@ def _send_domain_invitation_update_emails_to_domain_managers(
         Boolean indicating if all messages were sent successfully.
     """
     all_emails_sent = True
-    # Get each domain manager from list
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
+    # Get each domain manager from list (exclude pending invitations where user is null)
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain, user__isnull=False).select_related("user")
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
@@ -212,8 +212,8 @@ def send_domain_manager_removal_emails_to_domain_managers(
 
     """
     all_emails_sent = True
-    # Get each domain manager from list
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
+    # Get each domain manager from list (exclude pending invitations where user is null)
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain, user__isnull=False).select_related("user")
     if manager_removed:
         user_domain_roles = user_domain_roles.exclude(user=manager_removed)
     for user_domain_role in user_domain_roles:
@@ -261,8 +261,8 @@ def send_domain_manager_on_hold_email_to_domain_managers(
 
     """
     all_emails_sent = True
-    # Get each domain manager from list
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
+    # Get each domain manager from list (exclude pending invitations where user is null)
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain, user__isnull=False).select_related("user")
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
@@ -368,8 +368,8 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
     all_emails_sent = True
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
-        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-    )
+        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], user__isnull=False
+    ).select_related("user")
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
@@ -419,6 +419,9 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
     """
+    # Exclude pending invitations where user is null
+    if not permissions.user:
+        return False
     requestor_email = _get_requestor_email(requestor, portfolio=permissions.portfolio)
     try:
         send_templated_email(
@@ -465,6 +468,9 @@ def send_portfolio_member_permission_remove_email(requestor, permissions: UserPo
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
     """
+    # Exclude pending invitations where user is null
+    if not permissions.user:
+        return False
     requestor_email = _get_requestor_email(requestor, portfolio=permissions.portfolio)
     try:
         send_templated_email(
@@ -558,8 +564,8 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
     all_emails_sent = True
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
-        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-    ).exclude(user__email=email)
+        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], user__isnull=False
+    ).exclude(user__email=email).select_related("user")
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
@@ -615,8 +621,8 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
     all_emails_sent = True
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
-        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-    ).exclude(user__email=email)
+        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], user__isnull=False
+    ).exclude(user__email=email).select_related("user")
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user

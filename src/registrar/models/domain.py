@@ -742,8 +742,10 @@ class Domain(TimeStampedModel, DomainHelper):
         remRequest.add_extension(remExtension)
         dsdata_change_log = ""
 
-        # Get the user's email
-        user_domain_role = UserDomainRole.objects.filter(domain=self).first()
+        # Get the user's email (exclude invitation rows)
+        user_domain_role = (
+            UserDomainRole.objects.filter(domain=self, user__isnull=False).select_related("user").first()
+        )
         user_email = user_domain_role.user.email if user_domain_role else "unknown user"
 
         try:
