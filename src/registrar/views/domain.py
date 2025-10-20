@@ -392,6 +392,8 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         for role in manager_roles:
             manager = role.user
+            if not manager:
+                continue
             context["recipient"] = manager
             try:
                 send_templated_email(template, subject_template, to_addresses=[manager.email], context=context)
