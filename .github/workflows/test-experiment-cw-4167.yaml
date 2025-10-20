@@ -122,7 +122,7 @@ jobs:
 
       - name: "Upload test log"
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-log
           path: src/test.out
