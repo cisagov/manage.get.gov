@@ -1,4 +1,5 @@
 from datetime import date
+from httpx import Client
 import logging
 from contextvars import ContextVar
 from django.contrib import messages
@@ -62,6 +63,7 @@ from ..forms import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+    DomainDeleteForm,
 )
 
 from epplibwrapper import (
@@ -75,6 +77,8 @@ from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_invitation_email,
+    send_domain_manager_on_hold_email_to_domain_managers,
+    send_domain_renewal_notification_emails,
 )
 from django import forms
 
@@ -128,12 +132,21 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        domain = self.object
+
         context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
             "registrar.full_access_permission"
         )
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
+        context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
+        context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
+        context["domain_is_ready"] = domain.state == domain.State.READY
+        context["domain_is_deletable"] = context["is_domain_manager"] and (
+            context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
+        )
+
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
@@ -449,6 +462,17 @@ class DomainView(DomainBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainLifecycleView(DomainBaseView):
+
+    template_name = "domain_lifecycle.html"
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -495,6 +519,7 @@ class DomainRenewalView(DomainBaseView):
                 try:
                     domain.renew_domain()
                     messages.success(request, "This domain has been renewed for one year.")
+                    send_domain_renewal_notification_emails(domain=domain)
                 except Exception:
                     messages.error(
                         request,
@@ -515,6 +540,39 @@ class DomainRenewalView(DomainBaseView):
                 "is_domain_manager": True,
             },
         )
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainDeleteView(DomainFormBaseView):
+    """Domain delete page."""
+
+    template_name = "domain_delete.html"
+    form_class = DomainDeleteForm
+
+    def post(self, request, domain_pk):
+        domain = get_object_or_404(Domain, pk=domain_pk)
+        self.object = domain
+        form = self.form_class(request.POST)
+        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
+        if form.is_valid():
+            if domain.state != "ready":
+                messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+                return self.render_to_response(self.get_context_data(form=form))
+            if is_policy_acknowledged:
+                domain.place_client_hold()
+                domain.save()
+                # Email all domain managers that domain manager has been removed
+                send_domain_manager_on_hold_email_to_domain_managers(
+                    domain=domain,
+                )
+                messages.success(request, "The deletion request for this domain has been submitted.")
+                # redirect to domain overview
+                return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
+            return self.render_to_response(self.get_context_data(form=form))
+
+        # Form not valid -> redisplay with errors
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -712,10 +770,11 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
-    dns_host_service = DnsHostService()
 
     def __init__(self):
         self.dns_record = None
+        self.client = Client()
+        self.dns_host_service = DnsHostService(client=self.client)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -772,7 +831,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 account_name = f"account-{self.object.name}"
                 zone_name = f"{self.object.name}"  # must be a domain name
                 zone_id = ""
-
                 try:
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(account_name, zone_name)
                 except APIError as e:
@@ -781,9 +839,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 if zone_id:
                     # post nameservers to registry
                     try:
-                        self._register_nameservers(zone_name, nameservers)
-                    except RegistrySystemError as e:
-                        logger.error(f"Unable to register nameservers {e}")
+                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                    except (RegistryError, RegistrySystemError, Exception) as e:
+                        logger.error(f"Error updating registry: {e}")
 
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)
@@ -796,6 +854,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                 context_dns_record.set(self.dns_record)
             finally:
+                self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
@@ -1265,7 +1324,7 @@ class DomainAddUserView(DomainFormBaseView):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
@@ -1284,9 +1343,9 @@ class DomainAddUserView(DomainFormBaseView):
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
-        messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
@@ -1297,7 +1356,7 @@ class DomainAddUserView(DomainFormBaseView):
             is_member_of_different_org=member_of_different_org,
             requested_user=requested_user,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         UserDomainRole.objects.create(
             user=requested_user,
             domain=self.object,

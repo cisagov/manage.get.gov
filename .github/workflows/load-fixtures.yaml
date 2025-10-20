@@ -11,6 +11,7 @@ on:
         type: 'choice'
         options:
           - backup
+          - ap
           - cw
           - testdb
           - acadia
@@ -21,7 +22,6 @@ on:
           - potato
           - product
           - meoward
-          - bob
           - hotgov
           - litterbox
           - aa

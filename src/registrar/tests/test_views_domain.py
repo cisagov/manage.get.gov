@@ -11,6 +11,7 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from .common import GenericTestHelper, MockEppLib, create_user, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
+from waffle.testutils import override_flag
 
 from registrar.utility.errors import (
     NameserverError,
@@ -980,7 +981,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
-        self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
+        self.assertContains(success_page, "Could not send email notification to existing domain managers.")
 
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
@@ -1959,7 +1960,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
     def test_domain_senior_official(self):
         """Can load domain's senior official page."""
         page = self.client.get(reverse("domain-senior-official", kwargs={"domain_pk": self.domain.id}))
-        self.assertContains(page, "Senior official", count=5)
+        self.assertContains(page, "Senior official", count=4)
 
     @less_console_noise_decorator
     def test_domain_senior_official_content(self):
@@ -2358,10 +2359,13 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.mockedSendFunction = self.mockSendPatch.start()
             self.mockedSendFunction.side_effect = self.mockSend
 
-            domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+            domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+            # info@example.com
             # Add current user to this domain
-            _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
-            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain_contact.id}))
+            _ = UserDomainRole(user=self.user, domain=domain, role="admin").save()
+            DomainInformation.objects.get_or_create(requester=self.user, domain=domain)
+            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain.id}))
 
             # Loads correctly
             self.assertContains(page, "Security email")
@@ -3105,3 +3109,283 @@ class TestDomainRenewal(TestWithUser):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
+
+
+class TestDomainDeletion(TestWithUser):
+    def setUp(self):
+        super().setUp()
+
+        self.user = get_user_model().objects.create(
+            first_name="User",
+            last_name="Test",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+            username="usertest",
+        )
+
+        today = datetime.now().date()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+
+        self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
+            name="igorville.gov", state=Domain.State.READY, expiration_date=expiring_date
+        )
+
+        self.domain_not_expiring, _ = Domain.objects.get_or_create(
+            name="domainnotexpiring.gov",
+            state=Domain.State.READY,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+        self.dns_needed_not_expiring, _ = Domain.objects.get_or_create(
+            name="dnsneeded-nonexpiring.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+        self.dns_needed_expiring, _ = Domain.objects.get_or_create(
+            name="dnsneeded-expiring.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=expiring_date,
+        )
+
+        for domain in [
+            self.domain_with_expiring_soon_date,
+            self.domain_not_expiring,
+            self.dns_needed_not_expiring,
+            self.dns_needed_expiring,
+        ]:
+            DomainInformation.objects.update_or_create(requester=self.user, domain=domain)
+
+        for domain in [
+            self.domain_with_expiring_soon_date,
+            self.domain_not_expiring,
+            self.dns_needed_not_expiring,
+            self.dns_needed_expiring,
+        ]:
+            UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        self.user.save()
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def custom_is_expiring(self):
+        return True
+
+    def custom_is_expired_false(self):
+        return False
+
+    def custom_is_expired_true(self):
+        return True
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=False)
+    def test_domain_lifecycle_does_not_appear_with_inactive_domain_deletion_flag_and_no_expiring_domain(self):
+        """
+        * Domain deletion flag is OFF
+        * Domain state = READY
+        * Domain is NOT expiring
+        * Should not see domain lifecycle, request deletion, or renewal form
+        * Test for verification that the flag is off, and will be deleted when flag is deleted
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
+            )
+
+            self.assertNotContains(response, "Domain lifecycle")
+            self.assertNotContains(response, "Request deletion")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=False)
+    def test_domain_lifecycle_does_not_appear_with_inactive_domain_deletion_flag_but_has_expiring_domain(self):
+        """
+        * Domain deletion flag is OFF
+        * Domain state = READY
+        * Domain IS expiring
+        * Should see renewal form, but NOT domain lifecycle or request deletion
+        * Test for verification that the flag is off, and will be deleted when flag is deleted
+        """
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
+            )
+            self.assertNotContains(detail_page, "Domain lifecycle")
+            self.assertNotContains(detail_page, "Request deletion")
+            self.assertContains(detail_page, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_appears_with_active_domain_deletion_flag(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = READY
+        * Domain IS expiring
+        * Should see domain lifecycle, renewal form, and request deletion
+        """
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            )
+
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Renewal form")
+            self.assertContains(response, "Request deletion")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_appears_with_active_domain_deletion_flag_no_expiring_domain(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = READY
+        * Domain is NOT expiring
+        * Should see domain lifecycle, and request deletion, but NOT renewal form
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
+            )
+
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Request deletion")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_dns_needed_not_expiring(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = DNS_NEEDED
+        * Domain is NOT expiring
+        * Should NOT see domain lifecycle, request deletion, or renewal form
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
+
+            self.assertNotContains(response, "Domain lifecycle")
+            self.assertNotContains(response, "Request deletion")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_dns_needed_expiring(self):
+        """
+        Domain deletion flag is ON
+        Domain state = DNS_NEEDED
+        Domain IS expiring
+        Should see domain lifecycle, renewal form, but NOT request deletion
+        """
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            self.client.force_login(self.user)
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Renewal form")
+            self.assertNotContains(response, "Request deletion")
+
+    @override_flag("domain_deletion", active=True)
+    def test_if_acknowledged_is_not_checked_error_resp(self):
+        """
+        * We have domain deletion waffle turned on
+        * if acknowlege is not checked, it should throw an error
+        """
+        self.client.force_login(self.user)
+
+        message = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
+        )
+
+        self.assertContains(
+            message,
+            "Check the box if you understand that your domain will be deleted within 7 days of " "making this request.",
+        )
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_successful(self):
+        """
+        * We have domain deletion waffle turned on
+        * Domain STATE is ready, should be successful
+        * Should render a success message, and redirect to domain overview page
+        """
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+        domain = Domain.objects.get(id=self.domain_with_expiring_soon_date.id)
+        self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
+        self.assertContains(response, "The deletion request for this domain has been submitted.")
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_not_successful(self):
+        """
+        * We have domain deletion waffle turned on
+        * Domain Deletion only works if State is READY
+        * Created a Domain that is UNKNOWN
+        * Domain Deletion should fail
+        """
+        self.client.force_login(self.user)
+        domain, _ = Domain.objects.get_or_create(
+            name="domainwithunknownstatus.gov",
+            state=Domain.State.UNKNOWN,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain)
+
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+
+    @override_flag("domain_deletion", active=True)
+    def test_check_for_modal_trigger(self):
+        """
+        * We have no way to test that the modal trigger, since it occurs via JS
+        * This test checks for the button that triggers it
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_not_expiring.id}),
+        )
+        self.assertContains(response, "Request deletion")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_successful_redirects_to_list_and_shows_on_hold(self):
+        """
+        * Domain deletion waffle flag is ON
+        * Domain state is READY and then do the POST "deletion"
+        * After "deletion", check the domains table
+        * In the domains table, confirm domain exists + status in the table is "On Hold"
+        """
+        self.client.force_login(self.user)
+        _ = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        json_response = self.client.get("/get-domains-json/")
+
+        self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
+        self.assertContains(json_response, "On Hold")

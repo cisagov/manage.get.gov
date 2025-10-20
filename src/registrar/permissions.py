@@ -66,7 +66,7 @@ URL_PERMISSIONS = {
     "organization": [IS_PORTFOLIO_MEMBER],
     "organization-info": [IS_PORTFOLIO_MEMBER],
     "organization-senior-official": [IS_PORTFOLIO_MEMBER],
-    "your-portfolios": [IS_MULTIPLE_PORTFOLIOS_MEMBER],
+    "your-organizations": [IS_MULTIPLE_PORTFOLIOS_MEMBER],
     "set-session-portfolio": [IS_MULTIPLE_PORTFOLIOS_MEMBER],
     # Domain requests
     "domain-request-status": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
@@ -136,6 +136,8 @@ URL_PERMISSIONS = {
     "review": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "portfolio_requesting_entity": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "portfolio_additional_details": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
+    "domain-delete": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
+    "domain-lifecycle": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
 }
 
 UNCHECKED_URLS = [

@@ -610,7 +610,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that our sort works correctly
         self.test_helper.assert_table_sorted(
-            "13",
+            "2",
             (
                 "requester__first_name",
                 "requester__last_name",
@@ -619,7 +619,7 @@ class TestDomainRequestAdmin(MockEppLib):
 
         # Assert that sorting in reverse works correctly
         self.test_helper.assert_table_sorted(
-            "-13",
+            "-2",
             (
                 "-requester__first_name",
                 "-requester__last_name",
@@ -735,7 +735,7 @@ class TestDomainRequestAdmin(MockEppLib):
         response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
-        self.assertContains(response, "Federal", count=56)
+        self.assertContains(response, "Federal", count=6)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
@@ -1923,7 +1923,7 @@ class TestDomainRequestAdmin(MockEppLib):
         # Test for the copy link
         # We expect 5 in the form + 2 from the js module copy-to-clipboard.js
         # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
-        self.assertContains(response, "copy-to-clipboard", count=7)
+        self.assertContains(response, "copy-to-clipboard", count=5)
 
         # Test that requester counts display properly
         self.assertNotContains(response, "Approved domains")

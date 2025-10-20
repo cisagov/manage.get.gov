@@ -341,10 +341,10 @@ class TestDomainInvitationAdmin(WebTest):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=5)
-            self.assertContains(response, "Invited", count=2)
-            self.assertContains(response, "retrieved", count=4)
-            self.assertContains(response, "Retrieved", count=2)
+            self.assertContains(response, "invited", count=4)
+            self.assertContains(response, "Invited", count=1)
+            self.assertContains(response, "retrieved", count=2)
+            self.assertContains(response, "Retrieved", count=1)
 
             # Check for the HTML context specificially
             invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
@@ -399,7 +399,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "test@example.com has been invited to the organization: new portfolio"),
+                call(request, "test@example.com has been invited to become a member of new portfolio"),
                 call(request, "test@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -656,7 +656,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "test@example.com has been invited to the organization: new portfolio"
+            request, "test@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -784,7 +784,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
+                call(request, "nonexistent@example.com has been invited to become a member of new portfolio"),
                 call(request, "nonexistent@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -1018,7 +1018,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "nonexistent@example.com has been invited to the organization: new portfolio"
+            request, "nonexistent@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -1323,10 +1323,10 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
 
         # Assert that the filters are added
-        self.assertContains(response, "invited", count=5)
-        self.assertContains(response, "Invited", count=2)
-        self.assertContains(response, "retrieved", count=4)
-        self.assertContains(response, "Retrieved", count=2)
+        self.assertContains(response, "invited", count=4)
+        self.assertContains(response, "Invited", count=1)
+        self.assertContains(response, "retrieved", count=2)
+        self.assertContains(response, "Retrieved", count=1)
 
         # Check for the HTML context specificially
         invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
@@ -1503,7 +1503,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.client.force_login(self.superuser)
 
         # Mock the email sending function to raise EmailSendingError
-        mock_send_email.side_effect = EmailSendingError("Email service unavailable")
+        mock_send_email.side_effect = EmailSendingError("Email service unavailable.")
 
         # Create an instance of the admin class
         admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
@@ -1521,9 +1521,16 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
+        msg = (
+            "Email service unavailable. Try again, and if the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
+        )
 
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Email service unavailable")
+        mock_messages_error.assert_called_once_with(
+            request,
+            msg,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1585,8 +1592,17 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
+        msg = (
+            "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
+            'Try again, and if the problem persists, <a href="https://get.gov/contact" '
+            'class="usa-link" target="_blank">contact us</a>.'
+        )
+
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
+        mock_messages_error.assert_called_once_with(
+            request,
+            msg,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_admin_addition_emails")
@@ -2292,7 +2308,7 @@ class TestDomainInformationAdmin(TestCase):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.assertContains(response, "Testy Tester", count=2)
 
         # == Test the other_employees field == #
         self.assertContains(response, "testy2@town.com", count=2)
@@ -2306,7 +2322,7 @@ class TestDomainInformationAdmin(TestCase):
         # Test for the copy link
         # We expect 4 in the form + 2 from the js module copy-to-clipboard.js
         # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
-        self.assertContains(response, "copy-to-clipboard", count=6)
+        self.assertContains(response, "copy-to-clipboard", count=4)
 
         # cleanup this test
         domain_info.delete()
@@ -4562,9 +4578,9 @@ class TestDomainAdminState(TestCase):
         url = reverse("admin:registrar_domain_change", args=[domain_stays_unknown.pk])
 
         response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
+        self.assertContains(response, "Unknown")
 
         # 5. Refresh and check that the state is still UNKNOWN
         response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
-        self.assertNotContains(response, "DNS NEEDED")
+        self.assertContains(response, "Unknown")
+        self.assertNotContains(response, "dns needed")

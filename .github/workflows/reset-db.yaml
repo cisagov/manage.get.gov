@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - development
+          - ap
           - cw
           - testdb
           - acadia
@@ -30,7 +31,6 @@ on:
           - ad
           - litterbox
           - hotgov
-          - bob
           - meoward
           - backup
           - es

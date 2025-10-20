@@ -142,7 +142,7 @@ button {
                 font-weight: font-weight('bold');
             }
             button[aria-expanded="true"] {
-                color: color('white');
+                color: #{$dhs-light-blue-15};
             }
             button:not(.usa-current):hover::after  {
                 display: none!important;
@@ -151,14 +151,17 @@ button {
         .usa-nav__secondary {
             right: 1rem;
             padding-right: $widescreen-x-padding;
-            color: color('white');
-            bottom: 4.3rem;
+            color: #{$dhs-light-blue-15};
+            @include at-media($theme-header-min-width) {
+                bottom: 3.625rem;
+            }
+
             .usa-nav-link,
             .usa-nav-link:hover,
             .usa-nav-link:active {
                 font-weight: bold;
                 font-size: 16px;
-                color: color('white');
+                color: #{$dhs-light-blue-15};
             }
             // Submenu nav links have normal font weight 
             .usa-nav__submenu-item {
@@ -168,14 +171,33 @@ button {
                     font-weight: normal;
                 }
             }
-            transform: translateY(20%); // shift secondary nav down to accommodate button dropdowns
         }
         > .usa-navbar {
             // This is a dangerous override to USWDS, necessary because we have a tooltip on the logo
             overflow: visible;
         }
     }
-    z-index: 2;
+    .usa-nav__primary a:not(.usa-button) {
+        @include at-media-max($theme-header-min-width) {
+            .organization-nav-link {
+                white-space: nowrap;
+                width: 100%;
+            }
+
+            &:hover,
+            &:focus,
+            &.usa-current {
+                .organization-nav-link {
+                    white-space: normal;
+                }
+
+                .logo-col {
+                    padding-top: 0.42rem;
+                    align-self: flex-start;
+                }
+            }
+        }
+    }
 }
 
 .usa-nav__inner--widescreen,
@@ -222,6 +244,8 @@ button {
 
     @include at-media-max($theme-header-min-width) {
         @include nav-list("nav");
+        border-top: solid 1px color('base-lighter');
+
         a {
           @include u-padding-y(1.5);
         }
@@ -276,7 +300,7 @@ button {
         span {
             @include place-icon($-add-icon, "after");
             font-weight: font-weight('bold');
-            color: color('white');
+            color: #{$dhs-light-blue-15};
         }
     }
 
@@ -305,6 +329,7 @@ button {
 
         @include at-media-max($theme-header-min-width) {
             justify-content: flex-start;
+
             &:hover {
                 background-color: var(--border-color);
                 color: #{$theme-color-primary};
@@ -351,12 +376,12 @@ button {
               @include place-icon($-add-icon, "after");
       
               &::after:hover {
-                background-color: color('white');
+                background-color: #{$dhs-light-blue-15};
               }
             }
 
             &::after:hover {
-                background-color: color('white');
+                background-color: #{$dhs-light-blue-15};
             }
             
             @include at-media($theme-header-min-width) {
@@ -364,7 +389,7 @@ button {
                     @include place-icon($-expand-more-icon, "after");
     
                     &::after {
-                        background-color: color('white');
+                        background-color: #{$dhs-light-blue-15};
                         right: units(1.5);
                     }
                 }
@@ -373,10 +398,10 @@ button {
             &:hover {
                 @include at-media($theme-header-min-width) {
                     span::after {
-                        background-color: color('white');
+                        background-color: #{$dhs-light-blue-15};
         
                         @media (forced-colors: active) {
-                            background-color: color('white');
+                            background-color: #{$dhs-light-blue-15};
                         }
                     }
                 }
@@ -392,7 +417,7 @@ button {
                   right: 0;
         
                   @media (forced-colors: active) {
-                    background-color: white;
+                    background-color: #{$dhs-light-blue-15};
                   }
                 }
             }
@@ -400,16 +425,16 @@ button {
             @include at-media($theme-header-min-width) {
                 background-image: none;
                 background-color: color("primary-darker");
-                color: white;
+                color: #{$dhs-light-blue-15};
 
                 @include at-media($theme-header-min-width) {
                     span {
                         @include place-icon($-expand-less-icon, "after");
                         &::after {
                             right: units(1.5);
-                            background-color: white;
+                            background-color: #{$dhs-light-blue-15};
                             @media (forced-colors: active) {
-                                background-color: white;
+                                background-color: #{$dhs-light-blue-15};
                             }
                         }
                     }
@@ -433,6 +458,10 @@ button {
 }
 
 #organizations-submenu {
+    @include at-media($theme-header-min-width) {
+        width: 20rem;
+    }
+
     button,
     button:hover {
         background-color: inherit;
@@ -456,6 +485,10 @@ button {
             margin-right: auto;
             text-align: left;
             width: 100%;
+            @include at-media($theme-header-min-width) {
+                font-size: 1rem;
+                color: #{$dhs-light-blue-15};
+            }
         }
     }
 }

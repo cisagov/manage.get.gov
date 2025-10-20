@@ -31,7 +31,7 @@ docker run -v $(pwd):$(pwd) -w $(pwd) -it plantuml/plantuml -tsvg models_diagram
 
 
 ```plantuml
-@startuml 
+@startuml
 class "registrar.Contact <Registrar>" as registrar.Contact #d6f4e9 {
     contact
     --
@@ -296,6 +296,142 @@ class "registrar.DraftDomain <Registrar>" as registrar.DraftDomain #d6f4e9 {
     + name (CharField)
     --
 }
+
+
+class "registrar.DnsAccount <Registrar>" as registrar.DnsAccount #d6f4e9 {
+    dns account
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + name (CharField)
+    # vendor_dns_account (ManyToManyField)
+    --
+}
+registrar.DnsAccount *--* registrar.VendorDnsAccount
+
+
+class "registrar.DnsVendor <Registrar>" as registrar.DnsVendor #d6f4e9 {
+    dns vendor
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + name (CharField)
+    --
+}
+
+
+class "registrar.VendorDnsAccount <Registrar>" as registrar.VendorDnsAccount #d6f4e9 {
+    vendor dns account
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ dns_vendor (ForeignKey)
+    + x_account_id (CharField)
+    + x_created_at (DateTimeField)
+    + x_updated_at (DateTimeField)
+    --
+}
+registrar.VendorDnsAccount -- registrar.DnsVendor
+
+
+class "registrar.DnsAccount_VendorDnsAccount <Registrar>" as registrar.DnsAccount_VendorDnsAccount #d6f4e9 {
+    dns account_ vendor dns account
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ dns_account (ForeignKey)
+    ~ vendor_dns_account (ForeignKey)
+    --
+}
+registrar.DnsAccount_VendorDnsAccount -- registrar.DnsAccount
+registrar.DnsAccount_VendorDnsAccount -- registrar.VendorDnsAccount
+
+
+class "registrar.DnsZone <Registrar>" as registrar.DnsZone #d6f4e9 {
+    dns zone
+    --
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ dns_account (ForeignKey)
+    ~ domain (OneToOneField)
+    # vendor_dns_zone (ManyToManyField)
+    --
+}
+registrar.DnsZone -- registrar.DnsAccount
+registrar.DnsZone -- registrar.Domain
+registrar.DnsZone *--* registrar.VendorDnsZone
+
+
+class "registrar.VendorDnsZone <Registrar>" as registrar.VendorDnsZone #d6f4e9 {
+    vendor dns zone
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + x_zone_id (CharField)
+    + x_created_at (DateTimeField)
+    + x_updated_at (DateTimeField)
+    --
+}
+
+
+class "registrar.DnsZone_VendorDnsZone <Registrar>" as registrar.DnsZone_VendorDnsZone #d6f4e9 {
+    dns zone_ vendor dns zone
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ dns_zone (ForeignKey)
+    ~ vendor_dns_zone (ForeignKey)
+    --
+}
+registrar.DnsZone_VendorDnsZone -- registrar.DnsZone
+registrar.DnsZone_VendorDnsZone -- registrar.VendorDnsZone
+
+
+class "registrar.DnsRecord <Registrar>" as registrar.DnsRecord #d6f4e9 {
+    dns record
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ dns_zone (ForeignKey)
+    # vendor_dns_record (ManyToManyField)
+    --
+}
+registrar.DnsRecord -- registrar.DnsZone
+registrar.DnsRecord *--* registrar.VendorDnsRecord
+
+
+class "registrar.VendorDnsRecord <Registrar>" as registrar.VendorDnsRecord #d6f4e9 {
+    vendor dns record
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    + x_record_id (CharField)
+    + x_created_at (DateTimeField)
+    + x_updated_at (DateTimeField)
+    --
+}
+
+
+class "registrar.DnsRecord_VendorDnsRecord <Registrar>" as registrar.DnsRecord_VendorDnsRecord #d6f4e9 {
+    dns record_ vendor dns record
+    --
+    + id (BigAutoField)
+    + created_at (DateTimeField)
+    + updated_at (DateTimeField)
+    ~ dns_record (ForeignKey)
+    ~ vendor_dns_record (ForeignKey)
+    --
+}
+registrar.DnsRecord_VendorDnsRecord -- registrar.DnsRecord
+registrar.DnsRecord_VendorDnsRecord -- registrar.VendorDnsRecord
 
 
 class "registrar.UserPortfolioPermission <Registrar>" as registrar.UserPortfolioPermission #d6f4e9 {
