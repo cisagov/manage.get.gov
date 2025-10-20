@@ -399,7 +399,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "test@example.com has been invited to the organization: new portfolio"),
+                call(request, "test@example.com has been invited to become a member of new portfolio"),
                 call(request, "test@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -656,7 +656,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "test@example.com has been invited to the organization: new portfolio"
+            request, "test@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -784,7 +784,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
+                call(request, "nonexistent@example.com has been invited to become a member of new portfolio"),
                 call(request, "nonexistent@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -1018,7 +1018,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "nonexistent@example.com has been invited to the organization: new portfolio"
+            request, "nonexistent@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -1503,7 +1503,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.client.force_login(self.superuser)
 
         # Mock the email sending function to raise EmailSendingError
-        mock_send_email.side_effect = EmailSendingError("Email service unavailable")
+        mock_send_email.side_effect = EmailSendingError("Email service unavailable.")
 
         # Create an instance of the admin class
         admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
@@ -1521,9 +1521,16 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
+        msg = (
+            "Email service unavailable. Try again, and if the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
+        )
 
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Email service unavailable")
+        mock_messages_error.assert_called_once_with(
+            request,
+            msg,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1585,8 +1592,17 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
+        msg = (
+            "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
+            'Try again, and if the problem persists, <a href="https://get.gov/contact" '
+            'class="usa-link" target="_blank">contact us</a>.'
+        )
+
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
+        mock_messages_error.assert_called_once_with(
+            request,
+            msg,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_admin_addition_emails")

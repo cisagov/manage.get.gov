@@ -11,8 +11,8 @@ class CloudflareService:
     tenant_key = settings.SECRET_DNS_TENANT_KEY
     tenant_id = settings.SECRET_DNS_TENANT_ID
     headers = {
-        "X-Auth-Email": "test.gob",
-        "X-Auth-Key": "12321",
+        "X-Auth-Email": service_email,
+        "X-Auth-Key": tenant_key,
         "Content-Type": "application/json",
     }
 
@@ -87,7 +87,7 @@ class CloudflareService:
         appended_url = "/zones"
         params = f"account.id={account_id}"
         try:
-            logger.info("Getting all account zones")
+            logger.info("Getting all of the account's zones")
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
         except RequestError as e:
