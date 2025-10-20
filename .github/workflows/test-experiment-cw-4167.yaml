@@ -52,9 +52,10 @@ jobs:
         run: |
           set -o pipefail
           echo '::group::Mypy'
-          docker compose run --rm app mypy . --error-format=json --no-error-summary --hide-error-context --no-color-output --show-column-numbers > mypy.out.json
-          python3 -c "import sys,json; d=json.load(open('mypy.out.json','r')); [print('::error file=src/{},line={},col={}::{} ({})'.format(e.get('path',''),e.get('line',1) or 1,e.get('column',1) or 1,e.get('message',''),e.get('code','mypy'))) for e in d.get('errors',[])]; sys.exit(1 if d.get('errorCount') else 0)"
+          docker compose run --rm app mypy . --color-output --show-error-codes --no-error-summary --hide-error-context 2>&1 | tee mypy.out
+          status=${PIPESTATUS[0]}
           echo '::endgroup::'
+          exit $status
 
       - name: "Lint: bandit"
         id: bandit
@@ -101,16 +102,17 @@ jobs:
           exit $status
 
       - name: "Annotate failures and summarize"
+        id: annotate
         if: ${{ always() }}
         working-directory: ./src
         shell: bash
         run: |
           if [ -f test.out ]; then
-            # Emit annotations for FAIL/ERROR lines
+            # Emit annotations for FAIL/ERROR cases (step remains green)
             grep -E '^(FAIL|ERROR): ' test.out | sed 's/\\/\\\\/g' | while read -r line; do
               echo "::error ::${line}"
             done || true
-            # Write a short summary
+            # Summary lines
             ran=$(grep -E '^Ran [0-9]+ tests?' test.out | tail -n 1 || true)
             summary=$(grep -E '^(FAILED|OK)' test.out | tail -n 1 || true)
             {
@@ -121,19 +123,17 @@ jobs:
           fi
 
       - name: "Upload test log"
-        if: ${{ failure() }}
+        if: ${{ steps.tests.outcome == 'failure' }}
         uses: actions/upload-artifact@v4
         with:
           name: test-log
           path: src/test.out
 
       - name: "Fail if tests failed"
-        if: ${{ always() }}
+        if: ${{ steps.tests.outcome == 'failure' }}
         run: |
-          if [ "${{ steps.tests.outcome }}" = "failure" ]; then
-            echo "Unit tests failed. See annotations and artifact."
-            exit 1
-          fi
+          echo "Unit tests failed. See annotations and artifact."
+          exit 1
 
   django-migrations-complete:
     runs-on: ubuntu-latest
