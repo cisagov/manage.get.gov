@@ -157,6 +157,13 @@ class UserFixture:
             "email": "charles.wells@ecstech.com",
             "title": "ADMIN",
         },
+        {
+            "username": "8facfafb-a55e-4743-bc87-1db82cc09fd3",
+            "first_name": "Agapito",
+            "last_name": "Pabalan",
+            "email": "agapito.pabalan@ecstech.com",
+            "title": "ADMIN",
+        },
     ]
 
     STAFF = [
