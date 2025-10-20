@@ -743,9 +743,7 @@ class Domain(TimeStampedModel, DomainHelper):
         dsdata_change_log = ""
 
         # Get the user's email (exclude invitation rows)
-        user_domain_role = (
-            UserDomainRole.objects.filter(domain=self, user__isnull=False).select_related("user").first()
-        )
+        user_domain_role = (UserDomainRole.objects.filter(domain=self, user__isnull=False).select_related("user").first())
         user_email = user_domain_role.user.email if user_domain_role and user_domain_role.user else "unknown user"
 
         try:

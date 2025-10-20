@@ -571,9 +571,13 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
     """
     all_emails_sent = True
     # Get each portfolio admin from list
-    user_portfolio_permissions = UserPortfolioPermission.objects.filter(
-        portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], user__isnull=False
-    ).exclude(user__email=email).select_related("user")
+    user_portfolio_permissions = (
+        UserPortfolioPermission.objects.filter(
+            portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN], user__isnull=False
+        )
+        .exclude(user__email=email)
+        .select_related("user")
+    )
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
