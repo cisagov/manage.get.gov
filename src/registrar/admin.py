@@ -258,7 +258,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
         choices=[("", "---------")] + UserPortfolioRoleChoices.choices,
         required=True,
         widget=forms.Select(attrs={"class": "admin-dropdown"}),
-        label="Member access",
+        label="Member role",
         help_text="Only admins can manage member permissions and organization metadata.",
     )
 
@@ -452,6 +452,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         labels = {
             "action_needed_reason_email": "Email",
             "rejection_reason_email": "Email",
+            "investigator": "Analyst",
         }
 
     def __init__(self, *args, **kwargs):
@@ -1561,7 +1562,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Member access"  # type: ignore
+    get_roles.short_description = "Member role"  # type: ignore
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
@@ -1855,15 +1856,17 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
-            requested_email = obj.email
-            # Look up a user with that email
+            # Check to see if there is an existing user
             requested_user = get_requested_user(obj.email)
-            requestor = request.user
 
+            #Use existing user's email if it exists
+            requested_email = requested_user.email if requested_user else obj.email
+            requestor = request.user
+            
             # set object email to appropiate user email if it exists
             if requested_user and requested_user.email:
                 obj.email = requested_user.email
-
+            
             member_of_a_different_org, member_of_this_org = get_org_membership(
                 domain_org, requested_email, requested_user
             )
@@ -1888,7 +1891,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         portfolio_invitation.retrieve()
                         portfolio_invitation.save()
-                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+                    messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
                 if not send_domain_invitation_email(
                     email=requested_email,
@@ -1897,7 +1900,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
                 ):
-                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()
@@ -1958,7 +1961,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Member access"  # type: ignore
+    get_roles.short_description = "Member role"  # type: ignore
 
     def save_model(self, request, obj, form, change):
         """
@@ -2079,7 +2082,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     form = DomainInformationAdminForm
 
     # Customize column header text
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
@@ -2553,7 +2556,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
-        title = "investigator"
+        title = "analyst"
         # Match the old param name to avoid unnecessary refactoring
         parameter_name = "investigator__id__exact"
 
@@ -2637,7 +2640,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
-        # Example: Show different icons based on `status`
+        # Show different icons based on `status`
         text = obj.requested_domain
         if obj.portfolio:
             return format_html(
@@ -2650,7 +2653,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # ------ Converted fields ------
     # These fields map to @Property methods and
     # require these custom definitions to work properly
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
@@ -2754,9 +2757,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     status_history.short_description = "Status history"  # type: ignore
 
+    # ------ model fields ------
+    @admin.display(description=_("analyst"))
+    def analyst_as_investigator(self, obj):
+        return obj.investigator
+
+    analyst_as_investigator.admin_order_field = ["investigator__first_name", "investigator__last_name"]  # type: ignore
+
     # Columns
     list_display = [
         "custom_requested_domain",
+        "requester",
         "first_submitted_date",
         "last_submitted_date",
         "last_status_update",
@@ -2768,12 +2779,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_federal_type",
         "converted_city",
         "converted_state_territory",
-        "investigator",
+        "analyst_as_investigator",
     ]
 
     orderable_fk_fields = [
-        ("requested_domain", "name"),
-        ("investigator", ["first_name", "last_name"]),
+        ("requester", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -4095,7 +4105,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     # --- Generic Org Type
     # Use converted value in the table
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.domain_info.converted_generic_org_type_display
 
@@ -4713,7 +4723,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["requester", "created_on", "notes"]}),
+        (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -4785,6 +4795,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "requester",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
+        "agency_seal",
     ]
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
