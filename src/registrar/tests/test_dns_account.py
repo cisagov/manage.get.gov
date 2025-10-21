@@ -4,6 +4,7 @@ from django.apps import apps
 
 DnsAccount = apps.get_model("registrar", "DnsAccount")
 
+
 class DnsAccountTest(TestCase):
     """
     Testing constraints on DnsAccount model
@@ -23,8 +24,3 @@ class DnsAccountTest(TestCase):
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 DnsAccount.objects.create(name=self.dns_account.name)
-    
-
-    
-    
-    
