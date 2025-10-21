@@ -1858,7 +1858,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
             domain_org = getattr(domain.domain_info, "portfolio", None)
             requested_email = obj.email
             # Look up a user with that email
-            requested_user = get_requested_user(obj.email)
+            requested_user = get_requested_user(requested_email)
             requestor = request.user
 
             # set object email to appropiate user email if it exists
