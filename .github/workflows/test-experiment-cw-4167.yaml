@@ -1,6 +1,9 @@
 # test.yaml
 name: Experiment - Lint (cw/4167)
 
+env:
+  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.ref }}
+
 on:
   push:
     branches:
@@ -12,12 +15,20 @@ on:
       - '.gitignore'
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or SHA to check out
+        required: true
+        type: string
 
 jobs:
   python-linting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Prepare app image
         working-directory: ./src
@@ -95,6 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: "Run unit tests"
         id: tests
@@ -155,6 +168,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Check for complete migrations
         working-directory: ./src
@@ -166,6 +181,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Disable Login
         working-directory: ./src
