@@ -38,6 +38,14 @@ jobs:
           docker compose build app --pull
           echo '::endgroup::'
 
+      - name: "Show linter versions"
+        working-directory: ./src
+        continue-on-error: true
+        run: |
+          echo 'Linter versions:'
+          docker compose run --rm --no-deps app sh -lc "printf 'Python: ' ; python --version ; printf 'pip: ' ; pip --version ; printf 'flake8: ' ; flake8 --version ; printf 'black: ' ; black --version ; printf 'mypy: ' ; mypy --version ; printf 'bandit: ' ; bandit --version" 2>&1 || true
+
+
       - name: "Lint: flake8"
         id: flake8
         working-directory: ./src
