@@ -36,9 +36,9 @@
     </div>
     <div class="margin-top-3" id="anything-else">
         <p>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></p>
-        {% with attr_maxlength=2000 add_label_class="usa-sr-only" add_legend_class="usa-sr-only" add_legend_heading="Is there anything else you’d like us to know about your domain request?" add_aria_label="Provide details below. You can enter up to 2000 characters" %}
-            {% input_with_errors forms.3.anything_else %}
-        {% endwith %}
+    {% with add_label_class="usa-sr-only" add_legend_class="usa-sr-only" add_legend_heading="Is there anything else you’d like us to know about your domain request?" %}
+      {% input_with_errors forms.3.anything_else %}
+    {% endwith %}
         {# forms.3 is a form for inputting the e-mail of a cisa representative #}
     </div>
 {% endblock %}
