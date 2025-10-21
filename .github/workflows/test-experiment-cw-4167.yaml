@@ -19,13 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Prepare app image
+        working-directory: ./src
+        run: |
+          echo '::group::Docker prepare (pull/build)'
+          docker compose pull --ignore-pull-failures || true
+          docker compose build app --pull
+          echo '::endgroup::'
+
       - name: "Lint: flake8"
         id: flake8
         working-directory: ./src
         continue-on-error: true
         run: |
           echo '::group::Flake8'
-          docker compose run --rm app sh -lc "flake8 . --count --format='::error file=src/%(path)s,line=%(row)d,col=%(col)d::%(code)s %(text)s'"
+          docker compose run --rm --no-deps app sh -lc "flake8 . --count --format='::error file=src/%(path)s,line=%(row)d,col=%(col)d::%(code)s %(text)s'"
           echo '::endgroup::'
 
       - name: "Lint: black"
@@ -36,7 +44,7 @@ jobs:
         run: |
           set -o pipefail
           echo '::group::Black'
-          docker compose run --rm app black --check . 2>&1 | tee black.out
+          docker compose run --rm --no-deps app black --check . 2>&1 | tee black.out
           status=${PIPESTATUS[0]}
           grep -E "^would reformat \S+" black.out | awk '{print $3}' | while read -r file; do
             echo "::error file=src/${file}::Black would reformat ${file}"
@@ -52,7 +60,7 @@ jobs:
         run: |
           set -o pipefail
           echo '::group::Mypy'
-          docker compose run --rm app mypy . --color-output --show-error-codes --no-error-summary --hide-error-context 2>&1 | tee mypy.out
+          docker compose run --rm --no-deps app mypy . --color-output --show-error-codes --no-error-summary --hide-error-context 2>&1 | tee mypy.out
           status=${PIPESTATUS[0]}
           echo '::endgroup::'
           exit $status
@@ -64,7 +72,7 @@ jobs:
         continue-on-error: true
         run: |
           echo '::group::Bandit'
-          docker compose run --rm app bandit -q -r . -f json > bandit.out.json
+          docker compose run --rm --no-deps app bandit -q -r . -f json > bandit.out.json
           python3 -c "import sys,json; r=json.load(open('bandit.out.json','r')); bad=lambda s:(s or '').upper() in ('HIGH','MEDIUM'); [print('::{} file=src/{},line={}::{} {}: {}'.format(('error' if bad((i.get('issue_severity') or '').upper()) else 'warning'), i.get('filename',''), i.get('line_number',1) or 1, i.get('test_id','B000'), (i.get('issue_severity') or '').upper(), i.get('issue_text',''))) for i in r.get('results',[])]; sys.exit(1 if any(bad((i.get('issue_severity') or '').upper()) for i in r.get('results',[])) else 0)"
           echo '::endgroup::'
 
@@ -122,8 +130,14 @@ jobs:
               # If failed, include failure tracebacks for quick triage
               if echo "$summary" | grep -q '^FAILED'; then
                 echo ""
-                echo "### Failure Details"
-                awk 'BEGIN{inblk=0;hdrset=0} /^={10,}/{ if(inblk){ print "```"; inblk=0 } hdrwait=1; next } hdrwait && /^(FAIL|ERROR): /{ header=$0; hdrwait=0; next } /^-{10,}/ && header { if(!hdrset){ print "\n### Failure Details"; hdrset=1 } if(!inblk){ print "#### " header; print "```text"; inblk=1 } next } inblk { print; next } END { if(inblk) print "```" }' test.out
+                awk '
+                  BEGIN{inblk=0;hdrset=0}
+                  /^[[:space:]]*={10,}[[:space:]]*$/ { if(inblk){ print "```"; inblk=0 } next }
+                  /^[[:space:]]*(FAIL|ERROR): / { if(!hdrset){ print "### Failure Details"; hdrset=1 } if(inblk){ print "```"; inblk=0 } header=$0; sub(/^[[:space:]]+/, "", header); print "#### " header; print "```text"; inblk=1; next }
+                  /^[[:space:]]*-{10,}[[:space:]]*$/ { next }
+                  inblk { print; next }
+                  END { if(inblk) print "```" }
+                ' test.out
               fi
             } >> "$GITHUB_STEP_SUMMARY"
           fi
