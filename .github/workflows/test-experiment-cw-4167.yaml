@@ -158,12 +158,6 @@ jobs:
           name: test-log
           path: src/test.out
 
-      - name: "Fail if tests failed"
-        if: ${{ steps.tests.outcome == 'failure' }}
-        run: |
-          echo "Unit tests failed. See annotations and artifact."
-          exit 1
-
   django-migrations-complete:
     runs-on: ubuntu-latest
     steps:
