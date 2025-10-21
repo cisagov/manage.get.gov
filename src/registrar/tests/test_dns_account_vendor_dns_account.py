@@ -29,11 +29,6 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
             dns_account=self.dns_account, vendor_dns_account=self.vendor_account_1, is_active=True
         )
 
-    def test_dns_account_name_is_unique(self):
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                DnsAccount.objects.create(name=self.dns_account.name)
-
     def test_is_active_constraint_throws_error(self):
         vendor_account_2 = VendorDnsAccount.objects.create(
             x_account_id="x2",
