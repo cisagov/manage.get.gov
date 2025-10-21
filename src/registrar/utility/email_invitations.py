@@ -160,8 +160,8 @@ def _send_domain_invitation_update_emails_to_domain_managers(
         Boolean indicating if all messages were sent successfully.
     """
     all_emails_sent = True
-    # Get each domain manager from list (exclude pending invitations where user is null)
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain, user__isnull=False).select_related("user")
+    # Get each domain manager from list
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
@@ -215,7 +215,7 @@ def send_domain_manager_removal_emails_to_domain_managers(
     """
     all_emails_sent = True
     # Get each domain manager from list (exclude pending invitations where user is null)
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain, user__isnull=False).select_related("user")
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     if manager_removed:
         user_domain_roles = user_domain_roles.exclude(user=manager_removed)
     for user_domain_role in user_domain_roles:
@@ -265,8 +265,8 @@ def send_domain_manager_on_hold_email_to_domain_managers(
 
     """
     all_emails_sent = True
-    # Get each domain manager from list (exclude pending invitations where user is null)
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain, user__isnull=False).select_related("user")
+    # Get each domain manager from list
+    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
