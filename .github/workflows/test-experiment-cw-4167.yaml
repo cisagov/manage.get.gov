@@ -121,14 +121,13 @@ jobs:
         id: tests
         working-directory: ./src
         shell: bash
-        continue-on-error: true
         run: |
           set -o pipefail
           echo '::group::Django Tests'
           docker compose run --rm app python manage.py test --parallel --verbosity 2 2>&1 | tee test.out
           status=${PIPESTATUS[0]}
           echo '::endgroup::'
-          exit $status
+          echo "test_status=${status}" >> $GITHUB_OUTPUT
 
       - name: "Annotate failures and summarize"
         id: annotate
@@ -160,11 +159,17 @@ jobs:
           fi
 
       - name: "Upload test log"
-        if: ${{ steps.tests.outcome == 'failure' }}
+        if: ${{ steps.tests.outputs.test_status != '0' }}
         uses: actions/upload-artifact@v4
         with:
           name: test-log
           path: src/test.out
+
+      - name: "Fail job if tests failed"
+        if: ${{ steps.tests.outputs.test_status != '0' }}
+        run: |
+          echo "Tests failed (exit code: ${{ steps.tests.outputs.test_status }})."
+          exit 1
 
   django-migrations-complete:
     runs-on: ubuntu-latest
