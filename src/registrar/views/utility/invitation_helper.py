@@ -9,6 +9,7 @@ from registrar.utility.errors import (
     MissingEmailError,
     OutsideOrgMemberError,
 )
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ def handle_invitation_exceptions(request, exception, email):
     """Handle exceptions raised during the process."""
     if isinstance(exception, EmailSendingError):
         logger.warning(exception, exc_info=True)
-        messages.error(request, str(exception))
+        messages.error(request, with_contact_link(str(exception)))
     elif isinstance(exception, MissingEmailError):
         messages.error(request, str(exception))
         logger.error(exception, exc_info=True)
@@ -72,7 +73,17 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, AlreadyDomainInvitedError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.error(request, f"{email} is already a manager for this domain")
+        messages.error(request, f"An unexpected error occurred: {email} could not be added to this domain.")
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-        messages.error(request, "Could not send email invitation.")
+        messages.error(
+            request, with_contact_link(f"An unexpected error occurred: {email} could not be added to this domain.")
+        )
+
+
+def with_contact_link(error_message: str, contact_url: str = "https://get.gov/contact") -> str:
+    return format_html(
+        '{} Try again, and if the problem persists, <a href="{}" class="usa-link" target="_blank">contact us</a>.',
+        error_message,
+        contact_url,
+    )

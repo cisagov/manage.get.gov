@@ -1885,7 +1885,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         portfolio_invitation.retrieve()
                         portfolio_invitation.save()
-                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+                    messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
                 if not send_domain_invitation_email(
                     email=requested_email,
@@ -1894,7 +1894,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
                 ):
-                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()
@@ -4717,7 +4717,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["requester", "created_on", "notes"]}),
+        (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -4789,6 +4789,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         "requester",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
+        "agency_seal",
     ]
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
