@@ -19,7 +19,7 @@
 {% endblock %}
 
 {% block form_fields %}
-    {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
+    {% with add_label_class="usa-sr-only" %}
       {% input_with_errors forms.0.about_your_organization %}
     {% endwith %}
 {% endblock %}
