@@ -909,8 +909,8 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
         label="Anything else?",
         widget=forms.Textarea(
             attrs={
-                "aria-label": "Is there anything else you’d like us to know about your domain request? \
-                    Provide details below. You can enter up to 2000 characters",
+                "aria-label": f"Is there anything else you’d like us to know about your domain request? \
+                    Provide details below. You can enter up to {TEXTAREA_LONG} characters",
                 **get_max_length_attrs(TEXTAREA_LONG),
             }
         ),
