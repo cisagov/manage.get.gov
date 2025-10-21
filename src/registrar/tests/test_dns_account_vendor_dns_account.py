@@ -10,7 +10,7 @@ DnsVendor = apps.get_model("registrar", "DnsVendor")
 
 class DnsAccount_VendorDnsAccountTest(TestCase):
     """
-    Testing constraints on DnsAccount_VendorDNSAccount class
+    Testing constraints on DnsAccount_VendorDNSAccount model
     """
 
     def setUp(self):
@@ -71,7 +71,7 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
             "Only one active join present for one dns_account.",
         )
 
-    def test_cannot_flip_to_two_active_by_update(self):
+    def test_update_is_active_constraint_throws_error(self):
         vendor_account_2 = VendorDnsAccount.objects.create(
             x_account_id="x2",
             x_created_at="2025-10-17 19:57:53.157055+00",
