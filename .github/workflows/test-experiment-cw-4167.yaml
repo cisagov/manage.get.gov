@@ -116,10 +116,6 @@ jobs:
         shell: bash
         run: |
           if [ -f test.out ]; then
-            # Emit annotations for FAIL/ERROR cases (step remains green)
-            grep -E '^(FAIL|ERROR): ' test.out | sed 's/\\/\\\\/g' | while read -r line; do
-              echo "::error ::${line}"
-            done || true
             # Summary lines
             ran=$(grep -E '^Ran [0-9]+ tests?' test.out | tail -n 1 || true)
             summary=$(grep -E '^(FAILED|OK)' test.out | tail -n 1 || true)
