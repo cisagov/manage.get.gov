@@ -164,6 +164,12 @@ class UserFixture:
             "email": "agapito.pabalan@ecstech.com",
             "title": "ADMIN",
         },
+        {
+            "username": "285df9a1-0139-49df-878f-e15f0c991a05",
+            "first_name": "Erin",
+            "last_name": "Tingler",
+            "email": "erin.tingler@associates.cisa.dhs.gov",
+        },
     ]
 
     STAFF = [
@@ -273,6 +279,13 @@ class UserFixture:
             "last_name": "Wells",
             "email": "charles.wells.analyst@ecstech.com",
             "title": "ANALYST",
+        },
+        {
+            "username": "949210d7-62b7-4dcb-8134-194e39eec0f3",
+            "first_name": "Erin",
+            "last_name": "Tingler",
+            "title": "Erin-Analyst",
+            "email": "erin.tingler@ecstech.com",
         },
     ]
 
