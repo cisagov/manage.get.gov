@@ -1146,10 +1146,15 @@ class Domain(TimeStampedModel, DomainHelper):
         self._delete_related_objects_from_db()
 
     def _delete_nameservers_and_hosts(self):
-        """Removes nameservers and deletes associated hosts in EPP if not in use."""
+        """Removes nameservers and deletes associated hosts in EPP if not in use."""        """Removes nameservers and deletes associated hosts in EPP if not in use."""        """Removes nameservers and deletes associated hosts in EPP if not in use."""
+
+
+
+
+
         try:
             deleted_values, updated_values, new_values, oldNameservers = self.getNameserverChanges(hosts=[])
-            self._update_host_values(updated_values, oldNameservers)  # Returns nothing, just need to be run and errors
+            self._update_host_values(updated_values, oldNameservers)  #Returns nothing, just need to be run and errors
             addToDomainList, _ = self.createNewHostList(new_values)
             deleteHostList, _ = self.createDeleteHostList(deleted_values)
             responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
