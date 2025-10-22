@@ -52,6 +52,7 @@ class MockCloudflareService:
         self._mock_context.get(f"/zones", params=f"account.id=1234").mock(side_effect=self._mock_get_account_zones_response)
         self._mock_context.post(f"/accounts").mock(side_effect=self._mock_create_account_response)
         self._mock_context.post(f"/zones").mock(side_effect=self._mock_create_zone_response)
+        self._mock_context.post(f"/zones/789/dns_records").mock(side_effect=self._mock_create_dns_record_response)
 
     def _mock_get_page_accounts_response(self, request):
         return httpx.Response(
@@ -176,5 +177,36 @@ class MockCloudflareService:
                     "type": "standard",  # enterprise?
                     "created_on": datetime.now(timezone.utc).isoformat() # format "2014-03-01T12:21:02.0000Z",
                 }
+            }
+        )
+
+    def _mock_create_dns_record_response(self, request):
+        request_as_json = json.loads(request.content.decode('utf-8'))
+        record_name = request_as_json["name"]
+        content = request_as_json["content"]
+        type = request_as_json["type"]
+        ttl = request_as_json.get("ttl") or 1
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": "7bdc1bc468599539197fb8f1ed0e6ebc",
+                    "name": record_name,
+                    "type": type,
+                    "content": content,
+                    "proxiable": True,
+                    "proxied": False,
+                    "ttl": ttl,
+                    "settings": {},
+                    "meta": {},
+                    "comment": "Mocked A record created",
+                    "tags": [],
+                    "created_on": "2025-10-22T03:38:21.614099Z",
+                    "modified_on": "2025-10-22T03:38:21.614099Z"
+                },
+                "success": True,
+                "errors": [],
+                "messages": []
             }
         )
