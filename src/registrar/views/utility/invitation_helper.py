@@ -53,7 +53,7 @@ def get_org_membership(org, email, user):
 def get_requested_user(email):
     """Retrieve a user by email or return None if the user doesn't exist."""
     try:
-        return User.objects.get(email__iexact=email)
+        return User.objects.get(email=email)
     except User.DoesNotExist:
         return None
 

@@ -60,7 +60,7 @@ class DomainInvitation(TimeStampedModel):
         # get a user with this email address
         User = get_user_model()
         try:
-            user = User.objects.get(email__iexact=self.email)
+            user = User.objects.get(email=self.email)
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
