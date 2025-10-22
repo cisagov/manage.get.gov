@@ -17,7 +17,7 @@
 
     <p>If you withdraw your request, we won't review it. Once you withdraw your request, you can edit it and submit it again. </p>
 
-    <p><a href="{% url 'domain-request-withdrawn' domain_request_pk=DomainRequest.id %}" class="usa-button withdraw">Withdraw request</a>  
+    <p><a href="{% url 'domain-request-withdrawn' domain_request_pk=DomainRequest.id %}" class="usa-button usa-button--outline usa-button--outline-secondary">Withdraw request</a>  
       <a href="{% url 'domain-request-status' domain_request_pk=DomainRequest.id %}">Cancel</a></p>
 
     </div>

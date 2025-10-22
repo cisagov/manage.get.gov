@@ -388,6 +388,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="domain_requests_investigating",
+        verbose_name="analyst",
     )
 
     # ##### data fields from the initial form #####
@@ -1187,7 +1188,6 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.REJECTED,
@@ -1307,6 +1307,7 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
+            DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.APPROVED,

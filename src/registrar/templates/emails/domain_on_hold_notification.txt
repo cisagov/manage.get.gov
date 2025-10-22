@@ -1,0 +1,49 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }}.{% endif %}
+
+On {{ date }}, the following domain was placed on hold: {{ domain.name }}
+
+You can view this status update in the .gov registrar <{{ manage_url }}>.
+
+----------------------------------------------------------------
+
+WHAT DOES “ON HOLD” MEAN?
+
+When a domain is placed on hold: 
+
+- The domain and its subdomains no longer resolve in DNS. 
+- Any email or websites using the domain could become unavailable.
+- Domain managers can’t edit domain information.
+
+Although the domain is still registered to your organization, it’s administratively paused. These changes can be undone if the .gov team releases the hold.
+
+WHY ARE DOMAINS PLACED “ON HOLD”?
+
+In general, there are a handful of reasons we place a domain on hold: 
+- There was an authorized request to delete the domain, so we temporarily placed it on hold as a precautionary measure before deleting. 
+- The domain registration was not renewed.
+- Prolonged, unresolved, serious violations of .gov’s registration requirements occurred, and our outreach about these violations was unsuccessful. Learn more about these requirements <https://get.gov/domains/requirements>.
+- The original domain registration was deemed unauthorized.
+
+A domain is typically placed on hold for seven calendar days before deletion. Unauthorized requests may be deleted sooner.
+
+RELEASE THE HOLD
+
+If you would like to cancel the deletion of this domain or get help renewing it, reply to this email or contact help@get.gov for assistance.
+
+SOMETHING WRONG?
+
+If you’re not affiliated with this .gov domain or think you received this message in error, reply to this email. 
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency
+(CISA) <https://cisa.gov/>
+{% endautoescape %}
