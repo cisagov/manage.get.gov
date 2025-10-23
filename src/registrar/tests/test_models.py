@@ -1580,6 +1580,17 @@ class TestUser(TestCase):
         )
         # User doesn't have admin access so should return false
         self.assertFalse(self.user.is_only_admin_of_portfolio(self.portfolio))
+    
+    @less_console_noise_decorator
+    def test_email_is_with_normalize(self):
+        mixed_case_email = "SOME_user@igorville.gov"
+        user = User.objects.create(email=mixed_case_email, username="some_user")
+        self.assertEqual(user.email, "some_user@igorville.gov")
+    
+    @less_console_noise_decorator
+    def test_empty_email_with_normalize(self):
+        user = User.objects.create(username="user_without_email")
+        self.assertEqual(user.email, '')
 
 
 class TestContact(TestCase):
