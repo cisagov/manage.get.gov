@@ -981,7 +981,7 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
-        self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
+        self.assertContains(success_page, "Could not send email notification to existing domain managers.")
 
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching

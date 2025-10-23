@@ -38,7 +38,7 @@
           <p class="margin-bottom-3 margin-top-3">
             <em>Provide details below. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
           </p>
-          {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+          {% with add_label_class="usa-sr-only" attr_required="required" %}
             {% input_with_errors forms.1.purpose %}
           {% endwith %}
         </div>
@@ -60,7 +60,7 @@
             <p class="margin-bottom-3 margin-top-3">
               <em>Describe the nature of the interagency engagement, including the names of the agencies that are involved and their role(s) in this initiative. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
             </p>
-            {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+            {% with add_label_class="usa-sr-only" attr_required="required" %}
               {% input_with_errors forms.5.interagency_initiative_details %}
             {% endwith %}
           </div>
@@ -82,7 +82,7 @@
             <p class="margin-bottom-3 margin-top-3">
               <em>Provide information about the context for the launch. Include any dates, events, or announcements that are planned. <abbr class="usa-hint usa-hint--required" title="required">*</abbr></em>
             </p>
-            {% with add_label_class="usa-sr-only" attr_required="required" attr_maxlength="2000" %}
+            {% with add_label_class="usa-sr-only" attr_required="required" %}
               {% input_with_errors forms.3.time_frame_details %}
             {% endwith %}
           </div>
@@ -91,7 +91,7 @@
     <h2>What is the purpose of your requested domain?</h2>
     <p>Describe how you’ll use your .gov domain. Will it be used for a website, email, or something else?</p>
 
-    {% with attr_maxlength=2000 add_label_class="usa-sr-only" %}
+    {% with add_label_class="usa-sr-only" %}
       {% input_with_errors forms.1.purpose %}
     {% endwith %}
   {% endif %}

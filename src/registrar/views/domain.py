@@ -1324,7 +1324,7 @@ class DomainAddUserView(DomainFormBaseView):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
@@ -1343,9 +1343,9 @@ class DomainAddUserView(DomainFormBaseView):
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
-        messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
@@ -1356,7 +1356,7 @@ class DomainAddUserView(DomainFormBaseView):
             is_member_of_different_org=member_of_different_org,
             requested_user=requested_user,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         UserDomainRole.objects.create(
             user=requested_user,
             domain=self.object,
