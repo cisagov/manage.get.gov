@@ -1,8 +1,7 @@
 from django.test import TestCase
 from django.db import IntegrityError, transaction
-from django.apps import apps
 
-DnsAccount = apps.get_model("registrar", "DnsAccount")
+from registrar.models.dns.dns_account import DnsAccount
 
 
 class DnsAccountTest(TestCase):
@@ -10,6 +9,9 @@ class DnsAccountTest(TestCase):
     def setUp(self):
         self.dns_account = DnsAccount.objects.create(name="acct-base")
         self.dns_account.save()
+
+    def tearDown(self):
+        DnsAccount.objects.all().delete()
 
     def test_dns_account_creation_success(self):
         try:
