@@ -74,7 +74,7 @@ __all__ = [
     "DnsRecord",
     "VendorDnsRecord",
     "DnsRecord_VendorDnsRecord",
-    "DnsSoa"
+    "DnsSoa",
 ]
 
 auditlog.register(Contact)

@@ -4,6 +4,7 @@ from registrar.models.dns.dns_soa import DnsSoa
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
+
 class DnsZone(TimeStampedModel):
     class ZoneModes(models.TextChoices):
         STANDARD = "standard", "Standard"
@@ -21,46 +22,24 @@ class DnsZone(TimeStampedModel):
     )  # apex domain
 
     soa = models.ForeignKey(
-        "registrar.DnsSoa",
-        on_delete=models.SET_DEFAULT,
-        related_name="+",
-        default=DnsSoa.get_default_pk)
-
-    name = models.CharField(
-        null=True,
-        blank=True
+        "registrar.DnsSoa", on_delete=models.SET_DEFAULT, related_name="+", default=DnsSoa.get_default_pk
     )
 
-    nameservers = ArrayField(
-        models.CharField(),
-        null=True,
-        blank=True
-    )
+    name = models.CharField(null=True, blank=True)
 
-    flatten_all_cnames = models.BooleanField(
-        default=False
-    )
+    nameservers = ArrayField(models.CharField(), null=True, blank=True)
 
-    foundation_dns = models.BooleanField(
-        default=False
-    )
+    flatten_all_cnames = models.BooleanField(default=False)
 
-    multiprovider = models.BooleanField(
-        default=False
-    )
+    foundation_dns = models.BooleanField(default=False)
 
-    ns_ttl = models.PositiveIntegerField(
-        default=86400
-    )
+    multiprovider = models.BooleanField(default=False)
 
-    secondary_overrides = models.BooleanField(
-        default=False
-    )
+    ns_ttl = models.PositiveIntegerField(default=86400)
 
-    zone_mode = models.CharField(
-        choices=ZoneModes.choices,
-        default="standard"
-    )
+    secondary_overrides = models.BooleanField(default=False)
+
+    zone_mode = models.CharField(choices=ZoneModes.choices, default="standard")
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
@@ -71,4 +50,3 @@ class DnsZone(TimeStampedModel):
         if not self.soa:
             self.soa = DnsSoa
         super().save(*args, **kwargs)
-

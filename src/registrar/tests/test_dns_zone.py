@@ -1,15 +1,13 @@
 from django.test import TestCase
 from registrar.models import Domain, DnsAccount, DnsZone, DnsSoa
 
+
 class DnsZoneTest(TestCase):
     def setUp(self):
         super().setUp()
         self.dns_domain, _ = Domain.objects.get_or_create(name="dns-test.gov")
         self.dns_account, _ = DnsAccount.objects.get_or_create(name="acct-base")
-        self.dns_zone, _ = DnsZone.objects.get_or_create(
-            dns_account=self.dns_account,
-            domain=self.dns_domain
-        )
+        self.dns_zone, _ = DnsZone.objects.get_or_create(dns_account=self.dns_account, domain=self.dns_domain)
 
     def tearDown(self):
         super().tearDown()
