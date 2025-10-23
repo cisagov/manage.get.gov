@@ -264,6 +264,7 @@ class DomainRequestWizard(TemplateView):
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
         # Notify OMB if an FEB request has been submitted
         if self.requires_feb_questions():
+            self.domain_request.in_review_omb()
             try:
                 self.send_omb_submission_email()
             except Exception:
