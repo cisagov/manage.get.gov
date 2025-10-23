@@ -1124,7 +1124,27 @@ class TestDomainRequest(TestCase):
             expected_email="intern@igorville.com",
             expected_cc=["portfolioadmin@igorville.com"],
         )
-
+    ## Testing for In Review - OMB
+    ## test if omb was successful
+    ## omb review should not be successful without 
+    @less_console_noise_decorator
+    def test_in_omb_review_enterprise_mode_no_investigator(self):
+        fed_agency = FederalAgency.objects.create(
+            agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
+        )
+        portfolio = Portfolio.objects.create(organization_name=fed_agency.agency, federal_agency=fed_agency)
+        domain_request = completed_domain_request(name="test.gov", federal_agency=fed_agency, portfolio=portfolio, status=DomainRequest.DomainRequestStatus.SUBMITTED)
+        domain_request.in_review_omb()
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.OMB_IN_REVIEW)
+    
+    @less_console_noise_decorator
+    def test_in_omb_review_without_portfolio_fail(self):
+       fed_agency = FederalAgency.objects.first()
+       fed_agency.federal_type = BranchChoices.EXECUTIVE
+       domain_request = completed_domain_request(name="test.gov", federal_agency=fed_agency,status=DomainRequest.DomainRequestStatus.SUBMITTED)
+       with self.assertRaises(TransitionNotAllowed):
+            domain_request.in_review_omb()
+           
 
 class TestDomainRequestSuborganization(TestCase):
     """Tests for the suborganization fields on domain requests"""

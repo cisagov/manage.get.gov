@@ -1054,6 +1054,12 @@ class DomainRequest(TimeStampedModel):
         if self.investigator is None or not self.investigator.is_staff:
             is_valid = False
         return is_valid
+    
+    def allow_omb_transition_if_portfolio_exists(self):
+        if self.portfolio:
+            return True
+        else:
+            return self.investigator_exists_and_is_staff()
 
     @transition(
         field="status",
@@ -1262,7 +1268,7 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
+        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.OMB_IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
         target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
@@ -1302,6 +1308,7 @@ class DomainRequest(TimeStampedModel):
         source=[
             DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.OMB_IN_REVIEW,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.APPROVED,
             DomainRequestStatus.REJECTED,
@@ -1329,7 +1336,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.SUBMITTED,
         ],
         target=DomainRequestStatus.OMB_IN_REVIEW,
-        conditions=[request_is_feb])
+        conditions=[request_is_feb, domain_is_not_active, allow_omb_transition_if_portfolio_exists])
     def in_review_omb(self):
         """When a domain request is submitted for Feb, it automatically transitions to in review"""
         pass
