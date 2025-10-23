@@ -1856,14 +1856,12 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
-            requested_email = obj.email.lower()
+            obj.email = obj.email.lower()
+            requested_email = obj.email
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)
             requestor = request.user
-
-            # set object email to appropiate user email if it exists
-            if requested_user and requested_user.email:
-                obj.email = requested_user.email
+            
 
             member_of_a_different_org, member_of_this_org = get_org_membership(
                 domain_org, requested_email, requested_user
