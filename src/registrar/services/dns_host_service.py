@@ -119,6 +119,6 @@ class DnsHostService:
 
         try:
             logger.info("Attempting to register nameservers. . .")
-            domain.nameservers = nameserver_tups  # calls epp service to post nameservers to registry
+            domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
         except (RegistrySystemError, Exception):
             raise
