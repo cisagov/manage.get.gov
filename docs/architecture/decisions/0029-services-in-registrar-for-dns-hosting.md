@@ -24,11 +24,11 @@ This design separates out vendor specific code and data and minimizes architectu
 
 This would mean creating an app `dns_hosting` as an app inside of the project (parallel to `registrar`). Migrations would be separate, but the db would be the same.
 
-+ cleaner organization of dns code from registrar code
++ Cleaner organization of dns code from registrar code
 + Can be lifted more easily if we intend to reuse it elsewhere later
 + Migrations can be worked on separately from `registrar`
 
-- possible mixing of templates and views between the apps could get confusing
+- Possible mixing of templates and views between the apps could get confusing
 - As new devs onboarded and worked on it, they would need to be aware of the need to make sure there is only one-way dependency
 - YAGNI (You Aren't Gonna Need It) - we don't currently have a need to use the functionality elsewhere. We might spend extra development time for something we might not need
 
@@ -52,6 +52,6 @@ We would create two separate services within the registar app: CloudflareService
 + Could use a different stack if desired
 + Could scale independently of the registrar
 
-- Would need to build out an additional AP on the registrar side or add infrastructure to communicate between services
+- Would need to build out an additional API on the registrar side or add infrastructure to communicate between services
 -  YAGNI (You Aren't Gonna Need It) - we don't currently have a need to use the functionality elsewhere (over-engineering) We could end up spending extra development time on something we will not need.
 - Using microservices would introduce many complexities in deployment, debugging, and monitoring
