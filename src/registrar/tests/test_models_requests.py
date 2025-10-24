@@ -1127,7 +1127,8 @@ class TestDomainRequest(TestCase):
 
     @less_console_noise_decorator
     def test_in_omb_review_enterprise_mode_no_investigator(self):
-        ## for enterprise mode after submitting a domain request for feb, it should allow the omb review status to update programmatically
+        # for enterprise mode after submitting a domain request for feb,
+        # it should allow the omb review status to update programmatically
         fed_agency = FederalAgency.objects.create(agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
         portfolio = Portfolio.objects.create(
             organization_name=fed_agency.agency, federal_agency=fed_agency, requester=self.dummy_user_3
@@ -1149,7 +1150,7 @@ class TestDomainRequest(TestCase):
 
     @less_console_noise_decorator
     def test_in_omb_review_without_portfolio_fail(self):
-        ## for non enterprise mode, it should not allow the omb review status to update programmatically.
+        # for non enterprise mode, it should not allow the omb review status to update programmatically.
         fed_agency = FederalAgency.objects.first()
         fed_agency.federal_type = BranchChoices.EXECUTIVE
         domain_request = completed_domain_request(

@@ -1053,7 +1053,7 @@ class DomainRequest(TimeStampedModel):
         return is_valid
 
     def allow_omb_in_review_transition(self):
-        ## Check if domain request is feb. Allow transition if in enterprise mode
+        # Check if domain request is feb. Allow transition if in enterprise mode
         if self.is_feb():
             if self.portfolio:
                 return True
