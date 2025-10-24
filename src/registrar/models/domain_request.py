@@ -727,9 +727,6 @@ class DomainRequest(TimeStampedModel):
         super().__init__(*args, **kwargs)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
-    
-    def request_is_feb(self):
-        return self.is_feb()
 
     def clean(self):
         """
@@ -1054,12 +1051,15 @@ class DomainRequest(TimeStampedModel):
         if self.investigator is None or not self.investigator.is_staff:
             is_valid = False
         return is_valid
-    
-    def allow_omb_transition_if_portfolio_exists(self):
-        if self.portfolio:
-            return True
-        else:
-            return self.investigator_exists_and_is_staff()
+
+    def allow_omb_in_review_transition(self):
+        ## Check if domain request is feb. Allow transition if in enterprise mode
+        if self.is_feb():
+            if self.portfolio:
+                return True
+            else:
+                return self.investigator_exists_and_is_staff()
+        return False
 
     @transition(
         field="status",
@@ -1268,7 +1268,12 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.OMB_IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
+        source=[
+            DomainRequestStatus.SUBMITTED,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.OMB_IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+        ],
         target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
@@ -1282,7 +1287,12 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED, DomainRequestStatus.OMB_IN_REVIEW],
+        source=[
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.APPROVED,
+            DomainRequestStatus.OMB_IN_REVIEW,
+        ],
         target=DomainRequestStatus.REJECTED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
@@ -1329,14 +1339,15 @@ class DomainRequest(TimeStampedModel):
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
         self.requester.restrict_user()
-    
+
     @transition(
         field="status",
         source=[
             DomainRequestStatus.SUBMITTED,
         ],
         target=DomainRequestStatus.OMB_IN_REVIEW,
-        conditions=[request_is_feb, domain_is_not_active, allow_omb_transition_if_portfolio_exists])
+        conditions=[domain_is_not_active, allow_omb_in_review_transition],
+    )
     def in_review_omb(self):
         """When a domain request is submitted for Feb, it automatically transitions to in review"""
         pass
