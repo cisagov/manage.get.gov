@@ -1856,6 +1856,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
+            obj.email = obj.email.lower()
             requested_email = obj.email
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)

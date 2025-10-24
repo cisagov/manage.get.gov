@@ -2574,7 +2574,7 @@ class TestUserDomainRoleAdmin(WebTest):
             self.assertEqual(search_query, "testmail@igorville.com")
 
             # We only need to check for the end of the HTML string
-            self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
+            self.assertNotContains(response, "Stewart Jones antarcticpolarbears@example.com</a></th>")
 
     def test_email_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
@@ -2606,7 +2606,7 @@ class TestUserDomainRoleAdmin(WebTest):
             self.assertEqual(search_query, "AntarcticPolarBears@example.com")
 
             # We only need to check for the end of the HTML string
-            self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
+            self.assertContains(response, "Joe Jones antarcticpolarbears@example.com</a></th>", count=1)
 
     @less_console_noise_decorator
     def test_custom_delete_confirmation_page(self):
