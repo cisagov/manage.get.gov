@@ -124,7 +124,7 @@ class BasePortfolioMemberForm(forms.ModelForm):
     role = forms.ChoiceField(
         choices=[
             # Uses .value because the choice has a different label (on /admin)
-            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Admin"),
+            (UserPortfolioRoleChoices.ORGANIZATION_ADMIN.value, "Organization admin"),
             (UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value, "Basic"),
         ],
         widget=forms.RadioSelect,

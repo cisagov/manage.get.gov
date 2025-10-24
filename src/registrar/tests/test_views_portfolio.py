@@ -1050,7 +1050,7 @@ class TestPortfolio(WebTest):
         # Assert text within the page is correct
         self.assertContains(response, "First Last")
         self.assertContains(response, self.user.email)
-        self.assertContains(response, "Admin")
+        self.assertContains(response, "Organization admin")
         self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
         self.assertContains(response, "This member does not manage any domains.")
@@ -1159,7 +1159,7 @@ class TestPortfolio(WebTest):
         # Assert text within the page is correct
         self.assertContains(response, "Invited")
         self.assertContains(response, portfolio_invitation.email)
-        self.assertContains(response, "Admin")
+        self.assertContains(response, "Organization admin")
         self.assertContains(response, "Viewer")
         self.assertContains(response, "Requester")
         self.assertContains(response, "Manager")
