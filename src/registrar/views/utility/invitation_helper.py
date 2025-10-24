@@ -35,7 +35,7 @@ def get_org_membership(org, email, user):
 
     # Check for existing permissions or invitations for the user
     existing_org_permission = UserPortfolioPermission.objects.filter(user=user).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
+    existing_org_invitation = PortfolioInvitation.objects.filter(email__iexact=email).first()
 
     # Determine membership in a different organization
     member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != org) or (
