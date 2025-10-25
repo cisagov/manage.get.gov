@@ -20,6 +20,7 @@ from .dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone
 from .dns.dns_record import DnsRecord
 from .dns.vendor_dns_record import VendorDnsRecord
 from .dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord
+from .dns.dns_soa import DnsSoa
 
 # IMPORTANT: UserPortfolioPermission must be before PortfolioInvitation.
 # PortfolioInvitation imports from UserPortfolioPermission, so you will get a circular import otherwise.
@@ -73,6 +74,7 @@ __all__ = [
     "DnsRecord",
     "VendorDnsRecord",
     "DnsRecord_VendorDnsRecord",
+    "DnsSoa",
 ]
 
 auditlog.register(Contact)
