@@ -27,7 +27,7 @@ class DnsZoneVendorDnsZoneTest(TestCase):
         DnsVendor.objects.all().delete()
         DnsZone_VendorDnsZone.objects.all().delete()
 
-    def test_dns_zone_vendor_dns_zone_is_active_constraint(self):
+    def test_dns_zone_vendor_dns_zone_is_active_constraint_throws_error(self):
         """ "Only allow 1 active vendor per DNS zone."""
         vendor_zone_2, _ = VendorDnsZone.objects.get_or_create(
             x_zone_id="2",
