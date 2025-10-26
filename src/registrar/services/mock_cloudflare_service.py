@@ -79,7 +79,7 @@ class MockCloudflareService:
                 "result": [
                     {
                         "account_tag": "234asdf",
-                        "account_pubname": "hello.gov",
+                        "account_pubname": "Account for hello.gov",
                         "account_type": "standard",
                         "created_on": "2025-10-08T21:07:18.651092Z",
                         "settings": {
@@ -103,7 +103,7 @@ class MockCloudflareService:
                     },
                     {
                         "account_tag": "1234",
-                        "account_pubname": "account-exists.gov",  # use exists.gov domain to simulate an account that already exists
+                        "account_pubname": "Account for exists.gov",  # use exists.gov domain to simulate an account that already exists
                         "account_type": "enterprise",
                         "created_on": "2025-10-08T21:21:38.401706Z",
                         "settings": {
@@ -131,6 +131,19 @@ class MockCloudflareService:
                     {
                         "id": fake.uuid4(),
                         "account": {"id": account_id, "name": self.new_account_name},
+                        "created_on": "2014-01-01T05:20:00.12345Z",
+                        "modified_on": "2014-01-01T05:20:00.12345Z",
+                        "name": zone_name,
+                        "name_servers": [
+                            "rainbow.dns.gov",
+                            "rainbow2.dns.gov",
+                        ],
+                        "status": "pending",
+                        "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
+                    },
+                    {
+                        "id": fake.uuid4(),
+                        "account": {"id": account_id, "name": "Account for exists.gov"},
                         "created_on": "2014-01-01T05:20:00.12345Z",
                         "modified_on": "2014-01-01T05:20:00.12345Z",
                         "name": zone_name,
