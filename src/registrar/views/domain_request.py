@@ -266,7 +266,7 @@ class DomainRequestWizard(TemplateView):
         if self.requires_feb_questions():
             # Automatically put domain request in review omb if the request is in enteprise mode
             if self.domain_request.portfolio:
-                self.domain_request.in_review_omb()
+                self.domain_request.allow_omb_in_review_transition()
                 self.domain_request.save()
             try:
                 self.send_omb_submission_email()

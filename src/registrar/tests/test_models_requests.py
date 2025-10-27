@@ -1144,9 +1144,9 @@ class TestDomainRequest(TestCase):
             user=self.dummy_user_2,
         )
         domain_request.save()
-        domain_request.in_review_omb()
+        domain_request.allow_omb_in_review_transition()
 
-        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.OMB_IN_REVIEW)
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW_OMB)
 
     @less_console_noise_decorator
     def test_in_omb_review_without_portfolio_fail(self):
@@ -1161,7 +1161,7 @@ class TestDomainRequest(TestCase):
         )
         domain_request.save()
         with self.assertRaises(TransitionNotAllowed):
-            domain_request.in_review_omb()
+            domain_request.allow_omb_in_review_transition()
 
 
 class TestDomainRequestSuborganization(TestCase):
