@@ -82,6 +82,7 @@ class User(AbstractUser):
     domains = models.ManyToManyField(
         "registrar.Domain",
         through="registrar.UserDomainRole",
+        through_fields=("user", "domain"),
         related_name="users",
     )
 
