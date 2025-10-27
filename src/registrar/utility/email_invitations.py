@@ -279,7 +279,7 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
             bcc_address=bcc_address,
             context={
                 "domain": domain,
-                "requestor": requestor_email,
+                "requestor_email": requestor_email,
                 "date": date.today(),
             },
         )
