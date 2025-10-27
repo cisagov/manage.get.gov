@@ -1053,7 +1053,8 @@ class DomainRequest(TimeStampedModel):
         return is_valid
 
     def allow_omb_in_review_transition(self):
-        # Check if domain request is feb. Allow transition if in enterprise mode
+        """Checks if domain request is in enterprise mode for state transition without investigator"""
+        """If it is not in enterprise mode check the investigator exists"""
         if self.is_feb():
             if self.portfolio:
                 return True
@@ -1349,7 +1350,7 @@ class DomainRequest(TimeStampedModel):
         conditions=[domain_is_not_active, allow_omb_in_review_transition],
     )
     def in_review_omb(self):
-        """When a domain request is submitted for Feb, it automatically transitions to in review"""
+        """Transitions Domain Request Status from submitted to In review - OMB"""
         pass
 
     def requesting_entity_is_portfolio(self) -> bool:
