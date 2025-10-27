@@ -261,34 +261,33 @@ def send_domain_manager_on_hold_email_to_domain_managers(
 
     """
     all_emails_sent = True
-    # Get each domain manager from list
-    user_domain_roles = UserDomainRole.objects.filter(domain=domain)
-    for user_domain_role in user_domain_roles:
-        # Send email to each domain manager
-        user = user_domain_role.user
-        bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
-        try:
-            send_templated_email(
-                "emails/domain_on_hold_notification.txt",
-                "emails/domain_on_hold_notification_subject.txt",
-                to_addresses=[user.email],
-                bcc_address=bcc_address,
-                context={
-                    "domain_manager": user,
-                    "domain": domain,
-                    "date": date.today(),
-                },
-            )
-        except EmailSendingError as err:
-            logger.error(
-                "Failed to send domain manager deleted notification email:\n"
-                f"  Subject template: domain_on_hold_notification_subject.txt\n"
-                f"  To: {user.email}\n"
-                f"  Domain: {domain.name}\n"
-                f"  Error: {err}",
-                exc_info=True,
-            )
-            all_emails_sent = False
+    # Get domain manager emails
+    domain_manager_emails = list(
+        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+    )
+
+    bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
+    try:
+        send_templated_email(
+            "emails/domain_on_hold_notification.txt",
+            "emails/domain_on_hold_notification_subject.txt",
+            to_addresses=domain_manager_emails,
+            bcc_address=bcc_address,
+            context={
+                "domain": domain,
+                "date": date.today(),
+            },
+        )
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send domain manager deleted notification email:\n"
+            f"  Subject template: domain_on_hold_notification_subject.txt\n"
+            f"  To: {domain_manager_emails}\n"
+            f"  Domain: {domain.name}\n"
+            f"  Error: {err}",
+            exc_info=True,
+        )
+        all_emails_sent = False
     return all_emails_sent
 
 
