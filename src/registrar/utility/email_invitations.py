@@ -268,6 +268,7 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
     domain_manager_emails = list(
         UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
     )
+    requestor_email = _get_requestor_email(requestor, domains=domain)
 
     bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
     try:
@@ -278,7 +279,7 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
             bcc_address=bcc_address,
             context={
                 "domain": domain,
-                "requestor": requestor,
+                "requestor": requestor_email,
                 "date": date.today(),
             },
         )

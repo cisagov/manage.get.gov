@@ -1,9 +1,15 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }}.{% endif %}
+Hi, domain managers.
 
-On {{ date }}, the following domain was placed on hold: {{ domain.name }}
+We received a request to delete the following domain: {{ domain.name }}
 
-You can view this status update in the .gov registrar <{{ manage_url }}>.
+DELETION REQUESTED BY: {{ requestor_email }}
+REQUEST RECEIVED ON: {{ date }}
+STATUS: On hold
+
+We placed the domain on hold for seven days as a precautionary measure before deleting it. After the domain is deleted, it can’t be recovered. 
+
+If you would like to release the hold and cancel the deletion, reply to this email.
 
 ----------------------------------------------------------------
 
@@ -15,21 +21,8 @@ When a domain is placed on hold:
 - Any email or websites using the domain could become unavailable.
 - Domain managers can’t edit domain information.
 
-Although the domain is still registered to your organization, it’s administratively paused. These changes can be undone if the .gov team releases the hold.
+The domain is still registered to your organization until it’s officially deleted.
 
-WHY ARE DOMAINS PLACED “ON HOLD”?
-
-In general, there are a handful of reasons we place a domain on hold: 
-- There was an authorized request to delete the domain, so we temporarily placed it on hold as a precautionary measure before deleting. 
-- The domain registration was not renewed.
-- Prolonged, unresolved, serious violations of .gov’s registration requirements occurred, and our outreach about these violations was unsuccessful. Learn more about these requirements <https://get.gov/domains/requirements>.
-- The original domain registration was deemed unauthorized.
-
-A domain is typically placed on hold for seven calendar days before deletion. Unauthorized requests may be deleted sooner.
-
-RELEASE THE HOLD
-
-If you would like to cancel the deletion of this domain or get help renewing it, reply to this email or contact help@get.gov for assistance.
 
 SOMETHING WRONG?
 

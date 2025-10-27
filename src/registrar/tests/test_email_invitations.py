@@ -1416,16 +1416,21 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
         self.mock_values_list_qs.distinct.return_value = [self.dm1.user.email, self.dm2.user.email]
 
     @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+    def test_send_email_success(self, mock_filter, mock_send_templated_email, mock_get_requestor_email):
         """Test successful sending of domain manager removal emails."""
 
         mock_filter.return_value.values_list.return_value = self.mock_values_list_qs
         mock_send_templated_email.return_value = None  # No exception means success
 
+        mock_get_requestor_email.return_value = "requestor_success@example.com"
+
+        mock_requestor = MagicMock()
         result = send_domain_manager_on_hold_email_to_domain_managers(
             domain=self.domain,
+            requestor=mock_requestor,
         )
         mock_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
@@ -1435,6 +1440,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             bcc_address="",
             context={
                 "domain": self.domain,
+                "requestor": "requestor_success@example.com",
                 "date": date.today(),
             },
         )
@@ -1442,13 +1448,17 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
         self.assertTrue(result)
 
     @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    def test_send_email_failure(self, mock_filter, mock_send_templated_email):
+    def test_send_email_failure(self, mock_filter, mock_send_templated_email, mock_get_requestor_email):
         mock_filter.return_value.values_list.return_value = self.mock_values_list_qs
 
+        mock_get_requestor_email.return_value = "requestor_fail@example.com"
+        mock_requestor = MagicMock()
         result = send_domain_manager_on_hold_email_to_domain_managers(
             domain=self.domain,
+            requestor=mock_requestor,
         )
 
         self.assertFalse(result)
@@ -1460,6 +1470,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             bcc_address="",
             context={
                 "domain": self.domain,
+                "requestor": "requestor_fail@example.com",
                 "date": date.today(),
             },
         )
