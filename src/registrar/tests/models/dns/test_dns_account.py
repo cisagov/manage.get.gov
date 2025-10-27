@@ -7,8 +7,7 @@ from registrar.models.dns.dns_account import DnsAccount
 class DnsAccountTest(TestCase):
 
     def setUp(self):
-        self.dns_account = DnsAccount.objects.create(name="acct-base")
-        self.dns_account.save()
+        self.dns_account, _ = DnsAccount.objects.get_or_create(name="acct-base")
 
     def tearDown(self):
         DnsAccount.objects.all().delete()
