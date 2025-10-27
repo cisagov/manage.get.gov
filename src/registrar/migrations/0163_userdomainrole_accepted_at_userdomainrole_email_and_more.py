@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0161_dnsaccount_vendordnsaccount_is_active_and_more"),
+        ("registrar", "0162_dnssoa_dnszone_flatten_all_cnames_and_more"),
     ]
 
     operations = [
