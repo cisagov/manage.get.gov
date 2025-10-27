@@ -287,6 +287,13 @@ class UserFixture:
             "title": "Erin-Analyst",
             "email": "erin.tingler@ecstech.com",
         },
+        {
+            "username": "ad74ef51-8cab-4c2a-8d06-c357f138cc2f",
+            "first_name": "Agapito",
+            "last_name": "Pabalan",
+            "title": "ANALYST",
+            "email": "agapito.pabalan.analyst@ecstech.com",
+        }
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
