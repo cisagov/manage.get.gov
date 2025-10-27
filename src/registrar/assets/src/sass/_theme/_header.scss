@@ -70,8 +70,19 @@ button {
 }
 
 .usa-header--basic {
-    .usa-logo__text {
-        color: color('primary-darker');
+    .usa-logo__text a,
+    .usa-logo__text button,
+    .usa-logo__text button:hover {
+        color: color('white');
+    }    
+    background-color: color('primary-darker');
+    .usa-accordion__button[aria-expanded="false"] span::after,
+    .usa-accordion__button[aria-expanded="true"] span::after {
+        background-color: color("white") !important;
+    }
+    .usa-accordion__button:hover .usa-nav__username,
+    .usa-accordion__button:focus .usa-nav__username {
+      color: color('white') !important;
     }
     .usa-nav__username {
         padding: units(1) units(2);
@@ -79,22 +90,46 @@ button {
             padding: units(2);
         }
     }
+    .usa-nav__text {
+        color: color('white');
+        font-weight: font-weight('bold');
+    }
     .usa-nav__primary {
         margin-top:units(1);
+        .usa-nav-link,
+        .usa-nav-link:hover,
+        .usa-nav-link:active {
+            font-size: 16px;
+            color: color('white');
+        }
+        .usa-current,
+        .usa-current:hover,
+        .usa-current:active,
+        button.usa-current {
+            font-weight: font-weight('bold');
+            color: color('white');
+        }
+        button[aria-expanded="true"] {
+            color: color('white');
+        }
+        button:not(.usa-current):hover::after  {
+            display: none!important;
+            color: color('white');
+        }
     }
     @include at-media(desktop) {
-        .usa-nav__primary-item:not(:first-child) {
-            position: relative;
-        }
-        .usa-nav__primary-item:not(:first-child)::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 0; /* No width since it's a border */
-            height: 40%;
-            border-left: solid 1px color('base-light');
-            transform: translateY(-50%);
+    .usa-nav__primary-item:not(:first-child) {
+        position: relative;
+    }
+    .usa-nav__primary-item:not(:first-child)::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 0; /* No width since it's a border */
+        height: 40%;
+        border-left: solid 1px color('base-light');
+        transform: translateY(-50%);
         }
     }
 
@@ -102,7 +137,7 @@ button {
         padding-top: 0;
         padding-bottom: 0;
         padding-left: 0;
-        color: #{$dhs-blue};
+        color: color('white');
     }
 }
 
