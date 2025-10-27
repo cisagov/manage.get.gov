@@ -165,6 +165,8 @@ def _send_domain_invitation_update_emails_to_domain_managers(
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
+        if not user:
+            continue
         try:
             send_templated_email(
                 "emails/domain_manager_notification.txt",
@@ -212,13 +214,15 @@ def send_domain_manager_removal_emails_to_domain_managers(
 
     """
     all_emails_sent = True
-    # Get each domain manager from list
+    # Get each domain manager from list (exclude pending invitations where user is null)
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     if manager_removed:
         user_domain_roles = user_domain_roles.exclude(user=manager_removed)
     for user_domain_role in user_domain_roles:
         # Send email to each domain manager
         user = user_domain_role.user
+        if not user:
+            continue
         try:
             send_templated_email(
                 "emails/domain_manager_deleted_notification.txt",
@@ -246,15 +250,14 @@ def send_domain_manager_removal_emails_to_domain_managers(
     return all_emails_sent
 
 
-def send_domain_manager_on_hold_email_to_domain_managers(
-    domain: Domain,
-):
+def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, requestor):
     """
     Notifies all domain managers that a domain they are a domain manager
     for has been put on hold and set to be deleted in 7 days.
 
     Args:
         domain (Domain): The domain that is going to be put on hold
+        requestor (User): The user initiating the invitation.
 
     Returns:
         Boolean indicating if all messages were sent successfully.
@@ -275,6 +278,7 @@ def send_domain_manager_on_hold_email_to_domain_managers(
             bcc_address=bcc_address,
             context={
                 "domain": domain,
+                "requestor": requestor,
                 "date": date.today(),
             },
         )
@@ -372,6 +376,8 @@ def send_portfolio_update_emails_to_portfolio_admins(editor, portfolio, updated_
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
+        if not user:
+            continue
         try:
             send_templated_email(
                 "emails/portfolio_org_update_notification.txt",
@@ -418,6 +424,9 @@ def send_portfolio_member_permission_update_email(requestor, permissions: UserPo
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
     """
+    # Exclude pending invitations where user is null
+    if not permissions.user:
+        return False
     requestor_email = _get_requestor_email(requestor, portfolio=permissions.portfolio)
     try:
         send_templated_email(
@@ -464,6 +473,9 @@ def send_portfolio_member_permission_remove_email(requestor, permissions: UserPo
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
     """
+    # Exclude pending invitations where user is null
+    if not permissions.user:
+        return False
     requestor_email = _get_requestor_email(requestor, portfolio=permissions.portfolio)
     try:
         send_templated_email(
@@ -562,6 +574,8 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
+        if not user:
+            continue
         try:
             send_templated_email(
                 "emails/portfolio_admin_addition_notification.txt",
@@ -619,6 +633,8 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
+        if not user:
+            continue
         try:
             send_templated_email(
                 "emails/portfolio_admin_removal_notification.txt",

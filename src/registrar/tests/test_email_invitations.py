@@ -1427,7 +1427,6 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
         result = send_domain_manager_on_hold_email_to_domain_managers(
             domain=self.domain,
         )
-        print(mock_send_templated_email.return_value)
         mock_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             "emails/domain_on_hold_notification.txt",
