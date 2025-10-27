@@ -525,7 +525,10 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
         with self.assertRaises(EmailSendingError) as context:
             send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
 
-        self.assertIn("Could not sent email invitation to", str(context.exception))
+        self.assertIn(
+            "An unexpected error occurred: invitee@example.com could not be added to this domain.",
+            str(context.exception),
+        )
 
     @less_console_noise_decorator
     @patch(

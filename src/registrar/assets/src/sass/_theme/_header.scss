@@ -212,6 +212,27 @@ button {
             overflow: visible;
         }
     }
+    .usa-nav__primary a:not(.usa-button) {
+        @include at-media-max($theme-header-min-width) {
+            .organization-nav-link {
+                white-space: nowrap;
+                width: 100%;
+            }
+
+            &:hover,
+            &:focus,
+            &.usa-current {
+                .organization-nav-link {
+                    white-space: normal;
+                }
+
+                .logo-col {
+                    padding-top: 0.42rem;
+                    align-self: flex-start;
+                }
+            }
+        }
+    }
 }
 
 .usa-nav__inner--widescreen,
@@ -472,6 +493,10 @@ button {
 }
 
 #organizations-submenu {
+    @include at-media($theme-header-min-width) {
+        width: 20rem;
+    }
+
     button,
     button:hover {
         background-color: inherit;
@@ -492,7 +517,6 @@ button {
         margin-right: 0;
         width: 100%;
         a {
-            line-height: line-height($theme-navigation-font-family, 2);
             margin-right: auto;
             text-align: left;
             width: 100%;
