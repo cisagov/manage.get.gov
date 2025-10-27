@@ -10,6 +10,7 @@
 {% endblock content %}
 
 {% block field_sets %}
+    <input type="hidden" name="version" value="{{ original.updated_at|date:'c' }}">
     {# Create an invisible <a> tag so that we can use a click event to toggle the modal. #}
     <a id="invisible-ineligible-modal-toggler" class="display-none" href="#toggle-set-ineligible" aria-controls="toggle-set-ineligible" data-open-modal></a>
     {# Store the current object id so we can access it easier #}

@@ -3,12 +3,14 @@ from datetime import date
 from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
+from django.utils.dateparse import parse_datetime
 from registrar.decorators import (
     HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
@@ -482,6 +484,7 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
             }
         context["domain_request_id"] = self.domain_request.id
+        context["version_token"] = self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else ""
         return context
 
     def get_step_list(self) -> list:
@@ -508,32 +511,63 @@ class DomainRequestWizard(TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
-            self.is_portfolio = True
-            # Configure titles, wizard_conditions, unlocking_steps, and steps
-            self.configure_step_options()
+        self.ensure_portfolio_mode(request)
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
-            # Split into a function: C901 'DomainRequestWizard.post' is too complex (11)
-            self.handle_intro_acknowledge(request)
+            return self.handle_intro_acknowledge(request)
 
         # if accessing this class directly, redirect to the first step
         if self.__class__ == DomainRequestWizard:
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
-        if self.is_valid(forms):
-            # always save progress
-            self.save(forms)
-        else:
-            context = self.get_context_data()
-            context["forms"] = forms
-            return render(request, self.template_name, context)
+        # pull the snapshot from form (set during GET)
+        self.apply_optimistic_lock(request)
 
+        if not self.is_valid(forms):
+            return self.render_invalid(request, forms)
+
+        try:
+            self.save(forms)  # this calls RegistrarForm.to_database(...) which calls obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.domain_request.refresh_from_db()
+            # DO NOT persist the POST; show the latest DB state
+            messages.warning(request, "A newer version of this form exists. Please try again.")
+            return self.goto(self.steps.current)
+
+        return self.dispatch_next(button, request)
+
+    def ensure_portfolio_mode(self, request) -> None:
+        """Enable portfolio mode if applicable and reconfigure steps."""
+        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
+            self.is_portfolio = True
+            self.configure_step_options()
+
+    def apply_optimistic_lock(self, request) -> None:
+        """Apply optimistic locking comparing against version in the submitted form."""
+        version_str = request.POST.get("version")
+        if version_str:
+            parsed = parse_datetime(version_str)
+            self.domain_request._original_updated_at = parsed
+
+    def render_invalid(self, request, forms: list) -> HttpResponse:
+        """Render the template with invalid forms and context."""
+        context = self.get_context_data()
+        context["forms"] = forms
+        return render(request, self.template_name, context)
+
+    def redirect_after_save(self, request) -> HttpResponse:
+        """Redirect after 'save_and_return' depending on user type."""
+        if request.user.is_org_user(request):
+            return HttpResponseRedirect(reverse("domain-requests"))
+        return HttpResponseRedirect(reverse("home"))
+
+    def dispatch_next(self, button: str, request) -> HttpResponse:
+        """Route to the appropriate next page based on the pressed button."""
         if button == "back":
             return self.goto(self.steps.prev)
         # if user opted to save their progress,
@@ -544,11 +578,7 @@ class DomainRequestWizard(TemplateView):
         # if user opted to save progress and return,
         # return them to the home page
         if button == "save_and_return":
-            if request.user.is_org_user(request):
-                return HttpResponseRedirect(reverse("domain-requests"))
-            else:
-                return HttpResponseRedirect(reverse("home"))
-
+            return self.redirect_after_save(request)
         # otherwise, proceed as normal
         return self.goto_next_step()
 
@@ -563,9 +593,12 @@ class DomainRequestWizard(TemplateView):
 
         Saves the domain request to the database.
         """
-        for form in forms:
-            if form is not None and hasattr(form, "to_database"):
-                form.to_database(self.domain_request)
+        try:
+            for form in forms:
+                if form is not None and hasattr(form, "to_database"):
+                    form.to_database(self.domain_request)
+        except ValidationError:
+            raise
 
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete

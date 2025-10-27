@@ -85,6 +85,7 @@
 {% block form_fields %}{% endblock %}
 
 {% block form_buttons %}
+        <input type="hidden" name="version" value="{{ version_token }}">
           <div class="stepnav">
             {% if steps.prev %}
             <button
