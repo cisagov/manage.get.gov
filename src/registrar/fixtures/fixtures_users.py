@@ -293,7 +293,7 @@ class UserFixture:
             "last_name": "Pabalan",
             "title": "ANALYST",
             "email": "agapito.pabalan.analyst@ecstech.com",
-        }
+        },
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
