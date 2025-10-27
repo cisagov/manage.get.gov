@@ -1,5 +1,6 @@
 from django.db import models
 from registrar.models.user_domain_role import UserDomainRole
+from django.core.exceptions import ValidationError
 from registrar.models.utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
     UserPortfolioRoleChoices,
@@ -52,9 +53,15 @@ class UserPortfolioPermission(TimeStampedModel):
         ],
     }
 
+    class Status(models.TextChoices):
+        INVITED = "invited", "Invited"
+        ACCEPTED = "accepted", "Accepted"
+        REJECTED = "rejected", "Rejected"
+        EXPIRED = "expired", "Expired"
+
     user = models.ForeignKey(
         "registrar.User",
-        null=False,
+        null=True,
         # when a user is deleted, permissions are too
         on_delete=models.CASCADE,
         related_name="portfolio_permissions",
@@ -88,6 +95,34 @@ class UserPortfolioPermission(TimeStampedModel):
         help_text="Select one or more additional permissions.",
     )
 
+    # Invitation fields
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        null=True,
+        help_text="Status of the portfolio permission invitation",
+    )
+
+    invited_by = models.ForeignKey(
+        "registrar.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="invited_portfolio_permissions",
+        help_text="User who created the invitation",
+    )
+
+    invited_at = models.DateTimeField(null=True, blank=True)
+
+    email = models.EmailField(null=True, blank=True)
+
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    revocation_reason = models.TextField(null=True, blank=True)
+
+    # End Invitation fields
     def __str__(self):
         readable_roles = []
         if self.roles:
@@ -272,6 +307,9 @@ class UserPortfolioPermission(TimeStampedModel):
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
+        # Ensure user is present for any non-invited status
+        if self.status != self.Status.INVITED and self.user_id is None:
+            raise ValidationError({"user": "User is required when status is not 'invited'."})
         # Ensure user exists before running further validation
         # In django admin, this clean method is called before form validation checks
         # for required fields. Since validation below requires user, skip if user does
