@@ -20,5 +20,12 @@ class DnsZoneTest(TestCase):
         self.assertEqual(self.dns_zone.name, self.dns_zone.domain.name)
 
     def test_zone_sets_default_soa(self):
-        """Zones without a specified SOA will be assigned default SOA settings"""
+        """Zones without a specified SOA will be assigned default SOA settings."""
         self.assertEqual(self.dns_zone.soa.pk, DnsSoa.get_default_pk())
+
+    def test_set_zone_name(self):
+        """Successfully change DNS Zone name."""
+        updated_name = "subdomain.dns-test.gov"
+        self.dns_zone.name = updated_name
+        self.dns_zone.save()
+        self.assertEqual(self.dns_zone.name, updated_name)
