@@ -765,6 +765,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
     )
 
 
+# Test push
 @grant_access(IS_STAFF)
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
