@@ -1440,7 +1440,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             bcc_address="",
             context={
                 "domain": self.domain,
-                "requestor": "requestor_success@example.com",
+                "requestor_email": "requestor_success@example.com",
                 "date": date.today(),
             },
         )
@@ -1470,7 +1470,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             bcc_address="",
             context={
                 "domain": self.domain,
-                "requestor": "requestor_fail@example.com",
+                "requestor_email": "requestor_fail@example.com",
                 "date": date.today(),
             },
         )
