@@ -9,7 +9,6 @@ from django_fsm import FSMField, transition  # type: ignore
 
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
-from django.forms import ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -75,14 +74,7 @@ class DomainInvitation(TimeStampedModel):
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
             logger.warn("Invitation %s was retrieved for a role that already exists.", self)
-    
-    def clean(self):
-        existing_invitation = DomainInvitation.objects.filter(email__iexact=self.email, domain=self.domain)
-        if existing_invitation:
-            raise ValidationError(
-                {"email": "An invitation this email and domain already exists"}
-            )
-    
+
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
         """When an invitation is canceled, change the status to canceled"""

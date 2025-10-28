@@ -438,14 +438,3 @@ def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
     if user:
         # Remove user's domain roles for the current portfolio
         UserDomainRole.objects.filter(user=user, domain__domain_info__portfolio=portfolio).delete()
-
-def check_if_portfolio_invitation_exists(portfolio_invitation):
-    PortfolioInvitation = apps.get_model("registrar.PortfolioInvitation")
-    existing_invitation = PortfolioInvitation.objects.filter(email__iexact=portfolio_invitation.email, portfolio=portfolio_invitation.portfolio)
-
-    if existing_invitation:
-        raise ValidationError({
-                'email': 'An invitation with this email and role already exists'
-                }
-    )
- 
