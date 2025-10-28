@@ -1,11 +1,10 @@
 from django.test import TestCase
 from django.db import IntegrityError, transaction
-from django.apps import apps
 
-DnsAccount = apps.get_model("registrar", "DnsAccount")
-VendorDnsAccount = apps.get_model("registrar", "VendorDnsAccount")
-Join = apps.get_model("registrar", "DnsAccount_VendorDnsAccount")
-DnsVendor = apps.get_model("registrar", "DnsVendor")
+from registrar.models.dns.dns_account import DnsAccount
+from registrar.models.dns.dns_vendor import DnsVendor
+from registrar.models.dns.vendor_dns_account import VendorDnsAccount
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
 
 
 class DnsAccount_VendorDnsAccountTest(TestCase):
@@ -15,19 +14,22 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
 
     def setUp(self):
         self.dns_account = DnsAccount.objects.create(name="acct-base")
-        self.dns_account.save()
         self.vendor = DnsVendor.objects.create(name="Cloudflare")
-        self.vendor.save()
         self.vendor_account_1 = VendorDnsAccount.objects.create(
             x_account_id="x1",
             x_created_at="2025-10-17 19:57:53.157055+00",
             x_updated_at="2025-10-17 19:57:53.157055+00",
             dns_vendor=self.vendor,
         )
-        self.vendor_account_1.save()
         self.join1 = Join.objects.create(
             dns_account=self.dns_account, vendor_dns_account=self.vendor_account_1, is_active=True
         )
+
+    def tearDown(self):
+        Join.objects.all().delete()
+        VendorDnsAccount.objects.all().delete()
+        DnsAccount.objects.all().delete()
+        DnsVendor.objects.all().delete()
 
     def test_is_active_constraint_throws_error(self):
         vendor_account_2 = VendorDnsAccount.objects.create(
@@ -58,7 +60,6 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
         second_join = Join.objects.create(
             dns_account=self.dns_account, vendor_dns_account=vendor_account_2, is_active=False
         )
-        second_join.save()
 
         self.assertTrue(Join.objects.filter(pk=second_join.pk).exists(), "Second join created successfully!")
         self.assertTrue(
