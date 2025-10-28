@@ -11,7 +11,6 @@ from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
-    IS_DOMAIN_MANAGER,
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
     HAS_LEGACY_AND_ORG_USER,
@@ -1213,7 +1212,7 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
         user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
             "portfolio"
         )
-        # context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["user_portfolio_permissions"] = user_portfolio_permissions
         context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
