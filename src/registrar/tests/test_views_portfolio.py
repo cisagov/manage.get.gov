@@ -3895,7 +3895,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         invite_count_before = PortfolioInvitation.objects.count()
-        print("invite", invite_count_before)
         # Simulate submission of member invite for user who has already been invited
         response = self.client.post(
             reverse("new-member"),
