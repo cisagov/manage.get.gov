@@ -13,15 +13,15 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
     """
 
     def setUp(self):
-        self.dns_account, _ = DnsAccount.objects.get_or_create(name="acct-base")
-        self.vendor, _ = DnsVendor.objects.get_or_create(name="Cloudflare")
-        self.vendor_account_1, _ = VendorDnsAccount.objects.get_or_create(
+        self.dns_account = DnsAccount.objects.get_or_create(name="acct-base")
+        self.vendor = DnsVendor.objects.get_or_create(name="Cloudflare")
+        self.vendor_account_1 = VendorDnsAccount.objects.get_or_create(
             x_account_id="x1",
             x_created_at="2025-10-17 19:57:53.157055+00",
             x_updated_at="2025-10-17 19:57:53.157055+00",
             dns_vendor=self.vendor,
         )
-        self.join1 = Join.objects.get_or_create(
+        self.join1 = Join.objects.create(
             dns_account=self.dns_account, vendor_dns_account=self.vendor_account_1, is_active=True
         )
 
