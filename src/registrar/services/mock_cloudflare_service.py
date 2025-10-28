@@ -7,6 +7,7 @@ from faker import Faker
 from random import randint
 
 from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.utility.dns_helper import make_dns_account_name
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +68,8 @@ class MockCloudflareService:
             side_effect=self._mock_create_dns_record_response
         )
 
-    def _mock_get_page_accounts_response(self, request):
-        logger.debug("😎 Mocking accounts get")
+    def _mock_get_page_accounts_response(self, request) -> httpx.Response:
+        logger.debug("😎 Mocking accounts GET")
 
         return httpx.Response(
             200,
@@ -118,7 +119,7 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_get_account_zones_response(self, request):
+    def _mock_get_account_zones_response(self, request) -> httpx.Response:
         request_as_json = json.loads(request.content.decode("utf-8"))
         zone_name = request_as_json["name"]
         account_id = request_as_json["account"]["id"]
@@ -159,20 +160,21 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_create_zone_response(self, request):
+    def _mock_create_zone_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking zone create")
         request_as_json = json.loads(request.content.decode("utf-8"))
         zone_name = request_as_json["name"]
         account_id = request_as_json["account"]["id"]
+
         return httpx.Response(
             200,
             json={
                 "success": True,
                 "result": {
                     "id": self.fake_record_id,
-                    "account": {"id": account_id, "name": "account-found-my.gov"},
-                    "created_on": "2014-01-01T05:20:00.12345Z",
-                    "modified_on": "2014-01-01T05:20:00.12345Z",
+                    "account": {"id": account_id, "name": make_dns_account_name(zone_name)},
+                    "created_on": datetime.now(timezone.utc).isoformat(),
+                    "modified_on": datetime.now(timezone.utc).isoformat(),
                     "name": zone_name,
                     "name_servers": [
                         "rainbow.dns.gov",
@@ -184,16 +186,17 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_create_account_response(self, request):
+    def _mock_create_account_response(self, request) -> httpx.Response:
         logger.debug("😎 mocking account create")
         request_as_json = json.loads(request.content.decode("utf-8"))
         account_name = request_as_json["name"]
+
         return httpx.Response(
             200,
             json={
                 "success": True,
                 "result": {
-                    "id": "24681359",
+                    "id": fake.uuid4(),
                     "name": account_name,
                     "type": "standard",  # enterprise?
                     "created_on": datetime.now(timezone.utc).isoformat(),  # format "2014-03-01T12:21:02.0000Z",
@@ -201,13 +204,20 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_create_dns_record_response(self, request):
+    def _mock_create_dns_record_response(self, request) -> httpx.Response:
         logger.debug("😃 mocking dns record creation")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
         content = request_as_json["content"]
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
+
+        # if record_name.starts_with("error"):
+            # if record_name starts with error-400:
+                #return a bad request error "Mocked Bad Request 400"
+            # if record_name starts with error-403:
+                # return an unauthorized error "Mocked Unauthorized 403"
+            # return 500 error "not a proper mock error"
 
         return httpx.Response(
             200,
@@ -225,8 +235,8 @@ class MockCloudflareService:
                     "meta": {},
                     "comment": "Mocked A record created",
                     "tags": [],
-                    "created_on": "2025-10-22T03:38:21.614099Z",
-                    "modified_on": "2025-10-22T03:38:21.614099Z",
+                    "created_on": datetime.now(timezone.utc).isoformat(),
+                    "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
                 "success": True,
                 "errors": [],
