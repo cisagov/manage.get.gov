@@ -257,7 +257,7 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
 
     Args:
         domain (Domain): The domain that is going to be put on hold
-        requestor (User): The user initiating the invitation.
+        requestor (User): The user initiating the request to delete the domain
 
     Returns:
         Boolean indicating if all messages were sent successfully.
