@@ -740,7 +740,6 @@ class DomainDNSView(DomainBaseView):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
-        context["is_valid_domain"] = self.object.name in self.valid_domains
         return context
 
 
@@ -797,12 +796,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
         if not flag_enabled:
             return False
-
-        self.object = self.get_object()
-        if self.object.name not in self.valid_domains:
-            return False
-
-        return True
 
     def get_success_url(self):
         return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
