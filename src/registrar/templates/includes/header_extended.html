@@ -1,7 +1,11 @@
 {% load static %}
 {% load custom_filters %}
 
+{% if hide_portfolio_navbar %}
+<header class="usa-header usa-header--extended usa-header__top-level-only">
+{% else %}
 <header class="usa-header usa-header--extended">
+{% endif %}
     <div class="usa-navbar usa-navbar--widescreen padding-x--widescreen">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
         <button type="button" class="usa-menu-btn">Menu</button>

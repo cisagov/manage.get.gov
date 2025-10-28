@@ -174,7 +174,7 @@ class CheckPortfolioMiddleware:
         # Remove condition 1 when we remove multiple portfolios feature flag
         if (
             not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
-        ) or request.user.get_num_portfolios() == 1:
+        ) or (request.user.get_num_portfolios() == 1 and not request.user.has_legacy_domain() ):
             request.session["portfolio"] = request.user.get_first_portfolio()
         # If user no longer has permission to session portfolio,
         # eg their user portfolio permission deleted or replaced,
@@ -197,6 +197,7 @@ class CheckPortfolioMiddleware:
             request.user.is_multiple_orgs_user(request)
             or (request.user.has_legacy_domain() and request.user.is_any_org_user())
         ) and current_path == self.home:
+            del request.session["portfolio"]
             home_redirect = reverse("your-organizations")
             return HttpResponseRedirect(home_redirect)
 
