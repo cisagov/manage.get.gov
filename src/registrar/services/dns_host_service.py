@@ -5,6 +5,7 @@ from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
 
 from django.db import transaction
 from django.utils import timezone
@@ -132,40 +133,29 @@ class DnsHostService:
             raise
 
     def create_account(self, account_name: str):
-        existing_id = self._find_existing_account(account_name)
-
-        if existing_id:
-            with transaction.atomic():
-                vendor_acc, _ = VendorDnsAccount.objects.get_or_create(
-                    x_account_id=existing_id,
-                    defaults={
-                        "x_created_at": timezone.now(),
-                        "x_updated_at": timezone.now(),
-                    },
-                )
-                DnsAccount.objects.get_or_create(
-                    name=account_name,
-                    defaults={"vendor_dns_account": vendor_acc},
-                )
-            return existing_id, account_name
-
-        try:
-            data = self.dns_vendor_service.create_account(account_name)
-            account_id = data["result"]["id"]
-            saved_name = data["result"].get("name", account_name)
-        except Exception as e:
-            logger.error("Failed to create vendor DNS account %s: %s", account_name, e)
-            raise
+        data = self.dns_vendor_service.create_account(account_name)
+        account_id = data["result"]["id"]
+        saved_name = data["result"].get("name", account_name)
 
         with transaction.atomic():
-            vendor_acc = VendorDnsAccount.objects.create(
+            vendor_acc, _ = VendorDnsAccount.objects.get_or_create(
                 x_account_id=account_id,
-                x_created_at=timezone.now(),
-                x_updated_at=timezone.now(),
+                defaults={
+                    "x_created_at": timezone.now(),
+                    "x_updated_at": timezone.now(),
+                },
             )
-            DnsAccount.objects.creat(
-                name=saved_name,
+
+            dns_acc, _ = DnsAccount.objects.get_or_create(name=saved_name)
+
+            Join.objects.get_or_create(
+                dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
+                defaults={
+                    "is_active": True,
+                    "x_created_at": timezone.now(),
+                    "x_updated_at": timezone.now(),
+                },
             )
 
         return account_id, saved_name
