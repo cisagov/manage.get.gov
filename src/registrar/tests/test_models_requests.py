@@ -1144,7 +1144,7 @@ class TestDomainRequest(TestCase):
             user=self.dummy_user_2,
         )
         domain_request.save()
-        domain_request.allow_omb_in_review_transition()
+        domain_request.in_review_omb()
 
         self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW_OMB)
 
@@ -1159,9 +1159,11 @@ class TestDomainRequest(TestCase):
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             user=self.dummy_user_2,
         )
+        #Removed investigator 
+        domain_request.investigator = None
         domain_request.save()
         with self.assertRaises(TransitionNotAllowed):
-            domain_request.allow_omb_in_review_transition()
+            domain_request.in_review_omb()
 
 
 class TestDomainRequestSuborganization(TestCase):
