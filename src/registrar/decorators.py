@@ -208,10 +208,7 @@ def _user_has_permission(user, request, rules, **kwargs):
                 and _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
             ),
         ),
-        (
-            HAS_LEGACY_AND_ORG_USER,
-            lambda: user.has_legacy_domain() and user.is_any_org_user()
-        ),
+        (HAS_LEGACY_AND_ORG_USER, lambda: user.has_legacy_domain() and user.is_any_org_user()),
     ]
 
     # Check conditions iteratively
