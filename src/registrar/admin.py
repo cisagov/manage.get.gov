@@ -1968,7 +1968,8 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         """
         try:
             portfolio = obj.portfolio
-            requested_email = obj.email.lower()
+            obj.email = obj.email.lower()
+            requested_email = obj.email
             requestor = request.user
             is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
             if not change:  # Only send email if this is a new PortfolioInvitation (creation)
@@ -1978,7 +1979,12 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 permission_exists = UserPortfolioPermission.objects.filter(
                     user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
-                if not permission_exists:
+
+                invitation_exists = PortfolioInvitation.objects.filter(
+                    email__iexact=requested_email, portfolio=portfolio
+                ).exists()
+                
+                if not permission_exists and not invitation_exists:
                     # if permission does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
                         email=requested_email,
@@ -1991,8 +1997,10 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
-                else:
-                    messages.warning(request, "User is already a member of this portfolio.")
+                elif permission_exists:
+                    messages.error(request, "User is already a member of this portfolio.")
+                elif invitation_exists:
+                    messages.error(request, f"{requested_email} has an existing invitation.")
             else:  # Handle the case when updating an existing PortfolioInvitation
                 # Retrieve the existing object from the database
                 existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
