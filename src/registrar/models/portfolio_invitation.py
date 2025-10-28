@@ -18,6 +18,7 @@ from .utility.portfolio_helper import (
     get_readable_roles,
     get_role_display,
     validate_portfolio_invitation,
+    check_if_portfolio_invitation_exists
 )  # type: ignore
 from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
@@ -211,6 +212,9 @@ class PortfolioInvitation(TimeStampedModel):
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
         super().clean()
+    
+        
+        check_if_portfolio_invitation_exists(self)
         validate_portfolio_invitation(self)
 
     def delete(self, *args, **kwargs):

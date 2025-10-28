@@ -1968,7 +1968,8 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         """
         try:
             portfolio = obj.portfolio
-            requested_email = obj.email.lower()
+            obj.email = obj.email.lower()
+            requested_email = obj.email
             requestor = request.user
             is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
             if not change:  # Only send email if this is a new PortfolioInvitation (creation)
