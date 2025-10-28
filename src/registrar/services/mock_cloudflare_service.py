@@ -212,12 +212,38 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
 
-        # if record_name.starts_with("error"):
-            # if record_name starts with error-400:
-                #return a bad request error "Mocked Bad Request 400"
-            # if record_name starts with error-403:
-                # return an unauthorized error "Mocked Unauthorized 403"
-            # return 500 error "not a proper mock error"
+        if record_name.startswith("error"):
+            if record_name.startswith("error-400"):
+                return httpx.Response(
+                    400,
+                    json={
+                        "result": None,
+                        "success": False,
+                        "errors": [
+                            {
+                                "code": 9005,
+                                "message": "Bad request for dns record."
+                            }
+                        ],
+                        "messages": []
+                                        }
+                )
+            if record_name.startswith("error-403"):
+                return httpx.Response(
+                    403,
+                    json={
+                        "success": False,
+                        "errors": [
+                            {
+                                "code": 10000,
+                                "message": "Authentication error"
+                            }
+                        ]
+                    }
+                )
+            return httpx.Response(
+                500
+            )
 
         return httpx.Response(
             200,
