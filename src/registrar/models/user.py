@@ -487,7 +487,7 @@ class User(AbstractUser):
         )
         return UserDomainRole.objects.filter(user=self).filter(Exists(no_portfolio)).exists()
 
-    def personal_domain_ids(self):
+    def legacy_domain_ids(self):
         """
         IDs of domains this user manages that are NOT in any portfolio.
         """

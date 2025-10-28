@@ -193,8 +193,8 @@ class CheckPortfolioMiddleware:
             flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
         ) or request.user.is_org_user(request)
 
-        # If user has multiple portfolios, home page should redirect to Your organizations page.
-        if request.user.is_multiple_orgs_user(request) and current_path == self.home:
+        if (request.user.is_multiple_orgs_user(request) or 
+            (request.user.has_legacy_domain() and request.user.is_any_org_user())) and current_path == self.home:
             home_redirect = reverse("your-organizations")
             return HttpResponseRedirect(home_redirect)
 

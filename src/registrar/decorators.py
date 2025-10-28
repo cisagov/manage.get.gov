@@ -32,6 +32,7 @@ HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
 HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
+HAS_LEGACY_AND_ORG_USER = "has_legacy_and_org_user"
 
 
 def grant_access(*rules):
@@ -206,6 +207,10 @@ def _user_has_permission(user, request, rules, **kwargs):
                 _member_exists_under_portfolio(portfolio, kwargs.get("member_pk"))
                 and _member_invitation_exists_under_portfolio(portfolio, kwargs.get("invitedmember_pk"))
             ),
+        ),
+        (
+            HAS_LEGACY_AND_ORG_USER,
+            lambda: user.has_legacy_domain() and user.is_any_org_user()
         ),
     ]
 
