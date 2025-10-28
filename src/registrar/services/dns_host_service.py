@@ -7,7 +7,7 @@ from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
 
-from django.db import transaction
+from django.db import transaction, connection
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -42,15 +42,18 @@ class DnsHostService:
         has_zone = bool(zone_id)
 
         if not has_account:
-            account_id, _ = self.create_account(account_name)
-
-        if not has_zone:
             try:
                 account_data = self.dns_vendor_service.create_account(account_name)
                 logger.info("Successfully created account")
                 account_id = account_data["result"]["id"]
             except APIError as e:
                 logger.error(f"DNS setup failed to create account: {str(e)}")
+                raise
+            
+            try:
+                account_id = self.create_db_account(account_data)
+            except Exception as e:
+                logger.error("Save to database failed") 
                 raise
 
             try:
@@ -132,30 +135,35 @@ class DnsHostService:
         except (RegistrySystemError, Exception):
             raise
 
-    def create_account(self, account_name: str):
-        data = self.dns_vendor_service.create_account(account_name)
-        account_id = data["result"]["id"]
-        saved_name = data["result"].get("name", account_name)
+    def create_db_account(self, account_data):
+        result = account_data["result"]
+        account_id = result["id"]
 
-        with transaction.atomic():
-            vendor_acc, _ = VendorDnsAccount.objects.get_or_create(
+        with transaction.atomic():            
+            vendor_acc = VendorDnsAccount.objects.create(
                 x_account_id=account_id,
                 defaults={
-                    "x_created_at": timezone.now(),
-                    "x_updated_at": timezone.now(),
+                    "x_created_at": result["created_on"],
+                    "x_updated_at": result["created_on"],
                 },
             )
+            logger.info("VendorAccount saved: id=%s, name=%s", vendor_acc.pk, vendor_acc.x_account_id)
 
-            dns_acc, _ = DnsAccount.objects.get_or_create(name=saved_name)
+            dns_acc = DnsAccount.objects.create(name=result["name"])
+            logger.info("DnsAccount saved: id=%s, name=%s", dns_acc.pk, dns_acc.name)
 
-            Join.objects.get_or_create(
+            join= Join.objects.create(
                 dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
                 defaults={
                     "is_active": True,
-                    "x_created_at": timezone.now(),
-                    "x_updated_at": timezone.now(),
                 },
             )
+            logger.info(
+                "Join link saved: dns_account_id=%s, vendor_dns_account_id=%s is_active=%s",
+                dns_acc.pk, vendor_acc.pk, join.is_active
+            )
 
-        return account_id, saved_name
+            logger.info("DB settings: %s", connection.settings_dict)
+        
+        return account_id
