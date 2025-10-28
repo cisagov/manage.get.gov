@@ -1159,7 +1159,7 @@ class TestDomainRequest(TestCase):
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             user=self.dummy_user_2,
         )
-        #Removed investigator 
+        # Removed investigator
         domain_request.investigator = None
         domain_request.save()
         with self.assertRaises(TransitionNotAllowed):
