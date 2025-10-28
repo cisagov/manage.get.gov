@@ -10,6 +10,7 @@ from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
 from functools import cached_property
+from django.core.exceptions import ValidationError
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
@@ -88,6 +89,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def __init__(self, *args, **kwargs):
         self._cache = {}
         super(Domain, self).__init__(*args, **kwargs)
+        self._original_updated_at = self.__dict__.get("updated_at", None)
 
     class Status(models.TextChoices):
         """
@@ -241,12 +243,19 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
+        # -------- Optimistic locking (quick-fix) --------
+        if optimistic_lock and self.pk:
+            current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
+            if getattr(self, "_original_updated_at", None) and current_updated_at != self._original_updated_at:
+                raise ValidationError("A newer version of this form exists. Please try again.")
+
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
 
         super().save(force_insert, force_update, using, update_fields)
+        self._original_updated_at = self.updated_at
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -369,7 +378,9 @@ class Domain(TimeStampedModel, DomainHelper):
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
 
-    def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
+    def renew_domain(
+        self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR, persist: bool = True, optimistic_lock: bool = False
+    ) -> bool:
         """
         Renew the domain to a length and unit of time relative to the current
         expiration date.
@@ -392,8 +403,13 @@ class Domain(TimeStampedModel, DomainHelper):
             # expiration date in the registrar, and in the cache
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
-            self.save()
-
+            if persist:
+                if optimistic_lock:
+                    self.save(optimistic_lock=True)
+                else:
+                    self.save()
+                return True
+            return False
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"Registry error renewing domain '{self.name}': {err}")
@@ -742,9 +758,9 @@ class Domain(TimeStampedModel, DomainHelper):
         remRequest.add_extension(remExtension)
         dsdata_change_log = ""
 
-        # Get the user's email
-        user_domain_role = UserDomainRole.objects.filter(domain=self).first()
-        user_email = user_domain_role.user.email if user_domain_role else "unknown user"
+        # Get the user's email (exclude invitation rows)
+        user_domain_role = UserDomainRole.objects.filter(domain=self, user__isnull=False).select_related("user").first()
+        user_email = user_domain_role.user.email if user_domain_role and user_domain_role.user else "unknown user"
 
         try:
             added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None

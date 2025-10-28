@@ -13,6 +13,7 @@ from django.db.models import (
 )
 
 from django.db.models.functions import Concat, Coalesce
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -71,6 +72,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.utils.dateparse import parse_datetime
 
 
 logger = logging.getLogger(__name__)
@@ -3105,6 +3107,20 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             modified_fieldsets.append((name, {**data, "fields": fields}))
         return modified_fieldsets
 
+    def _has_version_conflict(self, request, obj):
+        """
+        Returns True if there is a version conflict, False otherwise.
+        """
+        version = request.POST.get("version")
+        snap = parse_datetime(version) if version else None
+        current = type(obj).objects.only("updated_at").filter(pk=obj.pk).values_list("updated_at", flat=True).first()
+
+        if snap and current and current != snap:
+            return True
+        else:
+            obj._original_updated_at = snap
+            return False
+
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
         """Custom save_model definition that handles edge cases"""
@@ -3135,8 +3151,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
             return None
 
-        # == Check if we're making a change or not == #
+        # == OPTIMISTIC LOCK: Temp fix check for version conflict == #
+        if self._has_version_conflict(request, obj):
+            request._domain_request_version_conflict = True
+            return None
 
+        # == Check if we're making a change or not == #
         # If we're not making a change (adding a record), run save model as we do normally
         if not change:
             return super().save_model(request, obj, form, change)
@@ -3163,6 +3183,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def response_change(self, request, obj):
+        if getattr(request, "_domain_request_version_conflict", False):
+            change_url = reverse("admin:registrar_domainrequest_change", args=[obj.pk])
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
+            return HttpResponseRedirect(change_url)
+        return super().response_change(request, obj)
 
     def _handle_custom_emails(self, obj):
         if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
@@ -4327,6 +4354,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "Error connecting to the registry. No expiration date was found.",
                 messages.ERROR,
             )
+        except ValidationError:
+            self.message_user(
+                request,
+                "A newer version of this form exists. Please try again.",
+                messages.ERROR,
+            )
         except Exception as err:
             logger.error(err, stack_info=True)
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
@@ -4350,7 +4383,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         try:
             obj.deletedInEpp()
-            obj.save()
+            obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
@@ -4386,6 +4419,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     ),
                     messages.ERROR,
                 )
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception:
             self.message_user(
                 request,
@@ -4413,9 +4448,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
+
         try:
             obj.place_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -4444,7 +4482,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def do_remove_client_hold(self, request, obj):
         try:
             obj.revert_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error

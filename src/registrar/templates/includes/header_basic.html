@@ -21,7 +21,7 @@
             aria-controls="basic-nav-section-one"
             aria-label="user-profile-menu"
           >
-            <span class="usa-nav__username ellipsis">{{ user.email }}</span>
+            <span class="ellipsis usa-nav__username">{{ user.email }}</span>
           </button>
           <ul id="basic-nav-section-one" class="usa-nav__submenu">
             <li class="usa-nav__submenu-item">
@@ -34,14 +34,13 @@
           </ul>
         </li>
         <li class="usa-nav__primary-item">
-          <a href="{% url 'logout' %}"><span class="text-primary">Sign out</span></a>
+          <a href="{% url 'logout' %}"><span class="usa-nav__text">Sign out</span></a>
           {% else %}
-          <a href="{% url 'login' %}"><span>Sign in</span></a>
+          <a href="{% url 'login' %}"><span class="usa-nav__text">Sign in</span></a>
           {% endif %}
         </li>
       </ul>
     </nav>
-    {% block usa_nav_secondary %}{% endblock %}
     {% endblock %}
   </div>
 </header>
