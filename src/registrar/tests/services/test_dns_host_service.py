@@ -2,7 +2,7 @@ from unittest.mock import patch, Mock
 from django.test import SimpleTestCase
 
 from registrar.services.dns_host_service import DnsHostService
-from registrar.utility.constants import DNS_ACCOUNT_NAME_PREFIX
+from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
 
 
@@ -59,9 +59,7 @@ class TestDnsHostService(SimpleTestCase):
 
                 mock_get_account_zones.return_value = {"result": [{"id": case.get("found_zone_id")}]}
 
-                returned_account_id, returned_zone_id, _ = self.service.dns_setup(
-                   case["domain_name"]
-                )
+                returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
                 self.assertEqual(returned_account_id, case["account_id"])
                 self.assertEqual(returned_zone_id, case["zone_id"])
 
@@ -73,7 +71,7 @@ class TestDnsHostService(SimpleTestCase):
         self, mock_create_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
     ):
         domain_name = "test.gov"
-        account_name = self.service._make_account_name(domain_name)
+        account_name = make_dns_account_name(domain_name)
         mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
         mock_create_account.side_effect = APIError("DNS setup failed to create account")
 
@@ -91,7 +89,7 @@ class TestDnsHostService(SimpleTestCase):
         self, mock_create_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
     ):
         domain_name = "test.gov"
-        account_name = DNS_ACCOUNT_NAME_PREFIX + domain_name
+        account_name = make_dns_account_name(domain_name)
         account_id = "12345"
         mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
         mock_create_account.return_value = {"result": {"id": account_id}}
