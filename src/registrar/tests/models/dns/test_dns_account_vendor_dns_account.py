@@ -13,8 +13,8 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
     """
 
     def setUp(self):
-        self.dns_account = DnsAccount.objects.get_or_create(name="acct-base")
-        self.vendor = DnsVendor.objects.get_or_create(name="Cloudflare")
+        self.dns_account = DnsAccount.objects.create(name="acct-base")
+        self.vendor = DnsVendor.objects.create(name="Cloudflare")
         self.vendor_account_1 = VendorDnsAccount.objects.get_or_create(
             x_account_id="x1",
             x_created_at="2025-10-17 19:57:53.157055+00",
