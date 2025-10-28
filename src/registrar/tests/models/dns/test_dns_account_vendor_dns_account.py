@@ -15,7 +15,7 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
     def setUp(self):
         self.dns_account = DnsAccount.objects.create(name="acct-base")
         self.vendor = DnsVendor.objects.create(name="Cloudflare")
-        self.vendor_account_1 = VendorDnsAccount.objects.get_or_create(
+        self.vendor_account_1 = VendorDnsAccount.objects.create(
             x_account_id="x1",
             x_created_at="2025-10-17 19:57:53.157055+00",
             x_updated_at="2025-10-17 19:57:53.157055+00",
@@ -60,7 +60,6 @@ class DnsAccount_VendorDnsAccountTest(TestCase):
         second_join = Join.objects.create(
             dns_account=self.dns_account, vendor_dns_account=vendor_account_2, is_active=False
         )
-        second_join.save()
 
         self.assertTrue(Join.objects.filter(pk=second_join.pk).exists(), "Second join created successfully!")
         self.assertTrue(
