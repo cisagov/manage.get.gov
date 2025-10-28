@@ -137,7 +137,7 @@ class DnsHostService:
         if existing_id:
             with transaction.atomic():
                 vendor_acc, _ = VendorDnsAccount.objects.get_or_create(
-                    x_account_id = existing_id,
+                    x_account_id=existing_id,
                     defaults={
                         "x_created_at": timezone.now(),
                         "x_updated_at": timezone.now(),
@@ -145,10 +145,10 @@ class DnsHostService:
                 )
                 DnsAccount.objects.get_or_create(
                     name=account_name,
-                    defaults={"vendor_dns_account":vendor_acc},
+                    defaults={"vendor_dns_account": vendor_acc},
                 )
             return existing_id, account_name
-    
+
         try:
             data = self.dns_vendor_service.create_account(account_name)
             account_id = data["result"]["id"]
@@ -159,7 +159,7 @@ class DnsHostService:
 
         with transaction.atomic():
             vendor_acc = VendorDnsAccount.objects.create(
-                x_account_id = account_id,
+                x_account_id=account_id,
                 x_created_at=timezone.now(),
                 x_updated_at=timezone.now(),
             )
