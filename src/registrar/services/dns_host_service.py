@@ -3,6 +3,8 @@ import logging
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
+from registrar.services.utility.dns_helper import make_dns_account_name
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +28,7 @@ class DnsHostService:
 
     def dns_setup(self, domain_name):
         """Creates an account and zone in the dns host vendor tenant. Registers nameservers after zone creation"""
-
-        account_name = self.make_account_name(domain_name)
+        account_name = make_dns_account_name(domain_name)
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)
 
@@ -123,4 +124,3 @@ class DnsHostService:
             domain.nameservers = nameserver_tups  # calls epp service to post nameservers to registry
         except (RegistrySystemError, Exception):
             raise
-        
