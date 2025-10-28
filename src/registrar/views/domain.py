@@ -734,7 +734,6 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -775,7 +774,6 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "exists.gov"]
 
     def __init__(self):
         self.dns_record = None
@@ -813,12 +811,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
             try:
                 if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
                     raise Exception(f"create dns record was called for domain {self.name}")
-
-                if not settings.IS_PRODUCTION and self.object.name not in self.valid_domains:
-                    raise Exception(
-                        f"Can only create DNS records for: {self.valid_domains}."
-                        " Create one in a test environment if it doesn't already exist."
-                    )
 
                 record_data = {
                     "type": "A",
