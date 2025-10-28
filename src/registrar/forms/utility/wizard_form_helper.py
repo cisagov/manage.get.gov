@@ -33,7 +33,11 @@ class RegistrarForm(forms.Form):
             return
         for name, value in self.cleaned_data.items():
             setattr(obj, name, value)
-        obj.save()
+
+        if isinstance(obj, DomainRequest):
+            obj.save(optimistic_lock=True)
+        else:
+            obj.save()
 
     @classmethod
     def from_database(cls, obj: DomainRequest | Contact | None):
@@ -101,7 +105,7 @@ class RegistrarFormSet(forms.BaseFormSet):
         """
         if not self.is_valid():
             return
-        obj.save()
+        obj.save(optimistic_lock=True)
 
         query = getattr(obj, join).order_by("created_at").all()  # order matters
 
@@ -209,7 +213,7 @@ class BaseDeletableRegistrarForm(RegistrarForm):
         else:
             for name, value in self.cleaned_data.items():
                 setattr(obj, name, value)
-        obj.save()
+        obj.save(optimistic_lock=True)
 
 
 class BaseYesNoForm(RegistrarForm):

@@ -725,6 +725,7 @@ class DomainRequest(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
 
@@ -781,8 +782,21 @@ class DomainRequest(TimeStampedModel):
                         )
                 raise ValidationError(errors)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, optimistic_lock=False, **kwargs):
         """Save override for custom properties"""
+        if optimistic_lock and self.pk is not None:
+            # Get the current DB value to compare with our snapshot
+            current_updated_at = (
+                type(self).objects.only("updated_at").filter(pk=self.pk).values_list("updated_at", flat=True).first()
+            )
+            # If someone else saved after we loaded, block the save
+            if (
+                self._original_updated_at is not None
+                and current_updated_at is not None
+                and current_updated_at != self._original_updated_at
+            ):
+                raise ValidationError("A newer version of this form exists. Please try again.")
+
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
 
@@ -790,7 +804,7 @@ class DomainRequest(TimeStampedModel):
             self.last_status_update = timezone.now().date()
 
         super().save(*args, **kwargs)
-
+        self._original_updated_at = self.updated_at
         # Handle custom status emails.
         # An email is sent out when a, for example, action_needed_reason is changed or added.
         statuses_that_send_custom_emails = [self.DomainRequestStatus.ACTION_NEEDED, self.DomainRequestStatus.REJECTED]
