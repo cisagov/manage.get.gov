@@ -197,7 +197,6 @@ class CheckPortfolioMiddleware:
             request.user.is_multiple_orgs_user(request)
             or (request.user.has_legacy_domain() and request.user.is_any_org_user())
         ) and current_path == self.home:
-            del request.session["portfolio"]
             home_redirect = reverse("your-organizations")
             return HttpResponseRedirect(home_redirect)
 
