@@ -1985,7 +1985,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 invitation_exists = PortfolioInvitation.objects.filter(
                     email__iexact=requested_email, portfolio=portfolio
                 ).exists()
-                
+
                 if not permission_exists and not invitation_exists:
                     # if permission does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(

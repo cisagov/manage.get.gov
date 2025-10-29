@@ -1395,12 +1395,12 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
 
         # Create a request object
-        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/") 
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
         request.user = self.superuser
 
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
-    
+
         # Assert that send_portfolio_invitation_email is not called
         mock_send_email.assert_not_called()
 
