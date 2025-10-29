@@ -1,7 +1,6 @@
 from httpx import RequestError, HTTPStatusError
 import logging
 from django.conf import settings
-from registrar.models import VendorDnsZone, DnsZone, DnsAccount, Domain
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,6 @@ class CloudflareService:
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
             logger.info(f"Created zone {zone_name}")
-
         except RequestError as e:
             logger.error(f"Failed to create zone {zone_name} for account {account_id}: {e}")
             raise

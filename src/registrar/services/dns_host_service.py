@@ -1,6 +1,6 @@
 import logging
 
-from registrar.models import Domain, DnsAccount, DnsZone, VendorDnsZone, VendorDnsAccount
+from registrar.models import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
 
@@ -50,36 +50,12 @@ class DnsHostService:
                 zone_name = zone_data["result"].get("name")
                 logger.info(f"Successfully created zone {domain_name}")
                 zone_id = zone_data["result"]["id"]
-                zone_xcreated_at = zone_data["result"]["created_on"]
-                zone_xupdated_at = zone_data["result"]["modified_on"]
                 nameservers = zone_data["result"].get("name_servers")
 
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
                 raise
-
-            # Create db zone objects
-            try:
-                db_vendor_dns_zone = VendorDnsZone.objects.create(
-                    x_zone_id=zone_id,
-                    x_created_at=zone_xcreated_at,
-                    x_updated_at=zone_xupdated_at
-                )
-                logger.info(f"Created VendorDnsZone for {zone_name}.")
-                dns_domain = Domain.objects.get(name=domain_name)
-                dns_account = DnsAccount.objects.get(name=account_name)
-                DnsZone.objects.create(
-                    dns_account=dns_account,
-                    vendor_dns_zone=db_vendor_dns_zone,
-                    name=dns_domain
-                )
-                logger.info(f"Created DnsZone for {zone_name}.")
-            except Exception as e:
-                logger.error(f"Database failed to create objects for {zone_name}: {str(e)}")
-                raise
-
         elif has_account and not has_zone:
-            # Create vendor zone
             try:
                 zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
                 logger.info("Successfully created zone")
@@ -91,27 +67,7 @@ class DnsHostService:
                 logger.error(f"DNS setup failed to create zone {domain_name}: {str(e)}")
                 raise
 
-            # Create db zone objects
-            try:
-                db_vendor_dns_zone = VendorDnsZone.objects.create(x_zone_id=zone_id)
-                logger.info(f"Created VendorDnsZone for {zone_name}.")
-                dns_domain = Domain.objects.get(name=domain_name)
-                dns_account = DnsAccount.objects.get(name=account_name)
-                DnsZone.objects.create(
-                    dns_account=dns_account,
-                    vendor_dns_zone=db_vendor_dns_zone,
-                    name=dns_domain
-                )
-                logger.info(f"Created DnsZone for {zone_name}.")
-            except Exception as e:
-                logger.error(f"Database failed to create objects for {zone_name}: {str(e)}")
-                raise
-
         return account_id, zone_id, nameservers
-
-    def create_zone(self, account_name, domain_name):
-        """Create a DNS zone on Cloudflare and database."""
-        
 
     def create_record(self, zone_id, record_data):
         """Calls create method of vendor service to create a DNS record"""
