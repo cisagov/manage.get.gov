@@ -1988,12 +1988,14 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                     user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
 
-                invitation_exists = PortfolioInvitation.objects.filter(
-                    email__iexact=requested_email, portfolio=portfolio
-                ).exists()
-
+                invitation_exists = (
+                    PortfolioInvitation.objects.filter(email__iexact=requested_email, portfolio=portfolio)
+                    .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+                    .exists()
+                )
                 if not permission_exists and not invitation_exists:
-                    # if permission does not exist and invitation does not exist for a user with requested_email, send email
+                    # if permission does not exist and invitation
+                    # does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
                         email=requested_email,
                         requestor=requestor,
@@ -2006,7 +2008,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
-                    self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
+                    return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation
                 # Retrieve the existing object from the database
                 existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
