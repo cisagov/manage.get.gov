@@ -499,7 +499,7 @@ class TestDomainInvitationAdmin(WebTest):
         Should send out domain invitation only.
         Should trigger success message for the domain invitation.
         Should retrieve the domain invitation.
-        Integrated testing for casing normalization to lowercase for email Domain Invitatio
+        Integrated testing for casing normalization to lowercase for email Domain Invitation
         """
 
         user = User.objects.create_user(email="test@example.com", username="username")
