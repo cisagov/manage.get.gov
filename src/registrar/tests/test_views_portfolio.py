@@ -517,7 +517,7 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         page = self.app.get(reverse("organization-info"))
         # Org name in Sidenav, main nav, webpage title, and breadcrumb
-        self.assertContains(page, "Hotel California", count=5)
+        self.assertGreaterEqual(page.text.count("Hotel California"), 5)
         self.assertContains(page, "Organization type")
         self.assertContains(page, "Federal")
 

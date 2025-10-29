@@ -12,6 +12,7 @@
     text-align: left;
     width: 100%;
     max-width: 588px;
+    min-height: 83.6px;
 }
 
 .usa-card__heading {
@@ -25,8 +26,8 @@ Custom tag for Enterprise pill
 ---------------------------------- */
 .usa-tag--enterprise {
     @extend .usa-tag;
-    background-color: #{$dhs-blue-10};
-    border: 0.5px solid #{$dhs-blue-30};
+    background-color: #D6E9F2;
+    border: 0.5px solid #003E67;
     color: #{$dhs-blue}; 
     font-weight: 600; // semi-bold
     padding: 1px 0.5rem;
