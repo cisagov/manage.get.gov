@@ -1379,7 +1379,9 @@ class TestPortfolioInvitationAdmin(TestCase):
     @patch("django.contrib.messages.error")  # Mock the `messages.warning` call
     def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_error, mock_send_email):
         """On save_model, an email is NOT sent if an the requested email belongs to an existing user.
-        It also throws a warning."""
+        It also throws a warning.
+        Integrated testing for casing normalization to lowercase for email Portfolio Invitation
+        """
         self.client.force_login(self.superuser)
 
         # Create an instance of the admin class
@@ -1389,9 +1391,12 @@ class TestPortfolioInvitationAdmin(TestCase):
         existing_user = create_user()
         UserPortfolioPermission.objects.create(user=existing_user, portfolio=self.portfolio)
 
+        # An email with different capitalization that the existing user
+        existing_user_email_with_capitalization = "STaff@example.com"
+
         # Create a PortfolioInvitation instance
         portfolio_invitation = PortfolioInvitation(
-            email=existing_user.email,
+            email=existing_user_email_with_capitalization,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
