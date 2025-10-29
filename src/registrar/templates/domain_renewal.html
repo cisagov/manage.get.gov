@@ -44,8 +44,14 @@
       require</a> that you maintain accurate information for the domain.
       The details you provide will only be used to support the administration of .gov and won't be made public.
     </p>
+    {% if domain.state == domain.State.READY %}
     <p>If you would like to delete your domain instead, please <a href="{{ url }}" class="usa-link" target="_blank">
       request deletion</a>. </p>
+    {% else %}
+      <p>
+        If you would like to retire your domain instead, please contact us at <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>. 
+      </p>
+    {% endif %}
     <p><em>Required fields are marked with an asterisk (<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).</em>
     </p>
 
