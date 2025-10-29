@@ -3,6 +3,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from xml.dom.minidom import parseString
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
 import logging
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,10 @@ class Command(BaseCommand):
             logger.exception("Failed to construct InfoContact command: %s", e)
             raise CommandError(f"Failed to construct InfoContact command: {e}")
 
+        # Note: when building manual raw XML we wrap the string in a tiny
+        # object exposing xml() below using SimpleNamespace so it behaves
+        # like epplib command objects.
+
         # If requested, build an UpdateContact using epplib models so you can
         # compare its XML to the raw disclose-street XML. This will use the
         # library's DiscloseField (ADDR) which hides the entire address.
@@ -113,13 +118,15 @@ class Command(BaseCommand):
                     name="Test Name",
                     org="Test Org",
                     addr=sample_addr,
-                    type="int",
+                    type="loc",
                 )
 
                 cmd = commands.UpdateContact(
                     id=registry_id,
                     disclose=Disclose(
-                        flag=False, fields={DiscloseField.ADDR}
+                        flag=False,
+                        fields={DiscloseField.ADDR},
+                        types={DiscloseField.ADDR: "loc"},
                     ),
                     postal_info=sample_postal,
                 )
@@ -158,29 +165,41 @@ class Command(BaseCommand):
 
                 c_chg = ET.SubElement(c_update, f"{{{contact_ns}}}chg")
                 postal = ET.SubElement(c_chg, f"{{{contact_ns}}}postalInfo")
-                postal.set("type", "int")
                 name_el = ET.SubElement(postal, f"{{{contact_ns}}}name")
                 name_el.text = "Test Name"
                 org_el = ET.SubElement(postal, f"{{{contact_ns}}}org")
                 org_el.text = "Test Org"
                 addr_el = ET.SubElement(postal, f"{{{contact_ns}}}addr")
-                ET.SubElement(addr_el, f"{{{contact_ns}}}street").text = "123 main st"
-                ET.SubElement(addr_el, f"{{{contact_ns}}}street").text = "#5"
-                ET.SubElement(addr_el, f"{{{contact_ns}}}city").text = "somewhere"
+                ET.SubElement(
+                    addr_el, f"{{{contact_ns}}}street"
+                ).text = "123 main st"
+                ET.SubElement(
+                    addr_el, f"{{{contact_ns}}}street"
+                ).text = "#5"
+                ET.SubElement(
+                    addr_el, f"{{{contact_ns}}}city"
+                ).text = "somewhere"
                 ET.SubElement(addr_el, f"{{{contact_ns}}}sp").text = "FL"
-                ET.SubElement(addr_el, f"{{{contact_ns}}}pc").text = "33547"
+                ET.SubElement(
+                    addr_el, f"{{{contact_ns}}}pc"
+                ).text = "33547"
                 ET.SubElement(addr_el, f"{{{contact_ns}}}cc").text = "US"
 
                 xml_str = ET.tostring(root, encoding="unicode")
 
-                class RawRequest:
-                    def __init__(self, xml):
-                        self._xml = xml
+                # ensure the addr element carries the 'type' attribute the
+                # registry expects (some registries require the attribute on
+                # the <addr> element rather than on postalInfo)
+                try:
+                    root = ET.fromstring(xml_str)
+                    for a in root.findall('.//{'+contact_ns+'}addr'):
+                        a.set('type', 'loc')
+                    xml_str = ET.tostring(root, encoding='unicode')
+                except Exception:
+                    pass
 
-                    def xml(self):
-                        return self._xml
-
-                cmd = RawRequest(xml_str)
+                # Wrap the raw XML string in a tiny object exposing xml()
+                cmd = SimpleNamespace(xml=lambda: xml_str)
             except Exception as e:
                 logger.exception(
                     "Failed to build raw disclose-street XML: %s", e
@@ -205,7 +224,9 @@ class Command(BaseCommand):
         # send via module-level CLIENT instance
         try:
             self.stdout.write("Sending command to registry...")
-            resp = CLIENT.send(cmd, cleaned=True)
+            send_cmd = cmd
+
+            resp = CLIENT.send(send_cmd, cleaned=True)
         except Exception as e:
             logger.exception("Error while sending command: %s", e)
             raise CommandError(f"Error while sending command: {e}")
