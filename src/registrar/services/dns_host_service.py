@@ -6,6 +6,7 @@ from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
+from registrar.models.dns.dns_vendor import DnsVendor
 
 from django.db import transaction, connection
 from django.utils import timezone
@@ -49,11 +50,11 @@ class DnsHostService:
             except APIError as e:
                 logger.error(f"DNS setup failed to create account: {str(e)}")
                 raise
-            
+
             try:
                 account_id = self.create_db_account(account_data)
             except Exception as e:
-                logger.error("Save to database failed") 
+                logger.error("Save to database failed")
                 raise
 
             try:
@@ -138,10 +139,12 @@ class DnsHostService:
     def create_db_account(self, account_data):
         result = account_data["result"]
         account_id = result["id"]
+        dns_vendor = DnsVendor.objects.get(name=DnsVendor.CF)
 
-        with transaction.atomic():            
+        with transaction.atomic():
             vendor_acc = VendorDnsAccount.objects.create(
                 x_account_id=account_id,
+                dns_vendor=dns_vendor,
                 defaults={
                     "x_created_at": result["created_on"],
                     "x_updated_at": result["created_on"],
@@ -152,7 +155,7 @@ class DnsHostService:
             dns_acc = DnsAccount.objects.create(name=result["name"])
             logger.info("DnsAccount saved: id=%s, name=%s", dns_acc.pk, dns_acc.name)
 
-            join= Join.objects.create(
+            join = Join.objects.create(
                 dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
                 defaults={
@@ -161,9 +164,11 @@ class DnsHostService:
             )
             logger.info(
                 "Join link saved: dns_account_id=%s, vendor_dns_account_id=%s is_active=%s",
-                dns_acc.pk, vendor_acc.pk, join.is_active
+                dns_acc.pk,
+                vendor_acc.pk,
+                join.is_active,
             )
 
             logger.info("DB settings: %s", connection.settings_dict)
-        
+
         return account_id
