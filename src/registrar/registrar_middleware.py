@@ -168,13 +168,9 @@ class CheckPortfolioMiddleware:
 
         if not request.user.is_authenticated:
             return None
-        
+
         # Allow legacy users to see old home
-        if (
-            current_path == self.home
-            and request.GET.get(self.legacy_home) == "1"
-            and request.user.has_legacy_domain()
-        ):
+        if current_path == self.home and request.GET.get(self.legacy_home) == "1" and request.user.has_legacy_domain():
             del request.session["portfolio"]
             return None
 
@@ -182,9 +178,9 @@ class CheckPortfolioMiddleware:
         # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
         # 2. User has only 1 portfolio
         # Remove condition 1 when we remove multiple portfolios feature flag
-        if (
-            not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
-        ) or (request.user.get_num_portfolios() == 1 and not request.user.has_legacy_domain() ):
+        if (not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()) or (
+            request.user.get_num_portfolios() == 1 and not request.user.has_legacy_domain()
+        ):
             request.session["portfolio"] = request.user.get_first_portfolio()
         # If user no longer has permission to session portfolio,
         # eg their user portfolio permission deleted or replaced,
