@@ -72,8 +72,7 @@ class Command(BaseCommand):
         try:
             # Import here so Django settings are already configured
             from epplibwrapper import commands, CLIENT
-            # cert/key objects are provided by the client module
-            from epplibwrapper import client as epplib_client_module
+
         except Exception as e:
             logger.exception(
                 "Failed to import epplibwrapper: %s", e
@@ -83,95 +82,6 @@ class Command(BaseCommand):
                 "installed and settings are correct."
             )
 
-    # Verify settings and cert/key, and attempt to initialize a
-    # client to validate access.
-        if options.get("check"):
-            from django.conf import settings
-            import os
-
-            missing = []
-            for name in (
-                "SECRET_REGISTRY_CL_ID",
-                "SECRET_REGISTRY_PASSWORD",
-                "SECRET_REGISTRY_HOSTNAME",
-                "SECRET_REGISTRY_KEY_PASSPHRASE",
-            ):
-                if not getattr(settings, name, None):
-                    missing.append(name)
-
-            if missing:
-                self.stderr.write(
-                    "Missing registry settings: {}. Check failed.".format(
-                        ", ".join(missing)
-                    )
-                )
-                raise CommandError(
-                    "Check failed due to missing settings."
-                )
-
-            cert_obj = getattr(epplib_client_module, "CERT", None)
-            key_obj = getattr(epplib_client_module, "KEY", None)
-            if not cert_obj or not key_obj:
-                self.stderr.write(
-                    "Certificate or key objects not available. "
-                    "Ensure certs are provisioned."
-                )
-                raise CommandError(
-                    "Check failed: missing certificate/key."
-                )
-
-            cert_file = getattr(cert_obj, "filename", None)
-            key_file = getattr(key_obj, "filename", None)
-            if not cert_file or not key_file:
-                self.stderr.write(
-                    "Certificate or key file paths not set on Cert/Key "
-                    "objects."
-                )
-                raise CommandError(
-                    "Check failed: cert/key paths missing."
-                )
-
-            if not os.path.exists(cert_file) or not os.path.exists(key_file):
-                self.stderr.write(
-                    "Cert/key files not found: {}, {}".format(
-                        cert_file, key_file
-                    )
-                )
-                raise CommandError(
-                    "Check failed: cert/key files missing."
-                )
-
-            if (
-                not os.access(cert_file, os.R_OK)
-                or not os.access(key_file, os.R_OK)
-            ):
-                self.stderr.write(
-                    "Cert/key files are not readable by this user."
-                )
-                raise CommandError(
-                    "Check failed: cert/key unreadable."
-                )
-
-            # Attempt to initialize the client and login. This performs a
-            # real network login; it's intended for sandbox environments.
-            try:
-                self.stdout.write(
-                    "Attempting to initialize registry client (login)..."
-                )
-                # call the wrapper's init helper to force initialization
-                CLIENT._initialize_client()
-                self.stdout.write("Check: login successful.")
-                # close connection after successful login
-                try:
-                    CLIENT._disconnect()
-                except Exception:
-                    # best-effort close
-                    pass
-            except Exception as e:
-                logger.exception("Client init failed: %s", e)
-                raise CommandError(
-                    f"Check failed: {e}"
-                )
 
         # build registry command
         try:
@@ -185,11 +95,33 @@ class Command(BaseCommand):
         # library's DiscloseField (ADDR) which hides the entire address.
         if options.get("update_via_epplib"):
             try:
-                from epplib.models import Disclose, DiscloseField
+                from epplib.models import (
+                    Disclose,
+                    DiscloseField,
+                    ContactAddr,
+                    PostalInfo,
+                )
+
+                sample_addr = ContactAddr(
+                    street=["123 main st", "#5"],
+                    city="somewhere",
+                    sp="FL",
+                    pc="33547",
+                    cc="US",
+                )
+                sample_postal = PostalInfo(
+                    name="Test Name",
+                    org="Test Org",
+                    addr=sample_addr,
+                    type="int",
+                )
 
                 cmd = commands.UpdateContact(
                     id=registry_id,
-                    disclose=Disclose(flag=False, fields={DiscloseField.ADDR}),
+                    disclose=Disclose(
+                        flag=False, fields={DiscloseField.ADDR}
+                    ),
+                    postal_info=sample_postal,
                 )
             except Exception as e:
                 logger.exception(
@@ -224,9 +156,20 @@ class Command(BaseCommand):
                 addr = ET.SubElement(disclose, f"{{{contact_ns}}}addr")
                 ET.SubElement(addr, f"{{{contact_ns}}}street")
 
-                # add a clTRID under the command element for tracing
-                cltrid = ET.SubElement(command_el, f"{{{epp_ns}}}clTRID")
-                cltrid.text = "cli-disclose-street-1"
+                c_chg = ET.SubElement(c_update, f"{{{contact_ns}}}chg")
+                postal = ET.SubElement(c_chg, f"{{{contact_ns}}}postalInfo")
+                postal.set("type", "int")
+                name_el = ET.SubElement(postal, f"{{{contact_ns}}}name")
+                name_el.text = "Test Name"
+                org_el = ET.SubElement(postal, f"{{{contact_ns}}}org")
+                org_el.text = "Test Org"
+                addr_el = ET.SubElement(postal, f"{{{contact_ns}}}addr")
+                ET.SubElement(addr_el, f"{{{contact_ns}}}street").text = "123 main st"
+                ET.SubElement(addr_el, f"{{{contact_ns}}}street").text = "#5"
+                ET.SubElement(addr_el, f"{{{contact_ns}}}city").text = "somewhere"
+                ET.SubElement(addr_el, f"{{{contact_ns}}}sp").text = "FL"
+                ET.SubElement(addr_el, f"{{{contact_ns}}}pc").text = "33547"
+                ET.SubElement(addr_el, f"{{{contact_ns}}}cc").text = "US"
 
                 xml_str = ET.tostring(root, encoding="unicode")
 
