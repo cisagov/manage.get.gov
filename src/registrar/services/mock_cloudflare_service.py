@@ -17,8 +17,8 @@ fake = Faker()
 class MockCloudflareService:
     _instance = None
     _mock_context = None
-    fake_record_id = fake.uuid4()
-    new_account_name = f"account-{fake.domain_name}"
+    fake_zone_id = fake.uuid4()
+    new_account_name = f"account-{fake.domain_name()}"
 
     def __new__(cls):
         if cls._instance is None:
@@ -29,6 +29,8 @@ class MockCloudflareService:
         if not hasattr(self, "initialized"):
             self.initialized = True
             self.is_active = False
+        self.domain_name = fake.domain_name()
+        self.new_account_name = make_dns_account_name(self.domain_name)
 
     def start(self):
         """Start mocking external APIs"""
@@ -60,11 +62,14 @@ class MockCloudflareService:
         self._mock_context.post(f"/accounts").mock(side_effect=self._mock_create_account_response)
 
     def _register_zone_mocks(self):
-        self._mock_context.get(f"/zones", params=f"account.id=1234").mock(
+        self._mock_context.get(f"/zones", params=f"account.id=a1234").mock(
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.post(f"/zones").mock(side_effect=self._mock_create_zone_response)
-        self._mock_context.post(f"/zones/{self.fake_record_id}/dns_records").mock(
+        self._mock_context.post(f"/zones/{self.fake_zone_id}/dns_records").mock(
+            side_effect=self._mock_create_dns_record_response
+        )
+        self._mock_context.post(f"/zones/z54321/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
 
@@ -103,7 +108,7 @@ class MockCloudflareService:
                         },
                     },
                     {
-                        "account_tag": "1234",
+                        "account_tag": "a1234",
                         "account_pubname": "Account for exists.gov",  # use exists.gov domain to simulate an account that already exists
                         "account_type": "enterprise",
                         "created_on": "2025-10-08T21:21:38.401706Z",
@@ -120,9 +125,9 @@ class MockCloudflareService:
         )
 
     def _mock_get_account_zones_response(self, request) -> httpx.Response:
-        request_as_json = json.loads(request.content.decode("utf-8"))
-        zone_name = request_as_json["name"]
-        account_id = request_as_json["account"]["id"]
+        logger.debug("😎 Mocking zones GET")
+        zone_name = self.domain_name
+        account_id = request.url.params.get("account.id")
 
         return httpx.Response(
             200,
@@ -142,12 +147,12 @@ class MockCloudflareService:
                         "status": "pending",
                         "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
                     },
-                    {
-                        "id": fake.uuid4(),
+                    {   # This record referenced for existing account
+                        "id": "z54321",
                         "account": {"id": account_id, "name": "Account for exists.gov"},
                         "created_on": "2014-01-01T05:20:00.12345Z",
                         "modified_on": "2014-01-01T05:20:00.12345Z",
-                        "name": zone_name,
+                        "name": "exists.gov",
                         "name_servers": [
                             "rainbow.dns.gov",
                             "rainbow2.dns.gov",

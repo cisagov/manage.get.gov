@@ -769,7 +769,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "age-bit-low-far.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "age-bit-low-far.gov", "exists.gov"]
 
     def __init__(self):
         self.dns_record = None
@@ -836,11 +836,13 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     logger.error(f"API error in view: {str(e)}")
 
                 if zone_id:
+                    zone_name = domain_name
                     # post nameservers to registry
                     try:
                         self.dns_host_service.register_nameservers(zone_name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
+                        # Don't raise an error here in order to bypass blocking error in local dev
 
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)

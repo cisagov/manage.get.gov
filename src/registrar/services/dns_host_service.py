@@ -33,7 +33,8 @@ class DnsHostService:
         has_account = bool(account_id)
 
         zone_id = None
-        if account_id:
+        if has_account:
+            logger.info("Already has an existing vendor account")
             zone_id, nameservers = self._find_existing_zone(domain_name, account_id)
         has_zone = bool(zone_id)
 
@@ -68,7 +69,7 @@ class DnsHostService:
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {domain_name}: {str(e)}")
                 raise
-
+        logger.info("Has existing zone")
         return account_id, zone_id, nameservers
 
     def create_record(self, zone_id, record_data):
