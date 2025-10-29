@@ -75,15 +75,15 @@ button {
     .usa-logo__text button,
     .usa-logo__text button:hover {
         color: color('white');
-    }    
+}    
     background-color: color('primary-darker');
     .usa-accordion__button[aria-expanded="false"] span::after,
     .usa-accordion__button[aria-expanded="true"] span::after {
-        background-color: color("white") !important;
+        background-color: #d6e9f2 !important;
     }
     .usa-accordion__button:hover .usa-nav__username,
     .usa-accordion__button:focus .usa-nav__username {
-      color: color('white') !important;
+      color: #d6e9f2 !important;
     }
     .usa-nav__username {
         padding: units(1) units(2);
@@ -92,7 +92,7 @@ button {
         }
     }
     .usa-nav__text {
-        color: color('white');
+        color: #d6e9f2;
         font-weight: font-weight('bold');
     }
     .usa-nav__primary {
@@ -101,21 +101,21 @@ button {
         .usa-nav-link:hover,
         .usa-nav-link:active {
             font-size: 16px;
-            color: color('white');
+            color: #d6e9f2;
         }
         .usa-current,
         .usa-current:hover,
         .usa-current:active,
         button.usa-current {
             font-weight: font-weight('bold');
-            color: color('white');
+            color: #d6e9f2;
         }
         button[aria-expanded="true"] {
-            color: color('white');
+            color: #d6e9f2;
         }
         button:not(.usa-current):hover::after  {
             display: none!important;
-            color: color('white');
+            color: #d6e9f2;
         }
     }
     @include at-media(desktop) {
@@ -138,7 +138,7 @@ button {
         padding-top: 0;
         padding-bottom: 0;
         padding-left: 0;
-        color: color('white');
+        color: #d6e9f2;
     }
 }
 
