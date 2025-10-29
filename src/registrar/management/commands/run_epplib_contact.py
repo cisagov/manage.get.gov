@@ -2,6 +2,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from xml.dom.minidom import parseString
+import xml.etree.ElementTree as ET
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,25 @@ class Command(BaseCommand):
                 "Check: verify settings/certs and attempt a login to the "
                 "registry. Does not send an InfoContact unless --send is also "
                 "provided."
+            ),
+        )
+        parser.add_argument(
+            "--update-via-manual-xml",
+            action="store_true",
+            dest="disclose_street_xml",
+            help=(
+                "Build (and optionally send with --send) an UpdateContact XML "
+                "that uses a nested disclose/addr/street element to request "
+                "hiding only the street element"
+            ),
+        )
+        parser.add_argument(
+            "--update-via-epplib",
+            action="store_true",
+            dest="update_via_epplib",
+            help=(
+                "Build (and optionally send with --send) an UpdateContact "
+                "using the epplib model"
             ),
         )
 
@@ -160,6 +180,70 @@ class Command(BaseCommand):
             logger.exception("Failed to construct InfoContact command: %s", e)
             raise CommandError(f"Failed to construct InfoContact command: {e}")
 
+        # If requested, build an UpdateContact using epplib models so you can
+        # compare its XML to the raw disclose-street XML. This will use the
+        # library's DiscloseField (ADDR) which hides the entire address.
+        if options.get("update_via_epplib"):
+            try:
+                from epplib.models import Disclose, DiscloseField
+
+                cmd = commands.UpdateContact(
+                    id=registry_id,
+                    disclose=Disclose(flag=False, fields={DiscloseField.ADDR}),
+                )
+            except Exception as e:
+                logger.exception(
+                    "Failed to construct epplib UpdateContact: %s", e
+                )
+                raise CommandError(
+                    f"Failed to build UpdateContact via epplib: {e}"
+                )
+
+        # If requested, build a raw UpdateContact request that contains a
+        # nested <disclose><addr><street/></addr></disclose> element so we
+        # can test the registry's per-street disclose acceptance without
+        # modifying epplib itself.
+        if options.get("disclose_street_xml"):
+            try:
+                epp_ns = "urn:ietf:params:xml:ns:epp-1.0"
+                contact_ns = "urn:ietf:params:xml:ns:contact-1.0"
+                # register namespaces so output contains prefixes/declarations
+                ET.register_namespace("", epp_ns)
+                ET.register_namespace("contact", contact_ns)
+
+                root = ET.Element(f"{{{epp_ns}}}epp")
+                command_el = ET.SubElement(root, f"{{{epp_ns}}}command")
+                update_el = ET.SubElement(command_el, f"{{{epp_ns}}}update")
+                c_update = ET.SubElement(update_el, f"{{{contact_ns}}}update")
+                c_id = ET.SubElement(c_update, f"{{{contact_ns}}}id")
+                c_id.text = registry_id
+
+                disclose = ET.SubElement(
+                    c_update, f"{{{contact_ns}}}disclose", {"flag": "0"}
+                )
+                addr = ET.SubElement(disclose, f"{{{contact_ns}}}addr")
+                ET.SubElement(addr, f"{{{contact_ns}}}street")
+
+                # add a clTRID under the command element for tracing
+                cltrid = ET.SubElement(command_el, f"{{{epp_ns}}}clTRID")
+                cltrid.text = "cli-disclose-street-1"
+
+                xml_str = ET.tostring(root, encoding="unicode")
+
+                class RawRequest:
+                    def __init__(self, xml):
+                        self._xml = xml
+
+                    def xml(self):
+                        return self._xml
+
+                cmd = RawRequest(xml_str)
+            except Exception as e:
+                logger.exception(
+                    "Failed to build raw disclose-street XML: %s", e
+                )
+                raise CommandError(f"Failed to build XML: {e}")
+
         # show request XML
         try:
             xml_req = cmd.xml()
@@ -198,15 +282,12 @@ class Command(BaseCommand):
                 res_data = getattr(resp, "res_data", None)
                 if res_data:
                     self.stdout.write("--- Response res_data ---")
-                    try:
-                        for item in res_data:
-                            xml_fn = getattr(item, "xml", None)
-                            if callable(xml_fn):
-                                self.stdout.write(pretty_xml(xml_fn()))
-                            else:
-                                self.stdout.write(repr(item))
-                    except Exception:
-                        self.stdout.write(repr(res_data))
+                    for item in res_data:
+                        xml_fn = getattr(item, "xml", None)
+                        if callable(xml_fn):
+                            self.stdout.write(pretty_xml(xml_fn()))
+                        else:
+                            self.stdout.write(repr(item))
                 else:
                     self.stdout.write(repr(resp))
             elif isinstance(resp, (bytes, str)):
