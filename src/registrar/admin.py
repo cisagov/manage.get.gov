@@ -3088,7 +3088,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # Hide certain portfolio and suborg fields for users that are not in a portfolio
         if not request.user.is_org_user(request):
-            excluded_fields.update(org_fields)
+            # In any org_fields, exclude all the other fields that aren't portfolio
+            excluded_fields.update(field for field in org_fields if field != "portfolio")
             excluded_fields.update(feb_fields)
 
         modified_fieldsets = []
