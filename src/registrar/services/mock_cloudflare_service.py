@@ -217,6 +217,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
 
+        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
             if record_name.startswith("error-400"):
                 return httpx.Response(
