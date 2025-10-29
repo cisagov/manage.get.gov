@@ -1,6 +1,6 @@
 from django.test import TestCase
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
-from django.core.exceptions import ValidationError
+
 
 class DnsZoneTest(TestCase):
     def setUp(self):
