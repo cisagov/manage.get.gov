@@ -35,7 +35,7 @@ def get_org_membership(org, email, user):
 
     # Check for existing permissions or invitations for the user
     existing_org_permission = UserPortfolioPermission.objects.filter(user=user).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
+    existing_org_invitation = PortfolioInvitation.objects.filter(email__iexact=email).first()
 
     # Determine membership in a different organization
     member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != org) or (
@@ -53,7 +53,7 @@ def get_org_membership(org, email, user):
 def get_requested_user(email):
     """Retrieve a user by email or return None if the user doesn't exist."""
     try:
-        return User.objects.get(email=email)
+        return User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         return None
 

@@ -496,3 +496,7 @@ class User(AbstractUser):
             .values_list("domain_id", flat=True)
             .distinct()
         )
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+        super().save(*args, **kwargs)
