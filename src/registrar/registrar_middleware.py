@@ -139,6 +139,7 @@ class CheckPortfolioMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.home = reverse("home")
+        self.legacy_home = "legacy_home"
 
         self.select_portfolios_page = reverse("your-organizations")
         self.set_portfolio_page = reverse("set-session-portfolio")
@@ -166,6 +167,15 @@ class CheckPortfolioMiddleware:
         current_path = request.path
 
         if not request.user.is_authenticated:
+            return None
+        
+        # Allow legacy users to see old home
+        if (
+            current_path == self.home
+            and request.GET.get(self.legacy_home) == "1"
+            and request.user.has_legacy_domain()
+        ):
+            del request.session["portfolio"]
             return None
 
         # Assign user portfolio if:

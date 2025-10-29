@@ -39,7 +39,7 @@
     {% if has_legacy_domain %}
         <div class="grid-row margin-bottom-1">
             <a class="usa-card__container margin-left-0 display-block text-no-underline"
-                href="{% url 'domains' %}">
+                href="{% url 'home' %}?legacy_home=1">
                 <div class="usa-card__header">
                     <h2 class="usa-card__heading">
                     {{ request.user.email }}’s account

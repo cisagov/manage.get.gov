@@ -19,7 +19,7 @@
                 {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_nav_menu" %}
             {% endfor %}
                 {% if has_legacy_domain %}
-                <a class="usa-nav-link organization-button" href="{% url 'domains' %}">
+                <a class="usa-nav-link organization-button" href="{% url 'home' %}?legacy_home=1">
                     <span>
                         {{ request.user.email }}’s account
                     </span>
