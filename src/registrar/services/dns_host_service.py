@@ -1,6 +1,6 @@
 import logging
 
-from registrar.models import Domain
+from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
 
@@ -44,7 +44,6 @@ class DnsHostService:
                 logger.error(f"DNS setup failed to create account: {str(e)}")
                 raise
 
-            # Create vendor zone
             try:
                 zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
                 zone_name = zone_data["result"].get("name")
@@ -55,6 +54,7 @@ class DnsHostService:
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
                 raise
+
         elif has_account and not has_zone:
             try:
                 zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
