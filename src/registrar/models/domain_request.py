@@ -1069,7 +1069,6 @@ class DomainRequest(TimeStampedModel):
     def allow_in_review_omb_transition(self):
         """Checks if domain request is in enterprise mode for state transition without investigator"""
         """If it is not in enterprise mode check the investigator exists"""
-        print(self.is_feb(), self.investigator_exists_and_is_staff(), self.federal_type)
         if self.is_feb():
             return True
         elif self.federal_type == BranchChoices.EXECUTIVE:
