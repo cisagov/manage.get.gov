@@ -172,7 +172,7 @@ class CheckPortfolioMiddleware:
         # Allow legacy users to see old home
         if current_path == self.home and request.GET.get(self.legacy_home) == "1" and request.user.has_legacy_domain():
             for k in ("portfolio",):
-                request.session.pop(k, None)            
+                request.session.pop(k, None)
             return None
 
         # Assign user portfolio if:
