@@ -1374,8 +1374,8 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.warning")  # Mock the `messages.warning` call
-    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_warning, mock_send_email):
+    @patch("django.contrib.messages.error")  # Mock the `messages.warning` call
+    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_error, mock_send_email):
         """On save_model, an email is NOT sent if an the requested email belongs to an existing user.
         It also throws a warning."""
         self.client.force_login(self.superuser)
@@ -1395,17 +1395,17 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
 
         # Create a request object
-        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/")
+        request = self.factory.post("/admin/registrar/PortfolioInvitation/add/") 
         request.user = self.superuser
 
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
-
+    
         # Assert that send_portfolio_invitation_email is not called
         mock_send_email.assert_not_called()
 
         # Assert that a warning message was triggered
-        mock_messages_warning.assert_called_once_with(request, "User is already a member of this portfolio.")
+        mock_messages_error.assert_called_once_with(request, "User is already a member of this portfolio.")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
