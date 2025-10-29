@@ -45,5 +45,5 @@ class DnsRecord(TimeStampedModel):
         # Set default record name to zone's domain name.
         # Some DNS records make name optional but A records require a name.
         if not self.name:
-            self.name = self.zone.domain.name
+            self.name = self.dns_zone.domain.name
         super().save(*args, **kwargs)
