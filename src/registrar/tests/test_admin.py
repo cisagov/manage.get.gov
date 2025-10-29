@@ -498,12 +498,14 @@ class TestDomainInvitationAdmin(WebTest):
 
         Should send out domain invitation only.
         Should trigger success message for the domain invitation.
-        Should retrieve the domain invitation."""
+        Should retrieve the domain invitation.
+        Integrated testing for casing normalization to lowercase for email Domain Invitatio
+        """
 
         user = User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
-        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+        invitation = DomainInvitation(email="TEST@example.com", domain=self.domain)
 
         UserPortfolioPermission.objects.create(
             user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
