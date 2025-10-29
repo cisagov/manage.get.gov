@@ -1125,6 +1125,46 @@ class TestDomainRequest(TestCase):
             expected_cc=["portfolioadmin@igorville.com"],
         )
 
+    @less_console_noise_decorator
+    def test_in_omb_review_enterprise_mode_no_investigator(self):
+        # for enterprise mode after submitting a domain request for feb,
+        # it should allow the omb review status to update programmatically
+        fed_agency = FederalAgency.objects.create(agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
+        portfolio = Portfolio.objects.create(
+            organization_name=fed_agency.agency, federal_agency=fed_agency, requester=self.dummy_user_3
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.dummy_user_2, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        domain_request = completed_domain_request(
+            name="test.gov",
+            federal_agency=fed_agency,
+            portfolio=portfolio,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            user=self.dummy_user_2,
+        )
+        domain_request.save()
+        domain_request.in_review_omb()
+
+        self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW_OMB)
+
+    @less_console_noise_decorator
+    def test_in_omb_review_without_portfolio_fail(self):
+        # for non enterprise mode, it should not allow the omb review status to update programmatically.
+        fed_agency = FederalAgency.objects.first()
+        fed_agency.federal_type = BranchChoices.EXECUTIVE
+        domain_request = completed_domain_request(
+            name="test.gov",
+            federal_agency=fed_agency,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            user=self.dummy_user_2,
+        )
+        # Removed investigator
+        domain_request.investigator = None
+        domain_request.save()
+        with self.assertRaises(TransitionNotAllowed):
+            domain_request.in_review_omb()
+
 
 class TestDomainRequestSuborganization(TestCase):
     """Tests for the suborganization fields on domain requests"""
