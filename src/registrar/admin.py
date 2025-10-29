@@ -1960,6 +1960,12 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     get_roles.short_description = "Member role"  # type: ignore
 
+    def display_error_msgs(self, request, email, permission_exists, invitation_exists):
+        if permission_exists:
+            messages.error(request, "User is already a member of this portfolio.")
+        elif invitation_exists:
+            messages.error(request, f"{email} has an existing invitation.")
+
     def save_model(self, request, obj, form, change):
         """
         Override the save_model method.
@@ -1987,7 +1993,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 ).exists()
 
                 if not permission_exists and not invitation_exists:
-                    # if permission does not exist for a user with requested_email, send email
+                    # if permission does not exist and invitation does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
                         email=requested_email,
                         requestor=requestor,
@@ -1999,10 +2005,8 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
-                elif permission_exists:
-                    messages.error(request, "User is already a member of this portfolio.")
-                elif invitation_exists:
-                    messages.error(request, f"{requested_email} has an existing invitation.")
+                else:
+                    self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation
                 # Retrieve the existing object from the database
                 existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
