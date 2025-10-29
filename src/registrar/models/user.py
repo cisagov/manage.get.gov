@@ -475,3 +475,8 @@ class User(AbstractUser):
 
         # If there are other admins or the user is not the only one
         return False
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+        super().save(*args, **kwargs)
