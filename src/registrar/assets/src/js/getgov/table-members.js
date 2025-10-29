@@ -393,7 +393,7 @@ export class MembersTable extends BaseTable {
    */
   generatePermissionsHTML(is_admin, member_permissions, UserPortfolioPermissionChoices, unique_id) {
     // 1. Role
-    const memberRoleValue = is_admin ? "Admin" : "Basic";
+    const memberRoleValue = is_admin ? "Organization admin" : "Basic";
     
     // 2. Domain access
     let domainValue = "No access";

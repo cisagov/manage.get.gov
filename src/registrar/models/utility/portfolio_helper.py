@@ -90,7 +90,7 @@ def get_role_display(roles):
     """
     Returns a user-friendly display name for a given list of user roles.
 
-    - If the user has the ORGANIZATION_ADMIN role, return "Admin".
+    - If the user has the ORGANIZATION_ADMIN role, return "Organization admin".
     - If the user has the ORGANIZATION_MEMBER role, return "Basic".
     - If the user has neither role, return "-".
 
@@ -101,7 +101,7 @@ def get_role_display(roles):
         str: The display name for the highest applicable role.
     """
     if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles:
-        return "Admin"
+        return "Organization admin"
     elif UserPortfolioRoleChoices.ORGANIZATION_MEMBER in roles:
         return "Basic"
     else:
