@@ -16,7 +16,7 @@ def unpopulate_cloudflare_vendor(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0163_userdomainrole_accepted_at_userdomainrole_email_and_more"),
+        ("registrar", "0164_alter_domain_request_status"),
     ]
 
     operations = [
