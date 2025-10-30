@@ -71,7 +71,7 @@ class MockCloudflareService:
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_zone_response)
-        self._mock_context.post("/zones/{self.fake_zone_id}/dns_records").mock(
+        self._mock_context.post(f"/zones/{self.fake_zone_id}/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
         self._mock_context.post("/zones/z54321/dns_records").mock(side_effect=self._mock_create_dns_record_response)
