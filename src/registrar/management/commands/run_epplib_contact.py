@@ -2,9 +2,8 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from xml.dom.minidom import parseString
-import xml.etree.ElementTree as ET
-from types import SimpleNamespace
 import logging
+from types import SimpleNamespace
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,6 @@ class Command(BaseCommand):
         do_send = options.get("send", False)
 
         try:
-            # Import here so Django settings are already configured
             from epplibwrapper import commands, CLIENT
 
         except Exception as e:
@@ -83,7 +81,6 @@ class Command(BaseCommand):
                 "installed and settings are correct."
             )
 
-
         # build registry command
         try:
             cmd = commands.InfoContact(id=registry_id)
@@ -91,11 +88,7 @@ class Command(BaseCommand):
             logger.exception("Failed to construct InfoContact command: %s", e)
             raise CommandError(f"Failed to construct InfoContact command: {e}")
 
-        # Note: when building manual raw XML we wrap the string in a tiny
-        # object exposing xml() below using SimpleNamespace so it behaves
-        # like epplib command objects.
-
-        # If requested, build an UpdateContact using epplib models so you can
+        # Build an UpdateContact using epplib models so we can
         # compare its XML to the raw disclose-street XML. This will use the
         # library's DiscloseField (ADDR) which hides the entire address.
         if options.get("update_via_epplib"):
@@ -138,72 +131,60 @@ class Command(BaseCommand):
                     f"Failed to build UpdateContact via epplib: {e}"
                 )
 
-        # If requested, build a raw UpdateContact request that contains a
+        # Build a raw UpdateContact request that contains a
         # nested <disclose><addr><street/></addr></disclose> element so we
         # can test the registry's per-street disclose acceptance without
         # modifying epplib itself.
         if options.get("disclose_street_xml"):
             try:
-                epp_ns = "urn:ietf:params:xml:ns:epp-1.0"
-                contact_ns = "urn:ietf:params:xml:ns:contact-1.0"
-                # register namespaces so output contains prefixes/declarations
-                ET.register_namespace("", epp_ns)
-                ET.register_namespace("contact", contact_ns)
+                # Build an epplib UpdateContact as a base so we replicate the
+                # exact namespace declarations/schemaLocation that epplib
+                # produces, then inject a nested <disclose><addr><street/></addr></disclose>
+                # element into the <chg> element. 
+                from lxml import etree as LET
+                from lxml.etree import QName as LQName
+                from epplib.constants import NAMESPACE as EPPNS
+                from epplib.models import PostalInfo, ContactAddr
 
-                root = ET.Element(f"{{{epp_ns}}}epp")
-                command_el = ET.SubElement(root, f"{{{epp_ns}}}command")
-                update_el = ET.SubElement(command_el, f"{{{epp_ns}}}update")
-                c_update = ET.SubElement(update_el, f"{{{contact_ns}}}update")
-                c_id = ET.SubElement(c_update, f"{{{contact_ns}}}id")
-                c_id.text = registry_id
-
-                disclose = ET.SubElement(
-                    c_update, f"{{{contact_ns}}}disclose", {"flag": "0"}
+                sample_addr = ContactAddr(
+                    street=["123 main st", "#5"],
+                    city="somewhere",
+                    sp="FL",
+                    pc="33547",
+                    cc="US",
                 )
-                addr = ET.SubElement(disclose, f"{{{contact_ns}}}addr")
-                ET.SubElement(addr, f"{{{contact_ns}}}street")
+                sample_postal = PostalInfo(
+                    name="Test Name",
+                    org="Test Org",
+                    addr=sample_addr,
+                    type="loc",
+                )
 
-                c_chg = ET.SubElement(c_update, f"{{{contact_ns}}}chg")
-                postal = ET.SubElement(c_chg, f"{{{contact_ns}}}postalInfo")
-                name_el = ET.SubElement(postal, f"{{{contact_ns}}}name")
-                name_el.text = "Test Name"
-                org_el = ET.SubElement(postal, f"{{{contact_ns}}}org")
-                org_el.text = "Test Org"
-                addr_el = ET.SubElement(postal, f"{{{contact_ns}}}addr")
-                ET.SubElement(
-                    addr_el, f"{{{contact_ns}}}street"
-                ).text = "123 main st"
-                ET.SubElement(
-                    addr_el, f"{{{contact_ns}}}street"
-                ).text = "#5"
-                ET.SubElement(
-                    addr_el, f"{{{contact_ns}}}city"
-                ).text = "somewhere"
-                ET.SubElement(addr_el, f"{{{contact_ns}}}sp").text = "FL"
-                ET.SubElement(
-                    addr_el, f"{{{contact_ns}}}pc"
-                ).text = "33547"
-                ET.SubElement(addr_el, f"{{{contact_ns}}}cc").text = "US"
+                base_cmd = commands.UpdateContact(
+                    id=registry_id,
+                    postal_info=sample_postal,
+                )
 
-                xml_str = ET.tostring(root, encoding="unicode")
+                base_raw = base_cmd.xml()
+                root = LET.fromstring(base_raw)
 
-                # ensure the addr element carries the 'type' attribute the
-                # registry expects (some registries require the attribute on
-                # the <addr> element rather than on postalInfo)
-                try:
-                    root = ET.fromstring(xml_str)
-                    for a in root.findall('.//{'+contact_ns+'}addr'):
-                        a.set('type', 'loc')
-                    xml_str = ET.tostring(root, encoding='unicode')
-                except Exception:
-                    pass
+                chg = root.find('.//{*}chg')
+                if chg is None:
+                    raise RuntimeError("Couldn't find chg element in base XML")
 
-                # Wrap the raw XML string in a tiny object exposing xml()
-                cmd = SimpleNamespace(xml=lambda: xml_str)
+                disclose_el = LET.Element(LQName(EPPNS.NIC_CONTACT, "disclose"), flag="0")
+                addr_el = LET.SubElement(disclose_el, LQName(EPPNS.NIC_CONTACT, "addr"))
+                LET.SubElement(addr_el, LQName(EPPNS.NIC_CONTACT, "street"))
+
+                addr_el.set("type", "loc")
+
+                chg.append(disclose_el)
+
+                xml_bytes = LET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+                cmd = SimpleNamespace(xml=lambda: xml_bytes)
             except Exception as e:
-                logger.exception(
-                    "Failed to build raw disclose-street XML: %s", e
-                )
+                logger.exception("Failed to build raw disclose-street XML: %s", e)
                 raise CommandError(f"Failed to build XML: {e}")
 
         # show request XML
@@ -231,11 +212,8 @@ class Command(BaseCommand):
             logger.exception("Error while sending command: %s", e)
             raise CommandError(f"Error while sending command: {e}")
 
-        # print response in a way consistent with other code/tests: epplib may
-        # return a Result-like object (with code/msg/res_data), raw XML bytes,
-        # or an object exposing xml().
+        # print response
         try:
-            # Result-like object (parsed): has 'code' and possibly 'res_data'
             if hasattr(resp, "code"):
                 self.stdout.write(
                     "Response code: {}".format(getattr(resp, "code", None))
