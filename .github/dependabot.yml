@@ -9,5 +9,3 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
-      target-branch: "ad/4283-high-and-moderate-level-dependabot-issues"
-      
