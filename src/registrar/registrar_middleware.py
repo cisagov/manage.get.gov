@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.urls import resolve
 from django.db import connections
-from registrar.models import User
+from registrar.models import User, user
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
@@ -163,58 +163,84 @@ class CheckPortfolioMiddleware:
         response = self.get_response(request)
         return response
 
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        current_path = request.path
+    def _is_excluded(self, path: str) -> bool:
+        return any(path.startswith(p) for p in self.excluded_pages)
 
+    def _handle_legacy_opt_in(self, request):
+        """Allow legacy users to see old home; clears portfolio from session."""
+        if request.path == self.home and request.GET.get(self.legacy_home) == "1" and request.user.has_legacy_domain():
+            request.session.pop("portfolio", None)
+            return True
+        return False
+
+    def _set_or_clear_portfolio(self, request):
+        """Ensure session['portfolio'] is consistent with user/org state."""
+        user = request.user
+        multiple = flag_is_active(request, "multiple_portfolios")
+        first_portfolio = user.get_first_portfolio()
+
+        # Set if feature off and user has any portfolio OR user has exactly one portfolio
+        if (not multiple and first_portfolio) or (user.get_num_portfolios() == 1 and not user.has_legacy_domain()):
+            request.session["portfolio"] = first_portfolio
+            return
+
+        # Clear if session portfolio is not valid anymore
+        if request.session.get("portfolio") and not user.is_org_user(request):
+            request.session.pop("portfolio", None)
+
+    def _maybe_redirect_to_org_select(self, request):
+        """If user has multiple orgs and no active portfolio (and not on excluded paths), send to select page."""
+        if self._is_excluded(request.path):
+            return None
+        if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
+            return HttpResponseRedirect(self.select_portfolios_page)
+        return None
+
+    def _home_redirect(self, request):
+        """Handle all home page redirections."""
+        if request.path != self.home:
+            return None
+
+        user = request.user
+        multiple = user.is_multiple_orgs_user(request)
+        any_org = user.is_any_org_user()
+
+        # If multi-org OR legacy+any_org, go to org select
+        if multiple or (user.has_legacy_domain() and any_org):
+            return HttpResponseRedirect(self.select_portfolios_page)
+
+        # If portfolio is present, choose domains vs no-portfolio-domains
+        portfolio = request.session.get("portfolio")
+        has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
+            request
+        )
+
+        if has_portfolio_domains and portfolio:
+            target = (
+                reverse("domains")
+                if user.has_any_domains_portfolio_permission(portfolio)
+                else reverse("no-portfolio-domains")
+            )
+            return HttpResponseRedirect(target)
+
+        return None
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
         if not request.user.is_authenticated:
             return None
 
-        # Allow legacy users to see old home
-        if current_path == self.home and request.GET.get(self.legacy_home) == "1" and request.user.has_legacy_domain():
-            for k in ("portfolio",):
-                request.session.pop(k, None)
+        if self._handle_legacy_opt_in(request):
             return None
 
-        # Assign user portfolio if:
-        # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
-        # 2. User has only 1 portfolio
-        # Remove condition 1 when we remove multiple portfolios feature flag
-        if (not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()) or (
-            request.user.get_num_portfolios() == 1 and not request.user.has_legacy_domain()
-        ):
-            request.session["portfolio"] = request.user.get_first_portfolio()
-        # If user no longer has permission to session portfolio,
-        # eg their user portfolio permission deleted or replaced,
-        # delete session portfolio since user no longer can access that portfolio.
-        # The user should get redirected to the Select organization page.
-        elif request.session.get("portfolio") and not request.user.is_org_user(request):
-            del request.session["portfolio"]
+        self._set_or_clear_portfolio(request)
 
-        # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.excluded_pages):
-            # Redirect user to org select page if no active portfolio
-            if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
-                org_select_redirect = reverse("your-organizations")
-                return HttpResponseRedirect(org_select_redirect)
-        has_portfolio_domains = (
-            flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
-        ) or request.user.is_org_user(request)
+        resp = self._maybe_redirect_to_org_select(request)
+        if resp:
+            return resp
 
-        if (
-            request.user.is_multiple_orgs_user(request)
-            or (request.user.has_legacy_domain() and request.user.is_any_org_user())
-        ) and current_path == self.home:
-            home_redirect = reverse("your-organizations")
-            return HttpResponseRedirect(home_redirect)
-
-        # Redirect user to portfolio domains table if they manage domains in active portfolio.
-        # Redirect to Not managing domains page if they don't manage domains in active portfolio.
-        if has_portfolio_domains and current_path == self.home:
-            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                portfolio_redirect = reverse("domains")
-            else:
-                portfolio_redirect = reverse("no-portfolio-domains")
-            return HttpResponseRedirect(portfolio_redirect)
+        resp = self._home_redirect(request)
+        if resp:
+            return resp
 
         return None
 

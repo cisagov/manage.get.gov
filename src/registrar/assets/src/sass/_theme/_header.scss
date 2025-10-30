@@ -93,6 +93,7 @@ button {
     }
     .usa-nav__text {
         color: #d6e9f2;
+        font-size: 16px;
         font-weight: font-weight('bold');
     }
     .usa-nav__primary {
@@ -109,6 +110,8 @@ button {
         button.usa-current {
             font-weight: font-weight('bold');
             color: #d6e9f2;
+            font-size: 16px;
+
         }
         button[aria-expanded="true"] {
             color: #d6e9f2;
@@ -124,6 +127,7 @@ button {
     }
     .usa-nav__primary-item:not(:first-child)::before {
         content: '';
+        font-size: 16px;
         position: absolute;
         top: 50%;
         left: 0;
@@ -139,6 +143,7 @@ button {
         padding-bottom: 0;
         padding-left: 0;
         color: #d6e9f2;
+        font-size: 16px;
     }
 }
 
