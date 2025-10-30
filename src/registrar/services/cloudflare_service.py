@@ -53,7 +53,7 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def create_dns_record(self, zone_id: str, record_data: dict[str:Any]):
+    def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
         try:
             resp = self.client.post(appended_url, json=record_data)
