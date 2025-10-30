@@ -498,12 +498,14 @@ class TestDomainInvitationAdmin(WebTest):
 
         Should send out domain invitation only.
         Should trigger success message for the domain invitation.
-        Should retrieve the domain invitation."""
+        Should retrieve the domain invitation.
+        Integrated testing for casing normalization to lowercase for email Domain Invitation
+        """
 
         user = User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
-        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+        invitation = DomainInvitation(email="TEST@example.com", domain=self.domain)
 
         UserPortfolioPermission.objects.create(
             user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -1374,10 +1376,12 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.warning")  # Mock the `messages.warning` call
-    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_warning, mock_send_email):
+    @patch("django.contrib.messages.error")  # Mock the `messages.warning` call
+    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_error, mock_send_email):
         """On save_model, an email is NOT sent if an the requested email belongs to an existing user.
-        It also throws a warning."""
+        It also throws a warning.
+        Integrated testing for casing normalization to lowercase for email Portfolio Invitation
+        """
         self.client.force_login(self.superuser)
 
         # Create an instance of the admin class
@@ -1387,9 +1391,12 @@ class TestPortfolioInvitationAdmin(TestCase):
         existing_user = create_user()
         UserPortfolioPermission.objects.create(user=existing_user, portfolio=self.portfolio)
 
+        # An email with different capitalization that the existing user
+        existing_user_email_with_capitalization = "STaff@example.com"
+
         # Create a PortfolioInvitation instance
         portfolio_invitation = PortfolioInvitation(
-            email=existing_user.email,
+            email=existing_user_email_with_capitalization,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
@@ -1405,7 +1412,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         mock_send_email.assert_not_called()
 
         # Assert that a warning message was triggered
-        mock_messages_warning.assert_called_once_with(request, "User is already a member of this portfolio.")
+        mock_messages_error.assert_called_once_with(request, "User is already a member of this portfolio.")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -2574,7 +2581,7 @@ class TestUserDomainRoleAdmin(WebTest):
             self.assertEqual(search_query, "testmail@igorville.com")
 
             # We only need to check for the end of the HTML string
-            self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
+            self.assertNotContains(response, "Stewart Jones antarcticpolarbears@example.com</a></th>")
 
     def test_email_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
@@ -2606,7 +2613,7 @@ class TestUserDomainRoleAdmin(WebTest):
             self.assertEqual(search_query, "AntarcticPolarBears@example.com")
 
             # We only need to check for the end of the HTML string
-            self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
+            self.assertContains(response, "Joe Jones antarcticpolarbears@example.com</a></th>", count=1)
 
     @less_console_noise_decorator
     def test_custom_delete_confirmation_page(self):

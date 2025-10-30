@@ -1858,6 +1858,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
+            obj.email = obj.email.lower()
             requested_email = obj.email
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)
@@ -1959,6 +1960,12 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     get_roles.short_description = "Member role"  # type: ignore
 
+    def display_error_msgs(self, request, email, permission_exists, invitation_exists):
+        if permission_exists:
+            messages.error(request, "User is already a member of this portfolio.")
+        elif invitation_exists:
+            messages.error(request, f"{email} has an existing invitation.")
+
     def save_model(self, request, obj, form, change):
         """
         Override the save_model method.
@@ -1969,6 +1976,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         """
         try:
             portfolio = obj.portfolio
+            obj.email = obj.email.lower()
             requested_email = obj.email
             requestor = request.user
             is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
@@ -1979,8 +1987,15 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 permission_exists = UserPortfolioPermission.objects.filter(
                     user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
-                if not permission_exists:
-                    # if permission does not exist for a user with requested_email, send email
+
+                invitation_exists = (
+                    PortfolioInvitation.objects.filter(email__iexact=requested_email, portfolio=portfolio)
+                    .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+                    .exists()
+                )
+                if not permission_exists and not invitation_exists:
+                    # if permission does not exist and invitation
+                    # does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
                         email=requested_email,
                         requestor=requestor,
@@ -1993,7 +2008,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
-                    messages.warning(request, "User is already a member of this portfolio.")
+                    return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation
                 # Retrieve the existing object from the database
                 existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
@@ -3088,7 +3103,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # Hide certain portfolio and suborg fields for users that are not in a portfolio
         if not request.user.is_org_user(request):
-            excluded_fields.update(org_fields)
+            # In any org_fields, exclude all the other fields that aren't portfolio
+            excluded_fields.update(field for field in org_fields if field != "portfolio")
             excluded_fields.update(feb_fields)
 
         modified_fieldsets = []
