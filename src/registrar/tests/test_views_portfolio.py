@@ -3400,7 +3400,7 @@ class TestRequestingEntity(WebTest):
         response = self.app.get(
             reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         ).follow()
-        form = response.forms[0]
+        form = response.forms[1]
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
