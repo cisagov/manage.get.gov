@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.urls import resolve
 from django.db import connections
-from registrar.models import User, user
+from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
