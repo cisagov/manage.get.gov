@@ -4,7 +4,6 @@ import respx
 import logging
 from datetime import datetime, timezone
 from faker import Faker
-from random import randint
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
@@ -62,26 +61,24 @@ class MockCloudflareService:
         self._mock_context.get(f"/tenants/{tenant_id}/accounts", params={"page": 1, "per_page": 50}).mock(
             side_effect=self._mock_get_page_accounts_response
         )
-        self._mock_context.post(f"/accounts").mock(side_effect=self._mock_create_account_response)
+        self._mock_context.post("/accounts").mock(side_effect=self._mock_create_account_response)
 
     def _register_zone_mocks(self):
-        self._mock_context.get(f"/zones", params=f"account.id={self.existing_account_id}").mock(
+        self._mock_context.get("/zones", params=f"account.id={self.existing_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
         )
-        self._mock_context.get(f"/zones", params=f"account.id={self.new_account_id}").mock(
+        self._mock_context.get("/zones", params=f"account.id={self.new_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
         )
-        self._mock_context.post(f"/zones").mock(side_effect=self._mock_create_zone_response)
-        self._mock_context.post(f"/zones/{self.fake_zone_id}/dns_records").mock(
+        self._mock_context.post("/zones").mock(side_effect=self._mock_create_zone_response)
+        self._mock_context.post("/zones/{self.fake_zone_id}/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
-        self._mock_context.post(f"/zones/z54321/dns_records").mock(
-            side_effect=self._mock_create_dns_record_response
-        )
+        self._mock_context.post("/zones/z54321/dns_records").mock(side_effect=self._mock_create_dns_record_response)
 
     def _mock_get_page_accounts_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking accounts GET")
-
+        # use exists.gov domain to simulate an account that already exists
         return httpx.Response(
             200,
             json={
@@ -115,7 +112,7 @@ class MockCloudflareService:
                     },
                     {
                         "account_tag": self.existing_account_id,
-                        "account_pubname": "Account for exists.gov",  # use exists.gov domain to simulate an account that already exists
+                        "account_pubname": "Account for exists.gov",
                         "account_type": "enterprise",
                         "created_on": "2025-10-08T21:21:38.401706Z",
                         "settings": {
@@ -143,7 +140,7 @@ class MockCloudflareService:
                 json={
                     "success": True,
                     "result": [
-                        {   # This record referenced for existing account with existing zone
+                        {  # This record referenced for existing account with existing zone
                             "id": "z54321",
                             "account": {"id": self.existing_account_id, "name": "Account for exists.gov"},
                             "created_on": "2014-01-01T05:20:00.12345Z",
@@ -181,7 +178,7 @@ class MockCloudflareService:
                     },
                     {
                         "id": fake.uuid4(),
-                        "account": {"id": account_id, "name":  self.new_account_name},
+                        "account": {"id": account_id, "name": self.new_account_name},
                         "created_on": "2014-01-01T05:20:00.12345Z",
                         "modified_on": "2014-01-01T05:20:00.12345Z",
                         "name": "some.gov",
@@ -191,7 +188,7 @@ class MockCloudflareService:
                         ],
                         "status": "pending",
                         "tenant": {"id": CloudflareService.tenant_id, "name": "Yet another fake dotgov"},
-                    }
+                    },
                 ],
                 "result_info": {"count": 1, "page": 1, "per_page": 20, "total_count": 1, "total_pages": 1},
             },
@@ -257,31 +254,15 @@ class MockCloudflareService:
                     json={
                         "result": None,
                         "success": False,
-                        "errors": [
-                            {
-                                "code": 9005,
-                                "message": "Bad request for dns record."
-                            }
-                        ],
-                        "messages": []
-                                        }
+                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
+                        "messages": [],
+                    },
                 )
             if record_name.startswith("error-403"):
                 return httpx.Response(
-                    403,
-                    json={
-                        "success": False,
-                        "errors": [
-                            {
-                                "code": 10000,
-                                "message": "Authentication error"
-                            }
-                        ]
-                    }
+                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
                 )
-            return httpx.Response(
-                500
-            )
+            return httpx.Response(500)
 
         return httpx.Response(
             200,
