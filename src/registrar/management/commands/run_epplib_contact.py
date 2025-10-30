@@ -182,7 +182,13 @@ class Command(BaseCommand):
 
                 xml_bytes = LET.tostring(root, encoding="utf-8", xml_declaration=True)
 
-                cmd = SimpleNamespace(xml=lambda: xml_bytes)
+                # The epplib Client.send will call request.xml(tr_id=..., schema=...)
+                # (it passes tr_id and schema as kwargs). The simple wrapper we
+                # provide must accept those kwargs even if it ignores them, or
+                # the client will raise a TypeError like "unexpected keyword
+                # argument 'tr_id'". Accept arbitrary args/kwargs and return
+                # the pre-built bytes.
+                cmd = SimpleNamespace(xml=lambda *a, **kw: xml_bytes)
             except Exception as e:
                 logger.exception("Failed to build raw disclose-street XML: %s", e)
                 raise CommandError(f"Failed to build XML: {e}")
