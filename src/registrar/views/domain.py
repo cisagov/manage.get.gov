@@ -415,6 +415,9 @@ class DomainView(DomainBaseView):
     template_name = "domain_detail.html"
 
     def get_context_data(self, **kwargs):
+        """If we don't reference security email in context for older deleted domains
+        there wont be a 500 error (bc it was referencing something that didn't exist
+        via security_contact_registry_id) -- reference #4334"""
         context = super().get_context_data(**kwargs)
 
         default_emails = DefaultEmail.get_all_emails()
@@ -424,11 +427,6 @@ class DomainView(DomainBaseView):
             user=self.request.user, portfolio=self.request.session.get("portfolio")
         ).first()
 
-        """
-        If we don't reference security email in context for older deleted domains 
-        there wont be a 500 error (bc it was referencing something that didn't exist
-        via security_contact_registry_id) -- reference #4334
-        """
         if self.object.state != self.object.State.DELETED:
             security_email = self.object.get_security_email()
             if security_email is None or security_email in default_emails:
