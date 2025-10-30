@@ -1,6 +1,11 @@
 
 from django.test import SimpleTestCase
+from httpx import Client
+
 from registrar.services.mock_cloudflare_service import MockCloudflareService
+from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.utility.dns_helper import make_dns_account_name
+
 
 
 class TestMockCloudflareServiceBasics(SimpleTestCase):
@@ -48,4 +53,44 @@ class TestMockCloudflareServiceBasics(SimpleTestCase):
         self.mock_api_service.stop()  # Should not error
 
         assert not self.mock_api_service.is_active
-        
+
+class TestMockCloudflareServiceEndpoints(SimpleTestCase):
+    """Test that mocked endpoints return correct data"""
+    mock_api_service = MockCloudflareService()
+
+    @classmethod
+    def setUpClass(cls):
+        """Start mock service once for all tests in this class"""
+        super().setUpClass()
+        cls.mock_api_service.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Stop mock service after all tests"""
+        cls.mock_api_service.stop()
+        super().tearDownClass()
+
+    def setUp(self):
+        client = Client()
+        self.service = CloudflareService(client)
+
+    def test_mock_get_page_accounts_response(self):
+        resp = self.service.get_page_accounts(1, 50)
+        result = resp["result"]
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[2]["account_pubname"], make_dns_account_name("exists.gov"))
+
+    def test_mock_get_account_zones_response(self):
+        account_id = self.mock_api_service.new_account_id
+        resp = self.service.get_account_zones(account_id)
+        result = resp["result"]
+        self.assertEqual(len(result), 2)
+        for zone in result:
+            self.assertNotEquals(zone.get("name"), "exists.gov")
+
+        existing_account_id = self.mock_api_service.existing_account_id
+        resp2 = self.service.get_account_zones(existing_account_id)
+        print(f"🍩 {resp2}")
+        result2 = resp2["result"]
+        self.assertEqual(len(result2), 1)
+        self.assertEquals(result2[0].get("name"), "exists.gov")

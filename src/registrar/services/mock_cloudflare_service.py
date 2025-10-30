@@ -19,6 +19,8 @@ class MockCloudflareService:
     _mock_context = None
     fake_zone_id = fake.uuid4()
     new_account_name = f"account-{fake.domain_name()}"
+    existing_account_id = "a1234"
+    existing_domain_name = "exists.gov"
 
     def __new__(cls):
         if cls._instance is None:
@@ -31,6 +33,7 @@ class MockCloudflareService:
             self.is_active = False
         self.domain_name = fake.domain_name()
         self.new_account_name = make_dns_account_name(self.domain_name)
+        self.new_account_id = fake.uuid4()
 
     def start(self):
         """Start mocking external APIs"""
@@ -62,7 +65,10 @@ class MockCloudflareService:
         self._mock_context.post(f"/accounts").mock(side_effect=self._mock_create_account_response)
 
     def _register_zone_mocks(self):
-        self._mock_context.get(f"/zones", params=f"account.id=a1234").mock(
+        self._mock_context.get(f"/zones", params=f"account.id={self.existing_account_id}").mock(
+            side_effect=self._mock_get_account_zones_response
+        )
+        self._mock_context.get(f"/zones", params=f"account.id={self.new_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.post(f"/zones").mock(side_effect=self._mock_create_zone_response)
@@ -108,7 +114,7 @@ class MockCloudflareService:
                         },
                     },
                     {
-                        "account_tag": "a1234",
+                        "account_tag": self.existing_account_id,
                         "account_pubname": "Account for exists.gov",  # use exists.gov domain to simulate an account that already exists
                         "account_type": "enterprise",
                         "created_on": "2025-10-08T21:21:38.401706Z",
@@ -128,6 +134,32 @@ class MockCloudflareService:
         logger.debug("😎 Mocking zones GET")
         zone_name = self.domain_name
         account_id = request.url.params.get("account.id")
+        zone_exists = account_id == self.existing_account_id
+        print(f"💕 {zone_exists}")
+        # test with domain "exists.gov" to skip zone creation
+        if zone_exists:
+            return httpx.Response(
+                200,
+                json={
+                    "success": True,
+                    "result": [
+                        {   # This record referenced for existing account with existing zone
+                            "id": "z54321",
+                            "account": {"id": self.existing_account_id, "name": "Account for exists.gov"},
+                            "created_on": "2014-01-01T05:20:00.12345Z",
+                            "modified_on": "2014-01-01T05:20:00.12345Z",
+                            "name": "exists.gov",
+                            "name_servers": [
+                                "rainbow.dns.gov",
+                                "rainbow2.dns.gov",
+                            ],
+                            "status": "pending",
+                            "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
+                        }
+                    ],
+                    "result_info": {"count": 1, "page": 1, "per_page": 20, "total_count": 1, "total_pages": 1},
+                },
+            )
 
         return httpx.Response(
             200,
@@ -147,18 +179,18 @@ class MockCloudflareService:
                         "status": "pending",
                         "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
                     },
-                    {   # This record referenced for existing account
-                        "id": "z54321",
-                        "account": {"id": account_id, "name": "Account for exists.gov"},
+                    {
+                        "id": fake.uuid4(),
+                        "account": {"id": account_id, "name":  self.new_account_name},
                         "created_on": "2014-01-01T05:20:00.12345Z",
                         "modified_on": "2014-01-01T05:20:00.12345Z",
-                        "name": "exists.gov",
+                        "name": "some.gov",
                         "name_servers": [
                             "rainbow.dns.gov",
                             "rainbow2.dns.gov",
                         ],
                         "status": "pending",
-                        "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
+                        "tenant": {"id": CloudflareService.tenant_id, "name": "Yet another fake dotgov"},
                     }
                 ],
                 "result_info": {"count": 1, "page": 1, "per_page": 20, "total_count": 1, "total_pages": 1},
