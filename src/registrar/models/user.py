@@ -82,6 +82,7 @@ class User(AbstractUser):
     domains = models.ManyToManyField(
         "registrar.Domain",
         through="registrar.UserDomainRole",
+        through_fields=("user", "domain"),
         related_name="users",
     )
 
@@ -135,8 +136,8 @@ class User(AbstractUser):
     @classmethod
     def get_default_user(cls):
         """Returns the default "system" user"""
-        default_creator, _ = User.objects.get_or_create(username="System")
-        return default_creator
+        default_requester, _ = User.objects.get_or_create(username="System")
+        return default_requester
 
     def restrict_user(self):
         self.status = self.RESTRICTED
@@ -221,26 +222,14 @@ class User(AbstractUser):
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS)
 
-    def has_organization_requests_flag(self):
-        return flag_is_active_for_user(self, "organization_requests")
-
-    def has_organization_members_flag(self):
-        return flag_is_active_for_user(self, "organization_members")
-
     def has_view_members_portfolio_permission(self, portfolio):
-        # BEGIN
-        # Note code below is to add organization_request feature
-        if not self.has_organization_members_flag():
+        if not portfolio:
             return False
-        # END
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_MEMBERS)
 
     def has_edit_members_portfolio_permission(self, portfolio):
-        # BEGIN
-        # Note code below is to add organization_request feature
-        if not self.has_organization_members_flag():
+        if not portfolio:
             return False
-        # END
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_MEMBERS)
 
     def has_view_all_domains_portfolio_permission(self, portfolio):
@@ -252,11 +241,8 @@ class User(AbstractUser):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS)
 
     def has_any_requests_portfolio_permission(self, portfolio):
-        # BEGIN
-        # Note code below is to add organization_request feature
-        if not self.has_organization_requests_flag():
+        if not portfolio:
             return False
-        # END
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
         ) or self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
@@ -276,6 +262,9 @@ class User(AbstractUser):
         if permission:
             return permission.portfolio
         return None
+
+    def get_num_portfolios(self):
+        return self.get_portfolios().count()
 
     def get_portfolios(self):
         return self.portfolio_permissions.all()
@@ -422,9 +411,16 @@ class User(AbstractUser):
         self.check_portfolio_invitations_on_login()
 
     def is_org_user(self, request):
-        has_organization_feature_flag = flag_is_active(request, "organization_feature")
         portfolio = request.session.get("portfolio")
-        return has_organization_feature_flag and self.has_view_portfolio_permission(portfolio)
+        return portfolio is not None and self.has_view_portfolio_permission(portfolio)
+
+    def is_any_org_user(self):
+        return self.get_num_portfolios() > 0
+
+    def is_multiple_orgs_user(self, request):
+        has_multiple_portfolios_feature_flag = flag_is_active(request, "multiple_portfolios")
+        num_portfolios = self.get_num_portfolios()
+        return has_multiple_portfolios_feature_flag and num_portfolios > 1
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
@@ -479,3 +475,8 @@ class User(AbstractUser):
 
         # If there are other admins or the user is not the only one
         return False
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+        super().save(*args, **kwargs)

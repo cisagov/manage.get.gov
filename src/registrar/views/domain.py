@@ -1,6 +1,7 @@
 from datetime import date
+from httpx import Client
 import logging
-import requests
+from contextvars import ContextVar
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -10,6 +11,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -50,6 +52,8 @@ from registrar.views.utility.invitation_helper import (
     handle_invitation_exceptions,
 )
 
+from registrar.services.dns_host_service import DnsHostService
+
 from ..forms import (
     SeniorOfficialContactForm,
     DomainOrgNameAddressForm,
@@ -59,6 +63,7 @@ from ..forms import (
     DomainDnssecForm,
     DomainDsdataFormset,
     DomainDsdataForm,
+    DomainDeleteForm,
 )
 
 from epplibwrapper import (
@@ -72,10 +77,14 @@ from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_invitation_email,
+    send_domain_manager_on_hold_email_to_domain_managers,
+    send_domain_renewal_notification_emails,
 )
 from django import forms
 
 logger = logging.getLogger(__name__)
+
+context_dns_record = ContextVar("context_dns_record", default=None)
 
 
 class DomainBaseView(PermissionRequiredMixin, DetailView):
@@ -123,12 +132,21 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        domain = self.object
+
         context["is_analyst_or_superuser"] = user.has_perm("registrar.analyst_access_permission") or user.has_perm(
             "registrar.full_access_permission"
         )
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
         context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
+        context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
+        context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
+        context["domain_is_ready"] = domain.state == domain.State.READY
+        context["domain_is_deletable"] = context["is_domain_manager"] and (
+            context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
+        )
+
         # Stored in a variable for the linter
         action = "analyst_action"
         action_location = "analyst_action_location"
@@ -332,9 +350,8 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                 if form.__class__ in check_for_portfolio:
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
-                    if flag_is_active_for_user(self.request.user, "organization_feature") and (
-                        not info or info.portfolio
-                    ):
+                    is_org_user = self.request.user.is_org_user(self.request)
+                    if is_org_user and (not info or info.portfolio):
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -368,10 +385,15 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         Will log a warning if the email fails to send for any reason, but will not raise an error.
         """
-        manager_roles = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER)
+        # Get each domain manager from list (exclude pending invitations where user is null)
+        manager_roles = UserDomainRole.objects.filter(
+            domain=domain.pk, role=UserDomainRole.Roles.MANAGER, user__isnull=False
+        ).select_related("user")
 
         for role in manager_roles:
             manager = role.user
+            if not manager:
+                continue
             context["recipient"] = manager
             try:
                 send_templated_email(template, subject_template, to_addresses=[manager.email], context=context)
@@ -445,6 +467,17 @@ class DomainView(DomainBaseView):
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainLifecycleView(DomainBaseView):
+
+    template_name = "domain_lifecycle.html"
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
@@ -491,6 +524,7 @@ class DomainRenewalView(DomainBaseView):
                 try:
                     domain.renew_domain()
                     messages.success(request, "This domain has been renewed for one year.")
+                    send_domain_renewal_notification_emails(domain=domain)
                 except Exception:
                     messages.error(
                         request,
@@ -511,6 +545,37 @@ class DomainRenewalView(DomainBaseView):
                 "is_domain_manager": True,
             },
         )
+
+
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
+class DomainDeleteView(DomainFormBaseView):
+    """Domain delete page."""
+
+    template_name = "domain_delete.html"
+    form_class = DomainDeleteForm
+
+    def post(self, request, domain_pk):
+        domain = get_object_or_404(Domain, pk=domain_pk)
+        self.object = domain
+        form = self.form_class(request.POST)
+        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
+        if form.is_valid():
+            if domain.state != "ready":
+                messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+                return self.render_to_response(self.get_context_data(form=form))
+            if is_policy_acknowledged:
+                domain.place_client_hold()
+                domain.save()
+                # Email all domain managers that domain manager has been removed
+                send_domain_manager_on_hold_email_to_domain_managers(domain=domain, requestor=request.user)
+                messages.success(request, "The deletion request for this domain has been submitted.")
+                # redirect to domain overview
+                return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
+            return self.render_to_response(self.get_context_data(form=form))
+
+        # Form not valid -> redisplay with errors
+        return self.render_to_response(self.get_context_data(form=form))
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -665,7 +730,7 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -709,6 +774,17 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
     form_class = PrototypeDomainDNSRecordForm
     valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
 
+    def __init__(self):
+        self.dns_record = None
+        self.client = Client()
+        self.dns_host_service = DnsHostService(client=self.client)
+
+    def get_context_data(self, **kwargs):
+        """Adds custom context."""
+        context = super().get_context_data(**kwargs)
+        context["dns_record"] = context_dns_record.get()
+        return context
+
     def has_permission(self):
         has_permission = super().has_permission()
         if not has_permission:
@@ -731,7 +807,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
@@ -747,132 +823,41 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         " Create one in a test environment if it doesn't already exist."
                     )
 
-                base_url = "https://api.cloudflare.com/client/v4"
-                headers = {
-                    "X-Auth-Email": settings.SECRET_REGISTRY_SERVICE_EMAIL,
-                    "X-Auth-Key": settings.SECRET_REGISTRY_TENANT_KEY,
-                    "Content-Type": "application/json",
+                record_data = {
+                    "type": "A",
+                    "name": form.cleaned_data["name"],  # record name
+                    "content": form.cleaned_data["content"],  # IPv4
+                    "ttl": int(form.cleaned_data["ttl"]),
+                    "comment": "Test record",
                 }
-                params = {"tenant_name": settings.SECRET_REGISTRY_TENANT_NAME}
 
-                # 1. Get tenant details
-                tenant_response = requests.get(f"{base_url}/user/tenants", headers=headers, params=params, timeout=5)
-                tenant_response_json = tenant_response.json()
-                logger.info(f"Found tenant: {tenant_response_json}")
-                tenant_id = tenant_response_json["result"][0]["tenant_tag"]
-                errors = tenant_response_json.get("errors", [])
-                tenant_response.raise_for_status()
-
-                # 2. Create or get a account under tenant
-
-                # Check to see if the account already exists. Filters accounts by tenant_id / account_name.
                 account_name = f"account-{self.object.name}"
-                params = {"tenant_id": tenant_id, "name": account_name}
+                zone_name = f"{self.object.name}"  # must be a domain name
+                zone_id = ""
+                try:
+                    _, zone_id, nameservers = self.dns_host_service.dns_setup(account_name, zone_name)
+                except APIError as e:
+                    logger.error(f"API error in view: {str(e)}")
 
-                account_response = requests.get(f"{base_url}/accounts", headers=headers, params=params, timeout=5)
-                account_response_json = account_response.json()
-                logger.debug(f"account get: {account_response_json}")
-                errors = account_response_json.get("errors", [])
-                account_response.raise_for_status()
+                if zone_id:
+                    # post nameservers to registry
+                    try:
+                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                    except (RegistryError, RegistrySystemError, Exception) as e:
+                        logger.error(f"Error updating registry: {e}")
 
-                # See if we already made an account.
-                # This maybe doesn't need to be a for loop (1 record or 0) but alas, here we are
-                accounts = account_response_json.get("result", [])
-                account_id = self.find_by_name(accounts, account_name)
+                    try:
+                        record_response = self.dns_host_service.create_record(zone_id, record_data)
+                        logger.info(f"Created DNS record: {record_response['result']}")
+                        self.dns_record = record_response["result"]
+                        dns_name = record_response["result"]["name"]
+                        messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+                    except APIError as e:
+                        logger.error(f"API error in view: {str(e)}")
 
-                # If we didn't, create one
-                if not account_id:
-                    account_response = requests.post(
-                        f"{base_url}/accounts",
-                        headers=headers,
-                        json={"name": account_name, "type": "enterprise", "unit": {"id": tenant_id}},
-                        timeout=5,
-                    )
-                    account_response_json = account_response.json()
-                    logger.info(f"Created account: {account_response_json}")
-                    account_id = account_response_json["result"]["id"]
-                    errors = account_response_json.get("errors", [])
-                    account_response.raise_for_status()
-
-                # 3. Create or get a zone under account
-
-                # Try to find an existing zone first by searching on the current id
-                zone_name = self.object.name
-                params = {"account.id": account_id, "name": zone_name}
-                zone_response = requests.get(f"{base_url}/zones", headers=headers, params=params, timeout=5)
-                zone_response_json = zone_response.json()
-                logger.debug(f"get zone: {zone_response_json}")
-                errors = zone_response_json.get("errors", [])
-                zone_response.raise_for_status()
-
-                # Get the zone id
-                zones = zone_response_json.get("result", [])
-                zone_id = self.find_by_name(zones, zone_name)
-
-                # Create one if it doesn't presently exist
-                if not zone_id:
-                    zone_response = requests.post(
-                        f"{base_url}/zones",
-                        headers=headers,
-                        json={"name": zone_name, "account": {"id": account_id}, "type": "full"},
-                        timeout=5,
-                    )
-                    zone_response_json = zone_response.json()
-                    logger.info(f"Created zone: {zone_response_json}")
-                    zone_id = zone_response_json.get("result", {}).get("id")
-                    errors = zone_response_json.get("errors", [])
-                    zone_response.raise_for_status()
-
-                # 4. Add or get a zone subscription
-
-                # See if one already exists
-                subscription_response = requests.get(
-                    f"{base_url}/zones/{zone_id}/subscription", headers=headers, timeout=5
-                )
-                subscription_response_json = subscription_response.json()
-                logger.debug(f"get subscription: {subscription_response_json}")
-
-                # Create a subscription if one doesn't exist already.
-                # If it doesn't, we get this error message (code 1207):
-                # Add a core subscription first and try again. The zone does not have an active core subscription.
-                # Note that status code and error code are different here.
-                if subscription_response.status_code == 404:
-                    subscription_response = requests.post(
-                        f"{base_url}/zones/{zone_id}/subscription",
-                        headers=headers,
-                        json={"rate_plan": {"id": "PARTNERS_ENT"}, "frequency": "annual"},
-                        timeout=5,
-                    )
-                    subscription_response.raise_for_status()
-                    subscription_response_json = subscription_response.json()
-                    logger.info(f"Created subscription: {subscription_response_json}")
-                else:
-                    subscription_response.raise_for_status()
-
-                # # 5. Create DNS record
-                # # Format the DNS record according to Cloudflare's API requirements
-                dns_response = requests.post(
-                    f"{base_url}/zones/{zone_id}/dns_records",
-                    headers=headers,
-                    json={
-                        "type": "A",
-                        "name": form.cleaned_data["name"],
-                        "content": form.cleaned_data["content"],
-                        "ttl": int(form.cleaned_data["ttl"]),
-                        "comment": "Test record (will need clean up)",
-                    },
-                    timeout=5,
-                )
-                dns_response_json = dns_response.json()
-                logger.info(f"Created DNS record: {dns_response_json}")
-                errors = dns_response_json.get("errors", [])
-                dns_response.raise_for_status()
-                dns_name = dns_response_json["result"]["name"]
-                messages.success(request, f"DNS A record '{dns_name}' created successfully.")
-            except Exception as err:
-                logger.error(f"Error creating DNS A record for {self.object.name}: {err}")
-                messages.error(request, f"An error occurred: {err}")
+                context_dns_record.set(self.dns_record)
             finally:
+                self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
@@ -1324,8 +1309,9 @@ class DomainAddUserView(DomainFormBaseView):
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view
+            is_org_user = self.request.user.is_org_user(self.request)
             if (
-                flag_is_active_for_user(requestor, "organization_feature")
+                is_org_user
                 and not flag_is_active_for_user(requestor, "multiple_portfolios")
                 and domain_org is not None
                 and requestor_can_update_portfolio
@@ -1341,7 +1327,7 @@ class DomainAddUserView(DomainFormBaseView):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited to the organization: {domain_org}")
+                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
@@ -1360,9 +1346,9 @@ class DomainAddUserView(DomainFormBaseView):
             domains=self.object,
             is_member_of_different_org=member_of_different_org,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
-        messages.success(self.request, f"{email} has been invited to the domain: {self.object}")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
         """Handle adding an existing user to the domain."""
@@ -1373,7 +1359,7 @@ class DomainAddUserView(DomainFormBaseView):
             is_member_of_different_org=member_of_different_org,
             requested_user=requested_user,
         ):
-            messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
         UserDomainRole.objects.create(
             user=requested_user,
             domain=self.object,

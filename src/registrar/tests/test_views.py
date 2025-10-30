@@ -312,7 +312,7 @@ class HomeTests(TestWithUser):
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.WITHDRAWN
+            requester=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.WITHDRAWN
         )
 
         # Trigger the delete logic
@@ -331,7 +331,7 @@ class HomeTests(TestWithUser):
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.STARTED
+            requester=self.user, requested_domain=site, status=DomainRequest.DomainRequestStatus.STARTED
         )
 
         # Trigger the delete logic
@@ -358,7 +358,7 @@ class HomeTests(TestWithUser):
                 ]:
                     with self.subTest(status=status):
                         domain_request = DomainRequest.objects.create(
-                            creator=self.user, requested_domain=draft_domain, status=status
+                            requester=self.user, requested_domain=draft_domain, status=status
                         )
 
                         # Trigger the delete logic
@@ -400,7 +400,7 @@ class HomeTests(TestWithUser):
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
@@ -410,7 +410,7 @@ class HomeTests(TestWithUser):
         # Create a second domain request to attach contacts to
         site_2 = DraftDomain.objects.create(name="teaville.gov")
         domain_request_2 = DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
             senior_official=contact_2,
@@ -470,7 +470,7 @@ class HomeTests(TestWithUser):
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
@@ -480,7 +480,7 @@ class HomeTests(TestWithUser):
         # Create a second domain request to attach contacts to
         site_2 = DraftDomain.objects.create(name="teaville.gov")
         domain_request_2 = DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=site_2,
             status=DomainRequest.DomainRequestStatus.STARTED,
             senior_official=contact_2,
@@ -984,7 +984,7 @@ class UserProfileTests(TestWithUser, WebTest):
         )
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             senior_official=contact_user,
@@ -1028,7 +1028,7 @@ class PortfoliosTests(TestWithUser, WebTest):
         )
         self.federal_agency = FederalAgency.objects.create()
         self.portfolio, _ = Portfolio.objects.get_or_create(
-            creator=self.user, organization_name="xyz inc", federal_agency=self.federal_agency
+            requester=self.user, organization_name="xyz inc", federal_agency=self.federal_agency
         )
 
     def tearDown(self):
@@ -1060,13 +1060,12 @@ class PortfoliosTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_no_redirect_when_user_has_no_portfolios(self):
         """No redirect so no follow,
-        implicitely test for the presense of the h2 by looking up its id"""
+        implicitly test for the presense of the h2 by looking up its id"""
         self.portfolio.delete()
         self.app.set_user(self.user.username)
-        with override_flag("organization_feature", active=True):
-            home_page = self.app.get(reverse("home"))
-            self._set_session_cookie()
+        home_page = self.app.get(reverse("home"))
+        self._set_session_cookie()
 
-            self.assertNotContains(home_page, self.portfolio.organization_name)
+        self.assertNotContains(home_page, self.portfolio.organization_name)
 
-            self.assertContains(home_page, 'id="domain-requests-header"')
+        self.assertContains(home_page, 'id="domain-requests-header"')

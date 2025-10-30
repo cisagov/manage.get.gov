@@ -16,9 +16,11 @@ on:
           - ad
           - litterbox
           - hotgov
-          - bob
           - meoward
           - backup
+          - ap
+          - cw
+          - testdb
           - acadia
           - glacier
           - olympic
@@ -35,6 +37,7 @@ on:
 jobs:
   reset-db:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
@@ -55,26 +58,15 @@ jobs:
          cf auth "$cf_username" "$cf_password"
          cf target -o cisa-dotgov -s $DESTINATION_ENVIRONMENT   
 
-
-
          # unbind the service
          cf unbind-service getgov-$DESTINATION_ENVIRONMENT getgov-$DESTINATION_ENVIRONMENT-database
          #delete the service key
-         yes Y | cf delete-service-key getgov-$DESTINATION_ENVIRONMENT-database SERVICE_CONNECT 
+         cf delete-service-key getgov-$DESTINATION_ENVIRONMENT-database SERVICE_CONNECT -f
          # delete the service
-         yes Y | cf delete-service getgov-$DESTINATION_ENVIRONMENT-database
+         cf delete-service getgov-$DESTINATION_ENVIRONMENT-database -f -w
          # create it again
-         cf create-service aws-rds micro-psql getgov-$DESTINATION_ENVIRONMENT-database
-         # wait for it be created (up to 5 mins)
-         # this checks the creation cf service getgov-$DESTINATION_ENVIRONMENT-database
-         # the below command with check “status” line using cf service command mentioned above. if it says “create in progress” it will keep waiting otherwise the next steps fail
-
-         timeout 480 bash -c  "until cf service getgov-$DESTINATION_ENVIRONMENT-database | grep -q 'The service instance status is succeeded'
-          do
-          echo 'Database not up yet, waiting...'
-          sleep 30
-         done"
-
+         cf create-service aws-rds micro-psql getgov-$DESTINATION_ENVIRONMENT-database -w
+        
          # rebind the service
          cf bind-service getgov-$DESTINATION_ENVIRONMENT getgov-$DESTINATION_ENVIRONMENT-database
          #restage the app or it will not connect to the database right for the next commands

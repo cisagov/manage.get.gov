@@ -21,6 +21,9 @@
       {% with attr_required=True %}
         {% input_with_errors forms.0.federal_agency %}
       {% endwith %}
+      <p class="font-body-xs text-base-darker margin-top-1">
+        Don’t see your agency listed? Its domains may be managed through <a href="{% public_site_url 'posts/2025-09-10-announcing-enterprise-mode/' %}" class="usa-link" target="_blank">enterprise mode</a>, which limits who can submit domain requests. <a href="{% public_site_url 'contact' %}" class="usa-link" target="_blank">Contact us</a> for assistance.
+      </p>
     {% endif %}
 
     {% input_with_errors forms.0.organization_name %}

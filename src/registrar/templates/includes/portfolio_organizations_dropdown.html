@@ -1,0 +1,24 @@
+{% load nav_header %}
+
+<li class="usa-nav__secondary-item">
+    <div class="usa-accordion">
+        <div class="usa-accordion__heading usa-nav__secondary-menu">
+            <button
+            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+            id="organizations-menu"
+            aria-controls="organizations-submenu"
+            aria-expanded="false"
+            aria-label="organizations-menu"
+            >
+                <span class="ellipsis usa-nav__username">Organizations</span>
+            </button>
+        </div>
+        <div id="organizations-submenu" class="usa-nav__submenu">
+            {% for user_portfolio_permission in user_portfolio_permissions %}
+            <div class="usa-nav__submenu-item usa-nav-link">
+                {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_nav_menu" %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</li>

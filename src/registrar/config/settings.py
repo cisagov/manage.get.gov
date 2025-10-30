@@ -92,9 +92,10 @@ secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # PROTOTYPE: Used for DNS hosting
-secret_registry_tenant_key = secret("REGISTRY_TENANT_KEY", None)
-secret_registry_tenant_name = secret("REGISTRY_TENANT_NAME", None)
-secret_registry_service_email = secret("REGISTRY_SERVICE_EMAIL", None)
+secret_dns_tenant_key = secret("DNS_TENANT_KEY", None)
+secret_dns_tenant_name = secret("DNS_TENANT_NAME", None)
+secret_registry_service_email = secret("DNS_SERVICE_EMAIL", None)
+secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", None)
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -209,6 +210,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
+    # Add DB info to logs
+    "registrar.registrar_middleware.DatabaseConnectionMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -504,6 +507,45 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
+        # Add all extra fields from the log record
+        extra_fields = {}
+        for key, value in record.__dict__.items():
+            # Skip standard LogRecord attributes
+            if key not in {
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "getMessage",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "message",
+            }:
+                # Only include JSON-serializable values
+                try:
+                    json.dumps(value)
+                    extra_fields[key] = value
+                except (TypeError, ValueError):
+                    # Convert non-serializable values to strings
+                    extra_fields[key] = str(value)
+
+        # Merge extra fields into the main log record
+        log_record.update(extra_fields)
+
         return json.dumps(log_record, ensure_ascii=False)
 
 
@@ -648,6 +690,17 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        # DB info
+        "django.db.backends": {
+            "handlers": django_handlers,
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.db.backends.schema": {
+            "handlers": django_handlers,
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
     # root logger catches anything, unless
     # defined by a more specific logger
@@ -756,9 +809,10 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
-SECRET_REGISTRY_TENANT_KEY = secret_registry_tenant_key
-SECRET_REGISTRY_TENANT_NAME = secret_registry_tenant_name
-SECRET_REGISTRY_SERVICE_EMAIL = secret_registry_service_email
+SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
+SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
+SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
+SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
 # endregion
 # region: Security and Privacy----------------------------------------------###
@@ -797,6 +851,10 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-ap.app.cloud.gov",
+    "getgov-cw.app.cloud.gov",
+    "getgov-cw.app.cloud.gov",
+    "getgov-testdb.app.cloud.gov",
     "getgov-acadia.app.cloud.gov",
     "getgov-glacier.app.cloud.gov",
     "getgov-olympic.app.cloud.gov",
@@ -809,7 +867,6 @@ ALLOWED_HOSTS = [
     "getgov-ad.app.cloud.gov",
     "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
-    "getgov-bob.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
     "getgov-es.app.cloud.gov",

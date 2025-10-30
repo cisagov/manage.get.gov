@@ -32,7 +32,7 @@ from .common import (
     MockEppLib,
     GenericTestHelper,
 )
-from unittest.mock import ANY, call, patch
+from unittest.mock import ANY, call, patch, PropertyMock
 
 import boto3_mocking  # type: ignore
 import logging
@@ -70,14 +70,14 @@ class TestDomainAdminAsStaff(MockEppLib):
             organization_name="new portfolio",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
             federal_agency=self.fed_agency,
-            creator=self.staffuser,
+            requester=self.staffuser,
         )
         self.domain_info = DomainInformation.objects.create(
-            domain=self.febdomain, portfolio=self.portfolio, creator=self.staffuser
+            domain=self.febdomain, portfolio=self.portfolio, requester=self.staffuser
         )
         self.nonfebportfolio = Portfolio.objects.create(
             organization_name="non feb portfolio",
-            creator=self.staffuser,
+            requester=self.staffuser,
         )
         super().setUp()
 
@@ -130,7 +130,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         # test whether fields are readonly or editable
         self.assertNotContains(response, "id_domain_info-0-portfolio")
         self.assertNotContains(response, "id_domain_info-0-sub_organization")
-        self.assertNotContains(response, "id_domain_info-0-creator")
+        self.assertNotContains(response, "id_domain_info-0-requester")
         self.assertNotContains(response, "id_domain_info-0-federal_agency")
         self.assertNotContains(response, "id_domain_info-0-about_your_organization")
         self.assertNotContains(response, "id_domain_info-0-anything_else")
@@ -189,7 +189,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         # test whether fields are readonly or editable
         self.assertContains(response, "id_domain_info-0-portfolio")
         self.assertContains(response, "id_domain_info-0-sub_organization")
-        self.assertContains(response, "id_domain_info-0-creator")
+        self.assertContains(response, "id_domain_info-0-requester")
         self.assertContains(response, "id_domain_info-0-federal_agency")
         self.assertContains(response, "id_domain_info-0-about_your_organization")
         self.assertContains(response, "id_domain_info-0-anything_else")
@@ -282,15 +282,15 @@ class TestDomainAdminAsStaff(MockEppLib):
     def test_analyst_can_see_inline_domain_information_in_domain_change_form(self):
         """Tests if an analyst can still see the inline domain information form"""
 
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
         )
 
         # Create a fake domain request
-        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
 
         # Creates a Domain and DomainInformation object
         _domain_request.approve()
@@ -532,6 +532,55 @@ class TestDomainAdminAsStaff(MockEppLib):
             ]
 
             self.assertEqual(filters, expected_filters)
+
+    def test_on_hold_columns_display(self):
+        """Test that 'on hold date' and 'days on hold' columns display correctly in Domain in /admin
+        when a domain is put on hold, and when the hold is removed.
+        We are using PropertyMock as on_hold_date and days_on_hold are both properties"""
+        fixed_on_hold_day = date(2025, 5, 29)
+
+        with patch.object(Domain, "on_hold_date", new_callable=PropertyMock) as mock_on_hold_date, patch.object(
+            Domain, "days_on_hold", new_callable=PropertyMock
+        ) as mock_days_on_hold:
+
+            mock_on_hold_date.return_value = fixed_on_hold_day
+            mock_days_on_hold.return_value = 0
+
+            # 1. Create domain in READY state
+            domain = Domain.objects.create(
+                name="put-on-hold-then-remove-hold.gov",
+                state=Domain.State.READY,
+            )
+
+            # 2. Transition domain to ON_HOLD
+            domain.place_client_hold(ignoreEPP=True)
+            domain.save()
+
+            # 3. Grab the admin display values for on hold date + days on hold
+            on_hold_date_display = self.admin.on_hold_date_display(domain)
+            days_on_hold_display = self.admin.days_on_hold_display(domain)
+
+            # 4. Check for correct date, count, and type
+            self.assertEqual(on_hold_date_display, fixed_on_hold_day)
+            self.assertEqual(days_on_hold_display, 0)
+            self.assertIsInstance(on_hold_date_display, date)
+            self.assertIsInstance(days_on_hold_display, int)
+
+            # 5. Confirm headers are correct
+            self.assertEqual(self.admin.on_hold_date_display.short_description, "On hold date")
+            self.assertEqual(self.admin.days_on_hold_display.short_description, "Days on hold")
+
+        # 6. Remove hold, domain transitions back to READY
+        domain.revert_client_hold(ignoreEPP=True)
+        domain.save()
+
+        # 7. Grab the admin display values for on hold date + days on hold
+        on_hold_date_display = self.admin.on_hold_date_display(domain)
+        days_on_hold_display = self.admin.days_on_hold_display(domain)
+
+        # 8. Since hold is removed, both should return None
+        self.assertIsNone(on_hold_date_display)
+        self.assertIsNone(days_on_hold_display)
 
 
 class TestDomainInformationInline(MockEppLib):
@@ -815,8 +864,8 @@ class TestDomainAdminWithClient(TestCase):
         """Tests if the contact fields in the inlined Domain information have the detail table
         which displays title, email, and phone"""
 
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
@@ -826,7 +875,7 @@ class TestDomainAdminWithClient(TestCase):
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         domain_request.approve()
         _domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
         domain = Domain.objects.filter(domain_info=_domain_info).get()
@@ -857,7 +906,7 @@ class TestDomainAdminWithClient(TestCase):
         domain.delete()
         _domain_info.delete()
         domain_request.delete()
-        _creator.delete()
+        _requester.delete()
 
     @less_console_noise_decorator
     def test_domains_by_portfolio(self):
@@ -865,7 +914,7 @@ class TestDomainAdminWithClient(TestCase):
         Tests that domains display for a portfolio.  And that domains outside the portfolio do not display.
         """
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.superuser)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", requester=self.superuser)
         # Create a fake domain request and domain
         _domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.IN_REVIEW, portfolio=portfolio
@@ -938,7 +987,7 @@ class TestDomainAdminWithClient(TestCase):
         deleted_domain, _ = Domain.objects.get_or_create(name="fakedeleted.gov", state=Domain.State.DELETED)
 
         # We don't need to check for all text content, just a portion of it
-        expected_unknown_domain_message = "The creator of the associated domain request has not logged in to"
+        expected_unknown_domain_message = "The requester of the associated domain request has not logged in to"
         expected_dns_message = "Before this domain can be used, name server addresses need"
         expected_hold_message = "While on hold, this domain"
         expected_deleted_message = "This domain was permanently removed from the registry."
@@ -966,15 +1015,15 @@ class TestDomainAdminWithClient(TestCase):
     @less_console_noise_decorator
     def test_admin_can_see_inline_domain_information_in_domain_change_form(self):
         """Tests if an admin can still see the inline domain information form"""
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
         )
 
         # Create a fake domain request
-        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        _domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
 
         # Creates a Domain and DomainInformation object
         _domain_request.approve()
@@ -1003,7 +1052,7 @@ class TestDomainAdminWithClient(TestCase):
         domain.delete()
         domain_information.delete()
         _domain_request.delete()
-        _creator.delete()
+        _requester.delete()
 
     @less_console_noise_decorator
     def test_custom_delete_confirmation_page_table(self):
@@ -1044,7 +1093,7 @@ class TestDomainAdminWithClient(TestCase):
         response = self.client.get("/admin/registrar/domain/")
         # There are 4 template references to Federal (4) plus four references in the table
         # for our actual domain_request
-        self.assertContains(response, "Federal", count=58)
+        self.assertContains(response, "Federal", count=7)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist

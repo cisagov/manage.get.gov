@@ -2,6 +2,7 @@ import io
 from unittest import skip
 from django.test import Client, RequestFactory
 from io import StringIO
+from registrar.decorators import allow_slow_queries
 from registrar.models import (
     DomainRequest,
     Domain,
@@ -48,7 +49,6 @@ from .common import (
     get_time_aware_date,
     GenericTestHelper,
 )
-from waffle.testutils import override_flag
 
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
@@ -276,7 +276,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "meoward@rocks.com,\n"
             "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
@@ -287,7 +286,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     @less_console_noise_decorator
     def test_domain_data_type_user(self):
         """Shows security contacts, domain managers, so for the current user"""
-
         # Add security email information
         self.domain_1.name = "defaultsecurity.gov"
         self.domain_1.save()
@@ -298,10 +296,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Add a first ready date on the first domain. Leaving the others blank.
         self.domain_1.first_ready = get_default_start_date()
         self.domain_1.save()
-
         # Create a user and associate it with some domains
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
-
         # Make a GET request using self.client to get a request object
         request = get_wsgi_request_object(client=self.client, user=self.user)
 
@@ -334,12 +330,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.assertEqual(csv_content, expected_content)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_data_type_user_with_portfolio(self):
         """Tests DomainDataTypeUser export with portfolio permissions"""
 
         # Create a portfolio and assign it to the user
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         UserDomainRole.objects.create(user=self.user, domain=self.domain_2)
@@ -403,13 +398,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         return csv_content
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_domain_request_data_type_user_with_portfolio(self):
         """Tests DomainRequestsDataType export with portfolio permissions"""
 
         # Create a portfolio and assign it to the user
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
         portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(portfolio=portfolio, user=self.user)
 
         # Create DraftDomain objects
@@ -418,9 +411,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         dd_3 = DraftDomain.objects.create(name="example3.com")
 
         # Create some domain requests
-        dr_1 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_1, portfolio=portfolio)
-        dr_2 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_2)
-        dr_3 = DomainRequest.objects.create(creator=self.user, requested_domain=dd_3, portfolio=portfolio)
+        dr_1 = DomainRequest.objects.create(requester=self.user, requested_domain=dd_1, portfolio=portfolio)
+        dr_2 = DomainRequest.objects.create(requester=self.user, requested_domain=dd_2)
+        dr_3 = DomainRequest.objects.create(requester=self.user, requested_domain=dd_3, portfolio=portfolio)
 
         # Set up user permissions
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -720,6 +713,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
             self.assertEqual(csv_content, expected_content)
 
+    @allow_slow_queries(statement_ms=120000, lock_ms=60000)
     @less_console_noise_decorator
     def test_domain_request_data_full(self):
         """Tests the full domain request report."""
@@ -741,11 +735,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Requested suborg",
             "Suborg city",
             "Suborg state/territory",
-            "Creator first name",
-            "Creator last name",
-            "Creator email",
-            "Creator approved domains count",
-            "Creator active requests count",
+            "Requester first name",
+            "Requester last name",
+            "Requester email",
+            "Requester approved domains count",
+            "Requester active requests count",
             "Alternative domains",
             "SO first name",
             "SO last name",
@@ -772,8 +766,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 # Header
                 "Domain request,Status,Domain type,Portfolio,Federal type,Federal agency,Organization name,"
                 "Election office,City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
-                "Suborg state/territory,Creator first name,Creator last name,Creator email,"
-                "Creator approved domains count,Creator active requests count,Alternative domains,SO first name,"
+                "Suborg state/territory,Requester first name,Requester last name,Requester email,"
+                "Requester approved domains count,Requester active requests count,Alternative domains,SO first name,"
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
@@ -815,8 +809,6 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         self.factory = RequestFactory()
 
     @skip("flaky test that needs to be refactored")
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""

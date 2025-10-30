@@ -150,6 +150,26 @@ class UserFixture:
             "last_name": "Kolden",
             "email": "tara.kolden@contractors.truss.works",
         },
+        {
+            "username": "742ea84a-9450-44a4-9d3f-dca56a0a8597",
+            "first_name": "Charlie",
+            "last_name": "Wells",
+            "email": "charles.wells@ecstech.com",
+            "title": "ADMIN",
+        },
+        {
+            "username": "8facfafb-a55e-4743-bc87-1db82cc09fd3",
+            "first_name": "Agapito",
+            "last_name": "Pabalan",
+            "email": "agapito.pabalan@ecstech.com",
+            "title": "ADMIN",
+        },
+        {
+            "username": "285df9a1-0139-49df-878f-e15f0c991a05",
+            "first_name": "Erin",
+            "last_name": "Tingler",
+            "email": "erin.tingler@associates.cisa.dhs.gov",
+        },
     ]
 
     STAFF = [
@@ -252,6 +272,27 @@ class UserFixture:
             "first_name": "Tara-Analyst",
             "last_name": "Kolden-Analyst",
             "email": "tara.kolden+1@contractors.truss.works",
+        },
+        {
+            "username": "25fe3e87-4a20-4709-a0cf-72725e7b1f26",
+            "first_name": "Charlie",
+            "last_name": "Wells",
+            "email": "charles.wells.analyst@ecstech.com",
+            "title": "ANALYST",
+        },
+        {
+            "username": "949210d7-62b7-4dcb-8134-194e39eec0f3",
+            "first_name": "Erin",
+            "last_name": "Tingler",
+            "title": "Erin-Analyst",
+            "email": "erin.tingler@ecstech.com",
+        },
+        {
+            "username": "ad74ef51-8cab-4c2a-8d06-c357f138cc2f",
+            "first_name": "Agapito",
+            "last_name": "Pabalan",
+            "title": "ANALYST",
+            "email": "agapito.pabalan.analyst@ecstech.com",
         },
     ]
 

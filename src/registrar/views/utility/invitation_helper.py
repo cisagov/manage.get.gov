@@ -9,6 +9,7 @@ from registrar.utility.errors import (
     MissingEmailError,
     OutsideOrgMemberError,
 )
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def get_org_membership(org, email, user):
 
     # Check for existing permissions or invitations for the user
     existing_org_permission = UserPortfolioPermission.objects.filter(user=user).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email=email).first()
+    existing_org_invitation = PortfolioInvitation.objects.filter(email__iexact=email).first()
 
     # Determine membership in a different organization
     member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != org) or (
@@ -52,7 +53,7 @@ def get_org_membership(org, email, user):
 def get_requested_user(email):
     """Retrieve a user by email or return None if the user doesn't exist."""
     try:
-        return User.objects.get(email=email)
+        return User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         return None
 
@@ -61,7 +62,7 @@ def handle_invitation_exceptions(request, exception, email):
     """Handle exceptions raised during the process."""
     if isinstance(exception, EmailSendingError):
         logger.warning(exception, exc_info=True)
-        messages.error(request, str(exception))
+        messages.error(request, with_contact_link(str(exception)))
     elif isinstance(exception, MissingEmailError):
         messages.error(request, str(exception))
         logger.error(exception, exc_info=True)
@@ -72,7 +73,17 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, AlreadyDomainInvitedError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.error(request, f"{email} is already a manager for this domain")
+        messages.error(request, f"An unexpected error occurred: {email} could not be added to this domain.")
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-        messages.error(request, "Could not send email invitation.")
+        messages.error(
+            request, with_contact_link(f"An unexpected error occurred: {email} could not be added to this domain.")
+        )
+
+
+def with_contact_link(error_message: str, contact_url: str = "https://get.gov/contact") -> str:
+    return format_html(
+        '{} Try again, and if the problem persists, <a href="{}" class="usa-link" target="_blank">contact us</a>.',
+        error_message,
+        contact_url,
+    )

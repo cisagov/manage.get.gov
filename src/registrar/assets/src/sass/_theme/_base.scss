@@ -37,13 +37,23 @@ body {
 }
 
 #wrapper.dashboard {
-  background-color: color('primary-lightest');
+  background-color: color('gray-1');
   padding-top: units(5)!important;
 }
 
 #wrapper.dashboard--grey-1,
 .bg-gray-1 {
   background-color: color('gray-1');
+}
+
+.organizations-page-wrapper {
+  @include at-media('desktop') {
+    background-image: url(../img/registrar/organizations_background.svg);
+    background-repeat: no-repeat;
+    background-position: right;
+    background-size: contain;
+    background-origin: content-box;
+  }
 }
 
 .section-outlined {

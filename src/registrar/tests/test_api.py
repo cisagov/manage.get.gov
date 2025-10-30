@@ -87,7 +87,7 @@ class GetPortfolioJsonTest(TestCase):
             first_name="John", last_name="Doe", title="Director", federal_agency=self.agency
         )
         self.portfolio = Portfolio.objects.create(
-            creator=self.user,
+            requester=self.user,
             federal_agency=self.agency,
             senior_official=self.senior_official,
             organization_name="Org name",
@@ -110,7 +110,7 @@ class GetPortfolioJsonTest(TestCase):
         self.assertEqual(response.status_code, 200)
         portfolio = response.json()
         self.assertEqual(portfolio["id"], self.portfolio.id)
-        self.assertEqual(portfolio["creator"], self.user.id)
+        self.assertEqual(portfolio["requester"], self.user.id)
         self.assertEqual(portfolio["organization_name"], self.portfolio.organization_name)
         self.assertEqual(portfolio["organization_type"], "Federal")
         self.assertEqual(portfolio["notes"], None)

@@ -27,16 +27,28 @@
               <div class="usa-footer__contact-info grid-row grid-gap-md">
                 {% if portfolio %}
                 <div class="grid-col-auto">
-                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'domains' %}">Domains</a>
+                  {% if has_any_domains_portfolio_permission %}
+                    {% url 'domains' as url %}
+                  {% else %}
+                    {% url 'no-portfolio-domains' as url %}
+                  {% endif %}
+                  <a class="usa-link" rel="noopener noreferrer" href="{{ url }}">Domains</a>
                 </div>
                 <span class=""> | </span>
                 <div class="grid-col-auto">
-                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'domain-requests' %}">Domain Requests</a>
+                  {% if has_any_requests_portfolio_permission %}
+                    {% url 'domain-requests' as url %}
+                  {% else %}
+                    {% url 'no-portfolio-requests' as url %}
+                  {% endif %}
+                  <a class="usa-link" rel="noopener noreferrer" href="{{ url }}">Domain requests</a>
                 </div>
-                <span class=""> | </span>
-                <div class="grid-col-auto">
-                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'members' %}">Members</a>
-                </div>
+                {% if has_view_members_portfolio_permission %}
+                  <span class=""> | </span>
+                  <div class="grid-col-auto">
+                    <a class="usa-link" rel="noopener noreferrer" href="{% url 'members' %}">Members</a>
+                  </div>
+                {% endif %}
                 <span class=""> | </span>
                 <div class="grid-col-auto">
                   <a class="usa-link" rel="noopener noreferrer" href="{% url 'organization' %}">Organization</a>
@@ -48,7 +60,7 @@
                 {% endif %}
                  <span class="">|</span>
                 <div class="grid-col-auto">
-                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'user-profile' %}">Your Profile</a>
+                  <a class="usa-link" rel="noopener noreferrer" href="{% url 'user-profile' %}">Your profile</a>
                 </div>
               </div>
             </address>

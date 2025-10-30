@@ -154,9 +154,9 @@ class TestDomainInvitationAdmin(WebTest):
         self.fed_agency = FederalAgency.objects.create(
             agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
         )
-        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", requester=self.superuser)
         self.domain_info = DomainInformation.objects.create(
-            domain=self.domain, portfolio=self.portfolio, creator=self.superuser
+            domain=self.domain, portfolio=self.portfolio, requester=self.superuser
         )
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
@@ -341,10 +341,10 @@ class TestDomainInvitationAdmin(WebTest):
             )
 
             # Assert that the filters are added
-            self.assertContains(response, "invited", count=5)
-            self.assertContains(response, "Invited", count=2)
-            self.assertContains(response, "retrieved", count=4)
-            self.assertContains(response, "Retrieved", count=2)
+            self.assertContains(response, "invited", count=4)
+            self.assertContains(response, "Invited", count=1)
+            self.assertContains(response, "retrieved", count=2)
+            self.assertContains(response, "Retrieved", count=1)
 
             # Check for the HTML context specificially
             invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
@@ -353,8 +353,8 @@ class TestDomainInvitationAdmin(WebTest):
             self.assertContains(response, invited_html, count=1)
             self.assertContains(response, retrieved_html, count=1)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -399,7 +399,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "test@example.com has been invited to the organization: new portfolio"),
+                call(request, "test@example.com has been invited to become a member of new portfolio"),
                 call(request, "test@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -421,69 +421,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserPortfolioPermission.objects.count(), 1)
         self.assertEqual(UserPortfolioPermission.objects.first().user, user)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=False)
-    @patch("registrar.admin.send_domain_invitation_email")
-    @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_user_not_portfolio_member_and_organization_feature_off(
-        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
-    ):
-        """Test saving a domain invitation when the user exists and organization_feature flag is off.
-
-        Should send out a domain invitation.
-        Should not send a out portfolio invitation.
-        Should trigger success message for the domain invitation.
-        Should retrieve the domain invitation.
-        Should not create a portfolio invitation."""
-
-        user = User.objects.create_user(email="test@example.com", username="username")
-
-        # Create a domain invitation instance
-        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
-
-        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
-
-        # Create a request object
-        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
-        request.user = self.superuser
-
-        admin_instance.save_model(request, invitation, form=None, change=False)
-
-        # Assert sends appropriate emails - domain but not portfolio
-        mock_send_domain_email.assert_called_once_with(
-            email="test@example.com",
-            requestor=self.superuser,
-            domains=self.domain,
-            is_member_of_different_org=None,
-            requested_user=user,
-        )
-        mock_send_portfolio_email.assert_not_called()
-
-        # Assert correct invite was created
-        self.assertEqual(DomainInvitation.objects.count(), 1)
-        self.assertEqual(PortfolioInvitation.objects.count(), 0)
-
-        # Assert success message
-        mock_messages_success.assert_called_once_with(
-            request, "test@example.com has been invited to the domain: example.com"
-        )
-
-        # Assert the domain invitation was saved
-        self.assertEqual(DomainInvitation.objects.count(), 1)
-        self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
-        self.assertEqual(PortfolioInvitation.objects.count(), 0)
-
-        # Assert the domain invitation was retrieved
-        domain_invitation = DomainInvitation.objects.get(email=user.email, domain=self.domain)
-
-        self.assertEqual(domain_invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
-        self.assertEqual(UserDomainRole.objects.count(), 1)
-        self.assertEqual(UserDomainRole.objects.first().user, user)
-        self.assertEqual(UserPortfolioPermission.objects.count(), 0)
-
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -547,8 +486,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(UserDomainRole.objects.first().user, user)
         self.assertEqual(UserPortfolioPermission.objects.count(), 0)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -559,12 +498,14 @@ class TestDomainInvitationAdmin(WebTest):
 
         Should send out domain invitation only.
         Should trigger success message for the domain invitation.
-        Should retrieve the domain invitation."""
+        Should retrieve the domain invitation.
+        Integrated testing for casing normalization to lowercase for email Domain Invitation
+        """
 
         user = User.objects.create_user(email="test@example.com", username="username")
 
         # Create a domain invitation instance
-        invitation = DomainInvitation(email="test@example.com", domain=self.domain)
+        invitation = DomainInvitation(email="TEST@example.com", domain=self.domain)
 
         UserPortfolioPermission.objects.create(
             user=user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -605,8 +546,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.first().email, "test@example.com")
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")
@@ -660,8 +601,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -717,7 +658,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "test@example.com has been invited to the organization: new portfolio"
+            request, "test@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -729,8 +670,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -795,8 +736,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -845,7 +786,7 @@ class TestDomainInvitationAdmin(WebTest):
         # Assert success message
         mock_messages_success.assert_has_calls(
             [
-                call(request, "nonexistent@example.com has been invited to the organization: new portfolio"),
+                call(request, "nonexistent@example.com has been invited to become a member of new portfolio"),
                 call(request, "nonexistent@example.com has been invited to the domain: example.com"),
             ]
         )
@@ -856,61 +797,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
         self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=False)
-    @patch("registrar.admin.send_domain_invitation_email")
-    @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.success")
-    def test_add_domain_invitation_success_when_email_not_portfolio_member_and_organization_feature_off(
-        self, mock_messages_success, mock_send_portfolio_email, mock_send_domain_email
-    ):
-        """Test saving a domain invitation when the user does not exist and organization_feature flag is off.
-
-        Should send out a domain invitation.
-        Should not send a out portfolio invitation.
-        Should trigger success message for domain invitation.
-        Should not retrieve the domain invitation.
-        Should not create a portfolio invitation."""
-        # Create a domain invitation instance
-        invitation = DomainInvitation(email="nonexistent@example.com", domain=self.domain)
-
-        admin_instance = DomainInvitationAdmin(DomainInvitation, admin_site=None)
-
-        # Create a request object
-        request = self.factory.post("/admin/registrar/DomainInvitation/add/")
-        request.user = self.superuser
-
-        # Patch the retrieve method to ensure it is not called
-        with patch.object(DomainInvitation, "retrieve") as domain_invitation_mock_retrieve:
-            with patch.object(PortfolioInvitation, "retrieve") as portfolio_invitation_mock_retrieve:
-                admin_instance.save_model(request, invitation, form=None, change=False)
-
-        # Assert sends appropriate emails - domain but not portfolio
-        mock_send_domain_email.assert_called_once_with(
-            email="nonexistent@example.com",
-            requestor=self.superuser,
-            domains=self.domain,
-            is_member_of_different_org=None,
-            requested_user=None,
-        )
-        mock_send_portfolio_email.assert_not_called()
-
-        # Assert retrieve on domain invite only was called
-        domain_invitation_mock_retrieve.assert_not_called()
-        portfolio_invitation_mock_retrieve.assert_not_called()
-
-        # Assert success message
-        mock_messages_success.assert_called_once_with(
-            request, "nonexistent@example.com has been invited to the domain: example.com"
-        )
-
-        # Assert the domain invitation was saved
-        self.assertEqual(DomainInvitation.objects.count(), 1)
-        self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
-        self.assertEqual(PortfolioInvitation.objects.count(), 0)
-
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @override_flag("multiple_portfolios", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -963,8 +851,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.first().email, "nonexistent@example.com")
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -1023,8 +911,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
         self.assertEqual(PortfolioInvitation.objects.first().email, "nonexistent@example.com")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.error")
@@ -1077,8 +965,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 0)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -1132,7 +1020,7 @@ class TestDomainInvitationAdmin(WebTest):
 
         # Assert success message
         mock_messages_success.assert_called_once_with(
-            request, "nonexistent@example.com has been invited to the organization: new portfolio"
+            request, "nonexistent@example.com has been invited to become a member of new portfolio"
         )
 
         # Assert error message
@@ -1144,8 +1032,8 @@ class TestDomainInvitationAdmin(WebTest):
         self.assertEqual(DomainInvitation.objects.count(), 0)
         self.assertEqual(PortfolioInvitation.objects.count(), 1)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     @patch("registrar.admin.send_domain_invitation_email")
     @patch("registrar.admin.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
@@ -1264,7 +1152,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.superuser = create_superuser()
         self.testuser = create_test_user()
         self.omb_analyst = create_omb_analyst_user()
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -1350,7 +1238,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
         self.omb_analyst = create_omb_analyst_user()
-        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
 
     def tearDown(self):
         """Delete all DomainInvitation objects"""
@@ -1437,10 +1325,10 @@ class TestPortfolioInvitationAdmin(TestCase):
         )
 
         # Assert that the filters are added
-        self.assertContains(response, "invited", count=5)
-        self.assertContains(response, "Invited", count=2)
-        self.assertContains(response, "retrieved", count=4)
-        self.assertContains(response, "Retrieved", count=2)
+        self.assertContains(response, "invited", count=4)
+        self.assertContains(response, "Invited", count=1)
+        self.assertContains(response, "retrieved", count=2)
+        self.assertContains(response, "Retrieved", count=1)
 
         # Check for the HTML context specificially
         invited_html = '<a id="status-filter-invited" href="?status__exact=invited">Invited</a>'
@@ -1488,10 +1376,12 @@ class TestPortfolioInvitationAdmin(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
-    @patch("django.contrib.messages.warning")  # Mock the `messages.warning` call
-    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_warning, mock_send_email):
+    @patch("django.contrib.messages.error")  # Mock the `messages.warning` call
+    def test_save_does_not_send_email_if_requested_user_exists(self, mock_messages_error, mock_send_email):
         """On save_model, an email is NOT sent if an the requested email belongs to an existing user.
-        It also throws a warning."""
+        It also throws a warning.
+        Integrated testing for casing normalization to lowercase for email Portfolio Invitation
+        """
         self.client.force_login(self.superuser)
 
         # Create an instance of the admin class
@@ -1501,9 +1391,12 @@ class TestPortfolioInvitationAdmin(TestCase):
         existing_user = create_user()
         UserPortfolioPermission.objects.create(user=existing_user, portfolio=self.portfolio)
 
+        # An email with different capitalization that the existing user
+        existing_user_email_with_capitalization = "STaff@example.com"
+
         # Create a PortfolioInvitation instance
         portfolio_invitation = PortfolioInvitation(
-            email=existing_user.email,
+            email=existing_user_email_with_capitalization,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
@@ -1519,7 +1412,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         mock_send_email.assert_not_called()
 
         # Assert that a warning message was triggered
-        mock_messages_warning.assert_called_once_with(request, "User is already a member of this portfolio.")
+        mock_messages_error.assert_called_once_with(request, "User is already a member of this portfolio.")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1617,7 +1510,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.client.force_login(self.superuser)
 
         # Mock the email sending function to raise EmailSendingError
-        mock_send_email.side_effect = EmailSendingError("Email service unavailable")
+        mock_send_email.side_effect = EmailSendingError("Email service unavailable.")
 
         # Create an instance of the admin class
         admin_instance = PortfolioInvitationAdmin(PortfolioInvitation, admin_site=None)
@@ -1635,9 +1528,16 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
+        msg = (
+            "Email service unavailable. Try again, and if the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
+        )
 
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Email service unavailable")
+        mock_messages_error.assert_called_once_with(
+            request,
+            msg,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1699,8 +1599,17 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
+        msg = (
+            "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
+            'Try again, and if the problem persists, <a href="https://get.gov/contact" '
+            'class="usa-link" target="_blank">contact us</a>.'
+        )
+
         # Assert that messages.error was called with the correct message
-        mock_messages_error.assert_called_once_with(request, "Could not send email invitation.")
+        mock_messages_error.assert_called_once_with(
+            request,
+            msg,
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_admin_addition_emails")
@@ -1811,7 +1720,7 @@ class PortfolioPermissionsFormTest(TestCase):
     def setUp(self):
         # Create a mock portfolio for testing
         self.user = create_test_user()
-        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", creator=self.user)
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test Portfolio", requester=self.user)
 
     def tearDown(self):
         UserPortfolioPermission.objects.all().delete()
@@ -2069,9 +1978,9 @@ class TestDomainInformationAdmin(TestCase):
         self.fed_agency = FederalAgency.objects.create(
             agency="New FedExec Agency", federal_type=BranchChoices.EXECUTIVE
         )
-        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="new portfolio", requester=self.superuser)
         self.domain_info = DomainInformation.objects.create(
-            domain=self.feddomain, portfolio=self.portfolio, creator=self.superuser
+            domain=self.feddomain, portfolio=self.portfolio, requester=self.superuser
         )
 
     def tearDown(self):
@@ -2273,9 +2182,9 @@ class TestDomainInformationAdmin(TestCase):
 
         # These should exist in the response
         expected_values = [
-            ("creator", "Person who submitted the domain request"),
+            ("requester", "Person who submitted the domain request"),
             ("domain_request", "Request associated with this domain"),
-            ("no_other_contacts_rationale", "Required if creator does not list other employees"),
+            ("no_other_contacts_rationale", "Required if requester does not list other employees"),
             ("urbanization", "Required for Puerto Rico only"),
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_values)
@@ -2316,15 +2225,15 @@ class TestDomainInformationAdmin(TestCase):
     @less_console_noise_decorator
     def test_analyst_cant_access_domain_information(self):
         """Ensures that analysts can't directly access the DomainInformation page through /admin"""
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
@@ -2353,8 +2262,8 @@ class TestDomainInformationAdmin(TestCase):
     def test_contact_fields_have_detail_table(self):
         """Tests if the contact fields have the detail table which displays title, email, and phone"""
 
-        # Create fake creator
-        _creator = User.objects.create(
+        # Create fake requester
+        _requester = User.objects.create(
             username="MrMeoward",
             first_name="Meoward",
             last_name="Jones",
@@ -2364,7 +2273,7 @@ class TestDomainInformationAdmin(TestCase):
         )
 
         # Create a fake domain request
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_creator)
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=_requester)
         domain_request.approve()
         domain_info = DomainInformation.objects.filter(domain=domain_request.approved_domain).get()
 
@@ -2381,17 +2290,17 @@ class TestDomainInformationAdmin(TestCase):
         # Check that the modal has the right content
         # Check for the header
 
-        # == Check for the creator == #
+        # == Check for the requester == #
 
         # Check for the right title and phone number in the response.
         # We only need to check for the end tag
         # (Otherwise this test will fail if we change classes, etc)
-        expected_creator_fields = [
+        expected_requester_fields = [
             # Field, expected value
             ("title", "Treat inspector"),
             ("phone", "(555) 123 12345"),
         ]
-        self.test_helper.assert_response_contains_distinct_values(response, expected_creator_fields)
+        self.test_helper.assert_response_contains_distinct_values(response, expected_requester_fields)
         self.assertContains(response, "meoward.jones@igorville.gov")
 
         # Check for the field itself
@@ -2406,7 +2315,7 @@ class TestDomainInformationAdmin(TestCase):
         ]
         self.test_helper.assert_response_contains_distinct_values(response, expected_so_fields)
 
-        self.assertContains(response, "Testy Tester", count=10)
+        self.assertContains(response, "Testy Tester", count=2)
 
         # == Test the other_employees field == #
         self.assertContains(response, "testy2@town.com", count=2)
@@ -2420,12 +2329,12 @@ class TestDomainInformationAdmin(TestCase):
         # Test for the copy link
         # We expect 4 in the form + 2 from the js module copy-to-clipboard.js
         # that gets pulled in the test in django.contrib.staticfiles.finders.FileSystemFinder
-        self.assertContains(response, "copy-to-clipboard", count=6)
+        self.assertContains(response, "copy-to-clipboard", count=4)
 
         # cleanup this test
         domain_info.delete()
         domain_request.delete()
-        _creator.delete()
+        _requester.delete()
 
     def test_readonly_fields_for_analyst(self):
         """Ensures that analysts have their permissions setup correctly"""
@@ -2450,7 +2359,7 @@ class TestDomainInformationAdmin(TestCase):
                 "other_contacts",
                 "is_election_board",
                 "federal_agency",
-                "creator",
+                "requester",
                 "type_of_work",
                 "more_organization_information",
                 "domain",
@@ -2473,19 +2382,19 @@ class TestDomainInformationAdmin(TestCase):
             # Assert that sorting in reverse works correctly
             self.test_helper.assert_table_sorted("-1", ("-domain__name",))
 
-    def test_creator_sortable(self):
-        """Tests if DomainInformation sorts by creator correctly"""
+    def test_requester_sortable(self):
+        """Tests if DomainInformation sorts by requester correctly"""
         with less_console_noise():
             self.client.force_login(self.superuser)
 
             # Assert that our sort works correctly
             self.test_helper.assert_table_sorted(
                 "4",
-                ("creator__first_name", "creator__last_name"),
+                ("requester__first_name", "requester__last_name"),
             )
 
             # Assert that sorting in reverse works correctly
-            self.test_helper.assert_table_sorted("-4", ("-creator__first_name", "-creator__last_name"))
+            self.test_helper.assert_table_sorted("-4", ("-requester__first_name", "-requester__last_name"))
 
 
 class TestUserDomainRoleAdmin(WebTest):
@@ -2672,7 +2581,7 @@ class TestUserDomainRoleAdmin(WebTest):
             self.assertEqual(search_query, "testmail@igorville.com")
 
             # We only need to check for the end of the HTML string
-            self.assertNotContains(response, "Stewart Jones AntarcticPolarBears@example.com</a></th>")
+            self.assertNotContains(response, "Stewart Jones antarcticpolarbears@example.com</a></th>")
 
     def test_email_in_search(self):
         """Tests the search bar in Django Admin for UserDomainRoleAdmin.
@@ -2704,7 +2613,7 @@ class TestUserDomainRoleAdmin(WebTest):
             self.assertEqual(search_query, "AntarcticPolarBears@example.com")
 
             # We only need to check for the end of the HTML string
-            self.assertContains(response, "Joe Jones AntarcticPolarBears@example.com</a></th>", count=1)
+            self.assertContains(response, "Joe Jones antarcticpolarbears@example.com</a></th>", count=1)
 
     @less_console_noise_decorator
     def test_custom_delete_confirmation_page(self):
@@ -2972,7 +2881,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             )
             self.assertEqual(fieldsets, expected_fieldsets)
 
-    @override_flag("organization_feature", active=True)
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     def test_get_fieldsets_cisa_analyst_organization(self):
         with less_console_noise():
             request = self.client.request().wsgi_request
@@ -3005,11 +2914,10 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
             self.assertEqual(fieldsets, expected_fieldsets)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_analyst_can_see_related_domains_and_requests_in_user_form(self):
         """Tests if an analyst can see the related domains and domain requests for a user in that user's form"""
 
-        # From MockDb, we have self.meoward_user which we'll use as creator
+        # From MockDb, we have self.meoward_user which we'll use as requester
         # Create fake domain requests
         domain_request_started = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED, user=self.meoward_user, name="started.gov"
@@ -3135,7 +3043,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
     @less_console_noise_decorator
     def test_user_can_see_related_portfolios(self):
         """Tests if a user can see the portfolios they are associated with on the user page"""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", creator=self.superuser)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", requester=self.superuser)
         permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -3221,7 +3129,7 @@ class AuditedAdminTest(TestCase):
                 # and this test does not accurately reflect that.
                 # DomainRequest.senior_official.field,
                 # DomainRequest.investigator.field,
-                DomainRequest.creator.field,
+                DomainRequest.requester.field,
                 DomainRequest.requested_domain.field,
             ]
 
@@ -3279,7 +3187,7 @@ class AuditedAdminTest(TestCase):
                 # Senior offical is commented out for now - this is alphabetized
                 # and this test does not accurately reflect that.
                 # DomainInformation.senior_official.field,
-                # DomainInformation.creator.field,
+                # DomainInformation.requester.field,
                 (DomainInformation.domain.field, ["name"]),
                 (DomainInformation.domain_request.field, ["requested_domain__name"]),
             ]
@@ -4028,13 +3936,13 @@ class TestPortfolioAdmin(TestCase):
 
     def setUp(self):
         self.client = Client(HTTP_HOST="localhost:8080")
-        self.portfolio = Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+        self.portfolio = Portfolio.objects.create(organization_name="Test portfolio", requester=self.superuser)
         self.feb_agency = FederalAgency.objects.create(
             agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE
         )
         self.feb_portfolio = Portfolio.objects.create(
             organization_name="Test FEB portfolio",
-            creator=self.superuser,
+            requester=self.superuser,
             federal_agency=self.feb_agency,
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
         )
@@ -4184,14 +4092,14 @@ class TestPortfolioAdmin(TestCase):
         self.assertEqual(suborg_names, ["Sub1", "Sub2", "Sub3", "Sub4", "Sub5"])
 
     def test_cannot_have_dup_suborganizations_with_same_portfolio(self):
-        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", requester=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Suborganization.objects.create(name="Sub1", portfolio=portfolio)
 
     def test_can_have_dup_suborganizations_with_diff_portfolio(self):
-        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", creator=self.superuser)
+        portfolio = Portfolio.objects.create(organization_name="Test portfolio too", requester=self.superuser)
         Suborganization.objects.create(name="Sub1", portfolio=portfolio)
         Suborganization.objects.create(name="Sub1", portfolio=self.portfolio)
         num_of_subs = Suborganization.objects.filter(name="Sub1").count()
@@ -4303,7 +4211,7 @@ class TestPortfolioAdmin(TestCase):
         portfolio = Portfolio.objects.create(
             organization_name="Test Federal Org",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            creator=self.superuser,
+            requester=self.superuser,
         )
 
         readonly_fields = self.admin.get_readonly_fields(request, portfolio)
@@ -4334,7 +4242,7 @@ class TestPortfolioAdmin(TestCase):
         portfolio = Portfolio.objects.create(
             organization_name="Test Federal Org",
             organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            creator=self.superuser,
+            requester=self.superuser,
         )
 
         # Test that the federal org gets senior official from agency when federal
@@ -4357,7 +4265,7 @@ class TestPortfolioAdmin(TestCase):
     def test_duplicate_portfolio(self):
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                Portfolio.objects.create(organization_name="Test portfolio", creator=self.superuser)
+                Portfolio.objects.create(organization_name="Test portfolio", requester=self.superuser)
 
 
 class TestTransferUser(WebTest):
@@ -4409,11 +4317,11 @@ class TestTransferUser(WebTest):
         )
         domain_request.status = DomainRequest.DomainRequestStatus.APPROVED
         domain_request.save()
-        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", requester=self.user2)
         UserPortfolioPermission.objects.create(
             user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
-        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", creator=self.user2)
+        portfolio2 = Portfolio.objects.create(organization_name="Tokyo Hotel", requester=self.user2)
         UserPortfolioPermission.objects.create(
             user=self.user2, portfolio=portfolio2, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -4441,7 +4349,7 @@ class TestTransferUser(WebTest):
     @less_console_noise_decorator
     def test_transfer_user_transfers_user_portfolio_roles(self):
         """Assert that a portfolio user role gets transferred"""
-        portfolio = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        portfolio = Portfolio.objects.create(organization_name="Hotel California", requester=self.user2)
         user_portfolio_permission = UserPortfolioPermission.objects.create(
             user=self.user2, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -4459,7 +4367,7 @@ class TestTransferUser(WebTest):
     @less_console_noise_decorator
     def test_transfer_user_transfers_user_portfolio_roles_no_error_when_duplicates(self):
         """Assert that duplicate portfolio user roles do not throw errors"""
-        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", creator=self.user2)
+        portfolio1 = Portfolio.objects.create(organization_name="Hotel California", requester=self.user2)
         UserPortfolioPermission.objects.create(
             user=self.user1, portfolio=portfolio1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
@@ -4484,11 +4392,11 @@ class TestTransferUser(WebTest):
             messages.error.assert_not_called()
 
     @less_console_noise_decorator
-    def test_transfer_user_transfers_domain_request_creator_and_investigator(self):
+    def test_transfer_user_transfers_domain_request_requester_and_investigator(self):
         """Assert that domain request fields get transferred"""
         domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
 
-        self.assertEquals(domain_request.creator, self.user2)
+        self.assertEquals(domain_request.requester, self.user2)
         self.assertEquals(domain_request.investigator, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
@@ -4497,15 +4405,15 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_request.refresh_from_db()
 
-        self.assertEquals(domain_request.creator, self.user1)
+        self.assertEquals(domain_request.requester, self.user1)
         self.assertEquals(domain_request.investigator, self.user1)
 
     @less_console_noise_decorator
-    def test_transfer_user_transfers_domain_information_creator(self):
+    def test_transfer_user_transfers_domain_information_requester(self):
         """Assert that domain fields get transferred"""
-        domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user2)
+        domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user2)
 
-        self.assertEquals(domain_information.creator, self.user2)
+        self.assertEquals(domain_information.requester, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         submit_form = user_transfer_page.forms[1]
@@ -4513,7 +4421,7 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_information.refresh_from_db()
 
-        self.assertEquals(domain_information.creator, self.user1)
+        self.assertEquals(domain_information.requester, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_role(self):
@@ -4568,7 +4476,7 @@ class TestTransferUser(WebTest):
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_verified_by_staff_requestor(self):
-        """Assert that verified by staff creator gets transferred"""
+        """Assert that verified by staff requester gets transferred"""
         vip, _ = VerifiedByStaff.objects.get_or_create(requestor=self.user2, email="immortan.joe@citadel.com")
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
@@ -4677,9 +4585,9 @@ class TestDomainAdminState(TestCase):
         url = reverse("admin:registrar_domain_change", args=[domain_stays_unknown.pk])
 
         response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
+        self.assertContains(response, "Unknown")
 
         # 5. Refresh and check that the state is still UNKNOWN
         response = self.client.get(url)
-        self.assertContains(response, "UNKNOWN")
-        self.assertNotContains(response, "DNS NEEDED")
+        self.assertContains(response, "Unknown")
+        self.assertNotContains(response, "dns needed")

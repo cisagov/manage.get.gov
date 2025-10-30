@@ -3,11 +3,14 @@ import logging
 import ipaddress
 import re
 import time
+from auditlog.models import LogEntry
 from datetime import date, timedelta
 from typing import Optional
 from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
+from functools import cached_property
+from django.core.exceptions import ValidationError
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
@@ -86,6 +89,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def __init__(self, *args, **kwargs):
         self._cache = {}
         super(Domain, self).__init__(*args, **kwargs)
+        self._original_updated_at = self.__dict__.get("updated_at", None)
 
     class Status(models.TextChoices):
         """
@@ -187,7 +191,7 @@ class Domain(TimeStampedModel, DomainHelper):
             """Returns a help message for a desired state for /admin. If none is found, an empty string is returned"""
             admin_help_texts = {
                 cls.UNKNOWN: (
-                    "The creator of the associated domain request has not logged in to "
+                    "The requester of the associated domain request has not logged in to "
                     "manage the domain since it was approved. "
                     'The state will switch to "DNS needed" after they access the domain in the registrar.'
                 ),
@@ -239,12 +243,19 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
+        # -------- Optimistic locking (quick-fix) --------
+        if optimistic_lock and self.pk:
+            current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
+            if getattr(self, "_original_updated_at", None) and current_updated_at != self._original_updated_at:
+                raise ValidationError("A newer version of this form exists. Please try again.")
+
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
 
         super().save(force_insert, force_update, using, update_fields)
+        self._original_updated_at = self.updated_at
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -367,7 +378,9 @@ class Domain(TimeStampedModel, DomainHelper):
         To update the expiration date, use renew_domain method."""
         raise NotImplementedError()
 
-    def renew_domain(self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR):
+    def renew_domain(
+        self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR, persist: bool = True, optimistic_lock: bool = False
+    ) -> bool:
         """
         Renew the domain to a length and unit of time relative to the current
         expiration date.
@@ -390,8 +403,13 @@ class Domain(TimeStampedModel, DomainHelper):
             # expiration date in the registrar, and in the cache
             self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
             self.expiration_date = self._cache["ex_date"]
-            self.save()
-
+            if persist:
+                if optimistic_lock:
+                    self.save(optimistic_lock=True)
+                else:
+                    self.save()
+                return True
+            return False
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
             logger.error(f"Registry error renewing domain '{self.name}': {err}")
@@ -740,9 +758,9 @@ class Domain(TimeStampedModel, DomainHelper):
         remRequest.add_extension(remExtension)
         dsdata_change_log = ""
 
-        # Get the user's email
-        user_domain_role = UserDomainRole.objects.filter(domain=self).first()
-        user_email = user_domain_role.user.email if user_domain_role else "unknown user"
+        # Get the user's email (exclude invitation rows)
+        user_domain_role = UserDomainRole.objects.filter(domain=self, user__isnull=False).select_related("user").first()
+        user_email = user_domain_role.user.email if user_domain_role and user_domain_role.user else "unknown user"
 
         try:
             added_record = "dsData" in _addDnssecdata and _addDnssecdata["dsData"] is not None
@@ -1348,7 +1366,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def state_display(self, request=None):
         """Return the display status of the domain."""
-        if self.is_expired() and (self.state != self.State.UNKNOWN):
+        if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None:
+            return "On Hold"
+        elif self.is_expired() and (self.state != self.State.UNKNOWN):
             return "Expired"
         elif self.is_expiring():
             return "Expiring soon"
@@ -1607,7 +1627,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.error(e.code)
                     raise e
                 if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST and self.state == Domain.State.UNKNOWN:
-                    logger.info("_get_or_create_domain() -> Switching to dns_needed from unknown")
+                    logger.info("_get_or_create_domain_in_registry() -> Switching to dns_needed from unknown")
                     # avoid infinite loop
                     already_tried_to_create = True
                     self.dns_needed_from_unknown()
@@ -1657,6 +1677,45 @@ class Domain(TimeStampedModel, DomainHelper):
         administrative_contact = self.get_default_administrative_contact()
         administrative_contact.save()
 
+    @cached_property
+    def on_hold_date(self):
+        """
+        Grabbing date of when domain was put on hold via audit log
+
+        NOTE:
+        We are hoping to have a state table in the future, so for now
+        we are pulling from audit log as we didn't want to add extra stuff to the DB.
+
+        This approach will query the db, but we are ok doing this as there are only a few domains
+        in the hold state simultaneously
+        """
+        if self.state != Domain.State.ON_HOLD:
+            return None
+
+        last_on_hold = (
+            LogEntry.objects.filter(
+                object_pk=str(self.pk),
+                action=LogEntry.Action.UPDATE,
+                changes__contains={"state": ["ready", "on hold"]},
+                # match when the state goes from ready to on hold
+            )
+            .order_by("-timestamp")
+            .first()
+        )
+
+        if last_on_hold:
+            return last_on_hold.timestamp.date()
+
+        return None
+
+    @property
+    def days_on_hold(self):
+        """Return how many days the domain has been on hold, or None if not on hold."""
+        date_on_hold = self.on_hold_date
+        if date_on_hold:
+            return (timezone.now().date() - date_on_hold).days
+        return None
+
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.ON_HOLD)
     def place_client_hold(self, ignoreEPP=False):
         """place a clienthold on a domain (no longer should resolve)
@@ -1670,6 +1729,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # include this ignoreEPP flag
         if not ignoreEPP:
             self._place_client_hold()
+        self.save(update_fields=["state"])
 
     @transition(field="state", source=[State.READY, State.ON_HOLD], target=State.READY)
     def revert_client_hold(self, ignoreEPP=False):
@@ -1681,6 +1741,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if not ignoreEPP:
             self._remove_client_hold()
         # TODO -on the client hold ticket any additional error handling here
+        self.save(update_fields=["state"])
 
     @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
     def deletedInEpp(self):
@@ -1766,7 +1827,12 @@ class Domain(TimeStampedModel, DomainHelper):
         """Returns a str containing additional information about a given state.
         Returns custom content for when the domain itself is expired."""
 
-        if self.is_expired() and self.state != self.State.UNKNOWN:
+        if (self.state == self.State.ON_HOLD) and self.days_on_hold is not None:
+            help_text = (
+                "This domain is administratively paused, so it can't be edited and won't resolve in DNS. "
+                "Contact help@get.gov for details."
+            )
+        elif self.is_expired() and self.state != self.State.UNKNOWN:
             # Given expired is not a physical state, but it is displayed as such,
             # We need custom logic to determine this message.
             help_text = "This domain has expired. Complete the online renewal process to maintain access."
@@ -2346,8 +2412,12 @@ class Domain(TimeStampedModel, DomainHelper):
         return self._get_or_create_public_contact(mapped_object)
 
     def _invalidate_cache(self):
-        """Remove cache data when updates are made."""
+        """Remove cache data when updates are made.
+        NOTE: The "on hold date" property is a one off addition - we want to
+        make sure that when there is state change we delete the on hold date as well."""
         self._cache = {}
+        logging.info(f"Delete hold date on {self.name}")
+        delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""

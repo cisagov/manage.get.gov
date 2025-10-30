@@ -1,0 +1,70 @@
+<form
+    id="set-session-portfolio-form-{{ forloop.counter }}" 
+    method="post"
+    action="{% url 'set-session-portfolio' %}"
+    name="{{portfolio.organization_name}}"
+>
+    {% csrf_token %}
+    {% if type == "organizations_page" %}
+    <button
+        type="submit"
+        class="usa-card__container margin-left-0"
+        name="set_session_portfolio_button"
+        value="{{portfolio.organization_name}}"
+    >
+            <div class="usa-card__header">
+                <h2 class="usa-card__heading">
+                    {% if portfolio.agency_seal %}
+                    <img 
+                        src="{{portfolio.agency_seal_url }}"
+                        alt=""
+                        class="margin-right-1 height-4"
+                    >
+                    {% else %}
+                    <img 
+                        src="/public/img/registrar/organization_default_icon.png"
+                        alt=""
+                        class="margin-right-1 height-4"
+                    >
+                    {% endif %}
+                    {{portfolio}}
+                    <svg class="margin-left-05 usa-icon organizations-arrow-icon" aria-hidden="true" focusable="false" role="img" width="28">
+                        <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
+                    </svg>
+                </h2>
+            </div>
+    </button>
+    {% elif type == "organizations_nav_menu" %}
+        <button
+        type="submit"
+        class="usa-button usa-nav-link organization-button"
+        name="set_session_portfolio_button"
+        value="{{portfolio.organization_name}}"
+        >
+            <a class="font-ui-xs">
+                <div class="grid-container padding-left-0 padding-right-0">
+                    <div class="grid-row flex-align-center">
+                        <div class="grid-col-auto height-3 flex-align-self-start">
+                            {% if portfolio.agency_seal %}
+                            <img 
+                                src="{{portfolio.agency_seal_url }}"
+                                alt=""
+                                class="margin-right-1 height-3"
+                            >
+                            {% else %}
+                            <img 
+                                src="/public/img/registrar/organization_default_icon.png"
+                                alt=""
+                                class="margin-right-1 height-3"
+                            >
+                            {% endif %}
+                        </div>
+                        <div class="grid-col">
+                            {{portfolio}}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </button>
+    {% endif %}
+</form>

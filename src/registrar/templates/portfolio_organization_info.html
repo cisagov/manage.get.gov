@@ -40,16 +40,8 @@
 
         <h1>Organization</h1>
         <div class="margin-top-2 tablet:grid-col-10">
-            <p>The name of your organization will be publicly listed as the domain registrant.</p>
-
-            {% if has_edit_portfolio_permission %}
-            <p>
-                Your organization name can’t be updated here.
-                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
-            </p>
-            {% endif %}
             <h2>Organization admins</h2>
-            <ul class="usa-list usa-list--unstyled margin-top-2 margin-bottom-0">
+            <ul class="usa-list usa-list--unstyled margin-top-1 margin-bottom-0">
             {% for admin in portfolio_admins %}
                 <li>
                     <p class="margin-bottom-0">{{admin.first_name}} {{admin.last_name}}</p>
@@ -58,36 +50,58 @@
             {% endfor %}
             </ul>
             
-            <h2>Organization name and address</h2>
-            
+            <h2>Organization information</h2>
+            <p>The name of your organization will be publicly listed as the domain registrant.
+
             {% if has_edit_portfolio_permission %}
+                Your organization name can’t be updated here.
+                To suggest an update, email <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
+            </p>
             {% include "includes/required_fields.html" with remove_margin_top=True %}
-            <form class="usa-form usa-form--large" method="post" novalidate>
-                {% csrf_token %}
-                <p class="margin-bottom-05 text-primary-darker text-bold">Organization name</p>
-                <p class="margin-top-0">
-                    {% if portfolio.organization_name %}
-                    {{ portfolio.organization_name }}
-                    {% else %}
-                    {{ portfolio.federal_agency }}
-                    {% endif %}
-                </p>
-                {% input_with_errors form.address_line1 %}
-                {% input_with_errors form.address_line2 %}
-                {% input_with_errors form.city %}
-                {% input_with_errors form.state_territory %}
-                {% with add_class="usa-input--small" sublabel_text="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789." %}
-                    {% input_with_errors form.zipcode %}
-                {% endwith %}
-                <button type="submit" class="usa-button">
-                Save
-                </button>
-            </form>
-            {% else %}
-            <div class="margin-top-2">
-            {% include "includes/organization_address.html" with organization=portfolio %}
-            </div>
             {% endif %}
+
+            <!-- To display organization_type for admins -->
+            {% if organization_type and has_edit_portfolio_permission %}            
+                <p class="margin-top-3 margin-bottom-05 text-primary-darker text-bold">Organization type</p>
+                {{ organization_type }}
+                {% if federal_type %}
+                    - {{ federal_type }}
+                {% endif %}
+            <!-- To display organization_type for analysts -->
+            {% else %}
+                <div class="usa-prose margin-top-2">
+                    Organization type: {{ organization_type }}
+                    {% if federal_type %}
+                        - {{ federal_type }}
+                    {% endif %}
+                    {% include "includes/organization_address.html" with organization=portfolio %}
+                </div>
+            {% endif %}
+
+            {% if has_edit_portfolio_permission %}
+                <form class="usa-form usa-form--large" method="post" novalidate>
+                    {% csrf_token %}
+                    <p class="margin-top-3 margin-bottom-05 text-primary-darker text-bold">Organization name</p>
+                    <p class="margin-top-0">
+                        {% if portfolio.organization_name %}
+                        {{ portfolio.organization_name }}
+                        {% else %}
+                        {{ portfolio.federal_agency }}
+                        {% endif %}
+                    </p>
+                    {% input_with_errors form.address_line1 %}
+                    {% input_with_errors form.address_line2 %}
+                    {% input_with_errors form.city %}
+                    {% input_with_errors form.state_territory %}
+                    {% with add_class="usa-input--small" sublabel_text="Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789." %}
+                        {% input_with_errors form.zipcode %}
+                    {% endwith %}
+                    <button type="submit" class="usa-button">
+                    Save
+                    </button>
+                </form>
+            {% endif %}
+
         </div>
     </div>
 </div>

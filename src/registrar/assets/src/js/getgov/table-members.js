@@ -393,7 +393,7 @@ export class MembersTable extends BaseTable {
    */
   generatePermissionsHTML(is_admin, member_permissions, UserPortfolioPermissionChoices, unique_id) {
     // 1. Role
-    const memberAccessValue = is_admin ? "Admin" : "Basic";
+    const memberRoleValue = is_admin ? "Organization admin" : "Basic";
     
     // 2. Domain access
     let domainValue = "No access";
@@ -429,7 +429,7 @@ export class MembersTable extends BaseTable {
         Member role and permissions
       </h4>
       <section aria-labelledby="member-role--heading-${unique_id}" tabindex="0">
-        ${createPermissionItem("Member role", memberAccessValue)}
+        ${createPermissionItem("Member role", memberRoleValue)}
         ${createPermissionItem("Domains", domainValue)}
         ${createPermissionItem("Domain requests", requestValue)}
         ${createPermissionItem("Members", memberValue)}

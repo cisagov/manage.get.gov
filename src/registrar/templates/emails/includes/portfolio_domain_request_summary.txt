@@ -19,7 +19,7 @@ Interagency initiative:
 {% if domain_request.is_interagency_initiative %}{{ domain_request.interagency_initiative_details }}{% else %}No{% endif %}
 
 Target time frame:
-{% if domain_request.has_target_time_frame %}{{ domain_request.time_frame_details }}{% else %}No{% endif %}
+{% if domain_request.has_timeframe %}{{ domain_request.time_frame_details }}{% else %}No{% endif %}
 {% else %}{{ domain_request.purpose }}{% endif %}{% if domain_request.anything_else %}
 Additional details:
 {{ domain_request.anything_else }}{% endif %}

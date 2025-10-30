@@ -16,7 +16,9 @@ on:
           - acadia
           - ad
           - backup
-          - bob
+          - ap
+          - cw
+          - testdb
           - dg
           - el
           - es

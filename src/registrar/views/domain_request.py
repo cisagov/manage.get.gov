@@ -3,16 +3,18 @@ from datetime import date
 from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import ValidationError
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DeleteView, DetailView, TemplateView
+from django.utils.dateparse import parse_datetime
 from registrar.decorators import (
     HAS_DOMAIN_REQUESTS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
-    IS_DOMAIN_REQUEST_CREATOR,
+    IS_DOMAIN_REQUEST_REQUESTER,
     grant_access,
 )
 from registrar.forms import domain_request_wizard as forms
@@ -21,7 +23,6 @@ from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest
 from registrar.models.contact import Contact
 from registrar.models.user import User
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility import StepsHelper
 from registrar.utility.enums import Step, PortfolioDomainRequestStep
 from registrar.views.utility.invitation_helper import get_org_membership
@@ -30,7 +31,7 @@ from ..utility.email import send_templated_email, EmailSendingError
 logger = logging.getLogger(__name__)
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWizard(TemplateView):
     """
     A common set of methods and configuration.
@@ -182,7 +183,10 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        return self.domain_request.is_feb() and flag_is_active_for_user(self.request.user, "organization_feature")
+        portfolio = self.request.session.get("portfolio")
+        if portfolio:
+            return self.domain_request.is_feb()
+        return False
 
     @property
     def prefix(self):
@@ -203,16 +207,16 @@ class DomainRequestWizard(TemplateView):
 
         # For linter. The else block should never be hit, but if it does,
         # there may be a UI consideration. That will need to be handled in another ticket.
-        creator = None
+        requester = None
         if self.request.user is not None and isinstance(self.request.user, User):
-            creator = self.request.user
+            requester = self.request.user
         else:
             raise ValueError("Invalid value for User")
 
         if self.has_pk():
             try:
                 self._domain_request = DomainRequest.objects.get(
-                    creator=creator,
+                    requester=requester,
                     pk=self.kwargs.get("domain_request_pk"),
                 )
                 return self._domain_request
@@ -223,15 +227,14 @@ class DomainRequestWizard(TemplateView):
         if self.request.user.is_org_user(self.request):
             portfolio = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
-                creator=self.request.user,
+                requester=self.request.user,
                 portfolio=portfolio,
             )
-            # Question for reviewers: we should probably be doing this right?
             if portfolio and not self._domain_request.generic_org_type:
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
         else:
-            self._domain_request = DomainRequest.objects.create(creator=self.request.user)
+            self._domain_request = DomainRequest.objects.create(requester=self.request.user)
         return self._domain_request
 
     @property
@@ -263,6 +266,9 @@ class DomainRequestWizard(TemplateView):
         logger.debug("Domain Request object saved: %s", self.domain_request.id)
         # Notify OMB if an FEB request has been submitted
         if self.requires_feb_questions():
+            # Automatically put domain request in review omb if the request is in enteprise mode
+            self.domain_request.in_review_omb()
+            self.domain_request.save()
             try:
                 self.send_omb_submission_email()
             except Exception:
@@ -294,7 +300,7 @@ class DomainRequestWizard(TemplateView):
         """This method handles GET requests."""
 
         self.kwargs = kwargs
-        if not self.is_portfolio and self.request.user.is_org_user(request):
+        if self.request.user.is_org_user(request):
             self.is_portfolio = True
             # Configure titles, wizard_conditions, unlocking_steps, and steps
             self.configure_step_options()
@@ -404,9 +410,9 @@ class DomainRequestWizard(TemplateView):
             return self.pending_domain_requests()
 
     def approved_domain_requests_exist(self):
-        """Checks if user is creator of domain requests with DomainRequestStatus.APPROVED status"""
+        """Checks if user is requester of domain requests with DomainRequestStatus.APPROVED status"""
         approved_domain_request_count = DomainRequest.objects.filter(
-            creator=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
+            requester=self.request.user, status=DomainRequest.DomainRequestStatus.APPROVED
         ).count()
         return approved_domain_request_count > 0
 
@@ -428,7 +434,7 @@ class DomainRequestWizard(TemplateView):
             DomainRequest.DomainRequestStatus.IN_REVIEW,
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
         ]
-        return DomainRequest.objects.filter(creator=self.request.user, status__in=check_statuses)
+        return DomainRequest.objects.filter(requester=self.request.user, status__in=check_statuses)
 
     def db_check_for_unlocking_steps(self):
         """Helper for get_context_data.
@@ -477,6 +483,7 @@ class DomainRequestWizard(TemplateView):
                 "requested_domain__name": requested_domain_name,
             }
         context["domain_request_id"] = self.domain_request.id
+        context["version_token"] = self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else ""
         return context
 
     def get_step_list(self) -> list:
@@ -503,32 +510,63 @@ class DomainRequestWizard(TemplateView):
 
     def post(self, request, *args, **kwargs) -> HttpResponse:
         """This method handles POST requests."""
-        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
-            self.is_portfolio = True
-            # Configure titles, wizard_conditions, unlocking_steps, and steps
-            self.configure_step_options()
+        self.ensure_portfolio_mode(request)
 
         # which button did the user press?
         button: str = request.POST.get("submit_button", "")
 
         # if user has acknowledged the intro message
         if button == "intro_acknowledge":
-            # Split into a function: C901 'DomainRequestWizard.post' is too complex (11)
-            self.handle_intro_acknowledge(request)
+            return self.handle_intro_acknowledge(request)
 
         # if accessing this class directly, redirect to the first step
         if self.__class__ == DomainRequestWizard:
             return self.goto(self.steps.first)
 
         forms = self.get_forms(use_post=True)
-        if self.is_valid(forms):
-            # always save progress
-            self.save(forms)
-        else:
-            context = self.get_context_data()
-            context["forms"] = forms
-            return render(request, self.template_name, context)
+        # pull the snapshot from form (set during GET)
+        self.apply_optimistic_lock(request)
 
+        if not self.is_valid(forms):
+            return self.render_invalid(request, forms)
+
+        try:
+            self.save(forms)  # this calls RegistrarForm.to_database(...) which calls obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.domain_request.refresh_from_db()
+            # DO NOT persist the POST; show the latest DB state
+            messages.warning(request, "A newer version of this form exists. Please try again.")
+            return self.goto(self.steps.current)
+
+        return self.dispatch_next(button, request)
+
+    def ensure_portfolio_mode(self, request) -> None:
+        """Enable portfolio mode if applicable and reconfigure steps."""
+        if not self.is_portfolio and self.request.user.is_org_user(request):  # type: ignore
+            self.is_portfolio = True
+            self.configure_step_options()
+
+    def apply_optimistic_lock(self, request) -> None:
+        """Apply optimistic locking comparing against version in the submitted form."""
+        version_str = request.POST.get("version")
+        if version_str:
+            parsed = parse_datetime(version_str)
+            self.domain_request._original_updated_at = parsed
+
+    def render_invalid(self, request, forms: list) -> HttpResponse:
+        """Render the template with invalid forms and context."""
+        context = self.get_context_data()
+        context["forms"] = forms
+        return render(request, self.template_name, context)
+
+    def redirect_after_save(self, request) -> HttpResponse:
+        """Redirect after 'save_and_return' depending on user type."""
+        if request.user.is_org_user(request):
+            return HttpResponseRedirect(reverse("domain-requests"))
+        return HttpResponseRedirect(reverse("home"))
+
+    def dispatch_next(self, button: str, request) -> HttpResponse:
+        """Route to the appropriate next page based on the pressed button."""
         if button == "back":
             return self.goto(self.steps.prev)
         # if user opted to save their progress,
@@ -539,11 +577,7 @@ class DomainRequestWizard(TemplateView):
         # if user opted to save progress and return,
         # return them to the home page
         if button == "save_and_return":
-            if request.user.is_org_user(request):
-                return HttpResponseRedirect(reverse("domain-requests"))
-            else:
-                return HttpResponseRedirect(reverse("home"))
-
+            return self.redirect_after_save(request)
         # otherwise, proceed as normal
         return self.goto_next_step()
 
@@ -558,9 +592,12 @@ class DomainRequestWizard(TemplateView):
 
         Saves the domain request to the database.
         """
-        for form in forms:
-            if form is not None and hasattr(form, "to_database"):
-                form.to_database(self.domain_request)
+        try:
+            for form in forms:
+                if form is not None and hasattr(form, "to_database"):
+                    form.to_database(self.domain_request)
+        except ValidationError:
+            raise
 
 
 # TODO - this is a WIP until the domain request experience for portfolios is complete
@@ -963,6 +1000,7 @@ class Review(DomainRequestWizard):
         context = super().get_context_data()
         context["Step"] = self.get_step_enum().__members__
         context["domain_request"] = self.domain_request
+        context["request"] = self.request
         context["requires_feb_questions"] = self.requires_feb_questions()
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(
             self.domain_request.feb_purpose_choice
@@ -1040,7 +1078,7 @@ class Finished(DomainRequestWizard):
         return render(self.request, self.template_name)
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestStatus(DetailView):
     template_name = "domain_request_status.html"
     model = DomainRequest
@@ -1060,12 +1098,12 @@ class DomainRequestStatus(DetailView):
         return context
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWithdrawConfirmation(DetailView):
     """This page will ask user to confirm if they want to withdraw
 
     Access is restricted so that only the
-    `creator` of the domain request may withdraw it.
+    `requester` of the domain request may withdraw it.
     """
 
     template_name = "domain_request_withdraw_confirmation.html"  # DetailView property for what model this is viewing
@@ -1074,7 +1112,7 @@ class DomainRequestWithdrawConfirmation(DetailView):
     context_object_name = "DomainRequest"
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestWithdrawn(DetailView):
     # this view renders no template
     template_name = ""
@@ -1097,7 +1135,7 @@ class DomainRequestWithdrawn(DetailView):
             return HttpResponseRedirect(reverse("home"))
 
 
-@grant_access(IS_DOMAIN_REQUEST_CREATOR, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
+@grant_access(IS_DOMAIN_REQUEST_REQUESTER, HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT)
 class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
     """Delete view for home that allows the end user to delete DomainRequests"""
 
@@ -1139,7 +1177,7 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
 
         # After a delete occurs, do a second sweep on any returned duplicates.
         # This determines if any of these three fields share a contact, which is used for
-        # the edge case where the same user may be an SO, and a creator, for example.
+        # the edge case where the same user may be an SO, and a requester, for example.
         if len(duplicates) > 0:
             duplicates_to_delete, _ = self._get_orphaned_contacts(domain_request, check_db=True)
             Contact.objects.filter(id__in=duplicates_to_delete).delete()
@@ -1152,7 +1190,7 @@ class DomainRequestDeleteView(PermissionRequiredMixin, DeleteView):
         Collects all orphaned contacts associated with a given DomainRequest object.
 
         An orphaned contact is defined as a contact that is associated with the domain request,
-        but not with any other domain_request. This includes the senior official, the creator,
+        but not with any other domain_request. This includes the senior official, the requester,
         and any other contacts linked to the domain_request.
 
         Parameters:
@@ -1212,7 +1250,7 @@ class DomainRequestStatusViewOnly(DetailView):
 
     Access is granted via HAS_DOMAIN_REQUESTS_VIEW_ALL which handles:
     - Portfolio members with view-all domain requests permission
-    - Non-portfolio users who are creators of the domain request
+    - Non-portfolio users who are requesters
     - Analysts with appropriate permissions
     """
 
@@ -1244,9 +1282,7 @@ class DomainRequestStatusViewOnly(DetailView):
             context["form_titles"] = wizard.titles
 
         # Common context
-        context["requires_feb_questions"] = domain_request.is_feb() and flag_is_active_for_user(
-            self.request.user, "organization_feature"
-        )
+        context["requires_feb_questions"] = domain_request.is_feb()
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
         context["view_only_mode"] = True
         context["is_portfolio"] = is_portfolio
