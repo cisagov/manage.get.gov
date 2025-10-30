@@ -147,15 +147,15 @@ class Command(BaseCommand):
                 from epplib.models import PostalInfo, ContactAddr
 
                 sample_addr = ContactAddr(
-                    street=["123 main st", "#5"],
-                    city="somewhere",
-                    sp="FL",
-                    pc="33547",
+                    street=["1234 main st", "#10"],
+                    city="somewhereelse",
+                    sp="OH",
+                    pc="33774",
                     cc="US",
                 )
                 sample_postal = PostalInfo(
-                    name="Test Name",
-                    org="Test Org",
+                    name="Other Test Name",
+                    org="Other Test Org",
                     addr=sample_addr,
                     type="loc",
                 )
@@ -188,7 +188,12 @@ class Command(BaseCommand):
                 # the client will raise a TypeError like "unexpected keyword
                 # argument 'tr_id'". Accept arbitrary args/kwargs and return
                 # the pre-built bytes.
-                cmd = SimpleNamespace(xml=lambda *a, **kw: xml_bytes)
+                # Provide the response_class expected by epplib Client.send
+                # so that the client's _receive() can parse the response.
+                cmd = SimpleNamespace(
+                    xml=lambda *a, **kw: xml_bytes,
+                    response_class=getattr(base_cmd, "response_class", None),
+                )
             except Exception as e:
                 logger.exception("Failed to build raw disclose-street XML: %s", e)
                 raise CommandError(f"Failed to build XML: {e}")
