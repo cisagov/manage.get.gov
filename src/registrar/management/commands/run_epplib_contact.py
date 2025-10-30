@@ -172,11 +172,13 @@ class Command(BaseCommand):
                 if chg is None:
                     raise RuntimeError("Couldn't find chg element in base XML")
 
+                # New addrField element (<contact:addrField type="loc" field="street"/>)
                 disclose_el = LET.Element(LQName(EPPNS.NIC_CONTACT, "disclose"), flag="0")
-                addr_el = LET.SubElement(disclose_el, LQName(EPPNS.NIC_CONTACT, "addr"))
-                LET.SubElement(addr_el, LQName(EPPNS.NIC_CONTACT, "street"))
-
-                addr_el.set("type", "loc")
+                addr_field = LET.SubElement(disclose_el, LQName(EPPNS.NIC_CONTACT, "addrField"))
+                # set the type (loc/int/whatever is appropriate for the registry)
+                addr_field.set("type", "loc")
+                # request only the street subfield be hidden
+                addr_field.set("field", "street")
 
                 chg.append(disclose_el)
 
