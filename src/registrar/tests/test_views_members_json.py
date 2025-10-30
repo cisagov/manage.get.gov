@@ -10,7 +10,6 @@ from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from waffle.testutils import override_flag
 from registrar.tests.common import MockEppLib, create_test_user
 from django_webtest import WebTest  # type: ignore
 
@@ -57,7 +56,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.email7 = "sixth@example.com"
 
         # Create Portfolio
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Test Portfolio")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
 
         # Assign permissions
 
@@ -74,8 +73,6 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         super().tearDown()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_members_json_authenticated(self):
         """Test that portfolio members are returned properly for an authenticated user."""
         """Also tests that reposnse is 200 when no domains"""
@@ -154,8 +151,6 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertTrue(expected_additional_permissions.issubset(actual_permissions))
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invited_json_authenticated(self):
         """Test that portfolio invitees are returned properly for an authenticated user."""
         """Also tests that response is 200 when no domains"""
@@ -214,8 +209,6 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertTrue(expected_additional_permissions.issubset(actual_additional_permissions))
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_members_json_with_domains(self):
         """Test that portfolio members are returned properly for an authenticated user and the response includes
         the domains that the member manages.."""
@@ -249,7 +242,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain1.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain,
             portfolio=self.portfolio,
         )
@@ -264,7 +257,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="thissecondpermtestsmultipleperms@lets.notbreak",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain2,
             portfolio=self.portfolio,
         )
@@ -279,7 +272,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain3.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain3,
         )
         UserDomainRole.objects.create(
@@ -299,8 +292,6 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertNotIn("somedomain3.com", domain_names)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invited_json_with_domains(self):
         """Test that portfolio invited members are returned properly for an authenticated user and the response includes
         the domains that the member manages. Test also verifies that retrieved invitations are not included."""
@@ -336,7 +327,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain1.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain,
             portfolio=self.portfolio,
         )
@@ -350,7 +341,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="thissecondinvitetestsasubqueryinjson@lets.notbreak",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain2,
             portfolio=self.portfolio,
         )
@@ -364,7 +355,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain3.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain3,
         )
         DomainInvitation.objects.create(
@@ -378,7 +369,7 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
             name="somedomain4.com",
         )
         DomainInformation.objects.create(
-            creator=self.user,
+            requester=self.user,
             domain=domain4,
         )
         DomainInvitation.objects.create(
@@ -399,8 +390,6 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertNotIn("somedomain4.com", domain_names)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_pagination(self):
         """Test that pagination works properly when there are more members than page size."""
         UserPortfolioPermission.objects.create(
@@ -486,8 +475,6 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertEqual(len(data["members"]), 5)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_search(self):
         """Test search functionality for portfolio members."""
         UserPortfolioPermission.objects.create(

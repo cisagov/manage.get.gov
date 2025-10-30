@@ -15,7 +15,6 @@ from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 
-from registrar.utility.waffle import flag_is_active_for_user, flag_is_active_anywhere
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
@@ -41,6 +40,7 @@ class DomainRequest(TimeStampedModel):
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
         IN_REVIEW = "in review", "In review"
+        IN_REVIEW_OMB = "in review - omb", "In review - OMB"
         ACTION_NEEDED = "action needed", "Action needed"
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
@@ -376,7 +376,7 @@ class DomainRequest(TimeStampedModel):
     )
 
     # This is the domain request user who created this domain request.
-    creator = models.ForeignKey(
+    requester = models.ForeignKey(
         "registrar.User",
         on_delete=models.PROTECT,
         related_name="domain_requests_created",
@@ -389,6 +389,7 @@ class DomainRequest(TimeStampedModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="domain_requests_investigating",
+        verbose_name="analyst",
     )
 
     # ##### data fields from the initial form #####
@@ -565,7 +566,7 @@ class DomainRequest(TimeStampedModel):
         "registrar.Website",
         blank=True,
         related_name="alternatives+",
-        help_text="Other domain names the creator provided for consideration",
+        help_text="Other domain names the requester provided for consideration",
     )
 
     other_contacts = models.ManyToManyField(
@@ -578,7 +579,7 @@ class DomainRequest(TimeStampedModel):
     no_other_contacts_rationale = models.TextField(
         null=True,
         blank=True,
-        help_text="Required if creator does not list other employees",
+        help_text="Required if requester does not list other employees",
     )
 
     anything_else = models.TextField(
@@ -724,6 +725,7 @@ class DomainRequest(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
 
@@ -780,8 +782,21 @@ class DomainRequest(TimeStampedModel):
                         )
                 raise ValidationError(errors)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, optimistic_lock=False, **kwargs):
         """Save override for custom properties"""
+        if optimistic_lock and self.pk is not None:
+            # Get the current DB value to compare with our snapshot
+            current_updated_at = (
+                type(self).objects.only("updated_at").filter(pk=self.pk).values_list("updated_at", flat=True).first()
+            )
+            # If someone else saved after we loaded, block the save
+            if (
+                self._original_updated_at is not None
+                and current_updated_at is not None
+                and current_updated_at != self._original_updated_at
+            ):
+                raise ValidationError("A newer version of this form exists. Please try again.")
+
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
 
@@ -789,7 +804,7 @@ class DomainRequest(TimeStampedModel):
             self.last_status_update = timezone.now().date()
 
         super().save(*args, **kwargs)
-
+        self._original_updated_at = self.updated_at
         # Handle custom status emails.
         # An email is sent out when a, for example, action_needed_reason is changed or added.
         statuses_that_send_custom_emails = [self.DomainRequestStatus.ACTION_NEEDED, self.DomainRequestStatus.REJECTED]
@@ -895,7 +910,7 @@ class DomainRequest(TimeStampedModel):
             if self.requested_domain and self.requested_domain.name:
                 return self.requested_domain.name
             else:
-                return f"{self.status} domain request created by {self.creator}"
+                return f"{self.status} domain request requested by {self.requester}"
         except Exception:
             return ""
 
@@ -964,10 +979,10 @@ class DomainRequest(TimeStampedModel):
         wrap_email=False,
         custom_email_content=None,
     ):
-        """Send a status update email to the creator.
+        """Send a status update email to the requester.
 
-        The email goes to the email address that the creator gave as their
-        contact information. If there is not creator information, then do
+        The email goes to the email address that the requester gave as their
+        contact information. If there is not requester information, then do
         nothing.
 
         Optional args:
@@ -984,10 +999,10 @@ class DomainRequest(TimeStampedModel):
         custom_email_content: str -> Renders an email with the content of this string as its body text.
         """
 
-        recipient = self.creator
+        recipient = self.requester
         if recipient is None or recipient.email is None:
             logger.warning(
-                f"Cannot send {new_status} email, no creator email address for domain request with pk: {self.pk}."
+                f"Cannot send {new_status} email, no requester email address for domain request with pk: {self.pk}."
                 f" Name: {self.requested_domain.name}"
                 if self.requested_domain
                 else ""
@@ -1000,8 +1015,7 @@ class DomainRequest(TimeStampedModel):
 
         try:
             if not context:
-                has_organization_feature_flag = flag_is_active_for_user(recipient, "organization_feature")
-                is_org_user = has_organization_feature_flag and recipient.has_view_portfolio_permission(self.portfolio)
+                is_org_user = self.portfolio is not None and recipient.has_view_portfolio_permission(self.portfolio)
                 requires_feb_questions = self.is_feb() and is_org_user
                 purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
                 context = {
@@ -1034,7 +1048,7 @@ class DomainRequest(TimeStampedModel):
             logger.info(f"The {new_status} email sent to: {recipient.email}")
         except EmailSendingError as err:
             logger.error(
-                "Failed to send status update to creator email:\n"
+                "Failed to send status update to requester email:\n"
                 f"  Type: {new_status}\n"
                 f"  Subject template: {email_template_subject}\n"
                 f"  To: {recipient.email}\n"
@@ -1052,11 +1066,21 @@ class DomainRequest(TimeStampedModel):
             is_valid = False
         return is_valid
 
+    def allow_in_review_omb_transition(self):
+        """Checks if domain request is in enterprise mode for state transition without investigator"""
+        """If it is not in enterprise mode check the investigator exists"""
+        if self.is_feb():
+            return True
+        elif self.federal_type == BranchChoices.EXECUTIVE:
+            return self.investigator_exists_and_is_staff()
+        return False
+
     @transition(
         field="status",
         source=[
             DomainRequestStatus.STARTED,
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.WITHDRAWN,
         ],
@@ -1139,6 +1163,7 @@ class DomainRequest(TimeStampedModel):
         field="status",
         source=[
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.APPROVED,
             DomainRequestStatus.REJECTED,
             DomainRequestStatus.INELIGIBLE,
@@ -1175,8 +1200,8 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
-            DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.REJECTED,
         ],
@@ -1228,7 +1253,7 @@ class DomainRequest(TimeStampedModel):
         # create the permission for the user
         UserDomainRole = apps.get_model("registrar.UserDomainRole")
         UserDomainRole.objects.get_or_create(
-            user=self.creator, domain=created_domain, role=UserDomainRole.Roles.MANAGER
+            user=self.requester, domain=created_domain, role=UserDomainRole.Roles.MANAGER
         )
 
         if self.status == self.DomainRequestStatus.REJECTED:
@@ -1257,7 +1282,12 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
+        source=[
+            DomainRequestStatus.SUBMITTED,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
+            DomainRequestStatus.ACTION_NEEDED,
+        ],
         target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
@@ -1271,7 +1301,12 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED],
+        source=[
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.APPROVED,
+            DomainRequestStatus.IN_REVIEW_OMB,
+        ],
         target=DomainRequestStatus.REJECTED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
@@ -1295,7 +1330,9 @@ class DomainRequest(TimeStampedModel):
     @transition(
         field="status",
         source=[
+            DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.APPROVED,
             DomainRequestStatus.REJECTED,
@@ -1315,7 +1352,19 @@ class DomainRequest(TimeStampedModel):
         if self.status == self.DomainRequestStatus.APPROVED:
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
-        self.creator.restrict_user()
+        self.requester.restrict_user()
+
+    @transition(
+        field="status",
+        source=[
+            DomainRequestStatus.SUBMITTED,
+        ],
+        target=DomainRequestStatus.IN_REVIEW_OMB,
+        conditions=[domain_is_not_active, allow_in_review_omb_transition],
+    )
+    def in_review_omb(self):
+        """Transitions Domain Request Status from submitted to In review - OMB"""
+        pass
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization.
@@ -1373,17 +1422,16 @@ class DomainRequest(TimeStampedModel):
 
     def unlock_organization_contact(self) -> bool:
         """Unlocks the organization_contact step."""
-        if flag_is_active_anywhere("organization_feature") and flag_is_active_anywhere("organization_requests"):
-            # Check if the current federal agency is an outlawed one
-            if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
-                Portfolio = apps.get_model("registrar.Portfolio")
-                return (
-                    FederalAgency.objects.exclude(
-                        id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
-                    )
-                    .filter(id=self.federal_agency.id)
-                    .exists()
+        # Check if the current federal agency is an outlawed one
+        if self.organization_type == self.OrganizationChoices.FEDERAL and self.federal_agency:
+            Portfolio = apps.get_model("registrar.Portfolio")
+            return (
+                FederalAgency.objects.exclude(
+                    id__in=Portfolio.objects.values_list("federal_agency__id", flat=True),
                 )
+                .filter(id=self.federal_agency.id)
+                .exists()
+            )
         return bool(
             self.federal_agency is not None
             or self.organization_name is not None

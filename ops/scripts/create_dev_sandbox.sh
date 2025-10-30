@@ -54,13 +54,7 @@ cf bind-security-group public_networks_egress cisa-dotgov --space $1
 cf bind-security-group trusted_local_networks_egress cisa-dotgov --space $1
 
 echo "Creating new cloud.gov DB for $1. This usually takes about 5 minutes..."
-cf create-service aws-rds micro-psql getgov-$1-database
-
-until cf service getgov-$1-database | grep -q 'Finished creating database resources'
-do
-  echo "Database not up yet, waiting..."
-  sleep 30
-done
+cf create-service aws-rds micro-psql getgov-$1-database -w
 
 echo "Creating new cloud.gov credentials for $1..."
 django_key=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
@@ -75,6 +69,18 @@ echo "There are two things to update."
 echo "1. You need to upload the public-$1.crt file generated as part of the previous command."
 echo "2. You need to add two redirect URIs: https://getgov-$1.app.cloud.gov/openid/callback/login/ and
 https://getgov-$1.app.cloud.gov/openid/callback/logout/ to the list of URIs."
+read -p "Please confirm when this is done (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    exit 1
+fi
+
+echo "Now we should add the OT&E registry credentials. The credentials can be found in other sandboxes."
+echo "To edit credentials, log into cloud.gov and navigate to the space created."
+echo "On the left sidebar, click on User Services. "
+echo "Click on the 3 dots at the end of the getgov-credentials line and select edit"
+echo "Add the appropriate credentials and click Finish."
 read -p "Please confirm when this is done (y/n) " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]

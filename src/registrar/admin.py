@@ -13,6 +13,7 @@ from django.db.models import (
 )
 
 from django.db.models.functions import Concat, Coalesce
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -71,6 +72,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.utils.dateparse import parse_datetime
 
 
 logger = logging.getLogger(__name__)
@@ -258,7 +260,7 @@ class PortfolioPermissionsForm(forms.ModelForm):
         choices=[("", "---------")] + UserPortfolioRoleChoices.choices,
         required=True,
         widget=forms.Select(attrs={"class": "admin-dropdown"}),
-        label="Member access",
+        label="Member role",
         help_text="Only admins can manage member permissions and organization metadata.",
     )
 
@@ -452,6 +454,7 @@ class DomainRequestAdminForm(forms.ModelForm):
         labels = {
             "action_needed_reason_email": "Email",
             "rejection_reason_email": "Email",
+            "investigator": "Analyst",
         }
 
     def __init__(self, *args, **kwargs):
@@ -479,7 +482,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             # only set the available transitions if the user is not restricted
             # from editing the domain request; otherwise, the form will be
             # readonly and the status field will not have a widget
-            if not domain_request.creator.is_restricted() and "status" in self.fields:
+            if not domain_request.requester.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
 
     def get_custom_field_transitions(self, instance, field):
@@ -761,7 +764,7 @@ class AdminSortFields:
         # == Senior Official == #
         "senior_official": (SeniorOfficial, _name_sort),
         # == User == #
-        "creator": (User, _name_sort),
+        "requester": (User, _name_sort),
         "user": (User, _name_sort),
         "investigator": (User, _name_sort),
         # == Website == #
@@ -1168,12 +1171,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             # Show all fields for all access users
             return super().get_fieldsets(request, obj)
         elif request.user.has_perm("registrar.analyst_access_permission"):
-            if flag_is_active(request, "organization_feature"):
+            if request.user.is_org_user(request):
                 # show analyst_fieldsets for analysts
                 return self.analyst_fieldsets
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_fieldsets_no_portfolio
+            return self.analyst_fieldsets_no_portfolio
         else:
             # any admin user should belong to either full_access_group
             # or cisa_analyst_group
@@ -1187,17 +1188,15 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         else:
             # Return restrictive Read-only fields for analysts and
             # users who might not belong to groups
-            if flag_is_active(request, "organization_feature"):
+            if request.user.is_org_user(request):
                 return self.analyst_readonly_fields
-            else:
-                # TODO: delete after we merge organization feature
-                return self.analyst_readonly_fields_no_portfolio
+            return self.analyst_readonly_fields_no_portfolio
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
         obj = self.get_object(request, object_id)
 
-        domain_requests = DomainRequest.objects.filter(creator=obj).exclude(
+        domain_requests = DomainRequest.objects.filter(requester=obj).exclude(
             Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
         )
         sort_by = request.GET.get("sort_by", "requested_domain__name")
@@ -1565,7 +1564,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Member access"  # type: ignore
+    get_roles.short_description = "Member role"  # type: ignore
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
@@ -1859,6 +1858,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
+            obj.email = obj.email.lower()
             requested_email = obj.email
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)
@@ -1870,7 +1870,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
 
             try:
                 if (
-                    flag_is_active(request, "organization_feature")
+                    request.user.is_org_user(request)
                     and not flag_is_active(request, "multiple_portfolios")
                     and domain_org is not None
                     and not member_of_this_org
@@ -1888,7 +1888,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     if requested_user is not None:
                         portfolio_invitation.retrieve()
                         portfolio_invitation.save()
-                    messages.success(request, f"{requested_email} has been invited to the organization: {domain_org}")
+                    messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
                 if not send_domain_invitation_email(
                     email=requested_email,
@@ -1897,7 +1897,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     is_member_of_different_org=member_of_a_different_org,
                     requested_user=requested_user,
                 ):
-                    messages.warning(request, "Could not send email confirmation to existing domain managers.")
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
                     obj.retrieve()
@@ -1958,7 +1958,13 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         readable_roles = obj.get_readable_roles()
         return ", ".join(readable_roles)
 
-    get_roles.short_description = "Member access"  # type: ignore
+    get_roles.short_description = "Member role"  # type: ignore
+
+    def display_error_msgs(self, request, email, permission_exists, invitation_exists):
+        if permission_exists:
+            messages.error(request, "User is already a member of this portfolio.")
+        elif invitation_exists:
+            messages.error(request, f"{email} has an existing invitation.")
 
     def save_model(self, request, obj, form, change):
         """
@@ -1970,6 +1976,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         """
         try:
             portfolio = obj.portfolio
+            obj.email = obj.email.lower()
             requested_email = obj.email
             requestor = request.user
             is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
@@ -1980,8 +1987,15 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 permission_exists = UserPortfolioPermission.objects.filter(
                     user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
-                if not permission_exists:
-                    # if permission does not exist for a user with requested_email, send email
+
+                invitation_exists = (
+                    PortfolioInvitation.objects.filter(email__iexact=requested_email, portfolio=portfolio)
+                    .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+                    .exists()
+                )
+                if not permission_exists and not invitation_exists:
+                    # if permission does not exist and invitation
+                    # does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
                         email=requested_email,
                         requestor=requestor,
@@ -1994,7 +2008,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
-                    messages.warning(request, "User is already a member of this portfolio.")
+                    return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation
                 # Retrieve the existing object from the database
                 existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
@@ -2079,7 +2093,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     form = DomainInformationAdminForm
 
     # Customize column header text
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
@@ -2181,7 +2195,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "fields": [
                     "portfolio",
                     "sub_organization",
-                    "creator",
+                    "requester",
                 ]
             },
         ),
@@ -2304,7 +2318,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "type_of_work",
         "more_organization_information",
         "domain",
@@ -2317,7 +2331,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for OMB Analysts
     omb_analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "about_your_organization",
         "anything_else",
         "cisa_representative_first_name",
@@ -2360,7 +2374,7 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     filter_horizontal = ("other_contacts",)
 
     autocomplete_fields = [
-        "creator",
+        "requester",
         "domain_request",
         "senior_official",
         "domain",
@@ -2553,7 +2567,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     class InvestigatorFilter(admin.SimpleListFilter):
         """Custom investigator filter that only displays users with the manager role"""
 
-        title = "investigator"
+        title = "analyst"
         # Match the old param name to avoid unnecessary refactoring
         parameter_name = "investigator__id__exact"
 
@@ -2637,7 +2651,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
-        # Example: Show different icons based on `status`
+        # Show different icons based on `status`
         text = obj.requested_domain
         if obj.portfolio:
             return format_html(
@@ -2650,7 +2664,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # ------ Converted fields ------
     # These fields map to @Property methods and
     # require these custom definitions to work properly
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.converted_generic_org_type_display
 
@@ -2754,9 +2768,17 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     status_history.short_description = "Status history"  # type: ignore
 
+    # ------ model fields ------
+    @admin.display(description=_("analyst"))
+    def analyst_as_investigator(self, obj):
+        return obj.investigator
+
+    analyst_as_investigator.admin_order_field = ["investigator__first_name", "investigator__last_name"]  # type: ignore
+
     # Columns
     list_display = [
         "custom_requested_domain",
+        "requester",
         "first_submitted_date",
         "last_submitted_date",
         "last_status_update",
@@ -2768,12 +2790,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_federal_type",
         "converted_city",
         "converted_state_territory",
-        "investigator",
+        "analyst_as_investigator",
     ]
 
     orderable_fk_fields = [
-        ("requested_domain", "name"),
-        ("investigator", ["first_name", "last_name"]),
+        ("requester", ["first_name", "last_name"]),
     ]
 
     # Filters
@@ -2791,11 +2812,11 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # NOTE: converted fields are included in the override for get_search_results
     search_fields = [
         "requested_domain__name",
-        "creator__email",
-        "creator__first_name",
-        "creator__last_name",
+        "requester__email",
+        "requester__first_name",
+        "requester__last_name",
     ]
-    search_help_text = "Search by domain, creator, or organization name."
+    search_help_text = "Search by domain, requester, or organization name."
 
     fieldsets = [
         (
@@ -2823,7 +2844,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "requested_suborganization",
                     "suborganization_city",
                     "suborganization_state_territory",
-                    "creator",
+                    "requester",
                 ]
             },
         ),
@@ -2970,7 +2991,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for CISA Analysts
     analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "about_your_organization",
         "requested_domain",
         "approved_domain",
@@ -2987,7 +3008,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Read only that we'll leverage for OMB Analysts
     omb_analyst_readonly_fields = [
         "federal_agency",
-        "creator",
+        "requester",
         "about_your_organization",
         "requested_domain",
         "approved_domain",
@@ -3043,7 +3064,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     autocomplete_fields = [
         "approved_domain",
         "requested_domain",
-        "creator",
+        "requester",
         "investigator",
         "portfolio",
         "sub_organization",
@@ -3076,15 +3097,14 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "suborganization_state_territory",
         ]
 
-        org_flag = flag_is_active_for_user(request.user, "organization_requests")
         # Hide FEB fields for non-FEB requests
         if not (obj and obj.portfolio and obj.is_feb()):
             excluded_fields.update(feb_fields)
 
-        # Hide certain portfolio and suborg fields behind the organization requests flag
-        # if it is not enabled
-        if not org_flag:
-            excluded_fields.update(org_fields)
+        # Hide certain portfolio and suborg fields for users that are not in a portfolio
+        if not request.user.is_org_user(request):
+            # In any org_fields, exclude all the other fields that aren't portfolio
+            excluded_fields.update(field for field in org_fields if field != "portfolio")
             excluded_fields.update(feb_fields)
 
         modified_fieldsets = []
@@ -3093,6 +3113,20 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             fields = tuple(field for field in fields if field not in excluded_fields)
             modified_fieldsets.append((name, {**data, "fields": fields}))
         return modified_fieldsets
+
+    def _has_version_conflict(self, request, obj):
+        """
+        Returns True if there is a version conflict, False otherwise.
+        """
+        version = request.POST.get("version")
+        snap = parse_datetime(version) if version else None
+        current = type(obj).objects.only("updated_at").filter(pk=obj.pk).values_list("updated_at", flat=True).first()
+
+        if snap and current and current != snap:
+            return True
+        else:
+            obj._original_updated_at = snap
+            return False
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -3113,19 +3147,23 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # If the user is restricted or we're saving an invalid model,
         # forbid this action.
-        if not obj or obj.creator.status == models.User.RESTRICTED:
+        if not obj or obj.requester.status == models.User.RESTRICTED:
             # Clear the success message
             messages.set_level(request, messages.ERROR)
 
             messages.error(
                 request,
-                "This action is not permitted for domain requests with a restricted creator.",
+                "This action is not permitted for domain requests with a restricted requester.",
             )
 
             return None
 
-        # == Check if we're making a change or not == #
+        # == OPTIMISTIC LOCK: Temp fix check for version conflict == #
+        if self._has_version_conflict(request, obj):
+            request._domain_request_version_conflict = True
+            return None
 
+        # == Check if we're making a change or not == #
         # If we're not making a change (adding a record), run save model as we do normally
         if not change:
             return super().save_model(request, obj, form, change)
@@ -3153,6 +3191,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if should_save:
                 return super().save_model(request, obj, form, change)
 
+    def response_change(self, request, obj):
+        if getattr(request, "_domain_request_version_conflict", False):
+            change_url = reverse("admin:registrar_domainrequest_change", args=[obj.pk])
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
+            return HttpResponseRedirect(change_url)
+        return super().response_change(request, obj)
+
     def _handle_custom_emails(self, obj):
         if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
             if obj.action_needed_reason and not obj.action_needed_reason_email:
@@ -3167,7 +3212,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         so we should display that information using this function.
 
         """
-        recipient = obj.creator
+        recipient = obj.requester
 
         # Displays a warning in admin when an email cannot be sent
         if recipient and recipient.email:
@@ -3295,13 +3340,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the domain request creator's status, so
+        admin user permissions and the domain request requester's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
 
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        # Check if the requester is restricted
+        if obj and obj.requester.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -3321,10 +3366,10 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return readonly_fields
 
     def display_restricted_warning(self, request, obj):
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        if obj and obj.requester.status == models.User.RESTRICTED:
             messages.warning(
                 request,
-                "Cannot edit a domain request with a restricted creator.",
+                "Cannot edit a domain request with a restricted requester.",
             )
 
     def changelist_view(self, request, extra_context=None):
@@ -3807,7 +3852,7 @@ class DomainInformationInline(admin.StackedInline):
         for index, (title, options) in enumerate(modified_fieldsets):
             if title is None:
                 options["fields"] = [
-                    field for field in options["fields"] if field not in ["creator", "domain_request", "notes"]
+                    field for field in options["fields"] if field not in ["requester", "domain_request", "notes"]
                 ]
             elif title == "Contacts":
                 options["fields"] = [
@@ -4063,21 +4108,41 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "expiration_date",
         "created_at",
         "first_ready",
+        "on_hold_date_display",
+        "days_on_hold_display",
         "deleted",
     ]
 
     fieldsets = (
         (
             None,
-            {"fields": ["state", "expiration_date", "first_ready", "deleted", "dnssecdata", "nameservers"]},
+            {
+                "fields": [
+                    "state",
+                    "expiration_date",
+                    "first_ready",
+                    "on_hold_date_display",
+                    "days_on_hold_display",
+                    "deleted",
+                    "dnssecdata",
+                    "nameservers",
+                ]
+            },
         ),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        """Add computed display methods to readonly_fields"""
+        return super().get_readonly_fields(request, obj) + (
+            "on_hold_date_display",
+            "days_on_hold_display",
+        )
 
     # ------- Domain Information Fields
 
     # --- Generic Org Type
     # Use converted value in the table
-    @admin.display(description=_("Generic Org Type"))
+    @admin.display(description=_("Org Type"))
     def converted_generic_org_type(self, obj):
         return obj.domain_info.converted_generic_org_type_display
 
@@ -4148,6 +4213,19 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Use native value for the change form
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
+
+    # --- On hold date / days on hold
+    @admin.display(description=_("On hold date"))
+    def on_hold_date_display(self, obj):
+        """Display the date the domain was put on hold"""
+        date = obj.on_hold_date
+        return date
+
+    @admin.display(description=_("Days on hold"))
+    def days_on_hold_display(self, obj):
+        """Display how many days the domain has been on hold"""
+        days = obj.days_on_hold
+        return days
 
     def dnssecdata(self, obj):
         return "No" if obj.state == Domain.State.UNKNOWN or not obj.dnssecdata else "Yes"
@@ -4283,6 +4361,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "Error connecting to the registry. No expiration date was found.",
                 messages.ERROR,
             )
+        except ValidationError:
+            self.message_user(
+                request,
+                "A newer version of this form exists. Please try again.",
+                messages.ERROR,
+            )
         except Exception as err:
             logger.error(err, stack_info=True)
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
@@ -4306,7 +4390,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         try:
             obj.deletedInEpp()
-            obj.save()
+            obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
@@ -4342,6 +4426,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     ),
                     messages.ERROR,
                 )
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception:
             self.message_user(
                 request,
@@ -4369,9 +4455,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
+
         try:
             obj.place_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -4400,7 +4489,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def do_remove_client_hold(self, request, obj):
         try:
             obj.revert_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -4682,7 +4773,7 @@ class PortfolioAdmin(ListHeaderAdmin):
     change_form_template = "django/admin/portfolio_change_form.html"
     fieldsets = [
         # created_on is the created_at field
-        (None, {"fields": ["creator", "created_on", "notes"]}),
+        (None, {"fields": ["requester", "created_on", "notes", "agency_seal"]}),
         ("Type of organization", {"fields": ["organization_type", "federal_type"]}),
         (
             "Organization name and mailing address",
@@ -4716,7 +4807,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # This is the fieldset display when adding a new model
     add_fieldsets = [
-        (None, {"fields": ["creator", "notes"]}),
+        (None, {"fields": ["requester", "notes"]}),
         ("Type of organization", {"fields": ["organization_type"]}),
         (
             "Organization name and mailing address",
@@ -4736,7 +4827,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         ("Senior official", {"fields": ["senior_official"]}),
     ]
 
-    list_display = ("organization_name", "organization_type", "federal_type", "creator")
+    list_display = ("organization_name", "organization_type", "federal_type", "requester")
     search_fields = ["organization_name"]
     search_help_text = "Search by organization name."
     readonly_fields = [
@@ -4751,9 +4842,10 @@ class PortfolioAdmin(ListHeaderAdmin):
         "suborganizations",
         "display_admins",
         "display_members",
-        "creator",
+        "requester",
         # As of now this means that only federal agency can update this, but this will change.
         "senior_official",
+        "agency_seal",
     ]
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
@@ -4882,7 +4974,7 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     # Creates select2 fields (with search bars)
     autocomplete_fields = [
-        "creator",
+        "requester",
         "federal_agency",
         "senior_official",
     ]
@@ -4897,13 +4989,13 @@ class PortfolioAdmin(ListHeaderAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the creator's status, so
+        admin user permissions and the requester's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)
 
-        # Check if the creator is restricted
-        if obj and obj.creator.status == models.User.RESTRICTED:
+        # Check if the requester is restricted
+        if obj and obj.requester.status == models.User.RESTRICTED:
             # For fields like CharField, IntegerField, etc., the widget used is
             # straightforward and the readonly_fields list can control their behavior
             readonly_fields.extend([field.name for field in self.model._meta.fields])
@@ -4962,10 +5054,10 @@ class PortfolioAdmin(ListHeaderAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj: Portfolio, form, change):
-        if hasattr(obj, "creator") is False:
-            # ---- update creator ----
-            # Set the creator field to the current admin user
-            obj.creator = request.user if request.user.is_authenticated else None  # type: ignore
+        if hasattr(obj, "requester") is False:
+            # ---- update requester ----
+            # Set the requester field to the current admin user
+            obj.requester = request.user if request.user.is_authenticated else None  # type: ignore
         # ---- update organization name ----
         # org name will be the same as federal agency, if it is federal,
         # otherwise it will be the actual org name. If nothing is entered for
@@ -5056,7 +5148,7 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         """Set the read-only state on form elements.
         We have 2 conditions that determine which fields are read-only:
-        admin user permissions and the domain request creator's status, so
+        admin user permissions and the domain request requester's status, so
         we'll use the baseline readonly_fields and extend it as needed.
         """
         readonly_fields = list(self.readonly_fields)

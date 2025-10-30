@@ -26,7 +26,7 @@
               </li>
               <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
                 {% if requested_domain__name %}
-                <span>{% if not portfolio %} Domain Request: {% endif %} {{ requested_domain__name }}</span>
+                <span>{% if not portfolio %} Domain request: {% endif %} {{ requested_domain__name }}</span>
                 {% else %}
                 <span>New domain request</span>
                 {% endif %}
@@ -85,6 +85,7 @@
 {% block form_fields %}{% endblock %}
 
 {% block form_buttons %}
+        <input type="hidden" name="version" value="{{ version_token }}">
           <div class="stepnav">
             {% if steps.prev %}
             <button

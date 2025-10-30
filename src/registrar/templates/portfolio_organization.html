@@ -20,7 +20,7 @@
             <div class="margin-top-2 tablet:grid-col-10">
                 <h2 class="string-wrap margin-top-2">{{ portfolio }}</h2>
                     {% url 'organization-info' as url %}
-                    {% include "includes/summary_item.html" with title='Organization' value=portfolio address='true' sub_header_text='Organization admins' edit_link=url editable=has_edit_portfolio_permission view_button='true' portfolio_first_section='true' %}
+                    {% include "includes/summary_item.html" with title='Organization' value=portfolio sub_header_text='Organization admins' edit_link=url editable=has_edit_portfolio_permission view_button='true' portfolio_first_section='true' %}
 
                     {% url 'organization-senior-official' as url %}
                     {% include "includes/summary_item.html" with title='Senior official' value=portfolio.senior_official contact='true' edit_link=url view_button='true' %}

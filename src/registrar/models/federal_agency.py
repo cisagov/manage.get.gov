@@ -21,7 +21,7 @@ class FederalAgency(TimeStampedModel):
         max_length=20,
         choices=BranchChoices.choices,
         null=True,
-        blank=False,
+        blank=True,
     )
 
     acronym = models.CharField(

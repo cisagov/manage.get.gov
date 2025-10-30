@@ -25,7 +25,6 @@ from registrar.forms.portfolio import (
     PortfolioMemberForm,
     PortfolioNewMemberForm,
 )
-from waffle.models import get_waffle_flag_model
 from registrar.models.portfolio import Portfolio
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user import User
@@ -41,10 +40,6 @@ class TestFormValidation(MockEppLib):
         self.API_BASE_PATH = "/api/v1/available/?domain="
         self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
-        # We use both of these flags in the test. In the normal app these are generated normally.
-        # The alternative syntax is adding the decorator to each test.
-        get_waffle_flag_model().objects.get_or_create(name="organization_feature")
-        get_waffle_flag_model().objects.get_or_create(name="organization_requests")
 
     @less_console_noise_decorator
     def test_org_contact_zip_invalid(self):
@@ -257,7 +252,7 @@ class TestFormValidation(MockEppLib):
 
     @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):
-        """Response must be less than 2000 characters."""
+        """Response must be no more than 1000 characters."""
         form = PurposeDetailsForm(
             data={
                 "purpose": "Bacon ipsum dolor amet fatback strip steak pastrami"
@@ -300,12 +295,12 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["purpose"],
-            ["Response must be less than 2000 characters."],
+            ["Response must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
     def test_anything_else_form_about_your_organization_character_count_invalid(self):
-        """Response must be less than 2000 characters."""
+        """Response must be no more than 1000 characters."""
         form = AnythingElseForm(
             data={
                 "anything_else": "Bacon ipsum dolor amet fatback strip steak pastrami"
@@ -347,12 +342,12 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["anything_else"],
-            ["Response must be less than 2000 characters."],
+            ["Response must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
     def test_anything_else_form_character_count_invalid(self):
-        """Response must be less than 2000 characters."""
+        """Response must be no more than 1000 characters."""
         form = AboutYourOrganizationForm(
             data={
                 "about_your_organization": "Bacon ipsum dolor amet fatback"
@@ -396,7 +391,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["about_your_organization"],
-            ["Response must be less than 2000 characters."],
+            ["Response must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
@@ -459,7 +454,7 @@ class TestBasePortfolioMemberForms(TestCase):
         super().setUp()
         self.user = create_user()
         self.portfolio, _ = Portfolio.objects.get_or_create(
-            creator_id=self.user.id, organization_name="Hotel California"
+            requester_id=self.user.id, organization_name="Hotel California"
         )
 
     def tearDown(self):

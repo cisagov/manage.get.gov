@@ -9,7 +9,6 @@ from registrar.utility.constants import BranchChoices
 from .common import MockSESClient, completed_domain_request  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
-from waffle.testutils import override_flag
 
 from registrar.models import (
     DomainRequest,
@@ -744,22 +743,25 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_page = additional_details_result.follow()
         requirements_form = requirements_page.forms[0]
 
-        requirements_form["requirements-is_policy_acknowledged"] = True
-
         # Before we go to the review page, let's remove some of the data from the request:
         domain_request = DomainRequest.objects.get()  # there's only one
 
         domain_request.generic_org_type = None
         domain_request.save()
 
-        # test next button
+        # Refresh the Requirements page so snapshot matches the new updated_at
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = self.app.get(reverse("domain-request:requirements", args=[domain_request.id]))
+        requirements_form = requirements_page.forms[0]
+        requirements_form["requirements-is_policy_acknowledged"] = True
+
+        # Submit and test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()
         # validate that data from this step are being saved
-
         domain_request.refresh_from_db()
-
         self.assertEqual(domain_request.is_policy_acknowledged, True)
+
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)
@@ -1606,13 +1608,13 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(other)
 
         # Now let's join the other contact to another object
-        domain_info = DomainInformation.objects.create(creator=self.user)
+        domain_info = DomainInformation.objects.create(requester=self.user)
         domain_info.other_contacts.set([other])
 
         # prime the form by visiting /edit
@@ -1744,7 +1746,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(other)
@@ -1820,7 +1822,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(other)
@@ -1899,7 +1901,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(other)
@@ -1977,7 +1979,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(other)
@@ -2054,7 +2056,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(so)
@@ -2128,7 +2130,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
 
@@ -2197,7 +2199,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             state_territory="NY",
             zipcode="10002",
             senior_official=so,
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
         domain_request.other_contacts.add(so)
@@ -2244,11 +2246,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertEquals("Testy2", senior_official.first_name)
 
     @less_console_noise_decorator
-    def test_edit_creator_in_place(self):
+    def test_edit_requester_in_place(self):
         """When you:
             1. edit a your user profile information,
             2. then submit,
-        the domain request also updates its creator data to reflect user profile changes."""
+        the domain request also updates its requester data to reflect user profile changes."""
 
         # Populate the database with a domain request
         domain_request, _ = DomainRequest.objects.get_or_create(
@@ -2261,11 +2263,11 @@ class DomainRequestTests(TestWithUser, WebTest):
             address_line1="address 1",
             state_territory="NY",
             zipcode="10002",
-            creator=self.user,
+            requester=self.user,
             status="started",
         )
 
-        creator_pk = self.user.id
+        requester_pk = self.user.id
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
@@ -2292,9 +2294,9 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         domain_request.refresh_from_db()
 
-        updated_creator = domain_request.creator
-        self.assertEquals(creator_pk, updated_creator.id)
-        self.assertEquals("Testy2", updated_creator.first_name)
+        updated_requester = domain_request.requester
+        self.assertEquals(requester_pk, updated_requester.id)
+        self.assertEquals("Testy2", updated_requester.first_name)
 
     @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
@@ -2416,7 +2418,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
@@ -2528,8 +2531,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "medicare.gov")
 
         # Go back to organization type page and change type
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
@@ -2549,7 +2552,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertNotContains(dotgov_page, "medicare.gov")
 
     # @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_FEB_questions(self):
         """
         Test that for a member of a federal executive branch portfolio with org feature on, the dotgov domain page
@@ -2561,7 +2563,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
 
         portfolio, _ = Portfolio.objects.get_or_create(
-            creator=self.user,
+            requester=self.user,
             organization_name="Test Portfolio",
             organization_type=Portfolio.OrganizationChoices.FEDERAL,
             federal_agency=agency,
@@ -2821,7 +2823,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             zipcode="10002",
             senior_official=so,
             requested_domain=domain,
-            creator=self.user,
+            requester=self.user,
         )
         domain_request.other_contacts.add(other)
         domain_request.current_websites.add(current)
@@ -2942,11 +2944,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(review_page, "toggle-submit-domain-request")
         self.assertContains(review_page, "Your request form is incomplete")
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_missing_edit_permissions(self):
         """Tests that a portfolio user without edit request permissions cannot edit or add new requests"""
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Test Portfolio")
         portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
@@ -2965,11 +2965,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         portfolio_perm.delete()
         portfolio.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_portfolio_user_with_edit_permissions(self):
         """Tests that a portfolio user with edit request permissions can edit and add new requests"""
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Test Portfolio")
         portfolio_perm, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=portfolio,
@@ -2988,7 +2986,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         ).follow()
         self.assertEqual(edit_page.status_code, 200)
 
-    def test_non_creator_access(self):
+    def test_non_requester_access(self):
         """Tests that a user cannot edit a domain request they didn't create"""
         p = "password"
         other_user = User.objects.create_user(username="other_user", password=p)
@@ -2999,7 +2997,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         )
         self.assertEqual(edit_page.status_code, 403)
 
-    def test_creator_access(self):
+    def test_requester_access(self):
         """Tests that a user can edit a domain request they created"""
         domain_request = completed_domain_request(user=self.user)
 
@@ -3080,10 +3078,9 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
         self.assertContains(response, "Withdrawn")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_withdraw_portfolio_redirects_correctly(self):
         """Tests that the withdraw button on portfolio redirects to the portfolio domain requests page"""
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Test Portfolio")
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=portfolio,
@@ -3136,11 +3133,11 @@ class DomainRequestTestDifferentStatuses(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_domain_request_status_no_permissions(self):
-        """Can't access domain requests without being the creator."""
+        """Can't access domain requests without being the requester."""
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.SUBMITTED, user=self.user)
         other_user = User()
         other_user.save()
-        domain_request.creator = other_user
+        domain_request.requester = other_user
         domain_request.save()
 
         # PermissionDeniedErrors make lots of noise in test output
@@ -3219,32 +3216,30 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # Verify that the back button appears
         self.assertContains(next_page, "Back")
 
-        # Test with portfolio flag
-        with override_flag("organization_feature", active=True), override_flag("organization_requests", active=True):
-            portfolio = Portfolio.objects.create(
-                creator=self.user,
-                organization_name="test portfolio",
-            )
-            permission = UserPortfolioPermission.objects.create(
-                user=self.user,
-                portfolio=portfolio,
-                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
-            )
-            domain_request.portfolio = portfolio
-            domain_request.save()
-            domain_request.refresh_from_db()
+        portfolio = Portfolio.objects.create(
+            requester=self.user,
+            organization_name="test portfolio",
+        )
+        permission = UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+        )
+        domain_request.portfolio = portfolio
+        domain_request.save()
+        domain_request.refresh_from_db()
 
-            # Check portfolio-specific breadcrumb
-            portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        # Check portfolio-specific breadcrumb
+        portfolio_page = self.app.get(f"/domain-request/{domain_request.id}/edit/").follow()
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-            self.assertContains(portfolio_page, "Domain requests")
-            domain_request.portfolio = None
-            domain_request.save()
-            # Clean up portfolio
-            permission.delete()
-            portfolio.delete()
+        self.assertContains(portfolio_page, "Domain requests")
+        domain_request.portfolio = None
+        domain_request.save()
+        # Clean up portfolio
+        permission.delete()
+        portfolio.delete()
 
         # Clean up
         domain_request.delete()
@@ -3316,7 +3311,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
 
         site = DraftDomain.objects.create(name="igorville.gov")
         domain_request = DomainRequest.objects.create(
-            creator=self.user,
+            requester=self.user,
             requested_domain=site,
             status=DomainRequest.DomainRequestStatus.WITHDRAWN,
             senior_official=contact,
@@ -3356,8 +3351,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             self.fail(f"Expected a redirect, but got a different response: {response}")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     def test_wizard_steps_portfolio(self):
         """
         Tests the behavior of the domain request wizard for portfolios.
@@ -3371,7 +3364,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         federal_agency = FederalAgency.objects.get(agency="Non-Federal Agency")
         # Add a portfolio
         portfolio = Portfolio.objects.create(
-            creator=self.user,
+            requester=self.user,
             organization_name="test portfolio",
             federal_agency=federal_agency,
         )
@@ -3443,8 +3436,6 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         federal_agency.delete()
         domain_request.delete()
 
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_requests", active=True)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_enabled(self):
         """Tests unlock_organization_contact when agency exists in a portfolio"""
@@ -3453,15 +3444,13 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
 
         # Create a portfolio with matching organization name
         Portfolio.objects.create(
-            creator=self.user, organization_name=federal_agency.agency, federal_agency=federal_agency
+            requester=self.user, organization_name=federal_agency.agency, federal_agency=federal_agency
         )
 
         # Create domain request with the portfolio agency
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertFalse(domain_request.unlock_organization_contact())
 
-    @override_flag("organization_feature", active=False)
-    @override_flag("organization_requests", active=False)
     @less_console_noise_decorator
     def test_unlock_organization_contact_flags_disabled(self):
         """Tests unlock_organization_contact when organization flags are disabled"""
@@ -3469,7 +3458,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         federal_agency = FederalAgency.objects.create(agency="Portfolio Agency")
 
         # Create a portfolio with matching organization name
-        Portfolio.objects.create(creator=self.user, organization_name=federal_agency.agency)
+        Portfolio.objects.create(requester=self.user, organization_name=federal_agency.agency)
 
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertTrue(domain_request.unlock_organization_contact())
@@ -3494,10 +3483,9 @@ class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
         self.federal_agency.delete()
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_request_viewonly_displays_correct_fields(self):
         """Tests that the viewonly page displays different fields"""
-        portfolio, _ = Portfolio.objects.get_or_create(creator=self.user, organization_name="Test Portfolio")
+        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Test Portfolio")
         UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )

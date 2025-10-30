@@ -5,7 +5,6 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from django.views.generic import DetailView
 from django.contrib import messages
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
@@ -13,6 +12,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
+    IS_MULTIPLE_PORTFOLIOS_MEMBER,
     grant_access,
 )
 from registrar.forms import portfolio as portfolioForms
@@ -40,7 +40,7 @@ from registrar.utility.email_invitations import (
 )
 from registrar.utility.errors import MissingEmailError
 from registrar.utility.enums import DefaultUserValues
-from django.views.generic import View
+from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
 
@@ -446,7 +446,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 is_member_of_different_org=member_of_a_different_org,
                 requested_user=member,
             ):
-                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+                messages.warning(self.request, "Could not send email notification to existing domain managers.")
             # Bulk create UserDomainRole instances for added domains
             UserDomainRole.objects.bulk_create(
                 [
@@ -777,7 +777,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 domains=added_domains,
                 is_member_of_different_org=member_of_a_different_org,
             ):
-                messages.warning(self.request, "Could not send email confirmation to existing domain managers.")
+                messages.warning(self.request, "Could not send email notification to existing domain managers.")
 
             # Update existing invitations from CANCELED to INVITED
             existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
@@ -905,6 +905,9 @@ class PortfolioOrganizationView(DetailView):
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
+        context["organization_type"] = portfolio.get_organization_type_display()
+        if context["organization_type"] == "Federal":
+            context["federal_type"] = portfolio.federal_agency.get_federal_type_display()
         return context
 
     def get_object(self, queryset=None):
@@ -937,6 +940,9 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         portfolio = self.request.session.get("portfolio")
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
+        context["organization_type"] = portfolio.get_organization_type_display()
+        if context["organization_type"] == "Federal":
+            context["federal_type"] = portfolio.federal_agency.get_federal_type_display()
         return context
 
     def get_object(self, queryset=None):
@@ -984,7 +990,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
     def form_valid(self, form):
         """Handle the case when the form is valid."""
         self.object = form.save(commit=False)
-        self.object.creator = self.request.user
+        self.object.requester = self.request.user
         self.object.save()
         messages.success(self.request, "The organization information for this portfolio has been updated.")
         return super().form_valid(form)
@@ -1055,7 +1061,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
     def form_valid(self, form):
         """Handle the case when the form is valid."""
         self.object = form.save(commit=False)
-        self.object.creator = self.request.user
+        self.object.requester = self.request.user
         self.object.save()
         messages.success(self.request, "The senior official information for this portfolio has been updated.")
         return super().form_valid(form)
@@ -1173,9 +1179,125 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
-                f"Can't send email to '{email}' for portfolio '{portfolio}'. No email exists for the requestor.",
+                "Can't send invitation email. No email is associated with your account.",
                 exc_info=True,
             )
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, "Could not send portfolio email invitation.")
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationsDropdownView(ListView, FormMixin):
+    """
+    View for Organizations dropdown.
+    Actual session switching is handled in PortfolioOrganizationSelectView.
+    """
+
+    model = UserPortfolioPermission
+    template_name = "portfolio_organizations_dropdown.html"
+    context_object_name = "portfolio"
+    pk_url_kwarg = "portfolio_pk"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html", context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
+            "portfolio"
+        )
+        context["user_portfolio_permissions"] = user_portfolio_permissions
+        return context
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationsView(ListView, FormMixin):
+    """
+    View for Select Portfolio Organization page when the user does not
+    have an active portfolio in session. Actual session switching is
+    handled in PortfolioOrganizationSelectView.
+    """
+
+    model = UserPortfolioPermission
+    template_name = "portfolio_organizations.html"
+    context_object_name = "portfolio"
+    pk_url_kwarg = "portfolio_pk"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+
+    def get(self, request):
+        """Add additional context data to the template."""
+        return render(request, "portfolio_organizations.html", context=self.get_context_data())
+
+    def get_context_data(self, **kwargs):
+        """Add additional context data to the template."""
+        # We can override the base class. This view only needs this item.
+        context = {}
+        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
+            "portfolio"
+        )
+        context["user_portfolio_permissions"] = user_portfolio_permissions
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles updating active portfolio in session.
+        """
+        self.object = self.get_object()
+        self.form = self.get_form()
+
+
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+class PortfolioOrganizationSelectView(DetailView, FormMixin):
+    """
+    View that displays an individual portfolio object and sets
+    active session portfolio to said portfolio when selected.
+    """
+
+    model = UserPortfolioPermission
+    template_name = "portfolio_organization_select.html"
+    context_object_name = "portfolio"
+    form_class = portfolioForms.PortfolioOrganizationSelectForm
+    pk_url_kwarg = "portfolio_pk"
+
+    def get(self, request):
+        """
+        Prevent user from calling this view directly.
+        View already requires a form to change session and verifies user has permission
+        to call this on passed portfolio, but added for additional protections.
+        """
+        return JsonResponse({"error": "You cannot access this page directly"}, status=404)
+
+    def post(self, request):
+        """
+        Handles updating active portfolio in session.
+        """
+        self.form = self.get_form()
+        portfolio_button = self.form["set_session_portfolio_button"]
+        portfolio_name = portfolio_button.value()
+        portfolio = Portfolio.objects.get(organization_name=portfolio_name)
+
+        # Verify user has permissions to access selected portfolio
+        portfolio_permission = UserPortfolioPermission.objects.filter(portfolio=portfolio, user=request.user).first()
+        if not portfolio_permission:
+            return JsonResponse({"error": "Invalid user portfolio permission"}, status=403)
+        if portfolio_permission.user != request.user:
+            return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
+
+        portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
+        request.session["portfolio"] = portfolio
+        logger.info(f"Successfully set active portfolio to {portfolio}")
+        return self._handle_success_response(request, portfolio)
+
+    def _handle_success_response(self, request, portfolio):
+        """
+        Return a success response (JSON or redirect with messages).
+        """
+        success_message = f"You set your active portfolio to {portfolio}."
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": success_message}, status=200)
+        return redirect(reverse("domains"))

@@ -39,10 +39,9 @@ def is_production(request):
 
 
 def org_user_status(request):
+    is_org_user = False
     if request.user.is_authenticated:
         is_org_user = request.user.is_org_user(request)
-    else:
-        is_org_user = False
 
     return {
         "is_org_user": is_org_user,
@@ -64,10 +63,9 @@ def portfolio_permissions(request):
         "has_view_members_portfolio_permission": False,
         "has_edit_members_portfolio_permission": False,
         "portfolio": None,
-        "has_organization_feature_flag": False,
-        "has_organization_requests_flag": False,
-        "has_organization_members_flag": False,
+        "is_portfolio_user": False,
         "is_portfolio_admin": False,
+        "has_multiple_portfolios": False,
     }
     try:
         portfolio = request.session.get("portfolio")
@@ -81,11 +79,12 @@ def portfolio_permissions(request):
                 "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
                 "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
                 "portfolio": portfolio,
-                "has_organization_feature_flag": True,
-                "has_organization_requests_flag": request.user.has_organization_requests_flag(),
-                "has_organization_members_flag": request.user.has_organization_members_flag(),
+                "is_portfolio_user": True,
                 "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
+                "has_multiple_portfolios": request.user.is_multiple_orgs_user(request),
             }
+        # Active portfolio may not be set yet, but indicate if user is a member of multiple portfolios
+        portfolio_context["has_multiple_portfolios"] = request.user.is_multiple_orgs_user(request)
         return portfolio_context
 
     except AttributeError:

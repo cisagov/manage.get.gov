@@ -4,14 +4,14 @@ Hi, {{ recipient.first_name }}.
 We received your .gov domain request.
 
 DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
-REQUESTED BY: {{ domain_request.creator.email }}
+REQUESTED BY: {{ domain_request.requester.email }}
 REQUEST RECEIVED ON: {{ domain_request.last_submitted_date|date }}
 STATUS: Submitted
 
 ----------------------------------------------------------------
 
 NEXT STEPS
-We’ll review your request. This review period can take 30 business days. Due to the volume of requests, the wait time is longer than usual. We appreciate your patience.  
+We’ll review your request. This review period can take 10 business days.  
 {% if is_org_user %}
 During our review we’ll verify that your requested domain meets our naming requirements.
 {% else %}

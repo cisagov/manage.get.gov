@@ -1,7 +1,11 @@
 {% load static %}
 {% load custom_filters %}
 
+{% if hide_portfolio_navbar %}
+<header class="usa-header usa-header--extended usa-header__top-level-only">
+{% else %}
 <header class="usa-header usa-header--extended">
+{% endif %}
     <div class="usa-navbar usa-navbar--widescreen padding-x--widescreen">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
         <button type="button" class="usa-menu-btn">Menu</button>
@@ -9,46 +13,50 @@
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
         <div class="usa-nav__inner usa-nav__inner--widescreen padding-x--widescreen">
-            <button type="button" class="usa-nav__close">
-                <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
-            </button>
-            <div class="usa-nav__secondary">
-                <ul class="usa-nav__secondary-links">
-                    {% if user.is_authenticated %}
-                    <li class="usa-nav__secondary-item">
-                        <div class="usa-accordion">
-                            <div class="usa-accordion__heading usa-nav__secondary-menu">
-                                <button
-                                class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
-                                id="user-profile-menu"
-                                aria-controls="user-profile-submenu"
-                                aria-expanded="false"
-                                aria-label="user-profile-menu"
-                                >
-                                    <span class="ellipsis usa-nav__username">{{ user.email }}</span>
-                                </button>
-                            </div>
-                            <div id="user-profile-submenu" class="usa-nav__submenu">
-                                <div class="usa-nav__submenu-item">
-                                    {% url 'user-profile' as user_profile_url %}
-                                    {% url 'finish-user-profile-setup' as finish_setup_url %}
-                                    <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
-                                        Your profile
-                                    </a>
+                <button type="button" class="usa-nav__close">
+                    <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
+                </button>
+                <div class="usa-nav__secondary">
+                    <ul class="usa-nav__secondary-links">
+                        {% if has_multiple_portfolios %}
+                        {% load nav_header %}
+                        {% portfolio_organizations_dropdown %}
+                        {% endif %}
+                        {% if user.is_authenticated %}
+                        <li class="usa-nav__secondary-item">
+                            <div class="usa-accordion">
+                                <div class="usa-accordion__heading usa-nav__secondary-menu">
+                                    <button
+                                    class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+                                    id="user-profile-menu"
+                                    aria-controls="user-profile-submenu"
+                                    aria-expanded="false"
+                                    aria-label="user-profile-menu"
+                                    >
+                                        <span class="ellipsis usa-nav__username">{{ user.email }}</span>
+                                    </button>
+                                </div>
+                                <div id="user-profile-submenu" class="usa-nav__submenu">
+                                    <div class="usa-nav__submenu-item">
+                                        {% url 'user-profile' as user_profile_url %}
+                                        {% url 'finish-user-profile-setup' as finish_setup_url %}
+                                        <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                                            Your profile
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </li> 
-                    <li class="usa-nav__secondary-item">
-                        <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
-                    </li>
-                    {% else %}
-                    <li class="usa-nav__secondary-item">
-                        <a class="usa-nav-link" href="{% url 'login' %}">Sign in</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
+                        </li> 
+                        <li class="usa-nav__secondary-item">
+                            <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
+                        </li>
+                        {% else %}
+                        <li class="usa-nav__secondary-item">
+                            <a class="usa-nav-link" href="{% url 'login' %}">Sign in</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
             <ul class="usa-nav__primary usa-accordion">
                 <li class="usa-nav__primary-item">
                     {% if has_any_domains_portfolio_permission %}
@@ -66,7 +74,6 @@
                 </a>
             </li> -->
 
-                {% if has_organization_requests_flag %}
                 <li class="usa-nav__primary-item">
                     <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
                     {% if has_edit_request_portfolio_permission %}
@@ -105,25 +112,45 @@
                         </a>
                     {% endif %}
                 </li>
-                {% endif %}
 
-                {% if has_organization_members_flag %}
-                    {% if has_view_members_portfolio_permission %}
-                    <li class="usa-nav__primary-item">
-                        <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
-                            Members
-                        </a>
-                    </li>
-                    {% endif %}
+                {% if has_view_members_portfolio_permission %}
+                <li class="usa-nav__primary-item">
+                    <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
+                        Members
+                    </a>
+                </li>
                 {% endif %}
 
                 <li class="usa-nav__primary-item">
                     {% url 'organization' as url %}
                     <!-- Move the padding from the a to the span so that the descenders do not get cut off -->
                     <a href="{{ url }}" class="usa-nav-link padding-y-0 {% if path|is_portfolio_subpage %} usa-current{% endif %}">
-                        <span class="ellipsis ellipsis--23 ellipsis--desktop-50 padding-y-1 desktop:padding-y-2">
-                            {{ portfolio.organization_name }}
-                        </span>
+                        <div class="grid-container padding-left-0 padding-right-0">
+                            <div class="grid-row flex-align-center">
+                                <div class="logo-col grid-col-auto height-3">
+                                    {% if portfolio.agency_seal %}
+                                    <img 
+                                        src="{{portfolio.agency_seal_url }}"
+                                        alt=""
+                                        class="margin-right-1 height-3"
+                                    >
+                                    {% else %}
+                                    <img
+                                        src="/public/img/registrar/organization_default_icon.png"
+                                        alt=""
+                                        class="margin-right-1 height-3"
+                                    >
+                                    {% endif %}
+                                </div>
+                                <div class="grid-col">
+                                    <span 
+                                        class="ellipsis ellipsis--desktop-50 padding-y-1 desktop:padding-y-2 organization-nav-link"
+                                    >
+                                        {{ portfolio.organization_name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </a>
                 </li>
             </ul>

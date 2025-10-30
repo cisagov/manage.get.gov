@@ -162,22 +162,22 @@ export function initAddNewMemberPageListeners() {
       let emailValue = document.getElementById('id_email').value;
       document.getElementById('modalEmail').textContent = emailValue;
 
-      // Get selected radio button for member access level
-      let selectedAccess = document.querySelector('input[name="role"]:checked');
-      // Map the access level values to user-friendly labels
-      const accessLevelMapping = {
+      // Get selected radio button for member role level
+      let selectedRole = document.querySelector('input[name="role"]:checked');
+      // Map the role values to user-friendly labels
+      const roleLevelMapping = {
         organization_admin: "Admin",
         organization_member: "Basic",
       };
-      // Determine the access text based on the selected value
-      let accessText = selectedAccess 
-        ? accessLevelMapping[selectedAccess.value] || "Unknown role" 
+      // Determine the role text based on the selected value
+      let roleText = selectedRole 
+        ? roleLevelMapping[selectedRole.value] || "Unknown role" 
         : "No role selected";
-      // Update the modal with the appropriate member access level text
-      document.getElementById('modalAccessLevel').textContent = accessText;
+      // Update the modal with the appropriate member role text
+      document.getElementById('modalRoleLevel').textContent = roleText;
 
-      // Populate permission details based on access level
-      if (selectedAccess && selectedAccess.value === 'organization_admin') {
+      // Populate permission details based on role
+      if (selectedRole && selectedRole.value === 'organization_admin') {
         populatePermissionDetails('admin');
       } else {
         populatePermissionDetails('member-basic-permissions');

@@ -3,6 +3,7 @@ Contains middleware used in settings.py
 """
 
 import logging
+import time
 import re
 from urllib.parse import parse_qs
 from django.conf import settings
@@ -10,6 +11,7 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.urls import resolve
+from django.db import connections
 from registrar.models import User
 from waffle.decorators import flag_is_active
 
@@ -138,6 +140,24 @@ class CheckPortfolioMiddleware:
         self.get_response = get_response
         self.home = reverse("home")
 
+        self.select_portfolios_page = reverse("your-organizations")
+        self.set_portfolio_page = reverse("set-session-portfolio")
+        self.setup_page = reverse("finish-user-profile-setup")
+        self.profile_page = reverse("user-profile")
+        self.logout_page = reverse("logout")
+
+        self.excluded_pages = [
+            self.setup_page,
+            self.logout_page,
+            self.profile_page,
+            self.select_portfolios_page,
+            self.set_portfolio_page,
+            "/admin",
+            # These are here as there is a bug with this middleware that breaks djangos built in debug console.
+            # The debug console uses this directory, but since this overrides that, it throws errors.
+            "/__debug__",
+        ]
+
     def __call__(self, request):
         response = self.get_response(request)
         return response
@@ -148,33 +168,46 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        # if multiple portfolios are allowed for this user
-        if flag_is_active(request, "organization_feature"):
-            self.set_portfolio_in_session(request)
-        elif request.session.get("portfolio"):
-            # Edge case: User disables flag while already logged in
-            request.session["portfolio"] = None
-        elif "portfolio" not in request.session:
-            # Set the portfolio in the session if its not already in it
-            request.session["portfolio"] = None
+        # Assign user portfolio if:
+        # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
+        # 2. User has only 1 portfolio
+        # Remove condition 1 when we remove multiple portfolios feature flag
+        if (
+            not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
+        ) or request.user.get_num_portfolios() == 1:
+            request.session["portfolio"] = request.user.get_first_portfolio()
+        # If user no longer has permission to session portfolio,
+        # eg their user portfolio permission deleted or replaced,
+        # delete session portfolio since user no longer can access that portfolio.
+        # The user should get redirected to the Select organization page.
+        elif request.session.get("portfolio") and not request.user.is_org_user(request):
+            del request.session["portfolio"]
 
-        if request.user.is_org_user(request):
-            if current_path == self.home:
-                if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                    portfolio_redirect = reverse("domains")
-                else:
-                    portfolio_redirect = reverse("no-portfolio-domains")
-                return HttpResponseRedirect(portfolio_redirect)
+        # Don't redirect on excluded pages (such as the setup page itself)
+        if not any(request.path.startswith(page) for page in self.excluded_pages):
+            # Redirect user to org select page if no active portfolio
+            if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
+                org_select_redirect = reverse("your-organizations")
+                return HttpResponseRedirect(org_select_redirect)
+        has_portfolio_domains = (
+            flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
+        ) or request.user.is_org_user(request)
+
+        # If user has multiple portfolios, home page should redirect to Your organizations page.
+        if request.user.is_multiple_orgs_user(request) and current_path == self.home:
+            home_redirect = reverse("your-organizations")
+            return HttpResponseRedirect(home_redirect)
+
+        # Redirect user to portfolio domains table if they manage domains in active portfolio.
+        # Redirect to Not managing domains page if they don't manage domains in active portfolio.
+        if has_portfolio_domains and current_path == self.home:
+            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
+                portfolio_redirect = reverse("domains")
+            else:
+                portfolio_redirect = reverse("no-portfolio-domains")
+            return HttpResponseRedirect(portfolio_redirect)
 
         return None
-
-    def set_portfolio_in_session(self, request):
-        # NOTE: we will want to change later to have a workflow for selecting
-        # portfolio and another for switching portfolio; for now, select first
-        if flag_is_active(request, "multiple_portfolios"):
-            request.session["portfolio"] = request.user.get_first_portfolio()
-        else:
-            request.session["portfolio"] = request.user.get_first_portfolio()
 
 
 class RestrictAccessMiddleware:
@@ -241,7 +274,7 @@ class RequestLoggingMiddleware:
             # Get remote IP address or IPv6 address
             forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
             if forwarded_for:
-                remote_ip = forwarded_for.split(",")[0]
+                remote_ip = forwarded_for.split(",")[0].strip()
             else:
                 remote_ip = request.META.get("REMOTE_ADDR")
             # Get request path
@@ -252,3 +285,38 @@ class RequestLoggingMiddleware:
             # Log user information
             logger.info("Router log")
         return self.get_response(request)
+
+
+class DatabaseConnectionMiddleware:
+    """
+    Middleware to track database connection metrics and query performance.
+    Uses the same callable pattern as RequestLoggingMiddleware.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request._db_start_time = time.time()
+        request._db_queries_start = len(connections["default"].queries)
+
+        # Log connection state
+        connection = connections["default"]
+        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
+        response = self.get_response(request)
+        if hasattr(request, "_db_start_time"):
+            connection = connections["default"]
+            query_count = len(connection.queries) - request._db_queries_start
+            duration = time.time() - request._db_start_time
+
+            # Get request ID for correlation
+            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
+            logger.info(
+                f"DB_CONN_END: req_id={request_id}, "
+                f"queries={query_count}, "
+                f"duration={duration:.3f}s, "
+                f"total_queries={len(connection.queries)}, "
+                f"status={response.status_code}, "
+                f"path={request.path}"
+            )
+        return response

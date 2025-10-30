@@ -17,6 +17,9 @@ on:
           - staging
           - development
           - backup
+          - ap
+          - cw
+          - testdb
           - acadia
           - glacier
           - olympic
@@ -25,7 +28,6 @@ on:
           - potato
           - product
           - meoward
-          - bob
           - hotgov
           - litterbox
           - aa

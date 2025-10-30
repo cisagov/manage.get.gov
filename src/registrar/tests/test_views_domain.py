@@ -6,12 +6,12 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.email import EmailSendingError
-from waffle.testutils import override_flag
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import MockEppLib, create_user, get_ap_style_month  # type: ignore
+from .common import GenericTestHelper, MockEppLib, create_user, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
+from waffle.testutils import override_flag
 
 from registrar.utility.errors import (
     NameserverError,
@@ -90,21 +90,21 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_with_twelve_nameservers, _ = Domain.objects.get_or_create(name="twelvenameserversdomain.gov")
         self.domain_with_thirteen_nameservers, _ = Domain.objects.get_or_create(name="thirteennameserversdomain.gov")
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dsdata)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_multdsdata)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dnssec_none)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_thirteen_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_twelve_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_four_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_three_nameservers)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_with_ip)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_just_nameserver)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_no_nameserver)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_on_hold)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_deleted)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_dns_needed)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dsdata)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_multdsdata)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dnssec_none)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_thirteen_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_twelve_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_four_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_three_nameservers)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_with_ip)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_just_nameserver)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_no_nameserver)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_on_hold)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_deleted)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dns_needed)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -279,7 +279,9 @@ class TestDomainDetail(TestDomainOverview):
             UserDomainRole.objects.all().delete()
 
             self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-            self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+            self.domain_information, _ = DomainInformation.objects.get_or_create(
+                requester=self.user, domain=self.domain
+            )
             self.role, _ = UserDomainRole.objects.get_or_create(
                 user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
             )
@@ -375,12 +377,11 @@ class TestDomainDetail(TestDomainOverview):
             )
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
         # need to create a different user than self.user because the user needs permission assignments
         user = get_user_model().objects.create(
             first_name="Test",
@@ -390,7 +391,7 @@ class TestDomainDetail(TestDomainOverview):
             title="test title",
         )
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
-        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
             user=user,
@@ -416,12 +417,11 @@ class TestDomainDetail(TestDomainOverview):
         self.assertNotContains(detail_page, "Invited domain managers")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_readonly_on_detail_page_for_org_admin_not_manager(self):
         """Test that a domain, which is part of a portfolio, but for which the user is not a domain manager,
         properly displays read only"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
         # need to create a different user than self.user because the user needs permission assignments
         user = get_user_model().objects.create(
             first_name="Test",
@@ -431,7 +431,7 @@ class TestDomainDetail(TestDomainOverview):
             title="test title",
         )
         domain, _ = Domain.objects.get_or_create(name="bogusdomain.gov")
-        DomainInformation.objects.get_or_create(creator=user, domain=domain, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=user, domain=domain, portfolio=portfolio)
 
         UserPortfolioPermission.objects.get_or_create(
             user=user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -481,9 +481,9 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             user=self.user, domain=self.domain_to_renew, role=UserDomainRole.Roles.MANAGER
         )
 
-        DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain_to_renew)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_to_renew)
 
-        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        self.portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
 
         self.user.save()
 
@@ -523,11 +523,10 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             self.assertNotContains(detail_page, "DNS needed")
             self.assertNotContains(detail_page, "Expired")
 
-    @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_non_domain_manager(self):
         """In org model: If a user is NOT a domain manager and their domain is expiring soon,
         user be notified to contact a domain manager in the domain overview detail box."""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
         non_dom_manage_user = get_user_model().objects.create(
             first_name="Non Domain",
             last_name="Manager",
@@ -548,7 +547,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         )
         domain_to_renew2, _ = Domain.objects.get_or_create(name="bogusdomain2.gov")
         DomainInformation.objects.get_or_create(
-            creator=non_dom_manage_user, domain=domain_to_renew2, portfolio=self.portfolio
+            requester=non_dom_manage_user, domain=domain_to_renew2, portfolio=self.portfolio
         )
         non_dom_manage_user.refresh_from_db()
         self.client.force_login(non_dom_manage_user)
@@ -560,16 +559,15 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
             )
             self.assertContains(detail_page, "Contact one of the listed domain managers to renew the domain.")
 
-    @override_flag("organization_feature", active=True)
     def test_expiring_domain_on_detail_page_in_org_model_as_a_domain_manager(self):
         """Inorg model: If a user is a domain manager and their domain is expiring soon,
         user should be able to see the "Renew to maintain access" link domain overview detail box."""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org2", requester=self.user)
 
         domain_to_renew3, _ = Domain.objects.get_or_create(name="bogusdomain3.gov")
 
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain_to_renew3, role=UserDomainRole.Roles.MANAGER)
-        DomainInformation.objects.get_or_create(creator=self.user, domain=domain_to_renew3, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_to_renew3, portfolio=portfolio)
         self.user.refresh_from_db()
         self.client.force_login(self.user)
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
@@ -766,14 +764,10 @@ class TestDomainManagers(TestDomainOverview):
     def setUp(self):
         super().setUp()
         # Add portfolio in order to test portfolio view
-        self.portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Ice Cream")
         # Add the portfolio to the domain_information object
         self.domain_information.portfolio = self.portfolio
         self.domain_information.save()
-        # Add portfolio perms to the user object
-        self.portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
 
     @classmethod
     def tearDownClass(cls):
@@ -798,8 +792,8 @@ class TestDomainManagers(TestDomainOverview):
         self.assertNotContains(response, "Admin")
         self.assertContains(response, "This domain has only one manager. Consider adding another manager")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_domain_managers_portfolio_view(self):
         response = self.client.get(reverse("domain-users", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(response, "Domain managers")
@@ -847,8 +841,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -904,8 +898,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -955,7 +949,7 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "notauser@igorville.gov")
 
-    @override_flag("organization_feature", active=True)
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -987,10 +981,10 @@ class TestDomainManagers(TestDomainOverview):
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         success_page = success_result.follow()
-        self.assertContains(success_page, "Could not send email confirmation to existing domain managers.")
+        self.assertContains(success_page, "Could not send email notification to existing domain managers.")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1039,8 +1033,8 @@ class TestDomainManagers(TestDomainOverview):
         success_page = success_result.follow()
         self.assertContains(success_page, "mayor@igorville.gov")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
-    @override_flag("organization_feature", active=True)
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1118,7 +1112,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1151,7 +1145,7 @@ class TestDomainManagers(TestDomainOverview):
         caps_email_address = "MAYOR@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1180,7 +1174,7 @@ class TestDomainManagers(TestDomainOverview):
         allowed_email, _ = AllowedEmail.objects.get_or_create(email=email_address)
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1207,7 +1201,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.filter(email=email_address).delete()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1246,7 +1240,7 @@ class TestDomainManagers(TestDomainOverview):
         email_address = "mayor@igorville.gov"
         User.objects.get_or_create(email=email_address, username="fakeuser@fakeymail.com")
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1290,7 +1284,7 @@ class TestDomainManagers(TestDomainOverview):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         mock_client = MagicMock()
         mock_client_instance = mock_client.return_value
@@ -1325,7 +1319,7 @@ class TestDomainManagers(TestDomainOverview):
     def test_domain_invitation_email_validation_blocks_bad_email(self):
         """Inviting a bad email blocks at validation."""
         email_address = "mayor"
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
@@ -1348,7 +1342,7 @@ class TestDomainManagers(TestDomainOverview):
         self.user.is_staff = False
         self.user.save()
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         with patch("django.contrib.messages.error") as mock_error:
             add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
@@ -1422,7 +1416,7 @@ class TestDomainManagers(TestDomainOverview):
 
         add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
 
-        self.domain_information, _ = DomainInformation.objects.get_or_create(creator=self.user, domain=self.domain)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
 
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         add_page.form["email"] = email_address
@@ -2238,34 +2232,53 @@ class TestDomainOrganization(TestDomainOverview):
 class TestDomainSuborganization(TestDomainOverview):
     """Tests the Suborganization page for portfolio users"""
 
-    @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_edit_suborganization_field(self):
-        """Ensure that org admins can edit the suborganization field"""
+    def setUp(self):
+        super().setUp()
         # Create a portfolio and two suborgs
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        suborg_2 = Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
+        self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Ice Cream")
+        self.suborg = Suborganization.objects.create(portfolio=self.portfolio, name="Vanilla")
+        self.suborg_2 = Suborganization.objects.create(portfolio=self.portfolio, name="Chocolate")
 
         # Create an unrelated portfolio
-        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
+        self.unrelated_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Fruit")
+        self.unrelated_suborg = Suborganization.objects.create(portfolio=self.unrelated_portfolio, name="Apple")
 
         # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-        self.domain_information.sub_organization = suborg
+        self.domain_information.portfolio = self.portfolio
+        self.domain_information.sub_organization = self.suborg
 
         # Add a organization_name to test if the old value still displays
         self.domain_information.organization_name = "Broccoli"
         self.domain_information.save()
         self.domain_information.refresh_from_db()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+
+    def tearDown(self):
+        """Ensure that the user has its original permissions"""
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+
+        # Unlink suborgs to avoid ProtectedError
+        DomainInformation.objects.update(sub_organization=None)
+        Suborganization.objects.all().delete()
+
+        User.objects.exclude(id=self.user.id).delete()
+        super().tearDown()
+
+    @less_console_noise_decorator
+    def test_edit_suborganization_field(self):
+        """Ensure that org admins can edit the suborganization field"""
+
         # Add portfolio perms to the user object
         UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+            user=self.user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
-        self.assertEqual(self.domain_information.sub_organization, suborg)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg)
 
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
@@ -2273,57 +2286,34 @@ class TestDomainSuborganization(TestDomainOverview):
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
         self.assertContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
 
         # Assert that the right option is selected. This component uses data-default-value.
-        self.assertContains(page, f'data-default-value="{suborg.id}"')
+        self.assertContains(page, f'data-default-value="{self.suborg.id}"')
 
         # Try changing the suborg
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        page.form["sub_organization"] = suborg_2.id
+        page.form["sub_organization"] = self.suborg_2.id
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         page = page.form.submit().follow()
 
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
         self.assertContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
 
         # Assert that the right option is selected
-        self.assertContains(page, f'data-default-value="{suborg_2.id}"')
+        self.assertContains(page, f'data-default-value="{self.suborg_2.id}"')
 
         self.domain_information.refresh_from_db()
-        self.assertEqual(self.domain_information.sub_organization, suborg_2)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg_2)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_view_suborganization_field(self):
         """Only org admins can edit the suborg field, ensure that others cannot"""
 
-        # Create a portfolio and two suborgs
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-        Suborganization.objects.create(portfolio=portfolio, name="Chocolate")
-
-        # Create an unrelated portfolio
-        unrelated_portfolio = Portfolio.objects.create(creator=self.user, organization_name="Fruit")
-        unrelated_suborg = Suborganization.objects.create(portfolio=unrelated_portfolio, name="Apple")
-
-        # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-        self.domain_information.sub_organization = suborg
-
-        # Add a organization_name to test if the old value still displays
-        self.domain_information.organization_name = "Broccoli"
-        self.domain_information.save()
-        self.domain_information.refresh_from_db()
-
-        # Add portfolio perms to the user object
-        portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
-        )
-
-        self.assertEqual(self.domain_information.sub_organization, suborg)
+        self.assertEqual(self.domain_information.sub_organization, self.suborg)
 
         # Navigate to the suborganization page
         page = self.app.get(reverse("domain-suborganization", kwargs={"domain_pk": self.domain.id}))
@@ -2333,35 +2323,19 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # The page shouldn't contain these choices
         self.assertNotContains(page, "Chocolate")
-        self.assertNotContains(page, unrelated_suborg.name)
+        self.assertNotContains(page, self.unrelated_suborg.name)
         self.assertNotContains(page, "Save")
 
         self.assertContains(
             page, "The suborganization for this domain can only be updated by a organization administrator."
         )
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_has_suborganization_field_on_overview_with_flag(self):
         """Ensures that the suborganization field is visible
         and displays correctly on the domain overview page"""
 
-        # Create a portfolio
-        portfolio = Portfolio.objects.create(creator=self.user, organization_name="Ice Cream")
-        suborg = Suborganization.objects.create(portfolio=portfolio, name="Vanilla")
-
-        # Add the portfolio to the domain_information object
-        self.domain_information.portfolio = portfolio
-
-        # Add a organization_name to test if the old value still displays
-        self.domain_information.organization_name = "Broccoli"
-        self.domain_information.save()
-        self.domain_information.refresh_from_db()
-
-        # Add portfolio perms to the user object
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
         self.user.refresh_from_db()
 
         # Navigate to the domain overview page
@@ -2376,11 +2350,6 @@ class TestDomainSuborganization(TestDomainOverview):
         # Test for the bad value
         self.assertNotContains(page, "Broccoli")
 
-        # Cleanup
-        self.domain_information.delete()
-        suborg.delete()
-        portfolio.delete()
-
 
 class TestDomainSecurityEmail(TestDomainOverview):
     def test_domain_security_email_existing_security_contact(self):
@@ -2390,10 +2359,13 @@ class TestDomainSecurityEmail(TestDomainOverview):
             self.mockedSendFunction = self.mockSendPatch.start()
             self.mockedSendFunction.side_effect = self.mockSend
 
-            domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+            domain, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+            # info@example.com
             # Add current user to this domain
-            _ = UserDomainRole(user=self.user, domain=domain_contact, role="admin").save()
-            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain_contact.id}))
+            _ = UserDomainRole(user=self.user, domain=domain, role="admin").save()
+            DomainInformation.objects.get_or_create(requester=self.user, domain=domain)
+            page = self.client.get(reverse("domain-security-email", kwargs={"domain_pk": domain.id}))
 
             # Loads correctly
             self.assertContains(page, "Security email")
@@ -2807,13 +2779,13 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Organization details", body)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_no_notification_on_org_name_change_with_portfolio(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
 
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.address_line1 = "123 Main St"
@@ -2840,7 +2812,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_on_change_by_analyst(self):
         """Test that an email is not sent on org name change when the domain is in a portfolio"""
 
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", creator=self.user)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="Test org", requester=self.user)
 
         self.domain_information.organization_name = "Town of Igorville"
         self.domain_information.address_line1 = "123 Main St"
@@ -2979,9 +2951,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
         self.assertIn("UPDATED BY: First Last info@example.com", body)
         self.assertIn("INFORMATION UPDATED: Senior official", body)
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
     def test_no_notification_on_senior_official_when_portfolio(self):
         """Test that an email is not sent when the senior official information is changed
         and the domain is in a portfolio."""
@@ -2991,7 +2963,7 @@ class TestDomainChangeNotifications(TestDomainOverview):
         )
         portfolio, _ = Portfolio.objects.get_or_create(
             organization_name="portfolio",
-            creator=self.user,
+            requester=self.user,
         )
         self.domain_information.portfolio = portfolio
         self.domain_information.save()
@@ -3104,17 +3076,17 @@ class TestDomainRenewal(TestWithUser):
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_single_domain_w_org_feature_flag(self):
+    def test_single_domain_w_org_feature_on(self):
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertContains(domains_page, "One domain will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_with_mulitple_domains_w_org_feature_flag(self):
+    def test_with_mulitple_domains_w_org_feature_on(self):
         today = datetime.now()
         expiring_date = (today + timedelta(days=31)).strftime("%Y-%m-%d")
         self.domain_with_another_expiring_org_model, _ = Domain.objects.get_or_create(
@@ -3129,11 +3101,291 @@ class TestDomainRenewal(TestWithUser):
         self.assertContains(domains_page, "Multiple domains will expire soon")
         self.assertContains(domains_page, "Expiring soon")
 
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    def test_no_expiring_domains_w_org_feature_flag(self):
+    def test_no_expiring_domains_w_org_feature_on(self):
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expired_date).delete()
         UserDomainRole.objects.filter(user=self.user, domain=self.domain_with_expiring_soon_date).delete()
         self.client.force_login(self.user)
         domains_page = self.client.get("/")
         self.assertNotContains(domains_page, "will expire soon")
+
+
+class TestDomainDeletion(TestWithUser):
+    def setUp(self):
+        super().setUp()
+
+        self.user = get_user_model().objects.create(
+            first_name="User",
+            last_name="Test",
+            email="bogus@example.gov",
+            phone="8003111234",
+            title="test title",
+            username="usertest",
+        )
+
+        today = datetime.now().date()
+        expiring_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+
+        self.domain_with_expiring_soon_date, _ = Domain.objects.get_or_create(
+            name="igorville.gov", state=Domain.State.READY, expiration_date=expiring_date
+        )
+
+        self.domain_not_expiring, _ = Domain.objects.get_or_create(
+            name="domainnotexpiring.gov",
+            state=Domain.State.READY,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+        self.dns_needed_not_expiring, _ = Domain.objects.get_or_create(
+            name="dnsneeded-nonexpiring.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+        self.dns_needed_expiring, _ = Domain.objects.get_or_create(
+            name="dnsneeded-expiring.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=expiring_date,
+        )
+
+        for domain in [
+            self.domain_with_expiring_soon_date,
+            self.domain_not_expiring,
+            self.dns_needed_not_expiring,
+            self.dns_needed_expiring,
+        ]:
+            DomainInformation.objects.update_or_create(requester=self.user, domain=domain)
+
+        for domain in [
+            self.domain_with_expiring_soon_date,
+            self.domain_not_expiring,
+            self.dns_needed_not_expiring,
+            self.dns_needed_expiring,
+        ]:
+            UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        self.user.save()
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def custom_is_expiring(self):
+        return True
+
+    def custom_is_expired_false(self):
+        return False
+
+    def custom_is_expired_true(self):
+        return True
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=False)
+    def test_domain_lifecycle_does_not_appear_with_inactive_domain_deletion_flag_and_no_expiring_domain(self):
+        """
+        * Domain deletion flag is OFF
+        * Domain state = READY
+        * Domain is NOT expiring
+        * Should not see domain lifecycle, request deletion, or renewal form
+        * Test for verification that the flag is off, and will be deleted when flag is deleted
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
+            )
+
+            self.assertNotContains(response, "Domain lifecycle")
+            self.assertNotContains(response, "Request deletion")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=False)
+    def test_domain_lifecycle_does_not_appear_with_inactive_domain_deletion_flag_but_has_expiring_domain(self):
+        """
+        * Domain deletion flag is OFF
+        * Domain state = READY
+        * Domain IS expiring
+        * Should see renewal form, but NOT domain lifecycle or request deletion
+        * Test for verification that the flag is off, and will be deleted when flag is deleted
+        """
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            detail_page = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
+            )
+            self.assertNotContains(detail_page, "Domain lifecycle")
+            self.assertNotContains(detail_page, "Request deletion")
+            self.assertContains(detail_page, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_appears_with_active_domain_deletion_flag(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = READY
+        * Domain IS expiring
+        * Should see domain lifecycle, renewal form, and request deletion
+        """
+        self.client.force_login(self.user)
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            )
+
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Renewal form")
+            self.assertContains(response, "Request deletion")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_appears_with_active_domain_deletion_flag_no_expiring_domain(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = READY
+        * Domain is NOT expiring
+        * Should see domain lifecycle, and request deletion, but NOT renewal form
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+
+            response = self.client.get(
+                reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
+            )
+
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Request deletion")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_dns_needed_not_expiring(self):
+        """
+        * Domain deletion flag is ON
+        * Domain state = DNS_NEEDED
+        * Domain is NOT expiring
+        * Should NOT see domain lifecycle, request deletion, or renewal form
+        """
+        with patch.object(Domain, "is_expired", self.custom_is_expired_false):
+            self.client.force_login(self.user)
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
+
+            self.assertNotContains(response, "Domain lifecycle")
+            self.assertNotContains(response, "Request deletion")
+            self.assertNotContains(response, "Renewal form")
+
+    @less_console_noise_decorator
+    @override_flag("domain_deletion", active=True)
+    def test_domain_lifecycle_dns_needed_expiring(self):
+        """
+        Domain deletion flag is ON
+        Domain state = DNS_NEEDED
+        Domain IS expiring
+        Should see domain lifecycle, renewal form, but NOT request deletion
+        """
+        with patch.object(Domain, "is_expiring", self.custom_is_expiring):
+            self.client.force_login(self.user)
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Renewal form")
+            self.assertNotContains(response, "Request deletion")
+
+    @override_flag("domain_deletion", active=True)
+    def test_if_acknowledged_is_not_checked_error_resp(self):
+        """
+        * We have domain deletion waffle turned on
+        * if acknowlege is not checked, it should throw an error
+        """
+        self.client.force_login(self.user)
+
+        message = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id})
+        )
+
+        self.assertContains(
+            message,
+            "Check the box if you understand that your domain will be deleted within 7 days of " "making this request.",
+        )
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_successful(self):
+        """
+        * We have domain deletion waffle turned on
+        * Domain STATE is ready, should be successful
+        * Should render a success message, and redirect to domain overview page
+        """
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+        domain = Domain.objects.get(id=self.domain_with_expiring_soon_date.id)
+        self.assertRedirects(response, reverse("domain", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}))
+        self.assertContains(response, "The deletion request for this domain has been submitted.")
+        self.assertEqual(domain.state, Domain.State.ON_HOLD)
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_not_successful(self):
+        """
+        * We have domain deletion waffle turned on
+        * Domain Deletion only works if State is READY
+        * Created a Domain that is UNKNOWN
+        * Domain Deletion should fail
+        """
+        self.client.force_login(self.user)
+        domain, _ = Domain.objects.get_or_create(
+            name="domainwithunknownstatus.gov",
+            state=Domain.State.UNKNOWN,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain)
+
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f"Cannot delete domain {domain.name} from current state {domain.state}.")
+
+    @override_flag("domain_deletion", active=True)
+    def test_check_for_modal_trigger(self):
+        """
+        * We have no way to test that the modal trigger, since it occurs via JS
+        * This test checks for the button that triggers it
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_not_expiring.id}),
+        )
+        self.assertContains(response, "Request deletion")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_post_successful_redirects_to_list_and_shows_on_hold(self):
+        """
+        * Domain deletion waffle flag is ON
+        * Domain state is READY and then do the POST "deletion"
+        * After "deletion", check the domains table
+        * In the domains table, confirm domain exists + status in the table is "On Hold"
+        """
+        self.client.force_login(self.user)
+        _ = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": self.domain_with_expiring_soon_date.id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        json_response = self.client.get("/get-domains-json/")
+
+        self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
+        self.assertContains(json_response, "On Hold")

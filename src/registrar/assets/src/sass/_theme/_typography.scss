@@ -11,8 +11,8 @@ address,
 }
 
 h1:not(.usa-alert__heading),
-// .module h2 excludes headers in DJA
-h2:not(.usa-alert__heading, .module h2),
+// .module h2 excludes headers in DJA and cards
+h2:not(.usa-alert__heading, .module h2, .usa-card__heading),
 h3:not(.usa-alert__heading),
 h4:not(.usa-alert__heading),
 h5:not(.usa-alert__heading),

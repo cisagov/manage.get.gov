@@ -5,6 +5,8 @@ from django.utils.decorators import method_decorator
 from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, UserDomainRole
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
+from functools import wraps
+from registrar.utility.db_timeouts import pg_timeouts
 
 
 logger = logging.getLogger(__name__)
@@ -16,10 +18,11 @@ IS_CISA_ANALYST = "is_cisa_analyst"
 IS_OMB_ANALYST = "is_omb_analyst"
 IS_FULL_ACCESS = "is_full_access"
 IS_DOMAIN_MANAGER = "is_domain_manager"
-IS_DOMAIN_REQUEST_CREATOR = "is_domain_request_creator"
+IS_DOMAIN_REQUEST_REQUESTER = "is_domain_request_requester"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
 HAS_DOMAIN_REQUESTS_VIEW_ALL = "has_domain_requests_view_all"
 IS_PORTFOLIO_MEMBER = "is_portfolio_member"
+IS_MULTIPLE_PORTFOLIOS_MEMBER = "is_multiple_portfolios_member"
 IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER = "is_portfolio_member_and_domain_manager"
 IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER = "is_domain_manager_and_not_portfolio_member"
 HAS_PORTFOLIO_DOMAINS_ANY_PERM = "has_portfolio_domains_any_perm"
@@ -125,6 +128,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: user.is_org_user(request)),
+        (IS_MULTIPLE_PORTFOLIOS_MEMBER, lambda: user.is_multiple_orgs_user(request)),
         (
             HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
             lambda: user.is_org_user(request)
@@ -148,8 +152,8 @@ def _user_has_permission(user, request, rules, **kwargs):
             lambda: _is_domain_manager(user, **kwargs) and not _is_portfolio_member(request),
         ),
         (
-            IS_DOMAIN_REQUEST_CREATOR,
-            lambda: _is_domain_request_creator(user, kwargs.get("domain_request_pk"))
+            IS_DOMAIN_REQUEST_REQUESTER,
+            lambda: _is_domain_request_requester(user, kwargs.get("domain_request_pk"))
             and not _is_portfolio_member(request),
         ),
         (
@@ -210,7 +214,7 @@ def _user_has_permission(user, request, rules, **kwargs):
 
 
 def _has_portfolio_domain_requests_edit(user, request, domain_request_id):
-    if domain_request_id and not _is_domain_request_creator(user, domain_request_id):
+    if domain_request_id and not _is_domain_request_requester(user, domain_request_id):
         return False
     return user.is_org_user(request) and user.has_edit_request_portfolio_permission(request.session.get("portfolio"))
 
@@ -300,11 +304,11 @@ def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     return PortfolioInvitation.objects.filter(portfolio=portfolio, id=invitedmember_pk).exists()
 
 
-def _is_domain_request_creator(user, domain_request_pk):
-    """Checks to see if the user is the creator of a domain request
+def _is_domain_request_requester(user, domain_request_pk):
+    """Checks to see if the user is the requester of a domain request
     with domain_request_pk."""
     if domain_request_pk:
-        return DomainRequest.objects.filter(creator=user, id=domain_request_pk).exists()
+        return DomainRequest.objects.filter(requester=user, id=domain_request_pk).exists()
     return True
 
 
@@ -427,16 +431,28 @@ def _has_legacy_domain_request_view_access(user, domain_request):
     """
     All of the ways a user can view a non-portfolio aka only applies to legacy mode domain request:
     Has the analyst_access_permission or
-    Is the creator of the request or
+    Is the requester of the request or
     Has the full_access_permission
     """
     if user.has_perm("registrar.analyst_access_permission"):
         return True
 
-    if domain_request.creator == user:
+    if domain_request.requester == user:
         return True
 
     if user.has_perm("registrar.full_access_permission"):
         return True
 
     return False
+
+
+def allow_slow_queries(*, statement_ms=60000, lock_ms=60000, idle_tx_ms=None):
+    def deco(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            with pg_timeouts(statement_ms=statement_ms, lock_ms=lock_ms, idle_tx_ms=idle_tx_ms):
+                return view_func(*args, **kwargs)
+
+        return wrapper
+
+    return deco

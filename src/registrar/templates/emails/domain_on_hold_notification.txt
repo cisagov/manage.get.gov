@@ -1,0 +1,42 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi, domain managers.
+
+We received a request to delete the following domain: {{ domain.name }}
+
+DELETION REQUESTED BY: {{ requestor_email }}
+REQUEST RECEIVED ON: {{ date }}
+STATUS: On hold
+
+We placed the domain on hold for seven days as a precautionary measure before deleting it. After the domain is deleted, it can’t be recovered. 
+
+If you would like to release the hold and cancel the deletion, reply to this email.
+
+----------------------------------------------------------------
+
+WHAT DOES “ON HOLD” MEAN?
+
+When a domain is placed on hold: 
+
+- The domain and its subdomains no longer resolve in DNS. 
+- Any email or websites using the domain could become unavailable.
+- Domain managers can’t edit domain information.
+
+The domain is still registered to your organization until it’s officially deleted.
+
+
+SOMETHING WRONG?
+
+If you’re not affiliated with this .gov domain or think you received this message in error, reply to this email. 
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency
+(CISA) <https://cisa.gov/>
+{% endautoescape %}

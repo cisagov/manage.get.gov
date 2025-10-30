@@ -10,7 +10,6 @@ from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from waffle.testutils import override_flag
 from .test_views import TestWithUser
 from django_webtest import WebTest  # type: ignore
 
@@ -41,7 +40,7 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         )
 
         # Create Portfolio
-        cls.portfolio = Portfolio.objects.create(creator=cls.user, organization_name="Test Portfolio")
+        cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
         # Assign permissions to the user making requests
         UserPortfolioPermission.objects.create(
@@ -61,10 +60,10 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         cls.domain4 = Domain.objects.create(name="example4.com", expiration_date="2024-03-01", state="ready")
 
         # Add domain1 and domain2 to portfolio
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain1, portfolio=cls.portfolio)
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain2, portfolio=cls.portfolio)
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain3, portfolio=cls.portfolio)
-        DomainInformation.objects.create(creator=cls.user, domain=cls.domain4, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain1, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain2, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain3, portfolio=cls.portfolio)
+        DomainInformation.objects.create(requester=cls.user, domain=cls.domain4, portfolio=cls.portfolio)
 
         # Assign user_member to view all domains
         UserPortfolioPermission.objects.create(
@@ -118,8 +117,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.app.set_user(self.user.username)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated(self):
         """Test that portfolio member's domains are returned properly for an authenticated user."""
         response = self.app.get(
@@ -141,8 +138,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["domains"]), 3)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated(self):
         """Test that portfolio invitedmember's domains are returned properly for an authenticated user.
         CANCELED and RETRIEVED invites should be ignored."""
@@ -165,8 +160,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["domains"]), 2)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_include_all_domains(self):
         """Test that all portfolio domains are returned properly for an authenticated user."""
         response = self.app.get(
@@ -188,8 +181,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["domains"]), 4)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated_include_all_domains(self):
         """Test that all portfolio domains are returned properly for an authenticated user."""
         response = self.app.get(
@@ -211,8 +202,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["domains"]), 4)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_search(self):
         """Test that search_term yields correct domain."""
         response = self.app.get(
@@ -239,8 +228,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["domains"]), 1)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated_search(self):
         """Test that search_term yields correct domain."""
         response = self.app.get(
@@ -267,8 +254,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(len(data["domains"]), 1)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_sort(self):
         """Test that sort returns results in correct order."""
         # Test by name in ascending order
@@ -328,8 +313,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][0]["name"], "example4.com")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_sort_by_checked(self):
         """Test that sort returns results in correct order."""
         # Test by checked in ascending order
@@ -393,8 +376,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][1]["name"], "example3.com")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_member_domains_json_authenticated_member_is_only_manager(self):
         """Test that sort returns member_is_only_manager when member_domain_role_exists
         and member_domain_role_count == 1"""
@@ -435,8 +416,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][3]["member_is_only_manager"], False)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated_sort(self):
         """Test that sort returns results in correct order."""
         # Test by name in ascending order
@@ -496,8 +475,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][0]["name"], "example4.com")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_invitedmember_domains_json_authenticated_sort_by_checked(self):
         """Test that sort returns results in correct order."""
         # Test by checked in ascending order
@@ -561,8 +538,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(data["domains"][1]["name"], "example3.com")
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_members_json_restricted_user(self):
         """Test that an restricted user is denied access."""
         # set user to a user with no permissions
@@ -579,8 +554,6 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    @override_flag("organization_feature", active=True)
-    @override_flag("organization_members", active=True)
     def test_get_portfolio_members_json_unauthenticated(self):
         """Test that an unauthenticated user is redirected to login."""
         # set app to unauthenticated
