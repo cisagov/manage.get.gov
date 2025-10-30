@@ -135,7 +135,7 @@ class MockCloudflareService:
         zone_name = self.domain_name
         account_id = request.url.params.get("account.id")
         zone_exists = account_id == self.existing_account_id
-        print(f"💕 {zone_exists}")
+
         # test with domain "exists.gov" to skip zone creation
         if zone_exists:
             return httpx.Response(
@@ -197,32 +197,6 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_create_zone_response(self, request) -> httpx.Response:
-        logger.debug("😎 Mocking zone create")
-        request_as_json = json.loads(request.content.decode("utf-8"))
-        zone_name = request_as_json["name"]
-        account_id = request_as_json["account"]["id"]
-
-        return httpx.Response(
-            200,
-            json={
-                "success": True,
-                "result": {
-                    "id": self.fake_record_id,
-                    "account": {"id": account_id, "name": make_dns_account_name(zone_name)},
-                    "created_on": datetime.now(timezone.utc).isoformat(),
-                    "modified_on": datetime.now(timezone.utc).isoformat(),
-                    "name": zone_name,
-                    "name_servers": [
-                        "rainbow.dns.gov",
-                        "rainbow2.dns.gov",
-                    ],
-                    "status": "pending",
-                    "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
-                },
-            },
-        )
-
     def _mock_create_account_response(self, request) -> httpx.Response:
         logger.debug("😎 mocking account create")
         request_as_json = json.loads(request.content.decode("utf-8"))
@@ -237,6 +211,32 @@ class MockCloudflareService:
                     "name": account_name,
                     "type": "standard",  # enterprise?
                     "created_on": datetime.now(timezone.utc).isoformat(),  # format "2014-03-01T12:21:02.0000Z",
+                },
+            },
+        )
+
+    def _mock_create_zone_response(self, request) -> httpx.Response:
+        logger.debug("😎 Mocking zone create")
+        request_as_json = json.loads(request.content.decode("utf-8"))
+        zone_name = request_as_json["name"]
+        account_id = request_as_json["account"]["id"]
+
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": self.fake_zone_id,
+                    "account": {"id": account_id, "name": make_dns_account_name(zone_name)},
+                    "created_on": datetime.now(timezone.utc).isoformat(),
+                    "modified_on": datetime.now(timezone.utc).isoformat(),
+                    "name": zone_name,
+                    "name_servers": [
+                        "rainbow.dns.gov",
+                        "rainbow2.dns.gov",
+                    ],
+                    "status": "pending",
+                    "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
                 },
             },
         )

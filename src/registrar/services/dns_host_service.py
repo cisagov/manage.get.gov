@@ -73,7 +73,7 @@ class DnsHostService:
         return account_id, zone_id, nameservers
 
     def create_record(self, zone_id, record_data):
-        """Calls create method of vendor serivce to create a DNS record"""
+        """Calls create method of vendor service to create a DNS record"""
         try:
             record = self.dns_vendor_service.create_dns_record(zone_id, record_data)
             logger.info(f"Created DNS record of type {record['result'].get('type')}")

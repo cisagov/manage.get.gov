@@ -1,6 +1,6 @@
 
 from django.test import SimpleTestCase
-from httpx import Client
+from httpx import Client, HTTPStatusError
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
@@ -90,7 +90,67 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         existing_account_id = self.mock_api_service.existing_account_id
         resp2 = self.service.get_account_zones(existing_account_id)
-        print(f"🍩 {resp2}")
         result2 = resp2["result"]
         self.assertEqual(len(result2), 1)
         self.assertEquals(result2[0].get("name"), "exists.gov")
+
+    def test_mock_create_account_response(self):
+        account_name = make_dns_account_name("equity.gov")
+
+        resp = self.service.create_account(account_name)
+        result = resp["result"]
+
+        self.assertEquals(result["name"], account_name)
+
+    def test_mock_create_zone_response(self):
+        zone_name = "peace.gov"
+        account_id = "1359"
+
+        resp = self.service.create_zone(zone_name, account_id)
+        result = resp["result"]
+        self.assertEquals(result["account"]["id"], account_id)
+        self.assertEquals(result["name"], zone_name)
+
+    def test_mock_create_dns_record_response(self):
+        zone_id = self.mock_api_service.fake_zone_id
+        record_data = {
+            "type": "A",
+            "name": "blog",
+            "content": "11.22.33.44"
+        }
+        resp = self.service.create_dns_record(zone_id, record_data)
+        result = resp["result"]
+
+        self.assertEquals(result["name"], record_data["name"])
+        self.assertEquals(result["type"], record_data["type"])
+        self.assertEquals(result["content"], record_data["content"])
+
+        error_403_record_data = {
+            "type": "A",
+            "name": "error-403-bottles",
+            "content": "11.22.33.44"
+        }
+
+        with self.assertRaises(HTTPStatusError) as context:
+            self.service.create_dns_record(zone_id, error_403_record_data)
+        self.assertTrue("403" in str(context.exception))
+
+        error_400_record_data = {
+            "type": "A",
+            "name": "error-400-bottles",
+            "content": "11.22.33.44"
+        }
+
+        with self.assertRaises(HTTPStatusError) as context:
+            self.service.create_dns_record(zone_id, error_400_record_data)
+        self.assertTrue("400" in str(context.exception))
+
+        error_500_record_data = {
+            "type": "A",
+            "name": "error-project",
+            "content": "11.22.33.44"
+        }
+
+        with self.assertRaises(HTTPStatusError) as context:
+            self.service.create_dns_record(zone_id, error_500_record_data)
+        self.assertTrue("500" in str(context.exception))
