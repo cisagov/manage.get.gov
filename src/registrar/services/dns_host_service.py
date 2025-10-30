@@ -145,10 +145,8 @@ class DnsHostService:
             vendor_acc = VendorDnsAccount.objects.create(
                 x_account_id=account_id,
                 dns_vendor=dns_vendor,
-                defaults={
-                    "x_created_at": result["created_on"],
-                    "x_updated_at": result["created_on"],
-                },
+                x_created_at = result["created_on"],
+                x_updated_at = result["created_on"],
             )
             logger.info("VendorAccount saved: id=%s, name=%s", vendor_acc.pk, vendor_acc.x_account_id)
 
@@ -158,9 +156,6 @@ class DnsHostService:
             join = Join.objects.create(
                 dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
-                defaults={
-                    "is_active": True,
-                },
             )
             logger.info(
                 "Join link saved: dns_account_id=%s, vendor_dns_account_id=%s is_active=%s",
