@@ -82,6 +82,7 @@ class User(AbstractUser):
     domains = models.ManyToManyField(
         "registrar.Domain",
         through="registrar.UserDomainRole",
+        through_fields=("user", "domain"),
         related_name="users",
     )
 
@@ -474,3 +475,8 @@ class User(AbstractUser):
 
         # If there are other admins or the user is not the only one
         return False
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+        super().save(*args, **kwargs)

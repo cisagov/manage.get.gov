@@ -38,6 +38,7 @@ cryptography = "*"
 rapidfuzz = "*"
 httpx = "*"
 respx = "*"
+pillow = "*"
 
 [dev-packages]
 django-debug-toolbar = "*"

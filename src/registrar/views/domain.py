@@ -385,10 +385,15 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
 
         Will log a warning if the email fails to send for any reason, but will not raise an error.
         """
-        manager_roles = UserDomainRole.objects.filter(domain=domain.pk, role=UserDomainRole.Roles.MANAGER)
+        # Get each domain manager from list (exclude pending invitations where user is null)
+        manager_roles = UserDomainRole.objects.filter(
+            domain=domain.pk, role=UserDomainRole.Roles.MANAGER, user__isnull=False
+        ).select_related("user")
 
         for role in manager_roles:
             manager = role.user
+            if not manager:
+                continue
             context["recipient"] = manager
             try:
                 send_templated_email(template, subject_template, to_addresses=[manager.email], context=context)
@@ -563,9 +568,7 @@ class DomainDeleteView(DomainFormBaseView):
                 domain.place_client_hold()
                 domain.save()
                 # Email all domain managers that domain manager has been removed
-                send_domain_manager_on_hold_email_to_domain_managers(
-                    domain=domain,
-                )
+                send_domain_manager_on_hold_email_to_domain_managers(domain=domain, requestor=request.user)
                 messages.success(request, "The deletion request for this domain has been submitted.")
                 # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))

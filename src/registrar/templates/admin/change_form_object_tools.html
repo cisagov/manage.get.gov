@@ -30,7 +30,7 @@
             {% endif %}
 
             <li>
-                <button data-href="{% add_preserved_filters history_url %}" class="historylink use-button-as-link">{% translate "History" %}</button>
+                <button data-href="{% url 'admin:auditlog_logentry_changelist' %}?resource_type=13&object_id={{ original.pk }}" class="historylink use-button-as-link">{% translate "History" %}</button>
             </li>
 
             {% if opts.model_name == 'domainrequest' %}
