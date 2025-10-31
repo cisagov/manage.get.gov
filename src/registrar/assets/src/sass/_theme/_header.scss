@@ -503,6 +503,12 @@ button {
         width: 20rem;
     }
 
+    @include at-media-max($theme-header-min-width) {
+        .usa-tag {
+            display: none !important;
+        }
+    }
+
     button,
     button:hover {
         background-color: inherit;
