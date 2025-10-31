@@ -91,11 +91,12 @@ secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
-# PROTOTYPE: Used for DNS hosting
+# Used for DNS hosting
 secret_dns_tenant_key = secret("DNS_TENANT_KEY", None)
 secret_dns_tenant_name = secret("DNS_TENANT_NAME", None)
 secret_registry_service_email = secret("DNS_SERVICE_EMAIL", None)
 secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", None)
+dns_mock_external_apis = env.bool("DNS_MOCK_EXTERNAL_APIS", default=False)
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -809,12 +810,22 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
+
+# endregion
+
+# region: DNS----------------------------------------------------------###
+
+# SECURITY WARNING: keep all DNS variables in production secret!
 SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
 SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
 SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
 SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
+# Configuration
+DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
+
 # endregion
+
 # region: Security and Privacy----------------------------------------------###
 
 # SECURITY WARNING: keep the secret key used in production secret!
