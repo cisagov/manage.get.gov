@@ -772,7 +772,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "age-bit-low-far.gov", "exists.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "exists.gov"]
 
     def __init__(self):
         self.dns_record = None
