@@ -8,6 +8,7 @@ def populate_cloudflare_vendor(apps, schema_editor):
     DnsVendor = apps.get_model("registrar", "DnsVendor")
     DnsVendor.objects.create(name=CF)
 
+
 def unpopulate_cloudflare_vendor(apps, schema_editor):
     DnsVendor = apps.get_model("registrar", "DnsVendor")
     DnsVendor.objects.filter(name="cloudflare").delete()

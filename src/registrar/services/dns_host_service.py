@@ -132,7 +132,7 @@ class DnsHostService:
 
         try:
             logger.info("Attempting to register nameservers. . .")
-            domain.nameservers = nameserver_tups  # calls epp service to post nameservers to registry
+            domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
         except (RegistrySystemError, Exception):
             raise
 
@@ -145,25 +145,15 @@ class DnsHostService:
             vendor_acc = VendorDnsAccount.objects.create(
                 x_account_id=account_id,
                 dns_vendor=dns_vendor,
-                x_created_at = result["created_on"],
-                x_updated_at = result["created_on"],
+                x_created_at=result["created_on"],
+                x_updated_at=result["created_on"],
             )
-            logger.info("VendorAccount saved: id=%s, name=%s", vendor_acc.pk, vendor_acc.x_account_id)
 
             dns_acc = DnsAccount.objects.create(name=result["name"])
-            logger.info("DnsAccount saved: id=%s, name=%s", dns_acc.pk, dns_acc.name)
 
             join = Join.objects.create(
                 dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
             )
-            logger.info(
-                "Join link saved: dns_account_id=%s, vendor_dns_account_id=%s is_active=%s",
-                dns_acc.pk,
-                vendor_acc.pk,
-                join.is_active,
-            )
-
-            logger.info("DB settings: %s", connection.settings_dict)
 
         return account_id
