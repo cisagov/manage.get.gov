@@ -8,8 +8,7 @@ from registrar.models.dns.vendor_dns_account import VendorDnsAccount
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
 from registrar.models.dns.dns_vendor import DnsVendor
 
-from django.db import transaction, connection
-from django.utils import timezone
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +52,7 @@ class DnsHostService:
 
             try:
                 account_id = self.create_db_account(account_data)
+                logger.info("Successfully saved to database")
             except Exception as e:
                 logger.error("Save to database failed")
                 raise

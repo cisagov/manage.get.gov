@@ -184,24 +184,15 @@ class TestDnsHostServiceDB(TestCase):
         join = Join.objects.get()
         self.assertEqual(join.dns_account, dns_acc)
         self.assertEqual(join.vendor_dns_account, vendor_acc)
-    
-    def test_create_db_account_fails_on_error(self):
-        account_data = {
-            "result": {
-                "id": "FAIL1",
-                "name": "Failed Test Account",
-                "created_on": "2024-01-02T03:04:05Z"
-            }
-        }
 
-        with patch(
-            "registrar.models.VendorDnsAccount.objects.create",
-            side_effect = IntegrityError("simulated failure")
-        ):
-            # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises an integrity error mid-transaction. 
+    def test_create_db_account_fails_on_error(self):
+        account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
+
+        with patch("registrar.models.VendorDnsAccount.objects.create", side_effect=IntegrityError("simulated failure")):
+            # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises an integrity error mid-transaction.
             with self.assertRaises(IntegrityError):
                 self.service.create_db_account(account_data)
-        
+
         # Ensure that no database rows are created across our tables (since the transaction failed).
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
@@ -214,13 +205,13 @@ class TestDnsHostServiceDB(TestCase):
             {"result": {"id": "A"}},
             {"result": {"name": "Account"}},
         ]
-        
+
         for payload in invalid_result_payloads:
             with self.subTest(payload=payload):
                 with self.assertRaises(KeyError):
                     self.service.create_db_account(payload)
-        
-        # Nothing should be written on any failure 
+
+        # Nothing should be written on any failure
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(Join.objects.count(), 0)
@@ -235,13 +226,32 @@ class TestDnsHostServiceDB(TestCase):
         }
 
         self.service.create_db_account(payload)
-        
+
         # Second create with the same external ID should violate constraints
         with self.assertRaises(IntegrityError):
             self.service.create_db_account(payload)
-        
+
         # There should only be one of each object (from the first create)
         self.assertEqual(VendorDnsAccount.objects.count(), 1)
         self.assertEqual(DnsAccount.objects.count(), 1)
         self.assertEqual(Join.objects.count(), 1)
 
+    def test_create_db_account_on_failed_join_creation_throws_error(self):
+        payload = {
+            "result": {
+                "id": "JOIN1",
+                "name": "Account for test.gov",
+                "created_on": "2024-01-02T03:04:05Z",
+            }
+        }
+
+        with patch(
+            "registrar.models.DnsAccount_VendorDnsAccount.objects.create",
+            side_effect=IntegrityError("simulated join failure"),
+        ):
+            with self.assertRaises(IntegrityError):
+                self.service.create_db_account(payload)
+
+        self.assertEqual(VendorDnsAccount.objects.count(), 0)
+        self.assertEqual(DnsAccount.objects.count(), 0)
+        self.assertEqual(Join.objects.count(), 0)
