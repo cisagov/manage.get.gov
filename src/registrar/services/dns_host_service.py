@@ -54,7 +54,7 @@ class DnsHostService:
                 account_id = self.create_db_account(account_data)
                 logger.info("Successfully saved to database")
             except Exception as e:
-                logger.error("Save to database failed")
+                logger.error(f"Save to database failed: {str(e)}")
                 raise
 
             try:
@@ -151,7 +151,7 @@ class DnsHostService:
 
             dns_acc = DnsAccount.objects.create(name=result["name"])
 
-            join = Join.objects.create(
+            Join.objects.create(
                 dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
             )

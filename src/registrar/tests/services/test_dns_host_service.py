@@ -188,8 +188,9 @@ class TestDnsHostServiceDB(TestCase):
     def test_create_db_account_fails_on_error(self):
         account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
 
+        # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises
+        # an integrity error mid-transcation
         with patch("registrar.models.VendorDnsAccount.objects.create", side_effect=IntegrityError("simulated failure")):
-            # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises an integrity error mid-transaction.
             with self.assertRaises(IntegrityError):
                 self.service.create_db_account(account_data)
 
