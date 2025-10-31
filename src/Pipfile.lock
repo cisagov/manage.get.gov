@@ -387,7 +387,7 @@
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==4.2.25"
+            "version": "==4.2.20"
         },
         "django-admin-multiple-choice-list-filter": {
             "hashes": [
