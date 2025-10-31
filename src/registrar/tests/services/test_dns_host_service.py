@@ -19,12 +19,12 @@ class TestDnsHostService(SimpleTestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_account")
-    @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
     def test_dns_setup_success(
         self,
-        mock_create_db_account,
-        mock_create_account,
+        mock_save_db_account,
+        mock_create_cf_account,
         mock_create_zone,
         mock_get_page_accounts,
         mock_get_account_zones,
@@ -61,7 +61,7 @@ class TestDnsHostService(SimpleTestCase):
 
         for case in test_cases:
             with self.subTest(msg=case["test_name"], **case):
-                mock_create_account.return_value = {"result": {"id": case["account_id"]}}
+                mock_create_cf_account.return_value = {"result": {"id": case["account_id"]}}
 
                 mock_create_zone.return_value = {"result": {"id": case["zone_id"], "name": case["zone_name"]}}
 
@@ -72,7 +72,7 @@ class TestDnsHostService(SimpleTestCase):
 
                 mock_get_account_zones.return_value = {"result": [{"id": case.get("found_zone_id")}]}
 
-                mock_create_db_account.return_value = case["account_id"]
+                mock_save_db_account.return_value = case["account_id"]
 
                 returned_account_id, returned_zone_id, _ = self.service.dns_setup(
                     case["account_name"], case["zone_name"]
@@ -83,39 +83,39 @@ class TestDnsHostService(SimpleTestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_account")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     def test_dns_setup_failure_from_create_account(
-        self, mock_create_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
+        self, mock_create_cf_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
     ):
         account_name = " "
         zone_name = "test.gov"
         mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
-        mock_create_account.side_effect = APIError("DNS setup failed to create account")
+        mock_create_cf_account.side_effect = APIError("DNS setup failed to create account")
 
         with self.assertRaises(APIError) as context:
             self.service.dns_setup(account_name, zone_name)
 
-        mock_create_account.assert_called_once_with(account_name)
+        mock_create_cf_account.assert_called_once_with(account_name)
         self.assertIn("DNS setup failed to create account", str(context.exception))
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_account")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     def test_dns_setup_failure_from_create_zone(
-        self, mock_create_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
+        self, mock_create_cf_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
     ):
         account_name = "Account for test.gov"
         zone_name = "test.gov"
         account_id = "12345"
         mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
-        mock_create_account.return_value = {"result": {"id": account_id}}
-        mock_create_account.side_effect = APIError("DNS setup failed to create zone")
+        mock_create_cf_account.return_value = {"result": {"id": account_id}}
+        mock_create_cf_account.side_effect = APIError("DNS setup failed to create zone")
 
         with self.assertRaises(APIError) as context:
             self.service.dns_setup(account_name, zone_name)
 
-        mock_create_account.assert_called_once_with(account_name)
+        mock_create_cf_account.assert_called_once_with(account_name)
         # mock_create_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
@@ -162,12 +162,12 @@ class TestDnsHostServiceDB(TestCase):
         DnsAccount.objects.all().delete()
         Join.objects.all().delete()
 
-    def test_create_db_account_success(self):
+    def test_save_db_account_success(self):
         # Dummy JSON data from API
         account_data = {"result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}}
 
         # Validate that the method returns the vendor account ID
-        returned_id = self.service.create_db_account(account_data)
+        returned_id = self.service.save_db_account(account_data)
         self.assertEqual(returned_id, "12345")
 
         # Validate there's one VendorDnsAccount row with the external id and the CF Vendor
@@ -185,21 +185,21 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(join.dns_account, dns_acc)
         self.assertEqual(join.vendor_dns_account, vendor_acc)
 
-    def test_create_db_account_fails_on_error(self):
+    def test_save_db_account_fails_on_error(self):
         account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
 
         # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises
         # an integrity error mid-transcation
         with patch("registrar.models.VendorDnsAccount.objects.create", side_effect=IntegrityError("simulated failure")):
             with self.assertRaises(IntegrityError):
-                self.service.create_db_account(account_data)
+                self.service.save_db_account(account_data)
 
         # Ensure that no database rows are created across our tables (since the transaction failed).
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(Join.objects.count(), 0)
 
-    def test_create_db_account_missing_fields_failure(self):
+    def test_save_db_account_missing_fields_failure(self):
         invalid_result_payloads = [
             {},
             {"result": {}},
@@ -210,14 +210,14 @@ class TestDnsHostServiceDB(TestCase):
         for payload in invalid_result_payloads:
             with self.subTest(payload=payload):
                 with self.assertRaises(KeyError):
-                    self.service.create_db_account(payload)
+                    self.service.save_db_account(payload)
 
         # Nothing should be written on any failure
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(Join.objects.count(), 0)
 
-    def test_create_db_account_duplicate_vendor_account_id_throws_error(self):
+    def test_save_db_account_duplicate_vendor_account_id_throws_error(self):
         payload = {
             "result": {
                 "id": "DUP1",
@@ -226,18 +226,18 @@ class TestDnsHostServiceDB(TestCase):
             }
         }
 
-        self.service.create_db_account(payload)
+        self.service.save_db_account(payload)
 
         # Second create with the same external ID should violate constraints
         with self.assertRaises(IntegrityError):
-            self.service.create_db_account(payload)
+            self.service.save_db_account(payload)
 
         # There should only be one of each object (from the first create)
         self.assertEqual(VendorDnsAccount.objects.count(), 1)
         self.assertEqual(DnsAccount.objects.count(), 1)
         self.assertEqual(Join.objects.count(), 1)
 
-    def test_create_db_account_on_failed_join_creation_throws_error(self):
+    def test_save_db_account_on_failed_join_creation_throws_error(self):
         payload = {
             "result": {
                 "id": "JOIN1",
@@ -251,7 +251,7 @@ class TestDnsHostServiceDB(TestCase):
             side_effect=IntegrityError("simulated join failure"),
         ):
             with self.assertRaises(IntegrityError):
-                self.service.create_db_account(payload)
+                self.service.save_db_account(payload)
 
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
