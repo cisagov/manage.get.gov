@@ -13,6 +13,7 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
+    HAS_LEGACY_AND_ORG_USER,
     grant_access,
 )
 from registrar.forms import portfolio as portfolioForms
@@ -1187,7 +1188,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
             messages.warning(self.request, "Could not send portfolio email invitation.")
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationsDropdownView(ListView, FormMixin):
     """
     View for Organizations dropdown.
@@ -1212,10 +1213,11 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationsView(ListView, FormMixin):
     """
     View for Select Portfolio Organization page when the user does not
@@ -1241,6 +1243,7 @@ class PortfolioOrganizationsView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -1251,7 +1254,7 @@ class PortfolioOrganizationsView(ListView, FormMixin):
         self.form = self.get_form()
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
     """
     View that displays an individual portfolio object and sets

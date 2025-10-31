@@ -2293,9 +2293,15 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Try changing the suborg
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        page.form["sub_organization"] = self.suborg_2.id
+        form = next(f for f in page.forms.values() if "sub_organization" in f.fields)
+        form["sub_organization"] = str(self.suborg_2.id)
+
+        # Set the cookie before submitting
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        page = page.form.submit().follow()
+        page = form.submit().follow()
+
+        # Re-grab the form from the response (there may be multiple forms)
+        form = next(f for f in page.forms.values() if "sub_organization" in f.fields)
 
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")

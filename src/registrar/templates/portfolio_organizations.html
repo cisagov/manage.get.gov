@@ -36,9 +36,26 @@
             </div>
         </div>
     {% endfor %}
+    {% if has_legacy_domain %}
+        <div class="grid-row margin-bottom-2">
+            <div class="grid-col-11 tablet:grid-col-11">
+                <a class="usa-card__container margin-left-0 display-block text-no-underline"
+                    href="{% url 'home' %}?legacy_home=1">
+                    <div class="usa-card__header">
+                        <h2 class="usa-card__heading">
+                        {{ request.user.email }}’s account
+                        <svg class="margin-left-05 usa-icon organizations-arrow-icon" aria-hidden="true" focusable="false" role="img" width="28">
+                            <use xlink:href="/public/img/sprite.svg#arrow_forward"></use>
+                        </svg>
+                        </h2>
+                    </div>
+                </a>
+            </div>
+        </div>
+    {% endif %}
 </form>
     <p class="font-ui-2xs margin-top-4"> 
-        Don’t see your organization here? If you believe you should have access to an organization, 
+        Don’t see your organization or account here? If you believe you should have access to an organization or account, 
         contact us at <a href="mailto:help@get.gov" class="usa-link">help@get.gov</a>.
     </p>
 

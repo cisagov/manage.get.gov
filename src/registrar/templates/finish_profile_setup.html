@@ -5,7 +5,8 @@
 
 {# Disable the redirect  #}
 {% block header %}
-    {% include "includes/header_selector.html" with logo_clickable=user_finished_setup %}
+    {% url 'your-portfolios' as your_portfolios_url %}
+    {% include "includes/header_extended.html" with logo_clickable=user_finished_setup %}
 {% endblock %}
 
 {# Add the new form #}
