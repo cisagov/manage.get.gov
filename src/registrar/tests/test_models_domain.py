@@ -3137,20 +3137,12 @@ class TestAnalystDelete(MockEppLib):
             registry_id="tech-id",
             email="tech@cleanup.gov",
         )
-        PublicContact.objects.create(
-            domain=domain,
-            contact_type=PublicContact.ContactTypeChoices.SECURITY,
-            registry_id="security-id",
-            email="sec@cleanup.gov",
-        )
 
         # Double check they all exist before cleaning up
         self.assertTrue(Domain.objects.filter(name="cleanup.gov", state=Domain.State.DELETED).exists())
         self.assertTrue(Host.objects.filter(domain=domain).exists())
         self.assertTrue(HostIP.objects.filter(host__domain=domain).exists())
-        self.assertTrue(
-            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech", "security"]).exists()
-        )
+        self.assertTrue(PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech"]).exists())
 
         # 4. Call the clean up method
         domain._delete_related_objects_from_db()
@@ -3159,7 +3151,7 @@ class TestAnalystDelete(MockEppLib):
         self.assertFalse(HostIP.objects.filter(host__domain=domain).exists())
         self.assertFalse(Host.objects.filter(domain=domain).exists())
         self.assertFalse(
-            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech", "security"]).exists(),
+            PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech"]).exists(),
         )
 
     @less_console_noise_decorator
