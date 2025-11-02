@@ -19,11 +19,11 @@ If you're new to Django, see [Getting Started with Django](https://www.djangopro
 Visit the running application at [http://localhost:8080](http://localhost:8080).
 
 
-### Troubleshooting 
+### Troubleshooting
 
 #### Line endings and manage.py
-* If you are using Windows, you may need to change your [line endings](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). If not, you may not be able to run manage.py. 
-* Unix based operating systems (like macOS or Linux) handle line separators [differently than Windows does](https://superuser.com/questions/374028/how-are-n-and-r-handled-differently-on-linux-and-windows). This can break bash scripts in particular. In the case of manage.py, it uses *#!/usr/bin/env python* to access the Python executable. Since the script is still thinking in terms of unix line seperators, it may look for the executable *python\r* rather than *python* (since Windows cannot read the carriage return on its own) - thus leading to the error `usr/bin/env: 'python\r' no such file or directory` 
+* If you are using Windows, you may need to change your [line endings](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings). If not, you may not be able to run manage.py.
+* Unix based operating systems (like macOS or Linux) handle line separators [differently than Windows does](https://superuser.com/questions/374028/how-are-n-and-r-handled-differently-on-linux-and-windows). This can break bash scripts in particular. In the case of manage.py, it uses *#!/usr/bin/env python* to access the Python executable. Since the script is still thinking in terms of unix line seperators, it may look for the executable *python\r* rather than *python* (since Windows cannot read the carriage return on its own) - thus leading to the error `usr/bin/env: 'python\r' no such file or directory`
 * If you'd rather not change this globally, add a `.gitattributes` file in the project root with `* text eol=lf` as the text content, and [refresh the repo](https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings#refreshing-a-repository-after-changing-line-endings)
 
 ## Branch Conventions
@@ -32,7 +32,7 @@ We use the branch convention of `initials/branch-topic` (ex: `lmm/fix-footer`). 
 
 ## Merging and PRs
 
-History preservation and merge contexts are more important to us than a clean and linear history, so we will merge instead of rebasing. 
+History preservation and merge contexts are more important to us than a clean and linear history, so we will merge instead of rebasing.
 To bring your feature branch up-to-date wih main:
 
 ```
@@ -147,8 +147,8 @@ The CODEOWNERS file sets the tagged individuals as default reviewers on any Pull
 
 1. Go to [.github\CODEOWNERS](../../.github/CODEOWNERS)
 2. Following the [CODEOWNERS documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners), add yourself as owner to files that you wish to be automatically requested as reviewer for.
-   
-   For example, if you wish to add yourself as a default reviewer for all pull requests, add your GitHub username to the same line as the `*` designator:  
+
+   For example, if you wish to add yourself as a default reviewer for all pull requests, add your GitHub username to the same line as the `*` designator:
 
    ```diff
    - * @abroddrick
@@ -209,7 +209,7 @@ If you're on local (localhost:8080) and want to submit a domain request, and kee
 @classmethod
 def available(cls, domain: str) -> bool:
   # Comment everything else out in the function
-  return True 
+  return True
 ```
 
 ### Testing behind logged in pages
@@ -249,11 +249,11 @@ def some_function():
 
 ### Accessibility Testing in the browser
 
-We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) browser extension 
-from ssa.gov for accessibility testing outside the pipeline. 
+We use the [ANDI](https://www.ssa.gov/accessibility/andi/help/install.html) browser extension
+from ssa.gov for accessibility testing outside the pipeline.
 
-ANDI will get blocked by our CSP settings, so you will need to install the 
-[Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden) 
+ANDI will get blocked by our CSP settings, so you will need to install the
+[Disable Content-Security-Policy extension](https://chrome.google.com/webstore/detail/disable-content-security/ieelmcmcagommplceebfedjlakkhpden)
 and activate it for the page you'd like to test.
 
 Note - refresh after enabling the extension on a page but before clicking ANDI.
@@ -291,7 +291,7 @@ Static files (images, CSS stylesheets, JavaScripts, etc) are known as "assets".
 
 Assets are stored in `registrar/assets` during development and served from `registrar/public`. During deployment, assets are copied from `registrar/assets` into `registrar/public`. Any assets which need processing, such as USWDS Sass files, are processed before copying.
 
-**Note:** Custom images are added to `/registrar/assets/img/registrar`, keeping them separate from the images copied over by USWDS. However, because the `/img/` directory is listed in `.gitignore`, any files added to `/registrar/assets/img/registrar` will need to be force added (i.e. `git add --force <img-file>`) before they can be deployed. 
+**Note:** Custom images are added to `/registrar/assets/img/registrar`, keeping them separate from the images copied over by USWDS. However, because the `/img/` directory is listed in `.gitignore`, any files added to `/registrar/assets/img/registrar` will need to be force added (i.e. `git add --force <img-file>`) before they can be deployed.
 
 We utilize the [uswds-compile tool](https://designsystem.digital.gov/documentation/getting-started/developers/phase-two-compile/) from USWDS to compile and package USWDS assets.
 
@@ -322,7 +322,7 @@ We use the [CSS Block Element Modifier (BEM)](https://getbem.com/naming/) naming
 
 ## Finite State Machines
 
-In an effort to keep our domain logic centralized, we are representing the state of 
+In an effort to keep our domain logic centralized, we are representing the state of
 objects in the application using the [django-fsm](https://github.com/viewflow/django-fsm)
 library. See the [ADR number 15](../architecture/decisions/0015-use-django-fs.md) for
 more information on the topic.
@@ -335,14 +335,14 @@ If you are seeing errors related to openid complaining about issuing a token fro
 ERROR [djangooidc.oidc:243] Issued in the future
 ```
 
-it may help to resync your laptop with time.nist.gov: 
+it may help to resync your laptop with time.nist.gov:
 
 ```
 sudo sntp -sS time.nist.gov
 ```
 
 ## Adding a S3 instance to your sandbox
-This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you. 
+This can either be done through the CLI, or through the cloud.gov dashboard. Generally, it is better to do it through the dashboard as it handles app binding for you.
 
 To associate a S3 instance to your sandbox, follow these steps:
 1. Navigate to https://dashboard.fr.cloud.gov/login
@@ -350,7 +350,7 @@ To associate a S3 instance to your sandbox, follow these steps:
 3. Click `Services` on the application nav bar
 4. Add a new service (plus symbol)
 5. Click `Marketplace Service`
-6. For Space, put in your sandbox initials 
+6. For Space, put in your sandbox initials
 7. On the `Select the service` dropdown, select `s3`
 8. Under the dropdown on `Select Plan`, select `basic-sandbox`
 9. Under `Service Instance` enter `getgov-s3` for the name and leave the other fields empty
@@ -378,7 +378,7 @@ Then, copy the variables under the section labled `s3`.
 1. On the app, navigate to `\admin`.
 2. Under models, click `Waffle flags`.
 3. Click the `disable_email_sending` record. This should exist by default, if not - create one with that name.
-4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings 
+4. (Important) Set the field `everyone` to `Yes`. This field overrides all other settings
 
 ## Request Flow FSM Diagram
 
@@ -387,13 +387,12 @@ The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaent
 
 ## Testing the prototype add DNS record feature (update as testing instructions change)
 We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
-`prototype_dns_flag` waffle flag and navigate to `igorville.gov`, `dns.gov`, or `domainops.gov`. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
+`prototype_dns_flag` waffle flag and use (or add a domain name in `valid_domains` (see local test instructions)). Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
 
 Before we can send data to cloudflare, you will need these values in your .env file:
 ```
 DNS_TENANT_KEY = {tenant key}
 DNS_SERVICE_EMAIL = {An email address}
-DNS_TENANT_NAME = {Name of the bucket, i.e. "CISA" }
 DNS_TEST_TENANT_ID = {id of the test tenant (as opposed to the prod tenant)}
 ```
 You can obtain these by going to cloud.gov and looking at the variables in the getgov-kma application (for now)
@@ -408,3 +407,24 @@ To manually test locally:
    - Click the link below DNSEC: "Prototype DNS record creator"
    - You should see a form for adding DNS records
 
+### Mocking DNS vendor APIs in local development
+
+  We use the library `respx` for mocking `httpx` api calls and responses. Through an environment variable, we determine
+  when to use a MockCloudflareService class which mocks the responses of the api calls.
+
+  To utilize the mocks
+  1) In your .env, add this:
+
+  ```
+  DNS_MOCK_EXTERNAL_APIS=True
+  ```
+  By default it is set to False, so outside of your local environment the actual CF APIs will be called (unless you set
+  the variable to True)
+
+  2) Fill and submit a record like normal and you will get a success response.
+  3) To mock using an existing account/zone (rather than creating a new one for each dns record created), use the domain
+  `exists.gov`
+  4) To trigger a dns record error response, enter a record name that starts with:
+    `error-400` to trigger a bad request 400
+    `error-403` to trigger an authentication error 403
+    `error*` to trigger a 500 response

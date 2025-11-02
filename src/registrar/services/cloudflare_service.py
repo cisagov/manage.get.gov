@@ -1,4 +1,5 @@
 from httpx import RequestError, HTTPStatusError
+from typing import Any
 import logging
 from django.conf import settings
 
@@ -21,7 +22,7 @@ class CloudflareService:
         client.headers = self.headers
         self.client = client
 
-    def create_account(self, account_name):
+    def create_account(self, account_name: str):
         appended_url = "/accounts"
         data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
         try:
@@ -37,7 +38,7 @@ class CloudflareService:
 
         return resp.json()
 
-    def create_zone(self, zone_name, account_id):
+    def create_zone(self, zone_name: str, account_id: str):
         appended_url = "/zones"
         data = {"name": zone_name, "account": {"id": account_id}}
         try:
@@ -52,7 +53,7 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def create_dns_record(self, zone_id, record_data):
+    def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
         try:
             resp = self.client.post(appended_url, json=record_data)
@@ -66,7 +67,7 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def get_page_accounts(self, page, per_page):
+    def get_page_accounts(self, page: int, per_page: int):
         """Gets all accounts under specified tenant. Must include pagination parameters."""
         appended_url = f"/tenants/{self.tenant_id}/accounts"
         params = {"page": page, "per_page": per_page}
@@ -82,7 +83,7 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def get_account_zones(self, account_id):
+    def get_account_zones(self, account_id: str):
         """Gets all zones under a particular account"""
         appended_url = "/zones"
         params = f"account.id={account_id}"
@@ -99,7 +100,7 @@ class CloudflareService:
         logger.info(f"Retrieved all zones: {resp}")
         return resp.json()
 
-    def get_dns_record(self, zone_id, record_id):
+    def get_dns_record(self, zone_id: str, record_id: str):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
         try:
             resp = self.client.get(appended_url, headers=self.headers)
