@@ -36,6 +36,8 @@ import boto3_mocking  # type: ignore
 from django.test import Client
 import logging
 import json
+from lxml import html
+
 
 logger = logging.getLogger(__name__)
 
@@ -3243,11 +3245,11 @@ class TestRequestingEntity(WebTest):
 
         # Navigate past the intro page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Fill out the requesting entity form
-        form = response.forms[0]
+        form = response.forms[1]
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = "True"
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = "True"
         form["portfolio_requesting_entity-requested_suborganization"] = suborganization.name.lower()
@@ -3269,26 +3271,57 @@ class TestRequestingEntity(WebTest):
         # Verify successful submission by checking we're on the next page
         self.assertContains(response, ".gov domain")
 
+    # ---- Helpers ----
+    def _parse_tree(self, response):
+        return html.fromstring(response.text)
+
+    def _assert_header_contains(self, tree, text):
+        headers = tree.xpath("//header")
+        self.assertTrue(headers, "Expected a <header> element")
+        header_text = " ".join(h.text_content() for h in headers)
+        self.assertIn(text, header_text)
+
+    def _assert_radio_group_contains_label(self, tree, legend_text, expected_label_part):
+        # fieldset whose legend matches legend_text
+        fieldsets = tree.xpath(
+            "//fieldset[.//legend[contains(normalize-space(.), $legend)]]",
+            legend=legend_text
+        )
+        self.assertTrue(fieldsets, f"Expected fieldset for '{legend_text}'")
+        labels = [el.text_content().strip() for el in fieldsets[0].xpath(".//label")]
+        self.assertTrue(
+            any(expected_label_part in t for t in labels),
+            f"Expected a radio label containing: {expected_label_part!r}",
+        )
+
     @less_console_noise_decorator
     def test_requesting_entity_page_new_request(self):
         """Tests that the requesting entity page loads correctly when a new request is started"""
 
+        """Requesting entity page loads correctly for a new request."""
         response = self.app.get(reverse("domain-request:start"))
 
-        # Navigate past the intro page
+        # Navigate past intro
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_form = response.forms[0]
+        intro_form = response.forms[1]
         response = intro_form.submit().follow()
 
-        # Test the requesting entiy page
+        # Static text checks
         self.assertContains(response, "Who will use the domain you’re requesting?")
         self.assertContains(response, "Add suborganization information")
+        
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
-        self.assertContains(response, self.portfolio.organization_name, count=3)
+        tree = self._parse_tree(response)
+        self._assert_header_contains(tree, self.portfolio.organization_name)
+        self._assert_radio_group_contains_label(
+            tree,
+            "Who will use the domain you’re requesting?",
+            self.portfolio.organization_name,
+        )
 
-        # We expect the dropdown list to contain the suborganizations that currently exist on this portfolio
+        # Suborg dropdown contents
         self.assertContains(response, self.suborganization.name, count=1)
         self.assertContains(response, self.suborganization_2.name, count=1)
 
@@ -3303,12 +3336,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[0]
+        form = response.forms[1]
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
@@ -3334,12 +3367,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[0]
+        form = response.forms[1]
 
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
@@ -3372,12 +3405,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[0]
+        form = response.forms[1]
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
@@ -3400,7 +3433,7 @@ class TestRequestingEntity(WebTest):
         response = self.app.get(
             reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         ).follow()
-        form = response.forms[0]
+        form = response.forms[1]
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
