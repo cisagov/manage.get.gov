@@ -2553,7 +2553,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
     def _form_with_field(self, page, field_name: str):
         return next(f for f in page.forms.values() if field_name in f.fields)
-    
+
     # @less_console_noise_decorator
     def test_domain_request_FEB_questions(self):
         """
@@ -2651,9 +2651,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_page = additional_details_result.follow()
         self.feb_requirements_page_tests(requirements_page)
 
-        requirements_form = self._form_with_field(
-            requirements_page, "requirements-is_policy_acknowledged"
-        )        
+        requirements_form = self._form_with_field(requirements_page, "requirements-is_policy_acknowledged")
         requirements_form["requirements-is_policy_acknowledged"] = "True"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()

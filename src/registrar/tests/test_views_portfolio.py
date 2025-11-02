@@ -3286,10 +3286,7 @@ class TestRequestingEntity(WebTest):
 
     def _assert_radio_group_contains_label(self, tree, legend_text, expected_label_part):
         # fieldset whose legend matches legend_text
-        fieldsets = tree.xpath(
-            "//fieldset[.//legend[contains(normalize-space(.), $legend)]]",
-            legend=legend_text
-        )
+        fieldsets = tree.xpath("//fieldset[.//legend[contains(normalize-space(.), $legend)]]", legend=legend_text)
         self.assertTrue(fieldsets, f"Expected fieldset for '{legend_text}'")
         labels = [el.text_content().strip() for el in fieldsets[0].xpath(".//label")]
         self.assertTrue(
@@ -3313,7 +3310,7 @@ class TestRequestingEntity(WebTest):
         # Static text checks
         self.assertContains(response, "Who will use the domain you’re requesting?")
         self.assertContains(response, "Add suborganization information")
-        
+
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
         tree = self._parse_tree(response)
