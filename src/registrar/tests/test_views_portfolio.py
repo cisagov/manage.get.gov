@@ -539,12 +539,13 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         portfolio_org_name_page = self.app.get(reverse("organization-info"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        portfolio_org_name_page_form = portfolio_org_name_page.forms[1]
 
-        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-        portfolio_org_name_page.form["city"] = "London"
+        portfolio_org_name_page_form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page_form["city"] = "London"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result_page = portfolio_org_name_page.form.submit()
+        success_result_page = portfolio_org_name_page_form.submit()
         # Form will not validate with missing required field (zipcode)
         self.assertEqual(success_result_page.status_code, 200)
 
@@ -569,12 +570,13 @@ class TestPortfolio(WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # Form validates and redirects with all required fields
-        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-        portfolio_org_name_page.form["city"] = "London"
-        portfolio_org_name_page.form["zipcode"] = "11111"
+        portfolio_org_name_page_form = portfolio_org_name_page.forms[1]
+        portfolio_org_name_page_form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page_form["city"] = "London"
+        portfolio_org_name_page_form["zipcode"] = "11111"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result_page = portfolio_org_name_page.form.submit()
+        success_result_page = portfolio_org_name_page_form.submit()
         self.assertEqual(success_result_page.status_code, 302)
 
     @boto3_mocking.patching
@@ -603,12 +605,13 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         portfolio_org_name_page = self.app.get(reverse("organization-info"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-        portfolio_org_name_page.form["city"] = "London"
-        portfolio_org_name_page.form["zipcode"] = "11111"
+        portfolio_org_name_page_form = portfolio_org_name_page.forms[1]
+        portfolio_org_name_page_form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page_form["city"] = "London"
+        portfolio_org_name_page_form["zipcode"] = "11111"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result_page = portfolio_org_name_page.form.submit()
+        success_result_page = portfolio_org_name_page_form.submit()
         self.assertEqual(success_result_page.status_code, 302)
 
         # Verify that the notification emails were sent to domain manager
