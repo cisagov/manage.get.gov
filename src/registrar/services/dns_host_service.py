@@ -9,6 +9,8 @@ from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_Vendo
 from registrar.models.dns.dns_vendor import DnsVendor
 
 from django.db import transaction
+from registrar.services.utility.dns_helper import make_dns_account_name
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,15 +32,18 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("name_servers") for item in items if item.get("id") == zone_id), None)
 
-    def dns_setup(self, account_name, domain_name):
+    def dns_setup(self, domain_name):
+        account_name = make_dns_account_name(domain_name)
         account_id = self.account_setup(account_name)
         zone_id, nameservers = self.zone_setup(account_id, domain_name)
         return account_id, zone_id, nameservers
 
     def account_setup(self, account_name):
         account_id = self._find_existing_account(account_name)
-        if account_id:
-            return account_id, bool(account_id)
+        has_account = bool(account_id)
+        if has_account:
+            logger.info("Already has an existing vendor account")
+            return account_id
         return self.create_db_account_and_save(account_name)
 
     def create_db_account_and_save(self, account_name):
@@ -61,7 +66,9 @@ class DnsHostService:
 
     def zone_setup(self, account_id, domain_name):
         zone_id, nameservers = self._find_existing_zone(domain_name, account_id)
-        if zone_id:
+        has_zone = bool(zone_id)
+        if has_zone:
+            logger.info("Has existing zone")
             return zone_id, nameservers
         return self.create_zone_id_and_nameservers(domain_name, account_id)
 
@@ -80,7 +87,7 @@ class DnsHostService:
         return zone_id, nameservers
 
     def create_record(self, zone_id, record_data):
-        """Calls create method of vendor serivce to create a DNS record"""
+        """Calls create method of vendor service to create a DNS record"""
         try:
             record = self.dns_vendor_service.create_dns_record(zone_id, record_data)
             logger.info(f"Created DNS record of type {record['result'].get('type')}")
