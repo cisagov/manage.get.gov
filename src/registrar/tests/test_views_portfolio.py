@@ -26,9 +26,14 @@ from registrar.views.portfolios import PortfolioOrganizationSelectView
 from .common import (
     MockEppLib,
     MockSESClient,
+    assert_header_contains,
+    assert_radio_group_contains_label,
     completed_domain_request,
     create_test_user,
     create_user,
+    form_with_any_field,
+    form_with_field,
+    parse_tree,
 )
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -539,8 +544,7 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         portfolio_org_name_page = self.app.get(reverse("organization-info"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        portfolio_org_name_page_form = portfolio_org_name_page.forms[1]
-
+        portfolio_org_name_page_form = form_with_any_field(portfolio_org_name_page, ["address_line1", "city"])
         portfolio_org_name_page_form["address_line1"] = "6 Downing st"
         portfolio_org_name_page_form["city"] = "London"
 
@@ -570,7 +574,9 @@ class TestPortfolio(WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # Form validates and redirects with all required fields
-        portfolio_org_name_page_form = portfolio_org_name_page.forms[1]
+        portfolio_org_name_page_form = form_with_any_field(
+            portfolio_org_name_page, ["address_line1", "city", "zipcode"]
+        )
         portfolio_org_name_page_form["address_line1"] = "6 Downing st"
         portfolio_org_name_page_form["city"] = "London"
         portfolio_org_name_page_form["zipcode"] = "11111"
@@ -605,7 +611,9 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         portfolio_org_name_page = self.app.get(reverse("organization-info"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        portfolio_org_name_page_form = portfolio_org_name_page.forms[1]
+        portfolio_org_name_page_form = form_with_any_field(
+            portfolio_org_name_page, ["address_line1", "city", "zipcode"]
+        )
         portfolio_org_name_page_form["address_line1"] = "6 Downing st"
         portfolio_org_name_page_form["city"] = "London"
         portfolio_org_name_page_form["zipcode"] = "11111"
@@ -3252,7 +3260,7 @@ class TestRequestingEntity(WebTest):
         response = form.submit().follow()
 
         # Fill out the requesting entity form
-        form = response.forms[1]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = "True"
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = "True"
         form["portfolio_requesting_entity-requested_suborganization"] = suborganization.name.lower()
@@ -3266,6 +3274,7 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "This suborganization already exists")
 
         # Test that a different name is allowed
+        form = form_with_field(response, "portfolio_requesting_entity-requested_suborganization")
         form["portfolio_requesting_entity-requested_suborganization"] = "New Suborg"
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -3273,26 +3282,6 @@ class TestRequestingEntity(WebTest):
 
         # Verify successful submission by checking we're on the next page
         self.assertContains(response, ".gov domain")
-
-    # ---- Helpers ----
-    def _parse_tree(self, response):
-        return html.fromstring(response.text)
-
-    def _assert_header_contains(self, tree, text):
-        headers = tree.xpath("//header")
-        self.assertTrue(headers, "Expected a <header> element")
-        header_text = " ".join(h.text_content() for h in headers)
-        self.assertIn(text, header_text)
-
-    def _assert_radio_group_contains_label(self, tree, legend_text, expected_label_part):
-        # fieldset whose legend matches legend_text
-        fieldsets = tree.xpath("//fieldset[.//legend[contains(normalize-space(.), $legend)]]", legend=legend_text)
-        self.assertTrue(fieldsets, f"Expected fieldset for '{legend_text}'")
-        labels = [el.text_content().strip() for el in fieldsets[0].xpath(".//label")]
-        self.assertTrue(
-            any(expected_label_part in t for t in labels),
-            f"Expected a radio label containing: {expected_label_part!r}",
-        )
 
     @less_console_noise_decorator
     def test_requesting_entity_page_new_request(self):
@@ -3313,9 +3302,10 @@ class TestRequestingEntity(WebTest):
 
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
-        tree = self._parse_tree(response)
-        self._assert_header_contains(tree, self.portfolio.organization_name)
-        self._assert_radio_group_contains_label(
+        tree = parse_tree(response)
+        assert_header_contains(self, tree, self.portfolio.organization_name)
+        assert_radio_group_contains_label(
+            self,
             tree,
             "Who will use the domain you’re requesting?",
             self.portfolio.organization_name,
@@ -3372,7 +3362,7 @@ class TestRequestingEntity(WebTest):
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[1]
+        form = form_with_field(response, "portfolio_requesting_entity-sub_organization")
 
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
@@ -3410,7 +3400,7 @@ class TestRequestingEntity(WebTest):
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[1]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
@@ -3433,7 +3423,7 @@ class TestRequestingEntity(WebTest):
         response = self.app.get(
             reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         ).follow()
-        form = response.forms[1]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 

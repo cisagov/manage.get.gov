@@ -6,7 +6,7 @@ from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.constants import BranchChoices
-from .common import MockSESClient, completed_domain_request  # type: ignore
+from .common import MockSESClient, completed_domain_request, form_with_field  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -2551,9 +2551,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
         self.assertNotContains(dotgov_page, "medicare.gov")
 
-    def _form_with_field(self, page, field_name: str):
-        return next(f for f in page.forms.values() if field_name in f.fields)
-
     # @less_console_noise_decorator
     def test_domain_request_FEB_questions(self):
         """
@@ -2606,7 +2603,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # separate out these tests for readability
         self.feb_dotgov_domain_tests(dotgov_page)
 
-        domain_form = self._form_with_field(dotgov_page, "dotgov_domain-requested_domain")
+        domain_form = form_with_field(dotgov_page, "dotgov_domain-requested_domain")
         domain = "test.gov"
         domain_form["dotgov_domain-requested_domain"] = domain
         domain_form["dotgov_domain-feb_naming_requirements"] = "False"
@@ -2623,7 +2620,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.feb_purpose_page_tests(purpose_page)
 
-        purpose_form = self._form_with_field(purpose_page, "purpose-feb_purpose_choice")
+        purpose_form = form_with_field(purpose_page, "purpose-feb_purpose_choice")
         purpose_form["purpose-feb_purpose_choice"] = "redirect"
         purpose_form["purpose-purpose"] = "testPurpose123"
         purpose_form["purpose-has_timeframe"] = "True"
@@ -2638,9 +2635,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_page = purpose_result.follow()
         self.feb_additional_details_page_tests(additional_details_page)
 
-        additional_details_form = self._form_with_field(
-            additional_details_page, "portfolio_additional_details-anything_else"
-        )
+        additional_details_form = form_with_field(additional_details_page, "portfolio_additional_details-anything_else")
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
         additional_details_form["portfolio_additional_details-anything_else"] = "test"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2651,7 +2646,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_page = additional_details_result.follow()
         self.feb_requirements_page_tests(requirements_page)
 
-        requirements_form = self._form_with_field(requirements_page, "requirements-is_policy_acknowledged")
+        requirements_form = form_with_field(requirements_page, "requirements-is_policy_acknowledged")
         requirements_form["requirements-is_policy_acknowledged"] = "True"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()

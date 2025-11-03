@@ -8,7 +8,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from .common import GenericTestHelper, MockEppLib, create_user, get_ap_style_month  # type: ignore
+from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
@@ -2293,7 +2293,7 @@ class TestDomainSuborganization(TestDomainOverview):
 
         # Try changing the suborg
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        form = next(f for f in page.forms.values() if "sub_organization" in f.fields)
+        form = form_with_field(page, "sub_organization")
         form["sub_organization"] = str(self.suborg_2.id)
 
         # Set the cookie before submitting
@@ -2301,7 +2301,7 @@ class TestDomainSuborganization(TestDomainOverview):
         page = form.submit().follow()
 
         # Re-grab the form from the response (there may be multiple forms)
-        form = next(f for f in page.forms.values() if "sub_organization" in f.fields)
+        form = form_with_field(page, "sub_organization")
 
         # The page should contain the choices Vanilla and Chocolate
         self.assertContains(page, "Vanilla")
