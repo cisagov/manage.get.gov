@@ -183,7 +183,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(join.dns_account, dns_acc)
         self.assertEqual(join.vendor_dns_account, vendor_acc)
 
-    def test_save_db_account_fails_on_error(self):
+    def test_save_db_account_with_error_fails(self):
         account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
 
         # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises
@@ -197,7 +197,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(Join.objects.count(), 0)
 
-    def test_save_db_account_missing_fields_failure(self):
+    def test_save_db_account_with_bad_or_incomplete_data_fails(self):
         invalid_result_payloads = [
             {},
             {"result": {}},
@@ -251,6 +251,7 @@ class TestDnsHostServiceDB(TestCase):
             with self.assertRaises(IntegrityError):
                 self.service.save_db_account(payload)
 
+        # If the creation of the join fails, nothing should be saved in the database.
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(Join.objects.count(), 0)
