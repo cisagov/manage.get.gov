@@ -41,7 +41,6 @@ import boto3_mocking  # type: ignore
 from django.test import Client
 import logging
 import json
-from lxml import html
 
 
 logger = logging.getLogger(__name__)
