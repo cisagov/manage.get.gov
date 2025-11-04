@@ -13,7 +13,7 @@
     This is a prototype that demonstrates adding an 'A' record to a zone.
     Do note that this just adds records, but does not update or delete existing ones.
     </p>
-    
+
     <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
         {% csrf_token %}
         {% input_with_errors form.name %}

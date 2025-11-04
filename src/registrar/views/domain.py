@@ -796,7 +796,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
             return False
 
         return True
-    
+
     def get_success_url(self):
         return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
 
