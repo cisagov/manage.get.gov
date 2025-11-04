@@ -29,7 +29,7 @@ class DnsRecord(TimeStampedModel):
 
     comment = models.CharField(blank=True, null=True)
 
-    tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
+    tags = ArrayField(models.CharField(), null=False, blank=False, default=list)
 
     priority = models.PositiveIntegerField(
         blank=True, null=True, validators=[MinValueValidator(0), MaxValueValidator(65535)]
