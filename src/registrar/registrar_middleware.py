@@ -166,15 +166,27 @@ class CheckPortfolioMiddleware:
     def _is_excluded(self, path: str) -> bool:
         return any(path.startswith(p) for p in self.excluded_pages)
 
-    def _handle_legacy_opt_in(self, request):
-        """Allow legacy users to see old home; clears portfolio from session."""
-        if request.path == self.home and request.GET.get(self.legacy_home) == "1" and request.user.has_legacy_domain():
-            request.session.pop("portfolio", None)
-            return True
-        return False
+    def _is_data_api(self, request):
+        return request.path in {
+            reverse("get_domains_json"),
+            reverse("get_domain_requests_json"),
+        }
+
+    def _wants_html(self, request):
+        accept = request.META.get("HTTP_ACCEPT", "")
+        return "text/html" in accept
 
     def _set_or_clear_portfolio(self, request):
         """Ensure session['portfolio'] is consistent with user/org state."""
+        # Only on the real home request, never on AJAX/APIs/Other URLs
+        if request.path != self.home:
+            return
+
+        # On legacy clicks clear portfolio & stop
+        if request.GET.get(self.legacy_home) == "1":
+            request.session.pop("portfolio", None)
+            return
+
         user = request.user
         multiple = flag_is_active(request, "multiple_portfolios")
         first_portfolio = user.get_first_portfolio()
@@ -190,7 +202,10 @@ class CheckPortfolioMiddleware:
 
     def _maybe_redirect_to_org_select(self, request):
         """If user has multiple orgs and no active portfolio (and not on excluded paths), send to select page."""
-        if self._is_excluded(request.path):
+        if request.GET.get(self.legacy_home) == "1":
+            return None
+        # Never redirect explicit legacy clicks; never redirect JSON/APIs etc. only HTML views
+        if self._is_excluded(request.path) or self._is_data_api(request) or not self._wants_html(request):
             return None
         if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
             return HttpResponseRedirect(self.select_portfolios_page)
@@ -198,6 +213,8 @@ class CheckPortfolioMiddleware:
 
     def _home_redirect(self, request):
         """Handle all home page redirections."""
+        if request.GET.get(self.legacy_home) == "1":
+            return None
         if request.path != self.home:
             return None
 
@@ -229,9 +246,7 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        if self._handle_legacy_opt_in(request):
-            return None
-
+        # Only runs on / home requests
         self._set_or_clear_portfolio(request)
 
         resp = self._maybe_redirect_to_org_select(request)
