@@ -1238,9 +1238,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.info("Deleting CONTACTS")
         try:
-            non_registrant_contacts = PublicContact.objects.filter(
-                domain=self, contact_type__in=["admin", "tech", "security"]
-            )
+            # We are keeping security contact for now
+            non_registrant_contacts = PublicContact.objects.filter(domain=self, contact_type__in=["admin", "tech"])
             logger.info("Deleting %d non-registrant contacts", non_registrant_contacts.count())
             for c in non_registrant_contacts:
                 logger.info("Deleting contact %s (%s)", c.contact_type, c.email)
