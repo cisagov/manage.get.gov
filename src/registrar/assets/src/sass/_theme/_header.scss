@@ -539,3 +539,39 @@ button {
         }
     }
 }
+
+.organizations-page-wrapper {
+  /* Make anchor/button versions behave the same */
+  .usa-card__container { display: block; box-sizing: border-box; }
+
+  /* Uniform header padding + centering */
+  .usa-card__header {
+    display: flex;
+    align-items: center;
+    padding: units(3); /* 24px */
+  }
+
+  /* Let the heading fill the row so the pill/tag pushes to the far right */
+  .usa-card__header > .usa-card__heading {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;     /* gives space for margin-left-auto to work */
+    margin: 0;          /* removes bottom spacing */
+    line-height: 1;     /* vertically centers icon with text */
+    white-space: nowrap;
+    min-height: units(4);
+  }
+
+  /* Remove baseline gap from icon/arrow so padding looks equal */
+  .usa-card__heading img,
+  .usa-card__heading svg {
+    display: block;
+    height: units(4);
+    flex: 0 0 auto;
+  }
+
+  /* Keep a small gap between name and arrow */
+  .usa-card__heading .organizations-arrow-icon { margin-left: units(0.5); }
+
+  .usa-card__heading .usa-tag--enterprise.margin-left-auto { margin-left: auto !important; }
+}
