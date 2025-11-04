@@ -30,18 +30,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="dnsrecord",
-            name="priority",
-            field=models.PositiveIntegerField(
-                blank=True,
-                null=True,
-                validators=[
-                    django.core.validators.MinValueValidator(0),
-                    django.core.validators.MaxValueValidator(65535),
-                ],
-            ),
-        ),
-        migrations.AddField(
-            model_name="dnsrecord",
             name="tags",
             field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(), default=list, size=None),
         ),

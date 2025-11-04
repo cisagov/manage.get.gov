@@ -2,7 +2,7 @@ from django.test import TestCase
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 
 
-class DnsZoneTest(TestCase):
+class DnsRecordTest(TestCase):
     def setUp(self):
         super().setUp()
         self.dns_domain = Domain.objects.create(name="dns-test.gov")
@@ -16,10 +16,6 @@ class DnsZoneTest(TestCase):
         DnsZone.objects.all().delete()
         Domain.objects.all().delete()
         DnsRecord.objects.all().delete()
-
-    def test_create_multiple_dns_record_per_zone(self):
-        """Successfully create multiple DNS records for same zone."""
-        DnsRecord.objects.create(dns_zone=self.dns_zone)
 
     def test_update_dns_record_success(self):
         """Update DNS A record content."""

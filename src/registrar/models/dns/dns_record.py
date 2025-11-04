@@ -31,14 +31,12 @@ class DnsRecord(TimeStampedModel):
 
     tags = ArrayField(models.CharField(), null=False, blank=False, default=list)
 
-    priority = models.PositiveIntegerField(
-        blank=True, null=True, validators=[MinValueValidator(0), MaxValueValidator(65535)]
-    )
-
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         # Set default record name to zone's domain name.
         # Some DNS records make name optional but A records require a name.
+
+        # Setting record name to @ indicates it is for root domain
         if not self.name:
-            self.name = self.dns_zone.domain.name
+            self.name = "@"
         super().save(*args, **kwargs)
