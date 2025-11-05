@@ -198,14 +198,14 @@ class TestDnsHostServiceDB(TestCase):
 
     def test_save_db_account_with_bad_or_incomplete_data_fails(self):
         invalid_result_payloads = [
-            {},
-            {"result": {}},
-            {"result": {"id": "A"}},
-            {"result": {"name": "Account"}},
+            {"test_name": "Empty payload test case"},
+            {"test_name": "Empty result dictionary test case", "result": {}},
+            {"test_name": "Missing name test case", "result": {"id": "A"}},
+            {"test_name": "Missing id test case", "result": {"name": "Account"}},
         ]
 
         for payload in invalid_result_payloads:
-            with self.subTest(payload=payload):
+            with self.subTest(msg=payload["test_name"], payload=payload):
                 with self.assertRaises(KeyError):
                     self.service.save_db_account(payload)
 
