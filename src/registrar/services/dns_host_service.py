@@ -72,9 +72,6 @@ class DnsHostService:
 
         return account_id, zone_id, nameservers
 
-    def account_setup(self, account_name):
-        pass
-
     def create_account_and_save(self, account_name):
         try:
             account_data = self.dns_vendor_service.create_cf_account(account_name)
