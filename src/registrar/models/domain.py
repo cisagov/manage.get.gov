@@ -1743,7 +1743,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO -on the client hold ticket any additional error handling here
         self.save(update_fields=["state"])
 
-    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
+    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN], target=State.DELETED)
     def deletedInEpp(self):
         """Domain is deleted in epp but is saved in our database.
         Subdomains will be deleted first if not in use by another domain.
