@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
-from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
 from registrar.models.dns.dns_vendor import DnsVendor
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
@@ -158,7 +158,7 @@ class TestDnsHostServiceDB(TestCase):
         DnsVendor.objects.all().delete()
         VendorDnsAccount.objects.all().delete()
         DnsAccount.objects.all().delete()
-        Join.objects.all().delete()
+        AccountsJoin.objects.all().delete()
 
     def test_save_db_account_success(self):
         # Dummy JSON data from API
@@ -174,14 +174,13 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(vendor_acc.dns_vendor, self.vendor)
 
         # Validate there's one DnsAccount row with the given name
-        self.assertEqual(DnsAccount.objects.count(), 1)
-        dns_acc = DnsAccount.objects.get(name="Account for test.gov")
+        dns_accts = DnsAccount.objects.filter(name="Account for test.gov")
+        self.assertEqual(dns_accts.count(), 1)
 
-        # Testing a join row for DnsAccount_VendorDnsAccount
-        self.assertEqual(Join.objects.count(), 1)
-        join = Join.objects.get()
-        self.assertEqual(join.dns_account, dns_acc)
-        self.assertEqual(join.vendor_dns_account, vendor_acc)
+        # Testing the join row for DnsAccount_VendorDnsAccount
+        dns_acc = DnsAccount.objects.get(name="Account for test.gov")
+        join_exists = AccountsJoin.objects.filter(dns_account=dns_acc, vendor_dns_account=vendor_acc).exists()
+        self.assertTrue(join_exists)
 
     def test_save_db_account_with_error_fails(self):
         account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
@@ -195,7 +194,7 @@ class TestDnsHostServiceDB(TestCase):
         # Ensure that no database rows are created across our tables (since the transaction failed).
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
-        self.assertEqual(Join.objects.count(), 0)
+        self.assertEqual(AccountsJoin.objects.count(), 0)
 
     def test_save_db_account_with_bad_or_incomplete_data_fails(self):
         invalid_result_payloads = [
@@ -213,7 +212,7 @@ class TestDnsHostServiceDB(TestCase):
         # Nothing should be written on any failure
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
-        self.assertEqual(Join.objects.count(), 0)
+        self.assertEqual(AccountsJoin.objects.count(), 0)
 
     def test_save_db_account_duplicate_vendor_account_id_throws_error(self):
         payload = {
@@ -233,7 +232,7 @@ class TestDnsHostServiceDB(TestCase):
         # There should only be one of each object (from the first create)
         self.assertEqual(VendorDnsAccount.objects.count(), 1)
         self.assertEqual(DnsAccount.objects.count(), 1)
-        self.assertEqual(Join.objects.count(), 1)
+        self.assertEqual(AccountsJoin.objects.count(), 1)
 
     def test_save_db_account_on_failed_join_creation_throws_error(self):
         payload = {
@@ -254,4 +253,4 @@ class TestDnsHostServiceDB(TestCase):
         # If the creation of the join fails, nothing should be saved in the database.
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
-        self.assertEqual(Join.objects.count(), 0)
+        self.assertEqual(AccountsJoin.objects.count(), 0)

@@ -5,7 +5,7 @@ from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
-from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as Join
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
 from registrar.models.dns.dns_vendor import DnsVendor
 
 from django.db import transaction
@@ -34,25 +34,54 @@ class DnsHostService:
 
     def dns_setup(self, domain_name):
         account_name = make_dns_account_name(domain_name)
-        account_id = self.account_setup(account_name)
-        zone_id, nameservers = self.zone_setup(account_id, domain_name)
+
+        account_id = self._find_existing_account(account_name)
+        has_account = bool(account_id)
+
+        zone_id = None
+        if has_account:
+            logger.info("Already has an existing vendor account")
+            zone_id, nameservers = self._find_existing_zone(domain_name, account_id)
+        has_zone = bool(zone_id)
+
+        if not has_account:
+            account_id = self.create_account_and_save(account_name)
+
+            try:
+                zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
+                zone_name = zone_data["result"].get("name")
+                logger.info(f"Successfully created zone {domain_name}")
+                zone_id = zone_data["result"]["id"]
+                nameservers = zone_data["result"].get("name_servers")
+
+            except APIError as e:
+                logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
+                raise
+
+        elif has_account and not has_zone:
+            try:
+                zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
+                logger.info("Successfully created zone")
+                zone_name = zone_data["result"].get("name")
+                zone_id = zone_data["result"]["id"]
+                nameservers = zone_data["result"].get("name_servers")
+
+            except APIError as e:
+                logger.error(f"DNS setup failed to create zone {domain_name}: {str(e)}")
+                raise
+
         return account_id, zone_id, nameservers
 
     def account_setup(self, account_name):
-        account_id = self._find_existing_account(account_name)
-        has_account = bool(account_id)
-        if has_account:
-            logger.info("Already has an existing vendor account")
-            return account_id
-        return self.create_db_account_and_save(account_name)
+        pass
 
-    def create_db_account_and_save(self, account_name):
+    def create_account_and_save(self, account_name):
         try:
             account_data = self.dns_vendor_service.create_cf_account(account_name)
             logger.info("Successfully created account")
             account_id = account_data["result"]["id"]
         except APIError as e:
-            logger.error(f"DNS setup failed to create account: {str(e)}")
+            logger.error(f"Failed to create account: {str(e)}")
             raise
 
         try:
@@ -63,28 +92,6 @@ class DnsHostService:
             raise
 
         return account_id
-
-    def zone_setup(self, account_id, domain_name):
-        zone_id, nameservers = self._find_existing_zone(domain_name, account_id)
-        has_zone = bool(zone_id)
-        if has_zone:
-            logger.info("Has existing zone")
-            return zone_id, nameservers
-        return self.create_zone_id_and_nameservers(domain_name, account_id)
-
-    def create_zone_id_and_nameservers(self, domain_name, account_id):
-        try:
-            zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
-            zone_name = zone_data["result"].get("name")
-            logger.info(f"Successfully created zone {domain_name}")
-            zone_id = zone_data["result"]["id"]
-            nameservers = zone_data["result"].get("name_servers")
-
-        except APIError as e:
-            logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
-            raise
-
-        return zone_id, nameservers
 
     def create_record(self, zone_id, record_data):
         """Calls create method of vendor service to create a DNS record"""
@@ -140,8 +147,8 @@ class DnsHostService:
         except (RegistrySystemError, Exception):
             raise
 
-    def save_db_account(self, account_data):
-        result = account_data["result"]
+    def save_db_account(self, vendor_account_data):
+        result = vendor_account_data["result"]
         account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=DnsVendor.CF)
 
@@ -155,7 +162,7 @@ class DnsHostService:
 
             dns_acc = DnsAccount.objects.create(name=result["name"])
 
-            Join.objects.create(
+            AccountsJoin.objects.create(
                 dns_account=dns_acc,
                 vendor_dns_account=vendor_acc,
             )
