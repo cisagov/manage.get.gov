@@ -1298,7 +1298,7 @@ class DomainRequest(TimeStampedModel):
             "withdraw",
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
-            bcc_address=bcc_address
+            bcc_address=bcc_address,
         )
 
     @transition(
