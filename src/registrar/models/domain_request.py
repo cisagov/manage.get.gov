@@ -1292,11 +1292,13 @@ class DomainRequest(TimeStampedModel):
     )
     def withdraw(self):
         """Withdraw an domain request that has been submitted."""
+        bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
 
         self._send_status_update_email(
             "withdraw",
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
+            bcc_address=bcc_address
         )
 
     @transition(
