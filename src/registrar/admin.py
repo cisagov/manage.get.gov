@@ -520,6 +520,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.IN_REVIEW_OMB
         ]
 
         # If a status change occured, check for validity
@@ -3332,6 +3333,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
             models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
             models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW_OMB: domain_request.in_review_omb,
         }
 
         # Grab the method
