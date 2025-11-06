@@ -33,7 +33,8 @@ class Command(BaseCommand):
             if count > 1:
                 logger.info(f'{count} domains have been deleted.')
             else:
-                logger.info(f'{count} domain has been deleted')
+                text = "No" if count == 0 else "1"
+                logger.info(f'{text} domain has been deleted.')
 
     def add_arguments(self, parser):
         parser.add_argument(
