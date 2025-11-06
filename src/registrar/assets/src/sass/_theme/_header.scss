@@ -212,26 +212,104 @@ button {
             overflow: visible;
         }
     }
-    .usa-nav__primary a:not(.usa-button) {
-        @include at-media-max($theme-header-min-width) {
-            .organization-nav-link {
-                white-space: nowrap;
-                width: 100%;
+    .usa-nav {
+        background-color: #{$dhs-light-blue-80};
+
+        .usa-nav__primary {
+            button {
+                color: white;
+                display: flex;
+                justify-content: flex-start;
+                align-items: stretch;
+                span {
+                    align-self: flex-start;
+                    &::after {
+                        background-color: white;
+                        display: flex;
+                        justify-content: center;
+                        align-items: flex-start;
+                        top: 1.3em;
+                    }
+                }
+            }
+            
+            a:not(.usa-button) {
+                color: white;
+            }
+        }
+        
+        .usa-nav__primary-item {
+            .usa-nav__submenu-item a {
+                &:hover {
+                    background-color: transparent;
+                }
             }
 
-            &:hover,
-            &:focus,
-            &.usa-current {
-                .organization-nav-link {
-                    white-space: normal;
-                }
-
-                .logo-col {
-                    padding-top: 0.42rem;
-                    align-self: flex-start;
+            a {
+                overflow-wrap: break-word;
+                &:hover {
+                    background-color: transparent;
                 }
             }
         }
+
+        .usa-accordion__button {
+            &:hover {
+                background-color: transparent;
+            }
+            &:focus {
+                outline: none;
+                border-left: 3px solid white;
+                font-weight: font-weight('bold');
+            }
+        }
+
+        #portfolio-single-button {
+            &:hover {
+                background-color: transparent;
+            }
+            &:focus {
+                outline: none;
+                font-weight: font-weight('bold');
+                border-left: 0;
+            }
+        }
+
+        .usa-nav__close {
+            &:focus {
+                outline: 0 !important;
+            }
+        }
+
+        .mobile-only {
+            display: none;
+
+            @media (max-width: 1024px) {
+                display: block;
+            }
+        }
+
+        .desktop-only {
+            display: none;
+
+            @media (min-width: 1024px) {
+                display: flex;
+            }
+        }
+    }
+
+    .close-icon {
+        filter: brightness(0) invert(1);
+        outline: none;
+    }
+
+    .logout-icon {
+        filter: brightness(0) invert(1);
+        height: 18px;
+    }
+
+    .usa-nav__primary .mobile-menu-profile {
+        border-top: 0;
     }
 }
 
@@ -278,8 +356,8 @@ button {
     }
 
     @include at-media-max($theme-header-min-width) {
-        @include nav-list("nav");
         border-top: solid 1px color('base-lighter');
+        @include nav-list("nav");
 
         a {
           @include u-padding-y(1.5);
@@ -333,9 +411,9 @@ button {
     
     @include at-media($theme-header-min-width) {
         span {
-            @include place-icon($-add-icon, "after");
             font-weight: font-weight('bold');
             color: #{$dhs-light-blue-15};
+            @include place-icon($-add-icon, "after");
         }
     }
 
@@ -503,11 +581,6 @@ button {
     }
 
     button {
-        @include at-media($theme-header-min-width) {
-            &:hover {
-                text-decoration: underline;
-            }
-        }
         font-size: 1rem;
         font-weight: font-weight("normal");
         justify-content: flex-start;
@@ -523,6 +596,11 @@ button {
             @include at-media($theme-header-min-width) {
                 font-size: 1rem;
                 color: #{$dhs-light-blue-15};
+            }
+        }
+        @include at-media($theme-header-min-width) {
+            &:hover {
+                text-decoration: underline;
             }
         }
     }

@@ -2,6 +2,8 @@ import logging
 from django import template
 import re
 from registrar.models.domain_request import DomainRequest
+from registrar.models.user_domain_role import UserDomainRole
+from registrar.models import User
 from phonenumber_field.phonenumber import PhoneNumber
 from registrar.views.domain_request import DomainRequestWizard
 
@@ -310,3 +312,41 @@ def get_dict_value(dictionary, key):
 def button_class(custom_class):
     default_class = "usa-button"
     return f"{default_class} {custom_class}" if custom_class else default_class
+
+@register.simple_tag(takes_context=True)
+def get_user_nav_modes(context):
+    request = context.get("request")
+
+    user = getattr(request, "user", None)
+
+    modes = dict(is_enterprise=False, is_legacy=False, is_both=False)
+
+    if not user or not user.is_authenticated:
+        return modes
+    
+    is_enterprise = user.is_org_user(request) or user.is_any_org_user()
+
+    has_legacy_domains = UserDomainRole.objects.filter(user=user).exists()
+    has_legacy_requests = DomainRequest.objects.filter(requester=user).exists()
+    is_grandfathered = user.verification_type == User.VerificationTypeChoices.GRANDFATHERED
+
+    is_legacy = has_legacy_domains or has_legacy_requests or is_grandfathered or user.has_perm("registrar.analyst_access_permission") or user.has_perm("registrar.full_access_permission")
+
+    modes["is_enterprise"] = is_enterprise
+    modes["is_legacy"] = is_legacy
+    modes["is_both"] = is_enterprise and is_legacy
+
+    return modes
+
+@register.simple_tag(takes_context=True)
+def get_user_portfolios(context):
+    request = context.get("request")
+
+    user = getattr(request, "user", None)
+
+    if not user or not user.is_authenticated:
+        return []
+    perms = user.get_portfolios().select_related("portfolio")
+    portfolios = [pp.portfolio for pp in perms if getattr(pp, "portfolio", None)]
+
+    return sorted(portfolios, key=lambda p: p.organization_name or "")
