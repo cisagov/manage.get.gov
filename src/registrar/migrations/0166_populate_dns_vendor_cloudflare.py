@@ -17,7 +17,7 @@ def unpopulate_cloudflare_vendor(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0164_alter_domain_request_status"),
+        ("registrar", "0165_dnsrecord_comment_dnsrecord_content_dnsrecord_name_and_more"),
     ]
 
     operations = [
