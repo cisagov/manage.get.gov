@@ -48,7 +48,7 @@ class DnsHostService:
             account_id = self.create_and_save_account(account_name)
 
             try:
-                zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
+                zone_data = self.dns_vendor_service.create_cf_zone(domain_name, account_id)
                 zone_name = zone_data["result"].get("name")
                 logger.info(f"Successfully created zone {domain_name}")
                 zone_id = zone_data["result"]["id"]
@@ -60,7 +60,7 @@ class DnsHostService:
 
         elif has_account and not has_zone:
             try:
-                zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
+                zone_data = self.dns_vendor_service.create_cf_zone(domain_name, account_id)
                 logger.info("Successfully created zone")
                 zone_name = zone_data["result"].get("name")
                 zone_id = zone_data["result"]["id"]
@@ -165,3 +165,8 @@ class DnsHostService:
             )
 
         return account_id
+
+    def save_db_zone(self, vendor_zone_data):
+        zone_data = vendor_zone_data["result"]
+        zone_xid = zone_data["id"]
+            

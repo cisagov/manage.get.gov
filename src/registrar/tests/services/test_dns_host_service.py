@@ -19,14 +19,14 @@ class TestDnsHostService(SimpleTestCase):
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_zone")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
     def test_dns_setup_success(
         self,
         mock_save_db_account,
         mock_create_cf_account,
-        mock_create_zone,
+        mock_create_cf_zone,
         mock_get_page_accounts,
         mock_get_account_zones,
     ):
@@ -61,7 +61,7 @@ class TestDnsHostService(SimpleTestCase):
             with self.subTest(msg=case["test_name"], **case):
                 mock_create_cf_account.return_value = {"result": {"id": case["account_id"]}}
 
-                mock_create_zone.return_value = {"result": {"id": case["zone_id"], "name": case["domain_name"]}}
+                mock_create_cf_zone.return_value = {"result": {"id": case["zone_id"], "name": case["domain_name"]}}
 
                 mock_get_page_accounts.return_value = {
                     "result": [{"id": case.get("found_account_id")}],
@@ -80,10 +80,10 @@ class TestDnsHostService(SimpleTestCase):
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_zone")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     def test_dns_setup_failure_from_create_account(
-        self, mock_create_cf_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
+        self, mock_create_cf_account, mock_create_cf_zone, mock_get_page_accounts, mock_get_account_zones
     ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
@@ -98,10 +98,10 @@ class TestDnsHostService(SimpleTestCase):
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_zone")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_dns_setup_failure_from_create_zone(
-        self, mock_create_cf_account, mock_create_zone, mock_get_page_accounts, mock_get_account_zones
+    def test_dns_setup_failure_from_create_cf_zone(
+        self, mock_create_cf_account, mock_create_cf_zone, mock_get_page_accounts, mock_get_account_zones
     ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
@@ -114,7 +114,7 @@ class TestDnsHostService(SimpleTestCase):
             self.service.dns_setup(domain_name)
 
         mock_create_cf_account.assert_called_once_with(account_name)
-        # mock_create_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
+        # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")

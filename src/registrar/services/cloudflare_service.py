@@ -38,7 +38,7 @@ class CloudflareService:
 
         return resp.json()
 
-    def create_zone(self, zone_name: str, account_id: str):
+    def create_cf_zone(self, zone_name: str, account_id: str):
         appended_url = "/zones"
         data = {"name": zone_name, "account": {"id": account_id}}
         try:
