@@ -734,7 +734,7 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov", "citizen-stuff.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -776,7 +776,11 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "exists.gov", "citizen-stuff.gov"]
+    valid_domains = [
+        "igorville.gov",
+        "domainops.gov",
+        "dns.gov",
+    ]
 
     def __init__(self):
         self.dns_record = None
