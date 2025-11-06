@@ -95,10 +95,10 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(len(result2), 1)
         self.assertEquals(result2[0].get("name"), "exists.gov")
 
-    def test_mock_create_account_response(self):
+    def test_mock_create_cf_account_response(self):
         account_name = make_dns_account_name("equity.gov")
 
-        resp = self.service.create_account(account_name)
+        resp = self.service.create_cf_account(account_name)
         result = resp["result"]
 
         self.assertEquals(result["name"], account_name)

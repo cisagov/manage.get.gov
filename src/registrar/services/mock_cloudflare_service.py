@@ -204,7 +204,7 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": {
-                    "id": fake.uuid4(),
+                    "id": self.new_account_id,
                     "name": account_name,
                     "type": "standard",  # enterprise?
                     "created_on": datetime.now(timezone.utc).isoformat(),  # format "2014-03-01T12:21:02.0000Z",
