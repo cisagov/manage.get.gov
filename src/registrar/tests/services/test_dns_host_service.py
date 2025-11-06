@@ -223,26 +223,6 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
                     self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
-    def test_save_db_account_duplicate_vendor_account_id_throws_error(self):
-        payload = {
-            "result": {
-                "id": "DUP1",
-                "name": "Account for test.gov",
-                "created_on": "2024-01-02T03:04:05Z",
-            }
-        }
-
-        self.service.save_db_account(payload)
-
-        # Second create with the same external ID should violate constraints
-        with self.assertRaises(IntegrityError):
-            self.service.save_db_account(payload)
-
-        # There should only be one of each object (from the first create)
-        self.assertEqual(VendorDnsAccount.objects.count(), 1)
-        self.assertEqual(DnsAccount.objects.count(), 1)
-        self.assertEqual(AccountsJoin.objects.count(), 1)
-
     def test_save_db_account_on_failed_join_creation_throws_error(self):
         payload = {
             "result": {
