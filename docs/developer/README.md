@@ -385,7 +385,9 @@ Then, copy the variables under the section labled `s3`.
 The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaenterprise3850/m/cisaenterprise3850/1743613581103/eeff220faf8db79d54624cef49d40f66cf85bfd6) visualizes the domain request flow and resulting domain objects.
 
 
-## Testing the prototype add DNS record feature (update as testing instructions change)
+## DNS Hosting Feature
+
+### Testing the DNS record feature (update as testing instructions change)
 We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
 `prototype_dns_flag` waffle flag and navigate to a domain you manage. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
 
@@ -406,3 +408,26 @@ To manually test locally:
    - Click on "DNS" on the left nav menu
    - Click the link below DNSEC: "Prototype DNS record creator"
    - You should see a form for adding DNS records
+
+### Mocking DNS vendor APIs in local development
+
+  We use the library `respx` for mocking `httpx` api calls and responses. Through an environment variable, we determine
+  when to use a MockCloudflareService class which mocks the responses of the api calls.
+
+  To utilize the mocks
+  1) In your .env, add this:
+
+  ```
+  DNS_MOCK_EXTERNAL_APIS=True
+  ```
+  By default it is set to False, so outside of your local environment the actual CF APIs will be called (unless you set
+  the variable to True)
+
+  2) Fill and submit a record like normal and you will get a success response.
+  3) To mock using an existing account/zone (rather than creating a new one for each dns record created), use the domain
+  `exists.gov`
+  4) To trigger a dns record error response, enter a record name that starts with:
+    `error-400` to trigger a bad request 400
+    `error-403` to trigger an authentication error 403
+    `error*` to trigger a 500 response
+    
