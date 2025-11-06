@@ -127,10 +127,12 @@
     {% endif %}
 
     {% url 'domain-security-email' domain_pk=domain.id as url %}
-    {% if security_email is not None and security_email not in hidden_security_emails%}
-      {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
-    {% else %}
-      {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
+    {% if domain.state != domain.State.DELETED %}
+      {% if security_email is not None and security_email not in hidden_security_emails%}
+        {% include "includes/summary_item.html" with title='Security email' value=security_email edit_link=url editable=is_editable %}
+      {% else %}
+        {% include "includes/summary_item.html" with title='Security email' value='None provided' edit_link=url editable=is_editable %}
+      {% endif %}
     {% endif %}
     {% url 'domain-users' domain_pk=domain.id as url %}
     {% if portfolio %}
