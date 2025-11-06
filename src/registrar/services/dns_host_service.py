@@ -45,7 +45,7 @@ class DnsHostService:
         has_zone = bool(zone_id)
 
         if not has_account:
-            account_id = self.create_account_and_save(account_name)
+            account_id = self.create_and_save_account(account_name)
 
             try:
                 zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
@@ -72,10 +72,10 @@ class DnsHostService:
 
         return account_id, zone_id, nameservers
 
-    def create_account_and_save(self, account_name):
+    def create_and_save_account(self, account_name):
         try:
             account_data = self.dns_vendor_service.create_cf_account(account_name)
-            logger.info("Successfully created account")
+            logger.info("Successfully created account at vendor")
             account_id = account_data["result"]["id"]
         except APIError as e:
             logger.error(f"Failed to create account: {str(e)}")

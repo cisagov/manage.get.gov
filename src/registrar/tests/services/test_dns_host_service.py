@@ -169,9 +169,9 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(returned_id, "12345")
 
         # Validate there's one VendorDnsAccount row with the external id and the CF Vendor
-        self.assertEqual(VendorDnsAccount.objects.count(), 1)
-        vendor_acc = VendorDnsAccount.objects.get(x_account_id="12345")
-        self.assertEqual(vendor_acc.dns_vendor, self.vendor)
+        expected_account_id = account_data["result"].get("id")
+        vendor_accts = VendorDnsAccount.objects.filter(x_account_id=expected_account_id, dns_vendor_id=self.vendor.id)
+        self.assertEqual(vendor_accts.count(), 1)
 
         # Validate there's one DnsAccount row with the given name
         dns_accts = DnsAccount.objects.filter(name="Account for test.gov")
@@ -179,11 +179,16 @@ class TestDnsHostServiceDB(TestCase):
 
         # Testing the join row for DnsAccount_VendorDnsAccount
         dns_acc = DnsAccount.objects.get(name="Account for test.gov")
+        vendor_acc = VendorDnsAccount.objects.get(x_account_id="12345")
         join_exists = AccountsJoin.objects.filter(dns_account=dns_acc, vendor_dns_account=vendor_acc).exists()
         self.assertTrue(join_exists)
 
     def test_save_db_account_with_error_fails(self):
         account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
+
+        expected_vendor_accts = VendorDnsAccount.objects.count()
+        expected_dns_accts = DnsAccount.objects.count()
+        expected_acct_joins = AccountsJoin.objects.count()
 
         # patch() temporarily replaces VendorDnsAccount.objects.create() with a fake version that raises
         # an integrity error mid-transcation
@@ -192,9 +197,9 @@ class TestDnsHostServiceDB(TestCase):
                 self.service.save_db_account(account_data)
 
         # Ensure that no database rows are created across our tables (since the transaction failed).
-        self.assertEqual(VendorDnsAccount.objects.count(), 0)
-        self.assertEqual(DnsAccount.objects.count(), 0)
-        self.assertEqual(AccountsJoin.objects.count(), 0)
+        self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_accts)
+        self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
+        self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
     def test_save_db_account_with_bad_or_incomplete_data_fails(self):
         invalid_result_payloads = [
@@ -204,15 +209,19 @@ class TestDnsHostServiceDB(TestCase):
             {"test_name": "Missing id test case", "result": {"name": "Account"}},
         ]
 
+        expected_vendor_accts = VendorDnsAccount.objects.count()
+        expected_dns_accts = DnsAccount.objects.count()
+        expected_acct_joins = AccountsJoin.objects.count()
+
         for payload in invalid_result_payloads:
             with self.subTest(msg=payload["test_name"], payload=payload):
                 with self.assertRaises(KeyError):
                     self.service.save_db_account(payload)
 
-        # Nothing should be written on any failure
-        self.assertEqual(VendorDnsAccount.objects.count(), 0)
-        self.assertEqual(DnsAccount.objects.count(), 0)
-        self.assertEqual(AccountsJoin.objects.count(), 0)
+                    # Nothing should be written on any failure
+                    self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_accts)
+                    self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
+                    self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
     def test_save_db_account_duplicate_vendor_account_id_throws_error(self):
         payload = {
