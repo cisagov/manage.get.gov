@@ -36,6 +36,7 @@ from registrar.utility.enums import DefaultEmail
 import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
+from datetime import timedelta
 
 from .common import (
     MockEppLib,
@@ -2728,3 +2729,50 @@ class TestCleanPII(TestCase):
         super().tearDown()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+class TestDeleteDomainNotSetup(MockEppLib):
+    def setUp(self):
+        self.user1 = User.objects.create(
+            email="lucille@aol.gov", first_name="Lucille", last_name="Malt", username="user1"
+        )
+        self.user2 = User.objects.create(
+            email="somedotgovdev@test.gov", first_name="Dottie", last_name="Glover", username="user2"
+        )
+
+        self.expiration_date_seven_days = timezone.now().date() - timedelta(days=7)
+        expiration_past_not_yet_seven_days = timezone.now().date() - timedelta(days=2)
+        self.domain_1 = Domain.objects.create(name="test.gov", expiration_date=self.expiration_date_seven_days)
+        self.domain_2 = Domain.objects.create(name="test1.gov",expiration_date=expiration_past_not_yet_seven_days)
+        self.domain_3 = Domain.objects.create(name="test2.gov", expiration_date=self.expiration_date_seven_days)   
+
+        # self.domain_3.dns_needed_from_unknown()
+        # self.domain_3.save()
+        #  def ready(self):
+
+        UserDomainRole.objects.create(domain=self.domain_1, user=self.user1, role=UserDomainRole.Roles.MANAGER)
+        UserDomainRole.objects.create(domain=self.domain_2, user=self.user2, role=UserDomainRole.Roles.MANAGER)
+
+        domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
+        domains = Domain.objects.filter(state__in=(domain_state), expiration_date=self.expiration_date_seven_days)
+    
+    @patch("registrar.admin.send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers")
+    def test_dry_run_does_not_modify_data(self, mock_send_domain_managers_email):
+        call_command("delete_expired_domains_not_setup", dry_run=True)
+        self.assertEqual(self.domain_1.state, Domain.State.UNKNOWN)
+        mock_send_domain_managers_email.assert_called_once_with(
+            domains=domains
+        )
+    
+    @patch("registrar.admin.send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers")
+    def test_updates_domains(self, mock_send_domain_managers_email):
+        self.domain_3.dns_needed_from_unknown()
+        self.domain_3.save()
+        call_command("delete_expired_domains_not_setup", dry_run=False)
+        self.assertEqual(self.domain_1.state, Domain.State.DELETED)
+        self.assertEqual(self.domain_2.state, Domain.State.UNKNOWN)
+        self.assertEqual(self.domain_3.state, Domain.State.DELETED)
+
+        mock_send_domain_managers_email.assert_called_once_with(
+            domains=domains
+        )
+

@@ -712,19 +712,22 @@ def send_domain_renewal_notification_emails(domain: Domain):
 
     return all_emails_sent
 
+
 def send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(domains):
     all_emails_sent = True
     subject_txt = "emails/domain_deletion_dns_needed_unknown_subject.txt"
     body_txt = "emails/domain_deletion_dns_needed_unknown_body.txt"
     for domain in domains:
-        user_domain_roles_emails = list(UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct())
+        user_domain_roles_emails = list(
+            UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+        )
 
         try:
             send_templated_email(
                 body_txt,
                 subject_txt,
                 to_addresses=user_domain_roles_emails,
-                context={"domain": domain, "date_of_deletion": domain.deleted.date() }
+                context={"domain": domain, "date_of_deletion": domain.deleted.date()},
             )
         except EmailSendingError as err:
             logger.error(
