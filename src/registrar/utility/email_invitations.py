@@ -724,7 +724,7 @@ def send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(do
                 body_txt,
                 subject_txt,
                 to_addresses=user_domain_roles_emails,
-                context={"domain": domain}
+                context={"domain": domain, "date_of_deletion": domain.deleted.date() }
             )
         except EmailSendingError as err:
             logger.error(
