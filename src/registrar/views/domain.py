@@ -734,12 +734,12 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "citizen-stuff.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        context["dns_hosting"] = flag_is_active_for_user(self.request.user, "dns_hosting")
         context["is_valid_domain"] = self.object.name in self.valid_domains
         return context
 
@@ -776,7 +776,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "exists.gov"]
+    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov", "exists.gov", "citizen-stuff.gov"]
 
     def __init__(self):
         self.dns_record = None
@@ -794,7 +794,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         if not has_permission:
             return False
 
-        flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        flag_enabled = flag_is_active_for_user(self.request.user, "dns_hosting")
         if not flag_enabled:
             return False
 
