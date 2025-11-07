@@ -173,14 +173,11 @@ class CheckPortfolioMiddleware:
         }
 
     def _wants_html(self, request):
-        accept = request.META.get("HTTP_ACCEPT", "")
-        return "text/html" in accept
+        accept = request.META.get("HTTP_ACCEPT")
+        return (not accept) or ("text/html" in accept) or ("*/*" in accept)
 
     def _set_or_clear_portfolio(self, request):
         """Ensure session['portfolio'] is consistent with user/org state."""
-        # Only on the real home request, never on AJAX/APIs/Other URLs
-        if request.path != self.home:
-            return
 
         # On legacy clicks clear portfolio & stop
         if request.GET.get(self.legacy_home) == "1":
@@ -246,13 +243,23 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
-        # Only runs on / home requests
-        self._set_or_clear_portfolio(request)
+        # Legacy-home click
+        # If user clicked "legacy home", clear portfolio
+        if request.path == self.home and request.GET.get(self.legacy_home) == "1":
+            request.session.pop("portfolio", None)
+            return None
 
+        # Keep session['portfolio'] in sync on normal HTML page views
+        # (Skip admin/debug/data APIs; only do this for HTML page loads)
+        if not self._is_excluded(request.path) and not self._is_data_api(request):
+            self._set_or_clear_portfolio(request)
+
+        # Maybe send multi-org users to org-select page
         resp = self._maybe_redirect_to_org_select(request)
         if resp:
             return resp
 
+        # Home redirect logic (domains vs no-portfolio-domains)
         resp = self._home_redirect(request)
         if resp:
             return resp

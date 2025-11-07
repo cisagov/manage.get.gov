@@ -4492,6 +4492,14 @@ class TestPortfolioMemberEditView(WebTest):
     def test_edit_member_permissions_validation(self):
         """Tests form validation for required fields based on role."""
         self.client.force_login(self.user)
+        UserPortfolioPermission.objects.update_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults=dict(
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+            ),
+        )
 
         member = create_test_user()
         permission = UserPortfolioPermission.objects.create(
