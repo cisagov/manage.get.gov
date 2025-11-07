@@ -14,7 +14,7 @@ from typing import List
 
 
 class Command(BaseCommand):
-    help = "Deletes Cloudflare accounts for the test tenant based on account name or account id"
+    help = "Deletes Cloudflare accounts for the test tenant based on account name(s) or account id(s)"
 
     def __init__(self):
         super().__init__()
@@ -107,14 +107,6 @@ class Command(BaseCommand):
         for account in accounts:
             self.delete_account(account["account_tag"])
 
-    def delete_by_id(self, account_id: str, dry_run: bool = False) -> None:
-        """Delete a specific account by ID"""
-        if dry_run:
-            print(f"[DRY RUN] Would delete account: {account_id}")
-            return
-
-        self.delete_account(account_id)
-
     def delete_by_list(self, account_ids: List[str], dry_run: bool = False) -> None:
         """Delete multiple accounts by list of IDs"""
         if dry_run:
@@ -198,55 +190,39 @@ class Command(BaseCommand):
             self.delete_account(account["account_tag"])
 
     def add_arguments(self, parser):
-        #     parser = argparse.ArgumentParser(
-        #         description="Delete Cloudflare accounts under a tenant via API",
-        #         formatter_class=argparse.RawDescriptionHelpFormatter,
-        #         epilog="""
-        # Environment Variables:
-        #   DNS_SERVICE_EMAIL      Cloudflare account email
-        #   DNS_TENANT_KEY    Cloudflare API key
-        #   DNS_TEST_TENANT_ID Unique ID associated with Cloudflare tenant
+        parser.description = "Delete Cloudflare accounts under a tenant via API"
+        parser.formatter_class = argparse.RawDescriptionHelpFormatter
+        parser.epilog = """
+            Environment Variables:
+            DNS_SERVICE_EMAIL: Cloudflare account email
+            DNS_TENANT_KEY: Cloudflare API key
+            DNS_TEST_TENANT_ID: Unique ID associated with Cloudflare tenant
 
-        # Examples:
-        #   # Using environment variables
-        #   export DNS_SERVICE_EMAIL=user@example.com
-        #   export DNS_TENANT_KEY=your_api_key
-        #   DNS_TEST_TENANT_ID=12345
+            %(prog)s --all
 
-        #   %(prog)s --all
+            # Using command line arguments
+            %(prog)s --all
 
-        #   # Using command line arguments
-        #   %(prog)s --all
+            # Delete multiple accounts by ids
+            %(prog)s --ids abc123 def456 ghi789
 
-        #   # Delete specific account
-        #   %(prog)s --id abc123
+            # Delete multiple accounts by names
+            %(prog)s --names "Dev Account" "Test Account" "Staging"
 
-        #   # Delete multiple accounts
-        #   %(prog)s --ids abc123 def456 ghi789
+            # Delete all except multiple accounts
+            %(prog)s --all-except-ids abc123 def456 ghi789
 
-        #   # Delete multiple accounts by names
-        #   %(prog)s --names "Dev Account" "Test Account" "Staging"
-
-        #   # Delete all except multiple accounts
-        #   %(prog)s --all-except-ids abc123 def456 ghi789
-
-        #   # Dry run (preview without deleting)
-        #   %(prog)s --all --dry-run
-        #         """,
-        #     )
+            # Dry run (preview without deleting)
+            %(prog)s --all --dry-run
+                    """
 
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument("--all", action="store_true", help="Delete all accounts under the tenant")
-        group.add_argument("--id", help="Delete account by ID")
         group.add_argument("--ids", nargs="+", help="Delete multiple accounts by IDs")
-        group.add_argument("--name", help="Delete account(s) by name")
         group.add_argument("--names", nargs="+", help="Delete multiple accounts by names")
-        group.add_argument("--all-except", help="Delete all accounts except this ID")
         group.add_argument("--all-except-ids", nargs="+", help="Delete all accounts except these IDs")
 
         parser.add_argument("--dry-run", action="store_true", help="Preview operation without actually deleting")
-
-        # parser.parse_args()
 
     def handle(self, **options):
         try:
