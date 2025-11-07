@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.conf import settings
 from unittest.mock import patch
 
 
@@ -363,6 +364,28 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(
             domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
         )
+
+    @less_console_noise_decorator
+    def test_withdraw_sends_email_withbcc(self):
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
+
+        with patch("registrar.models.domain_request.settings") as mock_settings:
+            mock_settings.IS_PRODUCTION = True
+            mock_settings.DEFAULT_FROM_EMAIL = settings.DEFAULT_FROM_EMAIL
+
+            with patch("registrar.models.domain_request.send_templated_email") as mock_send_email:
+                domain_request.withdraw()
+
+                mock_send_email.assert_called_once()
+                call_args = mock_send_email.call_args
+
+                self.assertEqual(call_args[0][0], "emails/domain_request_withdrawn.txt")
+                self.assertEqual(call_args[0][1], "emails/domain_request_withdrawn_subject.txt")
+                self.assertEqual(call_args[0][2], [user.email])
+
+                call_kwargs = call_args[1]
+                self.assertEqual(call_kwargs["bcc_address"], settings.DEFAULT_FROM_EMAIL)
 
     def test_reject_sends_email(self):
         "Create a domain request and reject it and see if email was sent."
