@@ -1,0 +1,1 @@
+[.gov request withdrawn] {{ domain_request.requested_domain.name }}
