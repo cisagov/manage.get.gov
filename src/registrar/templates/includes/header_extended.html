@@ -172,8 +172,16 @@
                     </button>
                     <ul id="portfolio-{{ forloop.counter }}" class="usa-nav__submenu">
                         <li class="usa-nav__submenu-item"><a href="{% url 'domains' %}"><span>Domains</span></a></li>
-                        <li class="usa-nav__submenu-item"><a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                        <li class="usa-nav__submenu-item">
+                        {% if has_edit_request_portfolio_permission or   has_any_requests_portfolio_permission %}
+                            <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                        {% else %}
+                            <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                        {% endif %}
+                        </li>
+                        {% if has_view_members_portfolio_permission %}
                         <li class="usa-nav__submenu-item"><a href="{% url 'members' %}"><span>Members</span></a></li>
+                        {% endif %}
                         <li class="usa-nav__submenu-item"><a href="{% url 'organization' %}"><span>Organization</span></a></li>
                     </ul>
                 </li>
@@ -192,8 +200,16 @@
                     {% endwith %}
                     <ul id="portfolio-single" class="usa-nav__submenu">
                         <li class="usa-nav__submenu-item"><a href="{% url 'domains' %}"><span>Domains</span></a></li>
-                        <li class="usa-nav__submenu-item"><a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                        <li class="usa-nav__submenu-item">
+                        {% if has_edit_request_portfolio_permission or   has_any_requests_portfolio_permission %}
+                            <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                        {% else %}
+                            <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                        {% endif %}
+                        </li>
+                        {% if has_view_members_portfolio_permission %}
                         <li class="usa-nav__submenu-item"><a href="{% url 'members' %}"><span>Members</span></a></li>
+                        {% endif %}
                         <li class="usa-nav__submenu-item"><a href="{% url 'organization' %}"><span>Organization</span></a></li>
                     </ul>
                 </li>
