@@ -125,44 +125,6 @@ class Command(BaseCommand):
         for account_id in account_ids:
             self.delete_account(account_id)
 
-    def delete_by_name(self, account_name: str, dry_run: bool = False) -> None:
-        """Delete account(s) by name"""
-        print(f"Fetching all accounts under tenant {self.tenant_id}...")
-        accounts = self.get_tenant_accounts()
-
-        if not accounts:
-            print("No accounts found or error fetching accounts.")
-            return
-
-        # Find accounts matching the name
-        matching_accounts = [acc for acc in accounts if acc.get("account_pubname") == account_name]
-
-        if not matching_accounts:
-            print(f"No accounts found with name: {account_name}")
-            return
-
-        print(f"Found {len(matching_accounts)} account(s) with name '{account_name}':")
-        for acc in matching_accounts:
-            print(f"  - {acc['account_tag']}: {acc.get('account_pubname', 'Unnamed')}")
-
-        if dry_run:
-            print("\n[DRY RUN] Would delete the above account(s)")
-            return
-
-        if len(matching_accounts) > 1:
-            confirm = input(
-                f"\nFound multiple accounts with this name. Delete all {len(matching_accounts)}? (yes/no): "
-            )
-        else:
-            confirm = input(f"\nDelete this account? (yes/no): ")
-
-        if confirm.lower() != "yes":
-            print("Operation cancelled.")
-            return
-
-        for account in matching_accounts:
-            self.delete_account(account["account_tag"])
-
     def delete_by_names(self, account_names: List[str], dry_run: bool = False) -> None:
         """Delete accounts by list of names"""
         print(f"Fetching all accounts under tenant {self.tenant_id}...")
@@ -196,37 +158,6 @@ class Command(BaseCommand):
             return
 
         for account in matching_accounts:
-            self.delete_account(account["account_tag"])
-
-    def delete_all_except(self, except_id: str, dry_run: bool = False) -> None:
-        """Delete all accounts under tenant except the specified one"""
-        print(f"Fetching all accounts under tenant {self.tenant_id}...")
-        accounts = self.get_tenant_accounts()
-
-        if not accounts:
-            print("No accounts found or error fetching accounts.")
-            return
-
-        to_delete = [acc for acc in accounts if acc["account_tag"] != except_id]
-
-        if not to_delete:
-            print(f"No accounts to delete (only account {except_id} found or it's the only one).")
-            return
-
-        print(f"Found {len(to_delete)} account(s) to delete (keeping {except_id})")
-
-        if dry_run:
-            print("\n[DRY RUN] Would delete the following accounts:")
-            for acc in to_delete:
-                print(f"  - {acc['account_tag']}: {acc.get('account_pubname', 'Unnamed')}")
-            return
-
-        confirm = input(f"\nDelete {len(to_delete)} account(s), keeping {except_id}? (yes/no): ")
-        if confirm.lower() != "yes":
-            print("Operation cancelled.")
-            return
-
-        for account in to_delete:
             self.delete_account(account["account_tag"])
 
     def delete_all_except_list(self, except_ids: List[str], dry_run: bool = False) -> None:
@@ -329,12 +260,8 @@ class Command(BaseCommand):
                 self.delete_by_id(options["id"], dry_run=options["dry_run"])
             elif options.get("ids"):
                 self.delete_by_list(options["ids"], dry_run=options["dry_run"])
-            elif options.get("name"):
-                self.delete_by_name(options["name"], dry_run=options["dry_run"])
             elif options.get("names"):
                 self.delete_by_names(options["names"], dry_run=options["dry_run"])
-            elif options.get("all_except"):
-                self.delete_all_except(options["all_except"], dry_run=options["dry_run"])
             elif options.get("all_except_ids"):
                 self.delete_all_except_list(options["all_except_ids"], dry_run=options["dry_run"])
         except KeyboardInterrupt:
