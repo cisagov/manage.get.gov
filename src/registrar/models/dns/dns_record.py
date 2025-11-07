@@ -5,10 +5,6 @@ from django.core.exceptions import ValidationError
 
 
 class DnsRecord(TimeStampedModel):
-    def validate_ttl(ttl):
-        if ttl != 1 and (ttl < 60 or ttl > 86400):
-            raise ValidationError("TTL must be 1 (automatic) or a number between 60 and 86400.")
-
     class RecordTypes(models.TextChoices):
         A = "a", "A"
 
@@ -22,13 +18,13 @@ class DnsRecord(TimeStampedModel):
 
     name = models.CharField(max_length=255, blank=True, null=True)
 
-    ttl = models.PositiveIntegerField(default=1, validators=[validate_ttl])
+    ttl = models.PositiveIntegerField(default=1)
 
     content = models.CharField(blank=True, null=True)
 
-    comment = models.CharField(blank=True, null=True)
+    comment = models.CharField(blank=False, null=False)
 
-    tags = ArrayField(models.CharField(), null=False, blank=False, default=list)
+    tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
@@ -39,3 +35,11 @@ class DnsRecord(TimeStampedModel):
         if not self.name:
             self.name = "@"
         super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        # TTL must be between 60 and 86400.
+        # If we add proxy field to records in the future, we can also allow TTL=1 as below:
+        # if self.ttl == 1: return self.proxy
+        if self.ttl < 60 or self.ttl > 84600:
+            return ValidationError({"ttl": "TTL for unproxied records must be between 60 and 86400."})

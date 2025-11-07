@@ -9,7 +9,7 @@ import registrar.models.dns.dns_record
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0164_alter_domain_request_status"),
+        ("registrar", "0165_populate_dns_vendor_cloudflare"),
     ]
 
     operations = [
