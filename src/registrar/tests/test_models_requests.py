@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.conf import settings
 from unittest.mock import patch
 
 
@@ -363,6 +364,62 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(
             domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
         )
+
+    @less_console_noise_decorator
+    def test_withdraw_feb_sends_omb_email(self):
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
+        fed_agency = FederalAgency.objects.create(agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
+        portfoilio = Portfolio.objects.create(
+            organization_name="Test FEB Portfolio",
+            requester=user,
+            federal_agency=fed_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            user=user,
+            portfolio=portfoilio,
+        )
+
+        domain_request.feb_purpose_choice = DomainRequest.FEBPurposeChoices.WEBSITE
+        domain_request.save()
+
+        with patch("registrar.models.domain_request.settings") as mock_settings:
+            mock_settings.IS_PRODUCTION = True
+            mock_settings.DEFAULT_FROM_EMAIL = settings.DEFAULT_FROM_EMAIL
+
+            with patch("registrar.models.domain_request.send_templated_email") as mock_send_email:
+                domain_request.withdraw()
+
+                self.assertEqual(mock_send_email.call_count, 2)
+
+                all_calls = mock_send_email.call_args_list
+                omb_call = None
+                for call in all_calls:
+                    to_addresses = call[0][2]
+                    is_string_match = to_addresses == "ombdotgov@omb.eop.gov"
+                    is_list_match = isinstance(to_addresses, list) and "ombdotgov@omb.eop.gov" in to_addresses
+                    is_omb_email = is_string_match or is_list_match
+                    if is_omb_email:
+                        omb_call = call
+                        break
+
+                self.assertIsNotNone(omb_call, "OMB withdrawl email was not sent")
+
+                omb_call_args = omb_call[0]
+                omb_call_kwargs = omb_call[1]
+
+                self.assertEqual(omb_call_args[0], "emails/omb_withdrawl_notification.txt")
+                self.assertEqual(omb_call_args[1], "emails/omb_withdrawl_notification_subject.txt")
+                self.assertEqual(omb_call_args[2], "ombdotgov@omb.eop.gov")
+
+                self.assertEqual(omb_call_kwargs["bcc_address"], settings.DEFAULT_FROM_EMAIL)
+
+                omb_context = omb_call_kwargs["context"]
+                self.assertEqual(omb_context["domain_request"], domain_request)
+                self.assertEqual(omb_context["requires_feb_questions"], True)
+                self.assertIn("purpose_label", omb_context)
+                self.assertIn("date", omb_context)
 
     def test_reject_sends_email(self):
         "Create a domain request and reject it and see if email was sent."
