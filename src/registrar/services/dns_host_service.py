@@ -4,9 +4,13 @@ from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.models.dns.dns_account import DnsAccount
+from registrar.models.dns.dns_zone import DnsZone
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
+from registrar.models.dns.vendor_dns_zone import VendorDnsZone
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
+from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesJoin
 from registrar.models.dns.dns_vendor import DnsVendor
+
 
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
@@ -45,30 +49,16 @@ class DnsHostService:
         has_zone = bool(zone_id)
 
         if not has_account:
-            account_id = self.create_and_save_account(account_name)
-
-            try:
-                zone_data = self.dns_vendor_service.create_cf_zone(domain_name, account_id)
-                zone_name = zone_data["result"].get("name")
-                logger.info(f"Successfully created zone {domain_name}")
-                zone_id = zone_data["result"]["id"]
-                nameservers = zone_data["result"].get("name_servers")
-
-            except APIError as e:
-                logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
-                raise
+            account_id = self.create_and_save_account(account_name) # Rename to account_xid
+            # rename to zone_xid
+            zone_id, nameservers = self.create_and_save_zone(
+                domain_name, account_id
+            )
 
         elif has_account and not has_zone:
-            try:
-                zone_data = self.dns_vendor_service.create_cf_zone(domain_name, account_id)
-                logger.info("Successfully created zone")
-                zone_name = zone_data["result"].get("name")
-                zone_id = zone_data["result"]["id"]
-                nameservers = zone_data["result"].get("name_servers")
-
-            except APIError as e:
-                logger.error(f"DNS setup failed to create zone {domain_name}: {str(e)}")
-                raise
+            zone_id, nameservers = self.create_and_save_zone(
+                domain_name, account_id
+            )
 
         return account_id, zone_id, nameservers
 
@@ -89,6 +79,27 @@ class DnsHostService:
             raise
 
         return account_id
+
+    def create_and_save_zone(self, domain_name, account_id):
+        try:
+            zone_data = self.dns_vendor_service.create_cf_zone(domain_name, account_id)
+            zone_name = zone_data["result"].get("name")
+            logger.info(f"Successfully created zone {domain_name}")
+            zone_id = zone_data["result"]["id"]
+            nameservers = zone_data["result"].get("name_servers")
+
+        except APIError as e:
+            logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
+            raise
+
+        # Create zone object in registrar db
+        try:
+            account_id = self.save_db_zone(zone_data)
+            logger.info("Successfully saved to database")
+        except Exception as e:
+            logger.error(f"Save to database failed: {str(e)}")
+            raise
+        return zone_id, nameservers
 
     def create_record(self, zone_id, record_data):
         """Calls create method of vendor service to create a DNS record"""
@@ -169,4 +180,21 @@ class DnsHostService:
     def save_db_zone(self, vendor_zone_data):
         zone_data = vendor_zone_data["result"]
         zone_xid = zone_data["id"]
-            
+        zone_name = zone_data["name"]
+        zone_account_name = zone_data["account"]["name"]
+
+        with transaction.atomic():
+            vendor_acc = VendorDnsZone.objects.create(
+                x_zone_id=zone_xid,
+                x_created_at=zone_data["created_on"],
+                x_updated_at=zone_data["created_on"],
+            )
+            account = DnsAccount.objects.get(id=account_id)
+            dns_acc = DnsAccount.objects.create(name=result["name"])
+
+            AccountsJoin.objects.create(
+                dns_account=dns_acc,
+                vendor_dns_account=vendor_acc,
+            )
+
+        return zone_xid
