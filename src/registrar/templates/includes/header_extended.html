@@ -173,10 +173,10 @@
                     <ul id="portfolio-{{ forloop.counter }}" class="usa-nav__submenu">
                         <li class="usa-nav__submenu-item"><a href="{% url 'domains' %}"><span>Domains</span></a></li>
                         <li class="usa-nav__submenu-item">
-                        {% if has_edit_request_portfolio_permission or   has_any_requests_portfolio_permission %}
+                        {% if has_edit_request_portfolio_permission or has_any_requests_portfolio_permission %}
                             <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
                         {% else %}
-                            <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                            <a href="{% url 'no-portfolio-requests' %}"><span>Domain Requests</span></a></li>
                         {% endif %}
                         </li>
                         {% if has_view_members_portfolio_permission %}
@@ -204,7 +204,7 @@
                         {% if has_edit_request_portfolio_permission or   has_any_requests_portfolio_permission %}
                             <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
                         {% else %}
-                            <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+                            <a href="{% url 'no-portfolio-requests' %}"><span>Domain Requests</span></a></li>
                         {% endif %}
                         </li>
                         {% if has_view_members_portfolio_permission %}
