@@ -14,6 +14,7 @@ from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
+from datetime import date
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -1292,12 +1293,43 @@ class DomainRequest(TimeStampedModel):
     )
     def withdraw(self):
         """Withdraw an domain request that has been submitted."""
+        bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
 
         self._send_status_update_email(
             "withdraw",
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
+            bcc_address=bcc_address,
         )
+
+        if self.is_feb():
+            try:
+                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
+                context =  {
+                    "domain_request": self,
+                    "date": date.today(),
+                    "requires_feb_questions": True,
+                    "purpose_label": purpose_label,
+                }
+
+
+                send_templated_email(
+                    "emails/omb_withdrawl_notification.txt",
+                    "emails/omb_withdrawl_notification_subject.txt",
+                    "ombdotgov@omb.eop.gov",
+                    bcc_address=bcc_address,
+                    context=context,
+                )
+                logger.info("A withdrawl notification email was sent to ombdotgov@omb.eop.gov")
+            except EmailSendingError as err:
+                logger.error(
+                    "Failed to send OMB withdrawl notification email:\n"
+                    f" Subject template: omb_withdrawl_notification_subject.txt\n"
+                    f" To: ombdotgov@omb.eop.gov\n"
+                    f" Error: {err}",
+                    exc_info=True,
+                )
+
 
     @transition(
         field="status",
