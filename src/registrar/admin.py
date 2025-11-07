@@ -498,7 +498,7 @@ class DomainRequestAdminForm(forms.ModelForm):
                 ## non feb requests should not see the in review - omb option
                 if transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
                     if not (instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE):
-                      continue
+                        continue
                 yield meta.get_transition(curr_state)
 
     def clean(self):
