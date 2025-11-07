@@ -43,18 +43,6 @@ class Command(BaseCommand):
         )
         return super().add_arguments(parser)
 
-    def test_domains(self):
-        domains = ["townofbrillionwi.gov"]
-        domain_obj_list = []
-        for domain in domains:
-            obj, _ = Domain.objects.get_or_create(name=domain)
-            obj.deleted = timezone.now()
-            obj.save()
-            domain_obj_list.append(obj)
-            if obj.state == Domain.State.READY:
-                obj.dns_needed()
-        return domain_obj_list
-
     def get_domains(self):
         """Get domains that are dns needed or unknown"""
         domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
