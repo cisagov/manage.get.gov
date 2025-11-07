@@ -21,7 +21,9 @@ class Command(BaseCommand):
         """Initialize with Cloudflare credentials and tenant ID"""
         self.email = settings.SECRET_DNS_SERVICE_EMAIL
         self.api_key = settings.SECRET_DNS_TENANT_KEY
-        self.tenant_id = os.environ.get("DNS_TEST_TENANT_ID")  # We only ever want to delete from the test tenant
+        self.tenant_id = os.environ.get(
+            "DNS_TEST_TENANT_ID"
+        )  # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
         self.base_url = "https://api.cloudflare.com/client/v4"
         self.headers = {"X-Auth-Email": self.email, "X-Auth-Key": self.api_key, "Content-Type": "application/json"}
 
@@ -222,14 +224,8 @@ class Command(BaseCommand):
         #   # Delete multiple accounts
         #   %(prog)s --ids abc123 def456 ghi789
 
-        #   # Delete account(s) by name
-        #   %(prog)s --name "Production Account"
-
         #   # Delete multiple accounts by names
         #   %(prog)s --names "Dev Account" "Test Account" "Staging"
-
-        #   # Delete all except one
-        #   %(prog)s --all-except abc123
 
         #   # Delete all except multiple accounts
         #   %(prog)s --all-except-ids abc123 def456 ghi789
