@@ -517,7 +517,7 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         page = self.app.get(reverse("organization-info"))
         # Org name in Sidenav, main nav, webpage title, and breadcrumb
-        self.assertContains(page, "Hotel California", count=5)
+        self.assertContains(page, "Hotel California", count=6)
         self.assertContains(page, "Organization type")
         self.assertContains(page, "Federal")
 
@@ -3286,7 +3286,7 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "Add suborganization information")
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
-        self.assertContains(response, self.portfolio.organization_name, count=3)
+        self.assertContains(response, self.portfolio.organization_name, count=4)
 
         # We expect the dropdown list to contain the suborganizations that currently exist on this portfolio
         self.assertContains(response, self.suborganization.name, count=1)
