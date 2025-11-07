@@ -3,6 +3,12 @@ import logging
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
+from registrar.models.dns.dns_account import DnsAccount
+from registrar.models.dns.vendor_dns_account import VendorDnsAccount
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
+from registrar.models.dns.dns_vendor import DnsVendor
+
+from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 
@@ -27,8 +33,8 @@ class DnsHostService:
         return next((item.get("name_servers") for item in items if item.get("id") == zone_id), None)
 
     def dns_setup(self, domain_name):
-        """Creates an account and zone in the dns host vendor tenant. Registers nameservers after zone creation"""
         account_name = make_dns_account_name(domain_name)
+
         account_id = self._find_existing_account(account_name)
         has_account = bool(account_id)
 
@@ -39,13 +45,7 @@ class DnsHostService:
         has_zone = bool(zone_id)
 
         if not has_account:
-            try:
-                account_data = self.dns_vendor_service.create_account(account_name)
-                logger.info("Successfully created account")
-                account_id = account_data["result"]["id"]
-            except APIError as e:
-                logger.error(f"DNS setup failed to create account: {str(e)}")
-                raise
+            account_id = self.create_and_save_account(account_name)
 
             try:
                 zone_data = self.dns_vendor_service.create_zone(domain_name, account_id)
@@ -69,8 +69,26 @@ class DnsHostService:
             except APIError as e:
                 logger.error(f"DNS setup failed to create zone {domain_name}: {str(e)}")
                 raise
-        logger.info("Has existing zone")
+
         return account_id, zone_id, nameservers
+
+    def create_and_save_account(self, account_name):
+        try:
+            account_data = self.dns_vendor_service.create_cf_account(account_name)
+            logger.info("Successfully created account at vendor")
+            account_id = account_data["result"]["id"]
+        except APIError as e:
+            logger.error(f"Failed to create account: {str(e)}")
+            raise
+
+        try:
+            account_id = self.save_db_account(account_data)
+            logger.info("Successfully saved to database")
+        except Exception as e:
+            logger.error(f"Save to database failed: {str(e)}")
+            raise
+
+        return account_id
 
     def create_record(self, zone_id, record_data):
         """Calls create method of vendor service to create a DNS record"""
@@ -125,3 +143,25 @@ class DnsHostService:
             domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
         except (RegistrySystemError, Exception):
             raise
+
+    def save_db_account(self, vendor_account_data):
+        result = vendor_account_data["result"]
+        account_id = result["id"]
+        dns_vendor = DnsVendor.objects.get(name=DnsVendor.CF)
+
+        with transaction.atomic():
+            vendor_acc = VendorDnsAccount.objects.create(
+                x_account_id=account_id,
+                dns_vendor=dns_vendor,
+                x_created_at=result["created_on"],
+                x_updated_at=result["created_on"],
+            )
+
+            dns_acc = DnsAccount.objects.create(name=result["name"])
+
+            AccountsJoin.objects.create(
+                dns_account=dns_acc,
+                vendor_dns_account=vendor_acc,
+            )
+
+        return account_id

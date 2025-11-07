@@ -1,9 +1,9 @@
-{% load i18n admin_urls %}
-{% load i18n static %}
+{% load i18n admin_urls static custom_filters %}
 
 {% comment %} Replace li with p for more semantic HTML if we have a single child {% endcomment %}
 {% block object-tools-items %}
     {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+    {% content_type_id original as resource_type_id %}
     {% if has_absolute_url %}
         <ul>
             <li>
@@ -30,7 +30,7 @@
             {% endif %}
 
             <li>
-                <button data-href="{% url 'admin:auditlog_logentry_changelist' %}?resource_type=13&object_id={{ original.pk }}" class="historylink use-button-as-link">{% translate "History" %}</button>
+                <button data-href="{% url 'admin:auditlog_logentry_changelist' %}?resource_type={{ resource_type_id }}&object_id={{ original.pk }}" class="historylink use-button-as-link">{% translate "History" %}</button>
             </li>
 
             {% if opts.model_name == 'domainrequest' %}
