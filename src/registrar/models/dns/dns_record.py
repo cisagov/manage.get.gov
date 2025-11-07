@@ -4,6 +4,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 import re
 
+
 class DnsRecord(TimeStampedModel):
     class RecordTypes(models.TextChoices):
         A = "a", "A"
