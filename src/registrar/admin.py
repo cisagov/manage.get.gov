@@ -495,7 +495,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             meta = transition._django_fsm
             if meta.has_transition(curr_state):
                 transition_data = meta.get_transition(curr_state)
-                ## non feb requests should not see the in review - omb option
+                # non feb requests should not see the in review - omb option
                 if transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
                     if not (instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE):
                         continue
