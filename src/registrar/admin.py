@@ -494,6 +494,12 @@ class DomainRequestAdminForm(forms.ModelForm):
         for name, transition in transitions.items():
             meta = transition._django_fsm
             if meta.has_transition(curr_state):
+                transition_data = meta.get_transition(curr_state)
+                ## non feb requests should not see the in review - omb option
+                if transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
+                    conditions_met = all(cond(instance) for cond in transition_data.conditions)
+                    if not conditions_met:
+                        continue
                 yield meta.get_transition(curr_state)
 
     def clean(self):
@@ -520,7 +526,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
-            DomainRequest.DomainRequestStatus.IN_REVIEW_OMB
+            DomainRequest.DomainRequestStatus.IN_REVIEW_OMB,
         ]
 
         # If a status change occured, check for validity
