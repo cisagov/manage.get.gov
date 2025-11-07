@@ -213,71 +213,73 @@ button {
         }
     }
     .usa-nav {
-        background-color: #{$dhs-light-blue-80};
+        @include at-media-max(desktop) {
+            background-color: #{$dhs-light-blue-80};
 
-        .usa-nav__primary {
-            button {
-                color: white;
-                display: flex;
-                justify-content: flex-start;
-                align-items: stretch;
-                span {
-                    align-self: flex-start;
-                    &::after {
-                        background-color: white;
-                        display: flex;
-                        justify-content: center;
-                        align-items: flex-start;
-                        top: 1.3em;
+            .usa-nav__primary {
+                button {
+                    color: white;
+                    display: flex;
+                    justify-content: flex-start;
+                    align-items: stretch;
+                    span {
+                        align-self: flex-start;
+                        &::after {
+                            background-color: white;
+                            display: flex;
+                            justify-content: center;
+                            align-items: flex-start;
+                            top: 1.3em;
+                        }
                     }
+                }
+                
+                a:not(.usa-button) {
+                    color: white;
                 }
             }
             
-            a:not(.usa-button) {
-                color: white;
-            }
-        }
-        
-        .usa-nav__primary-item {
-            .usa-nav__submenu-item a {
-                &:hover {
-                    background-color: transparent;
+            .usa-nav__primary-item {
+                .usa-nav__submenu-item a {
+                    &:hover {
+                        background-color: transparent;
+                    }
+                }
+
+                a {
+                    overflow-wrap: break-word;
+                    &:hover {
+                        background-color: transparent;
+                    }
                 }
             }
 
-            a {
-                overflow-wrap: break-word;
+            .usa-accordion__button {
                 &:hover {
                     background-color: transparent;
                 }
+                &:focus {
+                    outline: none;
+                    border-left: 3px solid white;
+                    font-weight: font-weight('bold');
+                }
             }
-        }
 
-        .usa-accordion__button {
-            &:hover {
-                background-color: transparent;
+            #portfolio-single-button {
+                &:hover {
+                    background-color: transparent;
+                }
+                &:focus {
+                    outline: none;
+                    font-weight: font-weight('bold');
+                    border-left: 0;
+                }
             }
-            &:focus {
-                outline: none;
-                border-left: 3px solid white;
-                font-weight: font-weight('bold');
-            }
-        }
 
-        #portfolio-single-button {
-            &:hover {
-                background-color: transparent;
-            }
-            &:focus {
-                outline: none;
-                font-weight: font-weight('bold');
-                border-left: 0;
-            }
-        }
-
-        .usa-nav__close {
-            &:focus {
-                outline: 0 !important;
+            .usa-nav__close {
+                &:focus {
+                    outline: 0 !important;
+                }
             }
         }
 
@@ -298,18 +300,20 @@ button {
         }
     }
 
-    .close-icon {
-        filter: brightness(0) invert(1);
-        outline: none;
-    }
+    @include at-media-max(desktop) {
+        .close-icon {
+            filter: brightness(0) invert(1);
+            outline: none;
+        }
 
-    .logout-icon {
-        filter: brightness(0) invert(1);
-        height: 18px;
-    }
+        .logout-icon {
+            filter: brightness(0) invert(1);
+            height: 18px;
+        }
 
-    .usa-nav__primary .mobile-menu-profile {
-        border-top: 0;
+        .usa-nav__primary .mobile-menu-profile {
+            border-top: 0;
+        }
     }
 }
 
