@@ -2767,6 +2767,8 @@ class TestDeleteDomainNotSetup(MockEppLib):
     def test_updates_domains(self, mock_send_domain_managers_email):
         self.domain_3.dns_needed_from_unknown()
         self.domain_3.save()
+        with patch("registrar.models.domain.Domain.deletedInEpp"):
+            pass
         call_command("delete_expired_domains_not_setup", dry_run=False)
 
         self.assertEqual(self.domain_1.state, Domain.State.DELETED)
