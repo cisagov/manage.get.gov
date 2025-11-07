@@ -1305,13 +1305,12 @@ class DomainRequest(TimeStampedModel):
         if self.is_feb():
             try:
                 purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
-                context =  {
+                context = {
                     "domain_request": self,
                     "date": date.today(),
                     "requires_feb_questions": True,
                     "purpose_label": purpose_label,
                 }
-
 
                 send_templated_email(
                     "emails/omb_withdrawl_notification.txt",
@@ -1329,7 +1328,6 @@ class DomainRequest(TimeStampedModel):
                     f" Error: {err}",
                     exc_info=True,
                 )
-
 
     @transition(
         field="status",
