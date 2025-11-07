@@ -27,7 +27,7 @@
   <p>The Domain Name System (DNS) is the internet service that translates your domain name into an IP address. Before your .gov domain can be used, you'll need to connect it to a DNS hosting service and provide us with your name server information.</p>
 
   <p>You can enter your name servers, as well as other DNS-related information, in the following sections:</p>
-  
+
 
   {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
 <ul class="usa-list">
@@ -35,7 +35,7 @@
 
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
   <li><a href="{{ url }}">DNSSEC</a></li>
-  {% if dns_hosting and is_valid_domain %}
+  {% if dns_prototype_flag %}
     <li><a href="{% url 'prototype-domain-dns' domain_pk=domain.id %}">Prototype DNS record creator</a></li>
   {% endif %}
 </ul>
