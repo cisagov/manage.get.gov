@@ -38,15 +38,15 @@ class CloudflareService:
 
         return resp.json()
 
-    def create_cf_zone(self, zone_name: str, account_id: str):
+    def create_cf_zone(self, zone_name: str, account_xid: str):
         appended_url = "/zones"
-        data = {"name": zone_name, "account": {"id": account_id}}
+        data = {"name": zone_name, "account": {"id": account_xid}}
         try:
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
             logger.info(f"Created zone {zone_name}")
         except RequestError as e:
-            logger.error(f"Failed to create zone {zone_name} for account {account_id}: {e}")
+            logger.error(f"Failed to create zone {zone_name} for account {account_xid}: {e}")
             raise
         except HTTPStatusError as e:
             logger.error(f"Error {e.response.status_code} while creating zone: {e}")
@@ -83,10 +83,10 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def get_account_zones(self, account_id: str):
+    def get_account_zones(self, account_xid: str):
         """Gets all zones under a particular account"""
         appended_url = "/zones"
-        params = f"account.id={account_id}"
+        params = f"account.id={account_xid}"
         try:
             logger.info("Getting all of the account's zones")
             resp = self.client.get(appended_url, params=params)
