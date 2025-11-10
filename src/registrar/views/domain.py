@@ -738,7 +738,7 @@ class DomainDNSView(DomainBaseView):
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        context["dns_hosting"] = flag_is_active_for_user(self.request.user, "dns_hosting")
         return context
 
 
