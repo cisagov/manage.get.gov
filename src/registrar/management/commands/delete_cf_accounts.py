@@ -133,7 +133,7 @@ class Command(BaseCommand):
         matching_accounts = [acc for acc in accounts if acc.get("account_pubname") in name_set]
 
         if not matching_accounts:
-            print(f"No accounts found with the specified names")
+            print("No accounts found with the specified names")
             return
 
         print(f"Found {len(matching_accounts)} account(s) matching the provided names:")
@@ -145,7 +145,7 @@ class Command(BaseCommand):
             return
 
         confirm = input(
-            f"\nDelete {len(matching_accounts)} account(s), including if multiple accounts with the same name? (yes/no): "
+            f"\nDelete {len(matching_accounts)} account(s), including if multiple accounts with the same name?(yes/no):"
         )
         if confirm.lower() != "yes":
             print("Operation cancelled.")
@@ -167,7 +167,7 @@ class Command(BaseCommand):
         to_delete = [acc for acc in accounts if acc["account_tag"] not in except_set]
 
         if not to_delete:
-            print(f"No accounts to delete (all accounts are in the exception list).")
+            print("No accounts to delete (all accounts are in the exception list).")
             return
 
         print(f"Found {len(to_delete)} account(s) to delete (keeping {len(except_ids)} account(s))")
@@ -176,7 +176,7 @@ class Command(BaseCommand):
             print("\n[DRY RUN] Would delete the following accounts:")
             for acc in to_delete:
                 print(f"  - {acc['account_tag']}: {acc.get('account_pubname', 'Unnamed')}")
-            print(f"\n[DRY RUN] Would keep the following accounts:")
+            print("\n[DRY RUN] Would keep the following accounts:")
             for acc_id in except_ids:
                 print(f"  - {acc_id}")
             return
