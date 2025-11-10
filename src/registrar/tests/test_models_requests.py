@@ -1,6 +1,7 @@
 from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.conf import settings
 from unittest.mock import patch
 
 
@@ -362,18 +363,9 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(domain_request, msg, "approve", 1, expected_content="approved", expected_email=user.email)
 
     @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=True)
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
-        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
-        self.check_email_sent(
-            domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
-        )
-
-    @less_console_noise_decorator
-    @override_settings(IS_PRODUCTION=True)
-    def test_withdraw_sends_email_with_bcc(self):
-        msg = "Create a domain request and withdraw it and see if email was sent with BCC."
         user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
         self.check_email_sent(
@@ -383,7 +375,7 @@ class TestDomainRequest(TestCase):
             1,
             expected_content="withdrawn",
             expected_email=user.email,
-            expected_bcc=["help@get.gov <help@get.gov>"],
+            expected_bcc=[settings.DEFAULT_FROM_EMAIL],
         )
 
     def test_reject_sends_email(self):
