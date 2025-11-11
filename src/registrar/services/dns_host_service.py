@@ -33,9 +33,9 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def _find_nameservers_by_zone_id(self, items, zone_id):
+    def _find_nameservers_by_zone_id(self, items, zone_xid):
         """Find an item by name in a list of dictionaries."""
-        return next((item.get("name_servers") for item in items if item.get("id") == zone_id), None)
+        return next((item.get("name_servers") for item in items if item.get("id") == zone_xid), None)
 
     def dns_setup(self, domain_name):
         account_name = make_dns_account_name(domain_name)
@@ -43,25 +43,24 @@ class DnsHostService:
         account_xid = self._find_existing_account(account_name)
         has_account = bool(account_xid)
 
-        zone_id = None
+        zone_xid = None
         if has_account:
             logger.info("Already has an existing vendor account")
-            zone_id, nameservers = self._find_existing_zone(domain_name, account_xid)
-        has_zone = bool(zone_id)
+            zone_xid, nameservers = self._find_existing_zone(domain_name, account_xid)
+        has_zone = bool(zone_xid)
 
         if not has_account:
             account_xid = self.create_and_save_account(account_name) # Rename to account_xid
-            # rename to zone_xid
-            zone_id, nameservers = self.create_and_save_zone(
+            zone_xid, nameservers = self.create_and_save_zone(
                 domain_name, account_xid
             )
 
         elif has_account and not has_zone:
-            zone_id, nameservers = self.create_and_save_zone(
+            zone_xid, nameservers = self.create_and_save_zone(
                 domain_name, account_xid
             )
 
-        return account_xid, zone_id, nameservers
+        return account_xid, zone_xid, nameservers
 
     def create_and_save_account(self, account_name):
         try:
@@ -102,10 +101,10 @@ class DnsHostService:
             raise
         return zone_xid, nameservers
 
-    def create_record(self, zone_id, record_data):
+    def create_record(self, zone_xid, record_data):
         """Calls create method of vendor service to create a DNS record"""
         try:
-            record = self.dns_vendor_service.create_dns_record(zone_id, record_data)
+            record = self.dns_vendor_service.create_dns_record(zone_xid, record_data)
             logger.info(f"Created DNS record of type {record['result'].get('type')}")
         except APIError as e:
             logger.error(f"Error creating DNS record: {str(e)}")
@@ -137,13 +136,13 @@ class DnsHostService:
         try:
             all_zones_data = self.dns_vendor_service.get_account_zones(account_xid)
             zones = all_zones_data["result"]
-            zone_id = self._find_by_name(zones, zone_name)
-            nameservers = self._find_nameservers_by_zone_id(zones, zone_id)
+            zone_xid = self._find_by_name(zones, zone_name)
+            nameservers = self._find_nameservers_by_zone_id(zones, zone_xid)
         except APIError as e:
             logger.error(f"Error fetching zones: {str(e)}")
             raise
 
-        return zone_id, nameservers
+        return zone_xid, nameservers
 
     def register_nameservers(self, domain_name, nameservers):
         domain = Domain.objects.get(name=domain_name)

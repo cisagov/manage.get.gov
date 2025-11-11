@@ -22,13 +22,15 @@ class TestDnsHostService(SimpleTestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_zone")
     def test_dns_setup_success(
         self,
+        mock_save_db_zone,
         mock_save_db_account,
         mock_create_cf_account,
         mock_create_cf_zone,
         mock_get_page_accounts,
-        mock_get_account_zones,
+        mock_get_account_zones
     ):
         test_cases = [
             {
