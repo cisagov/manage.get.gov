@@ -4,7 +4,8 @@ import logging
 import argparse
 from django.utils import timezone
 from datetime import timedelta
-from ...utility.email_invitations import send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers
+from registrar.utility.email import EmailSendingError, send_templated_email
+from registrar.models import Domain, UserDomainRole
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +17,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         domains_to_be_deleted = self.get_domains()
         dry_run = options.get("dry_run", False)
-
+        
         if not dry_run:
             deleted_domains = self.delete_domains(domains_to_be_deleted)
             self.logging_message(dry_run, deleted_domains)
-            send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(deleted_domains)
         else:
             self.logging_message(dry_run, domains_to_be_deleted)
 
@@ -47,14 +47,12 @@ class Command(BaseCommand):
         """Get domains that are dns needed or unknown"""
         domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
         domains = Domain.objects.filter(state__in=(domain_state), expiration_date__isnull=False)
-        time_to_compare = timezone.now().date() - timedelta(days=7)
+        time_to_compare = (timezone.now() - timedelta(days=7)).date()
         domains_in_expired_state = list(filter(lambda d: d.expiration_date == time_to_compare, domains))
-
         return domains_in_expired_state
 
     def delete_domains(self, domains):
         deleted_domains = []
-
         for domain in domains:
             try:
                 domain.deletedInEpp()
@@ -62,5 +60,34 @@ class Command(BaseCommand):
                 deleted_domains.append(domain)
             except:
                 logger.error(f"An error occured: {domain.name}")
-
+        
+        if len(deleted_domains) > 0:
+            self.send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(deleted_domains)
         return deleted_domains
+
+    def send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(self,domains):
+        all_emails_sent = True
+        subject_txt = "emails/domain_deletion_dns_needed_unknown_subject.txt"
+        body_txt = "emails/domain_deletion_dns_needed_unknown_body.txt"
+        for domain in domains:
+            user_domain_roles_emails = list(
+                UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+            )
+    
+            try:
+                send_templated_email(
+                    template_name=body_txt,
+                    subject_template_name=subject_txt,
+                    to_addresses=user_domain_roles_emails,
+                    context={"domain": domain, "date_of_deletion": domain.deleted.date()},
+                )
+            except EmailSendingError as err:
+                logger.error(
+                    "Failed to send domain deletion domain manager emails"
+                    f"Subject template: domain_deletion_dns_needed_unknown_subject.txt"
+                    f"To: {user_domain_roles_emails}"
+                    f"Domain: {domain.name}"
+                    f"Error: {err}"
+                )
+                all_emails_sent = False
+        return all_emails_sent
