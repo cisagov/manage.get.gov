@@ -326,6 +326,9 @@ BOTO_CONFIG = Config(retries={"mode": AWS_RETRY_MODE, "max_attempts": AWS_MAX_AT
 # also used as a default to and bcc email
 DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
 
+# OMB email address for FEB withdrawal notifications.
+OMB_EMAIL = "ombdotgov@omb.eop.gov"
+
 # connect to an (external) SMTP server for sending email
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 

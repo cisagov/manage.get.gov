@@ -1313,17 +1313,17 @@ class DomainRequest(TimeStampedModel):
                 }
 
                 send_templated_email(
-                    "emails/omb_withdrawl_notification.txt",
-                    "emails/omb_withdrawl_notification_subject.txt",
+                    "emails/omb_withdrawal_notification.txt",
+                    "emails/omb_withdrawal_notification_subject.txt",
                     "ombdotgov@omb.eop.gov",
                     bcc_address=bcc_address,
                     context=context,
                 )
-                logger.info("A withdrawl notification email was sent to ombdotgov@omb.eop.gov")
+                logger.info("A withdrawal notification email was sent to ombdotgov@omb.eop.gov")
             except EmailSendingError as err:
                 logger.error(
-                    "Failed to send OMB withdrawl notification email:\n"
-                    f" Subject template: omb_withdrawl_notification_subject.txt\n"
+                    "Failed to send OMB withdrawal notification email:\n"
+                    f" Subject template: omb_withdrawal_notification_subject.txt\n"
                     f" To: ombdotgov@omb.eop.gov\n"
                     f" Error: {err}",
                     exc_info=True,

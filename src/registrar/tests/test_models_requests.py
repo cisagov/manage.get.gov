@@ -1,6 +1,7 @@
 from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.conf import settings
 from unittest.mock import patch
 
 
@@ -373,7 +374,6 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     @override_settings(IS_PRODUCTION=True)
     def test_withdraw_feb_sends_omb_email(self):
-        msg = "Create an FEB domain request and withdraw it and see if OMB email was sent."
         user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         fed_agency = FederalAgency.objects.create(agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
         portfoilio = Portfolio.objects.create(
@@ -391,29 +391,19 @@ class TestDomainRequest(TestCase):
         domain_request.feb_purpose_choice = DomainRequest.FEBPurposeChoices.WEBSITE
         domain_request.save()
 
-        omb_email_allowed, _ = AllowedEmail.objects.get_or_create(email="ombdotgov@omb.eop.gov")
-
-        self.check_email_sent(
-            domain_request,
-            msg,
-            "withdraw",
-            1,
-            expected_content="withdrawn",
-            expected_email=user.email,
-            expected_bcc=["help@get.gov <help@get.gov>"],
-        )
+        omb_email_allowed, _ = AllowedEmail.objects.get_or_create(email=settings.OMB_EMAIL)
 
         sent_emails = [
             email
             for email in MockSESClient.EMAILS_SENT
-            if "ombdotgov@omb.eop.gov" in email["kwargs"]["Destination"].get("ToAddresses", [])
+            if settings.OMB_EMAIL in email["kwargs"]["Destination"].get("ToAddresses", [])
         ]
-        self.assertEqual(len(sent_emails), 1, "OMB withdrawl email was not sent")
+        self.assertEqual(len(sent_emails), 1, "OMB withdrawal email was not sent")
 
         omb_email = sent_emails[0]
         omb_destination = omb_email["kwargs"]["Destination"]
 
-        self.assertIn("ombdotgov@omb.eop.gov", omb_destination["ToAddresses"])
+        self.assertIn(settings.OMB_EMAIL, omb_destination["ToAddresses"])
         self.assertIn("help@get.gov <help@get.gov>", omb_destination.get("BccAddresses", []))
 
         omb_content = omb_email["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]

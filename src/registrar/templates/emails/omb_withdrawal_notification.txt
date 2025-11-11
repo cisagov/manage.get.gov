@@ -6,7 +6,7 @@ The following .gov domain request has been withdrawn and no longer requires OMB 
 DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
 REQUESTED BY: {{ domain_request.requester.email }}
 REQUEST WITHDRAWN ON: {{ date|date }}
-STATUS: {{ Withdrawn }}
+STATUS: Withdrawn
 
 ----------------------------------------------------------------
 
