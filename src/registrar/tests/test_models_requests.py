@@ -374,6 +374,7 @@ class TestDomainRequest(TestCase):
     @less_console_noise_decorator
     @override_settings(IS_PRODUCTION=True)
     def test_withdraw_feb_sends_omb_email(self):
+        msg = "Create an FEB domain request and withdraw it and see if OMB email was sent."
         user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         fed_agency = FederalAgency.objects.create(agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
         portfoilio = Portfolio.objects.create(
@@ -392,6 +393,16 @@ class TestDomainRequest(TestCase):
         domain_request.save()
 
         omb_email_allowed, _ = AllowedEmail.objects.get_or_create(email=settings.OMB_EMAIL)
+
+        self.check_email_sent(
+            domain_request,
+            msg,
+            "withdraw",
+            1,
+            expected_content="withdrawn",
+            expected_email=user.email,
+            expected_bcc=["help@get.gov <help@get.gov>"],
+        )
 
         sent_emails = [
             email
