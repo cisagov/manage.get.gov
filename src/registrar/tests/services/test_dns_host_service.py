@@ -30,7 +30,7 @@ class TestDnsHostService(SimpleTestCase):
         mock_create_cf_account,
         mock_create_cf_zone,
         mock_get_page_accounts,
-        mock_get_account_zones
+        mock_get_account_zones,
     ):
         test_cases = [
             {

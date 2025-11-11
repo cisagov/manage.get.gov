@@ -50,15 +50,11 @@ class DnsHostService:
         has_zone = bool(zone_xid)
 
         if not has_account:
-            account_xid = self.create_and_save_account(account_name) # Rename to account_xid
-            zone_xid, nameservers = self.create_and_save_zone(
-                domain_name, account_xid
-            )
+            account_xid = self.create_and_save_account(account_name)  # Rename to account_xid
+            zone_xid, nameservers = self.create_and_save_zone(domain_name, account_xid)
 
         elif has_account and not has_zone:
-            zone_xid, nameservers = self.create_and_save_zone(
-                domain_name, account_xid
-            )
+            zone_xid, nameservers = self.create_and_save_zone(domain_name, account_xid)
 
         return account_xid, zone_xid, nameservers
 
@@ -193,10 +189,7 @@ class DnsHostService:
             dns_domain = Domain.objects.get(name=domain_name)
 
             dns_zone = DnsZone.objects.create(
-                dns_account=dns_account,
-                vendor_dns_zone=vendor_dns_zone,
-                domain=dns_domain,
-                name=zone_name
+                dns_account=dns_account, vendor_dns_zone=vendor_dns_zone, domain=dns_domain, name=zone_name
             )
 
             ZonesJoin.objects.create(
