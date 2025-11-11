@@ -409,7 +409,7 @@ class TestDomainRequest(TestCase):
             for email in MockSESClient.EMAILS_SENT
             if settings.OMB_EMAIL in email["kwargs"]["Destination"].get("ToAddresses", [])
         ]
-        self.assertEqual(len(sent_emails), 1, "OMB withdrawal email was not sent")
+        self.assertEqual(len(sent_emails), 1)
 
         omb_email = sent_emails[0]
         omb_destination = omb_email["kwargs"]["Destination"]
