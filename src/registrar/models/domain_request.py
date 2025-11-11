@@ -1294,6 +1294,7 @@ class DomainRequest(TimeStampedModel):
     def withdraw(self):
         """Withdraw an domain request that has been submitted."""
         bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
+        omb_address = settings.OMB_EMAIL if settings.IS_PRODUCTION else ""
 
         self._send_status_update_email(
             "withdraw",
@@ -1315,7 +1316,7 @@ class DomainRequest(TimeStampedModel):
                 send_templated_email(
                     "emails/omb_withdrawal_notification.txt",
                     "emails/omb_withdrawal_notification_subject.txt",
-                    "ombdotgov@omb.eop.gov",
+                    omb_address,
                     bcc_address=bcc_address,
                     context=context,
                 )

@@ -401,7 +401,7 @@ class TestDomainRequest(TestCase):
             1,
             expected_content="withdrawn",
             expected_email=user.email,
-            expected_bcc=["help@get.gov <help@get.gov>"],
+            expected_bcc=[settings.DEFAULT_FROM_EMAIL],
         )
 
         sent_emails = [
@@ -415,7 +415,7 @@ class TestDomainRequest(TestCase):
         omb_destination = omb_email["kwargs"]["Destination"]
 
         self.assertIn(settings.OMB_EMAIL, omb_destination["ToAddresses"])
-        self.assertIn("help@get.gov <help@get.gov>", omb_destination.get("BccAddresses", []))
+        self.assertIn(settings.DEFAULT_FROM_EMAIL, omb_destination.get("BccAddresses", []))
 
         omb_content = omb_email["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn(domain_request.requested_domain.name, omb_content)
