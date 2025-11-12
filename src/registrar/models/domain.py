@@ -1137,7 +1137,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
-    
+
         self._delete_nameservers_and_hosts()
 
         self._delete_nonregistrant_contacts()
@@ -1188,7 +1188,7 @@ class Domain(TimeStampedModel, DomainHelper):
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
         logger.info(f"retrieved contacts for domain: {contacts}")
-        
+
         for contact in contacts:
             try:
                 if contact.contact_type != PublicContact.ContactTypeChoices.REGISTRANT:
