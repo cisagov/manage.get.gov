@@ -188,11 +188,12 @@ class DnsHostService:
             dns_account = DnsAccount.objects.get(name=zone_account_name)
             dns_domain = Domain.objects.get(name=domain_name)
 
-            dns_zone = DnsZone.objects.get_or_create(
-                dns_account=dns_account, vendor_dns_zone=vendor_dns_zone, domain=dns_domain, name=zone_name
-            )
+            dns_zone, _ = DnsZone.objects.get_or_create(dns_account=dns_account, domain=dns_domain, name=zone_name)
+            # Assign ManyToMany field vendor_dns_zone manually because we cannot directly assign forward
+            # side of a many to many set in Django
+            dns_zone.vendor_dns_zone.add(vendor_dns_zone)
 
-            ZonesJoin.objects.create(
+            ZonesJoin.objects.get_or_create(
                 dns_zone=dns_zone,
                 vendor_dns_zone=vendor_dns_zone,
             )
