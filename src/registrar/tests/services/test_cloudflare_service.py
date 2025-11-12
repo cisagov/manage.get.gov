@@ -58,17 +58,17 @@ class TestCloudflareService(SimpleTestCase):
         mock_response.raise_for_status.side_effect = http_error
         return mock_response
 
-    def test_create_account_success(self):
-        """Test successful create_account call"""
+    def test_create_cf_account_success(self):
+        """Test successful create_cf_account call"""
         account_name = "test.gov test account"
         mock_response = self._setUpSuccessMockResponse(return_value={"result": {"name": account_name, "id": "12345"}})
         self.service.client.post.return_value = mock_response
 
-        resp = self.service.create_account(account_name)
+        resp = self.service.create_cf_account(account_name)
         self.assertEqual(resp["result"]["name"], account_name)
 
-    def test_create_account_failure(self):
-        """Test create_account with API failure"""
+    def test_create_cf_account_failure(self):
+        """Test create_cf_account with API failure"""
         account_name = "My get.gov"
         for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
@@ -79,7 +79,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.service.client.post.return_value = mock_response
 
                 with self.assertRaises(case["error"]["exception"]) as context:
-                    self.service.create_account(account_name)
+                    self.service.create_cf_account(account_name)
 
                 self.assertIn(case["error"]["message"], str(context.exception))
 

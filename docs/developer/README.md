@@ -385,9 +385,11 @@ Then, copy the variables under the section labled `s3`.
 The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaenterprise3850/m/cisaenterprise3850/1743613581103/eeff220faf8db79d54624cef49d40f66cf85bfd6) visualizes the domain request flow and resulting domain objects.
 
 
-## Testing the prototype add DNS record feature (update as testing instructions change)
+## DNS Hosting Feature
+
+### Testing the DNS record feature (update as testing instructions change)
 We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
-`prototype_dns_flag` waffle flag and use (or add a domain name in `valid_domains` (see local test instructions)). Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
+`prototype_dns_flag` waffle flag and navigate to a domain you manage. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
 
 Before we can send data to cloudflare, you will need these values in your .env file:
 ```
@@ -428,3 +430,4 @@ To manually test locally:
     `error-400` to trigger a bad request 400
     `error-403` to trigger an authentication error 403
     `error*` to trigger a 500 response
+    
