@@ -91,4 +91,9 @@ class Command(BaseCommand):
                     f"Error: {err}"
                 )
                 all_emails_sent = False
+            
+            if all_emails_sent:
+                logger.info("Emails sent out successfully")
+            else:
+                logger.error("Some domain expiration emails failed to send.")
         return all_emails_sent
