@@ -1,6 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.conf import settings
 from unittest.mock import patch
 
 
@@ -291,6 +292,7 @@ class TestDomainRequest(TestCase):
         expected_content=None,
         expected_email="mayor@igorville.com",
         expected_cc=[],
+        expected_bcc=[],
     ):
         """Check if an email was sent after performing an action."""
         email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
@@ -313,6 +315,11 @@ class TestDomainRequest(TestCase):
                 sent_cc_adddresses = sent_emails[0]["kwargs"]["Destination"]["CcAddresses"]
                 for cc_address in expected_cc:
                     self.assertIn(cc_address, sent_cc_adddresses)
+
+            if expected_bcc:
+                sent_bcc_adddresses = sent_emails[0]["kwargs"]["Destination"]["BccAddresses"]
+                for bcc_address in expected_bcc:
+                    self.assertIn(bcc_address, sent_bcc_adddresses)
 
             if expected_content:
                 email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
@@ -356,12 +363,19 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(domain_request, msg, "approve", 1, expected_content="approved", expected_email=user.email)
 
     @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=True)
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
         self.check_email_sent(
-            domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
+            domain_request,
+            msg,
+            "withdraw",
+            1,
+            expected_content="withdrawn",
+            expected_email=user.email,
+            expected_bcc=[settings.DEFAULT_FROM_EMAIL],
         )
 
     def test_reject_sends_email(self):
