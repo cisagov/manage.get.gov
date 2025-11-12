@@ -1,0 +1,38 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi, domain managers.
+Your .gov domain {{ domain.name }} was approved on {{ approval_date|date  }}, but it still needs to be set up before it can be used.
+
+----------------------------------------------------------------
+
+ADD DOMAIN NAME SERVER INFORMATION
+Before your .gov domain can be used, you will first need to connect it to a Domain Name System (DNS) hosting service. At this time, we don't provide DNS hosting services.
+
+After you've set up hosting, you'll need to enter your name server information on the .gov registrar <{{ manage_url }}>.
+
+Learn more about:
+- Finding a DNS hosting service <https://get.gov/domains/moving/#find-dns-hosting-services>
+- Adding name servers <https://get.gov/help/domain-management/#manage-dns-name-servers>.
+
+
+ADD DOMAIN MANAGERS, SECURITY EMAIL
+Currently, you’re the only person who can manage this domain. Please keep your contact information updated. 
+
+We strongly recommend adding other domain managers who can serve as additional contacts. We also recommend providing a security email that the public can use to report security issues on your domain. You can add domain managers and a security email on the .gov registrar. 
+
+Learn more about:
+- Adding domain managers <https://get.gov/help/domain-management/#add-a-domain-manager-to-your-.gov-domain>
+- Adding a security email <https://get.gov/help/domain-management/#add-or-update-the-security-email-for-your-.gov-domain>
+- Domain security best practices <https://get.gov/domains/security/>
+
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+{% endautoescape %}
