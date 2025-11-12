@@ -26,7 +26,7 @@ jobs:
   python-linting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
@@ -113,7 +113,7 @@ jobs:
   python-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
@@ -174,7 +174,7 @@ jobs:
   django-migrations-complete:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
@@ -187,7 +187,7 @@ jobs:
   pa11y-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
