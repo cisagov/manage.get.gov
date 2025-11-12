@@ -17,9 +17,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         domains_to_be_deleted = self.get_domains()
         dry_run = options.get("dry_run", False)
-        
+
         if not dry_run:
-            deleted_domains = self.delete_domains(domains_to_be_deleted)
+            deleted_domains = self.delete_domains_and_send_notif_emails(domains_to_be_deleted)
             self.logging_message(dry_run, deleted_domains)
         else:
             self.logging_message(dry_run, domains_to_be_deleted)
@@ -48,24 +48,26 @@ class Command(BaseCommand):
         domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
         domains = Domain.objects.filter(state__in=(domain_state), expiration_date__isnull=False)
         time_to_compare = (timezone.now() - timedelta(days=7)).date()
+
         domains_in_expired_state = list(filter(lambda d: d.expiration_date == time_to_compare, domains))
         return domains_in_expired_state
 
-    def delete_domains(self, domains):
+    def delete_domains_and_send_notif_emails(self, domains):
         deleted_domains = []
         for domain in domains:
             try:
                 domain.deletedInEpp()
                 domain.save()
                 deleted_domains.append(domain)
-            except:
-                logger.error(f"An error occured: {domain.name}")
-        
+            except Exception as e:
+                logger.error(f"An error occured with {domain.name}")
+
         if len(deleted_domains) > 0:
-            self.send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(deleted_domains)
+            self.send_domain_notifications_emails(deleted_domains)
         return deleted_domains
 
-    def send_domain_deletion_emails_for_dns_needed_and_unknown_to_domain_managers(self,domains):
+    def send_domain_notifications_emails(self, domains):
+        """Send email to domain managers that the domain has been deleted"""
         all_emails_sent = True
         subject_txt = "emails/domain_deletion_dns_needed_unknown_subject.txt"
         body_txt = "emails/domain_deletion_dns_needed_unknown_body.txt"
@@ -73,7 +75,7 @@ class Command(BaseCommand):
             user_domain_roles_emails = list(
                 UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
             )
-    
+
             try:
                 send_templated_email(
                     template_name=body_txt,

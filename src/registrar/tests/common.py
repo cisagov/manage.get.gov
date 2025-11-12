@@ -1972,9 +1972,9 @@ class MockEppLib(TestCase):
             "ddomain3.gov": (self.InfoDomainWithContacts, None),
             "igorville.gov": (self.InfoDomainWithContacts, None),
             "sharingiscaring.gov": (self.infoDomainSharedHost, None),
-            "test1.gov": (self.infoDomainNoHost,None),
+            "test1.gov": (self.infoDomainNoHost, None),
             "test2.gov": (self.infoDomainNoHost, None),
-            "test.gov" : (self.infoDomainNoHost, None)
+            "test.gov": (self.infoDomainNoHost, None),
         }
 
         # Retrieve the corresponding values from the dictionary
