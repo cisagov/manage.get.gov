@@ -3,20 +3,20 @@ run-name: Check for expired domains
 
 on:
   schedule:
-    # Runs every day at 5 AM UTC.
-    - cron: "0 5 * * *"
+    # Runs daily at 14:30 UTC
+    - cron: "30 14 * * *"
 
 jobs:
   upload-reports:
     runs-on: ubuntu-latest
     env:
-      CF_USERNAME: ${{ secrets.CF_DELETE_DOMS_USERNAME }}
-      CF_PASSWORD: ${{ secrets.CF_DELETE_DOMS_PASSWORD }}
+      CF_USERNAME: CF_${{ secrets.CF_NOTIFICATIONS_ENV }}_USERNAME
+      CF_PASSWORD: CF_${{ secrets.CF_NOTIFICATIONS_ENV }}_PASSWORD
     steps:
-      - name: Run script to delete domains with expiration date past 7 days
+      - name: Run script to delete domains with expiration date past 7 days with dns needed and unknown status
         uses: cloud-gov/cg-cli-tools@main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
-          cf_command: "run-task getgov-staging --command 'python manage.py delete_expired_domains_no_setup'"
+          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py delete_expired_domains_no_setup'"
