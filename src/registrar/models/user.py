@@ -1,8 +1,11 @@
 import logging
+import warnings
+from typing_extensions import deprecated
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
+from django.apps import apps
 
 from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -410,7 +413,36 @@ class User(AbstractUser):
         self.check_domain_invitations_on_login()
         self.check_portfolio_invitations_on_login()
 
+    def is_org_user_for_portfolio(self, portfolio_or_id) -> bool:
+        """
+        Returns True if the user has view permission for the given portfolio ID.
+        """
+        if not portfolio_or_id:
+            return False
+
+        if hasattr(portfolio_or_id, "pk"):
+            portfolio = portfolio_or_id
+        else:
+            try:
+                pid = int(portfolio_or_id)
+            except (TypeError, ValueError):
+                return False
+
+            Portfolio = apps.get_model("registrar", "Portfolio")
+            portfolio = Portfolio.objects.filter(pk=pid).first()
+            if not portfolio:
+                return False
+
+        return self.has_view_portfolio_permission(portfolio)
+
+    @deprecated("Use permission checks with a portfolio id with is_org_user_for_portfolio instead")
     def is_org_user(self, request):
+        """DEPRECATED: session-based. Use is_org_user_for_portfolio(portfolio) instead."""
+        warnings.warn(
+            "User.is_org_user(request) is deprecated; use is_org_user_for_portfolio.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         portfolio = request.session.get("portfolio")
         return portfolio is not None and self.has_view_portfolio_permission(portfolio)
 
@@ -475,6 +507,27 @@ class User(AbstractUser):
 
         # If there are other admins or the user is not the only one
         return False
+
+    def has_legacy_domain(self) -> bool:
+        """
+        True if this user has any domain role on a domain whose DomainInformation.portfolio is NULL.
+        This ignores the current session/org and works even if the user ALSO has portfolios.
+        """
+        no_portfolio = DomainInformation.objects.filter(
+            domain_id=OuterRef("domain_id"),
+            portfolio__isnull=True,
+        )
+        return UserDomainRole.objects.filter(user=self).filter(Exists(no_portfolio)).exists()
+
+    def legacy_domain_ids(self):
+        """
+        IDs of domains this user manages that are NOT in any portfolio.
+        """
+        return (
+            DomainInformation.objects.filter(portfolio__isnull=True, domain__userdomainrole__user=self)
+            .values_list("domain_id", flat=True)
+            .distinct()
+        )
 
     def save(self, *args, **kwargs):
         if self.email:
