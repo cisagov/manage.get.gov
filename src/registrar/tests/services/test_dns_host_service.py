@@ -73,7 +73,6 @@ class TestDnsHostService(SimpleTestCase):
                 mock_get_account_zones.return_value = {"result": [{"id": case.get("found_zone_id")}]}
 
                 mock_save_db_account.return_value = case["account_id"]
-                mock_save_db_zone.return_value = case["zone_id"]
 
                 returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
                 self.assertEqual(returned_account_id, case["account_id"])
