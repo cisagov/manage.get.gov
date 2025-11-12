@@ -47,7 +47,6 @@ from .common import (
 )
 from api.tests.common import less_console_noise_decorator
 from django.db.models import ProtectedError
-from unittest.mock import Mock
 
 
 logger = logging.getLogger(__name__)

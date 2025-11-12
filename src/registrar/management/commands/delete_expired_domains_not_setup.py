@@ -1,11 +1,10 @@
 from django.core.management import BaseCommand
-from registrar.models import Domain
+from registrar.models import Domain, UserDomainRole
 import logging
 import argparse
 from django.utils import timezone
 from datetime import timedelta
 from registrar.utility.email import EmailSendingError, send_templated_email
-from registrar.models import Domain, UserDomainRole
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +58,7 @@ class Command(BaseCommand):
                 domain.deletedInEpp()
                 domain.save()
                 deleted_domains.append(domain)
-            except Exception as e:
+            except Exception:
                 logger.error(f"An error occured with {domain.name}")
 
         if len(deleted_domains) > 0:
