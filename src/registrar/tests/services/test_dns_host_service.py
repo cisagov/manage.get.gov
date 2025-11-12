@@ -5,8 +5,15 @@ from django.db import IntegrityError
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
-from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
-from registrar.models.dns.dns_vendor import DnsVendor
+from registrar.models import (
+    DnsVendor,
+    DnsAccount,
+    VendorDnsAccount,
+    DnsZone,
+    VendorDnsZone,
+    DnsAccount_VendorDnsAccount as AccountsJoin,
+    DnsZone_VendorDnsZone as ZonesJoin
+)
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
 
@@ -161,6 +168,9 @@ class TestDnsHostServiceDB(TestCase):
         VendorDnsAccount.objects.all().delete()
         DnsAccount.objects.all().delete()
         AccountsJoin.objects.all().delete()
+        VendorDnsZone.objects.all().delete()
+        DnsZone.objects.all().delete()
+        ZonesJoin.objects.all().delete()
 
     def test_save_db_account_success(self):
         # Dummy JSON data from API
