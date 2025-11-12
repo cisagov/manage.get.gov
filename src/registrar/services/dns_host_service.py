@@ -101,26 +101,44 @@ class DnsHostService:
         return record
 
     def _find_existing_account(self, account_name):
-        # temporary push for demo 
-        per_page = 50
-        page = 0
-        is_last_page = False
-        while is_last_page is False:
-            page += 1
-            try:
-                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
-                accounts = page_accounts_data["result"]
-                account_id = self._find_by_pubname(accounts, account_name)
-                if account_id:
-                    break
-                total_count = page_accounts_data["result_info"].get("total_count")
-                is_last_page = total_count <= page * per_page
+        dns_account = DnsAccount.objects.filter("name=account_name").first()
+        if not dns_account:
+            return None
 
-            except APIError as e:
-                logger.error(f"Error fetching accounts: {str(e)}")
-                raise
+        db_account_id = (
+            AccountsJoin.objects.filter(dns_account=dns_account, is_active=True)
+            .values_list("vendor_dns_account__x_account_id", flat=True)
+            .first()
+        )
 
-        return account_id
+        if db_account_id:
+            per_page = 50
+            page = 0
+            is_last_page = False
+            while is_last_page is False:
+                page += 1
+                try:
+                    page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
+                    accounts = page_accounts_data["result"]
+                    cf_account_id = self._find_by_pubname(accounts, account_name)
+                    if cf_account_id:
+                        break
+                    total_count = page_accounts_data["result_info"].get("total_count")
+                    is_last_page = total_count <= page * per_page
+
+                except APIError as e:
+                    logger.error(f"Error fetching accounts: {str(e)}")
+                    raise
+
+        if cf_account_id and cf_account_id == db_account_id:
+            return db_account_id
+
+        elif cf_account_id and cf_account_id != db_account_id:
+            logger.warning(
+                "Cloudflare id mismatch for '%s': DB has %s, CF returned %s", account_name, db_account_id, cf_account_id
+            )
+
+        return None
 
     def _find_existing_zone(self, zone_name, account_id):
         try:

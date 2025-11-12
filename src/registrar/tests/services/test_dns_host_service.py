@@ -243,3 +243,36 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(AccountsJoin.objects.count(), 0)
+
+    def test_find_existing_account_success(self):
+        account_name = "Account for test.gov"
+        test_x_account_id = "acc_12345"
+
+        vendor_dns_acc = VendorDnsAccount.objects.create(
+            dns_vendor=self.vendor,
+            x_account_id="acc_12345",
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+
+        dns_acc = DnsAccount.objects.create(name=account_name)
+
+        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=True)
+
+        found_id = self.service._find_existing_account(account_name)
+        self.assertEqual(found_id, test_x_account_id)
+
+    def test_find_existing_account_returns_none_with_inactive_join(self):
+        account_name = "Account for inactive.gov"
+
+        vendor_dns_acc = VendorDnsAccount.objects.create(
+            dns_vendor=self.vendor,
+            x_account_id="acc_inactive",
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+        dns_acc = DnsAccount.objects.create(name=account_name)
+
+        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
+
+        self.assertIsNone(self.service._find_existing_account(account_name))
