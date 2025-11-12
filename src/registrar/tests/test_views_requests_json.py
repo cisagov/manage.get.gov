@@ -291,12 +291,18 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         """Test that an authenticated user gets the list of 3 requests for portfolio. The 3 requests
         are the requests that are associated with the portfolio."""
 
-        UserPortfolioPermission.objects.get_or_create(
+        # Clean slate for this user/portfolio
+        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+
+        # Create permission to view all requests
+        UserPortfolioPermission.objects.create(
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS],
         )
+
+        self.assertFalse(self.user.has_edit_request_portfolio_permission(self.portfolio))
 
         response = self.app.get(reverse("get_domain_requests_json"), {"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)
@@ -365,12 +371,17 @@ class GetRequestsJsonTest(TestWithUser, WebTest):
         """Test that an authenticated user gets the list of 2 requests for portfolio. The 2 requests
         are the requests that are associated with the portfolio and owned by self.user."""
 
+        UserPortfolioPermission.objects.filter(user=self.user, portfolio=self.portfolio).delete()
+
         UserPortfolioPermission.objects.get_or_create(
             user=self.user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             additional_permissions=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
         )
+
+        self.assertFalse(self.user.has_view_all_requests_portfolio_permission(self.portfolio))
+        self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
 
         response = self.app.get(reverse("get_domain_requests_json"), {"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)
