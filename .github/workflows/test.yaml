@@ -1,6 +1,9 @@
 # test.yaml
 name: Testing
 
+env:
+  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.ref }}
+
 on:
   push:
     branches:
@@ -12,32 +15,168 @@ on:
       - '.gitignore'
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or SHA to check out
+        required: true
+        type: string
 
 jobs:
   python-linting:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
-      - name: Linting
+      - name: Prepare app image
         working-directory: ./src
-        # all of our linting is configured in
-        # registrar/management/commands/lint.py
-        run: docker compose run app python manage.py lint
+        run: |
+          echo '::group::Docker prepare (pull/build)'
+          docker compose pull --ignore-pull-failures || true
+          docker compose build app --pull
+          echo '::endgroup::'
+
+      - name: "Show linter versions"
+        working-directory: ./src
+        continue-on-error: true
+        run: |
+          echo 'Linter versions:'
+          docker compose run --rm --no-deps app sh -lc "printf 'Python: ' ; python --version ; printf 'pip: ' ; pip --version ; printf 'flake8: ' ; flake8 --version ; printf 'black: ' ; black --version ; printf 'mypy: ' ; mypy --version ; printf 'bandit: ' ; bandit --version" 2>&1 || true
+
+
+      - name: "Lint: flake8"
+        id: flake8
+        working-directory: ./src
+        continue-on-error: true
+        run: |
+          echo '::group::Flake8'
+          docker compose run --rm --no-deps app sh -lc "flake8 . --count --format='::error file=src/%(path)s,line=%(row)d,col=%(col)d::%(code)s %(text)s'"
+          echo '::endgroup::'
+
+      - name: "Lint: black"
+        id: black
+        working-directory: ./src
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo '::group::Black'
+          docker compose run --rm --no-deps app black --check . 2>&1 | tee black.out
+          status=${PIPESTATUS[0]}
+          grep -E "^would reformat \S+" black.out | awk '{print $3}' | while read -r file; do
+            echo "::error file=src/${file}::Black would reformat ${file}"
+          done || true
+          echo '::endgroup::'
+          exit $status
+
+      - name: "Lint: mypy"
+        id: mypy
+        working-directory: ./src
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          echo '::group::Mypy'
+          docker compose run --rm --no-deps app mypy . --color-output --show-error-codes --no-error-summary --hide-error-context 2>&1 | tee mypy.out
+          status=${PIPESTATUS[0]}
+          echo '::endgroup::'
+          exit $status
+
+      - name: "Lint: bandit"
+        id: bandit
+        working-directory: ./src
+        shell: bash
+        continue-on-error: true
+        run: |
+          echo '::group::Bandit'
+          docker compose run --rm --no-deps app bandit -q -r . -f json > bandit.out.json
+          python3 -c "import sys,json; r=json.load(open('bandit.out.json','r')); bad=lambda s:(s or '').upper() in ('HIGH','MEDIUM'); [print('::{} file=src/{},line={}::{} {}: {}'.format(('error' if bad((i.get('issue_severity') or '').upper()) else 'warning'), i.get('filename',''), i.get('line_number',1) or 1, i.get('test_id','B000'), (i.get('issue_severity') or '').upper(), i.get('issue_text',''))) for i in r.get('results',[])]; sys.exit(1 if any(bad((i.get('issue_severity') or '').upper()) for i in r.get('results',[])) else 0)"
+          echo '::endgroup::'
+
+      - name: Lint summary and fail if needed
+        if: ${{ always() }}
+        run: |
+          echo "Flake8: ${{ steps.flake8.outcome }}"
+          echo "Black:  ${{ steps.black.outcome }}"
+          echo "Mypy:   ${{ steps.mypy.outcome }}"
+          echo "Bandit: ${{ steps.bandit.outcome }}"
+          if [ "${{ steps.flake8.outcome }}" = "failure" ] || \
+             [ "${{ steps.black.outcome }}" = "failure" ] || \
+             [ "${{ steps.mypy.outcome }}" = "failure" ] || \
+             [ "${{ steps.bandit.outcome }}" = "failure" ]; then
+            echo "One or more linters failed. See annotations above."
+            exit 1
+          fi
 
   python-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
-      - name: Unit tests
+      - name: "Run unit tests"
+        id: tests
         working-directory: ./src
-        run: docker compose run app python manage.py test --parallel
+        shell: bash
+        run: |
+          set -o pipefail
+          echo '::group::Django Tests'
+          docker compose run --rm app python manage.py test --parallel --verbosity 2 2>&1 | tee test.out
+          status=${PIPESTATUS[0]}
+          echo '::endgroup::'
+          echo "test_status=${status}" >> $GITHUB_OUTPUT
+
+      - name: "Annotate failures and summarize"
+        id: annotate
+        if: ${{ always() }}
+        working-directory: ./src
+        shell: bash
+        run: |
+          if [ -f test.out ]; then
+            # Summary lines
+            ran=$(grep -E '^Ran [0-9]+ tests?' test.out | tail -n 1 || true)
+            summary=$(grep -E '^(FAILED|OK)' test.out | tail -n 1 || true)
+            {
+              echo "### Test Summary"
+              [ -n "$ran" ] && echo "$ran"
+              [ -n "$summary" ] && echo "$summary"
+              # If failed, include failure tracebacks for quick triage
+              if echo "$summary" | grep -q '^FAILED'; then
+                echo ""
+                awk '
+                  BEGIN{inblk=0;hdrset=0}
+                  /^[[:space:]]*={10,}[[:space:]]*$/ { if(inblk){ print "```"; inblk=0 } next }
+                  /^[[:space:]]*(FAIL|ERROR): / { if(!hdrset){ print "### Failure Details"; hdrset=1 } if(inblk){ print "```"; inblk=0 } header=$0; sub(/^[[:space:]]+/, "", header); print "#### " header; print "```text"; inblk=1; next }
+                  /^[[:space:]]*-{10,}[[:space:]]*$/ { next }
+                  inblk { print; next }
+                  END { if(inblk) print "```" }
+                ' test.out
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: "Upload test log"
+        if: ${{ steps.tests.outputs.test_status != '0' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: src/test.out
+
+      - name: "Fail job if tests failed"
+        if: ${{ steps.tests.outputs.test_status != '0' }}
+        run: |
+          echo "Tests failed (exit code: ${{ steps.tests.outputs.test_status }})."
+          exit 1
 
   django-migrations-complete:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Check for complete migrations
         working-directory: ./src
@@ -49,14 +188,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Disable Login
         working-directory: ./src
         # by adding MockUserLogin to settings.MIDDLEWARE
         run: |
-          perl -pi \
-          -e 's/"django.contrib.auth.middleware.AuthenticationMiddleware",/$&"registrar.tests.common.MockUserLogin",/' \
-          registrar/config/settings.py
+          perl -pi -e 's/"django.contrib.auth.middleware.AuthenticationMiddleware",/$&"registrar.tests.common.MockUserLogin",/' registrar/config/settings.py
 
       - name: Start container
         working-directory: ./src
