@@ -49,7 +49,7 @@ class DnsHostService:
         has_zone = bool(zone_xid)
 
         if not has_account:
-            account_xid = self.create_and_save_account(account_name)  # Rename to account_xid
+            account_xid = self.create_and_save_account(account_name)
             zone_xid, nameservers = self.create_and_save_zone(domain_name, account_xid)
 
         elif has_account and not has_zone:
