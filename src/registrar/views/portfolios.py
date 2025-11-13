@@ -13,7 +13,9 @@ from registrar.decorators import (
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
+    HAS_LEGACY_AND_ORG_USER,
     grant_access,
+    resolve_portfolio,
 )
 from registrar.forms import portfolio as portfolioForms
 from registrar.models import (
@@ -81,7 +83,8 @@ class PortfolioMemberView(DetailView, View):
     pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_permission.user
 
         # We have to explicitely name these with member_ otherwise we'll have conflicts with context preprocessors
@@ -128,7 +131,8 @@ class PortfolioMemberDeleteView(View):
         Find and delete the portfolio member using the provided primary key (pk).
         Redirect to a success page after deletion (or any other appropriate page).
         """
-        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_member_permission.user
         portfolio = portfolio_member_permission.portfolio
 
@@ -256,7 +260,8 @@ class PortfolioMemberEditView(DetailView, View):
     pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         user = portfolio_permission.user
         form = self.form_class(instance=portfolio_permission)
         return render(
@@ -271,7 +276,8 @@ class PortfolioMemberEditView(DetailView, View):
         )
 
     def post(self, request, member_pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
         removing_admin_role_on_self = False
@@ -339,7 +345,8 @@ class PortfolioMemberDomainsView(View):
     pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_permission.user
 
         return render(
@@ -360,7 +367,8 @@ class PortfolioMemberDomainsEditView(DetailView, View):
     pk_url_kwarg = "member_pk"
 
     def get(self, request, member_pk):
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_permission.user
 
         return render(
@@ -378,7 +386,8 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         """
         added_domains = request.POST.get("added_domains")
         removed_domains = request.POST.get("removed_domains")
-        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk)
+        portfolio = resolve_portfolio(request, member_pk=member_pk)
+        portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_permission.user
         portfolio = portfolio_permission.portfolio
 
@@ -1187,7 +1196,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
             messages.warning(self.request, "Could not send portfolio email invitation.")
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationsDropdownView(ListView, FormMixin):
     """
     View for Organizations dropdown.
@@ -1212,10 +1221,11 @@ class PortfolioOrganizationsDropdownView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationsView(ListView, FormMixin):
     """
     View for Select Portfolio Organization page when the user does not
@@ -1241,6 +1251,7 @@ class PortfolioOrganizationsView(ListView, FormMixin):
             "portfolio"
         )
         context["user_portfolio_permissions"] = user_portfolio_permissions
+        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -1251,7 +1262,7 @@ class PortfolioOrganizationsView(ListView, FormMixin):
         self.form = self.get_form()
 
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER)
+@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationSelectView(DetailView, FormMixin):
     """
     View that displays an individual portfolio object and sets

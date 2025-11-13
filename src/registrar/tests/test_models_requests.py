@@ -1,6 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from django.db import transaction
+from django.conf import settings
 from unittest.mock import patch
 
 
@@ -291,6 +292,7 @@ class TestDomainRequest(TestCase):
         expected_content=None,
         expected_email="mayor@igorville.com",
         expected_cc=[],
+        expected_bcc=[],
     ):
         """Check if an email was sent after performing an action."""
         email_allowed, _ = AllowedEmail.objects.get_or_create(email=expected_email)
@@ -313,6 +315,11 @@ class TestDomainRequest(TestCase):
                 sent_cc_adddresses = sent_emails[0]["kwargs"]["Destination"]["CcAddresses"]
                 for cc_address in expected_cc:
                     self.assertIn(cc_address, sent_cc_adddresses)
+
+            if expected_bcc:
+                sent_bcc_adddresses = sent_emails[0]["kwargs"]["Destination"]["BccAddresses"]
+                for bcc_address in expected_bcc:
+                    self.assertIn(bcc_address, sent_bcc_adddresses)
 
             if expected_content:
                 email_content = sent_emails[0]["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
@@ -356,13 +363,72 @@ class TestDomainRequest(TestCase):
         self.check_email_sent(domain_request, msg, "approve", 1, expected_content="approved", expected_email=user.email)
 
     @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=True)
     def test_withdraw_sends_email(self):
         msg = "Create a domain request and withdraw it and see if email was sent."
         user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW, user=user)
         self.check_email_sent(
-            domain_request, msg, "withdraw", 1, expected_content="withdrawn", expected_email=user.email
+            domain_request,
+            msg,
+            "withdraw",
+            1,
+            expected_content="withdrawn",
+            expected_email=user.email,
+            expected_bcc=[settings.DEFAULT_FROM_EMAIL],
         )
+
+    @less_console_noise_decorator
+    @override_settings(IS_PRODUCTION=True)
+    def test_withdraw_feb_sends_omb_email(self):
+        msg = "Create an FEB domain request and withdraw it and see if OMB email was sent."
+        user, _ = User.objects.get_or_create(username="testy", email="testy@town.com")
+        fed_agency = FederalAgency.objects.create(agency="Test FedExec Agency", federal_type=BranchChoices.EXECUTIVE)
+        portfoilio = Portfolio.objects.create(
+            organization_name="Test FEB Portfolio",
+            requester=user,
+            federal_agency=fed_agency,
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            user=user,
+            portfolio=portfoilio,
+        )
+
+        domain_request.feb_purpose_choice = DomainRequest.FEBPurposeChoices.WEBSITE
+        domain_request.save()
+
+        omb_email_allowed, _ = AllowedEmail.objects.get_or_create(email=settings.OMB_EMAIL)
+
+        self.check_email_sent(
+            domain_request,
+            msg,
+            "withdraw",
+            1,
+            expected_content="withdrawn",
+            expected_email=user.email,
+            expected_bcc=[settings.DEFAULT_FROM_EMAIL],
+        )
+
+        sent_emails = [
+            email
+            for email in MockSESClient.EMAILS_SENT
+            if settings.OMB_EMAIL in email["kwargs"]["Destination"].get("ToAddresses", [])
+        ]
+        self.assertEqual(len(sent_emails), 1)
+
+        omb_email = sent_emails[0]
+        omb_destination = omb_email["kwargs"]["Destination"]
+
+        self.assertIn(settings.OMB_EMAIL, omb_destination["ToAddresses"])
+        self.assertIn(settings.DEFAULT_FROM_EMAIL, omb_destination.get("BccAddresses", []))
+
+        omb_content = omb_email["kwargs"]["Content"]["Simple"]["Body"]["Text"]["Data"]
+        self.assertIn(domain_request.requested_domain.name, omb_content)
+        self.assertIn("withdrawn", omb_content.lower())
+
+        omb_email_allowed.delete()
 
     def test_reject_sends_email(self):
         "Create a domain request and reject it and see if email was sent."
