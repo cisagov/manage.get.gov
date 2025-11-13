@@ -10,7 +10,6 @@ from registrar.models.dns.vendor_dns_zone import VendorDnsZone
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
 from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesJoin
 from registrar.models.dns.dns_vendor import DnsVendor
-from registrar.models.domain import Domain
 
 
 from django.db import transaction

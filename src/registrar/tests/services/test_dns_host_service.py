@@ -3,8 +3,6 @@ from django.test import SimpleTestCase, TestCase
 from django.db import IntegrityError
 
 from registrar.services.dns_host_service import DnsHostService
-from registrar.models.dns.dns_account import DnsAccount
-from registrar.models.dns.vendor_dns_account import VendorDnsAccount
 from registrar.models import (
     Domain,
     DnsVendor,
