@@ -1,5 +1,15 @@
-name: Check for domains that has an expiration date 7 days before todays date with dns_needed and unknown status
-run-name: Check for expired domains
+# Automated destructive workflow
+# The workflow run automatically deletes domains
+
+# Scheduled Daily at 14:30 UTC
+# DELETIONS 
+#  - Domains expired 7 days ago (DNS_NEEDED, UNKNOWN)
+#  - All non-registrant PublicContact records and registry contact entries related to Domain
+#  - Nameservers and deletes associated hosts in EPP if not in use
+#  - DNSSEC data
+
+name: Deletes expired domains(DNS_NEEDED, UNKNOWN) 7 days past expiration and sends email notification to domain managers
+run-name: Deletes expired domains(DNS_NEEDED, UNKNOWN) 7 days past expiration and sends email notification to domain managers
 
 on:
   schedule:
