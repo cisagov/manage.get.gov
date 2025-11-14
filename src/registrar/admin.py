@@ -5205,12 +5205,12 @@ class WaffleFlagAdmin(FlagAdmin):
         model = models.WaffleFlag
         fields = "__all__"
 
-    # Hack to get the dns_prototype_flag to auto populate when you navigate to
+    # Hack to get the dns_hosting flag to auto populate when you navigate to
     # the waffle flag page.
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
-        extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
+        extra_context["dns_hosting"] = flag_is_active_for_user(request.user, "dns_hosting")
 
         # Loads "tabtitle" for this admin page so that on render the <title>
         # element will only have the model name instead of

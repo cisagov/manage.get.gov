@@ -103,11 +103,11 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         self.assertEquals(result["name"], account_name)
 
-    def test_mock_create_zone_response(self):
+    def test_mock_create_cf_zone_response(self):
         zone_name = "peace.gov"
         account_id = "1359"
 
-        resp = self.service.create_zone(zone_name, account_id)
+        resp = self.service.create_cf_zone(zone_name, account_id)
         result = resp["result"]
         self.assertEquals(result["account"]["id"], account_id)
         self.assertEquals(result["name"], zone_name)
