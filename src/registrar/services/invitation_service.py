@@ -256,6 +256,10 @@ def invite_to_domains_bulk(
                             user=requested_user,
                             domain=domain,
                             role=role,
+                            status=UserDomainRole.Status.INVITED,
+                            email=email,
+                            invited_by=requestor,
+                            invited_at=timezone.now(),
                         )
                     else:
                         domain_role = UserDomainRole.objects.create(
