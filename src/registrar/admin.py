@@ -490,15 +490,17 @@ class DomainRequestAdminForm(forms.ModelForm):
         in the FSM. Allows us to still display fields filtered out by a condition."""
         curr_state = field.get_state(instance)
         transitions = field.transitions[instance.__class__]
+        is_feb_request = instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE
 
         for name, transition in transitions.items():
             meta = transition._django_fsm
             if meta.has_transition(curr_state):
                 transition_data = meta.get_transition(curr_state)
-                # non feb requests should not see the in review - omb option
-                if transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
-                    if not (instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE):
-                        continue
+
+                # exclude in review - omb as a status for non feb requests
+                if not is_feb_request and transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
+                    continue
+
                 yield meta.get_transition(curr_state)
 
     def clean(self):
