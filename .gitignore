@@ -181,3 +181,5 @@ docs/compliance/.trestle/cache
 
 src/migrationdata/*
 
+# debug output
+src/debug_response.html
