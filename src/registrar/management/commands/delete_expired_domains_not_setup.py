@@ -26,7 +26,7 @@ class Command(BaseCommand):
     def logging_message(self, dry_run, domains):
         count = len(domains)
         if dry_run:
-            logger.info(f"{count} domains will be deleted")
+            logger.info(f"DRY RUN MODE - No changes will be made\n {count} domains will be deleted")
         else:
             if count > 1:
                 logger.info(f"{count} domains have been deleted.")
@@ -69,7 +69,7 @@ class Command(BaseCommand):
 
         subject_txt = "emails/domain_deletion_dns_needed_unknown_subject.txt"
         body_txt = "emails/domain_deletion_dns_needed_unknown_body.txt"
-        all_emails_sent = True
+
         for domain in domains:
             user_domain_roles_emails = list(
                 UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
@@ -90,6 +90,3 @@ class Command(BaseCommand):
                     f"Domain: {domain.name}"
                     f"Error: {err}"
                 )
-        
-        if all_emails_sent:
-            logger.info("All Emails have been sent")
