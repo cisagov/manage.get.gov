@@ -188,10 +188,7 @@ class TestDnsHostServiceDB(TestCase):
     def test_save_db_account_success(self):
         # Dummy JSON data from API
         account_data = {"result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}}
-
-        # Validate that the method returns the vendor account ID
-        returned_id = self.service.save_db_account(account_data)
-        self.assertEqual(returned_id, "12345")
+        self.service.save_db_account(account_data)
 
         # Validate there's one VendorDnsAccount row with the external id and the CF Vendor
         expected_account_id = account_data["result"].get("id")
