@@ -36,6 +36,7 @@ class TestInvitationService(TestCase):
             username="test_requestor", email="requestor@example.com"
         )
         self.portfolio = Portfolio.objects.create(
+            requester=self.requestor,
             organization_name="Test Organization",
             organization_type="federal",
         )
