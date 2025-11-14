@@ -98,6 +98,41 @@ def invite_to_portfolio(
         raise
 
 
+def _check_existing_domain_invitation(
+    email: str, domain: Domain, requested_user
+):
+    """
+    Check for existing domain invitations or roles.
+
+    Raises:
+        AlreadyDomainManagerError: If user is already a domain manager
+        AlreadyDomainInvitedError: If user has already been invited
+    """
+    # Check for duplicates in new model
+    if requested_user:
+        existing_role = UserDomainRole.objects.filter(
+            user=requested_user, domain=domain
+        ).exists()
+        if existing_role:
+            raise AlreadyDomainManagerError(email)
+
+    invited = UserDomainRole.objects.filter(
+        email=email, domain=domain, status=UserDomainRole.Status.INVITED
+    ).exists()
+    if invited:
+        raise AlreadyDomainInvitedError(email)
+
+    # Check for duplicates in legacy model
+    try:
+        invite = DomainInvitation.objects.get(email=email, domain=domain)
+        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+            raise AlreadyDomainManagerError(email)
+        elif invite.status == DomainInvitation.DomainInvitationStatus.INVITED:
+            raise AlreadyDomainInvitedError(email)
+    except DomainInvitation.DoesNotExist:
+        pass
+
+
 def invite_to_domain(
     email: str,
     domain: Domain,
@@ -126,27 +161,7 @@ def invite_to_domain(
     email = email.lower()
     requested_user = get_requested_user(email)
 
-    # Check for duplicates in new model
-    if requested_user:
-        if UserDomainRole.objects.filter(
-            user=requested_user, domain=domain
-        ).exists():
-            raise AlreadyDomainManagerError(email)
-
-    if UserDomainRole.objects.filter(
-        email=email, domain=domain, status=UserDomainRole.Status.INVITED
-    ).exists():
-        raise AlreadyDomainInvitedError(email)
-
-    # Check for duplicates in legacy model
-    try:
-        invite = DomainInvitation.objects.get(email=email, domain=domain)
-        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-            raise AlreadyDomainManagerError(email)
-        elif invite.status == DomainInvitation.DomainInvitationStatus.INVITED:
-            raise AlreadyDomainInvitedError(email)
-    except DomainInvitation.DoesNotExist:
-        pass
+    _check_existing_domain_invitation(email, domain, requested_user)
 
     try:
         with transaction.atomic():
@@ -383,8 +398,7 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
 
     except Exception as e:
         logger.error(
-            f"Failed to accept portfolio invitation for "
-            f"user {user.id}: {e}",
+            f"Failed to accept portfolio invitation for user {user.id}: {e}",
             exc_info=True,
         )
         raise
@@ -432,15 +446,13 @@ def accept_domain_invitation(user: User, domain: Domain):
                 legacy_invitation.save()
 
             logger.info(
-                f"User {user.id} accepted domain invitation "
-                f"for {domain.id}"
+                f"User {user.id} accepted domain invitation for {domain.id}"
             )
             return domain_role
 
     except Exception as e:
         logger.error(
-            f"Failed to accept domain invitation for "
-            f"user {user.id}: {e}",
+            f"Failed to accept domain invitation for user {user.id}: {e}",
             exc_info=True,
         )
         raise
@@ -634,12 +646,16 @@ def check_duplicate_domain_invitation(email: str, domain: Domain):
         return True
 
     # Check legacy model for active invitations
-    if DomainInvitation.objects.filter(email=email, domain=domain).exclude(
-        status__in=[
-            DomainInvitation.DomainInvitationStatus.RETRIEVED,
-            DomainInvitation.DomainInvitationStatus.CANCELED,
-        ]
-    ).exists():
+    if (
+        DomainInvitation.objects.filter(email=email, domain=domain)
+        .exclude(
+            status__in=[
+                DomainInvitation.DomainInvitationStatus.RETRIEVED,
+                DomainInvitation.DomainInvitationStatus.CANCELED,
+            ]
+        )
+        .exists()
+    ):
         return True
 
     return False
@@ -656,11 +672,13 @@ def check_duplicate_portfolio_invitation(email: str, portfolio: Portfolio):
         return True
 
     # Check legacy model for active invitations
-    if PortfolioInvitation.objects.filter(
-        email=email, portfolio=portfolio
-    ).exclude(
-        status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED
-    ).exists():
+    if (
+        PortfolioInvitation.objects.filter(email=email, portfolio=portfolio)
+        .exclude(
+            status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED
+        )
+        .exists()
+    ):
         return True
 
     return False

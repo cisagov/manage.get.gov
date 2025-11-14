@@ -22,7 +22,6 @@ from registrar.services.invitation_service import (
     check_duplicate_portfolio_invitation,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from registrar.tests.common import create_user
 
 
 class TestInvitationService(TestCase):
@@ -30,24 +29,22 @@ class TestInvitationService(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        self.user = create_user()
-        self.requestor = create_user()
+        self.user = User.objects.create(
+            username="test_invitee", email="invitee@example.com"
+        )
+        self.requestor = User.objects.create(
+            username="test_requestor", email="requestor@example.com"
+        )
         self.portfolio = Portfolio.objects.create(
             organization_name="Test Organization",
             organization_type="federal",
         )
         self.domain = Domain.objects.create(name="test.gov")
 
-    def tearDown(self):
-        """Clean up test data."""
-        UserPortfolioPermission.objects.all().delete()
-        UserDomainRole.objects.all().delete()
-        Domain.objects.all().delete()
-        Portfolio.objects.all().delete()
-        User.objects.all().delete()
-
-    @patch('registrar.services.invitation_service.'
-           'send_portfolio_invitation_email')
+    @patch(
+        "registrar.services.invitation_service."
+        "send_portfolio_invitation_email"
+    )
     def test_invite_to_portfolio_creates_permission(self, mock_send_email):
         """invite_to_portfolio creates a UserPortfolioPermission."""
         email = "invitee@example.com"
@@ -69,8 +66,9 @@ class TestInvitationService(TestCase):
         )
         mock_send_email.assert_called_once()
 
-    @patch('registrar.services.invitation_service.'
-           'send_domain_invitation_email')
+    @patch(
+        "registrar.services.invitation_service." "send_domain_invitation_email"
+    )
     def test_invite_to_domain_creates_role(self, mock_send_email):
         """invite_to_domain creates a UserDomainRole."""
         email = "invitee@example.com"
@@ -90,8 +88,9 @@ class TestInvitationService(TestCase):
         self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
         mock_send_email.assert_called_once()
 
-    @patch('registrar.services.invitation_service.'
-           'send_domain_invitation_email')
+    @patch(
+        "registrar.services.invitation_service." "send_domain_invitation_email"
+    )
     def test_invite_to_domains_bulk_creates_multiple_roles(
         self, mock_send_email
     ):
@@ -111,9 +110,7 @@ class TestInvitationService(TestCase):
         self.assertEqual(len(domain_roles), 3)
         for domain_role in domain_roles:
             self.assertEqual(domain_role.email, email)
-            self.assertEqual(
-                domain_role.status, UserDomainRole.Status.INVITED
-            )
+            self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
         mock_send_email.assert_called_once()
 
     def test_get_pending_invitations_returns_invitations(self):
