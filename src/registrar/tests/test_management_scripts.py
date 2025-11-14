@@ -2835,4 +2835,5 @@ class TestDeleteDomainNotSetup(MockEppLib):
         UserDomainRole.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
+        AllowedEmail.objects.all().delete()
         super().tearDown()

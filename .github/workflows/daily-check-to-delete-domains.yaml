@@ -23,7 +23,7 @@ jobs:
       CF_USERNAME: CF_${{ secrets.CF_NOTIFICATIONS_ENV }}_USERNAME
       CF_PASSWORD: CF_${{ secrets.CF_NOTIFICATIONS_ENV }}_PASSWORD
     steps:
-      - name: Run script to delete domains with expiration date past 7 days with dns needed and unknown status
+      - name:  Delete domains 7 days past expiration with dns status dns needed or unknown
         uses: cloud-gov/cg-cli-tools@main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}

@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    """If a domain is in the "Unknown" or "DNS Needed" state, and has been expired for 7 days,
-    it is marked as deleted in the registrar, and in the registry."""
+    """Domains that, (1) have DNS status "Unknown" or "DNS Needed" and (2) are 7+ days past their expiration date, 
+    are marked "DELETED" in the registrar and deleted in the registry."""
 
     def handle(self, *args, **options):
         domains_to_be_deleted = self.get_domains()
@@ -26,7 +26,7 @@ class Command(BaseCommand):
     def logging_message(self, dry_run, domains):
         count = len(domains)
         if dry_run:
-            logger.info(f"{count} domain will be deleted")
+            logger.info(f"{count} domains will be deleted")
         else:
             if count > 1:
                 logger.info(f"{count} domains have been deleted.")
@@ -43,12 +43,11 @@ class Command(BaseCommand):
         return super().add_arguments(parser)
 
     def get_domains(self):
-        """Get domains that are dns needed or unknown"""
+        """Get domains with DNS status DNS needed or Unknown"""
         domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
-        domains = Domain.objects.filter(state__in=(domain_state), expiration_date__isnull=False)
         time_to_compare = (timezone.now() - timedelta(days=7)).date()
+        domains_in_expired_state = Domain.objects.filter(state__in=(domain_state), expiration_date=time_to_compare)
 
-        domains_in_expired_state = list(filter(lambda d: d.expiration_date == time_to_compare, domains))
         return domains_in_expired_state
 
     def delete_domains_and_send_notif_emails(self, domains):
@@ -59,7 +58,7 @@ class Command(BaseCommand):
                 domain.save()
                 deleted_domains.append(domain)
             except Exception:
-                logger.error(f"An error occured with {domain.name}")
+                logger.error(f"Failed to delete {domain.name}")
 
         if len(deleted_domains) > 0:
             self.send_domain_notifications_emails(deleted_domains)
@@ -67,9 +66,10 @@ class Command(BaseCommand):
 
     def send_domain_notifications_emails(self, domains):
         """Send email to domain managers that the domain has been deleted"""
-        all_emails_sent = True
+
         subject_txt = "emails/domain_deletion_dns_needed_unknown_subject.txt"
         body_txt = "emails/domain_deletion_dns_needed_unknown_body.txt"
+        all_emails_sent = True
         for domain in domains:
             user_domain_roles_emails = list(
                 UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
@@ -90,10 +90,6 @@ class Command(BaseCommand):
                     f"Domain: {domain.name}"
                     f"Error: {err}"
                 )
-                all_emails_sent = False
-
-            if all_emails_sent:
-                logger.info("Emails sent out successfully")
-            else:
-                logger.error("Some domain expiration emails failed to send.")
-        return all_emails_sent
+        
+        if all_emails_sent:
+            logger.info("All Emails have been sent")
