@@ -55,10 +55,7 @@ def invite_to_portfolio(
     additional_permissions = additional_permissions or []
 
     if check_duplicate_portfolio_invitation(email, portfolio):
-        raise InvitationError(
-            f"{email} has already been invited to this portfolio "
-            "or is already a member."
-        )
+        raise InvitationError(f"{email} has already been invited to this portfolio " "or is already a member.")
 
     is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles
 
@@ -84,10 +81,7 @@ def invite_to_portfolio(
                 is_admin_invitation=is_admin_invitation,
             )
 
-            logger.info(
-                f"Created portfolio invitation for {email} "
-                f"to portfolio {portfolio.id}"
-            )
+            logger.info(f"Created portfolio invitation for {email} " f"to portfolio {portfolio.id}")
             return permission
 
     except Exception as e:
@@ -98,9 +92,7 @@ def invite_to_portfolio(
         raise
 
 
-def _check_existing_domain_invitation(
-    email: str, domain: Domain, requested_user
-):
+def _check_existing_domain_invitation(email: str, domain: Domain, requested_user):
     """
     Check for existing domain invitations or roles.
 
@@ -110,15 +102,11 @@ def _check_existing_domain_invitation(
     """
     # Check for duplicates in new model
     if requested_user:
-        existing_role = UserDomainRole.objects.filter(
-            user=requested_user, domain=domain
-        ).exists()
+        existing_role = UserDomainRole.objects.filter(user=requested_user, domain=domain).exists()
         if existing_role:
             raise AlreadyDomainManagerError(email)
 
-    invited = UserDomainRole.objects.filter(
-        email=email, domain=domain, status=UserDomainRole.Status.INVITED
-    ).exists()
+    invited = UserDomainRole.objects.filter(email=email, domain=domain, status=UserDomainRole.Status.INVITED).exists()
     if invited:
         raise AlreadyDomainInvitedError(email)
 
@@ -193,10 +181,7 @@ def invite_to_domain(
                 requested_user=requested_user,
             )
 
-            logger.info(
-                f"Created domain invitation for {email} "
-                f"to domain {domain.id}"
-            )
+            logger.info(f"Created domain invitation for {email} " f"to domain {domain.id}")
             return domain_role
 
     except Exception as e:
@@ -248,10 +233,7 @@ def invite_to_domains_bulk(
             # Fetch existing roles in bulk to avoid N+1 queries
             domain_ids = [d.id for d in domain_list]
             existing_roles = {
-                role.domain_id: role
-                for role in UserDomainRole.objects.filter(
-                    email=email, domain_id__in=domain_ids
-                )
+                role.domain_id: role for role in UserDomainRole.objects.filter(email=email, domain_id__in=domain_ids)
             }
 
             for domain in domain_list:
@@ -292,10 +274,7 @@ def invite_to_domains_bulk(
                 requested_user=requested_user,
             )
 
-            logger.info(
-                f"Created bulk domain invitations for {email} "
-                f"to {len(domain_list)} domains"
-            )
+            logger.info(f"Created bulk domain invitations for {email} " f"to {len(domain_list)} domains")
             return domain_roles
 
     except Exception as e:
@@ -326,9 +305,9 @@ def get_pending_invitations(user: User):
         email=email, status=UserPortfolioPermission.Status.INVITED
     ).select_related("portfolio", "invited_by")
 
-    domain_roles = UserDomainRole.objects.filter(
-        email=email, status=UserDomainRole.Status.INVITED
-    ).select_related("domain", "invited_by")
+    domain_roles = UserDomainRole.objects.filter(email=email, status=UserDomainRole.Status.INVITED).select_related(
+        "domain", "invited_by"
+    )
 
     # Get legacy model invitations with related objects
     legacy_portfolio_invitations = PortfolioInvitation.objects.filter(
@@ -390,10 +369,7 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
                 legacy_invitation.retrieve()
                 legacy_invitation.save()
 
-            logger.info(
-                f"User {user.id} accepted portfolio invitation "
-                f"for {portfolio.id}"
-            )
+            logger.info(f"User {user.id} accepted portfolio invitation " f"for {portfolio.id}")
             return permission
 
     except Exception as e:
@@ -445,9 +421,7 @@ def accept_domain_invitation(user: User, domain: Domain):
                 legacy_invitation.retrieve()
                 legacy_invitation.save()
 
-            logger.info(
-                f"User {user.id} accepted domain invitation for {domain.id}"
-            )
+            logger.info(f"User {user.id} accepted domain invitation for {domain.id}")
             return domain_role
 
     except Exception as e:
@@ -496,17 +470,12 @@ def cancel_domain_invitation(email: str, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.status = (
-                    DomainInvitation.DomainInvitationStatus.CANCELED
-                )
+                legacy_invitation.status = DomainInvitation.DomainInvitationStatus.CANCELED
                 legacy_invitation.save()
                 canceled = True
 
             if canceled:
-                logger.info(
-                    f"Canceled domain invitation for {email} "
-                    f"to domain {domain.id}"
-                )
+                logger.info(f"Canceled domain invitation for {email} " f"to domain {domain.id}")
 
             return canceled
 
@@ -562,10 +531,7 @@ def cancel_portfolio_invitation(email: str, portfolio: Portfolio):
                 canceled = True
 
             if canceled:
-                logger.info(
-                    f"Canceled portfolio invitation for {email} "
-                    f"to portfolio {portfolio.id}"
-                )
+                logger.info(f"Canceled portfolio invitation for {email} " f"to portfolio {portfolio.id}")
 
             return canceled
 
@@ -615,17 +581,12 @@ def reactivate_domain_invitation(email: str, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.status = (
-                    DomainInvitation.DomainInvitationStatus.INVITED
-                )
+                legacy_invitation.status = DomainInvitation.DomainInvitationStatus.INVITED
                 legacy_invitation.save()
                 reactivated = True
 
             if reactivated:
-                logger.info(
-                    f"Reactivated domain invitation for {email} "
-                    f"to domain {domain.id}"
-                )
+                logger.info(f"Reactivated domain invitation for {email} " f"to domain {domain.id}")
 
             return reactivated
 
@@ -666,17 +627,13 @@ def check_duplicate_portfolio_invitation(email: str, portfolio: Portfolio):
     email = email.lower()
 
     # Check new model
-    if UserPortfolioPermission.objects.filter(
-        email=email, portfolio=portfolio
-    ).exists():
+    if UserPortfolioPermission.objects.filter(email=email, portfolio=portfolio).exists():
         return True
 
     # Check legacy model for active invitations
     if (
         PortfolioInvitation.objects.filter(email=email, portfolio=portfolio)
-        .exclude(
-            status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED
-        )
+        .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         .exists()
     ):
         return True

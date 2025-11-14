@@ -29,12 +29,8 @@ class TestInvitationService(TestCase):
 
     def setUp(self):
         """Set up test data."""
-        self.user = User.objects.create(
-            username="test_invitee", email="invitee@example.com"
-        )
-        self.requestor = User.objects.create(
-            username="test_requestor", email="requestor@example.com"
-        )
+        self.user = User.objects.create(username="test_invitee", email="invitee@example.com")
+        self.requestor = User.objects.create(username="test_requestor", email="requestor@example.com")
         self.portfolio = Portfolio.objects.create(
             requester=self.requestor,
             organization_name="Test Organization",
@@ -42,10 +38,7 @@ class TestInvitationService(TestCase):
         )
         self.domain = Domain.objects.create(name="test.gov")
 
-    @patch(
-        "registrar.services.invitation_service."
-        "send_portfolio_invitation_email"
-    )
+    @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
     def test_invite_to_portfolio_creates_permission(self, mock_send_email):
         """invite_to_portfolio creates a UserPortfolioPermission."""
         email = "invitee@example.com"
@@ -62,14 +55,10 @@ class TestInvitationService(TestCase):
         self.assertEqual(permission.email, email)
         self.assertEqual(permission.portfolio, self.portfolio)
         self.assertEqual(permission.roles, roles)
-        self.assertEqual(
-            permission.status, UserPortfolioPermission.Status.INVITED
-        )
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
         mock_send_email.assert_called_once()
 
-    @patch(
-        "registrar.services.invitation_service." "send_domain_invitation_email"
-    )
+    @patch("registrar.services.invitation_service." "send_domain_invitation_email")
     def test_invite_to_domain_creates_role(self, mock_send_email):
         """invite_to_domain creates a UserDomainRole."""
         email = "invitee@example.com"
@@ -89,12 +78,8 @@ class TestInvitationService(TestCase):
         self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
         mock_send_email.assert_called_once()
 
-    @patch(
-        "registrar.services.invitation_service." "send_domain_invitation_email"
-    )
-    def test_invite_to_domains_bulk_creates_multiple_roles(
-        self, mock_send_email
-    ):
+    @patch("registrar.services.invitation_service." "send_domain_invitation_email")
+    def test_invite_to_domains_bulk_creates_multiple_roles(self, mock_send_email):
         """invite_to_domains_bulk creates multiple UserDomainRole objects."""
         email = "invitee@example.com"
         domain2 = Domain.objects.create(name="test2.gov")
@@ -127,9 +112,7 @@ class TestInvitationService(TestCase):
         result = get_pending_invitations(self.user)
 
         self.assertEqual(len(result["portfolio_permissions"]), 1)
-        self.assertEqual(
-            result["portfolio_permissions"][0].email, self.user.email
-        )
+        self.assertEqual(result["portfolio_permissions"][0].email, self.user.email)
 
     def test_accept_portfolio_invitation_updates_status(self):
         """accept_portfolio_invitation updates status to ACCEPTED."""
@@ -146,9 +129,7 @@ class TestInvitationService(TestCase):
 
         self.assertIsNotNone(result)
         permission.refresh_from_db()
-        self.assertEqual(
-            permission.status, UserPortfolioPermission.Status.ACCEPTED
-        )
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
         self.assertEqual(permission.user, self.user)
 
     def test_accept_domain_invitation_updates_status(self):
@@ -183,9 +164,7 @@ class TestInvitationService(TestCase):
         result = cancel_domain_invitation(email, self.domain)
 
         self.assertTrue(result)
-        domain_role = UserDomainRole.objects.get(
-            email=email, domain=self.domain
-        )
+        domain_role = UserDomainRole.objects.get(email=email, domain=self.domain)
         self.assertEqual(domain_role.status, UserDomainRole.Status.REJECTED)
 
     def test_cancel_portfolio_invitation_updates_status(self):
@@ -202,12 +181,8 @@ class TestInvitationService(TestCase):
         result = cancel_portfolio_invitation(email, self.portfolio)
 
         self.assertTrue(result)
-        permission = UserPortfolioPermission.objects.get(
-            email=email, portfolio=self.portfolio
-        )
-        self.assertEqual(
-            permission.status, UserPortfolioPermission.Status.REJECTED
-        )
+        permission = UserPortfolioPermission.objects.get(email=email, portfolio=self.portfolio)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.REJECTED)
 
     def test_reactivate_domain_invitation_updates_status(self):
         """reactivate_domain_invitation updates status to INVITED."""
@@ -223,9 +198,7 @@ class TestInvitationService(TestCase):
         result = reactivate_domain_invitation(email, self.domain)
 
         self.assertTrue(result)
-        domain_role = UserDomainRole.objects.get(
-            email=email, domain=self.domain
-        )
+        domain_role = UserDomainRole.objects.get(email=email, domain=self.domain)
         self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
 
     def test_check_duplicate_domain_invitation_returns_true(self):
