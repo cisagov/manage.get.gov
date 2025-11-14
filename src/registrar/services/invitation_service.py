@@ -159,6 +159,10 @@ def invite_to_domain(
                     user=requested_user,
                     domain=domain,
                     role=role,
+                    status=UserDomainRole.Status.INVITED,
+                    email=email,
+                    invited_by=requestor,
+                    invited_at=timezone.now(),
                 )
             else:
                 # User doesn't exist - create invitation in UserDomainRole

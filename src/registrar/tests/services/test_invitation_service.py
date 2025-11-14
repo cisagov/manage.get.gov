@@ -99,7 +99,8 @@ class TestInvitationService(TestCase):
             self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
         mock_send_email.assert_called_once()
 
-    def test_get_pending_invitations_returns_invitations(self):
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    def test_get_pending_invitations_returns_invitations(self, mock_send_email):
         """get_pending_invitations returns user's invitations."""
         # Create invitation
         invite_to_portfolio(
