@@ -107,7 +107,7 @@ class Command(BaseCommand):
         for account in accounts:
             self.delete_account(account["account_tag"])
 
-    def delete_by_list(self, account_ids: List[str], dry_run: bool = False) -> None:
+    def delete_by_ids(self, account_ids: List[str], dry_run: bool = False) -> None:
         """Delete multiple accounts by list of IDs"""
         if dry_run:
             print(f"[DRY RUN] Would delete {len(account_ids)} account(s):")
@@ -154,7 +154,7 @@ class Command(BaseCommand):
         for account in matching_accounts:
             self.delete_account(account["account_tag"])
 
-    def delete_all_except_list(self, except_ids: List[str], dry_run: bool = False) -> None:
+    def delete_all_except_ids(self, except_ids: List[str], dry_run: bool = False) -> None:
         """Delete all accounts under tenant except the specified list"""
         print(f"Fetching all accounts under tenant {self.tenant_id}...")
         accounts = self.get_tenant_accounts()
@@ -228,14 +228,12 @@ class Command(BaseCommand):
         try:
             if options.get("all"):
                 self.delete_all_accounts(dry_run=options["dry_run"])
-            elif options.get("id"):
-                self.delete_by_id(options["id"], dry_run=options["dry_run"])
             elif options.get("ids"):
-                self.delete_by_list(options["ids"], dry_run=options["dry_run"])
+                self.delete_by_ids(options["ids"], dry_run=options["dry_run"])
             elif options.get("names"):
                 self.delete_by_names(options["names"], dry_run=options["dry_run"])
             elif options.get("all_except_ids"):
-                self.delete_all_except_list(options["all_except_ids"], dry_run=options["dry_run"])
+                self.delete_all_except_ids(options["all_except_ids"], dry_run=options["dry_run"])
         except KeyboardInterrupt:
             print("\n\nOperation cancelled by user.")
             sys.exit(1)
