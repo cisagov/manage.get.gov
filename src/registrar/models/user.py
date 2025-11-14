@@ -381,24 +381,38 @@ class User(AbstractUser):
 
     def check_portfolio_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any portfolio
-        invitations that match their email address."""
-        for invitation in PortfolioInvitation.objects.filter(
-            email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
-        ):
-            only_single_portfolio = (
-                not flag_is_active_for_user(self, "multiple_portfolios") and self.get_first_portfolio() is None
-            )
-            if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
+        invitations that match their email address from both legacy and new models."""
+        from registrar.services import invitation_service
+
+        only_single_portfolio = (
+            not flag_is_active_for_user(self, "multiple_portfolios") and self.get_first_portfolio() is None
+        )
+
+        # Only process invitations if the user should have a portfolio
+        if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
+            # Get pending invitations from both models
+            pending_invitations = invitation_service.get_pending_invitations(self)
+
+            # Accept portfolio invitations from new model (UserPortfolioPermission)
+            for permission in pending_invitations.get("portfolio_permissions", []):
+                try:
+                    invitation_service.accept_portfolio_invitation(self, permission.portfolio)
+                except RuntimeError:
+                    # accepting should not fail because of a missing user, but
+                    # if it does fail, log the error so a new user can continue logging in
+                    logger.warn("Failed to accept new portfolio invitation %s", permission, exc_info=True)
+
+            # Accept legacy portfolio invitations (PortfolioInvitation)
+            for invitation in pending_invitations.get("legacy_portfolio_invitations", []):
                 try:
                     invitation.retrieve()
                     invitation.save()
                 except RuntimeError:
                     # retrieving should not fail because of a missing user, but
-                    # if it does fail, log the error so a new user can continue
-                    # logging in
-                    logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
-            else:
-                logger.warn("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
+                    # if it does fail, log the error so a new user can continue logging in
+                    logger.warn("Failed to retrieve legacy portfolio invitation %s", invitation, exc_info=True)
+        else:
+            logger.warn("User already has a portfolio, did not retrieve invitations", exc_info=True)
 
     def on_each_login(self):
         """Callback each time the user is authenticated.

@@ -40,13 +40,14 @@ from registrar.utility.email_invitations import (
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
 )
-from registrar.utility.errors import MissingEmailError
+from registrar.utility.errors import MissingEmailError, InvitationError
 from registrar.utility.enums import DefaultUserValues
 from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
 
 from registrar.views.utility.invitation_helper import get_org_membership
+from registrar.services import invitation_service
 
 
 logger = logging.getLogger(__name__)
@@ -144,8 +145,15 @@ class PortfolioMemberDeleteView(View):
         # Attempt to send notification emails
         self._send_removal_notifications(request, portfolio_member_permission)
 
-        # Passed all error conditions, proceed with deletion
-        portfolio_member_permission.delete()
+        # Passed all error conditions, proceed with deletion or cancellation
+        if portfolio_member_permission.status == UserPortfolioPermission.Status.INVITED:
+            # Use service to cancel invitation (new model)
+            invitation_service.cancel_portfolio_invitation(
+                email=portfolio_member_permission.email, portfolio=portfolio
+            )
+        else:
+            # Delete accepted member
+            portfolio_member_permission.delete()
 
         # Return success response
         return self._handle_success_response(request, member.email)
@@ -202,20 +210,13 @@ class PortfolioMemberDeleteView(View):
                 )
 
             # Notify domain managers for domains which the member is being removed from
-            # Get list of portfolio domains that the member is invited to:
-            invited_domains = Domain.objects.filter(
-                invitations__email=portfolio_member_permission.user.email,
-                domain_info__portfolio=portfolio_member_permission.portfolio,
-                invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
-            ).distinct()
             # Get list of portfolio domains that the member is a manager of
             domains = Domain.objects.filter(
                 permissions__user=portfolio_member_permission.user,
                 domain_info__portfolio=portfolio_member_permission.portfolio,
             ).distinct()
-            # Combine both querysets while ensuring uniqueness
-            all_domains = domains.union(invited_domains)
-            for domain in all_domains:
+
+            for domain in domains:
                 if not send_domain_manager_removal_emails_to_domain_managers(
                     removed_by_user=request.user,
                     manager_removed=portfolio_member_permission.user,
@@ -554,19 +555,29 @@ class PortfolioInvitedMemberDeleteView(View):
                 messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
 
             # Notify domain managers for domains which the invited member is being removed from
-            # Get list of portfolio domains that the invited member is invited to:
-            invited_domains = Domain.objects.filter(
+            # Get list of portfolio domains that the invited member is invited to (legacy model):
+            invited_domains_legacy = Domain.objects.filter(
                 invitations__email=portfolio_invitation.email,
                 domain_info__portfolio=portfolio_invitation.portfolio,
                 invitations__status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).distinct()
-            # Get list of portfolio domains that the member is a manager of
-            domains = Domain.objects.filter(
-                permissions__user__email=portfolio_invitation.email,
+
+            # Get list of portfolio domains that the invited member is invited to (new model):
+            invited_domains_new = Domain.objects.filter(
+                user_domain_roles__email=portfolio_invitation.email,
                 domain_info__portfolio=portfolio_invitation.portfolio,
+                user_domain_roles__status=UserDomainRole.Status.INVITED,
             ).distinct()
-            # Combine both querysets while ensuring uniqueness
-            all_domains = domains.union(invited_domains)
+
+            # Get list of portfolio domains where member has accepted domain role (new model):
+            accepted_domains_new = Domain.objects.filter(
+                permissions__email=portfolio_invitation.email,
+                domain_info__portfolio=portfolio_invitation.portfolio,
+                permissions__status=UserDomainRole.Status.ACCEPTED,
+            ).distinct()
+
+            # Combine all querysets while ensuring uniqueness
+            all_domains = invited_domains_legacy.union(invited_domains_new).union(accepted_domains_new)
             for domain in all_domains:
                 if not send_domain_manager_removal_emails_to_domain_managers(
                     removed_by_user=request.user,
@@ -580,7 +591,10 @@ class PortfolioInvitedMemberDeleteView(View):
         except Exception as e:
             self._handle_exceptions(e)
 
-        portfolio_invitation.delete()
+        # Use service to cancel the invitation (handles both legacy and new models)
+        invitation_service.cancel_portfolio_invitation(
+            email=portfolio_invitation.email, portfolio=portfolio_invitation.portfolio
+        )
 
         success_message = f"You've removed {portfolio_invitation.email} from the organization."
         # From the Members Table page Else the Member Page
@@ -773,44 +787,29 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
 
     def _process_added_domains(self, added_domain_ids, email, requestor, portfolio):
         """
-        Processes added domain invitations by updating existing invitations
-        or creating new ones.
+        Processes added domain invitations using the invitation service.
         """
         if added_domain_ids:
-            # get added_domains from ids to pass to send email method and bulk create
+            # Get added_domains from ids
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
             member_of_a_different_org, _ = get_org_membership(portfolio, email, None)
-            if not send_domain_invitation_email(
-                email=email,
-                requestor=requestor,
-                domains=added_domains,
-                is_member_of_different_org=member_of_a_different_org,
-            ):
+
+            try:
+                # Use the invitation service to handle both new and legacy models
+                invitation_service.invite_to_domains_bulk(
+                    email=email,
+                    domains=added_domains,
+                    requestor=requestor,
+                    role=UserDomainRole.Roles.MANAGER,
+                    is_member_of_different_org=member_of_a_different_org,
+                )
+            except Exception as e:
+                logger.error(f"Failed to invite {email} to domains: {e}", exc_info=True)
                 messages.warning(self.request, "Could not send email notification to existing domain managers.")
-
-            # Update existing invitations from CANCELED to INVITED
-            existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
-            existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
-
-            # Determine which domains need new invitations
-            existing_domain_ids = existing_invitations.values_list("domain_id", flat=True)
-            new_domain_ids = set(added_domain_ids) - set(existing_domain_ids)
-
-            # Bulk create new invitations
-            DomainInvitation.objects.bulk_create(
-                [
-                    DomainInvitation(
-                        domain_id=domain_id,
-                        email=email,
-                        status=DomainInvitation.DomainInvitationStatus.INVITED,
-                    )
-                    for domain_id in new_domain_ids
-                ]
-            )
 
     def _process_removed_domains(self, removed_domain_ids, email):
         """
-        Processes removed domain invitations by updating their status to CANCELED.
+        Processes removed domain invitations by canceling them via the service.
         """
         if not removed_domain_ids:
             return
@@ -830,12 +829,15 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                     self.request, "Could not send email notification to existing domain managers for %s", domain
                 )
 
-        # Update invitations from INVITED to CANCELED
-        DomainInvitation.objects.filter(
-            domain_id__in=removed_domain_ids,
-            email=email,
-            status=DomainInvitation.DomainInvitationStatus.INVITED,
-        ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
+        # Cancel domain invitations using the service (handles both legacy and new models)
+        for domain_id in removed_domain_ids:
+            try:
+                domain = Domain.objects.get(id=domain_id)
+                invitation_service.cancel_domain_invitation(email, domain)
+            except Domain.DoesNotExist:
+                logger.warning(f"Domain {domain_id} not found when canceling invitation for {email}")
+            except Exception as e:
+                logger.warning(f"Failed to cancel domain invitation for {email} to domain {domain_id}: {e}")
 
 
 @grant_access(IS_PORTFOLIO_MEMBER)
@@ -1149,28 +1151,23 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         portfolio = form.cleaned_data["portfolio"]
-        is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in form.cleaned_data["roles"]
+        roles = form.cleaned_data["roles"]
+        additional_permissions = form.cleaned_data.get("additional_permissions", [])
 
-        requested_user = User.objects.filter(email__iexact=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
         try:
-            if not requested_user or not permission_exists:
-                if not send_portfolio_invitation_email(
-                    email=requested_email,
-                    requestor=requestor,
-                    portfolio=portfolio,
-                    is_admin_invitation=is_admin_invitation,
-                ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
-                portfolio_invitation = form.save()
-                # if user exists for email, immediately retrieve portfolio invitation upon creation
-                if requested_user is not None:
-                    portfolio_invitation.retrieve()
-                    portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited.")
-            else:
-                if permission_exists:
-                    messages.warning(self.request, "User is already a member of this portfolio.")
+            # Use the invitation service to handle both new and legacy models
+            invitation_service.invite_to_portfolio(
+                email=requested_email,
+                portfolio=portfolio,
+                requestor=requestor,
+                roles=roles,
+                additional_permissions=additional_permissions,
+            )
+            messages.success(self.request, f"{requested_email} has been invited.")
+        except InvitationError as e:
+            # Handle duplicate invitation errors
+            messages.warning(self.request, str(e))
+            logger.warning(f"Invitation error for {requested_email}: {e}", exc_info=True)
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())

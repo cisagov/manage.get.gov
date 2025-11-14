@@ -2368,6 +2368,68 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             self.assertEqual(called_kwargs["invitation"].email, invitation.email)
             self.assertEqual(called_kwargs["invitation"].portfolio, invitation.portfolio)
 
+    @less_console_noise_decorator
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    @patch("registrar.views.portfolios.send_portfolio_invitation_remove_email")
+    def test_portfolio_invited_member_delete_with_domain_invitations(
+        self, mock_send_invitation_remove, mock_send_admin_removal, mock_send_domain_removal, mock_send_domain_invite
+    ):
+        """Test deleting invited member with domain invitations notifies domain managers"""
+
+        # Create admin user
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # Create domain with portfolio
+        DomainInformation.objects.create(requester=self.user, domain=self.domain, portfolio=self.portfolio)
+
+        # Invite a member to portfolio
+        invited_email = "invited_with_domains@example.com"
+        invitation = PortfolioInvitation.objects.create(
+            email=invited_email,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        # Create domain invitation (legacy model)
+        DomainInvitation.objects.create(
+            email=invited_email, domain=self.domain, status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
+
+        # Create domain role invitation (new model)
+        UserDomainRole.objects.create(
+            email=invited_email,
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        mock_send_invitation_remove.return_value = True
+        mock_send_domain_removal.return_value = True
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("invitedmember-delete", kwargs={"invitedmember_pk": invitation.pk}),
+        )
+
+        # Should succeed
+        self.assertEqual(response.status_code, 302)
+
+        # Domain removal emails should be called for both legacy and new model invitations
+        self.assertEqual(mock_send_domain_removal.call_count, 1)
+
+        # Verify invitation was canceled (service handles both models)
+        self.assertFalse(PortfolioInvitation.objects.filter(pk=invitation.pk).exists())
+
 
 class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
     @classmethod
