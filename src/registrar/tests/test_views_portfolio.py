@@ -3287,7 +3287,7 @@ class TestRequestingEntity(WebTest):
         """Tests that the requesting entity page loads correctly when a new request is started"""
 
         """Requesting entity page loads correctly for a new request."""
-        response = self.app.get(reverse("domain-request:start"))z
+        response = self.app.get(reverse("domain-request:start"))
 
         # Navigate past intro
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
