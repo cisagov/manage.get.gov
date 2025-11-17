@@ -13,6 +13,7 @@ from django.db.models import (
 )
 
 from django.db.models.functions import Concat, Coalesce
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -71,6 +72,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.utils.dateparse import parse_datetime
 
 
 logger = logging.getLogger(__name__)
@@ -1856,6 +1858,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
         if not change:
             domain = obj.domain
             domain_org = getattr(domain.domain_info, "portfolio", None)
+            obj.email = obj.email.lower()
             requested_email = obj.email
             # Look up a user with that email
             requested_user = get_requested_user(requested_email)
@@ -1957,6 +1960,12 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     get_roles.short_description = "Member role"  # type: ignore
 
+    def display_error_msgs(self, request, email, permission_exists, invitation_exists):
+        if permission_exists:
+            messages.error(request, "User is already a member of this portfolio.")
+        elif invitation_exists:
+            messages.error(request, f"{email} has an existing invitation.")
+
     def save_model(self, request, obj, form, change):
         """
         Override the save_model method.
@@ -1967,6 +1976,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
         """
         try:
             portfolio = obj.portfolio
+            obj.email = obj.email.lower()
             requested_email = obj.email
             requestor = request.user
             is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in obj.roles
@@ -1977,8 +1987,15 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                 permission_exists = UserPortfolioPermission.objects.filter(
                     user__email__iexact=requested_email, portfolio=portfolio, user__email__isnull=False
                 ).exists()
-                if not permission_exists:
-                    # if permission does not exist for a user with requested_email, send email
+
+                invitation_exists = (
+                    PortfolioInvitation.objects.filter(email__iexact=requested_email, portfolio=portfolio)
+                    .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+                    .exists()
+                )
+                if not permission_exists and not invitation_exists:
+                    # if permission does not exist and invitation
+                    # does not exist for a user with requested_email, send email
                     if not send_portfolio_invitation_email(
                         email=requested_email,
                         requestor=requestor,
@@ -1991,7 +2008,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         obj.retrieve()
                     messages.success(request, f"{requested_email} has been invited.")
                 else:
-                    messages.warning(request, "User is already a member of this portfolio.")
+                    return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation
                 # Retrieve the existing object from the database
                 existing_obj = PortfolioInvitation.objects.get(pk=obj.pk)
@@ -3086,7 +3103,8 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # Hide certain portfolio and suborg fields for users that are not in a portfolio
         if not request.user.is_org_user(request):
-            excluded_fields.update(org_fields)
+            # In any org_fields, exclude all the other fields that aren't portfolio
+            excluded_fields.update(field for field in org_fields if field != "portfolio")
             excluded_fields.update(feb_fields)
 
         modified_fieldsets = []
@@ -3095,6 +3113,20 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             fields = tuple(field for field in fields if field not in excluded_fields)
             modified_fieldsets.append((name, {**data, "fields": fields}))
         return modified_fieldsets
+
+    def _has_version_conflict(self, request, obj):
+        """
+        Returns True if there is a version conflict, False otherwise.
+        """
+        version = request.POST.get("version")
+        snap = parse_datetime(version) if version else None
+        current = type(obj).objects.only("updated_at").filter(pk=obj.pk).values_list("updated_at", flat=True).first()
+
+        if snap and current and current != snap:
+            return True
+        else:
+            obj._original_updated_at = snap
+            return False
 
     # Trigger action when a fieldset is changed
     def save_model(self, request, obj, form, change):
@@ -3126,8 +3158,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
             return None
 
-        # == Check if we're making a change or not == #
+        # == OPTIMISTIC LOCK: Temp fix check for version conflict == #
+        if self._has_version_conflict(request, obj):
+            request._domain_request_version_conflict = True
+            return None
 
+        # == Check if we're making a change or not == #
         # If we're not making a change (adding a record), run save model as we do normally
         if not change:
             return super().save_model(request, obj, form, change)
@@ -3154,6 +3190,13 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             # We should only save if we don't display any errors in the steps above.
             if should_save:
                 return super().save_model(request, obj, form, change)
+
+    def response_change(self, request, obj):
+        if getattr(request, "_domain_request_version_conflict", False):
+            change_url = reverse("admin:registrar_domainrequest_change", args=[obj.pk])
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
+            return HttpResponseRedirect(change_url)
+        return super().response_change(request, obj)
 
     def _handle_custom_emails(self, obj):
         if obj.status == DomainRequest.DomainRequestStatus.ACTION_NEEDED:
@@ -4318,6 +4361,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "Error connecting to the registry. No expiration date was found.",
                 messages.ERROR,
             )
+        except ValidationError:
+            self.message_user(
+                request,
+                "A newer version of this form exists. Please try again.",
+                messages.ERROR,
+            )
         except Exception as err:
             logger.error(err, stack_info=True)
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
@@ -4341,7 +4390,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         try:
             obj.deletedInEpp()
-            obj.save()
+            obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
@@ -4377,6 +4426,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     ),
                     messages.ERROR,
                 )
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception:
             self.message_user(
                 request,
@@ -4404,9 +4455,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
+
         try:
             obj.place_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -4435,7 +4489,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def do_remove_client_hold(self, request, obj):
         try:
             obj.revert_client_hold()
-            obj.save()
+            obj.save(optimistic_lock=True)
+        except ValidationError:
+            self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
         except Exception as err:
             # if error is an error from the registry, display useful
             # and readable error
@@ -5140,12 +5196,12 @@ class WaffleFlagAdmin(FlagAdmin):
         model = models.WaffleFlag
         fields = "__all__"
 
-    # Hack to get the dns_prototype_flag to auto populate when you navigate to
+    # Hack to get the dns_hosting flag to auto populate when you navigate to
     # the waffle flag page.
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
-        extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
+        extra_context["dns_hosting"] = flag_is_active_for_user(request.user, "dns_hosting")
 
         # Loads "tabtitle" for this admin page so that on render the <title>
         # element will only have the model name instead of

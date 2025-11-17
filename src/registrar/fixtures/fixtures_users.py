@@ -158,6 +158,13 @@ class UserFixture:
             "title": "ADMIN",
         },
         {
+            "username": "8facfafb-a55e-4743-bc87-1db82cc09fd3",
+            "first_name": "Agapito",
+            "last_name": "Pabalan",
+            "email": "agapito.pabalan@ecstech.com",
+            "title": "ADMIN",
+        },
+        {
             "username": "285df9a1-0139-49df-878f-e15f0c991a05",
             "first_name": "Erin",
             "last_name": "Tingler",
@@ -279,6 +286,13 @@ class UserFixture:
             "last_name": "Tingler",
             "title": "Erin-Analyst",
             "email": "erin.tingler@ecstech.com",
+        },
+        {
+            "username": "ad74ef51-8cab-4c2a-8d06-c357f138cc2f",
+            "first_name": "Agapito",
+            "last_name": "Pabalan",
+            "title": "ANALYST",
+            "email": "agapito.pabalan.analyst@ecstech.com",
         },
     ]
 

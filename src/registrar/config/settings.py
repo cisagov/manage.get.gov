@@ -91,11 +91,12 @@ secret_registry_key = b64decode(secret("REGISTRY_KEY", ""))
 secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
-# PROTOTYPE: Used for DNS hosting
+# Used for DNS hosting
 secret_dns_tenant_key = secret("DNS_TENANT_KEY", None)
 secret_dns_tenant_name = secret("DNS_TENANT_NAME", None)
 secret_registry_service_email = secret("DNS_SERVICE_EMAIL", None)
 secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", None)
+dns_mock_external_apis = env.bool("DNS_MOCK_EXTERNAL_APIS", default=False)
 
 # region: Basic Django Config-----------------------------------------------###
 
@@ -288,32 +289,6 @@ IS_DEMO_SITE = True
 #     from django.db import transaction
 #     @transaction.non_atomic_requests
 env_db_url["ATOMIC_REQUESTS"] = True
-# Enable persistent connections (seconds).
-# 0 = disable persistence (new connection per request).
-# None = unlimited reuse.
-# 60 is a safe default for RDS + no pgbouncer. Reuse DB connections, reduces connection churn
-env_db_url["CONN_MAX_AGE"] = int(env.int("CONN_MAX_AGE", default=60))
-# Set backend connection options for PostgreSQL
-env_db_url.setdefault("OPTIONS", {})
-env_db_url["OPTIONS"].update(
-    {
-        "connect_timeout": 10,  # Fail fast if DB is unreachable (seconds)
-        # Keep TCP socket alive to detect network drops, so dead sockets get detected
-        "keepalives": 1,  # 0 = disabled, 1 = enabled
-        "keepalives_idle": 600,  # seconds of idle before sending keepalive
-        "keepalives_interval": 30,  # seconds between keepalives
-        "keepalives_count": 3,  # number of failed keepalives before declaring the connection dead
-    }
-)
-# Server-side timeouts
-env_db_url["OPTIONS"]["options"] = " ".join(
-    [
-        "-c statement_timeout=5000",  # cancel >5s statements
-        # kill sessions idle in a transaction >30s, to prevent zombies holding locks
-        "-c idle_in_transaction_session_timeout=30000",
-        "-c lock_timeout=5000",  # cancel statements waiting >5s for a lock, fail, log, and retry
-    ]
-)
 
 DATABASES = {
     # dj-database-url package takes the supplied Postgres connection string
@@ -350,6 +325,9 @@ BOTO_CONFIG = Config(retries={"mode": AWS_RETRY_MODE, "max_attempts": AWS_MAX_AT
 # email address to use for various automated correspondence
 # also used as a default to and bcc email
 DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
+
+# OMB email address for FEB withdrawal notifications.
+OMB_EMAIL = "ombdotgov@omb.eop.gov <ombdotgov@omb.eop.gov>"
 
 # connect to an (external) SMTP server for sending email
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -835,12 +813,22 @@ SECRET_REGISTRY_CERT = secret_registry_cert
 SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
+
+# endregion
+
+# region: DNS----------------------------------------------------------###
+
+# SECURITY WARNING: keep all DNS variables in production secret!
 SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
 SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
 SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
 SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
+# Configuration
+DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
+
 # endregion
+
 # region: Security and Privacy----------------------------------------------###
 
 # SECURITY WARNING: keep the secret key used in production secret!

@@ -139,6 +139,7 @@ class CheckPortfolioMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         self.home = reverse("home")
+        self.legacy_home = "legacy_home"
 
         self.select_portfolios_page = reverse("your-organizations")
         self.set_portfolio_page = reverse("set-session-portfolio")
@@ -162,50 +163,106 @@ class CheckPortfolioMiddleware:
         response = self.get_response(request)
         return response
 
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        current_path = request.path
+    def _is_excluded(self, path: str) -> bool:
+        return any(path.startswith(p) for p in self.excluded_pages)
 
+    def _is_data_api(self, request):
+        return request.path in {
+            reverse("get_domains_json"),
+            reverse("get_domain_requests_json"),
+        }
+
+    def _wants_html(self, request):
+        accept = request.META.get("HTTP_ACCEPT")
+        return (not accept) or ("text/html" in accept) or ("*/*" in accept)
+
+    def _set_or_clear_portfolio(self, request):
+        """Ensure session['portfolio'] is consistent with user/org state."""
+
+        # On legacy clicks clear portfolio & stop
+        if request.GET.get(self.legacy_home) == "1":
+            request.session.pop("portfolio", None)
+            return
+
+        user = request.user
+        multiple = flag_is_active(request, "multiple_portfolios")
+        first_portfolio = user.get_first_portfolio()
+
+        # Set if feature off and user has any portfolio OR user has exactly one portfolio
+        if (not multiple and first_portfolio) or (user.get_num_portfolios() == 1 and not user.has_legacy_domain()):
+            request.session["portfolio"] = first_portfolio
+            return
+
+        # Clear if session portfolio is not valid anymore
+        if request.session.get("portfolio") and not user.is_org_user(request):
+            request.session.pop("portfolio", None)
+
+    def _maybe_redirect_to_org_select(self, request):
+        """If user has multiple orgs and no active portfolio (and not on excluded paths), send to select page."""
+        if request.GET.get(self.legacy_home) == "1":
+            return None
+        # Never redirect explicit legacy clicks; never redirect JSON/APIs etc. only HTML views
+        if self._is_excluded(request.path) or self._is_data_api(request) or not self._wants_html(request):
+            return None
+        if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
+            return HttpResponseRedirect(self.select_portfolios_page)
+        return None
+
+    def _home_redirect(self, request):
+        """Handle all home page redirections."""
+        if request.GET.get(self.legacy_home) == "1":
+            return None
+        if request.path != self.home:
+            return None
+
+        user = request.user
+        multiple = user.is_multiple_orgs_user(request)
+        any_org = user.is_any_org_user()
+
+        # If multi-org OR legacy+any_org, go to org select
+        if multiple or (user.has_legacy_domain() and any_org):
+            return HttpResponseRedirect(self.select_portfolios_page)
+
+        # If portfolio is present, choose domains vs no-portfolio-domains
+        portfolio = request.session.get("portfolio")
+        has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
+            request
+        )
+
+        if has_portfolio_domains and portfolio:
+            target = (
+                reverse("domains")
+                if user.has_any_domains_portfolio_permission(portfolio)
+                else reverse("no-portfolio-domains")
+            )
+            return HttpResponseRedirect(target)
+
+        return None
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
         if not request.user.is_authenticated:
             return None
 
-        # Assign user portfolio if:
-        # 1. User has at least 1 portfolio and multiple portfolios flag is off, OR
-        # 2. User has only 1 portfolio
-        # Remove condition 1 when we remove multiple portfolios feature flag
-        if (
-            not flag_is_active(request, "multiple_portfolios") and request.user.get_first_portfolio()
-        ) or request.user.get_num_portfolios() == 1:
-            request.session["portfolio"] = request.user.get_first_portfolio()
-        # If user no longer has permission to session portfolio,
-        # eg their user portfolio permission deleted or replaced,
-        # delete session portfolio since user no longer can access that portfolio.
-        # The user should get redirected to the Select organization page.
-        elif request.session.get("portfolio") and not request.user.is_org_user(request):
-            del request.session["portfolio"]
+        # Legacy-home click
+        # If user clicked "legacy home", clear portfolio
+        if request.path == self.home and request.GET.get(self.legacy_home) == "1":
+            request.session.pop("portfolio", None)
+            return None
 
-        # Don't redirect on excluded pages (such as the setup page itself)
-        if not any(request.path.startswith(page) for page in self.excluded_pages):
-            # Redirect user to org select page if no active portfolio
-            if request.user.is_multiple_orgs_user(request) and not request.session.get("portfolio"):
-                org_select_redirect = reverse("your-organizations")
-                return HttpResponseRedirect(org_select_redirect)
-        has_portfolio_domains = (
-            flag_is_active(request, "multiple_portfolios") and request.user.is_any_org_user()
-        ) or request.user.is_org_user(request)
+        # Keep session['portfolio'] in sync on normal HTML page views
+        # (Skip admin/debug/data APIs; only do this for HTML page loads)
+        if not self._is_excluded(request.path) and not self._is_data_api(request):
+            self._set_or_clear_portfolio(request)
 
-        # If user has multiple portfolios, home page should redirect to Your organizations page.
-        if request.user.is_multiple_orgs_user(request) and current_path == self.home:
-            home_redirect = reverse("your-organizations")
-            return HttpResponseRedirect(home_redirect)
+        # Maybe send multi-org users to org-select page
+        resp = self._maybe_redirect_to_org_select(request)
+        if resp:
+            return resp
 
-        # Redirect user to portfolio domains table if they manage domains in active portfolio.
-        # Redirect to Not managing domains page if they don't manage domains in active portfolio.
-        if has_portfolio_domains and current_path == self.home:
-            if request.user.has_any_domains_portfolio_permission(request.session["portfolio"]):
-                portfolio_redirect = reverse("domains")
-            else:
-                portfolio_redirect = reverse("no-portfolio-domains")
-            return HttpResponseRedirect(portfolio_redirect)
+        # Home redirect logic (domains vs no-portfolio-domains)
+        resp = self._home_redirect(request)
+        if resp:
+            return resp
 
         return None
 
@@ -287,10 +344,6 @@ class RequestLoggingMiddleware:
         return self.get_response(request)
 
 
-# used for tracking db reuse
-_LAST_DB_PID = None
-
-
 class DatabaseConnectionMiddleware:
     """
     Middleware to track database connection metrics and query performance.
@@ -299,75 +352,28 @@ class DatabaseConnectionMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self._skip_paths = {"/health", "/metrics"}
 
     def __call__(self, request):
-        for p in self._skip_paths:
-            if request.path.startswith(p):
-                return self.get_response(request)
+        request._db_start_time = time.time()
+        request._db_queries_start = len(connections["default"].queries)
 
-        start = time.perf_counter()
-        q_before = len(connections["default"].queries)  # 0 unless debug cursor enabled
-
-        pid_start = _get_backend_pid_safe()
-
-        logger.info(
-            f"DB_CONN_START pid_start={pid_start} queries_before={q_before} path={request.path}",
-            extra={"evt": "db_conn_start", "pid_start": pid_start, "queries_before": q_before, "path": request.path},
-        )
-
+        # Log connection state
+        connection = connections["default"]
+        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
+        if hasattr(request, "_db_start_time"):
+            connection = connections["default"]
+            query_count = len(connection.queries) - request._db_queries_start
+            duration = time.time() - request._db_start_time
 
-        duration_ms = int((time.perf_counter() - start) * 1000)
-        q_after = len(connections["default"].queries)
-        q_delta = q_after - q_before
-
-        pid_end = _get_backend_pid_safe()
-
-        global _LAST_DB_PID
-        reused = pid_end is not None and _LAST_DB_PID == pid_end
-        if pid_end is not None:
-            _LAST_DB_PID = pid_end
-
-        logger.info(
-            (
-                "DB_CONN_END "
-                f"req_id={request.META.get('HTTP_X_REQUEST_ID','unknown')} "
-                f"status={getattr(response,'status_code',None)} "
-                f"duration_ms={duration_ms} "
-                f"queries_delta={q_delta} "
-                f"pid_end={pid_end} "
-                f"db_reused={reused} "
+            # Get request ID for correlation
+            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
+            logger.info(
+                f"DB_CONN_END: req_id={request_id}, "
+                f"queries={query_count}, "
+                f"duration={duration:.3f}s, "
+                f"total_queries={len(connection.queries)}, "
+                f"status={response.status_code}, "
                 f"path={request.path}"
-            ),
-            extra={
-                "evt": "db_conn_end",
-                "req_id": request.META.get("HTTP_X_REQUEST_ID", "unknown"),
-                "status": getattr(response, "status_code", None),
-                "duration_ms": duration_ms,
-                "queries_delta": q_delta,
-                "pid_end": pid_end,
-                "db_reused": reused,
-                "path": request.path,
-            },
-        )
-
+            )
         return response
-
-
-def _get_backend_pid_safe():
-    """
-    Return the PostgreSQL backend PID if available, else None.
-    Avoids forcing a connection open.
-    """
-    try:
-        conn_wrapper = connections["default"]
-        # If the DB connection is already opened
-        raw = getattr(conn_wrapper, "connection", None)
-        if raw is None:
-            return None
-        # psycopg2/psycopg3 expose get_backend_pid()
-        getpid = getattr(raw, "get_backend_pid", None)
-        return getpid() if callable(getpid) else None
-    except Exception:
-        return None
