@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    """Domains that, (1) have DNS status "Unknown" or "DNS Needed" and (2) are 7+ days past their expiration date, 
+    """Domains that, (1) have DNS status "Unknown" or "DNS Needed" and (2) are 7+ days past their expiration date,
     are marked "DELETED" in the registrar and deleted in the registry."""
 
     def handle(self, *args, **options):
