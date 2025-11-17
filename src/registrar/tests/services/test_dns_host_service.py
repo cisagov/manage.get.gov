@@ -1,5 +1,5 @@
 from unittest.mock import patch, Mock
-from django.test import SimpleTestCase, TestCase
+from django.test import TestCase
 from django.db import IntegrityError
 
 from registrar.services.dns_host_service import DnsHostService
@@ -11,7 +11,7 @@ from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
 
 
-class TestDnsHostService(SimpleTestCase):
+class TestDnsHostService(TestCase):
 
     def setUp(self):
         mock_client = Mock()
@@ -152,7 +152,9 @@ class TestDnsHostServiceDB(TestCase):
     def setUp(self):
         self.vendor = DnsVendor.objects.get(name=DnsVendor.CF)
         mock_client = Mock()
+        vendor_mock = Mock()
         self.service = DnsHostService(client=mock_client)
+        self.service.dns_vendor_service = vendor_mock
 
     def tearDown(self):
         DnsVendor.objects.all().delete()
@@ -247,6 +249,24 @@ class TestDnsHostServiceDB(TestCase):
     def test_find_existing_account_success(self):
         account_name = "Account for test.gov"
         test_x_account_id = "acc_12345"
+
+        # First, create data returned from the API call
+        cf_page_response = {
+            "result": [
+                {
+                    "name": account_name,
+                    "id": test_x_account_id,
+                }
+            ],
+            "result_info": {
+                "total_count": 1,
+            },
+        }
+
+        # Paginated endpoint returns the above dictionary
+        self.service.dns_vendor_service.get_page_accounts.return_value = cf_page_response
+
+        self.service._find_by_pubname = Mock(return_value=test_x_account_id)
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
             dns_vendor=self.vendor,
