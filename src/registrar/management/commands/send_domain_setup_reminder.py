@@ -72,13 +72,15 @@ class Command(BaseCommand):
                 rendered_subject = render_to_string(subject_template, context).strip()
                 rendered_body = render_to_string(template, context)
 
+                body_preview = rendered_body[:200] + "..." if len(rendered_body) > 200 else rendered_body
+
                 logger.info(
                     f"[DRYRUN]\n"
                     f"Would send email for domain {domain.name}\n"
                     f"TO: {domain_manager_emails}\n"
                     f"CC: {portfolio_admin_emails}\n"
                     f"Subject: {rendered_subject}\n"
-                    f"Body:\n{rendered_body}"
+                    f"Body preview ({len(rendered_body)} chars):\n{body_preview}"
                 )
                 return True
             else:
