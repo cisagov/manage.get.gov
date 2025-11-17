@@ -567,19 +567,6 @@ button {
     }
 }
 
-// Extended header only displaying topmost navigation
-// .usa-header__top-level-only {
-//     border-bottom-width: 0;
-
-//     .usa-nav {
-//         background-color: white !important;
-//     }
-
-//     .usa-nav__primary {
-//         visibility: hidden;
-//     }
-// }
-
 #organizations-submenu {
     @include at-media($theme-header-min-width) {
         width: 20rem;
