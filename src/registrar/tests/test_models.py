@@ -135,6 +135,44 @@ class TestDomainInvitations(TestCase):
         self.user.on_each_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
 
+    @less_console_noise_decorator
+    def test_clean_validates_retrieved_invitation_has_role(self):
+        """Test that clean() validates retrieved invitations have corresponding UserDomainRole."""
+        from django.core.exceptions import ValidationError
+
+        # Retrieve the invitation (this creates the role)
+        self.invitation.retrieve()
+        self.invitation.save()
+        # This should pass validation since the role exists
+        self.invitation.clean()
+
+        # Now delete the role - this should cause validation to fail
+        UserDomainRole.objects.filter(user=self.user, domain=self.domain).delete()
+        with self.assertRaises(ValidationError) as context:
+            self.invitation.clean()
+
+        # Check that the error message contains the expected text (non-field error)
+        error_message = str(context.exception)
+        self.assertIn("no corresponding UserDomainRole", error_message)
+
+    @less_console_noise_decorator
+    def test_clean_validates_retrieved_invitation_user_exists(self):
+        """Test that clean() validates retrieved invitations have a corresponding user."""
+        from django.core.exceptions import ValidationError
+
+        # Retrieve the invitation (this creates the role)
+        self.invitation.retrieve()
+        self.invitation.save()
+
+        # Now delete the role - this should cause validation to fail
+        self.user.delete()
+        with self.assertRaises(ValidationError) as context:
+            self.invitation.clean()
+
+        # Check that the error message contains the expected text (non-field error)
+        error_message = str(context.exception)
+        self.assertIn("user with email", error_message)
+
 
 class TestPortfolioInvitations(TestCase):
     """Test the retrieval of portfolio invitations."""
