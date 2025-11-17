@@ -29,10 +29,10 @@ class Command(BaseCommand):
             logger.info(f"DRY RUN MODE - No changes will be made\n {count} domains will be deleted")
         else:
             if count > 1:
-                logger.info(f"{count} domains have been deleted.")
+                logger.info(f"{count} domains have been deleted: {domains}")
             else:
                 text = "No" if count == 0 else "1"
-                logger.info(f"{text} domain has been deleted.")
+                logger.info(f"{text} domain has been deleted. {domains}")
 
     def add_arguments(self, parser):
         parser.add_argument(
