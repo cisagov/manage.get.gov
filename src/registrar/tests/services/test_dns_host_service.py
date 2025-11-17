@@ -224,7 +224,7 @@ class TestDnsHostServiceDB(TestCase):
         AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
 
         self.assertIsNone(self.service._find_existing_account(account_name))
-    
+
     def test_save_db_account_success(self):
         # Dummy JSON data from API
         account_data = {"result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}}
@@ -305,7 +305,6 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsAccount.objects.count(), 0)
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(AccountsJoin.objects.count(), 0)
-
 
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
