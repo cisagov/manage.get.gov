@@ -6,7 +6,7 @@ from django.conf import settings
 from django.urls import reverse
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.constants import BranchChoices
-from .common import MockSESClient, completed_domain_request  # type: ignore
+from .common import MockSESClient, completed_domain_request, form_with_field  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 
@@ -743,22 +743,25 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_page = additional_details_result.follow()
         requirements_form = requirements_page.forms[0]
 
-        requirements_form["requirements-is_policy_acknowledged"] = True
-
         # Before we go to the review page, let's remove some of the data from the request:
         domain_request = DomainRequest.objects.get()  # there's only one
 
         domain_request.generic_org_type = None
         domain_request.save()
 
-        # test next button
+        # Refresh the Requirements page so snapshot matches the new updated_at
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        requirements_page = self.app.get(reverse("domain-request:requirements", args=[domain_request.id]))
+        requirements_form = requirements_page.forms[0]
+        requirements_form["requirements-is_policy_acknowledged"] = True
+
+        # Submit and test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()
         # validate that data from this step are being saved
-
         domain_request.refresh_from_db()
-
         self.assertEqual(domain_request.is_policy_acknowledged, True)
+
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(requirements_result.status_code, 302)
@@ -2415,7 +2418,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Go back to organization type page and change type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = so_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
@@ -2527,8 +2531,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.assertContains(dotgov_page, "medicare.gov")
 
         # Go back to organization type page and change type
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_page = dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        type_form = type_page.forms[0]  # IMPORTANT re-acquire a fresh form (new hidden version token)
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
@@ -2575,7 +2579,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-        intro_form = intro_page.forms[0]
+        intro_form = intro_page.forms[1]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         intro_result = intro_form.submit()
 
@@ -2585,7 +2589,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- REQUESTING ENTITY PAGE  ----
-        requesting_entity_form = portfolio_requesting_entity.forms[0]
+        requesting_entity_form = portfolio_requesting_entity.forms[1]
         requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
 
         # test next button
@@ -2599,7 +2603,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # separate out these tests for readability
         self.feb_dotgov_domain_tests(dotgov_page)
 
-        domain_form = dotgov_page.forms[0]
+        domain_form = form_with_field(dotgov_page, "dotgov_domain-requested_domain")
         domain = "test.gov"
         domain_form["dotgov_domain-requested_domain"] = domain
         domain_form["dotgov_domain-feb_naming_requirements"] = "False"
@@ -2616,7 +2620,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.feb_purpose_page_tests(purpose_page)
 
-        purpose_form = purpose_page.forms[0]
+        purpose_form = form_with_field(purpose_page, "purpose-feb_purpose_choice")
         purpose_form["purpose-feb_purpose_choice"] = "redirect"
         purpose_form["purpose-purpose"] = "testPurpose123"
         purpose_form["purpose-has_timeframe"] = "True"
@@ -2631,7 +2635,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_details_page = purpose_result.follow()
         self.feb_additional_details_page_tests(additional_details_page)
 
-        additional_details_form = additional_details_page.forms[0]
+        additional_details_form = form_with_field(additional_details_page, "portfolio_additional_details-anything_else")
         additional_details_form["portfolio_additional_details-has_anything_else_text"] = "True"
         additional_details_form["portfolio_additional_details-anything_else"] = "test"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2642,7 +2646,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         requirements_page = additional_details_result.follow()
         self.feb_requirements_page_tests(requirements_page)
 
-        requirements_form = requirements_page.forms[0]
+        requirements_form = form_with_field(requirements_page, "requirements-is_policy_acknowledged")
         requirements_form["requirements-is_policy_acknowledged"] = "True"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         requirements_result = requirements_form.submit()

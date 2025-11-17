@@ -15,6 +15,8 @@ from datetime import date, datetime, timedelta
 from django.utils import timezone
 from django.utils.html import strip_spaces_between_tags
 
+from lxml import html
+
 from registrar.models import (
     Contact,
     DraftDomain,
@@ -2123,3 +2125,33 @@ def get_wsgi_request_object(client, user, url="/"):
     request = client.get(url).wsgi_request
     request.user = user
     return request
+
+
+def form_with_field(page, field_name: str):
+    return next(f for f in page.forms.values() if field_name in f.fields)
+
+
+def form_with_any_field(page, field_names: list[str]):
+    return next(f for f in page.forms.values() if any(n in f.fields for n in field_names))
+
+
+def parse_tree(response):
+    return html.fromstring(response.text)
+
+
+def assert_header_contains(self, tree, text):
+    headers = tree.xpath("//header")
+    self.assertTrue(headers, "Expected a <header> element")
+    header_text = " ".join(h.text_content() for h in headers)
+    self.assertIn(text, header_text)
+
+
+def assert_radio_group_contains_label(self, tree, legend_text, expected_label_part):
+    # fieldset whose legend matches legend_text
+    fieldsets = tree.xpath("//fieldset[.//legend[contains(normalize-space(.), $legend)]]", legend=legend_text)
+    self.assertTrue(fieldsets, f"Expected fieldset for '{legend_text}'")
+    labels = [el.text_content().strip() for el in fieldsets[0].xpath(".//label")]
+    self.assertTrue(
+        any(expected_label_part in t for t in labels),
+        f"Expected a radio label containing: {expected_label_part!r}",
+    )

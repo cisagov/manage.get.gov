@@ -1,4 +1,5 @@
 from httpx import RequestError, HTTPStatusError
+from typing import Any
 import logging
 from django.conf import settings
 
@@ -21,9 +22,9 @@ class CloudflareService:
         client.headers = self.headers
         self.client = client
 
-    def create_account(self, account_name):
+    def create_cf_account(self, account_name: str):
         appended_url = "/accounts"
-        data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
+        data = {"name": account_name, "type": "standard", "unit": {"id": self.tenant_id}}
         try:
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
@@ -37,22 +38,22 @@ class CloudflareService:
 
         return resp.json()
 
-    def create_zone(self, zone_name, account_id):
+    def create_cf_zone(self, zone_name: str, x_account_id: str):
         appended_url = "/zones"
-        data = {"name": zone_name, "account": {"id": account_id}}
+        data = {"name": zone_name, "account": {"id": x_account_id}}
         try:
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
             logger.info(f"Created zone {zone_name}")
         except RequestError as e:
-            logger.error(f"Failed to create zone {zone_name} for account {account_id}: {e}")
+            logger.error(f"Failed to create zone {zone_name} for account {x_account_id}: {e}")
             raise
         except HTTPStatusError as e:
             logger.error(f"Error {e.response.status_code} while creating zone: {e}")
             raise
         return resp.json()
 
-    def create_dns_record(self, zone_id, record_data):
+    def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
         try:
             resp = self.client.post(appended_url, json=record_data)
@@ -66,8 +67,8 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def get_page_accounts(self, page, per_page):
-        """Gets all accounts under specified tenant. Must include pagination paramenters"""
+    def get_page_accounts(self, page: int, per_page: int):
+        """Gets all accounts under specified tenant. Must include pagination parameters."""
         appended_url = f"/tenants/{self.tenant_id}/accounts"
         params = {"page": page, "per_page": per_page}
         try:
@@ -82,10 +83,10 @@ class CloudflareService:
             raise
         return resp.json()
 
-    def get_account_zones(self, account_id):
+    def get_account_zones(self, x_account_id: str):
         """Gets all zones under a particular account"""
         appended_url = "/zones"
-        params = f"account.id={account_id}"
+        params = f"account.id={x_account_id}"
         try:
             logger.info("Getting all of the account's zones")
             resp = self.client.get(appended_url, params=params)
@@ -99,7 +100,7 @@ class CloudflareService:
         logger.info(f"Retrieved all zones: {resp}")
         return resp.json()
 
-    def get_dns_record(self, zone_id, record_id):
+    def get_dns_record(self, zone_id: str, record_id: str):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
         try:
             resp = self.client.get(appended_url, headers=self.headers)

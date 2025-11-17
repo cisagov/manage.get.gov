@@ -14,6 +14,7 @@ from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
+from datetime import date
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -40,6 +41,7 @@ class DomainRequest(TimeStampedModel):
     # Constants for choice fields
     class DomainRequestStatus(models.TextChoices):
         IN_REVIEW = "in review", "In review"
+        IN_REVIEW_OMB = "in review - omb", "In review - OMB"
         ACTION_NEEDED = "action needed", "Action needed"
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
@@ -724,6 +726,7 @@ class DomainRequest(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
 
@@ -780,8 +783,21 @@ class DomainRequest(TimeStampedModel):
                         )
                 raise ValidationError(errors)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, optimistic_lock=False, **kwargs):
         """Save override for custom properties"""
+        if optimistic_lock and self.pk is not None:
+            # Get the current DB value to compare with our snapshot
+            current_updated_at = (
+                type(self).objects.only("updated_at").filter(pk=self.pk).values_list("updated_at", flat=True).first()
+            )
+            # If someone else saved after we loaded, block the save
+            if (
+                self._original_updated_at is not None
+                and current_updated_at is not None
+                and current_updated_at != self._original_updated_at
+            ):
+                raise ValidationError("A newer version of this form exists. Please try again.")
+
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
 
@@ -789,7 +805,7 @@ class DomainRequest(TimeStampedModel):
             self.last_status_update = timezone.now().date()
 
         super().save(*args, **kwargs)
-
+        self._original_updated_at = self.updated_at
         # Handle custom status emails.
         # An email is sent out when a, for example, action_needed_reason is changed or added.
         statuses_that_send_custom_emails = [self.DomainRequestStatus.ACTION_NEEDED, self.DomainRequestStatus.REJECTED]
@@ -1051,11 +1067,21 @@ class DomainRequest(TimeStampedModel):
             is_valid = False
         return is_valid
 
+    def allow_in_review_omb_transition(self):
+        """Checks if domain request is in enterprise mode for state transition without investigator"""
+        """If it is not in enterprise mode check the investigator exists"""
+        if self.is_feb():
+            return True
+        elif self.federal_type == BranchChoices.EXECUTIVE:
+            return self.investigator_exists_and_is_staff()
+        return False
+
     @transition(
         field="status",
         source=[
             DomainRequestStatus.STARTED,
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.WITHDRAWN,
         ],
@@ -1138,6 +1164,7 @@ class DomainRequest(TimeStampedModel):
         field="status",
         source=[
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.APPROVED,
             DomainRequestStatus.REJECTED,
             DomainRequestStatus.INELIGIBLE,
@@ -1175,6 +1202,7 @@ class DomainRequest(TimeStampedModel):
         field="status",
         source=[
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.REJECTED,
         ],
@@ -1255,21 +1283,61 @@ class DomainRequest(TimeStampedModel):
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.SUBMITTED, DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED],
+        source=[
+            DomainRequestStatus.SUBMITTED,
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
+            DomainRequestStatus.ACTION_NEEDED,
+        ],
         target=DomainRequestStatus.WITHDRAWN,
     )
     def withdraw(self):
         """Withdraw an domain request that has been submitted."""
+        bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
+        omb_address = settings.OMB_EMAIL if settings.IS_PRODUCTION else ""
 
         self._send_status_update_email(
             "withdraw",
             "emails/domain_request_withdrawn.txt",
             "emails/domain_request_withdrawn_subject.txt",
+            bcc_address=bcc_address,
         )
+
+        if self.is_feb():
+            try:
+                purpose_label = DomainRequest.FEBPurposeChoices.get_purpose_label(self.feb_purpose_choice)
+                context = {
+                    "domain_request": self,
+                    "date": date.today(),
+                    "requires_feb_questions": True,
+                    "purpose_label": purpose_label,
+                }
+
+                send_templated_email(
+                    "emails/omb_withdrawal_notification.txt",
+                    "emails/omb_withdrawal_notification_subject.txt",
+                    omb_address,
+                    bcc_address=bcc_address,
+                    context=context,
+                )
+                logger.info("A withdrawal notification email was sent to ombdotgov@omb.eop.gov")
+            except EmailSendingError as err:
+                logger.error(
+                    "Failed to send OMB withdrawal notification email:\n"
+                    f" Subject template: omb_withdrawal_notification_subject.txt\n"
+                    f" To: ombdotgov@omb.eop.gov\n"
+                    f" Error: {err}",
+                    exc_info=True,
+                )
 
     @transition(
         field="status",
-        source=[DomainRequestStatus.IN_REVIEW, DomainRequestStatus.ACTION_NEEDED, DomainRequestStatus.APPROVED],
+        source=[
+            DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.ACTION_NEEDED,
+            DomainRequestStatus.APPROVED,
+            DomainRequestStatus.IN_REVIEW_OMB,
+        ],
         target=DomainRequestStatus.REJECTED,
         conditions=[domain_is_not_active, investigator_exists_and_is_staff],
     )
@@ -1295,6 +1363,7 @@ class DomainRequest(TimeStampedModel):
         source=[
             DomainRequestStatus.SUBMITTED,
             DomainRequestStatus.IN_REVIEW,
+            DomainRequestStatus.IN_REVIEW_OMB,
             DomainRequestStatus.ACTION_NEEDED,
             DomainRequestStatus.APPROVED,
             DomainRequestStatus.REJECTED,
@@ -1315,6 +1384,18 @@ class DomainRequest(TimeStampedModel):
             self.delete_and_clean_up_domain("reject_with_prejudice")
 
         self.requester.restrict_user()
+
+    @transition(
+        field="status",
+        source=[
+            DomainRequestStatus.SUBMITTED,
+        ],
+        target=DomainRequestStatus.IN_REVIEW_OMB,
+        conditions=[domain_is_not_active, allow_in_review_omb_transition],
+    )
+    def in_review_omb(self):
+        """Transitions Domain Request Status from submitted to In review - OMB"""
+        pass
 
     def requesting_entity_is_portfolio(self) -> bool:
         """Determines if this record is requesting that a portfolio be their organization.
