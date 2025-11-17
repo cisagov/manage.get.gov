@@ -2728,3 +2728,153 @@ class TestCleanPII(TestCase):
         super().tearDown()
         Contact.objects.all().delete()
         User.objects.all().delete()
+
+
+class TestCleanupOrphanedRetrievedInvitations(TestCase):
+    """Test the cleanup_orphaned_retrieved_invitations command"""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        """Set up test data"""
+        super().setUp()
+        self.domain1, _ = Domain.objects.get_or_create(name="test1.gov")
+        self.domain2, _ = Domain.objects.get_or_create(name="test2.gov")
+
+        self.user1, _ = User.objects.get_or_create(email="user1@example.com", defaults={"username": "user1"})
+        self.user2, _ = User.objects.get_or_create(email="user2@example.com", defaults={"username": "user2"})
+
+        # Create valid retrieved invitaion (has corresponding role)
+        self.valid_invitation, _ = DomainInvitation.objects.get_or_create(
+            email=self.user1.email,
+            domain=self.domain1,
+        )
+        self.valid_invitation.retrieve()
+        self.valid_invitation.save()
+
+        # Create orphaned invitation (no corresponding role)
+        # We need to bypass the signal that would delete this invitation
+        # When we delete the role, so we create it with status=RETRIEVED directly
+        self.orphaned_invitation, _ = DomainInvitation.objects.get_or_create(
+            email=self.user2.email,
+            domain=self.domain2,
+        )
+        # Temporarily disable the signal, create and delete role, then set status directly
+        from registrar.signals import cleanup_retrieved_domain_invitations
+        from django.db.models.signals import post_delete
+
+        post_delete.disconnect(cleanup_retrieved_domain_invitations, sender=UserDomainRole)
+        try:
+            # Create a role temporarily
+            role, _ = UserDomainRole.objects.get_or_create(
+                user=self.user2,
+                domain=self.domain2,
+                role=UserDomainRole.Roles.MANAGER,
+            )
+            self.orphaned_invitation.retrieve()
+            self.orphaned_invitation.save()
+            # Delete the role to make it orphaned (signal is disabled so invitation won't be deletedd)
+            role.delete()
+        finally:
+            post_delete.connect(cleanup_retrieved_domain_invitations, sender=UserDomainRole)
+
+        # Create orphaned invitation (user doesn't exist)
+        # Create user temporarily, retrieve invitation, then delete user
+        temp_user, _ = User.objects.get_or_create(email="nonexistent@example.com")
+        self.orphaned_invitation_no_user, _ = DomainInvitation.objects.get_or_create(
+            email="nonexistent@example.com",
+            domain=self.domain1,
+        )
+        # Disable signal temporarily
+        post_delete.disconnect(cleanup_retrieved_domain_invitations, sender=UserDomainRole)
+        try:
+            role, _ = UserDomainRole.objects.get_or_create(
+                user=temp_user,
+                domain=self.domain1,
+                role=UserDomainRole.Roles.MANAGER,
+            )
+            self.orphaned_invitation_no_user.retrieve()
+            self.orphaned_invitation_no_user.save()
+            role.delete()
+        finally:
+            post_delete.connect(cleanup_retrieved_domain_invitations, sender=UserDomainRole)
+        # Delete the user to make it orphaned
+        temp_user.delete()
+
+    def tearDown(self):
+        """Clean up test data"""
+        super().tearDown()
+        DomainInvitation.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        Domain.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_dry_run_identifies_orphaned_invitations(self):
+        """Test that dry-run mode identifies orphaned invitations without modifying them"""
+        from io import StringIO
+
+        out = StringIO()
+        call_command("cleanup_orphaned_retrieved_invitations", "--dry-run", stdout=out)
+
+        output = out.getvalue()
+        self.assertIn("DRYRUN", output)
+        self.assertIn("orphaned", output.lower())
+
+        # Verify invitations were not modified
+        orphaned_invitation = DomainInvitation.objects.get(pk=self.orphaned_invitation.pk)
+        self.assertEqual(
+            orphaned_invitation.status,
+            DomainInvitation.DomainInvitationStatus.RETRIEVED,
+        )
+        orphaned_invitation_no_user = DomainInvitation.objects.get(pk=self.orphaned_invitation_no_user.pk)
+        self.assertEqual(
+            orphaned_invitation_no_user.status,
+            DomainInvitation.DomainInvitationStatus.RETRIEVED,
+        )
+
+    @less_console_noise_decorator
+    def test_cleanup_cancels_orphaned_invitations(self):
+        """Test that the command cancels orphaned invitations"""
+        from io import StringIO
+
+        out = StringIO()
+        call_command("cleanup_orphaned_retrieved_invitations", stdout=out)
+
+        output = out.getvalue()
+        self.assertIn("Successfully cleaned up", output)
+
+        # Verify orphaned invitations were canceled
+        orphaned_invitation = DomainInvitation.objects.get(pk=self.orphaned_invitation.pk)
+        self.assertEqual(
+            orphaned_invitation.status,
+            DomainInvitation.DomainInvitationStatus.CANCELED,
+        )
+        orphaned_invitation_no_user = DomainInvitation.objects.get(pk=self.orphaned_invitation_no_user.pk)
+        self.assertEqual(
+            orphaned_invitation_no_user.status,
+            DomainInvitation.DomainInvitationStatus.CANCELED,
+        )
+
+        # Verify valid invitation was not modified
+        valid_invitation = DomainInvitation.objects.get(pk=self.valid_invitation.pk)
+        self.assertEqual(
+            valid_invitation.status,
+            DomainInvitation.DomainInvitationStatus.RETRIEVED,
+        )
+
+    @less_console_noise_decorator
+    def test_cleanup_no_orphaned_invitations(self):
+        """Test that the command handles the case when there are no orphaned invitations"""
+        # Clean up orphaned invitations first
+        self.orphaned_invitation.cancel_retrieved_invitation()
+        self.orphaned_invitation.save()
+        self.orphaned_invitation_no_user.cancel_retrieved_invitation()
+        self.orphaned_invitation_no_user.save()
+
+        from io import StringIO
+
+        out = StringIO()
+        call_command("cleanup_orphaned_retrieved_invitations", stdout=out)
+
+        output = out.getvalue()
+        self.assertIn("No orphaned retrieved invitations found", output)
