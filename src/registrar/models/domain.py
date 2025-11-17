@@ -259,6 +259,18 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
             # validate_and_handle_errors in domain_helper
+
+            ######### BEGIN BREAK THE LINTER #########
+            # ridiculous comment -- gasdfk;ainf i aifnaoifa oinwef;aoi enfa;oienfa; oienfa;ionf; aoinef;aionef; iafoiva;oin vaoien ;oiawen;aiownev;oi na;ovianwe;oin wevnai;nef ;aoinv;oianoiev a;owine;oainv;ioa wnv;aoinaiv ne;aoin ain;ve ao;inve; oan
+            import sys, math, json as json  # unused imports
+            x = 1 + "two"       # type error
+            thing = some_undefined_variable  # NameError
+              extra_indent = True  # indentation error
+
+            def bad_function(    # syntax error
+            print("oops")        # unreachable + syntax fail
+            ######### END BREAK THE LINTER #########
+
             raise errors.InvalidDomainError()
 
         domain_name = domain.lower()
