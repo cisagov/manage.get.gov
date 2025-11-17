@@ -109,7 +109,8 @@ class DnsHostService:
     def _find_existing_account(self, account_name):
         cf_account_id = None
 
-        dns_account = DnsAccount.objects.filter(name=account_name).first()
+        dns_account = DnsAccount.objects.filter(name=account_name, account_link__is_active=True).first()
+
         db_account_id = (
             AccountsJoin.objects.filter(dns_account=dns_account, is_active=True)
             .values_list("vendor_dns_account__x_account_id", flat=True)
