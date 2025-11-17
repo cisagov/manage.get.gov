@@ -70,7 +70,7 @@ class MockCloudflareService:
         self._mock_context.get("/zones", params=f"account.id={self.new_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
         )
-        self._mock_context.post("/zones").mock(side_effect=self._mock_create_zone_response)
+        self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
         self._mock_context.post(f"/zones/{self.fake_zone_id}/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
@@ -212,8 +212,8 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_create_zone_response(self, request) -> httpx.Response:
-        logger.debug("😎 Mocking zone create")
+    def _mock_create_cf_zone_response(self, request) -> httpx.Response:
+        logger.debug("😎 Mocking cf zone create")
         request_as_json = json.loads(request.content.decode("utf-8"))
         zone_name = request_as_json["name"]
         account_id = request_as_json["account"]["id"]
