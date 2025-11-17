@@ -2793,16 +2793,16 @@ class TestDeleteDomainNotSetup(MockEppLib):
 
         mock_send_domain_managers_email.assert_not_called()
 
-    @patch.object(Domain, "deletedInEpp")
+    @patch.object(Domain, "deleteInEpp")
     @patch("django.utils.timezone.now")
     @patch("registrar.management.commands.delete_expired_domains_not_setup.Command.send_domain_notifications_emails")
-    def test_updates_domains_to_delete(self, mock_send_domain_managers_email, mock_now, mock_deletedInepp):
+    def test_updates_domains_to_delete(self, mock_send_domain_managers_email, mock_now, mock_deleteInEpp):
 
         mock_now.return_value = self.fixed_today
 
         mock_send_domain_managers_email.return_value = None
 
-        mock_deletedInepp.side_effect = [None, None, None]
+        mock_deleteInEpp.side_effect = [None, None, None]
 
         call_command("delete_expired_domains_not_setup", dry_run=False)
 
@@ -2810,11 +2810,11 @@ class TestDeleteDomainNotSetup(MockEppLib):
             [self.domain_expired_seven_days, self.domain_expired_seven_days_too]
         )
 
-    @patch.object(Domain, "deletedInEpp")
+    @patch.object(Domain, "deleteInEpp")
     @patch("django.utils.timezone.now")
     @patch("registrar.management.commands.delete_expired_domains_not_setup.Command.send_domain_notifications_emails")
     def test_should_not_send_emails_if_conditions_arent_met(
-        self, mock_send_domain_managers_email, mock_now, mock_deletedInepp
+        self, mock_send_domain_managers_email, mock_now, mock_deleteInEpp
     ):
         """
         If a domain fails to delete in EPP process, the domain state should not be updated.
@@ -2822,7 +2822,7 @@ class TestDeleteDomainNotSetup(MockEppLib):
         """
         mock_now.return_value = self.fixed_today
 
-        mock_deletedInepp.side_effect = [ProtectedError("Protected", set()), None, None]
+        mock_deleteInEpp.side_effect = [ProtectedError("Protected", set()), None, None]
 
         call_command("delete_expired_domains_not_setup", dry_run=False)
 

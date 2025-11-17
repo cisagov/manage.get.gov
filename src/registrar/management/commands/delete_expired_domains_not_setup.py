@@ -54,7 +54,7 @@ class Command(BaseCommand):
         deleted_domains = []
         for domain in domains:
             try:
-                domain.deletedInEpp()
+                domain.deleteInEpp()
                 domain.save()
                 deleted_domains.append(domain)
             except Exception:
