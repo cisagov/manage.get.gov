@@ -187,6 +187,44 @@ class TestDnsHostServiceDB(TestCase):
         DnsZone.objects.all().delete()
         ZonesJoin.objects.all().delete()
 
+    def test_find_existing_account_success(self):
+        account_name = "Account for test.gov"
+        test_x_account_id = "12345"
+
+        # Paginated endpoint returns the above dictionary
+        self.service.dns_vendor_service.get_page_accounts.return_value = self.vendor_zone_data
+
+        self.service._find_by_pubname = Mock(return_value=test_x_account_id)
+
+        vendor_dns_acc = VendorDnsAccount.objects.create(
+            dns_vendor=self.vendor,
+            x_account_id="12345",
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+
+        dns_acc = DnsAccount.objects.create(name=account_name)
+
+        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=True)
+
+        found_id = self.service._find_existing_account(account_name)
+        self.assertEqual(found_id, test_x_account_id)
+
+    def test_find_existing_account_returns_none_with_inactive_join(self):
+        account_name = "Account for inactive.gov"
+
+        vendor_dns_acc = VendorDnsAccount.objects.create(
+            dns_vendor=self.vendor,
+            x_account_id="acc_inactive",
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+        dns_acc = DnsAccount.objects.create(name=account_name)
+
+        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
+
+        self.assertIsNone(self.service._find_existing_account(account_name))
+    
     def test_save_db_account_success(self):
         # Dummy JSON data from API
         account_data = {"result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}}
@@ -268,56 +306,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(AccountsJoin.objects.count(), 0)
 
-    def test_find_existing_account_success(self):
-        account_name = "Account for test.gov"
-        test_x_account_id = "acc_12345"
 
-        # First, create data returned from the API call
-        cf_page_response = {
-            "result": [
-                {
-                    "name": account_name,
-                    "id": test_x_account_id,
-                }
-            ],
-            "result_info": {
-                "total_count": 1,
-            },
-        }
-
-        # Paginated endpoint returns the above dictionary
-        self.service.dns_vendor_service.get_page_accounts.return_value = cf_page_response
-
-        self.service._find_by_pubname = Mock(return_value=test_x_account_id)
-
-        vendor_dns_acc = VendorDnsAccount.objects.create(
-            dns_vendor=self.vendor,
-            x_account_id="acc_12345",
-            x_created_at="2024-01-02T03:04:05Z",
-            x_updated_at="2024-01-02T03:04:05Z",
-        )
-
-        dns_acc = DnsAccount.objects.create(name=account_name)
-
-        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=True)
-
-        found_id = self.service._find_existing_account(account_name)
-        self.assertEqual(found_id, test_x_account_id)
-
-    def test_find_existing_account_returns_none_with_inactive_join(self):
-        account_name = "Account for inactive.gov"
-
-        vendor_dns_acc = VendorDnsAccount.objects.create(
-            dns_vendor=self.vendor,
-            x_account_id="acc_inactive",
-            x_created_at="2024-01-02T03:04:05Z",
-            x_updated_at="2024-01-02T03:04:05Z",
-        )
-        dns_acc = DnsAccount.objects.create(name=account_name)
-
-        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
-
-        self.assertIsNone(self.service._find_existing_account(account_name))
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
         # Create account object referenced in zone
