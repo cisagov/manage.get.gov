@@ -17,6 +17,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
+    HAS_LEGACY_AND_ORG_USER,
     HAS_PORTFOLIO_DOMAINS_ANY_PERM,
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
@@ -66,8 +67,8 @@ URL_PERMISSIONS = {
     "organization": [IS_PORTFOLIO_MEMBER],
     "organization-info": [IS_PORTFOLIO_MEMBER],
     "organization-senior-official": [IS_PORTFOLIO_MEMBER],
-    "your-organizations": [IS_MULTIPLE_PORTFOLIOS_MEMBER],
-    "set-session-portfolio": [IS_MULTIPLE_PORTFOLIOS_MEMBER],
+    "your-organizations": [IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER],
+    "set-session-portfolio": [IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER],
     # Domain requests
     "domain-request-status": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "domain-request-status-viewonly": [HAS_DOMAIN_REQUESTS_VIEW_ALL],

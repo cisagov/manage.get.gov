@@ -26,9 +26,14 @@ from registrar.views.portfolios import PortfolioOrganizationSelectView
 from .common import (
     MockEppLib,
     MockSESClient,
+    assert_header_contains,
+    assert_radio_group_contains_label,
     completed_domain_request,
     create_test_user,
     create_user,
+    form_with_any_field,
+    form_with_field,
+    parse_tree,
 )
 from waffle.testutils import override_flag
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -36,6 +41,7 @@ import boto3_mocking  # type: ignore
 from django.test import Client
 import logging
 import json
+
 
 logger = logging.getLogger(__name__)
 
@@ -537,12 +543,12 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         portfolio_org_name_page = self.app.get(reverse("organization-info"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-        portfolio_org_name_page.form["city"] = "London"
+        portfolio_org_name_page_form = form_with_any_field(portfolio_org_name_page, ["address_line1", "city"])
+        portfolio_org_name_page_form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page_form["city"] = "London"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result_page = portfolio_org_name_page.form.submit()
+        success_result_page = portfolio_org_name_page_form.submit()
         # Form will not validate with missing required field (zipcode)
         self.assertEqual(success_result_page.status_code, 200)
 
@@ -567,12 +573,15 @@ class TestPortfolio(WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # Form validates and redirects with all required fields
-        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-        portfolio_org_name_page.form["city"] = "London"
-        portfolio_org_name_page.form["zipcode"] = "11111"
+        portfolio_org_name_page_form = form_with_any_field(
+            portfolio_org_name_page, ["address_line1", "city", "zipcode"]
+        )
+        portfolio_org_name_page_form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page_form["city"] = "London"
+        portfolio_org_name_page_form["zipcode"] = "11111"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result_page = portfolio_org_name_page.form.submit()
+        success_result_page = portfolio_org_name_page_form.submit()
         self.assertEqual(success_result_page.status_code, 302)
 
     @boto3_mocking.patching
@@ -601,12 +610,15 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         portfolio_org_name_page = self.app.get(reverse("organization-info"))
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        portfolio_org_name_page.form["address_line1"] = "6 Downing st"
-        portfolio_org_name_page.form["city"] = "London"
-        portfolio_org_name_page.form["zipcode"] = "11111"
+        portfolio_org_name_page_form = form_with_any_field(
+            portfolio_org_name_page, ["address_line1", "city", "zipcode"]
+        )
+        portfolio_org_name_page_form["address_line1"] = "6 Downing st"
+        portfolio_org_name_page_form["city"] = "London"
+        portfolio_org_name_page_form["zipcode"] = "11111"
 
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        success_result_page = portfolio_org_name_page.form.submit()
+        success_result_page = portfolio_org_name_page_form.submit()
         self.assertEqual(success_result_page.status_code, 302)
 
         # Verify that the notification emails were sent to domain manager
@@ -3243,11 +3255,11 @@ class TestRequestingEntity(WebTest):
 
         # Navigate past the intro page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Fill out the requesting entity form
-        form = response.forms[0]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = "True"
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = "True"
         form["portfolio_requesting_entity-requested_suborganization"] = suborganization.name.lower()
@@ -3261,6 +3273,7 @@ class TestRequestingEntity(WebTest):
         self.assertContains(response, "This suborganization already exists")
 
         # Test that a different name is allowed
+        form = form_with_field(response, "portfolio_requesting_entity-requested_suborganization")
         form["portfolio_requesting_entity-requested_suborganization"] = "New Suborg"
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -3273,22 +3286,32 @@ class TestRequestingEntity(WebTest):
     def test_requesting_entity_page_new_request(self):
         """Tests that the requesting entity page loads correctly when a new request is started"""
 
-        response = self.app.get(reverse("domain-request:start"))
+        """Requesting entity page loads correctly for a new request."""
+        response = self.app.get(reverse("domain-request:start"))z
 
-        # Navigate past the intro page
+        # Navigate past intro
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_form = response.forms[0]
+        intro_form = response.forms[1]
         response = intro_form.submit().follow()
 
-        # Test the requesting entiy page
+        # Static text checks
         self.assertContains(response, "Who will use the domain you’re requesting?")
         self.assertContains(response, "Add suborganization information")
+
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
         self.assertContains(response, self.portfolio.organization_name, count=4)
+        tree = parse_tree(response)
+        assert_header_contains(self, tree, self.portfolio.organization_name)
+        assert_radio_group_contains_label(
+            self,
+            tree,
+            "Who will use the domain you’re requesting?",
+            self.portfolio.organization_name,
+        )
 
-        # We expect the dropdown list to contain the suborganizations that currently exist on this portfolio
+        # Suborg dropdown contents
         self.assertContains(response, self.suborganization.name, count=1)
         self.assertContains(response, self.suborganization_2.name, count=1)
 
@@ -3303,12 +3326,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[0]
+        form = response.forms[1]
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
@@ -3334,12 +3357,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[0]
+        form = form_with_field(response, "portfolio_requesting_entity-sub_organization")
 
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
         form["portfolio_requesting_entity-is_requesting_new_suborganization"] = True
@@ -3372,12 +3395,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[0]
+        form = response.forms[1]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[0]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
@@ -3400,7 +3423,7 @@ class TestRequestingEntity(WebTest):
         response = self.app.get(
             reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk})
         ).follow()
-        form = response.forms[0]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
@@ -4470,6 +4493,14 @@ class TestPortfolioMemberEditView(WebTest):
     def test_edit_member_permissions_validation(self):
         """Tests form validation for required fields based on role."""
         self.client.force_login(self.user)
+        UserPortfolioPermission.objects.update_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults=dict(
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                additional_permissions=[UserPortfolioPermissionChoices.EDIT_MEMBERS],
+            ),
+        )
 
         member = create_test_user()
         permission = UserPortfolioPermission.objects.create(

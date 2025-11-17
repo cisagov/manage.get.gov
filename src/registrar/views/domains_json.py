@@ -1,8 +1,9 @@
 import logging
+from django.apps import apps
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.decorators import grant_access, ALL
-from registrar.models import UserDomainRole, Domain, DomainInformation, User
+from registrar.models import UserDomainRole, Domain, DomainInformation
 from django.urls import reverse
 from django.db.models import Q
 
@@ -46,20 +47,43 @@ def get_domain_ids_from_request(request):
     """Get domain ids from request.
 
     If portfolio specified, return domain ids associated with portfolio.
-    Otherwise, return domain ids associated with request.user.
+    - require has_view_portfolio_permission(portfolio_obj)
+    - if has_view_all_domains_portfolio_permission(portfolio_obj): return all portfolio domains
+    - else: return only portfolio domains the user manages
+    Else: return the domains the user manages (legacy path).
     """
-    portfolio = request.GET.get("portfolio")
-    if portfolio:
-        current_user: User = request.user
-        if current_user.is_org_user(request) and current_user.has_view_all_domains_portfolio_permission(portfolio):
-            domain_infos = DomainInformation.objects.filter(portfolio=portfolio)
-            return domain_infos.values_list("domain_id", flat=True)
-        else:
-            domain_info_ids = DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
-            user_domain_roles = UserDomainRole.objects.filter(user=request.user).values_list("domain_id", flat=True)
-            return domain_info_ids.intersection(user_domain_roles)
-    user_domain_roles = UserDomainRole.objects.filter(user=request.user)
-    return user_domain_roles.values_list("domain_id", flat=True)
+    user = request.user
+    portfolio_param = request.GET.get("portfolio")
+
+    if portfolio_param:
+        # resolve to object
+        try:
+            pid = int(portfolio_param)
+        except (TypeError, ValueError):
+            return Domain.objects.none().values_list("id", flat=True)
+
+        Portfolio = apps.get_model("registrar", "Portfolio")
+        portfolio = Portfolio.objects.filter(pk=pid).first()
+        if not portfolio:
+            return Domain.objects.none().values_list("id", flat=True)
+
+        # must be able to view portfolio
+        if not user.has_view_portfolio_permission(portfolio):
+            return Domain.objects.none().values_list("id", flat=True)
+
+        # all domains in portfolio
+        if user.has_view_all_domains_portfolio_permission(portfolio):
+            return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+
+        # only domains this user manages within this portfolio
+        return (
+            DomainInformation.objects.filter(portfolio=portfolio, domain__permissions__user=user)
+            .values_list("domain_id", flat=True)
+            .distinct()
+        )
+
+    # No portfolio param = legacy/non-org path: only domains the user manages
+    return UserDomainRole.objects.filter(user=user).values_list("domain_id", flat=True)
 
 
 def apply_search(queryset, request):

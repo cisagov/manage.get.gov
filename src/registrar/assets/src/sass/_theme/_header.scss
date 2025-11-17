@@ -69,20 +69,21 @@ button {
     outline-offset: 0;
 }
 
+
 .usa-header--basic {
     .usa-logo__text a,
     .usa-logo__text button,
     .usa-logo__text button:hover {
         color: color('white');
-    }    
+}    
     background-color: color('primary-darker');
     .usa-accordion__button[aria-expanded="false"] span::after,
     .usa-accordion__button[aria-expanded="true"] span::after {
-        background-color: color("white") !important;
+        background-color: #d6e9f2 !important;
     }
     .usa-accordion__button:hover .usa-nav__username,
     .usa-accordion__button:focus .usa-nav__username {
-      color: color('white') !important;
+      color: #d6e9f2 !important;
     }
     .usa-nav__username {
         padding: units(1) units(2);
@@ -91,7 +92,8 @@ button {
         }
     }
     .usa-nav__text {
-        color: color('white');
+        color: #d6e9f2;
+        font-size: 16px;
         font-weight: font-weight('bold');
     }
     .usa-nav__primary {
@@ -100,21 +102,23 @@ button {
         .usa-nav-link:hover,
         .usa-nav-link:active {
             font-size: 16px;
-            color: color('white');
+            color: #d6e9f2;
         }
         .usa-current,
         .usa-current:hover,
         .usa-current:active,
         button.usa-current {
             font-weight: font-weight('bold');
-            color: color('white');
+            color: #d6e9f2;
+            font-size: 16px;
+
         }
         button[aria-expanded="true"] {
-            color: color('white');
+            color: #d6e9f2;
         }
         button:not(.usa-current):hover::after  {
             display: none!important;
-            color: color('white');
+            color: #d6e9f2;
         }
     }
     @include at-media(desktop) {
@@ -123,6 +127,7 @@ button {
     }
     .usa-nav__primary-item:not(:first-child)::before {
         content: '';
+        font-size: 16px;
         position: absolute;
         top: 50%;
         left: 0;
@@ -137,7 +142,8 @@ button {
         padding-top: 0;
         padding-bottom: 0;
         padding-left: 0;
-        color: color('white');
+        color: #d6e9f2;
+        font-size: 16px;
     }
 }
 
@@ -579,6 +585,12 @@ button {
         width: 20rem;
     }
 
+    @include at-media-max($theme-header-min-width) {
+        .usa-tag {
+            display: none !important;
+        }
+    }
+
     button,
     button:hover {
         background-color: inherit;
@@ -608,4 +620,40 @@ button {
             }
         }
     }
+}
+
+.organizations-page-wrapper {
+  /* Make anchor/button versions behave the same */
+  .usa-card__container { display: block; box-sizing: border-box; }
+
+  /* Uniform header padding + centering */
+  .usa-card__header {
+    display: flex;
+    align-items: center;
+    padding: units(3); /* 24px */
+  }
+
+  /* Let the heading fill the row so the pill/tag pushes to the far right */
+  .usa-card__header > .usa-card__heading {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;     /* gives space for margin-left-auto to work */
+    margin: 0;          /* removes bottom spacing */
+    line-height: 1;     /* vertically centers icon with text */
+    white-space: nowrap;
+    min-height: units(4);
+  }
+
+  /* Remove baseline gap from icon/arrow so padding looks equal */
+  .usa-card__heading img,
+  .usa-card__heading svg {
+    display: block;
+    height: units(4);
+    flex: 0 0 auto;
+  }
+
+  /* Keep a small gap between name and arrow */
+  .usa-card__heading .organizations-arrow-icon { margin-left: units(0.5); }
+
+  .usa-card__heading .usa-tag--enterprise.margin-left-auto { margin-left: auto !important; }
 }

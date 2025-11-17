@@ -1,6 +1,7 @@
 import logging
 from django import template
 import re
+from django.contrib.contenttypes.models import ContentType
 from registrar.models.domain_request import DomainRequest
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.models import User
@@ -178,6 +179,13 @@ def has_contact_info(user):
         return False
     else:
         return bool(user.title or user.email or user.phone)
+
+
+@register.simple_tag
+def content_type_id(obj):
+    if obj is None:
+        return ""
+    return ContentType.objects.get_for_model(obj, for_concrete_model=False).pk
 
 
 @register.filter

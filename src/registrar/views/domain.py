@@ -415,6 +415,9 @@ class DomainView(DomainBaseView):
     template_name = "domain_detail.html"
 
     def get_context_data(self, **kwargs):
+        """If we don't reference security email in context for older deleted domains
+        there wont be a 500 error (bc it was referencing something that didn't exist
+        via security_contact_registry_id) -- reference #4334"""
         context = super().get_context_data(**kwargs)
 
         default_emails = DefaultEmail.get_all_emails()
@@ -424,11 +427,12 @@ class DomainView(DomainBaseView):
             user=self.request.user, portfolio=self.request.session.get("portfolio")
         ).first()
 
-        security_email = self.object.get_security_email()
-        if security_email is None or security_email in default_emails:
-            context["security_email"] = None
-            return context
-        context["security_email"] = security_email
+        if self.object.state != self.object.State.DELETED:
+            security_email = self.object.get_security_email()
+            if security_email is None or security_email in default_emails:
+                context["security_email"] = None
+            else:
+                context["security_email"] = security_email
         return context
 
     def can_access_domain_via_portfolio(self, pk):
@@ -730,13 +734,11 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
-    valid_domains = ["igorville.gov", "domainops.gov"]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
-        context["is_valid_domain"] = self.object.name in self.valid_domains
+        context["dns_hosting"] = flag_is_active_for_user(self.request.user, "dns_hosting")
         return context
 
 
@@ -772,7 +774,6 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 class PrototypeDomainDNSRecordView(DomainFormBaseView):
     template_name = "prototype_domain_dns.html"
     form_class = PrototypeDomainDNSRecordForm
-    valid_domains = ["igorville.gov", "domainops.gov", "dns.gov"]
 
     def __init__(self):
         self.dns_record = None
@@ -790,12 +791,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         if not has_permission:
             return False
 
-        flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        flag_enabled = flag_is_active_for_user(self.request.user, "dns_hosting")
         if not flag_enabled:
-            return False
-
-        self.object = self.get_object()
-        if self.object.name not in self.valid_domains:
             return False
 
         return True
@@ -817,12 +814,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
                     raise Exception(f"create dns record was called for domain {self.name}")
 
-                if not settings.IS_PRODUCTION and self.object.name not in self.valid_domains:
-                    raise Exception(
-                        f"Can only create DNS records for: {self.valid_domains}."
-                        " Create one in a test environment if it doesn't already exist."
-                    )
-
                 record_data = {
                     "type": "A",
                     "name": form.cleaned_data["name"],  # record name
@@ -831,20 +822,21 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     "comment": "Test record",
                 }
 
-                account_name = f"account-{self.object.name}"
-                zone_name = f"{self.object.name}"  # must be a domain name
+                domain_name = self.object.name
                 zone_id = ""
                 try:
-                    _, zone_id, nameservers = self.dns_host_service.dns_setup(account_name, zone_name)
+                    _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"API error in view: {str(e)}")
 
                 if zone_id:
+                    zone_name = domain_name
                     # post nameservers to registry
                     try:
                         self.dns_host_service.register_nameservers(zone_name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
+                        # Don't raise an error here in order to bypass blocking error in local dev
 
                     try:
                         record_response = self.dns_host_service.create_record(zone_id, record_data)
