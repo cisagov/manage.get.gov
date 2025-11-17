@@ -83,8 +83,8 @@ class TestCloudflareService(SimpleTestCase):
 
                 self.assertIn(case["error"]["message"], str(context.exception))
 
-    def test_create_zone_success(self):
-        """Test successful create_zone call"""
+    def test_create_cf_zone_success(self):
+        """Test successful create_cf_zone call"""
         zone_name = "test.gov"
         account_id = "12345"
         return_value = {
@@ -96,11 +96,11 @@ class TestCloudflareService(SimpleTestCase):
         }
         mock_response = self._setUpSuccessMockResponse(return_value)
         self.service.client.post.return_value = mock_response
-        resp = self.service.create_zone(zone_name, account_id)
+        resp = self.service.create_cf_zone(zone_name, account_id)
         self.assertEqual(resp["result"]["name"], zone_name)
 
-    def test_create_zone_failure(self):
-        """Test create_zone with API failure"""
+    def test_create_cf_zone_failure(self):
+        """Test create_cf_zone with API failure"""
         zone_name = "test.gov"
         account_id = "12345"
 
@@ -112,7 +112,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.service.client.post.return_value = mock_response
 
                 with self.assertRaises(error["exception"]) as context:
-                    self.service.create_zone(zone_name, account_id)
+                    self.service.create_cf_zone(zone_name, account_id)
                 self.assertIn(
                     error["message"],
                     str(context.exception),
@@ -157,7 +157,7 @@ class TestCloudflareService(SimpleTestCase):
         )
 
     def test_create_dns_record_failure(self):
-        """Test create_zone with API failure"""
+        """Test create_cf_zone with API failure"""
         zone_id = "54321"
         record_data_missing_content = {
             "name": "democracy.gov",
