@@ -168,6 +168,7 @@ INSTALLED_APPS = [
     # Waffle feature flags
     "waffle",
     "csp",
+    "django_htmx"
 ]
 
 # Middleware are routines for processing web requests.
@@ -213,6 +214,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RequestLoggingMiddleware",
     # Add DB info to logs
     "registrar.registrar_middleware.DatabaseConnectionMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -572,7 +574,7 @@ class JsonServerFormatter(ServerFormatter):
 
 # If we're running locally we don't want json formatting
 if "localhost" in env_base_url:
-    django_handlers = ["console"]
+    django_handlers = ["split_console", "split_json"]
 elif env_log_format == "json":
     # in production we need everything to be logged as json so that log levels are parsed correctly
     django_handlers = ["json"]
