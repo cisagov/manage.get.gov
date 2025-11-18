@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from registrar.decorators import grant_access, ALL
@@ -48,18 +49,30 @@ def _get_domain_request_ids_from_request(request):
 
     If portfolio specified, return domain request ids associated with portfolio.
     Otherwise, return domain request ids associated with request.user.
+
+    If ?portfolio=<id> is provided:
+    - verify user can view that portfolio
+    - if user has VIEW_ALL_REQUESTS all in portfolio
+    - else only user's own in portfolio
+    Else:
+    - only user's own requests
+    Excludes APPROVED always.
     """
-    portfolio = request.GET.get("portfolio")
-    filter_condition = Q(requester=request.user)
-    if portfolio:
-        if request.user.is_org_user(request) and request.user.has_view_all_requests_portfolio_permission(portfolio):
-            filter_condition = Q(portfolio=portfolio)
-        else:
-            filter_condition = Q(portfolio=portfolio, requester=request.user)
-    domain_requests = DomainRequest.objects.filter(filter_condition).exclude(
-        status=DomainRequest.DomainRequestStatus.APPROVED
-    )
-    return domain_requests.values_list("id", flat=True)
+    qs = DomainRequest.objects.exclude(status=DomainRequest.DomainRequestStatus.APPROVED)
+    portfolio_id = request.GET.get("portfolio")
+
+    if not portfolio_id:
+        return qs.filter(requester=request.user).values_list("id", flat=True)
+
+    Portfolio = apps.get_model("registrar", "Portfolio")
+    portfolio = Portfolio.objects.filter(pk=portfolio_id).first()
+    if not portfolio or not request.user.has_view_portfolio_permission(portfolio):
+        return qs.none().values_list("id", flat=True)
+
+    if request.user.has_view_all_requests_portfolio_permission(portfolio):
+        return qs.filter(portfolio=portfolio_id).values_list("id", flat=True)
+
+    return qs.filter(portfolio=portfolio_id, requester=request.user).values_list("id", flat=True)
 
 
 def _apply_search(queryset, request):
@@ -152,8 +165,12 @@ def _serialize_domain_request(request, domain_request, user):
     is_deletable = domain_request.status in deletable_statuses
 
     # If we're working with a portfolio
-    if user.is_org_user(request):
-        portfolio = request.session.get("portfolio")
+    portfolio_id = request.GET.get("portfolio")
+    portfolio = None
+    if portfolio_id:
+        Portfolio = apps.get_model("registrar", "Portfolio")
+        portfolio = Portfolio.objects.filter(pk=portfolio_id).first()
+    if portfolio_id and user.is_org_user_for_portfolio(portfolio_id):
         is_deletable = (
             domain_request.status in deletable_statuses and user.has_edit_request_portfolio_permission(portfolio)
         ) and domain_request.requester == user
