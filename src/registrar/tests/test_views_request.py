@@ -2579,7 +2579,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-        intro_form = intro_page.forms[1]
+        intro_form = intro_page.forms[1] if len(intro_page.forms) > 1 else intro_page.forms[0]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         intro_result = intro_form.submit()
 
@@ -2589,7 +2589,12 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- REQUESTING ENTITY PAGE  ----
-        requesting_entity_form = portfolio_requesting_entity.forms[1]
+        try:
+            requesting_entity_form = portfolio_requesting_entity.forms[0]
+            _ = requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"]
+        except (KeyError, IndexError):
+            requesting_entity_form = portfolio_requesting_entity.forms[1]
+
         requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
 
         # test next button

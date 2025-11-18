@@ -3255,7 +3255,7 @@ class TestRequestingEntity(WebTest):
 
         # Navigate past the intro page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Fill out the requesting entity form
@@ -3292,7 +3292,7 @@ class TestRequestingEntity(WebTest):
         # Navigate past intro
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_form = response.forms[1]
+        intro_form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = intro_form.submit().follow()
 
         # Static text checks
@@ -3326,12 +3326,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[1]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
@@ -3357,7 +3357,7 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Check that we're on the right page
@@ -3395,7 +3395,7 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Check that we're on the right page
