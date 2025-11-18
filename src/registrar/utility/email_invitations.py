@@ -296,6 +296,145 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
     return all_emails_sent
 
 
+def send_domain_deleted_email_to_managers_and_admins(domain: Domain):
+    """
+    Notifies all domain managers and portfolio admins that a domain has been
+    removed from the registry by a CISA analyst via Django admin.
+
+    Args:
+        domain (Domain): The domain that has been deleted
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+    """
+    all_emails_sent = True
+
+    # Get domain manager emails
+    domain_manager_emails = list(
+        UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+        .values_list("user__email", flat=True)
+        .distinct()
+    )
+
+    # Get portfolio admin emails (if domain has a portfolio)
+    portfolio_admin_emails = []
+    try:
+        domain_info = DomainInformation.objects.get(domain=domain)
+        if domain_info.portfolio:
+            portfolio_admin_emails = list(
+                UserPortfolioPermission.objects.filter(
+                    portfolio=domain_info.portfolio,
+                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                )
+                .values_list("user__email", flat=True)
+                .distinct()
+            )
+    except DomainInformation.DoesNotExist:
+        pass  # Legacy domain without portfolio
+
+    # Don't send if no recipients
+    if not domain_manager_emails and not portfolio_admin_emails:
+        logger.warning(f"No recipients found for domain deleted email for domain {domain.name}")
+        return True
+
+    bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
+    try:
+        send_templated_email(
+            "emails/domain_deleted_notification.txt",
+            "emails/domain_deleted_notification_subject.txt",
+            to_addresses=domain_manager_emails if domain_manager_emails else portfolio_admin_emails,
+            cc_addresses=portfolio_admin_emails if domain_manager_emails else [],
+            bcc_address=bcc_address,
+            context={
+                "domain": domain,
+                "date": date.today(),
+            },
+        )
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send domain deleted notification email:\n"
+            f" Subject template: domain_deleted_notification_subject.txt\n"
+            f" To: {domain_manager_emails}\n"
+            f" CC: {portfolio_admin_emails}\n"
+            f" Domain: {domain.name}\n"
+            f" Error: {err}",
+            exc_info=True,
+        )
+        all_emails_sent = False
+    return all_emails_sent
+
+
+def send_domain_on_hold_admin_email_to_managers_and_admins(domain: Domain):
+    """
+    Notifies all domain managers and portfolio admins that a domain has been
+    placed on hold by a CISA analyst via Django admin.
+
+    Note: This is different from the emails sent when a user requests deletion
+    via the registrar, which also places the domain  on hold.
+
+    Args:
+        domain (Domain): The domain that has been placed on hold
+
+    Returns:
+        Boolean indicating if all messages were sent successfully.
+    """
+    all_emails_sent = True
+
+    # Get domain manager emails
+    domain_manager_emails = list(
+        UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+        .values_list("user__email", flat=True)
+        .distinct()
+    )
+
+    # Get portfolio admin emails (if domain has a portfolio)
+    portfolio_admin_emails = []
+    try:
+        domain_info = DomainInformation.objects.get(domain=domain)
+        if domain_info.portfolio:
+            portfolio_admin_emails = list(
+                UserPortfolioPermission.objects.filter(
+                    portfolio=domain_info.portfolio,
+                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                )
+                .values_list("user__email", flat=True)
+                .distinct()
+            )
+    except DomainInformation.DoesNotExist:
+        pass  # Legacy domain without portfolio
+
+    # Don't send if no recipients
+    if not domain_manager_emails and not portfolio_admin_emails:
+        logger.warning(f"No recipients found for domain on hold admin email for domain {domain.name}")
+        return True
+
+    bcc_address = settings.DEFAULT_FROM_EMAIL if settings.IS_PRODUCTION else ""
+    try:
+        send_templated_email(
+            "emails/domain_on_hold_admin_notification.txt",
+            "emails/domain_on_hold_admin_notification_subject.txt",
+            to_addresses=domain_manager_emails if domain_manager_emails else portfolio_admin_emails,
+            cc_addresses=portfolio_admin_emails if domain_manager_emails else [],
+            bcc_address=bcc_address,
+            context={
+                "domain": domain,
+                "date": date.today(),
+            },
+        )
+    except EmailSendingError as err:
+        logger.error(
+            "Failed to send domain on hold admin notification email:\n"
+            f" Subject template: domain_on_hold_admin_notification_subject.txt\n"
+            f" To: {domain_manager_emails}\n"
+            f" CC: {portfolio_admin_emails}\n"
+            f" Domain: {domain.name}\n"
+            f" Error: {err}",
+            exc_info=True,
+        )
+        all_emails_sent = False
+    return all_emails_sent
+
+
 def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_invitation):
     """
     Sends a portfolio member invitation email to the specified address.
