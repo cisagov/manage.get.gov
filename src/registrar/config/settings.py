@@ -398,6 +398,7 @@ CONTENT_SECURITY_POLICY = {
             "https://cdn.jsdelivr.net/npm/chart.js",
             "https://www.ssa.gov",
             "https://ajax.googleapis.com",
+            "https://cdn.jsdelivr.net",
         ],
         "style-src": [SELF, NONCE, "https://www.ssa.gov/accessibility/andi/andi.css"],
     }

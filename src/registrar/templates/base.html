@@ -7,7 +7,8 @@
 
 <head>
   {% htmx_script minified=false %}
-  {% if IS_PRODUCTION %}
+  <!-- Alpine's CSP-friendly Core -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.x.x/dist/cdn.min.js"></script>  {% if IS_PRODUCTION %}
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-PZ5QSP6QPL"></script>
   <script type="text/javascript" nonce="{{request.csp_nonce}}">

@@ -4,7 +4,7 @@
 {% block title %}Prototype DNS | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
-
+    
     {% include "includes/form_errors.html" with form=form %}
 
     <h1>Add DNS records</h1>
@@ -13,19 +13,56 @@
     This is a prototype that demonstrates adding an 'A' record to a zone.
     Do note that this just adds records, but does not update or delete existing ones.
     </p>
+    <!-- option 1: call separate view on click -->
+    <!-- <button
+    class="usa-button"
+    hx-target="#dns-record-form"
+    hx-trigger="click"
+    hx-get="{% url 'get-prototype-domain-dns-record-form' domain.id %}"]
+    >
+        Add record
+    </button> 
+    <div id="dns-record-form"></div> -->
 
-    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-        {% csrf_token %}
-        {% input_with_errors form.name %}
-        {% input_with_errors form.content %}
-        {% input_with_errors form.ttl %}
+    <!-- option 2: toggle hidden on form -->
+    <div x-data="{ show_form: false }">
         <button
-            type="submit"
-            class="usa-button"
+        class="usa-button"
+        x-on:click="show_form = true"
         >
             Add record
         </button>
-    </form>
+        <form 
+            class="usa-form usa-form--large"
+            method="post"
+            novalidate id="form-container"
+            x-bind:class="show_form ? '' : 'display-none'"
+        >
+            {% csrf_token %}
+            {% input_with_errors form.name %}
+            {% input_with_errors form.content %}
+            {% input_with_errors form.ttl %}
+            <button
+                    type="submit"
+                    class="usa-button"
+                >
+                    Submit record
+            </button>
+            <button
+                type="button"
+                class="usa-button usa-button--outline"
+                x-on:click="show_form = false"
+            >
+                Cancel
+            </button>
+        </form>
+    </div>
+    
+
+    
+    
+    <div id="dns-record-form"></div>
+
     {% if dns_record %}
     <p>DNS RECORD: {{ dns_record }} </p>
     {% endif %}

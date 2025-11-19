@@ -303,6 +303,11 @@ urlpatterns = [
         views.PrototypeDomainDNSRecordView.as_view(),
         name="prototype-domain-dns",
     ),
+    path(
+        "domain/<int:domain_pk>/get-prototype-domain-dns-record-form/",
+        views.PrototypeDomainDNSRecordFormView.as_view(),
+        name="get-prototype-domain-dns-record-form"
+    ),
     path("domain/<int:domain_pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
     path(
         "domain/<int:domain_pk>/dns",
