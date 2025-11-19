@@ -13,18 +13,7 @@
     This is a prototype that demonstrates adding an 'A' record to a zone.
     Do note that this just adds records, but does not update or delete existing ones.
     </p>
-    <!-- option 1: call separate view on click -->
-    <!-- <button
-    class="usa-button"
-    hx-target="#dns-record-form"
-    hx-trigger="click"
-    hx-get="{% url 'get-prototype-domain-dns-record-form' domain.id %}"]
-    >
-        Add record
-    </button> 
-    <div id="dns-record-form"></div> -->
 
-    <!-- option 2: toggle hidden on form -->
     <div x-data="{ show_form: false }">
         <button
         class="usa-button"

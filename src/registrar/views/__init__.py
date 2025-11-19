@@ -14,7 +14,6 @@ from .domain import (
     DomainInvitationCancelView,
     DomainDeleteUserView,
     PrototypeDomainDNSRecordView,
-    PrototypeDomainDNSRecordFormView,
     DomainRenewalView,
     DomainDeleteView,
     DomainLifecycleView,

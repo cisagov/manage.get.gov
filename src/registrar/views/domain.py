@@ -738,7 +738,7 @@ class DomainDNSView(DomainBaseView):
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["dns_hosting"] = flag_is_active_for_user(self.request.user, "dns_hosting")
+        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
         return context
 
 
@@ -791,7 +791,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         if not has_permission:
             return False
 
-        flag_enabled = flag_is_active_for_user(self.request.user, "dns_hosting")
+        flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
         if not flag_enabled:
             return False
 
@@ -854,99 +854,6 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     messages.error(request, f"Request errors: {errors}")
         return super().post(request)
 
-@grant_access(IS_STAFF)
-class PrototypeDomainDNSRecordFormView(DomainFormBaseView):
-    template_name = "prototype_domain_dns_record_form.html"
-    form_class = PrototypeDomainDNSRecordForm
-
-    def __init__(self):
-        self.dns_record = None
-        self.client = Client()
-        self.dns_host_service = DnsHostService(client=self.client)
-
-    def get_context_data(self, **kwargs):
-        """Adds custom context."""
-        context = super().get_context_data(**kwargs)
-        context["dns_record"] = context_dns_record.get()
-        return context
-
-    def has_permission(self):
-        has_permission = super().has_permission()
-        if not has_permission:
-            return False
-
-        flag_enabled = flag_is_active_for_user(self.request.user, "dns_hosting")
-        if not flag_enabled:
-            return False
-
-        return True
-
-    def find_by_name(self, items, name):
-        """Find an item by name in a list of dictionaries."""
-        return next((item.get("id") for item in items if item.get("name") == name), None)
-    
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
-        errors = []
-        return render(
-            request,
-            "prototype_domain_dns_record_form.html",
-            {
-                "domain_pk":self.object.pk,
-                'form': form
-            }
-        )
-
-    def post(self, request, *args, **kwargs):  # noqa: C901
-        """Handle form submission."""
-        self.object = self.get_object()
-        form = self.get_form()
-        errors = []
-        if form.is_valid():
-            try:
-                if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
-                    raise Exception(f"create dns record was called for domain {self.name}")
-
-                record_data = {
-                    "type": "A",
-                    "name": form.cleaned_data["name"],  # record name
-                    "content": form.cleaned_data["content"],  # IPv4
-                    "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": "Test record",
-                }
-
-                domain_name = self.object.name
-                zone_id = ""
-                try:
-                    _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
-                except APIError as e:
-                    logger.error(f"API error in view: {str(e)}")
-
-                if zone_id:
-                    zone_name = domain_name
-                    # post nameservers to registry
-                    try:
-                        self.dns_host_service.register_nameservers(zone_name, nameservers)
-                    except (RegistryError, RegistrySystemError, Exception) as e:
-                        logger.error(f"Error updating registry: {e}")
-                        # Don't raise an error here in order to bypass blocking error in local dev
-
-                    try:
-                        record_response = self.dns_host_service.create_record(zone_id, record_data)
-                        logger.info(f"Created DNS record: {record_response['result']}")
-                        self.dns_record = record_response["result"]
-                        dns_name = record_response["result"]["name"]
-                        messages.success(request, f"DNS A record '{dns_name}' created successfully.")
-                    except APIError as e:
-                        logger.error(f"API error in view: {str(e)}")
-
-                context_dns_record.set(self.dns_record)
-            finally:
-                self.client.close()
-                if errors:
-                    messages.error(request, f"Request errors: {errors}")
-        return super().post(request)
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
