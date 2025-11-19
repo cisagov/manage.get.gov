@@ -318,19 +318,16 @@ def send_domain_deleted_email_to_managers_and_admins(domain: Domain):
 
     # Get portfolio admin emails (if domain has a portfolio)
     portfolio_admin_emails = []
-    try:
-        domain_info = DomainInformation.objects.get(domain=domain)
-        if domain_info.portfolio:
-            portfolio_admin_emails = list(
-                UserPortfolioPermission.objects.filter(
-                    portfolio=domain_info.portfolio,
-                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                )
-                .values_list("user__email", flat=True)
-                .distinct()
+    domain_info = DomainInformation.objects.get(domain=domain)
+    if domain_info and domain_info.portfolio:
+        portfolio_admin_emails = list(
+            UserPortfolioPermission.objects.filter(
+                portfolio=domain_info.portfolio,
+                roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             )
-    except DomainInformation.DoesNotExist:
-        pass  # Legacy domain without portfolio
+            .values_list("user__email", flat=True)
+            .distinct()
+        )
 
     # Don't send if no recipients
     if not domain_manager_emails and not portfolio_admin_emails:
@@ -389,19 +386,16 @@ def send_domain_on_hold_admin_email_to_managers_and_admins(domain: Domain):
 
     # Get portfolio admin emails (if domain has a portfolio)
     portfolio_admin_emails = []
-    try:
-        domain_info = DomainInformation.objects.get(domain=domain)
-        if domain_info.portfolio:
-            portfolio_admin_emails = list(
-                UserPortfolioPermission.objects.filter(
-                    portfolio=domain_info.portfolio,
-                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                )
-                .values_list("user__email", flat=True)
-                .distinct()
+    domain_info = DomainInformation.objects.get(domain=domain)
+    if domain_info and domain_info.portfolio:
+        portfolio_admin_emails = list(
+            UserPortfolioPermission.objects.filter(
+                portfolio=domain_info.portfolio,
+                roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             )
-    except DomainInformation.DoesNotExist:
-        pass  # Legacy domain without portfolio
+            .values_list("user__email", flat=True)
+            .distinct()
+        )
 
     # Don't send if no recipients
     if not domain_manager_emails and not portfolio_admin_emails:
