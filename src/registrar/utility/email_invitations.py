@@ -342,8 +342,8 @@ def send_domain_deleted_email_to_managers_and_admins(domain: Domain):
         send_templated_email(
             "emails/domain_deleted_notification.txt",
             "emails/domain_deleted_notification_subject.txt",
-            to_addresses=domain_manager_emails if domain_manager_emails else portfolio_admin_emails,
-            cc_addresses=portfolio_admin_emails if domain_manager_emails else [],
+            to_addresses=domain_manager_emails,
+            cc_addresses=portfolio_admin_emails,
             bcc_address=bcc_address,
             context={
                 "domain": domain,
@@ -413,8 +413,8 @@ def send_domain_on_hold_admin_email_to_managers_and_admins(domain: Domain):
         send_templated_email(
             "emails/domain_on_hold_admin_notification.txt",
             "emails/domain_on_hold_admin_notification_subject.txt",
-            to_addresses=domain_manager_emails if domain_manager_emails else portfolio_admin_emails,
-            cc_addresses=portfolio_admin_emails if domain_manager_emails else [],
+            to_addresses=domain_manager_emails,
+            cc_addresses=portfolio_admin_emails,
             bcc_address=bcc_address,
             context={
                 "domain": domain,
