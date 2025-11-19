@@ -1,12 +1,10 @@
 <!doctype html>{# keep this on the first line #}
 {% load i18n static %}
 {% load static url_helpers %}
-{% load django_htmx static%}
 
 <html class="no-js" lang="{{ LANGUAGE_CODE }}">
 
 <head>
-  {% htmx_script minified=false %}
   <!-- Alpine's CSP-friendly Core -->
   <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.x.x/dist/cdn.min.js"></script>  {% if IS_PRODUCTION %}
   <!-- Google tag (gtag.js) -->
