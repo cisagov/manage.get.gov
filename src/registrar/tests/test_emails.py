@@ -726,7 +726,7 @@ class SendDomainSetupReminderTests(TestCase):
             state=Domain.State.UNKNOWN,
         )
         domain_unknown.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
-        domain_unknown.save(update_fields=['created_at'])
+        domain_unknown.save(update_fields=["created_at"])
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Setup Reminder")
         DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, requester=self.manager)
         UserDomainRole.objects.create(user=self.manager, domain=domain_unknown, role="manager")
@@ -774,7 +774,7 @@ class SendDomainSetupReminderTests(TestCase):
             state=Domain.State.DNS_NEEDED,
         )
         domain_dns.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
-        domain_dns.save(update_fields=['created_at'])
+        domain_dns.save(update_fields=["created_at"])
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Setup Reminder")
         DomainInformation.objects.create(domain=domain_dns, portfolio=portfolio, requester=self.manager)
         UserDomainRole.objects.create(user=self.manager, domain=domain_dns, role="manager")
@@ -821,7 +821,7 @@ class SendDomainSetupReminderTests(TestCase):
             state=Domain.State.UNKNOWN,
         )
         domain_legacy.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
-        domain_legacy.save(update_fields=['created_at'])
+        domain_legacy.save(update_fields=["created_at"])
         # Create domain_info without portfolio (legacy mode)
         DomainInformation.objects.create(domain=domain_legacy, requester=self.manager)
         UserDomainRole.objects.create(user=self.manager, domain=domain_legacy, role="manager")
