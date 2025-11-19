@@ -575,7 +575,7 @@ class JsonServerFormatter(ServerFormatter):
 
 # If we're running locally we don't want json formatting
 if "localhost" in env_base_url:
-    django_handlers = ["split_console", "split_json"]
+    django_handlers = ["console"]
 elif env_log_format == "json":
     # in production we need everything to be logged as json so that log levels are parsed correctly
     django_handlers = ["json"]
