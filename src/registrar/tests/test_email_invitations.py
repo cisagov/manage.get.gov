@@ -1795,8 +1795,8 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_deleted_notification.txt",
             "emails/domain_deleted_notification_subject.txt",
-            to_addresses=[self.admin_email_1],
-            cc_addresses=[],
+            to_addresses=[],
+            cc_addresses=[self.admin_email_1],
             bcc_address="help@get.gov <help@get.gov>",
             context={"domain": self.domain, "date": date.today()},
         )
@@ -2049,8 +2049,8 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_on_hold_admin_notification.txt",
             "emails/domain_on_hold_admin_notification_subject.txt",
-            to_addresses=[self.admin_email_1],
-            cc_addresses=[],
+            to_addresses=[],
+            cc_addresses=[self.admin_email_1],
             bcc_address="help@get.gov <help@get.gov>",
             context={"domain": self.domain, "date": date.today()},
         )
