@@ -207,10 +207,10 @@ class TestDnsHostServiceDB(TestCase):
 
         AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=True)
 
-        found_id = self.service._find_existing_account(account_name)
+        found_id = self.service._find_existing_account_in_db(account_name)
         self.assertEqual(found_id, test_x_account_id)
 
-    def test_find_existing_account_returns_none_with_inactive_join(self):
+    def test_find_existing_account_in_db_returns_none_with_inactive_join(self):
         account_name = "Account for inactive.gov"
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
@@ -223,15 +223,14 @@ class TestDnsHostServiceDB(TestCase):
 
         AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
 
-        self.assertIsNone(self.service._find_existing_account(account_name))
+        self.assertIsNone(self.service._find_existing_account_in_db(account_name))
 
     def test_save_db_account_success(self):
         # Dummy JSON data from API
-        account_data = {"result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}}
-        self.service.save_db_account(account_data)
+        self.service.save_db_account(self.vendor_account_data)
 
         # Validate there's one VendorDnsAccount row with the external id and the CF Vendor
-        expected_account_id = account_data["result"].get("id")
+        expected_account_id = self.vendor_account_data["result"].get("id")
         vendor_accts = VendorDnsAccount.objects.filter(x_account_id=expected_account_id, dns_vendor_id=self.vendor.id)
         self.assertEqual(vendor_accts.count(), 1)
 

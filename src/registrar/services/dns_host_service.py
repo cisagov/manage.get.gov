@@ -28,6 +28,9 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
+    def _find_account_data(self, items, x_account_id):
+        return next((item for item in items if item.get("account_pubname" == x_account_id)))
+
     def _find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
@@ -39,21 +42,38 @@ class DnsHostService:
     def dns_setup(self, domain_name):
         account_name = make_dns_account_name(domain_name)
 
-        x_account_id = self._find_existing_account(account_name)
-        has_account = bool(x_account_id)
+        cf_account_data = self._find_existing_account_in_cf(account_name)
+        has_cf_account = bool(cf_account_data)
+        
+        if cf_account_data:
+            x_account_id = cf_account_data.get("account_tag") if cf_account_data else None
 
-        x_zone_id = None
-        if has_account:
-            logger.info("Already has an existing vendor account")
-            x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
+        x_account_id = self._find_existing_account_in_db(account_name)
+        has_db_account = bool(x_account_id)
+
+        x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
         has_zone = bool(x_zone_id)
+        
+        # If you have the database account, there's likely a zone attached.
+        if has_db_account and has_zone:
+            logger.info("Already has an existing vendor account")
+            return x_account_id, x_zone_id, nameservers
+        
+        # In a rare instance when there's a db account saved, but no zone, create it
+        elif has_db_account and not has_zone:
+            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
 
-        if not has_account:
+        # If you do not have the database account, the cf account, or zone, create everything.
+        elif not has_db_account and not has_cf_account and not has_zone:
             x_account_id = self.create_and_save_account(account_name)
             x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
-
-        elif has_account and not has_zone:
-            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+        
+        # If you do not have the database account, but have the cf account, you'll need to create the 
+        # database entries (id, zone, nameservers) if they don't exist.
+        elif not has_db_account and has_cf_account:
+            x_account_id = self.save_db_account({"result": cf_account_data})
+            if not has_zone:
+                x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
 
         return x_account_id, x_zone_id, nameservers
 
@@ -106,46 +126,37 @@ class DnsHostService:
             raise
         return record
 
-    def _find_existing_account(self, account_name):
-        cf_account_id = None
+    def _find_existing_account_in_cf(self, account_name):
+        per_page = 50
+        page = 0
+        is_last_page = False
+        while is_last_page is False:
+            page += 1
+            try:
+                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
+                accounts = page_accounts_data["result"]
+                account_data = self._find_account_data(accounts, account_name)
+                if account_data:
+                    break
+                total_count = page_accounts_data["result_info"].get("total_count")
+                is_last_page = total_count <= page * per_page
 
+            except APIError as e:
+                logger.error(f"Error fetching accounts: {str(e)}")
+                raise
+
+        return account_data
+
+    def _find_existing_account_in_db(self, account_name):
         dns_account = DnsAccount.objects.filter(name=account_name, account_link__is_active=True).first()
 
-        db_account_id = (
+        x_account_id = (
             AccountsJoin.objects.filter(dns_account=dns_account, is_active=True)
             .values_list("vendor_dns_account__x_account_id", flat=True)
             .first()
         )
 
-        if db_account_id:
-            per_page = 50
-            page = 0
-            is_last_page = False
-            while is_last_page is False:
-                page += 1
-                try:
-                    page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
-                    accounts = page_accounts_data["result"]
-                    cf_account_id = self._find_by_pubname(accounts, account_name)
-                    if cf_account_id:
-                        break
-                    total_count = page_accounts_data["result_info"].get("total_count")
-                    is_last_page = total_count <= page * per_page
-
-                except APIError as e:
-                    logger.error(f"Error fetching accounts: {str(e)}")
-                    raise
-
-        if cf_account_id and cf_account_id == db_account_id:
-            return db_account_id
-
-        elif cf_account_id and cf_account_id != db_account_id:
-            logger.warning(
-                "Cloudflare id mismatch for '%s': DB has %s, CF returned %s", account_name, db_account_id, cf_account_id
-            )
-            return db_account_id
-
-        return None
+        return x_account_id
 
     def _find_existing_zone(self, zone_name, x_account_id):
         try:

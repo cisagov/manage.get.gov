@@ -7,3 +7,5 @@ class DnsAccount(TimeStampedModel):
     vendor_dns_account = models.ManyToManyField(
         "registrar.VendorDnsAccount", through="DnsAccount_VendorDnsAccount", related_name="accounts"
     )  # type: ignore
+
+# add a property here to get the account id
