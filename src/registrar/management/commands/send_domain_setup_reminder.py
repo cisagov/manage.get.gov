@@ -101,11 +101,11 @@ class Command(BaseCommand):
                     f" Subject template: {subject_template}\n"
                     f" TO: {', '.join(domain_manager_emails)}\n"
                     f" CC: {', '.join(portfolio_admin_emails)}\n"
-                    f" Doamin: {domain.name}\n"
+                    f" Domain: {domain.name}\n"
                     f" Error: {err}",
                     exc_info=True,
                 )
-                return True
+            return False
 
     def handle(self, *args, **options):
         """
@@ -158,4 +158,4 @@ class Command(BaseCommand):
         if all_emails_sent:
             self.stdout.write(self.style.SUCCESS("All domain setup reminder emails sent successfully."))
         else:
-            self.stderr.write(self.style.ERROR("Some domain setup reminder emails failed to sent."))
+            self.stderr.write(self.style.ERROR("Some domain setup reminder emails failed to send."))
