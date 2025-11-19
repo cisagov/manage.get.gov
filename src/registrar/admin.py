@@ -4389,7 +4389,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
-            obj.deleteInEpp()
+            obj.deletedInEpp()
             obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter

@@ -2925,7 +2925,7 @@ class TestAnalystDelete(MockEppLib):
         domain.place_client_hold()
         # Delete it
         with self.assertRaises(RegistryError) as err:
-            domain.deleteInEpp()
+            domain.deletedInEpp()
             domain.save()
 
             self.assertTrue(err.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION)
@@ -2971,7 +2971,7 @@ class TestAnalystDelete(MockEppLib):
             return self.mockedSendFunction(request, cleaned=cleaned)
 
         with patch("registrar.models.domain.registry.send", side_effect=side_effect):
-            self.domain_with_contacts.deleteInEpp()
+            self.domain_with_contacts.deletedInEpp()
             self.domain_with_contacts.save()
 
         # Now assert the expected calls that we know occur.
@@ -3069,7 +3069,7 @@ class TestAnalystDelete(MockEppLib):
     def test_analyst_deletes_domain_with_ds_data(self):
         """
         Scenario: Domain with DS data is deleted
-            When `domain.deleteInEpp()` is called
+            When `domain.deletedInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
@@ -3087,7 +3087,7 @@ class TestAnalystDelete(MockEppLib):
         self.mockDataInfoDomain.hosts = []
 
         # Delete the domain
-        domain.deleteInEpp()
+        domain.deletedInEpp()
         domain.save()
 
         # Check that dsdata is None
@@ -3159,7 +3159,7 @@ class TestAnalystDelete(MockEppLib):
         """
         Scenario: Domain deletion is unsuccessful due to FSM rules
             Given state is 'ready'
-            When `domain.deleteInEpp()` is called
+            When `domain.deletedInEpp()` is called
             and domain is of `state` is `READY`
             Then an FSM error is returned
             And `state` is not set to `DELETED`
@@ -3168,7 +3168,7 @@ class TestAnalystDelete(MockEppLib):
         """
         self.assertEqual(self.domain.state, Domain.State.READY)
         with self.assertRaises(TransitionNotAllowed) as err:
-            self.domain.deleteInEpp()
+            self.domain.deletedInEpp()
             self.domain.save()
             self.assertTrue(err.is_client_error() and err.code == ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
         # Domain should not be deleted

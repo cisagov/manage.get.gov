@@ -1185,6 +1185,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _delete_nonregistrant_contacts(self):
         """Deletes all non-registrant PublicContact records and registry contact entries."""
+
         logger.debug("Deleting non-registrant contacts for %s", self.name)
         contacts = PublicContact.objects.filter(domain=self)
         logger.info(f"retrieved contacts for domain: {contacts}")
@@ -1741,8 +1742,8 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO -on the client hold ticket any additional error handling here
         self.save(update_fields=["state"])
 
-    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN], target=State.DELETED)
-    def deleteInEpp(self):
+    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED], target=State.DELETED)
+    def deletedInEpp(self):
         """Domain is deleted in epp but is saved in our database.
         Subdomains will be deleted first if not in use by another domain.
         Contacts for this domain will also be deleted.
@@ -1752,7 +1753,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # Human-readable errors are introduced at the admin.py level,
         # as doing everything here would reduce reliablity.
         try:
-            logger.info("deleteInEpp()-> inside _delete_domain")
+            logger.info("deletedInEpp()-> inside _delete_domain")
             self._delete_domain()
             self.deleted = timezone.now()
             self.expiration_date = None

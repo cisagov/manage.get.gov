@@ -927,7 +927,7 @@ class DomainRequest(TimeStampedModel):
             domain_state = self.approved_domain.state
             # Only reject if it exists on EPP
             if domain_state != Domain.State.UNKNOWN:
-                self.approved_domain.deleteInEpp()
+                self.approved_domain.deletedInEpp()
                 self.approved_domain.save()
             self.approved_domain.delete()
             self.approved_domain = None

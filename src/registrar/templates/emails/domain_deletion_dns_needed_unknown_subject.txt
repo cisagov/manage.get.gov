@@ -1,1 +1,0 @@
-{{ domain.name }} has been deleted
