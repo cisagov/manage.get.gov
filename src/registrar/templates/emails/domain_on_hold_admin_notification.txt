@@ -16,7 +16,6 @@ When a domain is placed on:
 - Domain managers can't edit domain information.
 
 Although the domain is still registered to your organization, it's administratively paused. 
-
 These changes can be undone if the .gov team releases the hold.
 
 
@@ -32,7 +31,7 @@ In general, there are a handful of reasons we place a domain on hold:
 A domain is typically placed on hold for seven calendar days before deletion. Unauthorized requests may be deleted sooner.
 
 
-Something Wrong?
+SOMETHING WRONG?
 
 If you're not affiliated with this .gov domain or think you received this message in error, reply to this email.
 
