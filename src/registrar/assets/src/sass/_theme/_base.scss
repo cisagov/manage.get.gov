@@ -313,3 +313,6 @@ Fit-content itself does not work.
 .minh-143px {
   min-height: 143px;
 }
+
+/* Enables Alpine.js x-cloak */
+[x-cloak] { display: none !important; }

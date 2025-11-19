@@ -22,32 +22,31 @@
             Add record
         </button>
         <!-- Ensures form stays hidden even before Alpine loads -->
-        <template x-if="true">
-            <form 
-                class="usa-form usa-form--large"
-                method="post"
-                novalidate id="form-container"
-                x-show="show_form"
-            >
-                {% csrf_token %}
-                {% input_with_errors form.name %}
-                {% input_with_errors form.content %}
-                {% input_with_errors form.ttl %}
-                <button
-                        type="submit"
-                        class="usa-button"
-                    >
-                        Submit record
-                </button>
-                <button
-                    type="button"
-                    class="usa-button usa-button--outline"
-                    x-on:click="show_form = false"
+        <form 
+            class="usa-form usa-form--large"
+            method="post"
+            novalidate id="form-container"
+            x-cloak
+            x-show="show_form"
+        >
+            {% csrf_token %}
+            {% input_with_errors form.name %}
+            {% input_with_errors form.content %}
+            {% input_with_errors form.ttl %}
+            <button
+                    type="submit"
+                    class="usa-button"
                 >
-                    Cancel
-                </button>
-            </form>
-        </template>
+                    Submit record
+            </button>
+            <button
+                type="button"
+                class="usa-button usa-button--outline"
+                x-on:click="show_form = false"
+            >
+                Cancel
+            </button>
+        </form>
         
     </div>
     
