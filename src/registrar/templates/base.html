@@ -68,7 +68,7 @@
   <!-- ================================= -->
 </head>
 
-<body id="{% block body_id %}default{% endblock %}" class="{% block body_class %}section_front{% endblock %}" hx-headers='{"x-csrftoken": "{{ csrf_token }}"}'>
+<body id="{% block body_id %}default{% endblock %}" class="{% block body_class %}section_front{% endblock %}">
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
   {% if not IS_PRODUCTION %}
