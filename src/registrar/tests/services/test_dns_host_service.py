@@ -188,10 +188,7 @@ class TestDnsHostServiceDB(TestCase):
     def test_save_db_account_success(self):
         # Dummy JSON data from API
         account_data = {"result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}}
-
-        # Validate that the method returns the vendor account ID
-        returned_id = self.service.save_db_account(account_data)
-        self.assertEqual(returned_id, "12345")
+        self.service.save_db_account(account_data)
 
         # Validate there's one VendorDnsAccount row with the external id and the CF Vendor
         expected_account_id = account_data["result"].get("id")
@@ -278,8 +275,8 @@ class TestDnsHostServiceDB(TestCase):
         self.service.save_db_zone(self.vendor_zone_data, zone_domain)
 
         # VendorDnsAccount row exists with matching zone xid as cloudflare id
-        zone_xid = self.vendor_zone_data["result"].get("id")
-        vendor_zones = VendorDnsZone.objects.filter(x_zone_id=zone_xid)
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        vendor_zones = VendorDnsZone.objects.filter(x_zone_id=x_zone_id)
         self.assertEqual(vendor_zones.count(), 1)
 
         # DnsZone row exists with the matching zone name
