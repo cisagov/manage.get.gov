@@ -462,7 +462,7 @@ class TestDomainAdminAsStaff(MockEppLib):
         """
         Scenario: Analyst tries to delete an already deleted domain
             Given `state` is already `DELETED`
-            When `domain.deletedInEpp()` is called
+            When `domain.deleteInEpp()` is called
             Then `commands.DeleteDomain` is sent to the registry
             And Domain returns normally without an error dialog
         """
