@@ -34,6 +34,8 @@ from registrar.utility.email_invitations import (
     send_domain_invitation_email,
     send_portfolio_admin_addition_emails,
     send_portfolio_invitation_email,
+    send_domain_deleted_email_to_managers_and_admins,
+    send_domain_on_hold_admin_email_to_managers_and_admins,
 )
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
@@ -4439,6 +4441,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "Domain %s has been deleted. Thanks!" % obj.name,
             )
+            send_domain_deleted_email_to_managers_and_admins(domain=obj)
 
         return HttpResponseRedirect(".")
 
@@ -4484,6 +4487,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "%s is in client hold. This domain is no longer accessible on the public internet." % obj.name,
             )
+            send_domain_on_hold_admin_email_to_managers_and_admins(obj)
+
         return HttpResponseRedirect(".")
 
     def do_remove_client_hold(self, request, obj):

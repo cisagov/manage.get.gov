@@ -159,6 +159,10 @@
                         <div class="display-inline"></div>
                         New status: <b>{{ original.State.ON_HOLD|capfirst }}</b>
                     </p>
+                    <p>
+                        An email will be sent to all managers of the domain announcing this status change.
+                        If this domain is part of a portfolio, its admins will be notified, as well.
+                    </P>
                 </div>
 
                 <div class="usa-modal__footer">
@@ -225,6 +229,10 @@
                         {# Acts as a <br> #}
                         <div class="display-inline"></div>
                         New status: <b>{{ original.State.DELETED|capfirst }}</b>
+                    </p>
+                    <p>
+                        An email will be sent to all managers of the domain announcing this status change.
+                        If this domain is part of a portfolio, its admins will be notified, as well.
                     </p>
                 </div>
 
