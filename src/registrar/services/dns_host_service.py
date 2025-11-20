@@ -106,19 +106,19 @@ class DnsHostService:
         """Calls create method of vendor service to create a DNS record"""
         # Create record in vendor service
         try:
-            record = self.dns_vendor_service.create_dns_record(x_zone_id, record_data)
-            logger.info(f"Created DNS record of type {record['result'].get('type')}")
+            vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, record_data)
+            logger.info(f"Created DNS record of type {vendor_record_data['result'].get('type')}")
         except APIError as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise
 
         # Create and save record in registrar db
         try:
-            db_record = 2
+            self.save_db_record(vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {record_data} in database: {str(e)}.")
             raise
-        return record
+        return vendor_record_data
 
     def _find_existing_account(self, account_name):
         per_page = 50
