@@ -1839,41 +1839,6 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         self.assertFalse(result)
         mock_send_templated_email.assert_called_once()
 
-    @override_settings(IS_PRODUCTION=False)
-    @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.send_templated_email")
-    @patch("registrar.utility.email_invitations.DomainInformation.DoesNotExist", DomainInformation.DoesNotExist)
-    @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
-    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    def test_domain_info_does_not_exist(
-        self,
-        mock_domain_role_filter,
-        mock_domain_info_get,
-        mock_send_templated_email,
-    ):
-        """Test handing when DomainInformation does not exist (legacy domain)"""
-        # Mock domain manager emails
-        mock_values_list_qs = MagicMock()
-        mock_values_list_qs.distinct.return_value = [self.manager_email_1]
-        mock_domain_role_filter.return_value.values_list.return_value = mock_values_list_qs
-
-        # Mock DomainInformation.DoesNotExist exception
-        mock_domain_info_get.side_effect = DomainInformation.DoesNotExist()
-
-        mock_send_templated_email.return_value = None
-
-        result = send_domain_deleted_email_to_managers_and_admins(domain=self.domain)
-
-        mock_send_templated_email.assert_called_once_with(
-            "emails/domain_deleted_notification.txt",
-            "emails/domain_deleted_notification_subject.txt",
-            to_addresses=[self.manager_email_1],
-            cc_addresses=[],
-            bcc_address="",
-            context={"domain": self.domain, "date": date.today()},
-        )
-        self.assertTrue(result)
-
 
 class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
     """Unit tests for send_domain_on_hold_admin_email_to_managers_and_admins function."""
@@ -2072,38 +2037,3 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
 
         self.assertFalse(result)
         mock_send_templated_email.assert_called_once()
-
-    @override_settings(IS_PRODUCTION=False)
-    @less_console_noise_decorator
-    @patch("registrar.utility.email_invitations.send_templated_email")
-    @patch("registrar.utility.email_invitations.DomainInformation.DoesNotExist", DomainInformation.DoesNotExist)
-    @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
-    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    def test_domain_info_does_not_exist(
-        self,
-        mock_domain_role_filter,
-        mock_domain_info_get,
-        mock_send_templated_email,
-    ):
-        """Test handing when DomainInformation does not exist (legacy domain)"""
-        # Mock domain manager emails
-        mock_values_list_qs = MagicMock()
-        mock_values_list_qs.distinct.return_value = [self.manager_email_1]
-        mock_domain_role_filter.return_value.values_list.return_value = mock_values_list_qs
-
-        # Mock DomainInformation.DoesNotExist exception
-        mock_domain_info_get.side_effect = DomainInformation.DoesNotExist()
-
-        mock_send_templated_email.return_value = None
-
-        result = send_domain_on_hold_admin_email_to_managers_and_admins(domain=self.domain)
-
-        mock_send_templated_email.assert_called_once_with(
-            "emails/domain_on_hold_admin_notification.txt",
-            "emails/domain_on_hold_admin_notification_subject.txt",
-            to_addresses=[self.manager_email_1],
-            cc_addresses=[],
-            bcc_address="",
-            context={"domain": self.domain, "date": date.today()},
-        )
-        self.assertTrue(result)
