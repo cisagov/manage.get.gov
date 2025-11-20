@@ -23,6 +23,7 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
@@ -37,6 +38,7 @@ class TestDnsHostService(TestCase):
         mock_create_cf_zone,
         mock_get_page_accounts,
         mock_get_account_zones,
+        mock_find_account_db,
     ):
         test_cases = [
             {
@@ -67,6 +69,8 @@ class TestDnsHostService(TestCase):
 
         for case in test_cases:
             with self.subTest(msg=case["test_name"], **case):
+                mock_find_account_db.return_value = case["found_account_id"]
+
                 mock_create_cf_account.return_value = {"result": {"id": case["account_id"]}}
 
                 mock_create_cf_zone.return_value = {"result": {"id": case["zone_id"], "name": case["domain_name"]}}

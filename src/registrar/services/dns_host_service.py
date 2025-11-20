@@ -28,8 +28,8 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
-    def _find_account_data(self, items, x_account_id):
-        return next((item for item in items if item.get("account_pubname" == x_account_id)))
+    def _find_account_data(self, items, name):
+        return next((item for item in items if item.get("account_pubname" == name)), None)
 
     def _find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
