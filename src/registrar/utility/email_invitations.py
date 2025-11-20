@@ -318,7 +318,7 @@ def send_domain_deleted_email_to_managers_and_admins(domain: Domain):
 
     # Get portfolio admin emails (if domain has a portfolio)
     portfolio_admin_emails = []
-    domain_info = DomainInformation.objects.get(domain=domain)
+    domain_info = DomainInformation.objects.filter(domain=domain).first()
     if domain_info and domain_info.portfolio:
         portfolio_admin_emails = list(
             UserPortfolioPermission.objects.filter(
@@ -386,7 +386,7 @@ def send_domain_on_hold_admin_email_to_managers_and_admins(domain: Domain):
 
     # Get portfolio admin emails (if domain has a portfolio)
     portfolio_admin_emails = []
-    domain_info = DomainInformation.objects.get(domain=domain)
+    domain_info = DomainInformation.objects.filter(domain=domain).first()
     if domain_info and domain_info.portfolio:
         portfolio_admin_emails = list(
             UserPortfolioPermission.objects.filter(
