@@ -139,7 +139,7 @@ class TestDnsHostService(SimpleTestCase):
 
         mock_create_dns_record.return_value = {"result": {"id": zone_id, **record_data}}
 
-        response = self.service.create_record(zone_id, record_data)
+        response = self.service.create_and_save_record(zone_id, record_data)
         self.assertEqual(response["result"]["id"], zone_id)
         self.assertEqual(response["result"]["name"], "test.gov")
 
@@ -152,7 +152,7 @@ class TestDnsHostService(SimpleTestCase):
         mock_create_dns_record.side_effect = APIError("Bad request: missing name")
 
         with self.assertRaises(APIError) as context:
-            self.service.create_record(zone_id, record_data)
+            self.service.create_and_save_record(zone_id, record_data)
         self.assertIn("Bad request: missing name", str(context.exception))
 
 

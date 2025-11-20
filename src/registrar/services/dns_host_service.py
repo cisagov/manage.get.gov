@@ -3,13 +3,18 @@ import logging
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
-from registrar.models.dns.dns_account import DnsAccount
-from registrar.models.dns.dns_zone import DnsZone
-from registrar.models.dns.vendor_dns_account import VendorDnsAccount
-from registrar.models.dns.vendor_dns_zone import VendorDnsZone
-from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
-from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesJoin
-from registrar.models.dns.dns_vendor import DnsVendor
+from registrar.models import (
+    DnsVendor,
+    DnsAccount,
+    DnsZone,
+    DnsRecord,
+    VendorDnsAccount,
+    VendorDnsZone,
+    VendorDnsRecord,
+    DnsAccount_VendorDnsAccount as AccountsJoin,
+    DnsZone_VendorDnsZone as ZonesJoin,
+    DnsRecord_VendorDnsRecord as RecordsJoin
+)
 
 
 from django.db import transaction
@@ -70,12 +75,13 @@ class DnsHostService:
             self.save_db_account(account_data)
             logger.info("Successfully saved to database")
         except Exception as e:
-            logger.error(f"Save to database failed: {str(e)}")
+            logger.error(f"Failed to save {account_name} to database: {str(e)}")
             raise
 
         return x_account_id
 
     def create_and_save_zone(self, domain_name, x_account_id):
+        # Create zone in vendor service
         try:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
@@ -87,22 +93,30 @@ class DnsHostService:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
             raise
 
-        # Create zone object in registrar db
+        # Create and save zone in registrar db
         try:
             self.save_db_zone(zone_data, domain_name)
             logger.info("Successfully saved to database.")
         except Exception as e:
-            logger.error(f"Save to database failed: {str(e)}.")
+            logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
             raise
         return x_zone_id, nameservers
 
-    def create_record(self, x_zone_id, record_data):
+    def create_and_save_record(self, x_zone_id, record_data):
         """Calls create method of vendor service to create a DNS record"""
+        # Create record in vendor service
         try:
             record = self.dns_vendor_service.create_dns_record(x_zone_id, record_data)
             logger.info(f"Created DNS record of type {record['result'].get('type')}")
         except APIError as e:
             logger.error(f"Error creating DNS record: {str(e)}")
+            raise
+
+        # Create and save record in registrar db
+        try:
+            db_record = 2
+        except Exception as e:
+            logger.error(f"Failed to save record {record_data} in database: {str(e)}.")
             raise
         return record
 
@@ -194,3 +208,7 @@ class DnsHostService:
                 dns_zone=dns_zone,
                 vendor_dns_zone=vendor_dns_zone,
             )
+
+    def save_db_record(self, x_zone_id, record_data):
+        
+        return # delete after finishing method

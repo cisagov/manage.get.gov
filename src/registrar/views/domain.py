@@ -839,7 +839,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         # Don't raise an error here in order to bypass blocking error in local dev
 
                     try:
-                        record_response = self.dns_host_service.create_record(zone_id, record_data)
+                        record_response = self.dns_host_service.create_and_save_record(zone_id, record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
