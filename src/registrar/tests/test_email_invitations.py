@@ -30,7 +30,8 @@ from registrar.utility.email_invitations import (
 
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.errors import MissingEmailError
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.conf import settings
 from registrar.models import DomainInvitation, DomainInformation
 
 
@@ -1660,15 +1661,14 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         self.domain_info = MagicMock(spec=DomainInformation)
         self.portfolio = MagicMock(spec=Portfolio)
 
+    @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_success_enterprise_mode(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_portfolio_permission_filter,
         mock_domain_info_get,
@@ -1678,9 +1678,6 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         Test successful sending of domain deleted email
         with domain managers and portfolio admins (enterprise mode).
         """
-        mock_settings.IS_PRODUCTION = True
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1, self.manager_email_2]
@@ -1710,27 +1707,23 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
             "emails/domain_deleted_notification_subject.txt",
             to_addresses=[self.manager_email_1, self.manager_email_2],
             cc_addresses=[self.admin_email_1, self.admin_email_2],
-            bcc_address="help@get.gov <help@get.gov>",
+            bcc_address=settings.DEFAULT_FROM_EMAIL,
             context={"domain": self.domain, "date": date.today()},
         )
         self.assertTrue(result)
 
+    @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_success_legacy_mode(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test successful sending of domain deleted email with only domain managers (legacy mode)."""
-        mock_settings.IS_PRODUCTION = False
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1]
@@ -1756,24 +1749,20 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         )
         self.assertTrue(result)
 
+    @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_success_no_domain_managers_only_admins(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_portfolio_permission_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test successful sending when no domain managers exist, only portfolio admins"""
-        mock_settings.IS_PRODUCTION = True
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock no domain managers
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = []
@@ -1797,7 +1786,7 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
             "emails/domain_deleted_notification_subject.txt",
             to_addresses=[],
             cc_addresses=[self.admin_email_1],
-            bcc_address="help@get.gov <help@get.gov>",
+            bcc_address=settings.DEFAULT_FROM_EMAIL,
             context={"domain": self.domain, "date": date.today()},
         )
         self.assertTrue(result)
@@ -1824,22 +1813,18 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
 
         self.assertTrue(result)
 
+    @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_failure(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test hanlding of failure in sending domain deleted email."""
-        mock_settings.IS_PRODUCTION = False
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1]
@@ -1854,23 +1839,19 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         self.assertFalse(result)
         mock_send_templated_email.assert_called_once()
 
+    @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.DoesNotExist", DomainInformation.DoesNotExist)
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_domain_info_does_not_exist(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test handing when DomainInformation does not exist (legacy domain)"""
-        mock_settings.IS_PRODUCTION = False
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1]
@@ -1914,15 +1895,14 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         self.domain_info = MagicMock(spec=DomainInformation)
         self.portfolio = MagicMock(spec=Portfolio)
 
+    @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_success_enterprise_mode(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_portfolio_permission_filter,
         mock_domain_info_get,
@@ -1932,9 +1912,6 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         Test successful sending of domain on hold admin email
         with domain managers and portfolio admins (enterprise mode).
         """
-        mock_settings.IS_PRODUCTION = True
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1, self.manager_email_2]
@@ -1964,27 +1941,23 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
             "emails/domain_on_hold_admin_notification_subject.txt",
             to_addresses=[self.manager_email_1, self.manager_email_2],
             cc_addresses=[self.admin_email_1, self.admin_email_2],
-            bcc_address="help@get.gov <help@get.gov>",
+            bcc_address=settings.DEFAULT_FROM_EMAIL,
             context={"domain": self.domain, "date": date.today()},
         )
         self.assertTrue(result)
 
+    @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_success_legacy_mode(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test successful sending of domain on hold admin email with only domain managers (legacy mode)."""
-        mock_settings.IS_PRODUCTION = False
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1]
@@ -2010,24 +1983,20 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         )
         self.assertTrue(result)
 
+    @override_settings(IS_PRODUCTION=True)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserPortfolioPermission.objects.filter")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_success_no_domain_managers_only_admins(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_portfolio_permission_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test successful sending when no domain managers exist, only portfolio admins"""
-        mock_settings.IS_PRODUCTION = True
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock no domain managers
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = []
@@ -2051,7 +2020,7 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
             "emails/domain_on_hold_admin_notification_subject.txt",
             to_addresses=[],
             cc_addresses=[self.admin_email_1],
-            bcc_address="help@get.gov <help@get.gov>",
+            bcc_address=settings.DEFAULT_FROM_EMAIL,
             context={"domain": self.domain, "date": date.today()},
         )
         self.assertTrue(result)
@@ -2078,22 +2047,18 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
 
         self.assertTrue(result)
 
+    @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_send_email_failure(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test hanlding of failure in sending domain on hold admin email."""
-        mock_settings.IS_PRODUCTION = False
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1]
@@ -2108,23 +2073,19 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         self.assertFalse(result)
         mock_send_templated_email.assert_called_once()
 
+    @override_settings(IS_PRODUCTION=False)
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.DomainInformation.DoesNotExist", DomainInformation.DoesNotExist)
     @patch("registrar.utility.email_invitations.DomainInformation.objects.get")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    @patch("registrar.utility.email_invitations.settings")
     def test_domain_info_does_not_exist(
         self,
-        mock_settings,
         mock_domain_role_filter,
         mock_domain_info_get,
         mock_send_templated_email,
     ):
         """Test handing when DomainInformation does not exist (legacy domain)"""
-        mock_settings.IS_PRODUCTION = False
-        mock_settings.DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
-
         # Mock domain manager emails
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.manager_email_1]
