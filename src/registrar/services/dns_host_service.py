@@ -42,37 +42,27 @@ class DnsHostService:
     def dns_setup(self, domain_name):
         account_name = make_dns_account_name(domain_name)
 
-        cf_account_data = self._find_existing_account_in_cf(account_name)
-        has_cf_account = bool(cf_account_data)
-        
-        if cf_account_data:
-            x_account_id = cf_account_data.get("account_tag") if cf_account_data else None
-
         x_account_id = self._find_existing_account_in_db(account_name)
         has_db_account = bool(x_account_id)
 
-        x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
-        has_zone = bool(x_zone_id)
-        
-        # If you have the database account, there's likely a zone attached.
-        if has_db_account and has_zone:
-            logger.info("Already has an existing vendor account")
-            return x_account_id, x_zone_id, nameservers
-        
-        # In a rare instance when there's a db account saved, but no zone, create it
-        elif has_db_account and not has_zone:
-            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+        if has_db_account:
+            x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
+            has_zone = bool(x_zone_id)
 
-        # If you do not have the database account, the cf account, or zone, create everything.
-        elif not has_db_account and not has_cf_account and not has_zone:
-            x_account_id = self.create_and_save_account(account_name)
-            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
-        
-        # If you do not have the database account, but have the cf account, you'll need to create the 
-        # database entries (id, zone, nameservers) if they don't exist.
-        elif not has_db_account and has_cf_account:
-            x_account_id = self.save_db_account({"result": cf_account_data})
-            if not has_zone:
+            if has_zone:
+                logger.info("Already has an existing vendor account")
+            else:
+                x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+
+        else:
+            cf_account_data = self._find_existing_account_in_cf(account_name)
+            has_cf_account = bool(cf_account_data)
+
+            if has_cf_account:
+                x_account_id = self.save_db_account({"result": cf_account_data})
+                x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+            else:
+                x_account_id = self.create_and_save_account(account_name)
                 x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
 
         return x_account_id, x_zone_id, nameservers

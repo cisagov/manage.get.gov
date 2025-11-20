@@ -8,4 +8,8 @@ class DnsAccount(TimeStampedModel):
         "registrar.VendorDnsAccount", through="DnsAccount_VendorDnsAccount", related_name="accounts"
     )  # type: ignore
 
-# add a property here to get the account id
+    @property
+    def get_x_account_id_by_name_if_exists(self):
+        link = self.account_link.filter(is_active=True).select_related("vendor_dns_account").first()
+
+        return link.vendor_dns_account.x_account_id if link else None
