@@ -46,24 +46,25 @@ class DnsHostService:
         has_db_account = bool(x_account_id)
 
         if has_db_account:
-            x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
-            has_zone = bool(x_zone_id)
-
-            if has_zone:
                 logger.info("Already has an existing vendor account")
-            else:
-                x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
-
+            
         else:
             cf_account_data = self._find_existing_account_in_cf(account_name)
             has_cf_account = bool(cf_account_data)
 
             if has_cf_account:
                 x_account_id = self.save_db_account({"result": cf_account_data})
-                x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
             else:
                 x_account_id = self.create_and_save_account(account_name)
-                x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+
+        x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
+        has_zone = bool(x_zone_id)
+
+        if has_zone:
+            logger.info("Already has an existing zone")
+        else:
+            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+            has_zone = bool(x_zone_id)
 
         return x_account_id, x_zone_id, nameservers
 
