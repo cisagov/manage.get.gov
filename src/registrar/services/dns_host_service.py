@@ -46,8 +46,7 @@ class DnsHostService:
         has_db_account = bool(x_account_id)
 
         if has_db_account:
-                logger.info("Already has an existing vendor account")
-            
+            logger.info("Already has an existing vendor account")
         else:
             cf_account_data = self._find_existing_account_in_cf(account_name)
             has_cf_account = bool(cf_account_data)

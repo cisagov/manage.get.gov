@@ -41,54 +41,60 @@ class TestDnsHostService(TestCase):
         mock_find_account_db,
     ):
         test_cases = [
+            # Case A: Database has everything
             {
-                "test_name": "no account, no zone",
+                "test_name": "has db account, has db zone",
                 "domain_name": "test.gov",
-                "account_id": "12345",
-                "zone_id": "8765",
-                "found_account_id": None,
-                "found_zone_id": None,
+                "x_account_id": "12345",
+                "x_zone_id": "8765",
+                "cf_account": None,
+                "cf_zone": None,
+                "expected_account_id": "12345",
+                "expected_zone_id": "8765",
             },
+            # Case B: Database does not have account or zone, but CF has account
             {
-                "test_name": "has account, has zone",
+                "test_name": "no db account or zone, has cf account",
                 "domain_name": "test.gov",
-                "account_id": "12345",
-                "zone_id": "8765",
-                "found_account_id": "12345",
-                "found_zone_id": "8765",
+                "x_account_id": None,
+                "x_zone_id": None,
+                "cf_account": "12345",
+                "cf_zone": None,
+                "expected_account_id": "12345",
+                "expected_zone_id": "8765",
             },
+            # Case C: Database and CF have nothing
             {
-                "test_name": "has account, no zone",
+                "test_name": "no db account or zone, no cf account",
                 "domain_name": "test.gov",
-                "account_id": "12345",
-                "zone_id": "8765",
-                "found_account_id": "12345",
-                "found_zone_id": None,
+                "x_account_id": None,
+                "x_zone_id": None,
+                "cf_account": None,
+                "cf_zone": None,
+                "expected_account_id": "12345",
+                "expected_zone_id": "8765",
             },
         ]
 
         for case in test_cases:
             with self.subTest(msg=case["test_name"], **case):
-                mock_find_account_db.return_value = case["found_account_id"]
+                mock_find_account_db.return_value = case["x_account_id"]
 
-                mock_create_cf_account.return_value = {"result": {"id": case["account_id"]}}
-
-                mock_create_cf_zone.return_value = {"result": {"id": case["zone_id"], "name": case["domain_name"]}}
+                mock_create_cf_account.return_value = {"result": {"id": case["x_account_id"]}}
+                mock_create_cf_zone.return_value = {"result": {"id": case["x_zone_id"], "name": case["domain_name"]}}
 
                 mock_get_page_accounts.return_value = {
-                    "result": [{"id": case.get("found_account_id")}],
+                    "result": [{"id": case.get("expected_account_id")}],
                     "result_info": {"total_count": 18},
                 }
 
-                mock_get_account_zones.return_value = {"result": [{"id": case.get("found_zone_id")}]}
+                mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_zone_id")}]}
 
-                mock_save_db_account.return_value = case["account_id"]
+                mock_save_db_account.return_value = case["x_account_id"]
 
                 returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
-                self.assertEqual(returned_account_id, case["account_id"])
-                self.assertEqual(returned_zone_id, case["zone_id"])
-                self.assertEqual(returned_account_id, case["account_id"])
-                self.assertEqual(returned_zone_id, case["zone_id"])
+                self.assertEqual(returned_account_id, case["x_account_id"])
+                self.assertEqual(returned_zone_id, case["x_zone_id"])
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
