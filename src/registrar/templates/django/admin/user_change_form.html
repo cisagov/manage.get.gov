@@ -17,35 +17,45 @@
 {% endblock %}
 
 {% block after_related_objects %}
-    <div class="module aligned padding-3">
-        <h2>Associated requests and domains</h2>
-        <div class="grid-row grid-gap mobile:padding-x-1 desktop:padding-x-4">
-            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
-                <h3>Domain requests</h3>
-                <ul class="margin-0 padding-0">
-                {% for domain_request in domain_requests %}
-                    <li>
-                        <a href="{% url 'admin:registrar_domainrequest_change' domain_request.pk %}">
-                            {{ domain_request.requested_domain }}
-                        </a>
-                        ({{ domain_request.status }})
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>    
-            <div class="mobile:grid-col-12 tablet:grid-col-6 desktop:grid-col-4">
-                <h3>Domains</h3>
-                <ul class="margin-0 padding-0">
-                {% for domain in domains %}
-                    <li>
-                        <a href="{% url 'admin:registrar_domain_change' domain.pk %}">
-                            {{ domain.name }}
-                        </a>
-                        ({{ domain.state }})
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>
+  
+        <div class="module aligned padding-3">
+        <h2>Domain Requests</h2>
+
+        <div class="display-flex flex-column margin-top-3">   
+        {% for item in formatted_portfolios %}
+        <div class="margin-bottom-3">
+               <p class="margin-bottom-0"><a href="{{ portfolio_url }}"> {{ item.portfolio.organization_name }} </a></p>
+               <div class="padding-left-1">
+                  {%if item.domain_request|length > 0%}
+                     {% include "django/admin/includes/portfolio/portfolio_domain_requests_table.html" with domains=item.domain_requests link_title="Domain Requests"%}
+                  {% else %}
+                      <div class="readonly padding-top-1"> No domain requests </div>
+                  {% endif %}
+               </div>
         </div>
-    </div>
+       {% endfor %}
+        </div>
+     
+        </div>
+
+          
+        <div class="module aligned padding-3">
+        <h2>Domains</h2>
+
+        <div class="display-flex flex-column margin-top-3">   
+        {% for item in formatted_portfolios %}
+        <div class="margin-bottom-3">
+               <p class="margin-bottom-0"><a href="{{ portfolio_url }}"> {{ item.portfolio.organization_name }} </a></p>
+               <div class="padding-left-1">
+                {%if item.domains %}
+                     {% include "django/admin/includes/portfolio/portfolio_domains_table.html" with domains=item.domains link_title="Domains"%}
+                {% else %}
+                <div class="readonly padding-top-1"> No domains</div> 
+                {% endif %}
+               </div>
+        </div>
+       {% endfor %}
+        </div>
+     
+        </div>
 {% endblock %}
