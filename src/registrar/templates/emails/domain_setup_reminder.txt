@@ -5,8 +5,7 @@ Your domain request for {{ domain.name }} was approved, but the domain is not ye
 
 ADD DOMAIN NAME SERVER INFORMATION
 
-Before your .gov domain can be used, you’ll first need to connect it to a Domain Name System (DNS) hosting service. At this time, we don’t provide DNS hosting services. 
-After you’ve set up hosting, you’ll need to enter your name server information on the .gov registrar. 
+Before your .gov domain can be used, you’ll first need to connect it to a Domain Name System (DNS) hosting service. At this time, we don’t provide DNS hosting services. After you’ve set up hosting, you’ll need to enter your name server information on the .gov registrar. 
 
 Learn more about: 
 
