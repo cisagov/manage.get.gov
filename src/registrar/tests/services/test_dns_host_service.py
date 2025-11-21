@@ -23,6 +23,7 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
@@ -39,9 +40,10 @@ class TestDnsHostService(TestCase):
         mock_get_page_accounts,
         mock_get_account_zones,
         mock_find_account_db,
+        mock_find_zone_db,
     ):
         test_cases = [
-            # Case A: Database has everything
+            # Case A: Database has account + zone
             {
                 "test_name": "has db account, has db zone",
                 "domain_name": "test.gov",
@@ -52,7 +54,7 @@ class TestDnsHostService(TestCase):
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
             },
-            # Case B: Database does not have account or zone, but CF has account
+            # Case B: Database empty, but CF has account
             {
                 "test_name": "no db account or zone, has cf account",
                 "domain_name": "test.gov",
@@ -63,7 +65,7 @@ class TestDnsHostService(TestCase):
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
             },
-            # Case C: Database and CF have nothing
+            # Case C: Database and CF empty
             {
                 "test_name": "no db account or zone, no cf account",
                 "domain_name": "test.gov",
@@ -79,22 +81,22 @@ class TestDnsHostService(TestCase):
         for case in test_cases:
             with self.subTest(msg=case["test_name"], **case):
                 mock_find_account_db.return_value = case["x_account_id"]
+                mock_find_zone_db.return_value = case["x_zone_id"], None
 
-                mock_create_cf_account.return_value = {"result": {"id": case["x_account_id"]}}
-                mock_create_cf_zone.return_value = {"result": {"id": case["x_zone_id"], "name": case["domain_name"]}}
+                if mock_find_account_db.return_value == None:
+                    mock_create_cf_account.return_value = {"result": {"id": case["expected_account_id"]}}
+                    mock_create_cf_zone.return_value = {"result": {"id": case["expected_zone_id"], "name": case["domain_name"]}}
 
-                mock_get_page_accounts.return_value = {
-                    "result": [{"id": case.get("expected_account_id")}],
-                    "result_info": {"total_count": 18},
-                }
-
-                mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_zone_id")}]}
-
-                mock_save_db_account.return_value = case["x_account_id"]
+                    mock_get_page_accounts.return_value = {
+                        "result": [{"id": case.get("expected_account_id")}],
+                        "result_info": {"total_count": 18},
+                    }
+                    mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_zone_id")}]}
 
                 returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
-                self.assertEqual(returned_account_id, case["x_account_id"])
-                self.assertEqual(returned_zone_id, case["x_zone_id"])
+
+                self.assertEqual(returned_account_id, case["expected_account_id"])
+                self.assertEqual(returned_zone_id, case["expected_zone_id"])
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
