@@ -85,7 +85,9 @@ class TestDnsHostService(TestCase):
 
                 if mock_find_account_db.return_value == None:
                     mock_create_cf_account.return_value = {"result": {"id": case["expected_account_id"]}}
-                    mock_create_cf_zone.return_value = {"result": {"id": case["expected_zone_id"], "name": case["domain_name"]}}
+                    mock_create_cf_zone.return_value = {
+                        "result": {"id": case["expected_zone_id"], "name": case["domain_name"]}
+                    }
 
                     mock_get_page_accounts.return_value = {
                         "result": [{"id": case.get("expected_account_id")}],
