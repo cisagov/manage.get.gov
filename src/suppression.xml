@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress>
+        <notes><![CDATA[
+        File: alpine.js - This is a known, trusted third-party library.
+        ]]></notes>
+        <gav>alpinejs:alpinejs:x.x.x</gav> <!-- Adjust GAV if needed -->
+        <cve>CVE-YYYY-XXXX</cve> <!-- Add specific CVEs if suppressing known vulnerabilities -->
+    </suppress>
+</suppressions>
