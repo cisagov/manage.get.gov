@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi, domain managers.
 
-Your domain request for $domain.gov was approved, but the domain is not yet online. You’ll need to complete the following actions before your .gov domain is active:
+Your domain request for {{ domain.name }} was approved, but the domain is not yet online. You’ll need to complete the following actions before your .gov domain is active:
 
 ADD DOMAIN NAME SERVER INFORMATION
 
