@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Scan Django settings for security issues
         id: check
         uses: ./.github/actions/django-security-check
@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: MockUserLogin should not be in settings.MIDDLEWARE
         run: "! grep -rwn * --exclude-dir=node_modules -e registrar.tests.common.MockUserLogin"
         working-directory: ./src
@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Disable Login
         # by adding MockUserLogin to settings.MIDDLEWARE

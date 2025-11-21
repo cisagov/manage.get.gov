@@ -1,0 +1,40 @@
+{% autoescape off %}
+
+Hi, domain managers.  
+
+On {{ date_of_deletion }}, the following domain was deleted: {{ domain.name }}
+
+The domain was deleted because it expired and no name servers were added to the .gov registrar after registration. 
+
+----------------------------------------------------------------
+
+WHAT DOES “DELETED” MEAN?
+
+When a domain is deleted: 
+
+    - The domain and its subdomains no longer resolve in DNS. 
+    - Any infrastructure (like websites) are offline.
+    - Domain managers can’t edit domain information.
+
+The domain is no longer registered to your organization, but it will appear in your list of domains with a “deleted” status. 
+
+These changes are permanent.
+
+SOMETHING WRONG?
+If you’re not affiliated with this .gov domain or think you received this message in error, reply to this email.  
+
+
+THANK YOU
+.Gov helps the public identify official, trusted information. Thank you for using a .gov
+domain.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us: <https://get.gov/contact/>
+Learn about .gov <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency
+(CISA) <https://cisa.gov/>
+{% endautoescape %}
+

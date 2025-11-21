@@ -9,25 +9,14 @@ on:
 jobs:
   variables: 
     if: | 
-      startsWith(github.head_ref, 'backup/')
-        || startsWith(github.head_ref, 'ap')
-        || startsWith(github.head_ref, 'cw')
-        || startsWith(github.head_ref, 'testdb')
-        || startsWith(github.head_ref, 'acadia')
-        || startsWith(github.head_ref, 'glacier')
-        || startsWith(github.head_ref, 'olympic')
-        || startsWith(github.head_ref, 'yellowstone')
-        || startsWith(github.head_ref, 'zion')
-        || startsWith(github.head_ref, 'potato')
-        || startsWith(github.head_ref, 'product')
+      startsWith(github.head_ref, 'ap/')
+        || startsWith(github.head_ref, 'cw/')
+        || startsWith(github.head_ref, 'product/')
         || startsWith(github.head_ref, 'bl/')
         || startsWith(github.head_ref, 'rh/')
         || startsWith(github.head_ref, 'nl/')
         || startsWith(github.head_ref, 'kma/')
         || startsWith(github.head_ref, 'es/')
-        || startsWith(github.head_ref, 'meoward/')
-        || startsWith(github.head_ref, 'hotgov/')
-        || startsWith(github.head_ref, 'litterbox/')
         || startsWith(github.head_ref, 'ad/')
         || startsWith(github.head_ref, 'el/')
         || startsWith(github.head_ref, 'dg/')
@@ -47,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [variables]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
