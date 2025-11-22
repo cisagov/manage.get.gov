@@ -138,15 +138,13 @@ class DnsHostService:
         return account_data
 
     def _find_existing_account_in_db(self, account_name):
-        dns_account = DnsAccount.objects.filter(name=account_name, account_link__is_active=True).first()
+        try:
+            dns_account = DnsAccount.objects.get(name=account_name)
+        except DnsAccount.DoesNotExist:
+            logger.info(f"No db account found by name {account_name}")
+            return None
 
-        x_account_id = (
-            AccountsJoin.objects.filter(dns_account=dns_account, is_active=True)
-            .values_list("vendor_dns_account__x_account_id", flat=True)
-            .first()
-        )
-
-        return x_account_id
+        return dns_account.x_account_id
 
     def _find_existing_zone(self, zone_name, x_account_id):
         try:

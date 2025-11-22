@@ -9,7 +9,7 @@ class DnsAccount(TimeStampedModel):
     )  # type: ignore
 
     @property
-    def get_x_account_id_by_name_if_exists(self):
+    def x_account_id(self):
         link = self.account_link.filter(is_active=True).select_related("vendor_dns_account").first()
 
         return link.vendor_dns_account.x_account_id if link else None
