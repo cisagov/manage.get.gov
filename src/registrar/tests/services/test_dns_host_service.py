@@ -208,7 +208,7 @@ class TestDnsHostServiceDB(TestCase):
         # Paginated endpoint returns the above dictionary
         self.service.dns_vendor_service.get_page_accounts.return_value = self.vendor_zone_data
 
-        self.service._find_by_pubname = Mock(return_value=test_x_account_id)
+        self.service._find_account_tag_by_pubname = Mock(return_value=test_x_account_id)
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
             dns_vendor=self.vendor,

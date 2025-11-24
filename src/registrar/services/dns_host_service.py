@@ -24,14 +24,14 @@ class DnsHostService:
     def __init__(self, client):
         self.dns_vendor_service = CloudflareService(client)
 
-    def _find_by_pubname(self, items, name):
+    def _find_account_tag_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
-    def _find_account_data(self, items, name):
+    def _find_account_data_by_name(self, items, name):
         return next((item for item in items if item.get("account_pubname" == name)), None)
 
-    def _find_by_name(self, items, name):
+    def _find_id_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
@@ -128,7 +128,7 @@ class DnsHostService:
             try:
                 page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
                 accounts = page_accounts_data["result"]
-                account_data = self._find_account_data(accounts, account_name)
+                account_data = self._find_account_data_by_name(accounts, account_name)
                 if account_data:
                     break
                 total_count = page_accounts_data["result_info"].get("total_count")
@@ -153,7 +153,7 @@ class DnsHostService:
         try:
             all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
             zones = all_zones_data["result"]
-            x_zone_id = self._find_by_name(zones, zone_name)
+            x_zone_id = self._find_id_by_name(zones, zone_name)
             nameservers = self._find_nameservers_by_zone_id(zones, x_zone_id)
         except APIError as e:
             logger.error(f"Error fetching zones: {str(e)}")
