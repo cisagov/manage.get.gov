@@ -208,7 +208,7 @@ class TestDnsHostServiceDB(TestCase):
         # Paginated endpoint returns the above dictionary
         self.service.dns_vendor_service.get_page_accounts.return_value = self.vendor_zone_data
 
-        self.service._find_by_pubname = Mock(return_value=test_x_account_id)
+        self.service._find_account_tag_by_pubname = Mock(return_value=test_x_account_id)
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
             dns_vendor=self.vendor,
@@ -224,7 +224,7 @@ class TestDnsHostServiceDB(TestCase):
         found_id = self.service._find_existing_account_in_db(account_name)
         self.assertEqual(found_id, test_x_account_id)
 
-    def test_find_existing_account_in_db_returns_none_with_inactive_join(self):
+    def test_find_existing_account_in_db_raises_does_not_exist_with_inactive_join_success(self):
         account_name = "Account for inactive.gov"
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
@@ -237,7 +237,8 @@ class TestDnsHostServiceDB(TestCase):
 
         AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
 
-        self.assertIsNone(self.service._find_existing_account_in_db(account_name))
+        with self.assertRaises(AccountsJoin.DoesNotExist):
+            self.service._find_existing_account_in_db(account_name)
 
     def test_save_db_account_success(self):
         # Dummy JSON data from API
