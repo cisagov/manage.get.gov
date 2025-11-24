@@ -224,7 +224,7 @@ class TestDnsHostServiceDB(TestCase):
         found_id = self.service._find_existing_account_in_db(account_name)
         self.assertEqual(found_id, test_x_account_id)
 
-    def test_find_existing_account_in_db_returns_x_account_id_with_inactive_join_success(self):
+    def test_find_existing_account_in_db_raises_does_not_exist_with_inactive_join_success(self):
         account_name = "Account for inactive.gov"
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
