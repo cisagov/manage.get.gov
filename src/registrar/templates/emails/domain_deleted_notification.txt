@@ -3,7 +3,7 @@ Hi, domain managers.
 
 On {{ date|date }}, the following domain was deleted: {{ domain.name }}
 
-You can view this status update in the .gov registrar <https://manage.get.gov/>
+You can view this status update in the .gov registrar {{ manage_url }}
 
 ----------------------------------------------------------------
 
