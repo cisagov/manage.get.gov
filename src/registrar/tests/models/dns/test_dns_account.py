@@ -33,19 +33,19 @@ class DnsAccountTest(TestCase):
             with transaction.atomic():
                 DnsAccount.objects.create(name=self.dns_account.name)
 
-    def test_x_account_id_property_success(self):
+    def test_get_x_account_id_success(self):
         AccountsJoin.objects.create(
             dns_account=self.dns_account,
             vendor_dns_account=self.vendor_dns_account,
             is_active=True,
         )
-        self.assertEqual(self.dns_account.x_account_id, self.vendor_dns_account.x_account_id)
+        self.assertEqual(self.dns_account.get_active_x_account_id, self.vendor_dns_account.x_account_id)
 
-    def test_x_account_id_property_raises_error(self):
+    def test_get_x_account_id_raises_error(self):
         AccountsJoin.objects.create(
             dns_account=self.dns_account,
             vendor_dns_account=self.vendor_dns_account,
             is_active=False,
         )
         with self.assertRaises(AccountsJoin.DoesNotExist):
-            self.dns_account.x_account_id
+            self.dns_account.get_active_x_account_id

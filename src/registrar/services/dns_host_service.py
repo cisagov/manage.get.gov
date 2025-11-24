@@ -53,7 +53,11 @@ class DnsHostService:
         if has_db_account:
             logger.info("Already has an existing vendor account")
         else:
-            cf_account_data = self._find_existing_account_in_cf(account_name)
+            try:
+                cf_account_data = self._find_existing_account_in_cf(account_name)
+            except APIError as e:
+                logger.error(e)
+                raise
             has_cf_account = bool(cf_account_data)
 
             if has_cf_account:
@@ -149,7 +153,7 @@ class DnsHostService:
             logger.info(f"No db account found by name {account_name}")
             return None
 
-        return dns_account.x_account_id
+        return dns_account.get_active_x_account_id
 
     def _find_existing_zone(self, zone_name, x_account_id):
         try:
