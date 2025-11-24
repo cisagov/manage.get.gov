@@ -14,6 +14,7 @@
     </thead>
     <tbody>
         {% for domain_request in domain_requests %}
+
         {% url 'admin:registrar_domainrequest_change' domain_request.pk as url %}
         <tr>
             <td data-sort-value="{{ domain_request }}"> <a href={{url}}>{{ domain_request }}</a></td>
