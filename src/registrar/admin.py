@@ -1194,31 +1194,31 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
 
         user_domain_roles = UserDomainRole.objects.filter(user=obj)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
-        domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
 
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
         
-
+        domain_info_objects = DomainInformation.objects.filter(domain_id__in=domain_ids).exclude(domain__state=Domain.State.DELETED).order_by("domain__state","domain__name")
+        domain_info_objects_without_portfolio = domain_info_objects.filter(portfolio__isnull=False)
+     
         formatted_table_data = []
 
         for portfolio in portfolios:
             formatted_table_data.append({
              'portfolio': portfolio,
-             'portfolio_domains': portfolio.get_domains(order_by=["domain__state", "domain__name"]),
-             'portfolio_domain_requests':portfolio.get_domain_requests(order_by=["status", "requested_domain__name"])
+             'portfolio_domains': domain_info_objects.filter(portfolio=portfolio),
+             'portfolio_domain_requests': domain_requests.filter(portfolio=portfolio)
         })
 
         # add non portfolio requests
 
         formatted_table_data.append({
             "portfolio": None,
-            "portfolio_domains": domains,
+            "portfolio_domains": domain_info_objects_without_portfolio,
             "portfolio_domain_requests": domain_requests
         })
 
 
-        # extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
         extra_context = {"formatted_table_data": formatted_table_data}
         return super().change_view(request, object_id, form_url, extra_context)
 

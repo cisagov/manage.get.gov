@@ -51,9 +51,17 @@
         <h2>Domains</h2>
 
         <div class="display-flex flex-column margin-top-3">   
-        {% for item in formatted_portfolios %}
+        {% for item in formatted_table_data %}
         <div class="margin-bottom-3">
-               <p class="margin-bottom-0"><a href="{{ portfolio_url }}"> {{ item.portfolio.organization_name }} </a></p>
+          
+               <p class="margin-bottom-0">
+                  {% if item.portfolio %}
+                <a href="{{ portfolio_url }}"> {{ item.portfolio.organization_name }} </a>
+                {% else %}
+                    No portfolio
+                  {% endif %}
+            </p>
+        
                <div class="padding-left-1">
                 {%if item.portfolio_domains %}
                      {% include "django/admin/includes/portfolio/portfolio_domains_table.html" with domains=item.portfolio_domains link_title="Domains"%}
