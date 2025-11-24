@@ -829,14 +829,14 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"API error in view: {str(e)}")
-                except DnsAccount_VendorDnsAccount.DoesNotExist:
+                except DnsAccount_VendorDnsAccount.DoesNotExist as e:
                     logger.error(
-                        f"There is record of a domain with an account, but there is no active account at this time."
+                        f"There is record of a domain with an account, but there is no active account at this time. {e}"
                     )
                     return JsonResponse(
                         {
                             "status": "error",
-                            "message": "Record of an account for {domain_name} exists, but hosting is not enabled",
+                            "message": "Record of an account for {domain_name} exists, but not with an active vendor",
                         },
                         status=404,
                     )

@@ -10,6 +10,7 @@ from registrar.models.dns.vendor_dns_zone import VendorDnsZone
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
 from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesJoin
 from registrar.models.dns.dns_vendor import DnsVendor
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 
 
 from django.db import transaction
@@ -44,7 +45,8 @@ class DnsHostService:
 
         try:
             x_account_id = self._find_existing_account_in_db(account_name)
-        except:
+        except DnsAccount_VendorDnsAccount.DoesNotExist as e:
+            logger.error(f"Error finding existing active account in db: {e}")
             raise
         has_db_account = bool(x_account_id)
 
