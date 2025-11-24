@@ -42,7 +42,10 @@ class DnsHostService:
     def dns_setup(self, domain_name):
         account_name = make_dns_account_name(domain_name)
 
-        x_account_id = self._find_existing_account_in_db(account_name)
+        try:
+            x_account_id = self._find_existing_account_in_db(account_name)
+        except:
+            raise
         has_db_account = bool(x_account_id)
 
         if has_db_account:

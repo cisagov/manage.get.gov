@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
@@ -30,6 +30,7 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
+    DnsAccount_VendorDnsAccount,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -828,6 +829,17 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"API error in view: {str(e)}")
+                except DnsAccount_VendorDnsAccount.DoesNotExist:
+                    logger.error(
+                        f"There is record of a domain with an account, but there is no active account at this time."
+                    )
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "Record of an account for {domain_name} exists, but hosting is not enabled",
+                        },
+                        status=404,
+                    )
 
                 if zone_id:
                     zone_name = domain_name

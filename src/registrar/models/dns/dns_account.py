@@ -1,6 +1,10 @@
+import logging
+
 from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 
+logger = logging.getLogger(__name__)
 
 class DnsAccount(TimeStampedModel):
     name = models.CharField(unique=True, max_length=255)
@@ -10,6 +14,11 @@ class DnsAccount(TimeStampedModel):
 
     @property
     def x_account_id(self):
-        link = self.account_link.filter(is_active=True).select_related("vendor_dns_account").first()
+        try:
+            x_account_id = self.account_link.get(is_active=True).vendor_dns_account.x_account_id
+        except DnsAccount_VendorDnsAccount.DoesNotExist:
+            logger.error(f"There is a database entry but no active vendor for this account {self.name}")
+            raise
 
-        return link.vendor_dns_account.x_account_id if link else None
+        return x_account_id
+    
