@@ -2881,6 +2881,8 @@ class TestCleanupOrphanedRetrievedInvitations(TestCase):
 
         output = out.getvalue()
         self.assertIn("No orphaned retrieved invitations found", output)
+
+
 class TestDeleteDomainNotSetup(MockEppLib):
     def setUp(self):
         super().setUp()
