@@ -1,11 +1,8 @@
-function copyToClipboardAndChangeIcon(button) {
-    // Assuming the input is the previous sibling of the button
-    let input = button.previousElementSibling;
-    // Copy input value to clipboard
-    if (input) {
-        navigator.clipboard.writeText(input.value).then(function() {
+function copyToClipboardAndChangeIcon(button, input, selector) {
+        navigator.clipboard.writeText(input).then(function() {
             // Change the icon to a checkmark on successful copy
-            let buttonIcon = button.querySelector('.copy-to-clipboard use');
+            let buttonIcon = button.querySelector(selector + " use");
+            
             if (buttonIcon) {
                 let currentHref = buttonIcon.getAttribute('xlink:href');
                 let baseHref = currentHref.split('#')[0];
@@ -28,7 +25,56 @@ function copyToClipboardAndChangeIcon(button) {
         }).catch(function(error) {
             console.error('Clipboard copy failed', error);
         });
+}
+
+function copyIndividualTextButtonToClipBoard(button) {
+    // Assuming the input is the previous sibling of the button
+    let input = button.previousElementSibling;
+    // Copy input value to clipboard
+    if (input) {
+       const buttonSelector = ".copy-to-clipboard"
+       copyToClipboardAndChangeIcon(button, input.value, buttonSelector)
     }
+}
+
+function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
+    const membersInCsv = helperCopyMembersTableFunction(table);
+    if(membersInCsv != ""){
+        copyToClipboardAndChangeIcon(button, membersInCsv, buttonSelector)
+    }
+
+}
+
+function helperCopyMembersTableFunction(table){
+    const myTable = document.querySelector(table); 
+    console.log("SOMETHING HAS CHANGED")
+    let copyOfTableToCsv = ""
+   
+    const rows = myTable.querySelectorAll('tr')
+    
+    //header rows
+    const headerRow = rows[0].querySelectorAll('th')
+    for(let i = 0; i < headerRow.length - 1; i++){
+        let headerText = headerRow[i].textContent.trim()
+        copyOfTableToCsv+= headerText + ","
+
+        // add new line to the csv header row
+        if(i == headerRow.length - 2){
+            copyOfTableToCsv += "\n"
+        }
+    }
+
+    //body rows
+    for(let i = 1; i < rows.length; i++){
+       let rowText = ""
+        const bodyRows = rows[i].querySelectorAll('td');
+        for(let j = 0; j < bodyRows.length - 1; j++){
+            rowText+= bodyRows[j].textContent.trim() + ","
+        }
+        copyOfTableToCsv+= rowText + "\n"
+    }
+
+    return copyOfTableToCsv
 }
 
 /**
@@ -41,7 +87,7 @@ export function initCopyToClipboard() {
         // Handle copying the text to your clipboard,
         // and changing the icon.
         button.addEventListener("click", ()=>{
-            copyToClipboardAndChangeIcon(button);
+            copyIndividualTextButtonToClipBoard(button);
         });
         
         // Add a class that adds the outline style on click
@@ -56,4 +102,18 @@ export function initCopyToClipboard() {
         });
 
     });
+
+    const portfolioMemberSelectorButton = "#copy-to-clipboard-members"
+    const portfolioMembersButton = document.querySelector(portfolioMemberSelectorButton)
+    portfolioMembersButton && portfolioMembersButton.addEventListener("click", ()=>{
+        copyAllMembersAdminsToClipboard(portfolioMembersButton, "#portfolio-members-table", portfolioMemberSelectorButton)
+    })
+
+    const portfolioAdminsSelectorButton = "#copy-to-clipboard-admins"
+    const portfolioAdminsButton = document.querySelector(portfolioAdminsSelectorButton)
+    portfolioAdminsButton && portfolioAdminsButton.addEventListener("click", ()=>{
+        copyAllMembersAdminsToClipboard(portfolioAdminsButton, "#portfolio-admins-table", portfolioAdminsSelectorButton )
+     }
+    )
 }
+
