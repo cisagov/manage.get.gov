@@ -135,6 +135,7 @@ class TestDomainInvitations(TestCase):
         self.user.on_each_login()
         self.assertTrue(UserDomainRole.objects.get(user=self.user, domain=self.domain))
 
+
 class TestPortfolioInvitations(TestCase):
     """Test the retrieval of portfolio invitations."""
 
