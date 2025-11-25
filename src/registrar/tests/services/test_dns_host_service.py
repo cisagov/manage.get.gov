@@ -187,6 +187,19 @@ class TestDnsHostServiceDB(TestCase):
             }
         }
 
+        self.vendor_record_data = {
+            "result": {
+                "id": "12345",
+                "type": "A",
+                "name": "test.gov",  # record name
+                "content": "1.1.1.1",  # IPv4
+                "ttl": 1,
+                "comment": "Test record",
+                "created_on": "2024-01-02T03:04:05Z",
+                "tags": []
+            }
+        }
+
     def tearDown(self):
         DnsVendor.objects.all().delete()
         VendorDnsAccount.objects.all().delete()
@@ -367,3 +380,40 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsZone.objects.count(), 0)
         self.assertEqual(DnsZone.objects.count(), 0)
         self.assertEqual(ZonesJoin.objects.count(), 0)
+
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    def test_save_db_record_success(
+        self,
+        mock_create_cf_account,
+        mock_create_cf_zone
+    ):
+        """Successfully creates registrar db record objects."""
+        mock_create_cf_account.return_value = self.vendor_account_data        
+        mock_create_cf_zone.return_value = self.vendor_zone_data
+        account_name = self.vendor_account_data["result"].get("name")
+        domain_name = "test.gov"
+        domain = Domain.objects.create(name=domain_name)
+
+        x_account_id = self.service.create_and_save_account(account_name)
+        x_zone_id, _ = self.service.create_and_save_zone(domain_name, x_account_id)
+        zone = DnsZone.objects.get(domain=domain)
+
+        self.service.save_db_record(x_zone_id, self.vendor_record_data)
+
+        # VendorDnsRecord row exists with matching record xid as cloudflare id
+        x_record_id = self.vendor_record_data["result"].get("id")
+        vendor_records = VendorDnsRecord.objects.filter(x_record_id=x_record_id)
+        self.assertEqual(vendor_records.count(), 1)
+
+        # DnsRecord row exists with the matching record data
+        dns_records = DnsRecord.objects.filter(dns_zone=zone)
+        self.assertEqual(dns_records.count(), 1)
+
+        # Testing the join row for DnsRecord_VendorDnsRecord
+        vendor_record = vendor_records.first()
+        dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_record)
+        vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+        join_exists = RecordsJoin.objects.filter(
+            dns_record=dns_record, vendor_dns_record=vendor_dns_record).exists()
+        self.assertTrue(join_exists)
