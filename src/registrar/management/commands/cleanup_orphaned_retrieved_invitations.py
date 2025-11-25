@@ -80,10 +80,9 @@ class Command(BaseCommand):
                         f"(no corresponding UserDomainRole)"
                     )
                 else:
-                    invitation.cancel_retrieved_invitation()
-                    invitation.save()
+                    invitation.delete()
                     logger.info(
-                        f"Canceled orphaned invitation: {invitation.email} on {invitation.domain.name} "
+                        f"Deleted orphaned invitation: {invitation.email} on {invitation.domain.name} "
                         f"(no corresponding UserDomainRole)"
                     )
                     cleaned_up_count += 1
