@@ -36,7 +36,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--dry_run",
+            "--dry-run",
             action=argparse.BooleanOptionalAction,
             help="Show what would be changed without making any database modifications.",
         )
@@ -45,7 +45,9 @@ class Command(BaseCommand):
     def get_domains(self):
         """Get domains with DNS status DNS needed or Unknown"""
         domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
-        time_to_compare = (timezone.now() - timedelta(days=7)).date()
+        time_to_compare = timezone.now().date()
+        print("TIOMET TO COMPARE")
+        print(time_to_compare)
         domains_in_expired_state = Domain.objects.filter(state__in=(domain_state), expiration_date=time_to_compare)
 
         return domains_in_expired_state
