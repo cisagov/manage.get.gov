@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 Hi, domain managers.
 
-On {{ date|date }}, the following domain was placed on: {{ domain.name }}
+On {{ date|date }}, the following domain was placed on hold: {{ domain.name }}
 
 You can view this status update in the .gov registrar {{ manage_url }}
 
@@ -9,7 +9,7 @@ You can view this status update in the .gov registrar {{ manage_url }}
 
 WHAT DOES “ON HOLD” MEAN?
 
-When a domain is placed on:
+When a domain is placed on hold:
 
 - The domain and its subdomains no longer resolve in DNS.
 - Any email or websites using the domain could become unavailable.
