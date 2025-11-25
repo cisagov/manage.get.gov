@@ -231,7 +231,7 @@ class DnsHostService:
                 comment=record_data["comment"],
                 tags=record_data["tags"],
             )
-            
+
             RecordsJoin.objects.create(
                 dns_record=dns_record,
                 vendor_dns_record=vendor_dns_record,
