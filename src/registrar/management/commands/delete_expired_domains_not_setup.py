@@ -36,7 +36,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--dry_run",
+            "--dry-run",
             action=argparse.BooleanOptionalAction,
             help="Show what would be changed without making any database modifications.",
         )
