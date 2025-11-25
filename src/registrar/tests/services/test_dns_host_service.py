@@ -29,12 +29,8 @@ class TestDnsHostService(TestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
-    @patch("registrar.services.dns_host_service.DnsHostService.save_db_zone")
     def test_dns_setup_success(
         self,
-        mock_save_db_zone,
-        mock_save_db_account,
         mock_create_cf_account,
         mock_create_cf_zone,
         mock_get_page_accounts,
@@ -128,12 +124,10 @@ class TestDnsHostService(TestCase):
         with self.assertRaises((APIError, Exception)):
             self.service.dns_setup(domain_name)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     def test_dns_setup_failure_from_create_cf_zone(
-        self, mock_create_cf_account, mock_create_cf_zone, mock_get_page_accounts, mock_get_account_zones
+        self, mock_create_cf_account, mock_get_page_accounts
     ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
