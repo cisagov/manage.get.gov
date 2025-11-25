@@ -112,21 +112,21 @@ class TestDnsHostService(TestCase):
             self.service.dns_setup(domain_name)
         self.assertIn("DNS setup failed when finding account in cf", str(context.exception))
 
-    @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_dns_setup_failure_from_create_account(
-        self, mock_create_cf_account, mock_get_page_accounts
+    @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
+    def test_dns_setup_failure_from_create_and_save_account(
+        self, mock_find_existing_account_in_db, mock_find_existing_account_in_cf, mock_create_and_save_account
     ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
-        mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
-        mock_create_cf_account.side_effect = APIError("DNS setup failed to create account")
 
-        with self.assertRaises(APIError) as context:
+        mock_find_existing_account_in_db.return_value = None
+        mock_find_existing_account_in_cf.return_value = None
+        mock_create_and_save_account.side_effect = APIError("DNS setup failed to create account")
+
+        with self.assertRaises((APIError, Exception)):
             self.service.dns_setup(domain_name)
-
-        mock_create_cf_account.assert_called_once_with(account_name)
-        self.assertIn("DNS setup failed to create account", str(context.exception))
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")

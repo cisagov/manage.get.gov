@@ -63,7 +63,11 @@ class DnsHostService:
             if has_cf_account:
                 x_account_id = self.save_db_account({"result": cf_account_data})
             else:
-                x_account_id = self.create_and_save_account(account_name)
+                try:
+                    x_account_id = self.create_and_save_account(account_name)
+                except (APIError, Exception) as e:
+                    logger.error(f"dnsSetup failed {e}")
+                    raise
 
         x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
         has_zone = bool(x_zone_id)
