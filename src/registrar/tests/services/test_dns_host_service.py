@@ -155,7 +155,7 @@ class TestDnsHostService(TestCase):
         self.assertEqual(response["result"]["name"], "test.gov")
 
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
-    def test_create_record_failure(self, mock_create_dns_record):
+    def test_create_cf_record_failure(self, mock_create_dns_record):
 
         zone_id = "1234"
         record_data = {"type": "A", "content": "1.1.1.1", "ttl": 1, "comment": "Test record"}  # IPv4
