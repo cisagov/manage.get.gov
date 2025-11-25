@@ -3,7 +3,6 @@ from registrar.models import Domain, UserDomainRole
 import logging
 import argparse
 from django.utils import timezone
-from datetime import timedelta
 from registrar.utility.email import EmailSendingError, send_templated_email
 
 logger = logging.getLogger(__name__)
