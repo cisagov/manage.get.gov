@@ -10,14 +10,17 @@ from registrar.models import (
     VendorDnsAccount,
     DnsZone,
     VendorDnsZone,
+    DnsRecord,
+    VendorDnsRecord,
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
+    DnsRecord_VendorDnsRecord as RecordsJoin
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
 
 
-class TestDnsHostService(SimpleTestCase):
+class TestDnsHostService(TestCase):
 
     def setUp(self):
         mock_client = Mock()
@@ -29,8 +32,10 @@ class TestDnsHostService(SimpleTestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
     def test_dns_setup_success(
         self,
+        mock_save_db_record,
         mock_save_db_zone,
         mock_save_db_account,
         mock_create_cf_account,
@@ -125,8 +130,13 @@ class TestDnsHostService(SimpleTestCase):
         # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
-    def test_create_record_success(self, mock_create_dns_record):
+    def test_create_record_success(
+        self,
+        mock_create_dns_record,
+        mock_save_db_record
+    ):
 
         zone_id = "1234"
         record_data = {
@@ -135,6 +145,7 @@ class TestDnsHostService(SimpleTestCase):
             "content": "1.1.1.1",  # IPv4
             "ttl": 1,
             "comment": "Test record",
+            "created_on": "2024-01-02T03:04:05Z",
         }
 
         mock_create_dns_record.return_value = {"result": {"id": zone_id, **record_data}}
