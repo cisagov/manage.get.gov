@@ -13,7 +13,7 @@ from registrar.models import (
     VendorDnsRecord,
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
-    DnsRecord_VendorDnsRecord as RecordsJoin
+    DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 
 
@@ -213,7 +213,7 @@ class DnsHostService:
     def save_db_record(self, x_zone_id, vendor_record_data):
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
-        
+
         with transaction.atomic():
             vendor_dns_record = VendorDnsRecord.objects.create(
                 x_record_id=x_record_id,
@@ -232,7 +232,7 @@ class DnsHostService:
                 ttl=record_data["ttl"],
                 content=record_data["content"],
                 comment=record_data["comment"],
-                tags=record_data["tags"]
+                tags=record_data["tags"],
             )
             # Assign ManyToMany field vendor_dns_record manually because we cannot directly assign forward
             # side of a many to many set in Django
