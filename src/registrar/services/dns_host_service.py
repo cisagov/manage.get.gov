@@ -102,11 +102,11 @@ class DnsHostService:
             raise
         return x_zone_id, nameservers
 
-    def create_and_save_record(self, x_zone_id, record_data):
+    def create_and_save_record(self, x_zone_id, form_record_data):
         """Calls create method of vendor service to create a DNS record"""
         # Create record in vendor service
         try:
-            vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, record_data)
+            vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
             logger.info(f"Created DNS record of type {vendor_record_data['result'].get('type')}")
         except APIError as e:
             logger.error(f"Error creating DNS record: {str(e)}")
@@ -114,9 +114,10 @@ class DnsHostService:
 
         # Create and save record in registrar db
         try:
-            self.save_db_record(vendor_record_data)
+            # Do we want to save record referencing returned CF data or user input data?
+            self.save_db_record(x_zone_id, vendor_record_data)
         except Exception as e:
-            logger.error(f"Failed to save record {record_data} in database: {str(e)}.")
+            logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
         return vendor_record_data
 
@@ -209,6 +210,35 @@ class DnsHostService:
                 vendor_dns_zone=vendor_dns_zone,
             )
 
-    def save_db_record(self, x_zone_id, record_data):
+    def save_db_record(self, x_zone_id, vendor_record_data):
+        record_data = vendor_record_data["result"]
+        x_record_id = record_data["id"]
         
-        return # delete after finishing method
+        with transaction.atomic():
+            vendor_dns_record = VendorDnsRecord.objects.create(
+                x_record_id=x_record_id,
+                x_created_at=record_data["created_on"],
+                x_updated_at=record_data["created_on"],
+            )
+
+            # Find record's zone
+            vendor_dns_zone = VendorDnsZone.objects.filter(x_zone_id=x_zone_id).first()
+            dns_zone = ZonesJoin.objects.filter(vendor_dns_zone=vendor_dns_zone).first().dns_zone
+
+            dns_record, _ = DnsRecord.objects.get_or_create(
+                dns_zone=dns_zone,
+                type=record_data["type"],
+                name=record_data["name"],
+                ttl=record_data["ttl"],
+                content=record_data["content"],
+                comment=record_data["comment"],
+                tags=record_data["tags"]
+            )
+            # Assign ManyToMany field vendor_dns_record manually because we cannot directly assign forward
+            # side of a many to many set in Django
+            dns_record.vendor_dns_record.add(vendor_dns_record)
+
+            RecordsJoin.objects.get_or_create(
+                dns_record=dns_record,
+                vendor_dns_record=vendor_dns_record,
+            )
