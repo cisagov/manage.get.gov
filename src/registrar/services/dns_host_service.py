@@ -233,6 +233,6 @@ class DnsHostService:
             )
             # Assign ManyToMany field vendor_dns_record manually because we cannot directly assign forward
             # side of a many to many set in Django.
-            # DnsRecord vendor_dns_record connected through DnsRecord_VendorDnsRecord so assigning 
+            # DnsRecord vendor_dns_record connected through DnsRecord_VendorDnsRecord so assigning
             # vendor_dns_record automatically creates/updates its DnsRecord_VendorDnsRecord
             dns_record.vendor_dns_record.add(vendor_dns_record)
