@@ -20,7 +20,7 @@ from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
 
 
-class TestDnsHostService(TestCase):
+class TestDnsHostService(SimpleTestCase):
 
     def setUp(self):
         mock_client = Mock()
