@@ -2746,11 +2746,9 @@ class TestDeleteDomainNotSetup(MockEppLib):
         self.expiration_date_today = self.fixed_today
         self.expiration_not_today = self.fixed_today - timedelta(days=2)
 
-        self.domain_expired_today = Domain.objects.create(
-            name="test.gov", expiration_date=self.expiration_date_today 
-        )
+        self.domain_expired_today = Domain.objects.create(name="test.gov", expiration_date=self.expiration_date_today)
         self.domain_expired_not_today = Domain.objects.create(
-            name="test1.gov", expiration_date=self.expiration_not_today 
+            name="test1.gov", expiration_date=self.expiration_not_today
         )
         self.domain_expired_today_too = Domain.objects.create(
             name="test2.gov", expiration_date=self.expiration_date_today
