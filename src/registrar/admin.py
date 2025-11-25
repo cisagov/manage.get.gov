@@ -347,6 +347,18 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     Extends PortfolioPermissionsForm to include a user field, allowing administrators
     to assign roles and permissions to specific users within a portfolio.
     """
+
+    # Dropdown to select a user from the database
+    user = forms.ModelChoiceField(
+        queryset=models.User.objects.all(),
+        label="User",
+        widget=AutocompleteSelectWithPlaceholder(
+            models.UserPortfolioPermission._meta.get_field("user"),
+            admin.site,
+            attrs={"data-placeholder": "---------"},  # Customize placeholder
+        ),
+    )
+
     class Meta:
         """
         Meta class defining the model and fields to be used in the form.
@@ -354,13 +366,6 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
 
         model = models.UserPortfolioPermission  # Uses the UserPortfolioPermission model
         fields = ["user", "portfolio", "role", "domain_permissions", "request_permissions", "member_permissions"]
-        widgets = {
-            "user": AutocompleteSelectWithPlaceholder(
-            models.UserPortfolioPermission._meta.get_field("user"),
-            admin.site,
-            attrs={"data-placeholder": "---------"},
-            )
-        }
 
 
 class PortfolioInvitationForm(PortfolioPermissionsForm):
