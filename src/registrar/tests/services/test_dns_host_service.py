@@ -205,6 +205,9 @@ class TestDnsHostServiceDB(TestCase):
         DnsZone.objects.all().delete()
         ZonesJoin.objects.all().delete()
         Domain.objects.all().delete()
+        RecordsJoin.objects.all().delete()
+        VendorDnsRecord.objects.all().delete()
+        DnsRecord.objects.all().delete()
 
     def test_save_db_account_success(self):
         # Dummy JSON data from API

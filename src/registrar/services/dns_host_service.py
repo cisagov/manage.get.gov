@@ -214,7 +214,7 @@ class DnsHostService:
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
 
-        with transaction.atomic():
+        with transaction.atomic(using='default'):
             vendor_dns_record = VendorDnsRecord.objects.create(
                 x_record_id=x_record_id,
                 x_created_at=record_data["created_on"],
@@ -225,7 +225,7 @@ class DnsHostService:
             vendor_dns_zone = VendorDnsZone.objects.filter(x_zone_id=x_zone_id).first()
             dns_zone = ZonesJoin.objects.filter(vendor_dns_zone=vendor_dns_zone).first().dns_zone
 
-            dns_record, _ = DnsRecord.objects.get_or_create(
+            dns_record = DnsRecord.objects.create(
                 dns_zone=dns_zone,
                 type=record_data["type"],
                 name=record_data["name"],
@@ -238,7 +238,7 @@ class DnsHostService:
             # side of a many to many set in Django
             dns_record.vendor_dns_record.add(vendor_dns_record)
 
-            RecordsJoin.objects.get_or_create(
+            RecordsJoin.objects.update_or_create(
                 dns_record=dns_record,
                 vendor_dns_record=vendor_dns_record,
             )
