@@ -39,7 +39,8 @@ class DnsAccountTest(TestCase):
             vendor_dns_account=self.vendor_dns_account,
             is_active=True,
         )
-        self.assertEqual(self.dns_account.get_active_x_account_id, self.vendor_dns_account.x_account_id)
+        found_x_account_id = self.dns_account.get_active_x_account_id()
+        self.assertEqual(found_x_account_id, self.vendor_dns_account.x_account_id)
 
     def test_get_x_account_id_raises_error(self):
         AccountsJoin.objects.create(

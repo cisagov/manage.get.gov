@@ -45,7 +45,7 @@ class DnsHostService:
 
         try:
             x_account_id = self._find_existing_account_in_db(account_name)
-        except DnsAccount_VendorDnsAccount.DoesNotExist as e:
+        except DnsAccount.DoesNotExist as e:
             logger.error(f"Error finding existing active account in db: {e}")
             raise
         has_db_account = bool(x_account_id)
@@ -153,7 +153,7 @@ class DnsHostService:
             logger.info(f"No db account found by name {account_name}")
             return None
 
-        return dns_account.get_active_x_account_id
+        return dns_account.get_active_x_account_id()
 
     def _find_existing_zone(self, zone_name, x_account_id):
         try:
@@ -183,6 +183,7 @@ class DnsHostService:
         x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=DnsVendor.CF)
 
+        # TODO: handle transaction failure
         with transaction.atomic():
             vendor_acc = VendorDnsAccount.objects.create(
                 x_account_id=x_account_id,
@@ -204,6 +205,7 @@ class DnsHostService:
         zone_name = zone_data["name"]
         zone_account_name = zone_data["account"]["name"]
 
+        # TODO: handle transaction failure
         with transaction.atomic():
             vendor_dns_zone = VendorDnsZone.objects.create(
                 x_zone_id=x_zone_id,
