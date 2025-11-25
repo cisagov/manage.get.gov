@@ -369,7 +369,7 @@ class TestDnsHostServiceDB(TestCase):
         zone_domain = Domain.objects.create(name="dns-test.gov")
 
         with patch(
-            "registrar.models.DnsZone_VendorDnsZone.objects.get_or_create",
+            "registrar.models.DnsZone_VendorDnsZone.objects.create",
             side_effect=IntegrityError("simulated join failure"),
         ):
             with self.assertRaises(IntegrityError):
