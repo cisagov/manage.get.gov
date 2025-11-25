@@ -132,7 +132,7 @@ class TestDnsHostService(TestCase):
 
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
-    def test_create_record_success(
+    def test_create_cf_record_success(
         self,
         mock_create_dns_record,
         mock_save_db_record
