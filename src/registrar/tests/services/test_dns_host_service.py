@@ -133,7 +133,6 @@ class TestDnsHostService(SimpleTestCase):
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
     def test_create_cf_record_success(self, mock_create_dns_record, mock_save_db_record):
-
         zone_id = "1234"
         record_data = {
             "type": "A",
@@ -513,7 +512,7 @@ class TestDnsHostServiceDB(TestCase):
         x_zone_id, _ = self.service.create_and_save_zone(domain_name, x_account_id)
 
         with patch(
-            "registrar.models.DnsRecord_VendorDnsRecord.objects.get_or_create",
+            "registrar.models.DnsRecord_VendorDnsRecord.objects.create",
             side_effect=IntegrityError("simulated join failure"),
         ):
             with self.assertRaises(IntegrityError):

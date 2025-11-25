@@ -203,18 +203,15 @@ class DnsHostService:
             dns_zone, _ = DnsZone.objects.get_or_create(dns_account=dns_account, domain=dns_domain, name=zone_name)
             # Assign ManyToMany field vendor_dns_zone manually because we cannot directly assign forward
             # side of a many to many set in Django
+            # DnsZone vendor_dns_zone connected through DnsZone_VendorDnsZone so assigning vendor_dns_zone
+            # automatically creates/updates its DnsZone_VendorDnsZone
             dns_zone.vendor_dns_zone.add(vendor_dns_zone)
-
-            ZonesJoin.objects.get_or_create(
-                dns_zone=dns_zone,
-                vendor_dns_zone=vendor_dns_zone,
-            )
 
     def save_db_record(self, x_zone_id, vendor_record_data):
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
 
-        with transaction.atomic(using='default'):
+        with transaction.atomic():
             vendor_dns_record = VendorDnsRecord.objects.create(
                 x_record_id=x_record_id,
                 x_created_at=record_data["created_on"],
@@ -235,10 +232,7 @@ class DnsHostService:
                 tags=record_data["tags"],
             )
             # Assign ManyToMany field vendor_dns_record manually because we cannot directly assign forward
-            # side of a many to many set in Django
+            # side of a many to many set in Django.
+            # DnsRecord vendor_dns_record connected through DnsRecord_VendorDnsRecord so assigning 
+            # vendor_dns_record automatically creates/updates its DnsRecord_VendorDnsRecord
             dns_record.vendor_dns_record.add(vendor_dns_record)
-
-            RecordsJoin.objects.update_or_create(
-                dns_record=dns_record,
-                vendor_dns_record=vendor_dns_record,
-            )
