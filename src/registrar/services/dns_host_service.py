@@ -69,14 +69,30 @@ class DnsHostService:
                     logger.error(f"dnsSetup failed {e}")
                     raise
 
-        x_zone_id, nameservers = self._find_existing_zone(domain_name, x_account_id)
-        has_zone = bool(x_zone_id)
+        
+        try:
+            x_zone_id, nameservers = self._find_existing_zone_in_db(domain_name, x_account_id)
+        except DnsZone.DoesNotExist as e:
+            logger.error(f"Error finding existing active zone in db: {e}")
 
-        if has_zone:
+        if x_zone_id:
             logger.info("Already has an existing zone")
         else:
-            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
-            has_zone = bool(x_zone_id)
+            try:
+                x_zone_id, nameservers, zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
+            except APIError as e:
+                logger.error(e)
+                raise
+
+                
+            if x_zone_id:
+                x_zone_id, nameservers = self.save_db_zone({"result": zone_data}, domain_name)
+            else:
+                try: 
+                    x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)   
+                except Exception as e:
+                    logger.error(f"dnsSetup for zone failed {e}")
+                    raise
 
         return x_account_id, x_zone_id, nameservers
 
@@ -159,7 +175,7 @@ class DnsHostService:
 
         return dns_account.get_active_x_account_id()
 
-    def _find_existing_zone(self, zone_name, x_account_id):
+    def _find_existing_zone_in_cf(self, zone_name, x_account_id):
         try:
             all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
             zones = all_zones_data["result"]
@@ -168,6 +184,32 @@ class DnsHostService:
         except APIError as e:
             logger.error(f"Error fetching zones: {str(e)}")
             raise
+
+        return x_zone_id, nameservers, zones
+
+    # First pass, will probably need edit
+    def _find_existing_zone_in_db(self, zone_name, x_account_id):
+        try:
+            dns_account = DnsAccount.objects.get(
+                account_link__vendor_dns_account__x_account_id=x_account_id,
+                account_link__is_active=True,
+            )
+        except DnsAccount.DoesNotExist:
+            return None, None
+        
+        zone = dns_account.zones.filter(name=zone_name).first()
+
+        if not zone:
+            return None, None
+        
+        zone_link = zone.zone_link.filter(is_active=True).first()
+
+        if not zone_link:
+            return None, None
+        
+        vendor_zone = zone_link.vendor_dns_zone
+        x_zone_id = vendor_zone.x_zone_id
+        nameservers = zone.nameservers or []
 
         return x_zone_id, nameservers
 
