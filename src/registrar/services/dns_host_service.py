@@ -220,7 +220,7 @@ class DnsHostService:
 
             # Find record's zone
             vendor_dns_zone = VendorDnsZone.objects.filter(x_zone_id=x_zone_id).first()
-            dns_zone = ZonesJoin.objects.filter(vendor_dns_zone=vendor_dns_zone).first().dns_zone
+            dns_zone = vendor_dns_zone.zone_link.get(is_active=True).dns_zone
 
             dns_record = DnsRecord.objects.create(
                 dns_zone=dns_zone,
