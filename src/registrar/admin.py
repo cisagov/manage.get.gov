@@ -73,8 +73,8 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
-from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
 from django.db.models import Exists, OuterRef
+
 logger = logging.getLogger(__name__)
 
 
@@ -348,8 +348,6 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     to assign roles and permissions to specific users within a portfolio.
     """
 
-
-
     class Meta:
         """
         Meta class defining the model and fields to be used in the form.
@@ -357,7 +355,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
 
         model = models.UserPortfolioPermission  # Uses the UserPortfolioPermission model
         fields = ["user", "portfolio", "role", "domain_permissions", "request_permissions", "member_permissions"]
-          # Dropdown to select a user from the database
+        # Dropdown to select a user from the database
         user = forms.ModelChoiceField(
             queryset=models.User.objects.all(),
             label="User",
@@ -1194,36 +1192,49 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
         obj = self.get_object(request, object_id)
-        domain_requests = DomainRequest.objects.filter(requester=obj).exclude(
-            Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN),
-        ).order_by("status", "requested_domain__name")
+        domain_requests = (
+            DomainRequest.objects.filter(requester=obj)
+            .exclude(
+                Q(status=DomainRequest.DomainRequestStatus.STARTED)
+                | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN),
+            )
+            .order_by("status", "requested_domain__name")
+        )
 
         user_domain_roles = UserDomainRole.objects.filter(user=obj)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
 
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
-        
-        domain_info_objects = DomainInformation.objects.filter(domain_id__in=domain_ids).exclude(domain__state=Domain.State.DELETED).order_by("domain__state","domain__name")
-        domain_info_objects_without_portfolio = domain_info_objects.filter(portfolio__isnull=False)
-     
+
+        domain_info_objects = (
+            DomainInformation.objects.filter(domain_id__in=domain_ids)
+            .exclude(domain__state=Domain.State.DELETED)
+            .order_by("domain__state", "domain__name")
+        )
+        domain_info_objects_without_portfolio = domain_info_objects.filter(portfolio__isnull=True)
+        domain_request_without_portfolio = domain_requests.filter(portfolio__isnull=True)
+
         formatted_table_data = []
 
         for portfolio in portfolios:
-            formatted_table_data.append({
-             'portfolio': portfolio,
-             'portfolio_domains': domain_info_objects.filter(portfolio=portfolio),
-             'portfolio_domain_requests': domain_requests.filter(portfolio=portfolio)
-        })
+            formatted_table_data.append(
+                {
+                    "portfolio": portfolio,
+                    "portfolio_domains": domain_info_objects.filter(portfolio=portfolio),
+                    "portfolio_domain_requests": domain_requests.filter(portfolio=portfolio),
+                }
+            )
 
         # add non portfolio requests
-
-        formatted_table_data.append({
-            "portfolio": None,
-            "portfolio_domains": domain_info_objects_without_portfolio,
-            "portfolio_domain_requests": domain_requests
-        })
-
+        if domain_info_objects_without_portfolio or domain_request_without_portfolio:
+            formatted_table_data.append(
+                {
+                    "portfolio": None,
+                    "portfolio_domains": domain_info_objects_without_portfolio,
+                    "portfolio_domain_requests": domain_requests.filter(portfolio__isnull=True),
+                }
+            )
 
         extra_context = {"formatted_table_data": formatted_table_data}
         return super().change_view(request, object_id, form_url, extra_context)
@@ -4915,13 +4926,13 @@ class PortfolioAdmin(ListHeaderAdmin):
         """Returns each admin on UserPortfolioPermission for a given portfolio."""
         if obj:
             return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]).annotate(
-              has_domain_request_permission=Exists(
+                has_domain_request_permission=Exists(
                     UserPortfolioPermission.objects.filter(
-                        user=OuterRef('user'),
+                        user=OuterRef("user"),
                         portfolio=obj,
-                        additional_permissions__contains=[UserPortfolioPermissionChoices.EDIT_REQUESTS]
+                        additional_permissions__contains=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
                     )
-                )             
+                )
             )
         else:
             return []

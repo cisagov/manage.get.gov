@@ -22,6 +22,15 @@
         <h2>Domain Requests</h2>
 
         <div class="display-flex flex-column margin-top-3">   
+
+        <!-- If there is no data, display this message under the heading for domain request -->
+        {% if formatted_table_data|length == 0%}
+                 <div class="padding-left-1"> 
+                      <div class="readonly padding-top-1 padding-left-05"> No domain requests </div>
+                </div>
+        {%endif %}
+
+
         {% for item in formatted_table_data %}
         <div class="margin-bottom-3">
             
@@ -29,16 +38,17 @@
                 {% if item.portfolio %}
                     {% url 'admin:registrar_portfolio_change' item.portfolio.pk as url %}
                 <a href="{{ url }}"> {{ item.portfolio.organization_name }} </a>
-                {% else %}
+                {% elif item.portfolio_domain_requests %}
+                <!-- If there is no domain requests with no portfolio do not display portfolio -->
                     No portfolio
                 {% endif %}
             
             </p>
                <div class="padding-left-1">
-                  {%if item.portfolio_domain_requests|length > 0%}
+                  {%if item.portfolio_domain_requests %}
                      {% include "django/admin/includes/portfolio/portfolio_domain_requests_table.html" with domain_requests=item.portfolio_domain_requests link_title="Domain Requests"%}
-                  {% else %}
-                      <div class="readonly padding-top-1"> No domain requests </div>
+                  {% elif item.portfolio %}
+                      <div class="readonly padding-top-1 padding-left-05"> No domain requests </div>
                   {% endif %}
                </div>
         </div>
@@ -51,7 +61,16 @@
         <div class="module aligned padding-3">
         <h2>Domains</h2>
 
+
         <div class="display-flex flex-column margin-top-3">   
+        <!-- If there is no data, display this message under the heading for domains-->
+        {% if formatted_table_data|length == 0%}
+                 <div class="padding-left-1"> 
+                      <div class="readonly padding-top-1 padding-left-05"> No domains </div>
+                </div>
+        {% endif %}
+
+
         {% for item in formatted_table_data %}
         <div class="margin-bottom-3">
                 
@@ -59,7 +78,8 @@
                   {% if item.portfolio %}
                   {% url 'admin:registrar_portfolio_change' item.portfolio.pk as url %}
                 <a href="{{ url }}"> {{ item.portfolio.organization_name }} </a>
-                {% else %}
+                {% elif item.portfolio_domains %}
+                <!-- If there is no domains with no portfolio do not display portfolio -->
                     No portfolio
                   {% endif %}
             </p>
@@ -67,8 +87,8 @@
                <div class="padding-left-1">
                 {%if item.portfolio_domains %}
                      {% include "django/admin/includes/portfolio/portfolio_domains_table.html" with domains=item.portfolio_domains link_title="Domains"%}
-                {% else %}
-                <div class="readonly padding-top-1"> No domains</div> 
+                {% elif item.portfolio %}
+                <div class="readonly padding-top-1 padding-left-05"> No domains</div> 
                 {% endif %}
                </div>
         </div>
