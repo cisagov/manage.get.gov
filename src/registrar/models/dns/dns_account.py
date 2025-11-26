@@ -22,7 +22,7 @@ class DnsAccount(TimeStampedModel):
             With `is_active` set to True by default, this would not be reachable unless we switched vendors
             and did not yet set up a vendor_dns_account for the new vendor as active
             """
-            logger.info(f"There is a database entry but no active vendor for this account {self.name}")
+            logger.debug(f"There is a database entry but no active vendor for this account {self.name}")
             return None
 
         return x_account_id

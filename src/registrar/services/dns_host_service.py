@@ -141,7 +141,7 @@ class DnsHostService:
         try:
             dns_account = DnsAccount.objects.get(name=account_name)
         except DnsAccount.DoesNotExist:
-            logger.info(f"No db account found by name {account_name}")
+            logger.debug(f"No db account found by name {account_name}")
             return None
 
         return dns_account.get_active_x_account_id()
