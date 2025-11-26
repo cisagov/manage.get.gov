@@ -4917,7 +4917,7 @@ class PortfolioAdmin(ListHeaderAdmin):
             return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]).annotate(
               has_domain_request_permission=Exists(
                     UserPortfolioPermission.objects.filter(
-                        user=OuterRef('pk'),
+                        user=OuterRef('user'),
                         portfolio=obj,
                         additional_permissions__contains=[UserPortfolioPermissionChoices.EDIT_REQUESTS]
                     )

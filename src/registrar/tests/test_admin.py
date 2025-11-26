@@ -2771,7 +2771,12 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
 
     def tearDown(self):
         super().tearDown()
+        Domain.objects.all().delete()
         DomainRequest.objects.all().delete()
+        DraftDomain.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Suborganization.objects.all().delete()
+        Portfolio.objects.all().delete()
 
     @classmethod
     def tearDownClass(cls):
@@ -3041,18 +3046,50 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertNotContains(response, "Portfolio additional permissions:")
 
     @less_console_noise_decorator
-    def test_user_can_see_related_portfolios(self):
+    def test_user_can_see_related_portfolios_and_requests_and_domain_tables(self):
         """Tests if a user can see the portfolios they are associated with on the user page"""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", requester=self.superuser)
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="TestForUser", requester=self.superuser)
         permission, _ = UserPortfolioPermission.objects.get_or_create(
             user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
         expected_href = reverse("admin:registrar_portfolio_change", args=[portfolio.pk])
         self.assertContains(response, expected_href)
-        self.assertContains(response, str(portfolio))
-        permission.delete()
-        portfolio.delete()
+
+        self.assertContains(response, str(portfolio), count=2)
+        self.assertContains(response,"No domains", count=2)
+        self.assertContains(response,"No domain requests", count=2)
+        self.assertContains(response,"Domain Request")
+        self.assertContains(response, "Domains")
+        
+     
+        draft_domain = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
+        draft_domain_port = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
+
+
+        DomainRequest.objects.create(
+            requester=self.superuser, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
+        )
+
+        DomainRequest.objects.create(
+            requester=self.superuser, requested_domain=draft_domain_port, status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            portfolio=portfolio
+        )
+
+
+        domain_no_portfolio = Domain.objects.create(name="domainnoportfolio.gov")
+        DomainInformation.objects.create(domain=domain_no_portfolio, requester=self.superuser)
+        UserDomainRole.objects.create(domain=domain_no_portfolio, user=self.superuser)
+   
+        domain_portfolio = Domain.objects.create(name="domainportfolio.gov")
+        DomainInformation.objects.create(domain=domain_portfolio, requester=self.superuser, portfolio=portfolio)
+        UserDomainRole.objects.create(domain=domain_portfolio, user=self.superuser)
+
+        
+        response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
+    
+        self.assertNotContains(response, "No domain requests")
+        self.assertContains(response, '<table class="usa-table">', count=4)
 
 
 class AuditedAdminTest(TestCase):
@@ -4013,6 +4050,7 @@ class TestPortfolioAdmin(TestCase):
         response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
         self.assertEqual(response.status_code, 302)
         response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.feb_portfolio.organization_name)
         # test whether fields are readonly or editable
@@ -4185,7 +4223,7 @@ class TestPortfolioAdmin(TestCase):
             email="thematrix@gov.gov",
         )
 
-        UserPortfolioPermission.objects.all().create(
+        user_portfolo_perm_4 = UserPortfolioPermission.objects.all().create(
             user=admin_user_4,
             portfolio=self.portfolio,
             additional_permissions=[
@@ -4194,13 +4232,20 @@ class TestPortfolioAdmin(TestCase):
             ],
         )
 
-        display_admins = self.admin.display_admins(self.portfolio)
+       
         url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
-        self.assertIn(f'<a href="{url}">2 admins</a>', display_admins)
+        user4_portfolio_perm_url = reverse("admin:registrar_userportfoliopermission_change", args=[user_portfolo_perm_4.id])
+    
+        self.client.force_login(self.staffuser)
+        portfolio_change_form = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
 
-        display_members = self.admin.display_members(self.portfolio)
-        self.assertIn(f'<a href="{url}">2 basic members</a>', display_members)
+        #members with edit requests should have a asterisk to indicate that
+        self.assertContains(portfolio_change_form, f'<a href={user4_portfolio_perm_url}>Agent Smith</a>')
+        self.assertContains(portfolio_change_form, "*", count=2)
 
+        self.assertContains(portfolio_change_form, f'<a href="{url}">2 admins</a>')
+        self.assertContains(portfolio_change_form, f'<a href="{url}">2 basic members</a>')
+        
     @less_console_noise_decorator
     def test_senior_official_readonly_for_federal_org(self):
         """Test that senior_official field is readonly for federal organizations"""

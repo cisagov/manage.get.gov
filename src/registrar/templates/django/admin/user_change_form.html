@@ -27,7 +27,8 @@
             
                <p class="margin-bottom-0">
                 {% if item.portfolio %}
-                <a href="{{ portfolio_url }}"> {{ item.portfolio.organization_name }} </a>
+                    {% url 'admin:registrar_portfolio_change' item.portfolio.pk as url %}
+                <a href="{{ url }}"> {{ item.portfolio.organization_name }} </a>
                 {% else %}
                     No portfolio
                 {% endif %}
@@ -53,10 +54,11 @@
         <div class="display-flex flex-column margin-top-3">   
         {% for item in formatted_table_data %}
         <div class="margin-bottom-3">
-          
+                
                <p class="margin-bottom-0">
                   {% if item.portfolio %}
-                <a href="{{ portfolio_url }}"> {{ item.portfolio.organization_name }} </a>
+                  {% url 'admin:registrar_portfolio_change' item.portfolio.pk as url %}
+                <a href="{{ url }}"> {{ item.portfolio.organization_name }} </a>
                 {% else %}
                     No portfolio
                   {% endif %}
