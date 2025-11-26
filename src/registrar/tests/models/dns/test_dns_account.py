@@ -42,11 +42,11 @@ class DnsAccountTest(TestCase):
         found_x_account_id = self.dns_account.get_active_x_account_id()
         self.assertEqual(found_x_account_id, self.vendor_dns_account.x_account_id)
 
-    def test_get_x_account_id_raises_error(self):
+    def test_get_x_account_id_exception_path_executed(self):
         AccountsJoin.objects.create(
             dns_account=self.dns_account,
             vendor_dns_account=self.vendor_dns_account,
             is_active=False,
         )
-        with self.assertRaises(AccountsJoin.DoesNotExist):
-            self.dns_account.get_active_x_account_id
+        result = self.dns_account.get_active_x_account_id()
+        self.assertIsNone(result)
