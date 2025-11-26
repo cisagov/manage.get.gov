@@ -28,7 +28,7 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
-    def _find_account_data_by_name(self, items, name):
+    def _find_account_json_by_pubname(self, items, name):
         return next((item for item in items if item.get("account_pubname" == name)), None)
 
     def _find_id_by_name(self, items, name):
@@ -125,7 +125,7 @@ class DnsHostService:
             try:
                 page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
                 accounts = page_accounts_data["result"]
-                account_data = self._find_account_data_by_name(accounts, account_name)
+                account_data = self._find_account_json_by_pubname(accounts, account_name)
                 if account_data:
                     break
                 total_count = page_accounts_data["result_info"].get("total_count")
