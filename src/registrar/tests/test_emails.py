@@ -699,3 +699,217 @@ class SendExpirationEmailsTests(TestCase):
         call_command("send_expiring_soon_domains_notification")
 
         mock_send_email.assert_not_called()
+
+
+class SendDomainSetupReminderTests(TestCase):
+    def setUp(self):
+        # Hard set the date
+        self.fixed_today = date(2025, 5, 29)
+        # Create the users
+        self.manager = User.objects.create(email="manager@example.com", username="manageruser")
+        self.admin = User.objects.create(email="admin@example.com", username="adminuser")
+
+    @patch("registrar.management.commands.send_domain_setup_reminder.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_unknown_domain_7_days_after_approval(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is in UNKNOWN state 7 days after approval
+        2. Getting the right template
+        3. Sending the correct context to the right people (domain manager, org admin)
+        """
+        # Set today to 7 days after domain creation
+        seven_days_ago = self.fixed_today - timedelta(days=7)
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_unknown = Domain.objects.create(
+            name="unknownsetup.gov",
+            state=Domain.State.UNKNOWN,
+        )
+        domain_unknown.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
+        domain_unknown.save(update_fields=["created_at"])
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Setup Reminder")
+        DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, requester=self.manager)
+        UserDomainRole.objects.create(user=self.manager, domain=domain_unknown, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_domain_setup_reminder")
+
+        expected_context = {
+            "domain": domain_unknown,
+            "approval_date": seven_days_ago,
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/domain_setup_reminder.txt",
+            "emails/domain_setup_reminder_subject.txt",
+            to_addresses=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_domain_setup_reminder.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_dns_needed_domain_7_days_after_approval(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is in DNS_NEEDED state 7 days after approval
+        2. Getting the right template
+        3. Sending the correct context to the right people (domain manager, org admin)
+        """
+        # Set today to 7 days after domain creation
+        seven_days_ago = self.fixed_today - timedelta(days=7)
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_dns = Domain.objects.create(
+            name="dnssetup.gov",
+            state=Domain.State.DNS_NEEDED,
+        )
+        domain_dns.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
+        domain_dns.save(update_fields=["created_at"])
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Setup Reminder")
+        DomainInformation.objects.create(domain=domain_dns, portfolio=portfolio, requester=self.manager)
+        UserDomainRole.objects.create(user=self.manager, domain=domain_dns, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_domain_setup_reminder")
+
+        expected_context = {
+            "domain": domain_dns,
+            "approval_date": seven_days_ago,
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/domain_setup_reminder.txt",
+            "emails/domain_setup_reminder_subject.txt",
+            to_addresses=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_domain_setup_reminder.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_legacy_domain_without_portfolio(self, mock_now, mock_send_email):
+        """
+        1. Email should send for legacy domains (no portfolio) 7 days after approval
+        2. Only domain managers should be on TO line, no CC
+        """
+        # Set today to 7 days after domain creation
+        seven_days_ago = self.fixed_today - timedelta(days=7)
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_legacy = Domain.objects.create(
+            name="legacysetup.gov",
+            state=Domain.State.UNKNOWN,
+        )
+        domain_legacy.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
+        domain_legacy.save(update_fields=["created_at"])
+        # Create domain_info without portfolio (legacy mode)
+        DomainInformation.objects.create(domain=domain_legacy, requester=self.manager)
+        UserDomainRole.objects.create(user=self.manager, domain=domain_legacy, role="manager")
+
+        call_command("send_domain_setup_reminder")
+
+        expected_context = {
+            "domain": domain_legacy,
+            "approval_date": seven_days_ago,
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/domain_setup_reminder.txt",
+            "emails/domain_setup_reminder_subject.txt",
+            to_addresses=["manager@example.com"],
+            cc_addresses=[],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_domain_setup_reminder.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_no_emails_for_ready_domain(self, mock_now, mock_send_email):
+        """
+        1. Email should NOT send if domain is in READY state (already set up)
+        """
+        seven_days_ago = self.fixed_today - timedelta(days=7)
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_ready = Domain.objects.create(
+            name="readysetup.gov",
+            state=Domain.State.READY,
+            created_at=timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time())),
+        )
+        DomainInformation.objects.create(domain=domain_ready, requester=self.manager)
+        UserDomainRole.objects.create(user=self.manager, domain=domain_ready, role="manager")
+
+        call_command("send_domain_setup_reminder")
+
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.management.commands.send_domain_setup_reminder.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_no_emails_for_domains_created_on_different_days(self, mock_now, mock_send_email):
+        """
+        1. Email should NOT send for domains created 6 or 8 days ago (only exactly 7 days)
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        # Domain created 6 days ago
+        six_days_ago = self.fixed_today - timedelta(days=6)
+        domain_6_days = Domain.objects.create(
+            name="sixdays.gov",
+            state=Domain.State.UNKNOWN,
+            created_at=timezone.make_aware(datetime.combine(six_days_ago, datetime.min.time())),
+        )
+        DomainInformation.objects.create(domain=domain_6_days, requester=self.manager)
+        UserDomainRole.objects.create(user=self.manager, domain=domain_6_days, role="manager")
+
+        # Domain created 8 days ago
+        eight_days_ago = self.fixed_today - timedelta(days=8)
+        domain_8_days = Domain.objects.create(
+            name="eightdays.gov",
+            state=Domain.State.UNKNOWN,
+            created_at=timezone.make_aware(datetime.combine(eight_days_ago, datetime.min.time())),
+        )
+        DomainInformation.objects.create(domain=domain_8_days, requester=self.manager)
+        UserDomainRole.objects.create(user=self.manager, domain=domain_8_days, role="manager")
+
+        call_command("send_domain_setup_reminder")
+
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.management.commands.send_domain_setup_reminder.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_no_emails_for_domains_without_managers(self, mock_now, mock_send_email):
+        """
+        1. Email should NOT send if domain has no domain managers
+        """
+        seven_days_ago = self.fixed_today - timedelta(days=7)
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_no_manager = Domain.objects.create(
+            name="nomanager.gov",
+            state=Domain.State.UNKNOWN,
+            created_at=timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time())),
+        )
+        DomainInformation.objects.create(domain=domain_no_manager, requester=self.manager)
+
+        call_command("send_domain_setup_reminder")
+
+        mock_send_email.assert_not_called()

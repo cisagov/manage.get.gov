@@ -10,8 +10,7 @@ from registrar.models.dns.vendor_dns_zone import VendorDnsZone
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
 from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesJoin
 from registrar.models.dns.dns_vendor import DnsVendor
-from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
-
+from registrar.utility.constants import CURRENT_DNS_VENDOR
 
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
@@ -29,7 +28,7 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
-    def _find_account_data_by_name(self, items, name):
+    def _find_account_json_by_pubname(self, items, name):
         return next((item for item in items if item.get("account_pubname" == name)), None)
 
     def _find_id_by_name(self, items, name):
@@ -43,31 +42,19 @@ class DnsHostService:
     def dns_setup(self, domain_name):
         account_name = make_dns_account_name(domain_name)
 
-        try:
-            x_account_id = self._find_existing_account_in_db(account_name)
-        except DnsAccount.DoesNotExist as e:
-            logger.error(f"Error finding existing active account in db: {e}")
-            raise
+        x_account_id = self._find_existing_account_in_db(account_name)
         has_db_account = bool(x_account_id)
 
         if has_db_account:
             logger.info("Already has an existing vendor account")
         else:
-            try:
-                cf_account_data = self._find_existing_account_in_cf(account_name)
-            except APIError as e:
-                logger.error(e)
-                raise
+            cf_account_data = self._find_existing_account_in_cf(account_name)
             has_cf_account = bool(cf_account_data)
 
             if has_cf_account:
                 x_account_id = self.save_db_account({"result": cf_account_data})
             else:
-                try:
-                    x_account_id = self.create_and_save_account(account_name)
-                except (APIError, Exception) as e:
-                    logger.error(f"dnsSetup failed {e}")
-                    raise
+                x_account_id = self.create_and_save_account(account_name)
 
         
         try:
@@ -154,7 +141,7 @@ class DnsHostService:
             try:
                 page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
                 accounts = page_accounts_data["result"]
-                account_data = self._find_account_data_by_name(accounts, account_name)
+                account_data = self._find_account_json_by_pubname(accounts, account_name)
                 if account_data:
                     break
                 total_count = page_accounts_data["result_info"].get("total_count")
@@ -170,7 +157,7 @@ class DnsHostService:
         try:
             dns_account = DnsAccount.objects.get(name=account_name)
         except DnsAccount.DoesNotExist:
-            logger.info(f"No db account found by name {account_name}")
+            logger.debug(f"No db account found by name {account_name}")
             return None
 
         return dns_account.get_active_x_account_id()
@@ -227,7 +214,7 @@ class DnsHostService:
     def save_db_account(self, vendor_account_data):
         result = vendor_account_data["result"]
         x_account_id = result["id"]
-        dns_vendor = DnsVendor.objects.get(name=DnsVendor.CF)
+        dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
 
         # TODO: handle transaction failure
         with transaction.atomic():
