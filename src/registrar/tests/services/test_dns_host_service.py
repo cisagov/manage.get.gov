@@ -79,12 +79,9 @@ class TestDnsHostService(TestCase):
                 mock_find_account_db.return_value = case["x_account_id"]
                 mock_find_zone_db.return_value = case["x_zone_id"], None
 
-                if mock_find_account_db.return_value == None:
+                if mock_find_account_db.return_value is None:
                     mock_create_and_save_account.return_value = case["expected_account_id"]
-                    mock_create_and_save_zone.return_value = (
-                      case["expected_zone_id"],
-                      ["rainbow1.dns.gov"]
-                    )
+                    mock_create_and_save_zone.return_value = (case["expected_zone_id"], ["rainbow1.dns.gov"])
 
                     mock_get_page_accounts.return_value = {
                         "result": [{"id": case.get("expected_account_id")}],
@@ -100,7 +97,7 @@ class TestDnsHostService(TestCase):
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     def test_dns_setup_failure_from_find_existing_account_in_cf(
-        self,mock_find_existing_account_in_db, mock_find_existing_account_in_cf
+        self, mock_find_existing_account_in_db, mock_find_existing_account_in_cf
     ):
         domain_name = "test.gov"
         mock_find_existing_account_in_db.return_value = None
@@ -116,7 +113,6 @@ class TestDnsHostService(TestCase):
         self, mock_find_existing_account_in_db, mock_find_existing_account_in_cf, mock_create_and_save_account
     ):
         domain_name = "test.gov"
-        account_name = make_dns_account_name(domain_name)
 
         mock_find_existing_account_in_db.return_value = None
         mock_find_existing_account_in_cf.return_value = None
@@ -127,9 +123,7 @@ class TestDnsHostService(TestCase):
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_dns_setup_failure_from_create_cf_zone(
-        self, mock_create_cf_account, mock_get_page_accounts
-    ):
+    def test_dns_setup_failure_from_create_cf_zone(self, mock_create_cf_account, mock_get_page_accounts):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
         account_id = "12345"

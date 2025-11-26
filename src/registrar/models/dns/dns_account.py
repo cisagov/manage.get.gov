@@ -19,8 +19,8 @@ class DnsAccount(TimeStampedModel):
         # TODO: Revisit how we handle DoesNotExist when we are transitioning to a different vendor
         except AccountsJoin.DoesNotExist:
             """
-            With `is_active` set to True by default, this would not be reachable unless we switched vendors and did not yet
-            set up a vendor_dns_account for the new vendor as active
+            With `is_active` set to True by default, this would not be reachable unless we switched vendors
+            and did not yet set up a vendor_dns_account for the new vendor as active
             """
             logger.info(f"There is a database entry but no active vendor for this account {self.name}")
             return None

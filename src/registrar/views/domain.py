@@ -30,7 +30,6 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
-    DnsAccount_VendorDnsAccount as AccountsJoin,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -827,8 +826,15 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 zone_id = ""
                 try:
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
-                except (APIError, Exception) as e:
+                except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "DNS setup failed",
+                        },
+                        status=400,
+                    )
 
                 if zone_id:
                     zone_name = domain_name

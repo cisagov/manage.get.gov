@@ -12,7 +12,7 @@ from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone 
 from registrar.models.dns.dns_vendor import DnsVendor
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 
-from django.db import transaction, DatabaseError, IntegrityError
+from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 
