@@ -10,7 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@alpinejs/csp": "^3.15.2",
     "@uswds/uswds": "3.8.1",
     "pa11y-ci": "^3.1.0",
     "sass": "^1.54.8"
