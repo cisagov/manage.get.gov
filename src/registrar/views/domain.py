@@ -30,7 +30,7 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
-    DnsAccount_VendorDnsAccount,
+    DnsAccount_VendorDnsAccount as AccountsJoin,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -827,19 +827,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 zone_id = ""
                 try:
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
-                except APIError as e:
-                    logger.error(f"API error in view: {str(e)}")
-                except DnsAccount_VendorDnsAccount.DoesNotExist as e:
-                    logger.error(
-                        f"There is record of a domain with an account, but there is no active account at this time. {e}"
-                    )
-                    return JsonResponse(
-                        {
-                            "status": "error",
-                            "message": "Record of an account for {domain_name} exists, but not with an active vendor",
-                        },
-                        status=404,
-                    )
+                except (APIError, Exception) as e:
+                    logger.error(f"dnsSetup failed {e}")
 
                 if zone_id:
                     zone_name = domain_name

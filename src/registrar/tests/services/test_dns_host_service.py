@@ -27,12 +27,12 @@ class TestDnsHostService(TestCase):
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
     def test_dns_setup_success(
         self,
-        mock_create_cf_account,
-        mock_create_cf_zone,
+        mock_create_and_save_account,
+        mock_create_and_save_zone,
         mock_get_page_accounts,
         mock_get_account_zones,
         mock_find_account_db,
@@ -80,10 +80,11 @@ class TestDnsHostService(TestCase):
                 mock_find_zone_db.return_value = case["x_zone_id"], None
 
                 if mock_find_account_db.return_value == None:
-                    mock_create_cf_account.return_value = {"result": {"id": case["expected_account_id"]}}
-                    mock_create_cf_zone.return_value = {
-                        "result": {"id": case["expected_zone_id"], "name": case["domain_name"]}
-                    }
+                    mock_create_and_save_account.return_value = case["expected_account_id"]
+                    mock_create_and_save_zone.return_value = (
+                      case["expected_zone_id"],
+                      ["rainbow1.dns.gov"]
+                    )
 
                     mock_get_page_accounts.return_value = {
                         "result": [{"id": case.get("expected_account_id")}],
@@ -228,7 +229,7 @@ class TestDnsHostServiceDB(TestCase):
         found_id = self.service._find_existing_account_in_db(account_name)
         self.assertEqual(found_id, test_x_account_id)
 
-    def test_find_existing_account_in_db_raises_does_not_exist_with_inactive_join_success(self):
+    def test_find_existing_account_in_db_does_not_exist_returns_none(self):
         account_name = "Account for inactive.gov"
 
         vendor_dns_acc = VendorDnsAccount.objects.create(
@@ -241,8 +242,8 @@ class TestDnsHostServiceDB(TestCase):
 
         AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
 
-        with self.assertRaises(AccountsJoin.DoesNotExist):
-            self.service._find_existing_account_in_db(account_name)
+        result = self.service._find_existing_account_in_db(account_name)
+        self.assertIsNone(result)
 
     def test_save_db_account_success(self):
         # Dummy JSON data from API
