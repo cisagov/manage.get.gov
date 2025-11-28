@@ -2,14 +2,35 @@
 {% load static url_helpers %}
 
 {% block detail_content %}
-<table>
+<table id="portfolio-admins-table">
     <thead>
+                                            
         <tr>
             <th>Name</th>
             <th>Title</th>
             <th>Email</th>
             <th>Phone</th>
-            <th>Action</th>
+            <th>Action
+                 <button 
+                               class="
+                                            usa-button 
+                                            usa-button__small-text 
+                                            usa-button--unstyled 
+                                            usa-button--icon
+                                            text-no-underline
+                                            padding-left-1" 
+                                        type="button"
+                                        id="copy-to-clipboard-admins"
+                                        >
+                                            <svg 
+                                            class="usa-icon" 
+                                            >
+                                            <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                            </svg>
+                                            
+                                            <span>Copy all</span> 
+                                        </button>
+            </th>
         </tr>
     </thead>
     <tbody>
