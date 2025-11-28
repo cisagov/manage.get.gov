@@ -523,7 +523,7 @@ class TestPortfolio(WebTest):
         self.portfolio.save()
         page = self.app.get(reverse("organization-info"))
         # Org name in Sidenav, main nav, webpage title, and breadcrumb
-        self.assertGreaterEqual(page.text.count("Hotel California"), 5)
+        self.assertContains(page, "Hotel California", count=6)
         self.assertContains(page, "Organization type")
         self.assertContains(page, "Federal")
 
@@ -3255,7 +3255,7 @@ class TestRequestingEntity(WebTest):
 
         # Navigate past the intro page
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Fill out the requesting entity form
@@ -3292,7 +3292,7 @@ class TestRequestingEntity(WebTest):
         # Navigate past intro
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_form = response.forms[1]
+        intro_form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = intro_form.submit().follow()
 
         # Static text checks
@@ -3301,6 +3301,7 @@ class TestRequestingEntity(WebTest):
 
         # We expect to see the portfolio name in two places:
         # the header, and as one of the radio button options.
+        self.assertContains(response, self.portfolio.organization_name, count=4)
         tree = parse_tree(response)
         assert_header_contains(self, tree, self.portfolio.organization_name)
         assert_radio_group_contains_label(
@@ -3325,12 +3326,12 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Check that we're on the right page
         self.assertContains(response, "Who will use the domain you’re requesting?")
-        form = response.forms[1]
+        form = form_with_field(response, "portfolio_requesting_entity-requesting_entity_is_suborganization")
 
         # Test selecting an existing suborg
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
@@ -3356,7 +3357,7 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Check that we're on the right page
@@ -3394,7 +3395,7 @@ class TestRequestingEntity(WebTest):
         # Navigate past the intro page
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        form = response.forms[1]
+        form = response.forms[1] if len(response.forms) > 1 else response.forms[0]
         response = form.submit().follow()
 
         # Check that we're on the right page
