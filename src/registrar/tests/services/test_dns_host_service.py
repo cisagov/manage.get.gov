@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from django.test import TestCase
 from django.db import IntegrityError
 
