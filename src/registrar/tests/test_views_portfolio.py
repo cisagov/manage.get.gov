@@ -102,21 +102,21 @@ class TestPortfolio(WebTest):
         self.portfolio.delete()
         so.delete()
 
+    @override_flag("multiple_portfolios", active=False)
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_permission(self):
-        """Test that user with no portfolio permission is not redirected when attempting to access home"""
+        """Test that user with no portfolio permission stays on legacy home when flag is off"""
         self.app.set_user(self.user.username)
         UserPortfolioPermission.objects.get_or_create(
             user=self.user, portfolio=self.portfolio, additional_permissions=[]
         )
-        self.user.portfolio = self.portfolio
-        self.user.save()
-        self.user.refresh_from_db()
-        # This will redirect the user to the portfolio page.
-        # Follow implicity checks if our redirect is working.
-        portfolio_page = self.app.get(reverse("home"))
-        # Assert that we're on the right page
-        self.assertNotContains(portfolio_page, self.portfolio.organization_name)
+
+        # Should stay on home page (no redirect)
+        home_page = self.app.get(reverse("home"))
+        self.assertEqual(home_page.status_code, 200)
+
+        # Should NOT see portfolio name (legacy view)
+        self.assertNotContains(home_page, self.portfolio.organization_name)
 
     @less_console_noise_decorator
     def test_middleware_does_not_redirect_if_no_portfolio(self):
@@ -408,20 +408,6 @@ class TestPortfolio(WebTest):
             defaults={"additional_permissions": portfolio_additional_permissions},
         )
 
-        # Update if already exists
-        if portfolio_permission.additional_permissions != portfolio_additional_permissions:
-            portfolio_permission.additional_permissions = portfolio_additional_permissions
-            portfolio_permission.save()
-
-        # This will redirect the user to the portfolio page.
-        portfolio_page = self.app.get(reverse("home")).follow()
-        # Assert that we're on the right page
-        self.assertContains(portfolio_page, self.portfolio.organization_name)
-        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
-        self.assertContains(portfolio_page, reverse("domains"))
-        self.assertContains(portfolio_page, reverse("domain-requests"))
-
         # Remove additional permissions, leaving only the base role permissions
         # ORGANIZATION_MEMBER now includes VIEW_MANAGED_DOMAINS by default
         portfolio_permission.additional_permissions = []
@@ -429,11 +415,11 @@ class TestPortfolio(WebTest):
         portfolio_permission.refresh_from_db()
 
         # Members should be redirected to the readonly domains page
-        portfolio_page = self.app.get(reverse("home")).follow()
+        home_page = self.app.get(reverse("home")).follow()
 
-        self.assertContains(portfolio_page, self.portfolio.organization_name)
-        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
-        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(home_page, self.portfolio.organization_name)
+        self.assertNotContains(home_page, "<h1>Organization</h1>")
+        self.assertContains(home_page, '<h1 id="domains-header">Domains</h1>')
 
         # The organization page should still be accessible
         org_page = self.app.get(reverse("organization"))
@@ -447,6 +433,59 @@ class TestPortfolio(WebTest):
         # Domain request page should not be accessible (no domain request permissions)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
         self.assertEquals(domain_request_page.status_code, 403)
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_legacy_view_when_multiple_portfolios_flag_off(self):
+        """
+        Tests that when multiple_portfolios flag is OFF, users with portfolio access
+        still see their organization and get redirected to portfolio pages (legacy single-org mode).
+        They should NOT see the multi-org dropdown selector.
+        """
+        self.app.set_user(self.user.username)
+
+        # Give user portfolio permissions with domains access
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            defaults={
+                "additional_permissions": [
+                    UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+                    UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                ]
+            },
+        )
+
+        # User gets redirected to portfolio domains page (even in legacy mode)
+        response = self.app.get(reverse("home"))
+        self.assertEqual(response.status_code, 302)
+
+        # Follow the redirect
+        home_page = response.follow()
+
+        # Should see portfolio name in header (legacy single-org mode)
+        self.assertContains(home_page, self.portfolio.organization_name)
+
+        # Should NOT see the multi-org dropdown selector
+        self.assertNotContains(home_page, 'id="portfolio-organization-dropdown"')
+        # Checking for the org dropdown link, should not be present
+        self.assertNotContains(home_page, reverse("your-organizations"))
+
+        # Should see domains view
+        self.assertContains(home_page, "Domains")
+
+        # Organization page is accessible
+        org_page = self.app.get(reverse("organization"))
+        self.assertEqual(org_page.status_code, 200)
+        self.assertContains(org_page, self.portfolio.organization_name)
+
+        # Should NOT see org selector dropdown
+        self.assertNotContains(org_page, reverse("your-organizations"))
+
+        # Domain page accessible
+        domain_page = self.app.get(reverse("domains"))
+        self.assertEquals(domain_page.status_code, 200)
 
     @less_console_noise_decorator
     def test_accessible_pages_when_user_does_not_have_role(self):
