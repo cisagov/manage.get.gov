@@ -9,7 +9,3 @@ COPY Pipfile.lock Pipfile.lock
 
 RUN pip install pipenv
 RUN pipenv sync --system --dev
-
-# Mount suppression.xml to remove known false positives from OWASP
-COPY suppression.xml /src/suppression.xml
-CMD ["dependency-check.sh", "--scan", "/app", "--format", "HTML", "--out", "/app/owasp-report", "--suppression", "/src/suppression.xml"]
