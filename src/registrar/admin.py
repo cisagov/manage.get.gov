@@ -1208,7 +1208,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                 Q(status=DomainRequest.DomainRequestStatus.STARTED)
                 | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN),
             )
-            .select_related('portfolio')
+            .select_related("portfolio")
             .order_by("status", "requested_domain__name")
         )
 
@@ -1221,7 +1221,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         domain_info_objects = (
             DomainInformation.objects.filter(domain_id__in=domain_ids)
             .exclude(domain__state=Domain.State.DELETED)
-            .select_related('domain', 'portfolio')
+            .select_related("domain", "portfolio")
             .order_by("domain__state", "domain__name")
         )
 
@@ -1235,7 +1235,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         requests_by_portfolio = {}
         for domain_request in domain_requests:
             portfolio_id = domain_request.portfolio.id if domain_request.portfolio else None
-            if portfolio_id not in  requests_by_portfolio:
+            if portfolio_id not in requests_by_portfolio:
                 requests_by_portfolio[portfolio_id] = []
             requests_by_portfolio[portfolio_id].append(domain_request)
 
@@ -1246,16 +1246,18 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                 {
                     "portfolio": portfolio,
                     "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
-                    "portfolio_domain_requests": requests_by_portfolio.get(portfolio.id, [])
+                    "portfolio_domain_requests": requests_by_portfolio.get(portfolio.id, []),
                 }
             )
 
         if domains_by_portfolio.get(None) or requests_by_portfolio.get(None):
-            formatted_table_data.append({
-                "portfolio": None,
-                "portfolio_domains": domains_by_portfolio.get(None),
-                "portfolio_domain_requests":requests_by_portfolio.get(None)
-            })
+            formatted_table_data.append(
+                {
+                    "portfolio": None,
+                    "portfolio_domains": domains_by_portfolio.get(None),
+                    "portfolio_domain_requests": requests_by_portfolio.get(None),
+                }
+            )
 
         extra_context = {"formatted_table_data": formatted_table_data}
         return super().change_view(request, object_id, form_url, extra_context)
