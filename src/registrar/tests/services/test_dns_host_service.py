@@ -23,7 +23,9 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone")
+    # first patch will need to be updated to _find_existing_zone_in_db
+    # create another dns_setup test for just zones and rename this to test_dns_account_setup?
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
