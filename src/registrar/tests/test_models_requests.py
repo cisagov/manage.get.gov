@@ -1209,7 +1209,6 @@ class TestDomainRequest(TestCase):
             status=DomainRequest.DomainRequestStatus.SUBMITTED,
             user=self.dummy_user_2,
         )
-        domain_request.save()
         domain_request.in_review_omb()
 
         self.assertEqual(domain_request.status, DomainRequest.DomainRequestStatus.IN_REVIEW_OMB)
