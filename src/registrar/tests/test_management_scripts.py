@@ -2743,27 +2743,25 @@ class TestDeleteDomainNotSetup(MockEppLib):
             email="somedotgovdev@test.gov", first_name="Dottie", last_name="Glover", username="user2"
         )
         self.fixed_today = timezone.make_aware(datetime(2025, 10, 11, 0, 0, 0))
-        self.expiration_date_seven_days = self.fixed_today - timedelta(days=7)
-        self.expiration_past_not_yet_seven_days = self.fixed_today - timedelta(days=2)
+        self.expiration_date_today = self.fixed_today
+        self.expiration_not_today = self.fixed_today - timedelta(days=2)
 
-        self.domain_expired_seven_days = Domain.objects.create(
-            name="test.gov", expiration_date=self.expiration_date_seven_days
+        self.domain_expired_today = Domain.objects.create(name="test.gov", expiration_date=self.expiration_date_today)
+        self.domain_expired_not_today = Domain.objects.create(
+            name="test1.gov", expiration_date=self.expiration_not_today
         )
-        self.domain_expired_two_days = Domain.objects.create(
-            name="test1.gov", expiration_date=self.expiration_past_not_yet_seven_days
-        )
-        self.domain_expired_seven_days_too = Domain.objects.create(
-            name="test2.gov", expiration_date=self.expiration_date_seven_days
+        self.domain_expired_today_too = Domain.objects.create(
+            name="test2.gov", expiration_date=self.expiration_date_today
         )
 
-        self.domain_expired_seven_days_too.dns_needed_from_unknown()
-        self.domain_expired_seven_days_too.save()
+        self.domain_expired_today_too.dns_needed_from_unknown()
+        self.domain_expired_today_too.save()
 
         UserDomainRole.objects.create(
-            domain=self.domain_expired_seven_days, user=self.user1, role=UserDomainRole.Roles.MANAGER
+            domain=self.domain_expired_today, user=self.user1, role=UserDomainRole.Roles.MANAGER
         )
         UserDomainRole.objects.create(
-            domain=self.domain_expired_seven_days_too, user=self.user2, role=UserDomainRole.Roles.MANAGER
+            domain=self.domain_expired_today_too, user=self.user2, role=UserDomainRole.Roles.MANAGER
         )
 
         AllowedEmail.objects.create(email=self.user1.email)
@@ -2781,13 +2779,13 @@ class TestDeleteDomainNotSetup(MockEppLib):
         """Dry run to ensure data is not modified"""
         mock_now.return_value = self.fixed_today
 
-        initial_state = self.domain_expired_seven_days.state
+        initial_state = self.domain_expired_today.state
 
         call_command("delete_expired_domains_not_setup", dry_run=True)
 
         self.assertEqual(Domain.objects.first().state, initial_state)
 
-        domain_after_run = Domain.objects.get(pk=self.domain_expired_seven_days.id)
+        domain_after_run = Domain.objects.get(pk=self.domain_expired_today.id)
 
         self.assertEqual(domain_after_run.state, initial_state)
 
@@ -2807,7 +2805,7 @@ class TestDeleteDomainNotSetup(MockEppLib):
         call_command("delete_expired_domains_not_setup", dry_run=False)
 
         mock_send_domain_managers_email.assert_called_once_with(
-            [self.domain_expired_seven_days, self.domain_expired_seven_days_too]
+            [self.domain_expired_today, self.domain_expired_today_too]
         )
 
     @patch.object(Domain, "deleteInEpp")
@@ -2826,9 +2824,9 @@ class TestDeleteDomainNotSetup(MockEppLib):
 
         call_command("delete_expired_domains_not_setup", dry_run=False)
 
-        domain_to_test = Domain.objects.get(pk=self.domain_expired_seven_days.id)
+        domain_to_test = Domain.objects.get(pk=self.domain_expired_today.id)
         self.assertNotEqual(domain_to_test.state, Domain.State.DELETED)
-        mock_send_domain_managers_email.assert_called_with([self.domain_expired_seven_days_too])
+        mock_send_domain_managers_email.assert_called_with([self.domain_expired_today_too])
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""
