@@ -433,19 +433,15 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(DnsZone.objects.count(), 0)
         self.assertEqual(ZonesJoin.objects.count(), 0)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_save_db_record_success(self, mock_create_cf_account, mock_create_cf_zone):
+    def test_save_db_record_success(self):
         """Successfully creates registrar db record objects."""
-        mock_create_cf_account.return_value = self.vendor_account_data
-        mock_create_cf_zone.return_value = self.vendor_zone_data
-        account_name = self.vendor_account_data["result"].get("name")
+        x_zone_id = self.vendor_account_data["result"].get("id")
         domain_name = "test.gov"
         domain = Domain.objects.create(name=domain_name)
 
         # Create account and zone associated with record
-        x_account_id = self.service.create_and_save_account(account_name)
-        x_zone_id, _ = self.service.create_and_save_zone(domain_name, x_account_id)
+        self.service.save_db_account(self.vendor_account_data)
+        self.service.save_db_zone(self.vendor_zone_data, domain_name)
         zone = DnsZone.objects.get(domain=domain)
 
         self.service.save_db_record(x_zone_id, self.vendor_record_data)
@@ -466,18 +462,14 @@ class TestDnsHostServiceDB(TestCase):
         join_exists = RecordsJoin.objects.filter(dns_record=dns_record, vendor_dns_record=vendor_dns_record).exists()
         self.assertTrue(join_exists)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_save_db_record_with_error_fails(self, mock_create_cf_account, mock_create_cf_zone):
-        mock_create_cf_account.return_value = self.vendor_account_data
-        mock_create_cf_zone.return_value = self.vendor_zone_data
-        account_name = self.vendor_account_data["result"].get("name")
+    def test_save_db_record_with_error_fails(self):
+        x_zone_id = self.vendor_account_data["result"].get("id")
         domain_name = "test.gov"
         Domain.objects.create(name=domain_name)
 
         # Create account and zone associated with record
-        x_account_id = self.service.create_and_save_account(account_name)
-        x_zone_id, _ = self.service.create_and_save_zone(domain_name, x_account_id)
+        self.service.save_db_account(self.vendor_account_data)
+        self.service.save_db_zone(self.vendor_zone_data, domain_name)
 
         expected_vendor_records = VendorDnsRecord.objects.count()
         expected_dns_records = DnsRecord.objects.count()
@@ -493,9 +485,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_save_db_record_with_bad_or_incomplete_data_fails(self, mock_create_cf_account, mock_create_cf_zone):
+    def test_save_db_record_with_bad_or_incomplete_data_fails(self):
         """Do not create db zone objects when passed missing or incomplete Cloudlfare data."""
         # Test missing record data including incomplete registrar DNS record form data
         invalid_result_payloads = [
@@ -526,16 +516,13 @@ class TestDnsHostServiceDB(TestCase):
                 },
             },
         ]
-
-        mock_create_cf_account.return_value = self.vendor_account_data
-        mock_create_cf_zone.return_value = self.vendor_zone_data
-        account_name = self.vendor_account_data["result"].get("name")
+        x_zone_id = self.vendor_account_data["result"].get("id")
         domain_name = "dns-test.gov"
         Domain.objects.create(name=domain_name)
 
         # Create account and zone associated with record
-        x_account_id = self.service.create_and_save_account(account_name)
-        x_zone_id, _ = self.service.create_and_save_zone(domain_name, x_account_id)
+        self.service.save_db_account(self.vendor_account_data)
+        self.service.save_db_zone(self.vendor_zone_data, domain_name)
 
         expected_vendor_records = VendorDnsRecord.objects.count()
         expected_dns_records = DnsRecord.objects.count()
@@ -551,18 +538,14 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(DnsAccount.objects.count(), expected_dns_records)
                     self.assertEqual(AccountsJoin.objects.count(), expected_record_joins)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_save_db_record_on_failed_join_creation_throws_error(self, mock_create_cf_account, mock_create_cf_zone):
-        mock_create_cf_account.return_value = self.vendor_account_data
-        mock_create_cf_zone.return_value = self.vendor_zone_data
-        account_name = self.vendor_account_data["result"].get("name")
+    def test_save_db_record_on_failed_join_creation_throws_error(self):
+        x_zone_id = self.vendor_account_data["result"].get("id")
         domain_name = "dns-test.gov"
         Domain.objects.create(name=domain_name)
 
         # Create account and zone associated with record
-        x_account_id = self.service.create_and_save_account(account_name)
-        x_zone_id, _ = self.service.create_and_save_zone(domain_name, x_account_id)
+        self.service.save_db_account(self.vendor_account_data)
+        self.service.save_db_zone(self.vendor_zone_data, domain_name)
 
         with patch(
             "registrar.models.DnsRecord_VendorDnsRecord.objects.create",
