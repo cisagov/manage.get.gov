@@ -219,11 +219,13 @@ class CheckPortfolioMiddleware:
         multiple = user.is_multiple_orgs_user(request)
         any_org = user.is_any_org_user()
 
-        # If multi-org OR legacy+any_org, go to org select
-        if multiple or (user.has_legacy_domain() and any_org):
+        # Only redirect to org select if multiple_portfolios flag is active
+        # And if multi-org OR legacy+any_org, go to org select
+        if flag_is_active(request, "multiple_portfolios") and (multiple or (user.has_legacy_domain() and any_org)):
             return HttpResponseRedirect(self.select_portfolios_page)
 
-        # If portfolio is present, choose domains vs no-portfolio-domains
+        # Portfolio domain redirects when multi-portfolio flag is off
+        # (single org users / legacy should still get redirected to their portfolio pages)
         portfolio = request.session.get("portfolio")
         has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
             request
