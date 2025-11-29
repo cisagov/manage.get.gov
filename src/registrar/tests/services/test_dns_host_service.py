@@ -23,9 +23,8 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    # first patch will need to be updated to _find_existing_zone_in_db
-    # create another dns_setup test for just zones and rename this to test_dns_account_setup?
-    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
+    # Should we create another dns_setup test method for just zones?
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_db")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
@@ -321,6 +320,67 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(DnsAccount.objects.count(), 0)
         self.assertEqual(AccountsJoin.objects.count(), 0)
 
+    def test_find_existing_zone_in_db_success(self):
+        zone_name = "example.gov"
+        test_x_account_id = "12345"
+        x_zone_id = "zone-999"
+        expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
+
+        zone_domain = Domain.objects.create(
+            name=zone_name,
+        )
+
+        vendor_zone = VendorDnsZone.objects.create(
+            x_zone_id=x_zone_id,
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+
+        vendor_dns_acc = VendorDnsAccount.objects.create(
+            dns_vendor=self.vendor,
+            x_account_id=test_x_account_id,
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+
+        dns_acc = DnsAccount.objects.create(name=zone_name)
+        
+        AccountsJoin.objects.create(
+            dns_account=dns_acc,
+            vendor_dns_account=vendor_dns_acc,
+            is_active=True,
+        )
+
+        zone = DnsZone.objects.create(
+            domain=zone_domain,
+            dns_account=dns_acc,
+            name=zone_name,
+            nameservers=expected_nameservers
+        )
+
+        ZonesJoin.objects.create(
+            dns_zone=zone,
+            vendor_dns_zone=vendor_zone,
+            is_active=True,
+        )
+
+        found_x_zone_id, found_nameservers = self.service._find_existing_zone_in_db(zone_name, test_x_account_id)
+
+        self.assertEqual(found_x_zone_id, x_zone_id)
+        self.assertEqual(found_nameservers, expected_nameservers)
+    
+    def test_find_existing_zone_in_db_does_not_exist_returns_none(self):
+        zone_name = "missing.gov"
+        test_x_account_id = "99999"
+
+        x_zone_id, nameservers = self.service._find_existing_zone_in_db(
+            zone_name,
+            test_x_account_id,
+        )
+
+        self.assertIsNone(x_zone_id)
+        self.assertIsNone(nameservers)
+    
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
         # Create account object referenced in zone

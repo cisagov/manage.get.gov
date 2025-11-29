@@ -30,6 +30,9 @@ class DnsHostService:
 
     def _find_account_json_by_pubname(self, items, name):
         return next((item for item in items if item.get("account_pubname" == name)), None)
+    
+    def _find_zone_json_by_name(self, items, name):
+        return next((item for item in items if item.get("name") == name), None)
 
     def _find_id_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -167,11 +170,12 @@ class DnsHostService:
             zones = all_zones_data["result"]
             x_zone_id = self._find_id_by_name(zones, zone_name)
             nameservers = self._find_nameservers_by_zone_id(zones, x_zone_id)
+            zone_data = self._find_zone_json_by_name(zones, zone_name)
         except APIError as e:
             logger.error(f"Error fetching zones: {str(e)}")
             raise
 
-        return x_zone_id, nameservers
+        return x_zone_id, nameservers, zone_data
 
     def _find_existing_zone_in_db(self, zone_name, x_account_id):
         try:
