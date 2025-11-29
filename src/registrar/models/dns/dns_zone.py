@@ -1,8 +1,13 @@
+import logging
+
 from django.db import models
 
 from registrar.models.dns.dns_soa import DnsSoa
+from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesLink
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+
+logger = logging.getLogger(__name__)
 
 
 class DnsZone(TimeStampedModel):
@@ -50,3 +55,13 @@ class DnsZone(TimeStampedModel):
         if not self.soa:
             self.soa = DnsSoa
         super().save(*args, **kwargs)
+
+    # Not sure if this is needed, so I created it. It needs associated tests if we want to keep this.
+    def get_active_x_zone_id(self):
+        try:
+            x_zone_id = self.zone_link.get(is_active=True).vendor_dns_zone.x_zone_id
+        except ZonesLink.DoesNotExist:
+            logger.debug(f"There is a database entry but no active vendor for this account {self.name}")
+            return None
+
+        return x_zone_id
