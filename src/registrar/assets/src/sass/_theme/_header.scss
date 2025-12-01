@@ -75,7 +75,7 @@ button {
     .usa-logo__text button,
     .usa-logo__text button:hover {
         color: color('white');
-    }    
+}    
     background-color: color('primary-darker');
     .usa-accordion__button[aria-expanded="false"] span::after,
     .usa-accordion__button[aria-expanded="true"] span::after {
@@ -364,14 +364,7 @@ button {
             }
         }
         
-        .desktop-only-display-flex {
-            display: none;
-            @include at-media(desktop) {
-                display: flex;
-            }
-        }
-
-        .desktop-only-display-list-item {
+        .desktop-only {
             display: none;
             @include at-media(desktop) {
                 display: flex;
