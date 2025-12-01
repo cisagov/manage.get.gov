@@ -1587,7 +1587,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         # attempt to submit the form with duplicate host names of fake.host.com
-        nameservers_page.form["form-0-ip"] = ""
+        nameservers_page.form["form-0-server"] = "fake.host.com"
         nameservers_page.form["form-1-server"] = "fake.host.com"
         result = nameservers_page.form.submit()
         # form submission was a post with an error, response should be a 200

@@ -1918,8 +1918,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 )
             return err.code
 
-    def _fetch_contacts(self, contact_data):
-        """Fetch contact info."""
+    def _fetch_contacts_from_epp(self, contact_data):
+        """Fetch contact info from EPP. Returns dict of unsaved PublicContact objects."""
         choices = PublicContact.ContactTypeChoices
         # We expect that all these fields get populated,
         # so we can create these early, rather than waiting.
@@ -1928,18 +1928,27 @@ class Domain(TimeStampedModel, DomainHelper):
             choices.SECURITY: None,
             choices.TECHNICAL: None,
         }
+        
         for domainContact in contact_data:
-            req = commands.InfoContact(id=domainContact.contact)
-            data = registry.send(req, cleaned=True).res_data[0]
-            logger.info(f"_fetch_contacts => this is the data: {data}")
+            try:
+                req = commands.InfoContact(id=domainContact.contact)
+                data = registry.send(req, cleaned=True).res_data[0]
+                logger.info(f"_fetch_contacts => this is the data: {data}")
 
-            # Map the object we recieved from EPP to a PublicContact
-            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
-            logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
+                # Map EPP response to PublicContact object (unsaved)
+                mapped_object = self.map_epp_contact_to_public_contact(
+                    data, 
+                    domainContact.contact, 
+                    domainContact.type
+                )
+                
+                # Store temporarily for DB save later
+                contacts_dict[mapped_object.contact_type] = mapped_object
+                logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
+                
+            except RegistryError as e:
+                logger.error(f"Failed to fetch contact {domainContact.contact}: {e}")
 
-            # Find/create it in the DB
-            in_db = self._get_or_create_public_contact(mapped_object)
-            contacts_dict[in_db.contact_type] = in_db.registry_id
         return contacts_dict
 
     def _get_or_create_contact(self, contact: PublicContact):
@@ -1971,21 +1980,24 @@ class Domain(TimeStampedModel, DomainHelper):
         ip_addr = ipaddress.ip_address(ip)
         return ip_addr.version == 6
 
-    def _fetch_hosts(self, host_data):
-        """Fetch host info."""
+    def _fetch_hosts_from_epp(self, host_data):
+        """Fetch host info from EPP. Returns host dicts."""
         hosts = []
         for name in host_data:
-            req = commands.InfoHost(name=name)
-            data = registry.send(req, cleaned=True).res_data[0]
-            host = {
-                "name": name,
-                "addrs": [item.addr for item in getattr(data, "addrs", [])],
-                "cr_date": getattr(data, "cr_date", ...),
-                "statuses": getattr(data, "statuses", ...),
-                "tr_date": getattr(data, "tr_date", ...),
-                "up_date": getattr(data, "up_date", ...),
-            }
-            hosts.append({k: v for k, v in host.items() if v is not ...})
+            try:
+                req = commands.InfoHost(name=name)
+                data = registry.send(req, cleaned=True).res_data[0]
+                host = {
+                    "name": name,
+                    "addrs": [item.addr for item in getattr(data, "addrs", [])],
+                    "cr_date": getattr(data, "cr_date", ...),
+                    "statuses": getattr(data, "statuses", ...),
+                    "tr_date": getattr(data, "tr_date", ...),
+                    "up_date": getattr(data, "up_date", ...),
+                }
+                hosts.append({k: v for k, v in host.items() if v is not ...})
+            except RegistryError as e:
+                logger.error(f"Failed to fetch host {name}: {e}")
         return hosts
 
     def _convert_ips(self, ip_list: list[str]):
@@ -2156,15 +2168,41 @@ class Domain(TimeStampedModel, DomainHelper):
             data_response = self._get_or_create_domain_in_registry()
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
-            self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
 
-            if self.state == self.State.UNKNOWN:
-                self._fix_unknown_state(cleaned)
+            # Fetch hosts
             if fetch_hosts:
-                self._update_hosts_and_ips_in_db(cleaned)
+                cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
+            else:
+                old_cache_hosts = self._cache.get("hosts")
+                if old_cache_hosts is not None:
+                    cleaned["hosts"] = old_cache_hosts
+
+            # Fetch contacts  
             if fetch_contacts:
-                self._update_security_contact_in_db(cleaned)
-            self._update_dates(cleaned)
+                # This returns PublicContact objects
+                fetched_contacts = self._get_contacts(cleaned.get("_contacts", []))
+                cleaned["contacts"] = fetched_contacts
+            else:
+                old_cache_contacts = self._cache.get("contacts")
+                if old_cache_contacts is not None:
+                    cleaned["contacts"] = old_cache_contacts
+
+            # Perform db calls
+            with transaction.atomic():
+                if self.state == self.State.UNKNOWN:
+                    self._fix_unknown_state(cleaned)
+                if fetch_hosts:
+                    self._update_hosts_and_ips_in_db(cleaned)
+                if fetch_contacts:
+                    self._update_contacts_in_db(cleaned)
+                self._update_dates(cleaned)
+
+            # After DB save, convert objects to strings for cache
+            if fetch_contacts and "contacts" in cleaned:
+                cleaned["contacts"] = {
+                    k: (v.registry_id if v else None) 
+                    for k, v in cleaned["contacts"].items()
+                }
 
             self._cache = cleaned
 
@@ -2209,26 +2247,6 @@ class Domain(TimeStampedModel, DomainHelper):
             if isinstance(extension, extensions.DNSSECExtension):
                 dnssec_data = extension
         return dnssec_data
-
-    def _update_hosts_and_contacts(self, cleaned, fetch_hosts, fetch_contacts):
-        """
-        Update hosts and contacts if fetch_hosts and/or fetch_contacts.
-        Additionally, capture and cache old hosts and contacts from cache if they
-        don't exist in cleaned
-        """
-        old_cache_hosts = self._cache.get("hosts")
-        old_cache_contacts = self._cache.get("contacts")
-
-        if fetch_contacts:
-            cleaned["contacts"] = self._get_contacts(cleaned.get("_contacts", []))
-            if old_cache_hosts is not None:
-                logger.debug("resetting cleaned['hosts'] to old_cache_hosts")
-                cleaned["hosts"] = old_cache_hosts
-
-        if fetch_hosts:
-            cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
-            if old_cache_contacts is not None:
-                cleaned["contacts"] = old_cache_contacts
 
     def _update_hosts_and_ips_in_db(self, cleaned):
         """Update hosts and host_ips in database if retrieved from registry.
@@ -2278,21 +2296,22 @@ class Domain(TimeStampedModel, DomainHelper):
             for ip_address in cleaned_ips:
                 HostIP.objects.get_or_create(address=ip_address, host=host_in_db)
 
-    def _update_security_contact_in_db(self, cleaned):
-        """Update security contact registry id in database if retrieved from registry.
-        If no value is retrieved from registry, set to empty string in db.
-
-        Parameters:
-            self: the domain to be updated with security from cleaned
-            cleaned: dict containing contact registry ids. Security contact is of type
-                PublicContact.ContactTypeChoices.SECURITY
-        """
-        cleaned_contacts = cleaned["contacts"]
-        security_contact_registry_id = ""
-        security_contact = cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]
-        if security_contact:
-            security_contact_registry_id = security_contact
-        self.security_contact_registry_id = security_contact_registry_id
+    def _update_contacts_in_db(self, cleaned):
+        """Save all contacts to DB using pre-fetched EPP data."""
+        cleaned_contacts = cleaned.get("contacts", {})
+        
+        # Save ALL contact types to DB
+        for contact_type, contact_obj in cleaned_contacts.items():
+            if contact_obj:
+                self._get_or_create_public_contact(contact_obj)
+        
+        # Update security contact registry_id on domain
+        security_contact_obj = cleaned_contacts.get(PublicContact.ContactTypeChoices.SECURITY)
+        if security_contact_obj:
+            self.security_contact_registry_id = security_contact_obj.registry_id
+        else:
+            self.security_contact_registry_id = ""
+        
         self.save()
 
     def _update_dates(self, cleaned):
@@ -2325,13 +2344,13 @@ class Domain(TimeStampedModel, DomainHelper):
             choices.TECHNICAL: None,
         }
         if contacts and isinstance(contacts, list) and len(contacts) > 0:
-            cleaned_contacts = self._fetch_contacts(contacts)
+            cleaned_contacts = self._fetch_contacts_from_epp(contacts)
         return cleaned_contacts
 
     def _get_hosts(self, hosts):
         cleaned_hosts = []
         if hosts and isinstance(hosts, list):
-            cleaned_hosts = self._fetch_hosts(hosts)
+            cleaned_hosts = self._fetch_hosts_from_epp(hosts)
         return cleaned_hosts
 
     def _get_or_create_public_contact(self, public_contact: PublicContact):
