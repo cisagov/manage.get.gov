@@ -2771,12 +2771,7 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
 
     def tearDown(self):
         super().tearDown()
-        Domain.objects.all().delete()
         DomainRequest.objects.all().delete()
-        DraftDomain.objects.all().delete()
-        UserPortfolioPermission.objects.all().delete()
-        Suborganization.objects.all().delete()
-        Portfolio.objects.all().delete()
 
     @classmethod
     def tearDownClass(cls):
@@ -3013,7 +3008,6 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertContains(response, "Pending Invitation", count=2)
 
         # Portfolio name appears twice(once for domain requests, once for domains)
-        # print("response",response.content.decode('utf-8'))
         self.assertContains(response, self.portfolio_1.organization_name, count=2)
 
         # Must clean up within test since MockDB is shared across tests for performance reasons
@@ -3053,8 +3047,8 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertNotContains(response, "Portfolio additional permissions:")
 
     @less_console_noise_decorator
-    def test_user_can_see_related_portfolios_and_requests_and_domain_tables(self):
-        """Tests if a user can see the portfolios they are associated with on the user page"""
+    def test_user_can_see_related_portfolios_and_no_requests_and_no_domains_tables(self):
+        """Tests if a user can see the portfolios with no domains or domain requests"""
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="TestForUser", requester=self.superuser)
         UserPortfolioPermission.objects.get_or_create(
             user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
@@ -3064,45 +3058,85 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertContains(response, expected_href)
 
         # Check if the portfolio name appears once for domains and domain requests
-        # it should indicate there are no domains and no domains
+        # it should indicate there are no domains and no domain requests
         self.assertContains(response, str(portfolio), count=2)
         self.assertContains(response, "No domains", count=1)
         self.assertContains(response, "No domain requests", count=1)
         self.assertNotContains(response, '<table class="usa-table">')
 
+        # cleanup
+        portfolio.delete()
+        UserPortfolioPermission.objects.filter(portfolio=portfolio).delete()
+
+    @less_console_noise_decorator
+    def test_user_no_portfolio_does_not_appear_no_requests_and_no_domains_assoc_with_no_port(self):
         # Creating domain and domain requests with and without a portfolio
-        draft_domain = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
         draft_domain_port = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
 
-        DomainRequest.objects.create(
+        domain_req = DomainRequest.objects.create(
             requester=self.superuser,
             requested_domain=draft_domain_port,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-            portfolio=portfolio,
+            portfolio=self.portfolio_1,
         )
 
+        perm = UserPortfolioPermission.objects.create(
+            user=self.superuser, portfolio=self.portfolio_1, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        domain_req.submit()
         # check that the "no portfolio" title does not appear since it has no domain requests or domains associated
         response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
         self.assertNotContains(response, "No portfolio")
+        self.assertContains(response, draft_domain_port.name)
+        self.assertContains(response, self.portfolio_1.organization_name)
 
-        DomainRequest.objects.create(
-            requester=self.superuser, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
+        # cleanup
+        domain_req.delete()
+        draft_domain_port.delete()
+        perm.delete()
+
+    @less_console_noise_decorator
+    def test_user_with_domains_and_requests_with_no_portfolio_and_with_portfolio(self):
+        # No portfolio domains and domain requests
+        draft_domain_no_port = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
+        domain_req_no_port = DomainRequest.objects.create(
+            requester=self.superuser,
+            requested_domain=draft_domain_no_port,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
         )
 
         domain_no_portfolio = Domain.objects.create(name="domainnoportfolio.gov")
-        DomainInformation.objects.create(domain=domain_no_portfolio, requester=self.superuser)
-        UserDomainRole.objects.create(domain=domain_no_portfolio, user=self.superuser)
+        domain_info = DomainInformation.objects.create(domain=domain_no_portfolio, requester=self.superuser)
+        role = UserDomainRole.objects.create(domain=domain_no_portfolio, user=self.superuser)
 
+        # Portfolio with domain
+        # add user portfolio perm
+        perm = UserPortfolioPermission.objects.create(
+            user=self.superuser, portfolio=self.portfolio_1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
         domain_portfolio = Domain.objects.create(name="domainportfolio.gov")
-        DomainInformation.objects.create(domain=domain_portfolio, requester=self.superuser, portfolio=portfolio)
-        UserDomainRole.objects.create(domain=domain_portfolio, user=self.superuser)
+        domain_info_2 = DomainInformation.objects.create(
+            domain=domain_portfolio, requester=self.superuser, portfolio=self.portfolio_1
+        )
+        role_2 = UserDomainRole.objects.create(domain=domain_portfolio, user=self.superuser)
 
         response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
 
         # No portfolio should have one domain and one domain request, it will appear twice
-        self.assertNotContains(response, "No domain requests")
+        self.assertContains(response, "No domain requests")
         self.assertContains(response, "No portfolio", count=2)
-        self.assertContains(response, '<table class="usa-table">', count=4)
+        self.assertContains(response, '<table class="usa-table">', count=3)
+
+        # cleanup
+        domain_req_no_port.delete()
+        draft_domain_no_port.delete()
+        domain_no_portfolio.delete()
+        domain_portfolio.delete()
+        domain_info.delete()
+        domain_info_2.delete()
+        role.delete()
+        role_2.delete()
+        perm.delete()
 
 
 class AuditedAdminTest(TestCase):
