@@ -194,8 +194,10 @@ class CheckPortfolioMiddleware:
             return
 
         # Clear if session portfolio is not valid anymore
-        if request.session.get("portfolio") and not user.is_org_user(request):
-            request.session.pop("portfolio", None)
+        # IMPORTANT: only do this on get requests to avoid disrupting POST/PUT/DELETE operations
+        if request.method in ("GET", "HEAD"):
+            if request.session.get("portfolio") and not user.is_org_user(request):
+                request.session.pop("portfolio", None)
 
     def _maybe_redirect_to_org_select(self, request):
         """If user has multiple orgs and no active portfolio (and not on excluded paths), send to select page."""
@@ -219,11 +221,13 @@ class CheckPortfolioMiddleware:
         multiple = user.is_multiple_orgs_user(request)
         any_org = user.is_any_org_user()
 
-        # If multi-org OR legacy+any_org, go to org select
-        if multiple or (user.has_legacy_domain() and any_org):
+        # Only redirect to org select if multiple_portfolios flag is active
+        # And if multi-org OR legacy+any_org, go to org select
+        if flag_is_active(request, "multiple_portfolios") and (multiple or (user.has_legacy_domain() and any_org)):
             return HttpResponseRedirect(self.select_portfolios_page)
 
-        # If portfolio is present, choose domains vs no-portfolio-domains
+        # Portfolio domain redirects when multi-portfolio flag is off
+        # (single org users / legacy should still get redirected to their portfolio pages)
         portfolio = request.session.get("portfolio")
         has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
             request
@@ -243,16 +247,24 @@ class CheckPortfolioMiddleware:
         if not request.user.is_authenticated:
             return None
 
+        # Blocking access to org selection page when multiple_portfolios flag is off
+        if request.path == self.select_portfolios_page and not flag_is_active(request, "multiple_portfolios"):
+            return HttpResponseRedirect(self.home)
+
         # Legacy-home click
         # If user clicked "legacy home", clear portfolio
         if request.path == self.home and request.GET.get(self.legacy_home) == "1":
             request.session.pop("portfolio", None)
             return None
 
-        # Keep session['portfolio'] in sync on normal HTML page views
-        # (Skip admin/debug/data APIs; only do this for HTML page loads)
+        # Always ensure portfolio is set/kept in sync (but with clear logic above)
+        # (Skip admin/debug/data APIs/set-session-portfolio; only do this for HTML page loads)
         if not self._is_excluded(request.path) and not self._is_data_api(request):
             self._set_or_clear_portfolio(request)
+
+        # From here down: navigation behavior only, for HTML GET/HEAD
+        if request.method not in ("GET", "HEAD") or not self._wants_html(request):
+            return None
 
         # Maybe send multi-org users to org-select page
         resp = self._maybe_redirect_to_org_select(request)
@@ -260,11 +272,7 @@ class CheckPortfolioMiddleware:
             return resp
 
         # Home redirect logic (domains vs no-portfolio-domains)
-        resp = self._home_redirect(request)
-        if resp:
-            return resp
-
-        return None
+        return self._home_redirect(request)
 
 
 class RestrictAccessMiddleware:
