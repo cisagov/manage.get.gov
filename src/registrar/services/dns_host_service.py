@@ -43,6 +43,7 @@ class DnsHostService:
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
 
     def dns_setup(self, domain_name):
+        # Set up a vendor account
         account_name = make_dns_account_name(domain_name)
 
         x_account_id = self._find_existing_account_in_db(account_name)
@@ -59,10 +60,9 @@ class DnsHostService:
             else:
                 x_account_id = self.create_and_save_account(account_name)
 
-        try:
-            x_zone_id, nameservers = self._find_existing_zone_in_db(domain_name, x_account_id)
-        except DnsZone.DoesNotExist as e:
-            logger.error(f"Error finding existing active zone in db: {e}")
+        # Set up a vendor zone
+        # For now, we only expect one zone per account
+        x_zone_id, nameservers = self._find_existing_zone_in_db(domain_name)
         has_zone = bool(x_zone_id)
 
         if has_zone:
@@ -177,25 +177,19 @@ class DnsHostService:
 
         return x_zone_id, nameservers, zone_data
 
-    def _find_existing_zone_in_db(self, zone_name, x_account_id):
+    def _find_existing_zone_in_db(self, domain_name):
+        # get the zone by name(same as domain name)
         try:
-            dns_account = DnsAccount.objects.get(
-                account_link__vendor_dns_account__x_account_id=x_account_id,
-                account_link__is_active=True,
-            )
-        except DnsAccount.DoesNotExist:
+            zone = DnsZone.objects.get(name=domain_name)
+        except DnsZone.DoesNotExist:
+            logger.debug(f"Zone for domain {domain_name} does not exist")
             return None, None
 
-        zone = dns_account.zones.filter(name=zone_name).first()
-        zone_link = zone.zone_link.filter(is_active=True).first()
 
-        if not zone or zone_link:
-            return None, None
-
-        vendor_zone = zone_link.vendor_dns_zone
-        x_zone_id = vendor_zone.x_zone_id
+        x_zone_id = zone.get_active_x_zone_id()
         nameservers = zone.nameservers or []
 
+        # temporarily returning nameservers until we retrieve nameservers directly
         return x_zone_id, nameservers
 
     def register_nameservers(self, domain_name, nameservers):
