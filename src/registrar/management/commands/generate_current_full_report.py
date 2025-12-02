@@ -55,4 +55,4 @@ class Command(BaseCommand):
             raise FileNotFoundError(f"Could not find newly created file at '{file_path}'")
 
         # Upload this generated file for our S3 instance
-        # s3_client.upload_file(file_path, file_name)
+        s3_client.upload_file(file_path, file_name)
