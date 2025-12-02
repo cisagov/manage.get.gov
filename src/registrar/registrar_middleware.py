@@ -257,14 +257,14 @@ class CheckPortfolioMiddleware:
             request.session.pop("portfolio", None)
             return None
 
-        # All remaining should be for HTML page loads only
-        if request.method not in ("GET", "HEAD") or not self._wants_html(request):
-            return None
-
-        # Keep session['portfolio'] in sync on normal HTML page views
+        # Always ensure portfolio is set/kept in sync (but with clear logic above)
         # (Skip admin/debug/data APIs/set-session-portfolio; only do this for HTML page loads)
         if not self._is_excluded(request.path) and not self._is_data_api(request):
             self._set_or_clear_portfolio(request)
+
+        # From here down: navigation behavior only, for HTML GET/HEAD
+        if request.method not in ("GET", "HEAD") or not self._wants_html(request):
+            return None
 
         # Maybe send multi-org users to org-select page
         resp = self._maybe_redirect_to_org_select(request)
