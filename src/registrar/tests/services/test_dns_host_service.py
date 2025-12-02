@@ -90,9 +90,8 @@ class TestDnsHostService(TestCase):
                     }
                     mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_zone_id")}]}
 
-                returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
+                returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
 
-                self.assertEqual(returned_account_id, case["expected_account_id"])
                 self.assertEqual(returned_zone_id, case["expected_zone_id"])
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
@@ -344,7 +343,7 @@ class TestDnsHostServiceDB(TestCase):
         )
 
         dns_acc = DnsAccount.objects.create(name=zone_name)
-        
+
         AccountsJoin.objects.create(
             dns_account=dns_acc,
             vendor_dns_account=vendor_dns_acc,
@@ -368,7 +367,7 @@ class TestDnsHostServiceDB(TestCase):
 
         self.assertEqual(found_x_zone_id, x_zone_id)
         self.assertEqual(found_nameservers, expected_nameservers)
-    
+
     def test_find_existing_zone_in_db_does_not_exist_returns_none(self):
         zone_name = "missing.gov"
         test_x_account_id = "99999"
@@ -380,7 +379,7 @@ class TestDnsHostServiceDB(TestCase):
 
         self.assertIsNone(x_zone_id)
         self.assertIsNone(nameservers)
-    
+
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
         # Create account object referenced in zone

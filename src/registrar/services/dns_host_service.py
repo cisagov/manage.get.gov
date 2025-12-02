@@ -30,7 +30,7 @@ class DnsHostService:
 
     def _find_account_json_by_pubname(self, items, name):
         return next((item for item in items if item.get("account_pubname" == name)), None)
-    
+
     def _find_zone_json_by_name(self, items, name):
         return next((item for item in items if item.get("name") == name), None)
 
@@ -83,7 +83,7 @@ class DnsHostService:
                     logger.error(f"dnsSetup for zone failed {e}")
                     raise
 
-        return x_account_id, x_zone_id, nameservers
+        return x_zone_id, nameservers
 
     def create_and_save_account(self, account_name):
         try:
