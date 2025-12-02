@@ -588,6 +588,7 @@ class DomainExport(BaseExport):
             "converted_organization_name": Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+                When(federal_agency__isnull=False, then=F("federal_agency__agency")),
                 # Otherwise, return the natively assigned value
                 default=F("organization_name"),
                 output_field=CharField(),
@@ -638,6 +639,13 @@ class DomainExport(BaseExport):
                     Coalesce(F("senior_official__last_name"), Value("")),
                     output_field=CharField(),
                 ),
+                output_field=CharField(),
+            ),
+            "converted_sub_organization_name": Case(
+                # When sub_organization is present, use its name
+                When(sub_organization__isnull=False, then=F("sub_organization__name")),
+                # Otherwise, return empty string
+                default=Value(""),
                 output_field=CharField(),
             ),
         }
@@ -733,6 +741,7 @@ class DomainExport(BaseExport):
 
         # organization_type has organization_type AND is_election
         # domain_org_type includes "- Election" org_type variants
+
         domain_org_type = model.get("converted_org_type")
         human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
         domain_federal_type = model.get("converted_federal_type")
@@ -740,6 +749,23 @@ class DomainExport(BaseExport):
         domain_type = human_readable_domain_org_type
         if domain_federal_type and domain_org_type == DomainRequest.OrgChoicesElectionOffice.FEDERAL:
             domain_type = f"{human_readable_domain_org_type} - {human_readable_domain_federal_type}"
+        
+        # sub_org_city = model.get("sub_organization__city")
+        # sub_org_state = model.get("sub_organization__state_territory")
+
+        # portfolio_city = model.get("portfolio__city")
+        # portfolio_state = model.get("portfolio__state_territory")
+    
+        # if sub_org_city and sub_org_state:
+        #     city = sub_org_city
+        #     state = sub_org_state
+        # elif portfolio_city and portfolio_state:
+        #     city = portfolio_city
+        #     state = portfolio_state
+        # else:
+        #     city = model.get("city")
+        #     state = model.get("state_territory")
+
 
         security_contact_email = model.get("security_contact_email")
         invalid_emails = DefaultEmail.get_all_emails()
@@ -755,6 +781,8 @@ class DomainExport(BaseExport):
         model["expiration_date"] = expiration_date
         model["domain_type"] = domain_type
         model["security_contact_email"] = security_contact_email
+        # model["converted_city"] = city
+        # model["converted_state_territory"] = state
         # create a dictionary of fields which can be included in output.
         # "extra_fields" are precomputed fields (generated in the DB or parsed).
 
@@ -777,7 +805,6 @@ class DomainExport(BaseExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("converted_federal_agency"),
             "Organization name": model.get("converted_organization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),
@@ -1019,10 +1046,10 @@ class DomainDataFull(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
-            "City": model.get("city"),
-            "State": model.get("state_territory"),
+            "Organization name": model.get("converted_organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
+            "City": model.get("converted_city"),
+            "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
@@ -1041,7 +1068,6 @@ class DomainDataFull(DomainExport):
         return [
             "Domain name",
             "Domain type",
-            "Agency",
             "Organization name",
             "City",
             "State",
@@ -1099,6 +1125,7 @@ class DomainDataFull(DomainExport):
             domain__state__in=[
                 Domain.State.READY,
                 Domain.State.ON_HOLD,
+                Domain.State.UNKNOWN
             ],
         )
 
@@ -1139,8 +1166,8 @@ class DomainDataFederal(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
+            "Organization name": model.get("converted_organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
             "City": model.get("city"),
             "State": model.get("state_territory"),
             "SO": model.get("so_name"),
@@ -1161,8 +1188,8 @@ class DomainDataFederal(DomainExport):
         return [
             "Domain name",
             "Domain type",
-            "Agency",
             "Organization name",
+            "Suborganization name",
             "City",
             "State",
             "Security contact email",
@@ -1220,6 +1247,7 @@ class DomainDataFederal(DomainExport):
             domain__state__in=[
                 Domain.State.READY,
                 Domain.State.ON_HOLD,
+                Domain.State.UNKNOWN
             ],
         )
 
