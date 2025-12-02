@@ -73,9 +73,11 @@ class CsvReportsTest(MockDbForSharedTests):
             mock_client = MagicMock()
             fake_open = mock_open()
             expected_file_content = [
-                call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
+                call(
+                    "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\r\n"
+                ),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
@@ -95,9 +97,11 @@ class CsvReportsTest(MockDbForSharedTests):
             mock_client = MagicMock()
             fake_open = mock_open()
             expected_file_content = [
-                call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
+                call(
+                    "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\r\n"
+                ),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
@@ -451,6 +455,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Add a first ready date on the first domain. Leaving the others blank.
         self.domain_1.first_ready = get_default_start_date()
         self.domain_1.save()
+        # create suborg
+        self.domain_information_11.sub_organization = self.suborganization_1
+        self.domain_information_11.save()
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
@@ -461,6 +468,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         # We expect READY domains,
         # sorted alphabetially by domain name
+
         expected_content = (
             "Domain name,Domain type,Organization name, Suborganization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
@@ -475,6 +483,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
+
+        # cleanup
+        self.domain_information_11.sub_organization = None
+        self.domain_information_11.save()
 
     @less_console_noise_decorator
     def test_domain_data_federal(self):
@@ -504,7 +516,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         expected_content = (
             "Domain name,Domain type,Organization name, Suborganization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
+            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"

@@ -768,7 +768,6 @@ class MockDb(TestCase):
             domain=cls.domain_11,
             generic_org_type="federal",
             federal_agency=cls.federal_agency_1,
-            sub_organization=cls.suborganization_1,
             federal_type="executive",
             is_election_board=False,
         )
