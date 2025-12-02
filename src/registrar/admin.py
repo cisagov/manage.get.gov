@@ -1215,9 +1215,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         user_domain_roles = UserDomainRole.objects.filter(user=obj)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
 
-        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
-        portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
-
         domain_info_objects = (
             DomainInformation.objects.filter(domain_id__in=domain_ids)
             .exclude(domain__state=Domain.State.DELETED)
@@ -1225,6 +1222,13 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             .order_by("domain__state", "domain__name")
         )
 
+        portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
+        portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
+
+        #Group domains and requests by portfolio to avoid O(n*m) runtime filtering
+        # when building the formatted table data
+
+        # Organize domains by portfolio
         domains_by_portfolio = {}
         for domain_info in domain_info_objects:
             portfolio_id = domain_info.portfolio.id if domain_info.portfolio else None
@@ -1232,12 +1236,18 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                 domains_by_portfolio[portfolio_id] = []
             domains_by_portfolio[portfolio_id].append(domain_info)
 
+        # Organize requests by portfolio
         requests_by_portfolio = {}
         for domain_request in domain_requests:
             portfolio_id = domain_request.portfolio.id if domain_request.portfolio else None
             if portfolio_id not in requests_by_portfolio:
                 requests_by_portfolio[portfolio_id] = []
             requests_by_portfolio[portfolio_id].append(domain_request)
+
+        # Get pending portfolio invitations
+        portfolio_invitations = PortfolioInvitation.objects.filter(
+            email=obj.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
+        ).select_related("portfolio")
 
         formatted_table_data = []
 
@@ -1259,6 +1269,16 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                 }
             )
 
+        #TODO: update this code when invitation tables are updated
+        for portfolio_invitation in portfolio_invitations:
+            portfolio = portfolio_invitation.portfolio
+            formatted_table_data.append(
+                {
+                    "portfolio": portfolio,
+                    "pending_invitation": True,
+                    "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
+                }
+            )
         extra_context = {"formatted_table_data": formatted_table_data}
         return super().change_view(request, object_id, form_url, extra_context)
 

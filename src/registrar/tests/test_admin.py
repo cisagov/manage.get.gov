@@ -3009,6 +3009,13 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         expected_href = reverse("admin:registrar_domain_change", args=[domain_deleted.pk])
         self.assertNotContains(response, expected_href)
 
+        # We have no pending invitations message for portfolio invites not invited
+        self.assertContains(response, "Pending Invitation", count=2)
+
+        # Portfolio name appears twice(once for domain requests, once for domains)
+        # print("response",response.content.decode('utf-8'))
+        self.assertContains(response, self.portfolio_1.organization_name, count=2)
+
         # Must clean up within test since MockDB is shared across tests for performance reasons
         domain_request_started_id = domain_request_started.id
         domain_request_submitted_id = domain_request_submitted.id

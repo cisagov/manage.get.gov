@@ -37,7 +37,10 @@
                <p class="margin-bottom-0">
                 {% if item.portfolio %}
                     {% url 'admin:registrar_portfolio_change' item.portfolio.pk as url %}
-                <a href="{{ url }}"> {{ item.portfolio.organization_name }} </a>
+                    <a href="{{ url }}"> 
+                            {{ item.portfolio.organization_name }}
+                    </a>
+                    {% if item.pending_invitation %} Pending Invitation {%endif%}
                 {% elif item.portfolio_domain_requests %}
                 <!-- If there is no domain requests with no portfolio do not display portfolio -->
                     No portfolio
@@ -77,7 +80,10 @@
                <p class="margin-bottom-0">
                   {% if item.portfolio %}
                   {% url 'admin:registrar_portfolio_change' item.portfolio.pk as url %}
-                <a href="{{ url }}"> {{ item.portfolio.organization_name }} </a>
+                <a href="{{ url }}">
+                     {{item.portfolio.organization_name}}
+                </a>
+                 {% if item.pending_invitation %} Pending Invitation {%endif%}
                 {% elif item.portfolio_domains %}
                 <!-- If there is no domains with no portfolio do not display portfolio -->
                     No portfolio

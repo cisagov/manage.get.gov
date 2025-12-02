@@ -39,7 +39,7 @@ function copyIndividualTextButtonToClipBoard(button) {
 
 function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
     const membersInCsv = helperCopyMembersTableFunction(table);
-    if(membersInCsv != ""){
+    if(membersInCsv){
         copyToClipboardAndChangeIcon(button, membersInCsv, buttonSelector)
     }
 
@@ -47,7 +47,6 @@ function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
 
 function helperCopyMembersTableFunction(table){
     const myTable = document.querySelector(table); 
-    console.log("SOMETHING HAS CHANGED")
     let copyOfTableToCsv = ""
    
     const rows = myTable.querySelectorAll('tr')
