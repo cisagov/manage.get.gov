@@ -823,9 +823,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
-                zone_id = ""
                 try:
-                   zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
+                   nameservers = self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -836,7 +835,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         status=400,
                     )
 
-                if zone_id:
+                if nameservers:
                     zone_name = domain_name
                     # post nameservers to registry
                     try:

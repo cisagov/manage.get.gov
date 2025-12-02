@@ -43,7 +43,7 @@ class DnsHostService:
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
 
     def dns_setup(self, domain_name):
-        # Set up a vendor account
+        # Set up a vendor ACCOUNT
         account_name = make_dns_account_name(domain_name)
 
         x_account_id = self._find_existing_account_in_db(account_name)
@@ -60,7 +60,7 @@ class DnsHostService:
             else:
                 x_account_id = self.create_and_save_account(account_name)
 
-        # Set up a vendor zone
+        # Set up a vendor ZONE
         # For now, we only expect one zone per account
         x_zone_id, nameservers = self._find_existing_zone_in_db(domain_name)
         has_zone = bool(x_zone_id)
@@ -69,21 +69,21 @@ class DnsHostService:
             logger.info("Already has an existing zone")
         else:
             try:
-                x_zone_id, nameservers, zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
+                nameservers, zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
             except APIError as e:
                 logger.error(e)
                 raise
 
-            if x_zone_id:
-                x_zone_id, nameservers = self.save_db_zone({"result": zone_data}, domain_name)
+            if zone_data["id"]:
+                self.save_db_zone({"result": zone_data}, domain_name)
             else:
                 try:
-                    x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+                    nameservers = self.create_and_save_zone(domain_name, x_account_id)
                 except Exception as e:
                     logger.error(f"dnsSetup for zone failed {e}")
                     raise
 
-        return x_zone_id, nameservers
+        return nameservers
 
     def create_and_save_account(self, account_name):
         try:
@@ -108,7 +108,6 @@ class DnsHostService:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
             logger.info(f"Successfully created zone {domain_name}.")
-            x_zone_id = zone_data["result"]["id"]
             nameservers = zone_data["result"].get("name_servers")
 
         except APIError as e:
@@ -122,7 +121,7 @@ class DnsHostService:
         except Exception as e:
             logger.error(f"Save to database failed: {str(e)}.")
             raise
-        return x_zone_id, nameservers
+        return nameservers
 
     def create_record(self, x_zone_id, record_data):
         """Calls create method of vendor service to create a DNS record"""
@@ -175,7 +174,7 @@ class DnsHostService:
             logger.error(f"Error fetching zones: {str(e)}")
             raise
 
-        return x_zone_id, nameservers, zone_data
+        return nameservers, zone_data
 
     def _find_existing_zone_in_db(self, domain_name):
         # get the zone by name(same as domain name)
