@@ -40,7 +40,7 @@
                     <a href="{{ url }}"> 
                             {{ item.portfolio.organization_name }}
                     </a>
-                    {% if item.pending_invitation %} Pending Invitation {%endif%}
+                    {% if item.pending_invitation %} - Pending Invitation {%endif%}
                 {% elif item.portfolio_domain_requests %}
                 <!-- If there is no domain requests with no portfolio do not display portfolio -->
                     No portfolio
@@ -83,7 +83,7 @@
                 <a href="{{ url }}">
                      {{item.portfolio.organization_name}}
                 </a>
-                 {% if item.pending_invitation %} Pending Invitation {%endif%}
+                 {% if item.pending_invitation %} - Pending Invitation {%endif%}
                 {% elif item.portfolio_domains %}
                 <!-- If there is no domains with no portfolio do not display portfolio -->
                     No portfolio

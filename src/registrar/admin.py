@@ -1225,7 +1225,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
 
-        #Group domains and requests by portfolio to avoid O(n*m) runtime filtering
+        # Group domains and requests by portfolio to avoid O(n*m) runtime filtering
         # when building the formatted table data
 
         # Organize domains by portfolio
@@ -1269,7 +1269,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                 }
             )
 
-        #TODO: update this code when invitation tables are updated
+        # TODO: update this code when invitation tables are updated
         for portfolio_invitation in portfolio_invitations:
             portfolio = portfolio_invitation.portfolio
             formatted_table_data.append(
