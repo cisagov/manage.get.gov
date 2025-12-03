@@ -73,7 +73,9 @@ class MockCloudflareService:
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
 
         # Mock the api with any zone id
-        self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(side_effect=self._mock_create_dns_record_response)
+        self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
+            side_effect=self._mock_create_dns_record_response
+        )
 
     def _mock_get_page_accounts_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking accounts GET")
