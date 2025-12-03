@@ -189,20 +189,24 @@ class DnsHostService:
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
 
         # TODO: handle transaction failure
-        with transaction.atomic():
-            vendor_acc = VendorDnsAccount.objects.create(
-                x_account_id=x_account_id,
-                dns_vendor=dns_vendor,
-                x_created_at=result["created_on"],
-                x_updated_at=result["created_on"],
-            )
+        try:
+            with transaction.atomic():
+                vendor_acc = VendorDnsAccount.objects.create(
+                    x_account_id=x_account_id,
+                    dns_vendor=dns_vendor,
+                    x_created_at=result["created_on"],
+                    x_updated_at=result["created_on"],
+                )
 
-            dns_acc = DnsAccount.objects.create(name=result["name"])
+                dns_acc = DnsAccount.objects.create(name=result["name"])
 
-            AccountsJoin.objects.create(
-                dns_account=dns_acc,
-                vendor_dns_account=vendor_acc,
-            )
+                AccountsJoin.objects.create(
+                    dns_account=dns_acc,
+                    vendor_dns_account=vendor_acc,
+                )
+        except Exception as e:
+            logger.error(f"Failed to save account to database: {str(e)}.")
+            raise
 
     def save_db_zone(self, vendor_zone_data, domain_name):
         zone_data = vendor_zone_data["result"]
@@ -211,48 +215,56 @@ class DnsHostService:
         zone_account_name = zone_data["account"]["name"]
 
         # TODO: handle transaction failure
-        with transaction.atomic():
-            vendor_dns_zone = VendorDnsZone.objects.create(
-                x_zone_id=x_zone_id,
-                x_created_at=zone_data["created_on"],
-                x_updated_at=zone_data["created_on"],
-            )
-            dns_account = DnsAccount.objects.get(name=zone_account_name)
-            dns_domain = Domain.objects.get(name=domain_name)
+        try:
+            with transaction.atomic():
+                vendor_dns_zone = VendorDnsZone.objects.create(
+                    x_zone_id=x_zone_id,
+                    x_created_at=zone_data["created_on"],
+                    x_updated_at=zone_data["created_on"],
+                )
+                dns_account = DnsAccount.objects.get(name=zone_account_name)
+                dns_domain = Domain.objects.get(name=domain_name)
 
-            dns_zone = DnsZone.objects.create(dns_account=dns_account, domain=dns_domain, name=zone_name)
+                dns_zone = DnsZone.objects.create(dns_account=dns_account, domain=dns_domain, name=zone_name)
 
-            ZonesJoin.objects.create(
-                dns_zone=dns_zone,
-                vendor_dns_zone=vendor_dns_zone,
-            )
+                ZonesJoin.objects.create(
+                    dns_zone=dns_zone,
+                    vendor_dns_zone=vendor_dns_zone,
+                )
+        except Exception as e:
+            logger.error(f"Failed to save zone to database: {str(e)}.")
+            raise
 
     def save_db_record(self, x_zone_id, vendor_record_data):
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
 
-        with transaction.atomic():
-            vendor_dns_record = VendorDnsRecord.objects.create(
-                x_record_id=x_record_id,
-                x_created_at=record_data["created_on"],
-                x_updated_at=record_data["created_on"],
-            )
+        try:
+            with transaction.atomic():
+                vendor_dns_record = VendorDnsRecord.objects.create(
+                    x_record_id=x_record_id,
+                    x_created_at=record_data["created_on"],
+                    x_updated_at=record_data["created_on"],
+                )
 
-            # Find record's zone
-            vendor_dns_zone = VendorDnsZone.objects.filter(x_zone_id=x_zone_id).first()
-            dns_zone = vendor_dns_zone.zone_link.get(is_active=True).dns_zone
+                # Find record's zone
+                vendor_dns_zone = VendorDnsZone.objects.filter(x_zone_id=x_zone_id).first()
+                dns_zone = vendor_dns_zone.zone_link.get(is_active=True).dns_zone
 
-            dns_record = DnsRecord.objects.create(
-                dns_zone=dns_zone,
-                type=record_data["type"],
-                name=record_data["name"],
-                ttl=record_data["ttl"],
-                content=record_data["content"],
-                comment=record_data["comment"],
-                tags=record_data["tags"],
-            )
+                dns_record = DnsRecord.objects.create(
+                    dns_zone=dns_zone,
+                    type=record_data["type"],
+                    name=record_data["name"],
+                    ttl=record_data["ttl"],
+                    content=record_data["content"],
+                    comment=record_data["comment"],
+                    tags=record_data["tags"],
+                )
 
-            RecordsJoin.objects.create(
-                dns_record=dns_record,
-                vendor_dns_record=vendor_dns_record,
-            )
+                RecordsJoin.objects.create(
+                    dns_record=dns_record,
+                    vendor_dns_record=vendor_dns_record,
+                )
+        except Exception as e:
+            logger.error(f"Failed to save record to database: {str(e)}.")
+            raise
