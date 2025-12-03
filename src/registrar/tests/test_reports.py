@@ -74,7 +74,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call(
-                    "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\r\n"
+                    "Domain name,Domain type,Organization name,Suborganization name,"
+                    "City,State,Security contact email\r\n"
                 ),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
@@ -98,7 +99,8 @@ class CsvReportsTest(MockDbForSharedTests):
             fake_open = mock_open()
             expected_file_content = [
                 call(
-                    "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\r\n"
+                    "Domain name,Domain type,Organization name,Suborganization name,"
+                    "City,State,Security contact email\r\n"
                 ),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
