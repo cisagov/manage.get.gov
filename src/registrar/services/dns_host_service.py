@@ -66,7 +66,7 @@ class DnsHostService:
         if has_zone:
             logger.info("Already has an existing zone")
         else:
-            x_zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
+            x_zone_id, zone_id, nameservers = self.create_and_save_zone(domain_name, x_account_id)
             has_zone = bool(x_zone_id)
 
         return x_account_id, x_zone_id, nameservers
@@ -104,14 +104,14 @@ class DnsHostService:
 
         # Create and save zone in registrar db
         try:
-            self.save_db_zone(zone_data, domain_name)
+            zone_id = self.save_db_zone(zone_data, domain_name)
             logger.info("Successfully saved to database.")
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
             raise
-        return x_zone_id, nameservers
+        return x_zone_id, zone_id, nameservers
 
-    def create_and_save_record(self, x_zone_id, form_record_data):
+    def create_and_save_record(self, x_zone_id, zone_id, form_record_data):
         """Calls create method of vendor service to create a DNS record"""
         # Create record in vendor service
         try:
@@ -231,6 +231,8 @@ class DnsHostService:
                     dns_zone=dns_zone,
                     vendor_dns_zone=vendor_dns_zone,
                 )
+                
+                return dns_zone.pk
         except Exception as e:
             logger.error(f"Failed to save zone to database: {str(e)}.")
             raise

@@ -52,8 +52,9 @@ class TestDnsHostService(TestCase):
                 "x_zone_id": "8765",
                 "cf_account": None,
                 "cf_zone": None,
-                "expected_account_id": "12345",
-                "expected_zone_id": "8765",
+                "expected_x_account_id": "12345",
+                "expected_x_zone_id": "8765",
+                "expected_zone_id": "0"
             },
             # Case B: Database empty, but CF has account
             {
@@ -63,8 +64,9 @@ class TestDnsHostService(TestCase):
                 "x_zone_id": None,
                 "cf_account": "12345",
                 "cf_zone": None,
-                "expected_account_id": "12345",
-                "expected_zone_id": "8765",
+                "expected_x_account_id": "12345",
+                "expected_x_zone_id": "8765",
+                "expected_zone_id": "0"
             },
             # Case C: Database and CF empty
             {
@@ -74,8 +76,9 @@ class TestDnsHostService(TestCase):
                 "x_zone_id": None,
                 "cf_account": None,
                 "cf_zone": None,
-                "expected_account_id": "12345",
-                "expected_zone_id": "8765",
+                "expected_x_account_id": "12345",
+                "expected_x_zone_id": "8765",
+                "expected_zone_id": "0"
             },
         ]
 
@@ -85,19 +88,19 @@ class TestDnsHostService(TestCase):
                 mock_find_zone_db.return_value = case["x_zone_id"], None
 
                 if mock_find_account_db.return_value is None:
-                    mock_create_and_save_account.return_value = case["expected_account_id"]
-                    mock_create_and_save_zone.return_value = (case["expected_zone_id"], ["rainbow1.dns.gov"])
+                    mock_create_and_save_account.return_value = case["expected_x_account_id"]
+                    mock_create_and_save_zone.return_value = (case["expected_x_zone_id"], case["expected_zone_id"], ["rainbow1.dns.gov"])
 
                     mock_get_page_accounts.return_value = {
-                        "result": [{"id": case.get("expected_account_id")}],
+                        "result": [{"id": case.get("expected_x_account_id")}],
                         "result_info": {"total_count": 18},
                     }
-                    mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_zone_id")}]}
+                    mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_x_zone_id")}]}
 
                 returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
 
-                self.assertEqual(returned_account_id, case["expected_account_id"])
-                self.assertEqual(returned_zone_id, case["expected_zone_id"])
+                self.assertEqual(returned_account_id, case["expected_x_account_id"])
+                self.assertEqual(returned_zone_id, case["expected_x_zone_id"])
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
