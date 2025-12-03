@@ -4970,7 +4970,6 @@ class TestMultiplePortfolios(WebTest):
         session["portfolio"] = self.portfolio
         session.save()
 
-
     @override_flag("multiple_portfolios", active=True)
     @less_console_noise_decorator
     def test_middleware_redirects_to_portfolio_no_domains_page(self):
