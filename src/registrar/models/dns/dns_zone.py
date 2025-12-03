@@ -56,7 +56,6 @@ class DnsZone(TimeStampedModel):
             self.soa = DnsSoa
         super().save(*args, **kwargs)
 
-    # Not sure if this is needed, so I created it. It needs associated tests if we want to keep this.
     def get_active_x_zone_id(self):
         try:
             x_zone_id = self.zone_link.get(is_active=True).vendor_dns_zone.x_zone_id

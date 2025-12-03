@@ -400,7 +400,7 @@ class TestDnsHostServiceDB(TestCase):
 
         self.service.save_db_zone(self.vendor_zone_data, zone_domain)
 
-        # VendorDnsAccount row exists with matching zone xid as cloudflare id
+        # VendorDnsZone row exists with matching zone xid as cloudflare id
         x_zone_id = self.vendor_zone_data["result"].get("id")
         vendor_zones = VendorDnsZone.objects.filter(x_zone_id=x_zone_id)
         self.assertEqual(vendor_zones.count(), 1)

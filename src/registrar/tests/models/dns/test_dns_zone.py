@@ -1,5 +1,5 @@
 from django.test import TestCase
-from registrar.models import Domain, DnsAccount, DnsZone, DnsSoa
+from registrar.models import Domain, DnsAccount, DnsZone, DnsSoa, VendorDnsZone, DnsZone_VendorDnsZone as ZonesJoin
 
 
 class DnsZoneTest(TestCase):
@@ -29,3 +29,38 @@ class DnsZoneTest(TestCase):
         self.dns_zone.name = updated_name
         self.dns_zone.save()
         self.assertEqual(self.dns_zone.name, updated_name)
+
+    def test_get_active_x_zone_id_success(self):
+        x_zone_id = "56789abc"
+        vendor_zone = VendorDnsZone.objects.create(
+            x_zone_id=x_zone_id,
+            x_created_at="2025-01-02T03:04:05Z",
+            x_updated_at="2025-01-02T03:04:05Z",
+        )
+
+        ZonesJoin.objects.create(
+            dns_zone=self.dns_zone,
+            vendor_dns_zone=vendor_zone,
+            is_active=True,
+        )
+
+        returned_x_zone_id = self.dns_zone.get_active_x_zone_id()
+        self.assertEquals(returned_x_zone_id, x_zone_id)
+
+    def test_get_active_x_zone_id_returns_none(self):
+        x_zone_id = "56789abc"
+        vendor_zone = VendorDnsZone.objects.create(
+            x_zone_id=x_zone_id,
+            x_created_at="2025-01-02T03:04:05Z",
+            x_updated_at="2025-01-02T03:04:05Z",
+        )
+
+        ZonesJoin.objects.create(
+            dns_zone=self.dns_zone,
+            vendor_dns_zone=vendor_zone,
+            is_active=False,
+        )
+
+        returned_x_zone_id = self.dns_zone.get_active_x_zone_id()
+        self.assertEquals(returned_x_zone_id, None)
+        
