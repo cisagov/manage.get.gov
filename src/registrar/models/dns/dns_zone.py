@@ -61,7 +61,7 @@ class DnsZone(TimeStampedModel):
         try:
             x_zone_id = self.zone_link.get(is_active=True).vendor_dns_zone.x_zone_id
         except ZonesLink.DoesNotExist:
-            logger.debug(f"There is a database entry but no active vendor for this account {self.name}")
+            logger.debug(f"There is a database entry but no active vendor for this zone {self.name}")
             return None
 
         return x_zone_id

@@ -74,7 +74,8 @@ class DnsHostService:
                 logger.error(e)
                 raise
 
-            if zone_data["id"]:
+            if zone_data:
+                x_zone_id = zone_data["id"]
                 self.save_db_zone({"result": zone_data}, domain_name)
             else:
                 try:
@@ -83,7 +84,7 @@ class DnsHostService:
                     logger.error(f"dnsSetup for zone failed {e}")
                     raise
 
-        return nameservers
+        return x_zone_id, nameservers
 
     def create_and_save_account(self, account_name):
         try:
@@ -184,7 +185,6 @@ class DnsHostService:
             logger.debug(f"Zone for domain {domain_name} does not exist")
             return None, None
 
-
         x_zone_id = zone.get_active_x_zone_id()
         nameservers = zone.nameservers or []
 
@@ -228,6 +228,7 @@ class DnsHostService:
         x_zone_id = zone_data["id"]
         zone_name = zone_data["name"]
         zone_account_name = zone_data["account"]["name"]
+        nameservers = zone_data["name_servers"]
 
         # TODO: handle transaction failure
         with transaction.atomic():
@@ -239,7 +240,7 @@ class DnsHostService:
             dns_account = DnsAccount.objects.get(name=zone_account_name)
             dns_domain = Domain.objects.get(name=domain_name)
 
-            dns_zone, _ = DnsZone.objects.get_or_create(dns_account=dns_account, domain=dns_domain, name=zone_name)
+            dns_zone, _ = DnsZone.objects.get_or_create(dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers)
             # Assign ManyToMany field vendor_dns_zone manually because we cannot directly assign forward
             # side of a many to many set in Django
             dns_zone.vendor_dns_zone.add(vendor_dns_zone)
