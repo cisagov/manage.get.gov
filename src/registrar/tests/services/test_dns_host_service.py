@@ -204,7 +204,7 @@ class TestDnsHostServiceDB(TestCase):
                     "id": self.vendor_account_data["result"].get("id"),
                     "name": self.vendor_account_data["result"].get("name"),
                 },
-                "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"]
+                "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
             }
         }
 
