@@ -4960,8 +4960,8 @@ class TestMultiplePortfolios(WebTest):
         UserDomainRole.objects.all().delete()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
-        Portfolio.objects.all().delete()
         Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
 
