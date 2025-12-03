@@ -466,7 +466,7 @@ class TestDnsHostServiceDB(TestCase):
         vendor_record = vendor_records.first()
         dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_record)
         vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-        join_exists = RecordsJoin.objects.filter(dns_record=dns_record, vendor_dns_record=vendor_dns_record).exists()
+        join_exists = RecordsJoin.objects.get(dns_record=dns_record, vendor_dns_record=vendor_dns_record)
         self.assertTrue(join_exists)
 
     def test_save_db_record_with_error_fails(self):
@@ -550,6 +550,10 @@ class TestDnsHostServiceDB(TestCase):
         domain_name = "dns-test.gov"
         Domain.objects.create(name=domain_name)
 
+        expected_vendor_records = VendorDnsRecord.objects.count()
+        expected_dns_records = DnsRecord.objects.count()
+        expected_record_joins = RecordsJoin.objects.count()
+
         # Create account and zone associated with record
         self.service.save_db_account(self.vendor_account_data)
         self.service.save_db_zone(self.vendor_zone_data, domain_name)
@@ -562,6 +566,6 @@ class TestDnsHostServiceDB(TestCase):
                 self.service.save_db_record(x_zone_id, self.vendor_record_data)
 
         # If the creation of the join fails, nothing should be saved in the database.
-        self.assertEqual(VendorDnsRecord.objects.count(), 0)
-        self.assertEqual(DnsRecord.objects.count(), 0)
-        self.assertEqual(RecordsJoin.objects.count(), 0)
+        self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
+        self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
+        self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
