@@ -329,6 +329,9 @@ class TestDnsHostServiceDB(TestCase):
                 "created_on": "2024-01-02T03:04:05Z",
             }
         }
+        expected_vendor_accts = VendorDnsAccount.objects.count()
+        expected_dns_accts = DnsAccount.objects.count()
+        expected_acct_joins = AccountsJoin.objects.count()
 
         with patch(
             "registrar.models.DnsAccount_VendorDnsAccount.objects.create",
@@ -338,9 +341,9 @@ class TestDnsHostServiceDB(TestCase):
                 self.service.save_db_account(payload)
 
         # If the creation of the join fails, nothing should be saved in the database.
-        self.assertEqual(VendorDnsAccount.objects.count(), 0)
-        self.assertEqual(DnsAccount.objects.count(), 0)
-        self.assertEqual(AccountsJoin.objects.count(), 0)
+        self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_accts)
+        self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
+        self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
@@ -421,6 +424,10 @@ class TestDnsHostServiceDB(TestCase):
         self.service.save_db_account(self.vendor_account_data)
         zone_domain = Domain.objects.create(name="dns-test.gov")
 
+        expected_vendor_zones = VendorDnsZone.objects.count()
+        expected_dns_zones = DnsZone.objects.count()
+        expected_zone_joins = ZonesJoin.objects.count()
+
         with patch(
             "registrar.models.DnsZone_VendorDnsZone.objects.create",
             side_effect=IntegrityError("simulated join failure"),
@@ -429,9 +436,9 @@ class TestDnsHostServiceDB(TestCase):
                 self.service.save_db_zone(self.vendor_zone_data, zone_domain)
 
         # If the creation of the join fails, nothing should be saved in the database.
-        self.assertEqual(VendorDnsZone.objects.count(), 0)
-        self.assertEqual(DnsZone.objects.count(), 0)
-        self.assertEqual(ZonesJoin.objects.count(), 0)
+        self.assertEqual(VendorDnsZone.objects.count(), expected_vendor_zones)
+        self.assertEqual(DnsZone.objects.count(), expected_dns_zones)
+        self.assertEqual(ZonesJoin.objects.count(), expected_zone_joins)
 
     def test_save_db_record_success(self):
         """Successfully creates registrar db record objects."""
