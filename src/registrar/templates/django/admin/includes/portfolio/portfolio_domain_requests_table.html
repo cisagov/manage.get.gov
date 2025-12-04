@@ -19,7 +19,7 @@
         <tr>
             <td data-sort-value="{{ domain_request }}"> <a href={{url}}>{{ domain_request }}</a></td>
             <td data-sort-value="{{ domain_request.get_status_display}}"> {{ domain_request.get_status_display|default:"None" }} </td>
-            {% if needs_suborg %}  <td data-sort-value="{{ domain_request.sub_organization.name }}"> {{ domain_request.sub_organization.name |default:"None" }} </td> {% endif %}
+            {% if needs_suborg %}  <td data-sort-value="{{ domain_request.sub_organization.name }}"> {{ domain_request.sub_organization.name | default:"None" }} </td> {% endif %}
         </tr>
         {% endfor %}
     </tbody>

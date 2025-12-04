@@ -1,3 +1,6 @@
+
+// This function takes data and copies it to the user's clipboard
+// it also changes the icon from "copy" to "copied to clipboard" when a user clicks 
 function copyToClipboardAndChangeIcon(button, input, selector) {
         navigator.clipboard.writeText(input).then(function() {
             // Change the icon to a checkmark on successful copy
@@ -52,8 +55,9 @@ function helperCopyMembersTableFunction(table){
     const rows = myTable.querySelectorAll('tr')
     
     //header rows
+    // Minus 2 on the iterator, the last column has copy icons
     const headerRow = rows[0].querySelectorAll('th')
-    for(let i = 0; i < headerRow.length - 1; i++){
+    for(let i = 0; i <= headerRow.length - 2; i++){
         let headerText = headerRow[i].textContent.trim()
         copyOfTableToCsv+= headerText + ","
 
