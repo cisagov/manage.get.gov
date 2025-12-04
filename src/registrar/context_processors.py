@@ -77,15 +77,25 @@ def portfolio_permissions(request):
         portfolio = request.session.get("portfolio")
 
         # How many portfolios does this user have?
-        num_portfolios = user.get_num_portfolios()
-        has_legacy = user.has_legacy_domain()
+        get_num_portfolios = getattr(user, "get_num_portfolios", None)
+        if callable(get_num_portfolios):
+            num_portfolios = get_num_portfolios()
+        else:
+            num_portfolios = 0
+        if not isinstance(num_portfolios, int):
+            num_portfolios = 0
+
+        has_legacy_raw = getattr(user, "has_legacy_domain", lambda: False)()
+        has_legacy = bool(has_legacy_raw)
 
         # "Things" = portfolios + legacy
         num_choices = num_portfolios + (1 if has_legacy else 0)
         has_choice = num_choices > 1
 
-        portfolio_context["has_multiple_portfolios"] = user.is_multiple_orgs_user(request)
         portfolio_context["has_choice"] = has_choice
+        portfolio_context["has_multiple_portfolios"] = getattr(user, "is_multiple_orgs_user", lambda req: False)(
+            request
+        )
 
         hide_portfolio_navbar = False
         # Legacy mode (no portfolio in session)

@@ -4960,9 +4960,9 @@ class TestMultiplePortfolios(WebTest):
         UserDomainRole.objects.all().delete()
         DomainRequest.objects.all().delete()
         DomainInformation.objects.all().delete()
-        Domain.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        Domain.objects.all().delete()
         super().tearDown()
 
     def set_session_portfolio(self, portfolio=None):
