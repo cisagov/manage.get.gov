@@ -24,7 +24,7 @@
         <div class="display-flex flex-column margin-top-3">   
 
         <!-- If there is no data, display this message under the heading for domain request -->
-        {% if formatted_table_data|length == 0%}
+         {% if formatted_table_data|length == 0%}
                  <div class="padding-left-1"> 
                       <div class="readonly padding-top-1 padding-left-05"> No domain requests </div>
                 </div>
@@ -48,9 +48,9 @@
             
             </p>
                <div class="padding-left-1">
-                  {%if item.portfolio_domain_requests %}
+                  {%if item.portfolio_domain_requests|length > 0 %}
                      {% include "django/admin/includes/portfolio/portfolio_domain_requests_table.html" with domain_requests=item.portfolio_domain_requests link_title="Domain Requests"%}
-                  {% elif item.portfolio %}
+                  {% else %}
                       <div class="readonly padding-top-1 padding-left-05"> No domain requests </div>
                   {% endif %}
                </div>
@@ -87,13 +87,13 @@
                 {% elif item.portfolio_domains %}
                 <!-- If there is no domains with no portfolio do not display portfolio -->
                     No portfolio
-                  {% endif %}
+                {% endif %}
             </p>
         
                <div class="padding-left-1">
-                {%if item.portfolio_domains %}
+                {%if item.portfolio_domains|length > 0 %}
                      {% include "django/admin/includes/portfolio/portfolio_domains_table.html" with domains=item.portfolio_domains link_title="Domains"%}
-                {% elif item.portfolio %}
+                {% else %}
                 <div class="readonly padding-top-1 padding-left-05"> No domains</div> 
                 {% endif %}
                </div>
