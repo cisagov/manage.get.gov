@@ -1269,7 +1269,8 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                 }
             )
 
-        # TODO: update this code when invitation tables are updated
+        # TODO 4169: update this code when invitation tables are updated
+    
         for portfolio_invitation in portfolio_invitations:
             portfolio = portfolio_invitation.portfolio
             formatted_table_data.append(
