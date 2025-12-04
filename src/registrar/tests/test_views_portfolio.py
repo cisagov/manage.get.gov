@@ -1288,7 +1288,7 @@ class TestPortfolio(WebTest):
         portfolio_landing_page = self.client.get(reverse("home"), follow=True)
 
         # link to no requests
-        self.assertContains(portfolio_landing_page, "no-organization-requests/", count=1)
+        self.assertNotContains(portfolio_landing_page, "no-organization-requests/")
         # dropdown
         self.assertContains(portfolio_landing_page, "basic-nav-section-two")
         # link to requests
@@ -1328,7 +1328,7 @@ class TestPortfolio(WebTest):
         portfolio_landing_page = self.client.get(reverse("home"), follow=True)
 
         # link to no requests
-        self.assertContains(portfolio_landing_page, "no-organization-requests/", count=1)
+        self.assertNotContains(portfolio_landing_page, "no-organization-requests/")
         # dropdown
         self.assertNotContains(portfolio_landing_page, "basic-nav-section-two")
         # link to requests
