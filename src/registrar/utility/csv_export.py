@@ -588,6 +588,7 @@ class DomainExport(BaseExport):
             "converted_organization_name": Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+                When(federal_agency__agency="Non-Federal Agency", then=F("organization_name")),
                 When(federal_agency__isnull=False, then=F("federal_agency__agency")),
                 # Otherwise, return the natively assigned value
                 default=F("organization_name"),
