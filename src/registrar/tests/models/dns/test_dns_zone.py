@@ -62,4 +62,4 @@ class DnsZoneTest(TestCase):
         )
 
         returned_x_zone_id = self.dns_zone.get_active_x_zone_id()
-        self.assertEquals(returned_x_zone_id, None)
+        self.assertIsNone(returned_x_zone_id)

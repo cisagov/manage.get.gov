@@ -62,8 +62,9 @@ class DnsHostService:
 
         # Set up a vendor ZONE
         # For now, we only expect one zone per account
-        x_zone_id, nameservers = self._find_existing_zone_in_db(domain_name)
-        has_zone = bool(x_zone_id)
+        has_zone = DnsZone.objects.filter(name=domain_name).exists()
+        # Remove after we are getting nameservers from db
+        _, nameservers = self.get_x_zone_id_if_zone_exists()
 
         if has_zone:
             logger.info("Already has an existing zone")
@@ -75,7 +76,6 @@ class DnsHostService:
                 raise
 
             if zone_data:
-                x_zone_id = zone_data["id"]
                 self.save_db_zone({"result": zone_data}, domain_name)
             else:
                 try:
@@ -84,7 +84,7 @@ class DnsHostService:
                     logger.error(f"dnsSetup for zone failed {e}")
                     raise
 
-        return x_zone_id, nameservers
+        return nameservers
 
     def create_and_save_account(self, account_name):
         try:
@@ -177,8 +177,8 @@ class DnsHostService:
 
         return nameservers, zone_data
 
-    def _find_existing_zone_in_db(self, domain_name):
-        # get the zone by name(same as domain name)
+    def get_x_zone_id_if_zone_exists(self, domain_name):
+        # returns x_zone_id (and temporarily returns nameservers)
         try:
             zone = DnsZone.objects.get(name=domain_name)
         except DnsZone.DoesNotExist:

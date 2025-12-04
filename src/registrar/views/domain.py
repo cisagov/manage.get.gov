@@ -53,6 +53,7 @@ from registrar.views.utility.invitation_helper import (
 )
 
 from registrar.services.dns_host_service import DnsHostService
+from registrar.models.dns.dns_zone import DnsZone
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -823,9 +824,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
-                zone_id = ""
                 try:
-                    zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
+                    nameservers = self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -835,8 +835,8 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-
-                if zone_id:
+                has_zone = DnsZone.objects.filter(domain_name).exists()
+                if has_zone:
                     zone_name = domain_name
                     # post nameservers to registry
                     try:
@@ -845,8 +845,10 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
 
+                    # post a new record
                     try:
-                        record_response = self.dns_host_service.create_record(zone_id, record_data)
+                        x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
+                        record_response = self.dns_host_service.create_record(x_zone_id, record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
