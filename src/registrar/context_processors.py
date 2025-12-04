@@ -66,25 +66,62 @@ def portfolio_permissions(request):
         "is_portfolio_user": False,
         "is_portfolio_admin": False,
         "has_multiple_portfolios": False,
+        "has_choice": False,
     }
+
     try:
+        user = request.user
+        if not user.is_authenticated:
+            return portfolio_context
+
         portfolio = request.session.get("portfolio")
+
+        # How many portfolios does this user have?
+        get_num_portfolios = getattr(user, "get_num_portfolios", None)
+        if callable(get_num_portfolios):
+            num_portfolios = get_num_portfolios()
+        else:
+            num_portfolios = 0
+        if not isinstance(num_portfolios, int):
+            num_portfolios = 0
+
+        has_legacy_raw = getattr(user, "has_legacy_domain", lambda: False)()
+        has_legacy = bool(has_legacy_raw)
+
+        # "Things" = portfolios + legacy
+        num_choices = num_portfolios + (1 if has_legacy else 0)
+        has_choice = num_choices > 1
+
+        portfolio_context["has_choice"] = has_choice
+        portfolio_context["has_multiple_portfolios"] = getattr(user, "is_multiple_orgs_user", lambda req: False)(
+            request
+        )
+
+        hide_portfolio_navbar = False
+        # Legacy mode (no portfolio in session)
+        if portfolio is None and user.is_authenticated:
+            # User has portfolios (mixed user)
+            if num_portfolios > 0:
+                hide_portfolio_navbar = True
+
+        portfolio_context["hide_portfolio_navbar"] = hide_portfolio_navbar
+
         if portfolio:
-            return {
-                "has_view_portfolio_permission": request.user.has_view_portfolio_permission(portfolio),
-                "has_edit_portfolio_permission": request.user.has_edit_portfolio_permission(portfolio),
-                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
-                "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
-                "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(portfolio),
-                "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
-                "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
-                "portfolio": portfolio,
-                "is_portfolio_user": True,
-                "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
-                "has_multiple_portfolios": request.user.is_multiple_orgs_user(request),
-            }
-        # Active portfolio may not be set yet, but indicate if user is a member of multiple portfolios
-        portfolio_context["has_multiple_portfolios"] = request.user.is_multiple_orgs_user(request)
+            portfolio_context.update(
+                {
+                    "has_view_portfolio_permission": user.has_view_portfolio_permission(portfolio),
+                    "has_edit_portfolio_permission": user.has_edit_portfolio_permission(portfolio),
+                    "has_edit_request_portfolio_permission": user.has_edit_request_portfolio_permission(portfolio),
+                    "has_any_domains_portfolio_permission": user.has_any_domains_portfolio_permission(portfolio),
+                    "has_any_requests_portfolio_permission": user.has_any_requests_portfolio_permission(portfolio),
+                    "has_view_members_portfolio_permission": user.has_view_members_portfolio_permission(portfolio),
+                    "has_edit_members_portfolio_permission": user.has_edit_members_portfolio_permission(portfolio),
+                    "portfolio": portfolio,
+                    "is_portfolio_user": True,
+                    "is_portfolio_admin": user.is_portfolio_admin(portfolio),
+                }
+            )
+
         return portfolio_context
 
     except AttributeError:
