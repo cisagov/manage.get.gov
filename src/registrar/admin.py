@@ -34,6 +34,8 @@ from registrar.utility.email_invitations import (
     send_domain_invitation_email,
     send_portfolio_admin_addition_emails,
     send_portfolio_invitation_email,
+    send_domain_deleted_email_to_managers_and_admins,
+    send_domain_on_hold_admin_email_to_managers_and_admins,
 )
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
@@ -490,10 +492,17 @@ class DomainRequestAdminForm(forms.ModelForm):
         in the FSM. Allows us to still display fields filtered out by a condition."""
         curr_state = field.get_state(instance)
         transitions = field.transitions[instance.__class__]
+        is_feb_request = instance.is_feb() or instance.federal_type == BranchChoices.EXECUTIVE
 
         for name, transition in transitions.items():
             meta = transition._django_fsm
             if meta.has_transition(curr_state):
+                transition_data = meta.get_transition(curr_state)
+
+                # exclude in review - omb as a status for non feb requests
+                if not is_feb_request and transition_data.target == DomainRequest.DomainRequestStatus.IN_REVIEW_OMB:
+                    continue
+
                 yield meta.get_transition(curr_state)
 
     def clean(self):
@@ -520,6 +529,7 @@ class DomainRequestAdminForm(forms.ModelForm):
             DomainRequest.DomainRequestStatus.ACTION_NEEDED,
             DomainRequest.DomainRequestStatus.REJECTED,
             DomainRequest.DomainRequestStatus.INELIGIBLE,
+            DomainRequest.DomainRequestStatus.IN_REVIEW_OMB,
         ]
 
         # If a status change occured, check for validity
@@ -3332,6 +3342,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             models.DomainRequest.DomainRequestStatus.WITHDRAWN: domain_request.withdraw,
             models.DomainRequest.DomainRequestStatus.REJECTED: domain_request.reject,
             models.DomainRequest.DomainRequestStatus.INELIGIBLE: (domain_request.reject_with_prejudice),
+            models.DomainRequest.DomainRequestStatus.IN_REVIEW_OMB: domain_request.in_review_omb,
         }
 
         # Grab the method
@@ -4389,7 +4400,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
-            obj.deletedInEpp()
+            obj.deleteInEpp()
             obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
@@ -4439,6 +4450,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "Domain %s has been deleted. Thanks!" % obj.name,
             )
+            send_domain_deleted_email_to_managers_and_admins(domain=obj)
 
         return HttpResponseRedirect(".")
 
@@ -4484,6 +4496,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "%s is in client hold. This domain is no longer accessible on the public internet." % obj.name,
             )
+            send_domain_on_hold_admin_email_to_managers_and_admins(obj)
+
         return HttpResponseRedirect(".")
 
     def do_remove_client_hold(self, request, obj):
@@ -5196,12 +5210,12 @@ class WaffleFlagAdmin(FlagAdmin):
         model = models.WaffleFlag
         fields = "__all__"
 
-    # Hack to get the dns_prototype_flag to auto populate when you navigate to
+    # Hack to get the dns_hosting flag to auto populate when you navigate to
     # the waffle flag page.
     def changelist_view(self, request, extra_context=None):
         if extra_context is None:
             extra_context = {}
-        extra_context["dns_prototype_flag"] = flag_is_active_for_user(request.user, "dns_prototype_flag")
+        extra_context["dns_hosting"] = flag_is_active_for_user(request.user, "dns_hosting")
 
         # Loads "tabtitle" for this admin page so that on render the <title>
         # element will only have the model name instead of

@@ -326,6 +326,9 @@ BOTO_CONFIG = Config(retries={"mode": AWS_RETRY_MODE, "max_attempts": AWS_MAX_AT
 # also used as a default to and bcc email
 DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
 
+# OMB email address for FEB withdrawal notifications.
+OMB_EMAIL = "ombdotgov@omb.eop.gov <ombdotgov@omb.eop.gov>"
+
 # connect to an (external) SMTP server for sending email
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
@@ -393,6 +396,7 @@ CONTENT_SECURITY_POLICY = {
             "https://cdn.jsdelivr.net/npm/chart.js",
             "https://www.ssa.gov",
             "https://ajax.googleapis.com",
+            "https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.15.2/dist/cdn.min.js",
         ],
         "style-src": [SELF, NONCE, "https://www.ssa.gov/accessibility/andi/andi.css"],
     }

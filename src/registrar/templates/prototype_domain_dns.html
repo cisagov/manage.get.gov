@@ -14,18 +14,42 @@
     Do note that this just adds records, but does not update or delete existing ones.
     </p>
 
-    <form class="usa-form usa-form--large" method="post" novalidate id="form-container">
-        {% csrf_token %}
-        {% input_with_errors form.name %}
-        {% input_with_errors form.content %}
-        {% input_with_errors form.ttl %}
+    <div x-data="{ show_form: false }">
         <button
-            type="submit"
-            class="usa-button"
+        class="usa-button"
+        type="button"
+        x-on:click="show_form = true"
         >
             Add record
         </button>
-    </form>
+        <form 
+            class="usa-form usa-form--large"
+            method="post"
+            novalidate id="form-container"
+            x-cloak
+            x-show="show_form"
+        >
+            {% csrf_token %}
+            {% input_with_errors form.name %}
+            {% input_with_errors form.content %}
+            {% input_with_errors form.ttl %}
+            <button
+                    type="submit"
+                    class="usa-button"
+                >
+                    Submit record
+            </button>
+            <button
+                type="button"
+                class="usa-button usa-button--outline"
+                x-on:click="show_form = false"
+            >
+                Cancel
+            </button>
+        </form>
+        
+    </div>
+    
     {% if dns_record %}
     <p>DNS RECORD: {{ dns_record }} </p>
     {% endif %}

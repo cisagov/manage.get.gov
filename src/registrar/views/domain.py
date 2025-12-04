@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
@@ -738,7 +738,7 @@ class DomainDNSView(DomainBaseView):
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["dns_prototype_flag"] = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        context["dns_hosting"] = flag_is_active_for_user(self.request.user, "dns_hosting")
         return context
 
 
@@ -791,7 +791,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         if not has_permission:
             return False
 
-        flag_enabled = flag_is_active_for_user(self.request.user, "dns_prototype_flag")
+        flag_enabled = flag_is_active_for_user(self.request.user, "dns_hosting")
         if not flag_enabled:
             return False
 
@@ -827,7 +827,14 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 try:
                     _, zone_id, nameservers = self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
-                    logger.error(f"API error in view: {str(e)}")
+                    logger.error(f"dnsSetup failed {e}")
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "DNS setup failed",
+                        },
+                        status=400,
+                    )
 
                 if zone_id:
                     zone_name = domain_name
