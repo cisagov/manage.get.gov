@@ -1,6 +1,6 @@
 {% load nav_header %}
 
-<li class="usa-nav__secondary-item">
+<li class="usa-nav__secondary-item desktop-only">
     <div class="usa-accordion">
         <div class="usa-accordion__heading usa-nav__secondary-menu">
             <button
@@ -28,3 +28,43 @@
         </div>
     </div>
 </li>
+{% for user_portfolio_permission in user_portfolio_permissions %}
+<li class="usa-nav__secondary-item mobile-only">
+    <div class="usa-accordion">
+        <div class="usa-accordion__heading usa-nav__secondary-menu">
+            <button
+            class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
+            id="organizations-menu"
+            aria-controls="portfolio-{{ forloop.counter }}"
+            aria-expanded="false"
+            aria-label="organizations-menu"
+            >
+                <span class="ellipsis usa-nav__username">{{ user_portfolio_permission.portfolio.organization_name }}</span>
+            </button>
+        </div>
+        <ul id="portfolio-{{ forloop.counter }}" class="usa-nav__submenu">
+            <li class="usa-nav__submenu-item"><a href="{% url 'domains' %}"><span>Domains</span></a></li>
+            <li class="usa-nav__submenu-item">
+            {% if has_edit_request_portfolio_permission or has_any_requests_portfolio_permission %}
+                <a href="{% url 'domain-requests' %}"><span>Domain Requests</span></a></li>
+            {% else %}
+                <a href="{% url 'no-portfolio-requests' %}"><span>Domain Requests</span></a></li>
+            {% endif %}
+            </li>
+            {% if has_view_members_portfolio_permission %}
+            <li class="usa-nav__submenu-item"><a href="{% url 'members' %}"><span>Members</span></a></li>
+            {% endif %}
+            <li class="usa-nav__submenu-item"><a href="{% url 'organization' %}"><span>Organization</span></a></li>
+        </ul>
+    </div>
+</li>
+{% endfor %}
+{% if has_legacy_domain %}
+<li class="usa-nav__secondary-item mobile-only">
+    <a class="usa-nav-link organization-button mobile-only" href="{% url 'home' %}?legacy_home=1">
+        <span>
+            {{ request.user.email }}’s account
+        </span>
+    </a>
+</li>
+{% endif %}

@@ -4,16 +4,18 @@
   <div class="usa-nav-container usa-nav-container--widescreen padding-x--widescreen">
     <div class="usa-navbar">
         {% include "includes/gov_extended_logo.html" with logo_clickable=logo_clickable %}
-      <button type="button" class="usa-menu-btn">Menu</button>
+        <button type="button" class="usa-menu-btn">Menu</button>
     </div>
     {% block usa_nav %}
     <nav class="usa-nav" aria-label="Primary navigation">
       <button type="button" class="usa-nav__close">
-        <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
+        <img src="{%static 'img/usa-icons/close.svg'%}" class="close-icon" role="img" alt="Close" />
       </button>
       <ul class="usa-nav__primary usa-accordion">
-        <li class="usa-nav__primary-item">
+        <li class="usa-nav__primary-item desktop-profile-dropdown">
           {% if user.is_authenticated %}
+          {% url 'user-profile' as user_profile_url %}
+          {% url 'finish-user-profile-setup' as finish_setup_url %}
           <button
             type="button"
             class="usa-accordion__button usa-nav__link"
@@ -25,20 +27,28 @@
           </button>
           <ul id="basic-nav-section-one" class="usa-nav__submenu">
             <li class="usa-nav__submenu-item">
-              {% url 'user-profile' as user_profile_url %}
-              {% url 'finish-user-profile-setup' as finish_setup_url %}
               <a class="usa-nav-link {% if request.path == user_profile_url or request.path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
                   Your profile
               </a>
             </li>
           </ul>
         </li>
-        <li class="usa-nav__primary-item">
-          <a href="{% url 'logout' %}"><span class="usa-nav__text">Sign out</span></a>
-          {% else %}
-          <a href="{% url 'login' %}"><span class="usa-nav__text">Sign in</span></a>
-          {% endif %}
+        <li class="usa-nav__primary-item mobile-profile-menu">
+          <a class="usa-nav-link {% if request.path == user_profile_url or request.path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+              <span class="usa-nav__text">Your profile</span>
+          </a>
         </li>
+        <li class="usa-nav__primary-item display-flex flex-align-center">
+          <a class="usa-nav-link" href="{{ logout }}">
+              <span class="usa-nav__text">Sign out</span>
+          </a>
+          <img src="{%static 'img/usa-icons/logout.svg'%}" class="logout-icon mobile-profile-menu" role="img" alt="Logout" />
+        </li>
+        {% else %}
+        <li class="usa-nav__primary-item">
+          <a href="{% url 'login' %}"><span class="usa-nav__text">Sign in</span></a>
+        </li>
+        {% endif %}
       </ul>
     </nav>
     {% endblock %}
