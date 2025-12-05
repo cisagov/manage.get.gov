@@ -389,7 +389,7 @@ The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaent
 
 ### Testing the DNS record feature (update as testing instructions change)
 We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
-`prototype_dns_flag` waffle flag and navigate to a domain you manage. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
+`dns_hosting` waffle flag and navigate to a domain you manage. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
 
 Before we can send data to cloudflare, you will need these values in your .env file:
 ```
@@ -400,7 +400,7 @@ DNS_TEST_TENANT_ID = {id of the test tenant (as opposed to the prod tenant)}
 You can obtain these by going to cloud.gov and looking at the variables in the getgov-kma application (for now)
 Alternatively, if you are testing on a sandbox, you will need to add those to getgov-credentials.
 
-To manually test locally:
+To manually test locally (if not mocking cloudflare):
 
    - Add env't vars to your .env
    - From localhost:8080 in Enterprise view, go to domains and find one for which you are a domain manager (look for "Manage" under "Action"). Go to that domain's detail page
@@ -430,4 +430,3 @@ To manually test locally:
     `error-400` to trigger a bad request 400
     `error-403` to trigger an authentication error 403
     `error*` to trigger a 500 response
-    
