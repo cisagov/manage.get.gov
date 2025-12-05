@@ -835,7 +835,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(domain_name).exists()
+                has_zone = DnsZone.objects.filter(name=domain_name).exists()
                 if has_zone:
                     zone_name = domain_name
                     # post nameservers to registry
@@ -847,7 +847,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
 
                     # post a new record
                     try:
-                        x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
+                        x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
                         record_response = self.dns_host_service.create_record(x_zone_id, record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]

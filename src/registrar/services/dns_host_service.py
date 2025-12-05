@@ -97,7 +97,7 @@ class DnsHostService:
 
         try:
             self.save_db_account(account_data)
-            logger.info("Successfully saved to database")
+            logger.info(f"Successfully saved account '{account_name}' to database")
         except Exception as e:
             logger.error(f"Save to database failed: {str(e)}")
             raise
@@ -118,7 +118,7 @@ class DnsHostService:
         # Create zone object in registrar db
         try:
             self.save_db_zone(zone_data, domain_name)
-            logger.info("Successfully saved to database.")
+            logger.info(f"Successfully saved zone '{domain_name}' to database")
         except Exception as e:
             logger.error(f"Save to database failed: {str(e)}.")
             raise
