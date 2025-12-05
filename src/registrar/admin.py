@@ -75,7 +75,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
-
+from django.db.models import Exists, OuterRef
 
 logger = logging.getLogger(__name__)
 
@@ -350,17 +350,6 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     to assign roles and permissions to specific users within a portfolio.
     """
 
-    # Dropdown to select a user from the database
-    user = forms.ModelChoiceField(
-        queryset=models.User.objects.all(),
-        label="User",
-        widget=AutocompleteSelectWithPlaceholder(
-            models.UserPortfolioPermission._meta.get_field("user"),
-            admin.site,
-            attrs={"data-placeholder": "---------"},  # Customize placeholder
-        ),
-    )
-
     class Meta:
         """
         Meta class defining the model and fields to be used in the form.
@@ -368,6 +357,16 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
 
         model = models.UserPortfolioPermission  # Uses the UserPortfolioPermission model
         fields = ["user", "portfolio", "role", "domain_permissions", "request_permissions", "member_permissions"]
+        # Dropdown to select a user from the database
+        user = forms.ModelChoiceField(
+            queryset=models.User.objects.all(),
+            label="User",
+            widget=AutocompleteSelectWithPlaceholder(
+                models.UserPortfolioPermission._meta.get_field("user"),
+                admin.site,
+                attrs={"data-placeholder": "---------"},  # Customize placeholder
+            ),
+        )
 
 
 class PortfolioInvitationForm(PortfolioPermissionsForm):
@@ -1004,7 +1003,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
-        ("Associated portfolios", {"fields": ("portfolios",)}),
     )
 
     readonly_fields = ("verification_type", "portfolios")
@@ -1030,7 +1028,6 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             },
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
-        ("Associated portfolios", {"fields": ("portfolios",)}),
     )
 
     # TODO: delete after we merge organization feature
@@ -1205,20 +1202,85 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
     def change_view(self, request, object_id, form_url="", extra_context=None):
         """Add user's related domains and requests to context"""
         obj = self.get_object(request, object_id)
-
-        domain_requests = DomainRequest.objects.filter(requester=obj).exclude(
-            Q(status=DomainRequest.DomainRequestStatus.STARTED) | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN)
+        domain_requests = (
+            DomainRequest.objects.filter(requester=obj)
+            .exclude(
+                Q(status=DomainRequest.DomainRequestStatus.STARTED)
+                | Q(status=DomainRequest.DomainRequestStatus.WITHDRAWN),
+            )
+            .select_related("portfolio")
+            .order_by("status", "requested_domain__name")
         )
-        sort_by = request.GET.get("sort_by", "requested_domain__name")
-        domain_requests = domain_requests.order_by(sort_by)
 
         user_domain_roles = UserDomainRole.objects.filter(user=obj)
         domain_ids = user_domain_roles.values_list("domain_id", flat=True)
-        domains = Domain.objects.filter(id__in=domain_ids).exclude(state=Domain.State.DELETED)
+
+        domain_info_objects = (
+            DomainInformation.objects.filter(domain_id__in=domain_ids)
+            .exclude(domain__state=Domain.State.DELETED)
+            .select_related("domain", "portfolio")
+            .order_by("domain__state", "domain__name")
+        )
 
         portfolio_ids = obj.get_portfolios().values_list("portfolio", flat=True)
         portfolios = models.Portfolio.objects.filter(id__in=portfolio_ids)
-        extra_context = {"domain_requests": domain_requests, "domains": domains, "portfolios": portfolios}
+
+        # Group domains and requests by portfolio to avoid O(n*m) runtime filtering
+        # when building the formatted table data
+
+        # Organize domains by portfolio
+        domains_by_portfolio = {}
+        for domain_info in domain_info_objects:
+            portfolio_id = domain_info.portfolio.id if domain_info.portfolio else None
+            if portfolio_id not in domains_by_portfolio:
+                domains_by_portfolio[portfolio_id] = []
+            domains_by_portfolio[portfolio_id].append(domain_info)
+
+        # Organize requests by portfolio
+        requests_by_portfolio = {}
+        for domain_request in domain_requests:
+            portfolio_id = domain_request.portfolio.id if domain_request.portfolio else None
+            if portfolio_id not in requests_by_portfolio:
+                requests_by_portfolio[portfolio_id] = []
+            requests_by_portfolio[portfolio_id].append(domain_request)
+
+        # Get pending portfolio invitations
+        portfolio_invitations = PortfolioInvitation.objects.filter(
+            email=obj.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
+        ).select_related("portfolio")
+
+        formatted_table_data = []
+
+        for portfolio in portfolios:
+            formatted_table_data.append(
+                {
+                    "portfolio": portfolio,
+                    "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
+                    "portfolio_domain_requests": requests_by_portfolio.get(portfolio.id, []),
+                }
+            )
+
+        if domains_by_portfolio.get(None) or requests_by_portfolio.get(None):
+            formatted_table_data.append(
+                {
+                    "portfolio": None,
+                    "portfolio_domains": domains_by_portfolio.get(None),
+                    "portfolio_domain_requests": requests_by_portfolio.get(None),
+                }
+            )
+
+        # TODO 4169: update this code when invitation tables are updated
+    
+        for portfolio_invitation in portfolio_invitations:
+            portfolio = portfolio_invitation.portfolio
+            formatted_table_data.append(
+                {
+                    "portfolio": portfolio,
+                    "pending_invitation": True,
+                    "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
+                }
+            )
+        extra_context = {"formatted_table_data": formatted_table_data}
         return super().change_view(request, object_id, form_url, extra_context)
 
     # Loads "tabtitle" for this admin page so that on render the <title>
@@ -4911,7 +4973,15 @@ class PortfolioAdmin(ListHeaderAdmin):
     def get_user_portfolio_permission_non_admins(self, obj):
         """Returns each admin on UserPortfolioPermission for a given portfolio."""
         if obj:
-            return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+            return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]).annotate(
+                has_domain_request_permission=Exists(
+                    UserPortfolioPermission.objects.filter(
+                        user=OuterRef("user"),
+                        portfolio=obj,
+                        additional_permissions__contains=[UserPortfolioPermissionChoices.EDIT_REQUESTS],
+                    )
+                )
+            )
         else:
             return []
 

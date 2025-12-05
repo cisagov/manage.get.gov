@@ -1,11 +1,11 @@
-function copyToClipboardAndChangeIcon(button) {
-    // Assuming the input is the previous sibling of the button
-    let input = button.previousElementSibling;
-    // Copy input value to clipboard
-    if (input) {
-        navigator.clipboard.writeText(input.value).then(function() {
+
+// This function takes data and copies it to the user's clipboard
+// it also changes the icon from "copy" to "copied to clipboard" when a user clicks 
+function copyToClipboardAndChangeIcon(button, input, selector) {
+        navigator.clipboard.writeText(input).then(function() {
             // Change the icon to a checkmark on successful copy
-            let buttonIcon = button.querySelector('.copy-to-clipboard use');
+            let buttonIcon = button.querySelector(selector + " use");
+            
             if (buttonIcon) {
                 let currentHref = buttonIcon.getAttribute('xlink:href');
                 let baseHref = currentHref.split('#')[0];
@@ -28,7 +28,43 @@ function copyToClipboardAndChangeIcon(button) {
         }).catch(function(error) {
             console.error('Clipboard copy failed', error);
         });
+}
+
+function copyIndividualTextButtonToClipBoard(button) {
+    // Assuming the input is the previous sibling of the button
+    let input = button.previousElementSibling;
+    // Copy input value to clipboard
+    if (input) {
+       const buttonSelector = ".copy-to-clipboard"
+       copyToClipboardAndChangeIcon(button, input.value, buttonSelector)
     }
+}
+
+function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
+    const membersEmails = helperCopyEmailsFromTableFunction(table);
+    if(membersEmails){
+        copyToClipboardAndChangeIcon(button, membersEmails, buttonSelector)
+    }
+
+}
+
+function helperCopyEmailsFromTableFunction(table){
+    const myTable = document.querySelector(table); 
+    let emails= ""
+   
+    const rows = myTable.querySelectorAll('tr')
+
+    //body rows
+    // started at second row for content
+    for(let i = 1; i < rows.length; i++){
+        const bodyRows = rows[i].querySelectorAll('td')
+        // email is the third item from the end of the row
+        const emailI = bodyRows.length - 3 
+        const emailText = bodyRows[emailI].textContent.trim()
+        emails+= emailText + ","
+    }
+
+    return emails
 }
 
 /**
@@ -41,7 +77,7 @@ export function initCopyToClipboard() {
         // Handle copying the text to your clipboard,
         // and changing the icon.
         button.addEventListener("click", ()=>{
-            copyToClipboardAndChangeIcon(button);
+            copyIndividualTextButtonToClipBoard(button);
         });
         
         // Add a class that adds the outline style on click
@@ -56,4 +92,18 @@ export function initCopyToClipboard() {
         });
 
     });
+
+    const portfolioMemberSelectorButton = "#copy-to-clipboard-members"
+    const portfolioMembersButton = document.querySelector(portfolioMemberSelectorButton)
+    portfolioMembersButton && portfolioMembersButton.addEventListener("click", ()=>{
+        copyAllMembersAdminsToClipboard(portfolioMembersButton, "#portfolio-members-table", portfolioMemberSelectorButton)
+    })
+
+    const portfolioAdminsSelectorButton = "#copy-to-clipboard-admins"
+    const portfolioAdminsButton = document.querySelector(portfolioAdminsSelectorButton)
+    portfolioAdminsButton && portfolioAdminsButton.addEventListener("click", ()=>{
+        copyAllMembersAdminsToClipboard(portfolioAdminsButton, "#portfolio-admins-table", portfolioAdminsSelectorButton )
+     }
+    )
 }
+
