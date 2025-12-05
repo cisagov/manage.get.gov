@@ -651,46 +651,30 @@ class DomainExport(BaseExport):
             ),
             "converted_city": Case(
                 When(
-                    sub_organization__isnull=False,
-                    then=Case(
-                        When(
-                            Q(sub_organization__city__isnull=False)
-                            & Q(sub_organization__state_territory__isnull=False),
-                            then=F("sub_organization__city"),
-                        )
-                    ),
-                ),
+                     Q(sub_organization__isnull=False) &
+                    Q(sub_organization__city__isnull=False)& 
+                    Q(sub_organization__state_territory__isnull=False),
+                    then=F("sub_organization__city"),
+                   ),
                 When(
-                    portfolio__isnull=False,
-                    then=Case(
-                        When(
+                    Q(portfolio__isnull=False) &
                             Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False),
                             then=F("portfolio__city"),
-                        )
-                    ),
                 ),
                 default=F("city"),
                 output_field=CharField(),
             ),
             "converted_state_territory": Case(
+                 When(
+                    Q(sub_organization__isnull=False) &
+                    Q(sub_organization__city__isnull=False)& 
+                    Q(sub_organization__state_territory__isnull=False),
+                    then=F("sub_organization__state_territory"),
+                   ),
                 When(
-                    sub_organization__isnull=False,
-                    then=Case(
-                        When(
-                            Q(sub_organization__city__isnull=False)
-                            & Q(sub_organization__state_territory__isnull=False),
-                            then=F("sub_organization__state_territory"),
-                        )
-                    ),
-                ),
-                When(
-                    portfolio__isnull=False,
-                    then=Case(
-                        When(
+                    Q(portfolio__isnull=False) &
                             Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False),
                             then=F("portfolio__state_territory"),
-                        )
-                    ),
                 ),
                 default=F("state_territory"),
                 output_field=CharField(),
@@ -1060,9 +1044,6 @@ class DomainDataFull(DomainExport):
     # For example, the portfolio name, rather than the suborganization name.
     # This can be removed after that gets fixed.
     # The following fields are changed from DomainExport:
-    # converted_organization_name => organization_name
-    # converted_city => city
-    # converted_state_territory => state_territory
     # converted_so_name => so_name
     # converted_so_email => senior_official__email
     @classmethod
