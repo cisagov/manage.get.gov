@@ -41,43 +41,30 @@ function copyIndividualTextButtonToClipBoard(button) {
 }
 
 function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
-    const membersInCsv = helperCopyMembersTableFunction(table);
-    if(membersInCsv){
-        copyToClipboardAndChangeIcon(button, membersInCsv, buttonSelector)
+    const membersEmails = helperCopyEmailsFromTableFunction(table);
+    if(membersEmails){
+        copyToClipboardAndChangeIcon(button, membersEmails, buttonSelector)
     }
 
 }
 
-function helperCopyMembersTableFunction(table){
+function helperCopyEmailsFromTableFunction(table){
     const myTable = document.querySelector(table); 
-    let copyOfTableToCsv = ""
+    let emails= ""
    
     const rows = myTable.querySelectorAll('tr')
-    
-    //header rows
-    // Minus 2 on the iterator, the last column has copy icons
-    const headerRow = rows[0].querySelectorAll('th')
-    for(let i = 0; i <= headerRow.length - 2; i++){
-        let headerText = headerRow[i].textContent.trim()
-        copyOfTableToCsv+= headerText + ","
-
-        // add new line to the csv header row
-        if(i == headerRow.length - 2){
-            copyOfTableToCsv += "\n"
-        }
-    }
 
     //body rows
+    // started at second row for content
     for(let i = 1; i < rows.length; i++){
-       let rowText = ""
-        const bodyRows = rows[i].querySelectorAll('td');
-        for(let j = 0; j < bodyRows.length - 1; j++){
-            rowText+= bodyRows[j].textContent.trim() + ","
-        }
-        copyOfTableToCsv+= rowText + "\n"
+        const bodyRows = rows[i].querySelectorAll('td')
+        // email is the third item from the end of the row
+        const emailI = bodyRows.length - 3 
+        const emailText = bodyRows[emailI].textContent.trim()
+        emails+= emailText + ","
     }
 
-    return copyOfTableToCsv
+    return emails
 }
 
 /**
