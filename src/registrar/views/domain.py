@@ -835,7 +835,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(domain_name).exists()
+                has_zone = DnsZone.objects.filter(name=domain_name).exists()
                 if has_zone:
                     zone_name = domain_name
                     # post nameservers to registry

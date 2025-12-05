@@ -68,7 +68,7 @@ class DnsHostService:
         # For now, we only expect one zone per account
         has_zone = DnsZone.objects.filter(name=domain_name).exists()
         # Remove after we are getting nameservers from db
-        _, nameservers = self.get_x_zone_id_if_zone_exists()
+        _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
 
         if has_zone:
             logger.info("Already has an existing zone")
@@ -101,7 +101,7 @@ class DnsHostService:
 
         try:
             self.save_db_account(account_data)
-            logger.info("Successfully saved to database")
+            logger.info(f"Successfully saved account {account_name} to database")
         except Exception as e:
             logger.error(f"Failed to save {account_name} to database: {str(e)}")
             raise
@@ -123,7 +123,7 @@ class DnsHostService:
         # Create and save zone in registrar db
         try:
             self.save_db_zone(zone_data, domain_name)
-            logger.info("Successfully saved to database.")
+            logger.info(f"Successfully saved zone {domain_name} to database.")
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
             raise
@@ -223,6 +223,7 @@ class DnsHostService:
 
         # TODO: handle transaction failure
         try:
+            print(f"🥒 in save")
             with transaction.atomic():
                 vendor_acc = VendorDnsAccount.objects.create(
                     x_account_id=x_account_id,
