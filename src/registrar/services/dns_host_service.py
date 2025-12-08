@@ -68,7 +68,7 @@ class DnsHostService:
         # For now, we only expect one zone per account
         has_zone = DnsZone.objects.filter(name=domain_name).exists()
         # Remove after we are getting nameservers from db
-        _, nameservers = self.get_x_zone_id_if_zone_exists()
+        _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
 
         if has_zone:
             logger.info("Already has an existing zone")
