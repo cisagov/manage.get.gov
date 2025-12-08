@@ -259,7 +259,9 @@ class DnsHostService:
                 dns_account = DnsAccount.objects.get(name=zone_account_name)
                 dns_domain = Domain.objects.get(name=domain_name)
 
-                dns_zone = DnsZone.objects.create(dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers)
+                dns_zone = DnsZone.objects.create(
+                    dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
+                )
 
                 ZonesJoin.objects.create(
                     dns_zone=dns_zone,
