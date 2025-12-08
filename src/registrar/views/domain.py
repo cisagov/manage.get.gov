@@ -814,7 +814,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                 if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
                     raise Exception(f"create dns record was called for domain {self.name}")
 
-                record_data = {
+                form_record_data = {
                     "type": "A",
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
@@ -846,7 +846,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                         # Don't raise an error here in order to bypass blocking error in local dev
 
                     try:
-                        record_response = self.dns_host_service.create_record(zone_id, record_data)
+                        record_response = self.dns_host_service.create_and_save_record(zone_id, form_record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
