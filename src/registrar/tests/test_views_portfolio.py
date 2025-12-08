@@ -15,7 +15,9 @@ from registrar.models import (
     AllowedEmail,
 )
 from registrar.models.domain_invitation import DomainInvitation
+from registrar.models.host import Host
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.public_contact import PublicContact
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -4962,6 +4964,8 @@ class TestMultiplePortfolios(WebTest):
         DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
 

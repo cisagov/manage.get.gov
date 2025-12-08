@@ -162,7 +162,13 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             IS_DOMAIN_REQUEST_REQUESTER,
             lambda: (
-                _is_domain_request_requester(user, kwargs.get("domain_request_pk")) and not is_org
+                _is_domain_request_requester(user, kwargs.get("domain_request_pk"))
+                and (
+                    # Pure legacy user (no portfolios at all)
+                    not user.is_any_org_user()
+                    # Mixed mode (user has legacy + portfolios) in legacy context view
+                    or (user.has_legacy_domain() and not is_org)
+                )
             ),
         ),
         (
