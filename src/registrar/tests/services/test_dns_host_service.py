@@ -26,7 +26,10 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone")
+    # Should we create another dns_setup test method for just zones?
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
+    @patch("registrar.services.dns_host_service.DnsHostService.get_x_zone_id_if_zone_exists")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
@@ -40,9 +43,17 @@ class TestDnsHostService(TestCase):
         mock_create_and_save_zone,
         mock_get_page_accounts,
         mock_get_account_zones,
-        mock_find_account_db,
-        mock_find_zone_db,
+        mock_find_existing_account_in_db,
+        mock_get_x_zone_id_if_zone_exists,
+        mock_find_existing_zone_in_cf,
+        mock_save_db_zone,
     ):
+        domain_name = "test.gov"
+        domain = Domain.objects.create(name=domain_name)
+        dns_acc = DnsAccount.objects.create(name=domain_name)
+        DnsZone.objects.create(
+            domain=domain, dns_account=dns_acc, name=domain_name, nameservers=["ex1.dns.gov", "ex2.dns.gov"]
+        )
         test_cases = [
             # Case A: Database has account + zone
             {
@@ -54,6 +65,7 @@ class TestDnsHostService(TestCase):
                 "cf_zone": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
+                "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
             },
             # Case B: Database empty, but CF has account
             {
@@ -65,6 +77,7 @@ class TestDnsHostService(TestCase):
                 "cf_zone": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
+                "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
             },
             # Case C: Database and CF empty
             {
@@ -76,28 +89,36 @@ class TestDnsHostService(TestCase):
                 "cf_zone": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
+                "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
             },
         ]
 
         for case in test_cases:
             with self.subTest(msg=case["test_name"], **case):
-                mock_find_account_db.return_value = case["x_account_id"]
-                mock_find_zone_db.return_value = case["x_zone_id"], None
+                mock_find_existing_account_in_db.return_value = case["x_account_id"]
+                mock_get_x_zone_id_if_zone_exists.return_value = case["x_zone_id"], case["expected_nameservers"]
 
-                if mock_find_account_db.return_value is None:
+                if mock_find_existing_account_in_db.return_value is None:
                     mock_create_and_save_account.return_value = case["expected_account_id"]
-                    mock_create_and_save_zone.return_value = (case["expected_zone_id"], ["rainbow1.dns.gov"])
+                    mock_create_and_save_zone.return_value = (case["expected_zone_id"], case["expected_nameservers"])
+                    mock_find_existing_zone_in_cf.return_value = (
+                        case["expected_nameservers"],
+                        {"id": case.get("expected_zone_id"), "name": case["domain_name"]},
+                    )
 
                     mock_get_page_accounts.return_value = {
                         "result": [{"id": case.get("expected_account_id")}],
                         "result_info": {"total_count": 18},
                     }
-                    mock_get_account_zones.return_value = {"result": [{"id": case.get("expected_zone_id")}]}
+                    mock_get_account_zones.return_value = {
+                        "result": [
+                            {"id": case.get("expected_zone_id"), "nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"]}
+                        ]
+                    }
 
-                returned_account_id, returned_zone_id, _ = self.service.dns_setup(case["domain_name"])
+                returned_nameservers = self.service.dns_setup(case["domain_name"])
 
-                self.assertEqual(returned_account_id, case["expected_account_id"])
-                self.assertEqual(returned_zone_id, case["expected_zone_id"])
+                self.assertEqual(returned_nameservers, case["expected_nameservers"])
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
@@ -194,6 +215,7 @@ class TestDnsHostServiceDB(TestCase):
                     "id": self.vendor_account_data["result"].get("id"),
                     "name": self.vendor_account_data["result"].get("name"),
                 },
+                "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
             }
         }
 
@@ -345,6 +367,62 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
         self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
+    def test_find_existing_zone_in_db_success(self):
+        zone_name = "example.gov"
+        test_x_account_id = "12345"
+        x_zone_id = "zone-999"
+        expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
+
+        zone_domain = Domain.objects.create(
+            name=zone_name,
+        )
+
+        vendor_zone = VendorDnsZone.objects.create(
+            x_zone_id=x_zone_id,
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+
+        vendor_dns_acc = VendorDnsAccount.objects.create(
+            dns_vendor=self.vendor,
+            x_account_id=test_x_account_id,
+            x_created_at="2024-01-02T03:04:05Z",
+            x_updated_at="2024-01-02T03:04:05Z",
+        )
+
+        dns_acc = DnsAccount.objects.create(name=zone_name)
+
+        AccountsJoin.objects.create(
+            dns_account=dns_acc,
+            vendor_dns_account=vendor_dns_acc,
+            is_active=True,
+        )
+
+        zone = DnsZone.objects.create(
+            domain=zone_domain, dns_account=dns_acc, name=zone_name, nameservers=expected_nameservers
+        )
+
+        ZonesJoin.objects.create(
+            dns_zone=zone,
+            vendor_dns_zone=vendor_zone,
+            is_active=True,
+        )
+
+        found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
+
+        self.assertEqual(found_x_zone_id, x_zone_id)
+        self.assertEqual(found_nameservers, expected_nameservers)
+
+    def test_find_existing_zone_in_db_does_not_exist_returns_none(self):
+        zone_name = "missing.gov"
+
+        x_zone_id, nameservers = self.service.get_x_zone_id_if_zone_exists(
+            zone_name,
+        )
+
+        self.assertIsNone(x_zone_id)
+        self.assertIsNone(nameservers)
+
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
         # Create account object referenced in zone
@@ -353,14 +431,16 @@ class TestDnsHostServiceDB(TestCase):
 
         self.service.save_db_zone(self.vendor_zone_data, zone_domain)
 
-        # VendorDnsAccount row exists with matching zone xid as cloudflare id
+        # VendorDnsZone row exists with matching zone xid as cloudflare id
         x_zone_id = self.vendor_zone_data["result"].get("id")
         vendor_zones = VendorDnsZone.objects.filter(x_zone_id=x_zone_id)
         self.assertEqual(vendor_zones.count(), 1)
 
         # DnsZone row exists with the matching zone name
         dns_zones = DnsZone.objects.filter(name="dns-test.gov")
+        zone = dns_zones.first()
         self.assertEqual(dns_zones.count(), 1)
+        self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["name_servers"])
 
         # DnsZone_VendorDnsZone object exists for registrar zone and vendor zone
         dns_zone = dns_zones.first()
