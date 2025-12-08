@@ -162,7 +162,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             IS_DOMAIN_REQUEST_REQUESTER,
             lambda: (
-                _is_domain_request_requester(user, kwargs.get("domain_request_pk")) and not user.is_any_org_user()
+                _is_domain_request_requester(user, kwargs.get("domain_request_pk")) and not is_org
             ),
         ),
         (
