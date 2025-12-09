@@ -31,7 +31,7 @@
                                                 <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
                                             </svg>
                                             
-                                            <span>Copy All</span>
+                                            <span>Copy all</span>
                                         </button></th>
             </tr>
         </thead>
@@ -40,7 +40,7 @@
             {% url 'admin:registrar_userportfoliopermission_change' member.pk as url %}
             <tr>
                 <td>
-                    {%if member.has_domain_request_permission%}
+                    {% if member.has_domain_request_permission %}
                     *
                     {%endif%}
                     <a href={{url}}>{{ member.user.get_formatted_name}}</a></td>

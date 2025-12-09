@@ -30,6 +30,7 @@ function copyToClipboardAndChangeIcon(button, input, selector) {
         });
 }
 
+// This method copies an individual email to the clipboard from the admins/members table in portfolio
 function copyIndividualTextButtonToClipBoard(button) {
     // Assuming the input is the previous sibling of the button
     let input = button.previousElementSibling;
@@ -40,6 +41,7 @@ function copyIndividualTextButtonToClipBoard(button) {
     }
 }
 
+// method checks if emails are captured, and calls the method to capture to clipboard
 function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
     const membersEmails = helperCopyEmailsFromTableFunction(table);
     if(membersEmails){
@@ -48,6 +50,7 @@ function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
 
 }
 
+// method that captures the content(email) into a comma seperated list
 function helperCopyEmailsFromTableFunction(table){
     const myTable = document.querySelector(table); 
     let emails= ""

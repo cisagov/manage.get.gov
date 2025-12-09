@@ -4291,6 +4291,9 @@ class TestPortfolioAdmin(TestCase):
         self.assertContains(portfolio_change_form, f"<a href={user4_portfolio_perm_url}>Agent Smith</a>")
         self.assertContains(portfolio_change_form, "*", count=2)
 
+        # copy all button appears on page
+        self.assertContains(portfolio_change_form, "Copy all", count=2)
+
         self.assertContains(portfolio_change_form, f'<a href="{url}">2 admins</a>')
         self.assertContains(portfolio_change_form, f'<a href="{url}">2 basic members</a>')
 
