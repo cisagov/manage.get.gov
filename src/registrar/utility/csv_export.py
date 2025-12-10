@@ -645,8 +645,10 @@ class DomainExport(BaseExport):
             "converted_sub_organization_name": Case(
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
+                When(federal_agency__agency="Non-Federal Agency", then=""),
+                When(federal_agency__isnull=False, then=F("organization_name")),
                 # Otherwise, return empty string
-                default=Value("organization_name"),
+                default=(""),
                 output_field=CharField(),
             ),
             "converted_city": Case(
@@ -1176,7 +1178,7 @@ class DomainDataFederal(DomainExport):
             "Domain type": model.get("domain_type"),
             "Agency": model.get("federal_agency__agency"),
             "Organization name": model.get("converted_organization_name"),
-            "Suborganization name": model.get("converted_sub_organization_name"),
+            "Suborganization name": model.get("organization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
@@ -1721,7 +1723,7 @@ class DomainRequestExport(BaseExport):
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
                 # Otherwise, return empty string
-                default=Value(""),
+                default="",
                 output_field=CharField(),
             ),
             "converted_so_email": Case(
