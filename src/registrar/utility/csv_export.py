@@ -646,7 +646,7 @@ class DomainExport(BaseExport):
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
                 # Otherwise, return empty string
-                default=Value(""),
+                default=Value("organization_name"),
                 output_field=CharField(),
             ),
             "converted_city": Case(
@@ -1174,6 +1174,7 @@ class DomainDataFederal(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
+            "Agency": model.get("federal_agency__agency"),
             "Organization name": model.get("converted_organization_name"),
             "Suborganization name": model.get("converted_sub_organization_name"),
             "City": model.get("converted_city"),
