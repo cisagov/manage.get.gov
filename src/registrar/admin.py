@@ -4973,7 +4973,11 @@ class PortfolioAdmin(ListHeaderAdmin):
     def get_user_portfolio_permission_non_admins(self, obj):
         """Returns each admin on UserPortfolioPermission for a given portfolio."""
         if obj:
-            return obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]).annotate(
+            # get non admin portfolio users
+            obj_queryset = obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+            
+            # Annotate non admin portfolios users that have domain request permissions
+            return obj_queryset.annotate(
                 has_domain_request_permission=Exists(
                     UserPortfolioPermission.objects.filter(
                         user=OuterRef("user"),

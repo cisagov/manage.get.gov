@@ -48,7 +48,7 @@
             
             </p>
                <div class="padding-left-1">
-                  {%if item.portfolio_domain_requests|length > 0 %}
+                  {% if item.portfolio_domain_requests|length > 0 %}
                      {% include "django/admin/includes/portfolio/portfolio_domain_requests_table.html" with domain_requests=item.portfolio_domain_requests link_title="Domain Requests"%}
                   {% else %}
                       <div class="readonly padding-top-1 padding-left-05"> No domain requests </div>
