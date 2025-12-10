@@ -37,65 +37,96 @@ class Command(BaseCommand):
 
         logger.info(f"Found {retrieved_invitations.count()} retrieved invitations to check")
 
-        orphaned_count = 0
-        cleaned_up_count = 0
+        # orphaned_count = 0
+        # cleaned_up_count = 0
 
-        for invitation in retrieved_invitations:
-            # Check if there's a corresponding UserDomainRole
-            # We need to find the user by email (case-insensitive) and check if they have a role on this domain
-            user_exists = User.objects.filter(email__iexact=invitation.email).exists()
+        # for invitation in retrieved_invitations:
+        #     # Check if there's a corresponding UserDomainRole
+        #     # We need to find the user by email (case-insensitive) and check if they have a role on this domain
+        #     user_exists = User.objects.filter(email__iexact=invitation.email).exists()
 
-            if not user_exists:
-                # User doesn't exist anymore - this is orphaned
-                orphaned_count += 1
-                if dryrun:
-                    logger.info(
-                        f"[DRYRUN] Would cancel orphaned invitation: {invitation.email} on {invitation.domain.name} "
-                        f"(user no longer exists)"
-                    )
-                else:
-                    invitation.delete()
-                    logger.info(
-                        f"Canceled orphaned invitation: {invitation.email} on {invitation.domain.name} "
-                        f"(user no longer exists)"
-                    )
-                    cleaned_up_count += 1
-                continue
+        #     if not user_exists:
+        #         # User doesn't exist anymore - this is orphaned
+        #         orphaned_count += 1
+        #         if dryrun:
+        #             logger.info(
+        #                 f"[DRYRUN] Would cancel orphaned invitation: {invitation.email} on {invitation.domain.name} "
+        #                 f"(user no longer exists)"
+        #             )
+        #         else:
+        #             invitation.delete()
+        #             logger.info(
+        #                 f"Canceled orphaned invitation: {invitation.email} on {invitation.domain.name} "
+        #                 f"(user no longer exists)"
+        #             )
+        #             cleaned_up_count += 1
+        #         continue
 
-            # User exists, check if they have a role on this domain
-            user = User.objects.get(email__iexact=invitation.email)
-            role_exists = UserDomainRole.objects.filter(
-                user=user,
-                domain=invitation.domain,
-                role=UserDomainRole.Roles.MANAGER,
-            ).exists()
+        #     # User exists, check if they have a role on this domain
+        #     user = User.objects.get(email__iexact=invitation.email)
+        #     role_exists = UserDomainRole.objects.filter(
+        #         user=user,
+        #         domain=invitation.domain,
+        #         role=UserDomainRole.Roles.MANAGER,
+        #     ).exists()
 
-            if not role_exists:
-                # No role exists - this is orphaned
-                orphaned_count += 1
-                if dryrun:
-                    logger.info(
-                        f"[DRYRUN] Would cancel orphaned invitation: {invitation.email} on {invitation.domain.name} "
-                        f"(no corresponding UserDomainRole)"
-                    )
-                else:
-                    invitation.delete()
-                    logger.info(
-                        f"Deleted orphaned invitation: {invitation.email} on {invitation.domain.name} "
-                        f"(no corresponding UserDomainRole)"
-                    )
-                    cleaned_up_count += 1
+        #     if not role_exists:
+        #         # No role exists - this is orphaned
+        #         orphaned_count += 1
+        #         if dryrun:
+        #             logger.info(
+        #                 f"[DRYRUN] Would cancel orphaned invitation: {invitation.email} on {invitation.domain.name} "
+        #                 f"(no corresponding UserDomainRole)"
+        #             )
+        #         else:
+        #             invitation.delete()
+        #             logger.info(
+        #                 f"Deleted orphaned invitation: {invitation.email} on {invitation.domain.name} "
+        #                 f"(no corresponding UserDomainRole)"
+        #             )
+        #             cleaned_up_count += 1
+
+        # if dryrun:
+        #     self.stdout.write(
+        #         self.style.WARNING(
+        #             f"[DRYRUN] Found {orphaned_count} orphaned retrieved invitations that would be cleaned up."
+        #         )
+        #     )
+        # else:
+        #     if cleaned_up_count > 0:
+        #         self.stdout.write(
+        #             self.style.SUCCESS(f"Successfully cleaned up {cleaned_up_count} orphaned retrieved invitations.")
+        #         )
+        #     else:
+        #         self.stdout.write(self.style.SUCCESS("No orphaned retrieved invitations found. Database is clean."))
+
+        invitation_emails = set(
+            retrieved_invitations.values_list("email", flat=True)
+        )
+
+        existing_user_emails = set(
+            User.objects.filter(
+                email__iexact__in=invitation_emails
+            ).values_list("email", flat=True)
+        )
+
+        existing_user_emails_lower = {email.lower() for email in existing_user_emails}
+
+        orphaned_invitations = [
+            inv for inv in retrieved_invitations
+            if inv.email.lower() not in existing_user_emails_lower
+        ]
 
         if dryrun:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"[DRYRUN] Found {orphaned_count} orphaned retrieved invitations that would be cleaned up."
+            for invitation in orphaned_invitations:
+                logger.info(
+                    f"[DRYRUN] Would cancel orphaned invitation: {invitation.email} "
+                    f"on {invitation.domain.name} (user no longer exists)"
                 )
-            )
         else:
-            if cleaned_up_count > 0:
-                self.stdout.write(
-                    self.style.SUCCESS(f"Successfully cleaned up {cleaned_up_count} orphaned retrieved invitations.")
-                )
-            else:
-                self.stdout.write(self.style.SUCCESS("No orphaned retrieved invitations found. Database is clean."))
+            orphaned_ids = [inv.id for inv in orphaned_invitations]
+            deleted_count = DomainInvitation.objects.filter(
+                id__in=orphaned_ids
+            ).delete()[0]
+
+            logger.info(f"Cleaned up {deleted_count} orphaend invitations")
