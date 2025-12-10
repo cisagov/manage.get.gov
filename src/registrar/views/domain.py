@@ -30,6 +30,7 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
+    DnsRecord
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -785,6 +786,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
+        dns_zone = DnsZone.objects.get(domain=self.object)
+        if dns_zone:
+            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
         return context
 
     def has_permission(self):
