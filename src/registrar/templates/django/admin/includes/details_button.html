@@ -1,7 +1,7 @@
 
 {% comment %} This view provides a detail button that can be used to show/hide content {% endcomment %}
 <details class="margin-top-1 dja-detail-table" aria-role="button" {% if start_open %}open{% else %}closed{% endif %}">
-    <summary class="padding-1 padding-left-0 dja-details-summary">{% if link_title %} {{link_title}} {%else%}Details{%endif%}</summary>
+    <summary class="padding-1 padding-left-0 dja-details-summary">{% if link_title %} {{link_title}} {% else %}Details{% endif %}</summary>
     <div class="grid-container margin-left-0 padding-left-0 padding-right-0 dja-details-contents">
         {% block detail_content %}
         {% endblock detail_content%}
