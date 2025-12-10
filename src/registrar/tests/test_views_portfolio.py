@@ -4947,15 +4947,26 @@ class TestMultiplePortfolios(WebTest):
         self.client = Client()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
-        self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user,
+            organization_name="Hotel California",
         )
-        DomainInformation.objects.get_or_create(
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        # Ensure this user/domain pair is explicitly associated to this portfolio
+        di, _ = DomainInformation.objects.get_or_create(
             requester=self.user,
             domain=self.domain,
             defaults={"portfolio": self.portfolio},
         )
+        if di.portfolio_id is None:
+            di.portfolio = self.portfolio
+            di.save()
+        self.domain_info = di
 
     def tearDown(self):
         UserPortfolioPermission.objects.all().delete()
@@ -4979,14 +4990,6 @@ class TestMultiplePortfolios(WebTest):
     def test_middleware_redirects_to_portfolio_no_domains_page(self):
         """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to the no domains page"""
         self.app.set_user(self.user.username)
-        di, _ = DomainInformation.objects.get_or_create(
-            requester=self.user,
-            domain=self.domain,
-        )
-        # If it was a legacy DomainInformation (portfolio is NULL), tie it to this portfolio
-        if di.portfolio_id is None:
-            di.portfolio = self.portfolio
-            di.save()
 
         # Sanity: this test is for portfolio-only behavior, not portfolio+legacy
         self.assertFalse(self.user.has_legacy_domain())
