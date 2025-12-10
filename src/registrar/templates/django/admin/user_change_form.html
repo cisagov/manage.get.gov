@@ -28,7 +28,7 @@
                  <div class="padding-left-1"> 
                       <div class="readonly padding-top-1 padding-left-05"> No domain requests </div>
                 </div>
-        {%endif %}
+        {% endif %}
 
 
         {% for item in formatted_table_data %}
@@ -83,7 +83,7 @@
                 <a href="{{ url }}">
                      {{item.portfolio.organization_name}}
                 </a>
-                 {% if item.pending_invitation %} - Pending Invitation {%endif%}
+                 {% if item.pending_invitation %} - Pending Invitation {% endif %}
                 {% elif item.portfolio_domains %}
                 <!-- If there is no domains with no portfolio do not display portfolio -->
                     No portfolio

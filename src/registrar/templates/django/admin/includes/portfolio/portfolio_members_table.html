@@ -42,7 +42,7 @@
                 <td>
                     {% if member.has_domain_request_permission %}
                     *
-                    {%endif%}
+                    {% endif %}
                     <a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
                 <td>{{ member.user.title }}</td>
                 <td>
