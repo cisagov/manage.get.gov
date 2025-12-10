@@ -4975,7 +4975,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         if obj:
             # get non admin portfolio users
             obj_queryset = obj.portfolio_users.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-            
+
             # Annotate non admin portfolios users that have domain request permissions
             return obj_queryset.annotate(
                 has_domain_request_permission=Exists(
