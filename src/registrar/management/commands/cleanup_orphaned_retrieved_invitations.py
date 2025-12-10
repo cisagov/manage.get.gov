@@ -54,7 +54,7 @@ class Command(BaseCommand):
                         f"(user no longer exists)"
                     )
                 else:
-                    invitation.cancel_retrieved_invitation()
+                    invitation.delete()
                     invitation.save()
                     logger.info(
                         f"Canceled orphaned invitation: {invitation.email} on {invitation.domain.name} "
