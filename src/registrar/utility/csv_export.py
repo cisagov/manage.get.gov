@@ -1265,7 +1265,7 @@ class DomainDataFederal(DomainExport):
         """
         return Q(
             organization_type__icontains="federal",
-            domain__state__in=[Domain.State.READY, Domain.State.ON_HOLD, Domain.State.UNKNOWN],
+            domain__state__in=[Domain.State.READY, Domain.State.ON_HOLD],
         )
 
     @classmethod
