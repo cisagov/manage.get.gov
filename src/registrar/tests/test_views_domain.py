@@ -46,6 +46,7 @@ from django.utils import timezone
 
 from .common import less_console_noise
 from .test_views import TestWithUser
+from .services.test_dns_host_service import TestDnsHostService
 
 import logging
 
@@ -237,6 +238,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns",
             "domain-dns-nameservers",
             "domain-dns-dnssec",
+            "domain-dns-records",
             "domain-dns-dnssec-dsdata",
             "domain-org-name-address",
             "domain-senior-official",
@@ -3399,7 +3401,7 @@ class TestDomainDeletion(TestWithUser):
         self.assertContains(json_response, "On Hold")
 
 
-class TestDomainDnsRecords(TestDomainOverview):
+class TestDomainDnsRecords(TestDomainOverview, TestDnsHostService):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()

@@ -786,9 +786,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
-        dns_zone = DnsZone.objects.filter(domain=self.object)
+        dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
-            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone).first()
         return context
 
     def has_permission(self):
