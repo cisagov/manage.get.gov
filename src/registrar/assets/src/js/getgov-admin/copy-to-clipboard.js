@@ -64,7 +64,8 @@ function helperCopyEmailsFromTableFunction(table){
         // email is the third item from the end of the row
         const emailI = bodyRows.length - 3 
         const emailText = bodyRows[emailI].textContent.trim()
-        emails+= emailText + ","
+        emails+= emailText
+        if(i < rows.length - 1) {emails+=","}
     }
 
     return emails
