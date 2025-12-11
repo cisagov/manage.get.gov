@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.urls import reverse
+from waffle import flag_is_active
 
 
 def language_code(request):
@@ -66,25 +68,70 @@ def portfolio_permissions(request):
         "is_portfolio_user": False,
         "is_portfolio_admin": False,
         "has_multiple_portfolios": False,
+        "has_choice": False,
+        "hide_portfolio_navbar": False,
+        "is_org_user": False,
+        "show_extended_header": False,
     }
+
     try:
+        user = request.user
+        if not user.is_authenticated:
+            return portfolio_context
+
         portfolio = request.session.get("portfolio")
-        if portfolio:
-            return {
-                "has_view_portfolio_permission": request.user.has_view_portfolio_permission(portfolio),
-                "has_edit_portfolio_permission": request.user.has_edit_portfolio_permission(portfolio),
-                "has_edit_request_portfolio_permission": request.user.has_edit_request_portfolio_permission(portfolio),
-                "has_any_domains_portfolio_permission": request.user.has_any_domains_portfolio_permission(portfolio),
-                "has_any_requests_portfolio_permission": request.user.has_any_requests_portfolio_permission(portfolio),
-                "has_view_members_portfolio_permission": request.user.has_view_members_portfolio_permission(portfolio),
-                "has_edit_members_portfolio_permission": request.user.has_edit_members_portfolio_permission(portfolio),
-                "portfolio": portfolio,
-                "is_portfolio_user": True,
-                "is_portfolio_admin": request.user.is_portfolio_admin(portfolio),
-                "has_multiple_portfolios": request.user.is_multiple_orgs_user(request),
+        num_portfolios = user.get_num_portfolios()
+
+        # Legacy domains?
+        has_legacy = user.has_legacy_domain()
+
+        # "Things" = portfolios + legacy
+        num_choices = num_portfolios + (1 if has_legacy else 0)
+        has_choice = num_choices > 1
+        is_org_user = user.is_org_user(request)
+        has_multiple_portfolios = user.is_multiple_orgs_user(request)
+
+        # Mixed user in legacy view, then we hide portfolio navbar
+        hide_portfolio_navbar = False
+        if portfolio is None and num_portfolios > 0:
+            hide_portfolio_navbar = True
+
+        # Decide extended or basic/legacy header
+        multiple_on = flag_is_active(request, "multiple_portfolios")
+        your_orgs_url = reverse("your-organizations")
+        if multiple_on:
+            # New enterprise mode look with flag on
+            show_extended_header = is_org_user or has_choice
+        else:
+            # Legacy behavior when flag is off
+            show_extended_header = not (not is_org_user and request.path != your_orgs_url)
+
+        portfolio_context.update(
+            {
+                "has_choice": has_choice,
+                "has_multiple_portfolios": has_multiple_portfolios,
+                "hide_portfolio_navbar": hide_portfolio_navbar,
+                "is_org_user": is_org_user,
+                "show_extended_header": show_extended_header,
             }
-        # Active portfolio may not be set yet, but indicate if user is a member of multiple portfolios
-        portfolio_context["has_multiple_portfolios"] = request.user.is_multiple_orgs_user(request)
+        )
+
+        if portfolio:
+            portfolio_context.update(
+                {
+                    "has_view_portfolio_permission": user.has_view_portfolio_permission(portfolio),
+                    "has_edit_portfolio_permission": user.has_edit_portfolio_permission(portfolio),
+                    "has_edit_request_portfolio_permission": user.has_edit_request_portfolio_permission(portfolio),
+                    "has_any_domains_portfolio_permission": user.has_any_domains_portfolio_permission(portfolio),
+                    "has_any_requests_portfolio_permission": user.has_any_requests_portfolio_permission(portfolio),
+                    "has_view_members_portfolio_permission": user.has_view_members_portfolio_permission(portfolio),
+                    "has_edit_members_portfolio_permission": user.has_edit_members_portfolio_permission(portfolio),
+                    "portfolio": portfolio,
+                    "is_portfolio_user": True,
+                    "is_portfolio_admin": user.is_portfolio_admin(portfolio),
+                }
+            )
+
         return portfolio_context
 
     except AttributeError:
