@@ -189,7 +189,7 @@ class TestWithDomainPermissions(TestWithUser):
         super().tearDown()
 
 
-class TestDomainPermissions(TestWithDomainPermissions):
+class TestDomainPermissions(TestWithDomainPermissions, TestDnsHostService):
     @less_console_noise_decorator
     def test_not_logged_in(self):
         """Not logged in gets a redirect to Login."""
@@ -3401,7 +3401,7 @@ class TestDomainDeletion(TestWithUser):
         self.assertContains(json_response, "On Hold")
 
 
-class TestDomainDnsRecords(TestDomainOverview, TestDnsHostService):
+class TestDomainDnsRecords(TestDomainOverview):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
