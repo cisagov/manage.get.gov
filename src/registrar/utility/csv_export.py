@@ -645,38 +645,49 @@ class DomainExport(BaseExport):
             "converted_sub_organization_name": Case(
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
-                When(federal_agency__agency="Non-Federal Agency", then=""),
-                When(federal_agency__isnull=False, then=F("organization_name")),
+                # When federal agency is not null
+                # When federal agency is not  Non Federal Agency
+                # Federal Agency is not equal to organization
+                # use the suborg field to apply to organization
+                When(
+                    ~Q(federal_agency__agency=F("organization_name")) & ~Q(federal_agency__agency="Non-Federal Agency"),
+                    then=F("organization_name"),
+                ),
                 # Otherwise, return empty string
-                default=(""),
+                default=Value(""),
                 output_field=CharField(),
             ),
+            # When city and state_territory exists in suborg, use that info from suborg
+            # When city and state_territory exists in portfolio, use that info
+            # Otherwise, use the city, and state from the domain info
             "converted_city": Case(
                 When(
-                     Q(sub_organization__isnull=False) &
-                    Q(sub_organization__city__isnull=False)& 
-                    Q(sub_organization__state_territory__isnull=False),
+                    Q(sub_organization__isnull=False)
+                    & Q(sub_organization__city__isnull=False)
+                    & Q(sub_organization__state_territory__isnull=False),
                     then=F("sub_organization__city"),
-                   ),
+                ),
                 When(
-                    Q(portfolio__isnull=False) &
-                            Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False),
-                            then=F("portfolio__city"),
+                    Q(portfolio__isnull=False)
+                    & Q(portfolio__city__isnull=False)
+                    & Q(portfolio__state_territory__isnull=False),
+                    then=F("portfolio__city"),
                 ),
                 default=F("city"),
                 output_field=CharField(),
             ),
             "converted_state_territory": Case(
-                 When(
-                    Q(sub_organization__isnull=False) &
-                    Q(sub_organization__city__isnull=False)& 
-                    Q(sub_organization__state_territory__isnull=False),
-                    then=F("sub_organization__state_territory"),
-                   ),
                 When(
-                    Q(portfolio__isnull=False) &
-                            Q(portfolio__city__isnull=False) & Q(portfolio__state_territory__isnull=False),
-                            then=F("portfolio__state_territory"),
+                    Q(sub_organization__isnull=False)
+                    & Q(sub_organization__city__isnull=False)
+                    & Q(sub_organization__state_territory__isnull=False),
+                    then=F("sub_organization__state_territory"),
+                ),
+                When(
+                    Q(portfolio__isnull=False)
+                    & Q(portfolio__city__isnull=False)
+                    & Q(portfolio__state_territory__isnull=False),
+                    then=F("portfolio__state_territory"),
                 ),
                 default=F("state_territory"),
                 output_field=CharField(),
@@ -1176,9 +1187,8 @@ class DomainDataFederal(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("federal_agency__agency"),
             "Organization name": model.get("converted_organization_name"),
-            "Suborganization name": model.get("organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
@@ -1255,10 +1265,7 @@ class DomainDataFederal(DomainExport):
         """
         return Q(
             organization_type__icontains="federal",
-            domain__state__in=[
-                Domain.State.READY,
-                Domain.State.ON_HOLD,
-            ],
+            domain__state__in=[Domain.State.READY, Domain.State.ON_HOLD, Domain.State.UNKNOWN],
         )
 
     @classmethod
