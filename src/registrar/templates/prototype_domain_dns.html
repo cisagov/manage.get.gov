@@ -86,12 +86,12 @@
                                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                                 <use xlink:href="/public/img/sprite.svg#edit"></use>
                                 </svg>
-                                Edit <span class="usa-sr-only">DNS {{ dns_record.type }} record {{ dns_record.name }}</span>
+                                Edit <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
                             </button>
                             <a 
                                 role="button" 
-                                id="button-trigger-delete-{{ form.server.value }}"
-                                class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex nameserver-delete-kebab"
+                                id="button-trigger-delete-dnsrecord-{{ forloop.counter }}"
+                                class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
                                 >
                                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                                     <use xlink:href="/public/img/sprite.svg#delete"></use>
@@ -106,7 +106,7 @@
                                     class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
                                     aria-expanded="false"
                                     aria-controls="more-actions-dnsrecord-{{ forloop.counter }}"
-                                    aria-label="More Actions for ({{ form.server.value }})"
+                                    aria-label="More Actions for DNS record"
                                 >
                                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                                     <use xlink:href="/public/img/sprite.svg#more_vert"></use>
@@ -117,9 +117,8 @@
                                 <h2>More options</h2>
                                 <button 
                                     type="button" 
-                                    class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary nameserver-delete-kebab"
-                                    name="btn-delete-kebab-click"
-                                    aria-label="Delete the name server from the registry"
+                                    class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+                                    aria-label="Delete DNS record from Cloudflare"
                                 >
                                     Delete
                                 </button>
