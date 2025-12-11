@@ -28,7 +28,7 @@ typing-extensions ='*'
 django-login-required-middleware = "*"
 greenlet = "*"
 gevent = "*"
-fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
+fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "cw/9-Update-epplib-with-the-new-disclosure-format"}
 pyzipper="*"
 tblib = "*"
 django-admin-multiple-choice-list-filter = "*"
