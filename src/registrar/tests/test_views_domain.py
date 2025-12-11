@@ -5,6 +5,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -3398,3 +3399,20 @@ class TestDomainDeletion(TestWithUser):
 
         self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
         self.assertContains(json_response, "On Hold")
+
+
+class TestDomainDnsRecords(TestDomainOverview):
+    @less_console_noise_decorator
+    def setUp(self):
+        super().setUp()
+        # DNS Hosting requires staff user role
+        self.user = create_user()
+        # staff_user.save()
+        self.client.force_login(self.user)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records(self):
+        """Can load domain's DNS records page."""
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
+        self.assertContains(page, "Add DNS records")
