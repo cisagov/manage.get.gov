@@ -30,7 +30,7 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
-    DnsRecord
+    DnsRecord,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
