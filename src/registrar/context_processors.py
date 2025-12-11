@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.urls import reverse
+from waffle import flag_is_active
 
 
 def language_code(request):
@@ -67,6 +69,9 @@ def portfolio_permissions(request):
         "is_portfolio_admin": False,
         "has_multiple_portfolios": False,
         "has_choice": False,
+        "hide_portfolio_navbar": False,
+        "is_org_user": False,
+        "show_extended_header": False,
     }
 
     try:
@@ -75,36 +80,41 @@ def portfolio_permissions(request):
             return portfolio_context
 
         portfolio = request.session.get("portfolio")
+        num_portfolios = user.get_num_portfolios()
 
-        # How many portfolios does this user have?
-        get_num_portfolios = getattr(user, "get_num_portfolios", None)
-        if callable(get_num_portfolios):
-            num_portfolios = get_num_portfolios()
-        else:
-            num_portfolios = 0
-        if not isinstance(num_portfolios, int):
-            num_portfolios = 0
-
-        has_legacy_raw = getattr(user, "has_legacy_domain", lambda: False)()
-        has_legacy = bool(has_legacy_raw)
+        # Legacy domains?
+        has_legacy = user.has_legacy_domain()
 
         # "Things" = portfolios + legacy
         num_choices = num_portfolios + (1 if has_legacy else 0)
         has_choice = num_choices > 1
+        is_org_user = user.is_org_user(request)
+        has_multiple_portfolios = user.is_multiple_orgs_user(request)
 
-        portfolio_context["has_choice"] = has_choice
-        portfolio_context["has_multiple_portfolios"] = getattr(user, "is_multiple_orgs_user", lambda req: False)(
-            request
-        )
-
+        # Mixed user in legacy view, then we hide portfolio navbar
         hide_portfolio_navbar = False
-        # Legacy mode (no portfolio in session)
-        if portfolio is None and user.is_authenticated:
-            # User has portfolios (mixed user)
-            if num_portfolios > 0:
-                hide_portfolio_navbar = True
+        if portfolio is None and num_portfolios > 0:
+            hide_portfolio_navbar = True
 
-        portfolio_context["hide_portfolio_navbar"] = hide_portfolio_navbar
+        # Decide extended or basic/legacy header
+        multiple_on = flag_is_active(request, "multiple_portfolios")
+        your_orgs_url = reverse("your-organizations")
+        if multiple_on:
+            # New enterprise mode look with flag on
+            show_extended_header = is_org_user or has_choice
+        else:
+            # Legacy behavior when flag is off
+            show_extended_header = not (not is_org_user and request.path != your_orgs_url)
+
+        portfolio_context.update(
+            {
+                "has_choice": has_choice,
+                "has_multiple_portfolios": has_multiple_portfolios,
+                "hide_portfolio_navbar": hide_portfolio_navbar,
+                "is_org_user": is_org_user,
+                "show_extended_header": show_extended_header,
+            }
+        )
 
         if portfolio:
             portfolio_context.update(
