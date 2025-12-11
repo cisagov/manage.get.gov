@@ -237,7 +237,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users-add",
             "domain-dns",
             "domain-dns-nameservers",
-            "domain-dns-records",
             "domain-dns-dnssec",
             "domain-dns-dnssec-dsdata",
             "domain-org-name-address",
