@@ -803,7 +803,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return True
 
     def get_success_url(self):
-        return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
+        return reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
 
     def find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""

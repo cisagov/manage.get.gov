@@ -36,7 +36,7 @@
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
   <li><a href="{{ url }}">DNSSEC</a></li>
   {% if dns_hosting %}
-    <li><a href="{% url 'prototype-domain-dns' domain_pk=domain.id %}">Prototype DNS record creator</a></li>
+    <li><a href="{% url 'domain-dns-records' domain_pk=domain.id %}">Prototype DNS record creator</a></li>
   {% endif %}
 </ul>
 
