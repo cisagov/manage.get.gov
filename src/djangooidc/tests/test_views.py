@@ -432,6 +432,16 @@ class ViewsTest(TestCase):
             # Mock user and its attributes
             mock_user = MagicMock()
             mock_user.is_authenticated = True
+            mock_user.get_num_portfolios.return_value = 0
+            mock_user.has_legacy_domain.return_value = False
+            mock_user.is_org_user.return_value = False
+            mock_user.is_multiple_orgs_user.return_value = False
+            request.user = mock_user
+            # Make the mock look like a real registrar user for the header/context logic
+            mock_user.get_num_portfolios.return_value = 0
+            mock_user.has_legacy_domain.return_value = False
+            mock_user.is_org_user.return_value = False
+            mock_user.is_multiple_orgs_user.return_value = False
             request.user = mock_user
             # Ensure that the CLIENT instance used in login_callback is the mock
             # patch _requires_step_up_auth to return False

@@ -15,7 +15,9 @@ from registrar.models import (
     AllowedEmail,
 )
 from registrar.models.domain_invitation import DomainInvitation
+from registrar.models.host import Host
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.public_contact import PublicContact
 from registrar.models.user_group import UserGroup
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -1710,147 +1712,6 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "<form")
         self.assertContains(response, 'method="post"')
         self.assertContains(response, 'id="member-delete-form"')
-
-    @override_flag("multiple_portfolios", active=False)
-    @less_console_noise_decorator
-    def test_organizations_page_blocked_when_flag_off(self):
-        """
-        Tests that the /your-organizations/ page is completely inaccessible when
-        multiple_portfolios flag is OFF, even if user has multiple portfolios.
-        """
-        self.app.set_user(self.user.username)
-
-        # Create a second portfolio for the user
-        second_portfolio, _ = Portfolio.objects.get_or_create(
-            requester=self.user, organization_name="Second Organization"
-        )
-
-        # Give user access to both portfolios
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=second_portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        # Trying to directly access the org selection page should redirect to home
-        response = self.app.get(reverse("your-organizations"))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.location, reverse("home"))
-
-        # Following the redirect should land on home
-        home_page = response.follow()
-        self.assertIn(home_page.request.path, [reverse("home"), reverse("domains"), reverse("no-portfolio-domains")])
-
-    @override_flag("multiple_portfolios", active=False)
-    @less_console_noise_decorator
-    def test_organizations_dropdown_hidden_when_flag_off(self):
-        """
-        Tests that the organizations dropdown is NOT shown when multiple_portfolios flag is OFF,
-        even if user has multiple portfolios. The dropdown should be completely hidden.
-        """
-        self.app.set_user(self.user.username)
-
-        # Create a second portfolio for the user
-        second_portfolio, _ = Portfolio.objects.get_or_create(
-            requester=self.user, organization_name="Second Organization"
-        )
-
-        # Give user access to both portfolios
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=second_portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        # Get home page - will redirect to portfolio page in legacy mode
-        response = self.app.get(reverse("home"))
-        if response.status_code == 302:
-            page = response.follow()
-        else:
-            page = response
-
-        # Should NOT see link to organizations selection page anywhere
-        self.assertNotContains(page, reverse("your-organizations"))
-
-        # Should NOT see the portfolio_organizations_dropdown output
-        # (checking for the wrapper that would contain org switching UI)
-        self.assertNotContains(page, "portfolio-organization-dropdown")
-
-        # Should see the active organization name in the bottom nav (legacy single-org mode)
-        self.assertContains(page, self.portfolio.organization_name)
-
-        # Should NOT see the second organization anywhere (no way to switch)
-        self.assertNotContains(page, second_portfolio.organization_name)
-
-        # Try other pages with headers to ensure dropdown is hidden everywhere
-        domains_page = self.app.get(reverse("domains"))
-        self.assertNotContains(domains_page, reverse("your-organizations"))
-        self.assertNotContains(domains_page, 'id="organizations-menu"')
-
-        org_page = self.app.get(reverse("organization"))
-        self.assertNotContains(org_page, reverse("your-organizations"))
-        self.assertNotContains(org_page, 'id="organizations-menu"')
-
-    @override_flag("multiple_portfolios", active=True)
-    @less_console_noise_decorator
-    def test_organizations_dropdown_shown_when_flag_on(self):
-        """
-        Tests that the organizations dropdown IS shown in the header when
-        multiple_portfolios flag is ON and user has multiple portfolios.
-        """
-        self.client.force_login(self.user)
-
-        # Create a second portfolio for the user
-        second_portfolio, _ = Portfolio.objects.get_or_create(
-            requester=self.user, organization_name="Second Organization"
-        )
-
-        # Give user access to both portfolios
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=self.portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user,
-            portfolio=second_portfolio,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-        )
-
-        # With flag ON and multiple portfolios, should redirect to org selection page
-        response = self.client.get(reverse("home"))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("your-organizations", response.url)
-
-        # Now manually set a portfolio in session to simulate user selection
-        session = self.client.session
-        session["portfolio"] = self.portfolio
-        session.save()
-
-        # Get a page with the header - should now show the dropdown
-        domains_page = self.client.get(reverse("domains"))
-
-        # Should see the organizations dropdown button
-        self.assertContains(domains_page, 'id="organizations-menu"')
-
-        # Should see the organizations submenu
-        self.assertContains(domains_page, 'id="organizations-submenu"')
-
-        # Should see the current organization name
-        self.assertContains(domains_page, self.portfolio.organization_name)
 
 
 class TestPortfolioMemberDeleteView(WebTest):
@@ -5078,3 +4939,376 @@ class TestPortfolioSelectOrganizationView(WebTest):
         # Access the session via the request
         active_portfolio = self.client.session.get("portfolio")
         self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")
+
+
+class TestMultiplePortfolios(WebTest):
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.user = create_test_user()
+        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user,
+            organization_name="Hotel California",
+        )
+        self.role, _ = UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        # Ensure this user/domain pair is explicitly associated to this portfolio
+        di, _ = DomainInformation.objects.get_or_create(
+            requester=self.user,
+            domain=self.domain,
+            defaults={"portfolio": self.portfolio},
+        )
+        if di.portfolio_id is None:
+            di.portfolio = self.portfolio
+            di.save()
+        self.domain_info = di
+
+    def tearDown(self):
+        UserPortfolioPermission.objects.all().delete()
+        UserDomainRole.objects.all().delete()
+        DomainRequest.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        PublicContact.objects.all().delete()
+        Host.objects.all().delete()
+        Domain.objects.all().delete()
+        super().tearDown()
+
+    def set_session_portfolio(self, portfolio=None):
+        session = self.client.session
+        session["portfolio"] = self.portfolio
+        session.save()
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_middleware_redirects_to_portfolio_no_domains_page(self):
+        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to the no domains page"""
+        self.app.set_user(self.user.username)
+
+        # Sanity: this test is for portfolio-only behavior, not portfolio+legacy
+        self.assertFalse(self.user.has_legacy_domain())
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
+        )
+
+        portfolio_page = self.app.get(reverse("home")).follow()
+
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_middleware_redirects_to_portfolio_no_domains_page_flag_off(self):
+        """Test that user with a portfolio and VIEW_PORTFOLIO is redirected to the no domains page"""
+        self.app.set_user(self.user.username)
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_PORTFOLIO],
+        )
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home")).follow()
+        # Assert that we're on the right page
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+        self.assertContains(portfolio_page, "You aren’t managing any domains")
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_middleware_redirects_to_portfolio_domains_page_when_flag_off(self):
+        """Test that user with a portfolio, VIEW_PORTFOLIO, VIEW_ALL_DOMAINS
+        is redirected to portfolio domains page"""
+        self.app.set_user(self.user.username)
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+            ],
+        )
+        # This will redirect the user to the portfolio page.
+        # Follow implicity checks if our redirect is working.
+        portfolio_page = self.app.get(reverse("home")).follow()
+        # Assert that we're on the right page
+        self.assertContains(portfolio_page, self.portfolio.organization_name)
+        self.assertNotContains(portfolio_page, "<h1>Organization</h1>")
+        self.assertContains(portfolio_page, '<h1 id="domains-header">Domains</h1>')
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_legacy_view_when_multiple_portfolios_flag_off(self):
+        """
+        Tests that when multiple_portfolios flag is OFF, users with portfolio access
+        still see their organization and get redirected to portfolio pages (legacy single-org mode).
+        They should NOT see the multi-org dropdown selector.
+        """
+        self.app.set_user(self.user.username)
+
+        # Give user portfolio permissions with domains access
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            defaults={
+                "additional_permissions": [
+                    UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+                    UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS,
+                ]
+            },
+        )
+
+        # User gets redirected to portfolio domains page (even in legacy mode)
+        response = self.app.get(reverse("home"))
+        self.assertEqual(response.status_code, 302)
+
+        # Follow the redirect
+        home_page = response.follow()
+
+        # Should see portfolio name in header (legacy single-org mode)
+        self.assertContains(home_page, self.portfolio.organization_name)
+
+        # Should NOT see the multi-org dropdown selector
+        self.assertNotContains(home_page, 'id="portfolio-organization-dropdown"')
+        # Checking for the org dropdown link, should not be present
+        self.assertNotContains(home_page, reverse("your-organizations"))
+
+        # Should see domains view
+        self.assertContains(home_page, "Domains")
+
+        # Organization page is accessible
+        org_page = self.app.get(reverse("organization"))
+        self.assertEqual(org_page.status_code, 200)
+        self.assertContains(org_page, self.portfolio.organization_name)
+
+        # Should NOT see org selector dropdown
+        self.assertNotContains(org_page, reverse("your-organizations"))
+
+        # Domain page accessible
+        domain_page = self.app.get(reverse("domains"))
+        self.assertEquals(domain_page.status_code, 200)
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_cannot_view_member_page_when_flag_is_off(self):
+        """Test that user cannot access the member page when waffle flag is off"""
+
+        # Verify that the user cannot access the member page
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("member", kwargs={"member_pk": 1}), follow=True)
+        # Make sure the page is denied
+        self.assertEqual(response.status_code, 403)
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_organizations_page_blocked_when_flag_off(self):
+        """
+        Tests that the /your-organizations/ page is completely inaccessible when
+        multiple_portfolios flag is OFF, even if user has multiple portfolios.
+        """
+        self.app.set_user(self.user.username)
+
+        # Create a second portfolio for the user
+        second_portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user, organization_name="Second Organization"
+        )
+
+        # Give user access to both portfolios
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=second_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Trying to directly access the org selection page should redirect to home
+        response = self.app.get(reverse("your-organizations"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.location, reverse("home"))
+
+        # Following the redirect should land on home
+        home_page = response.follow()
+        self.assertIn(home_page.request.path, [reverse("home"), reverse("domains"), reverse("no-portfolio-domains")])
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_organizations_dropdown_hidden_when_flag_off(self):
+        """
+        Tests that the organizations dropdown is NOT shown when multiple_portfolios flag is OFF,
+        even if user has multiple portfolios. The dropdown should be completely hidden.
+        """
+        self.app.set_user(self.user.username)
+
+        # Create a second portfolio for the user
+        second_portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user, organization_name="Second Organization"
+        )
+
+        # Give user access to both portfolios
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=second_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Get home page - will redirect to portfolio page in legacy mode
+        response = self.app.get(reverse("home"))
+        if response.status_code == 302:
+            page = response.follow()
+        else:
+            page = response
+
+        # Should NOT see link to organizations selection page anywhere
+        self.assertNotContains(page, reverse("your-organizations"))
+
+        # Should NOT see the portfolio_organizations_dropdown output
+        # (checking for the wrapper that would contain org switching UI)
+        self.assertNotContains(page, "portfolio-organization-dropdown")
+
+        # Should see the active organization name in the bottom nav (legacy single-org mode)
+        self.assertContains(page, self.portfolio.organization_name)
+
+        # Should NOT see the second organization anywhere (no way to switch)
+        self.assertNotContains(page, second_portfolio.organization_name)
+
+        # Try other pages with headers to ensure dropdown is hidden everywhere
+        domains_page = self.app.get(reverse("domains"))
+        self.assertNotContains(domains_page, reverse("your-organizations"))
+        self.assertNotContains(domains_page, 'id="organizations-menu"')
+
+        org_page = self.app.get(reverse("organization"))
+        self.assertNotContains(org_page, reverse("your-organizations"))
+        self.assertNotContains(org_page, 'id="organizations-menu"')
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_organizations_dropdown_shown_when_flag_on(self):
+        """
+        Tests that the organizations dropdown IS shown in the header when
+        multiple_portfolios flag is ON and user has multiple portfolios.
+        """
+        self.client.force_login(self.user)
+
+        # Create a second portfolio for the user
+        second_portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user, organization_name="Second Organization"
+        )
+
+        # Give user access to both portfolios
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=second_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # With flag ON and multiple portfolios, should redirect to org selection page
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("your-organizations", response.url)
+
+        # Now manually set a portfolio in session to simulate user selection
+        session = self.client.session
+        session["portfolio"] = self.portfolio
+        session.save()
+
+        # Get a page with the header - should now show the dropdown
+        domains_page = self.client.get(reverse("domains"))
+
+        # Should see the organizations dropdown button
+        self.assertContains(domains_page, 'id="organizations-menu"')
+
+        # Should see the organizations submenu
+        self.assertContains(domains_page, 'id="organizations-submenu"')
+
+        # Should see the current organization name
+        self.assertContains(domains_page, self.portfolio.organization_name)
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_legacy_manage_domain_does_not_redirect_to_org_select(self):
+        """
+        Regression test:
+        Given multiple_portfolios flag ON and a user who:
+        - has legacy domains
+        - has access to multiple portfolios (multi-org)
+        When they click my email name on the your-organizations (legacy_home=1) and then hit
+        a legacy domain manage URL, they should NOT be bounced back to /your-organizations/.
+        """
+        self.app.set_user(self.user.username)
+
+        # Make user multi-org
+        second_portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user,
+            organization_name="Second Organization",
+        )
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=second_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        # Create a legacy domain: DomainInformation.portfolio is NULL
+        legacy_domain, _ = Domain.objects.get_or_create(name="legacy-example.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user,
+            domain=legacy_domain,
+            defaults={"portfolio": None},
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=legacy_domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        self.assertTrue(self.user.has_legacy_domain())
+
+        # Click account, legacy home
+        legacy_home_page = self.app.get(reverse("home"), params={"legacy_home": "1"})
+        self.assertEqual(legacy_home_page.status_code, 200)
+
+        # Got to the legacy domain manage URL
+        manage_url = reverse("domain", kwargs={"domain_pk": legacy_domain.pk})
+        manage_response = self.app.get(manage_url)
+
+        # If there is a redirect, it must NOT go to /your-organizations/
+        if manage_response.status_int in (301, 302, 303, 307, 308):
+            self.assertNotIn(reverse("your-organizations"), manage_response.location)
+            final_page = manage_response.follow()
+        else:
+            final_page = manage_response
+
+        self.assertEqual(final_page.status_code, 200)
+        self.assertNotEqual(final_page.request.path, reverse("your-organizations"))
