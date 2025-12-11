@@ -45,7 +45,7 @@
                     {% endif %}
                     <a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
                 <td>{{ member.user.title }}</td>
-                <td>
+                <td data-column-id="email">
                     {% if member.user.email %}
                     {{ member.user.email }}
                     {% else %}

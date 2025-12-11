@@ -53,22 +53,15 @@ function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
 // method that captures the content(email) into a comma seperated list
 function helperCopyEmailsFromTableFunction(table){
     const myTable = document.querySelector(table); 
-    let emails= ""
-   
-    const rows = myTable.querySelectorAll('tr')
-
-    //body rows
-    // started at second row for content
-    for(let i = 1; i < rows.length; i++){
-        const bodyRows = rows[i].querySelectorAll('td')
-        // email is the third item from the end of the row
-        const emailI = bodyRows.length - 3 
-        const emailText = bodyRows[emailI].textContent.trim()
-        emails+= emailText
-        if(i < rows.length - 1) {emails+=","}
+    const emailCells = myTable.querySelectorAll('[data-column-id="email"]')
+    let emails= []
+    for(let i = 0; i < emailCells.length; i++){
+        const email = emailCells[i].textContent.trim()
+        if(email != "None") {
+            emails.push(email)
+        }
     }
-
-    return emails
+    return emails.join(",")
 }
 
 /**
