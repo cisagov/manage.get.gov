@@ -647,10 +647,10 @@ class DomainExport(BaseExport):
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
                 # When federal agency is not null
                 # When federal agency is not  Non Federal Agency
-                # Federal Agency is not equal to organization
                 # use the suborg field to apply to organization
                 When(
-                    ~Q(federal_agency__agency=F("organization_name")) & ~Q(federal_agency__agency="Non-Federal Agency"),
+                    ~Q(federal_agency__agency="Non-Federal Agency")
+                    & Q(federal_agency_isnull=False),
                     then=F("organization_name"),
                 ),
                 # Otherwise, return empty string
