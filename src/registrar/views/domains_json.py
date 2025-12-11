@@ -98,12 +98,10 @@ def get_domain_ids_from_request(request):
         if has_portfolio_domains:
             # In the mixed case (user has portfolio + legacy domains),
             # the legacy view should show only legacy-only domains
-            qs = qs.filter(
-                Q(domain__domain_info__isnull=True) |
-                Q(domain__domain_info__portfolio__isnull=True)
-            )
+            qs = qs.filter(Q(domain__domain_info__isnull=True) | Q(domain__domain_info__portfolio__isnull=True))
 
     return qs.values_list("domain_id", flat=True).distinct()
+
 
 def apply_search(queryset, request):
     search_term = request.GET.get("search_term")
