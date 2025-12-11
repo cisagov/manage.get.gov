@@ -1,10 +1,11 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY, patch
+from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.services.dns_host_service import DnsHostService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -46,7 +47,6 @@ from django.utils import timezone
 
 from .common import less_console_noise
 from .test_views import TestWithUser
-from .services.test_dns_host_service import TestDnsHostService
 
 import logging
 
@@ -190,6 +190,11 @@ class TestWithDomainPermissions(TestWithUser):
 
 
 class TestDomainPermissions(TestWithDomainPermissions):
+    def setUp(self):
+        super.setUp()
+        mock_client = Mock()
+        self.service = DnsHostService(client=mock_client)
+
     @less_console_noise_decorator
     def test_not_logged_in(self):
         """Not logged in gets a redirect to Login."""
