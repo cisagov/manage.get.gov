@@ -6,6 +6,7 @@ from registrar.decorators import grant_access, ALL
 from registrar.models import UserDomainRole, Domain, DomainInformation
 from django.urls import reverse
 from django.db.models import Q
+from waffle import flag_is_active
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +84,26 @@ def get_domain_ids_from_request(request):
         )
 
     # No portfolio param = legacy/non-org path: only domains the user manages
-    return UserDomainRole.objects.filter(user=user).values_list("domain_id", flat=True)
+    qs = UserDomainRole.objects.filter(user=user)
 
+    # Further adjust query result when the multiple_portfolios flag is on
+    if flag_is_active(request, "multiple_portfolios"):
+        # Detect if this user manages any portfolio domains at all
+        managed_domain_ids = qs.values_list("domain_id", flat=True)
+        has_portfolio_domains = DomainInformation.objects.filter(
+            domain_id__in=managed_domain_ids,
+            portfolio__isnull=False,
+        ).exists()
+
+        if has_portfolio_domains:
+            # In the mixed case (user has portfolio + legacy domains),
+            # the legacy view should show only legacy-only domains
+            qs = qs.filter(
+                Q(domain__domain_info__isnull=True) |
+                Q(domain__domain_info__portfolio__isnull=True)
+            )
+
+    return qs.values_list("domain_id", flat=True).distinct()
 
 def apply_search(queryset, request):
     search_term = request.GET.get("search_term")
