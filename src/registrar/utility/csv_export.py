@@ -1730,7 +1730,7 @@ class DomainRequestExport(BaseExport):
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
                 # Otherwise, return empty string
-                default="",
+                default=Value(""),
                 output_field=CharField(),
             ),
             "converted_so_email": Case(
