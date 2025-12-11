@@ -42,8 +42,7 @@ function copyIndividualTextButtonToClipBoard(button) {
 }
 
 // method checks if emails are captured, and calls the method to capture to clipboard
-function copyAllMembersAdminsToClipboard(button, buttonSelector){
-    const table = button.dataset.target
+function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
     const membersEmails = helperCopyEmailsFromTableFunction(table);
     if(membersEmails){
         copyToClipboardAndChangeIcon(button, membersEmails, buttonSelector)
@@ -97,10 +96,16 @@ export function initCopyToClipboard() {
 
     });
 
-    const portfolioAdminsButton = document.querySelectorAll('[data-portfolio-table]')
+    const portfolioMemberSelectorButton = "#copy-to-clipboard-members"
+    const portfolioMembersButton = document.querySelector(portfolioMemberSelectorButton)
+    portfolioMembersButton && portfolioMembersButton.addEventListener("click", ()=>{
+        copyAllMembersAdminsToClipboard(portfolioMembersButton, "#portfolio-members-table", portfolioMemberSelectorButton)
+    })
+
+    const portfolioAdminsSelectorButton = "#copy-to-clipboard-admins"
+    const portfolioAdminsButton = document.querySelector(portfolioAdminsSelectorButton)
     portfolioAdminsButton && portfolioAdminsButton.addEventListener("click", ()=>{
-        copyAllMembersAdminsToClipboard(portfolioAdminsButton)
+        copyAllMembersAdminsToClipboard(portfolioAdminsButton, "#portfolio-admins-table", portfolioAdminsSelectorButton )
      }
     )
 }
-
