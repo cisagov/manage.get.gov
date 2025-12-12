@@ -650,9 +650,9 @@ class DomainExport(BaseExport):
                 # When federal agency is not a Non Federal Agency
                 # When portfolio is not null
                 When(
-                    Q(federal_agency__isnull=False) &
-                    ~Q(portfolio__isnull=False) &
-                    ~Q(federal_agency__agency="Non-Federal Agency"),  
+                    Q(federal_agency__isnull=False)
+                    & ~Q(portfolio__isnull=False)
+                    & ~Q(federal_agency__agency="Non-Federal Agency"),
                     then=F("organization_name"),
                 ),
                 # Otherwise, return empty string
