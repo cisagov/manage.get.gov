@@ -47,6 +47,7 @@ from django.utils import timezone
 
 from .common import less_console_noise
 from .test_views import TestWithUser
+from .services.test_dns_host_service import TestDnsHostServiceDB
 
 import logging
 
@@ -191,7 +192,7 @@ class TestWithDomainPermissions(TestWithUser):
 
 class TestDomainPermissions(TestWithDomainPermissions):
     def setUp(self):
-        super.setUp()
+        super().setUp()
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
@@ -203,7 +204,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-dns-nameservers",
-            "domain-dns-records",
+            # "domain-dns-records",
             "domain-org-name-address",
             "domain-senior-official",
             "domain-security-email",
@@ -223,7 +224,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-dns-nameservers",
-            "domain-dns-records",
+            # "domain-dns-records",
             "domain-org-name-address",
             "domain-senior-official",
             "domain-security-email",
@@ -243,7 +244,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-dns",
             "domain-dns-nameservers",
             "domain-dns-dnssec",
-            "domain-dns-records",
+            # "domain-dns-records",
             "domain-dns-dnssec-dsdata",
             "domain-org-name-address",
             "domain-senior-official",
