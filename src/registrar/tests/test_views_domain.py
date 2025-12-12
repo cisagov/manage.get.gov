@@ -3411,7 +3411,6 @@ class TestDomainDnsRecords(TestDomainOverview):
         super().setUp()
         # DNS Hosting requires staff user role
         self.user = create_user()
-        # staff_user.save()
         self.client.force_login(self.user)
 
     @less_console_noise_decorator
