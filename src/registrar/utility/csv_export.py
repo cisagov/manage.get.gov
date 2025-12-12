@@ -645,11 +645,14 @@ class DomainExport(BaseExport):
             "converted_sub_organization_name": Case(
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
+                # Use organization for suborg
                 # When federal agency is not null
-                # When federal agency is not  Non Federal Agency
-                # use the suborg field to apply to organization
+                # When federal agency is not a Non Federal Agency
+                # When portfolio is not null
                 When(
-                    Q(federal_agency__agency="Non-Federal Agency") & Q(federal_agency__isnull=False),
+                    Q(federal_agency__isnull=False) &
+                    ~Q(portfolio__isnull=False) &
+                    ~Q(federal_agency__agency="Non-Federal Agency"),  
                     then=F("organization_name"),
                 ),
                 # Otherwise, return empty string
