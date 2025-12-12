@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
 from registrar.services.mock_cloudflare_service import MockCloudflareService
+from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -3409,16 +3410,25 @@ class TestDomainDeletion(TestWithUser):
 class TestDomainDnsRecords(TestDomainOverview):
     mock_api_service = MockCloudflareService()
 
+    @classmethod
+    def setUpClass(cls):
+        """Start mock service once for all tests in this class"""
+        super().setUpClass()
+        cls.mock_api_service.start()
+    
+    @classmethod
+    def tearDownClass(cls):
+        """Stop mock service after all tests"""
+        cls.mock_api_service.stop()
+        super().tearDownClass()
+
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
+        self.service = CloudflareService(self.client)
         # DNS Hosting requires staff user role
         self.user = create_user()
         self.client.force_login(self.user)
-
-    def tearDown(self):
-        if self.mock_api_service.is_active:
-            self.mock_api_service.stop()
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
