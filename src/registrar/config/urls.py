@@ -300,7 +300,7 @@ urlpatterns = [
     path("domain/<int:domain_pk>", views.DomainView.as_view(), name="domain"),
     path(
         "domain/<int:domain_pk>/dns/records",
-        views.PrototypeDomainDNSRecordView.as_view(),
+        views.DomainDNSRecordView.as_view(),
         name="domain-dns-records",
     ),
     path("domain/<int:domain_pk>/users", views.DomainUsersView.as_view(), name="domain-users"),

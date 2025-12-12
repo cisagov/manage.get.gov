@@ -773,8 +773,8 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 
 
 @grant_access(IS_STAFF)
-class PrototypeDomainDNSRecordView(DomainFormBaseView):
-    template_name = "prototype_domain_dns.html"
+class DomainDNSRecordView(DomainFormBaseView):
+    template_name = "domain_dns_record.html"
     form_class = PrototypeDomainDNSRecordForm
 
     def __init__(self):
@@ -788,7 +788,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
-            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone).first()
+            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
         return context
 
     def has_permission(self):
