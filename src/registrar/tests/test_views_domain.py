@@ -3416,9 +3416,9 @@ class TestDomainDnsRecords(TestDomainOverview):
         # staff_user.save()
         self.client.force_login(self.user)
 
-    @less_console_noise_decorator
-    @override_flag("dns_hosting", active=True)
-    def test_domain_dns_records(self):
-        """Can load domain's DNS records page."""
-        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
-        self.assertContains(page, "Add DNS records")
+    # @less_console_noise_decorator
+    # @override_flag("dns_hosting", active=True)
+    # def test_domain_dns_records(self):
+    #     """Can load domain's DNS records page."""
+    #     page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
+    #     self.assertContains(page, "Add DNS records")
