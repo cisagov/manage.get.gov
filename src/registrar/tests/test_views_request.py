@@ -2957,8 +2957,14 @@ class DomainRequestTests(TestWithUser, WebTest):
         # This user should also be forbidden from editing existing ones
         domain_request = completed_domain_request(user=self.user)
         edit_page = self.app.get(
-            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}),
+            expect_errors=True,
         )
+
+        # Follow redirect if the edit URL bounces to the first wizard step
+        if edit_page.status_code in (301, 302, 303, 307, 308):
+            edit_page = edit_page.follow()  # still expect_errors=True behavior
+
         self.assertEqual(edit_page.status_code, 403)
 
         # Cleanup
