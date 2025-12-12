@@ -3416,7 +3416,7 @@ class TestDomainDnsRecords(TestDomainOverview):
         """Start mock service once for all tests in this class"""
         super().setUpClass()
         cls.mock_api_service.start()
-    
+
     @classmethod
     def tearDownClass(cls):
         """Stop mock service after all tests"""
