@@ -224,7 +224,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-dns-nameservers",
-            # "domain-dns-records",
+            "domain-dns-records",
             "domain-org-name-address",
             "domain-senior-official",
             "domain-security-email",
