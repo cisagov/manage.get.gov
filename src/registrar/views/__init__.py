@@ -13,7 +13,7 @@ from .domain import (
     DomainAddUserView,
     DomainInvitationCancelView,
     DomainDeleteUserView,
-    PrototypeDomainDNSRecordView,
+    DomainDNSRecordView,
     DomainRenewalView,
     DomainDeleteView,
     DomainLifecycleView,

@@ -30,6 +30,7 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
+    DnsRecord,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -743,7 +744,7 @@ class DomainDNSView(DomainBaseView):
         return context
 
 
-class PrototypeDomainDNSRecordForm(forms.Form):
+class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
     name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
@@ -772,9 +773,9 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 
 
 @grant_access(IS_STAFF)
-class PrototypeDomainDNSRecordView(DomainFormBaseView):
-    template_name = "prototype_domain_dns.html"
-    form_class = PrototypeDomainDNSRecordForm
+class DomainDNSRecordView(DomainFormBaseView):
+    template_name = "domain_dns_record.html"
+    form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
@@ -785,6 +786,9 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
+        dns_zone = DnsZone.objects.filter(domain=self.object).first()
+        if dns_zone:
+            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
         return context
 
     def has_permission(self):
@@ -799,7 +803,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return True
 
     def get_success_url(self):
-        return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
+        return reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
 
     def find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""

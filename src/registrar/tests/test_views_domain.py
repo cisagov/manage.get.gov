@@ -1,10 +1,13 @@
 from unittest import skip
-from unittest.mock import MagicMock, ANY, patch
+from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.services.dns_host_service import DnsHostService
+from registrar.services.mock_cloudflare_service import MockCloudflareService
+from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -189,6 +192,11 @@ class TestWithDomainPermissions(TestWithUser):
 
 
 class TestDomainPermissions(TestWithDomainPermissions):
+    def setUp(self):
+        super().setUp()
+        mock_client = Mock()
+        self.service = DnsHostService(client=mock_client)
+
     @less_console_noise_decorator
     def test_not_logged_in(self):
         """Not logged in gets a redirect to Login."""
@@ -197,6 +205,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-dns-nameservers",
+            "domain-dns-records",
             "domain-org-name-address",
             "domain-senior-official",
             "domain-security-email",
@@ -216,6 +225,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-users",
             "domain-users-add",
             "domain-dns-nameservers",
+            "domain-dns-records",
             "domain-org-name-address",
             "domain-senior-official",
             "domain-security-email",
@@ -3395,3 +3405,34 @@ class TestDomainDeletion(TestWithUser):
 
         self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
         self.assertContains(json_response, "On Hold")
+
+
+class TestDomainDnsRecords(TestDomainOverview):
+    mock_api_service = MockCloudflareService()
+
+    @classmethod
+    def setUpClass(cls):
+        """Start mock service once for all tests in this class"""
+        super().setUpClass()
+        cls.mock_api_service.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Stop mock service after all tests"""
+        cls.mock_api_service.stop()
+        super().tearDownClass()
+
+    @less_console_noise_decorator
+    def setUp(self):
+        super().setUp()
+        self.service = CloudflareService(self.client)
+        # DNS Hosting requires staff user role
+        self.user = create_user()
+        self.client.force_login(self.user)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records(self):
+        """Can load domain's DNS records page."""
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
+        self.assertContains(page, "Add DNS records")
