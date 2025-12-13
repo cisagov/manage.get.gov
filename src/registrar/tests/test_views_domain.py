@@ -49,7 +49,6 @@ from django.utils import timezone
 
 from .common import less_console_noise
 from .test_views import TestWithUser
-from .services.test_dns_host_service import TestDnsHostServiceDB
 
 import logging
 

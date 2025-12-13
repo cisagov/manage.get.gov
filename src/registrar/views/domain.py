@@ -744,7 +744,7 @@ class DomainDNSView(DomainBaseView):
         return context
 
 
-class PrototypeDomainDNSRecordForm(forms.Form):
+class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
     name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
@@ -775,7 +775,7 @@ class PrototypeDomainDNSRecordForm(forms.Form):
 @grant_access(IS_STAFF)
 class DomainDNSRecordView(DomainFormBaseView):
     template_name = "domain_dns_record.html"
-    form_class = PrototypeDomainDNSRecordForm
+    form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
