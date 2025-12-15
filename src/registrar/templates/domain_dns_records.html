@@ -30,10 +30,23 @@
             x-show="show_form"
         >
             {% csrf_token %}
+
             {% input_with_errors form.name %}
-            {% input_with_errors form.content %}
-            {% input_with_errors form.ttl %}
-            {% input_with_errors form.comment %}
+            <fieldset class="usa-fieldset">
+                <h2>Add record</h2>
+                
+                <div class=""grid-row grid-gap">
+                    <div class="grid-col-8">
+                        {% input_with_errors form.content %}
+                    </div>
+                    <div class="grid-col-4">
+                        {% input_with_errors form.ttl %}        
+                    </div>
+                </div>
+            
+                {% input_with_errors form.comment %}
+            </fieldset>
+
             <button
                     type="submit"
                     class="usa-button"
