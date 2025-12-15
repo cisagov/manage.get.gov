@@ -1200,6 +1200,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             return self.analyst_readonly_fields_no_portfolio
 
     def get_domain_and_requests_organized_by_portfolio(self, obj):
+        # Get domain request and domains by portfolio, 
+        # and pending portfolio invitations
+        # Returns a list with multiple dicts
+        
         domain_requests = (
             DomainRequest.objects.filter(requester=obj)
             .exclude(
