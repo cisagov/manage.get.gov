@@ -4,7 +4,7 @@ from django.db import models
 
 from registrar.models.dns.dns_soa import DnsSoa
 from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesLink
-from ..utility.time_stamped_model import TimeStampedModel
+from .utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 
 logger = logging.getLogger(__name__)
