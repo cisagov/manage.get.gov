@@ -22,9 +22,7 @@ class DnsZone(TimeStampedModel):
         "registrar.VendorDnsZone", through="DnsZone_VendorDnsZone", related_name="zones"
     )  # type: ignore
 
-    domain = models.OneToOneField(
-        "registrar.Domain", null=False, on_delete=models.CASCADE
-    )  # apex domain
+    domain = models.OneToOneField("registrar.Domain", null=False, on_delete=models.CASCADE)  # apex domain
 
     soa = models.ForeignKey(
         "registrar.DnsSoa", on_delete=models.SET_DEFAULT, related_name="+", default=DnsSoa.get_default_pk
