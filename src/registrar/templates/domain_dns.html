@@ -28,16 +28,27 @@
 
   <p>You can enter your name servers, as well as other DNS-related information, in the following sections:</p>
 
+  {% if dns_hosting %}
+  {% url 'domain-dns-records' domain_pk=domain.id as url %}
+  <h3><a href="{{ url }}">DNS Records</a></h3>
+  <p>Review, add, and edit DNS records.</p>
+  {% endif %}
 
   {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
-  <h3><a href="{{ url }}">Name servers</a></h3>
-<ul class="usa-list">
+  <div>
+    <h3 class="display-flex">
+      <a href="{{ url }}" class="display-flex ">
+        Nameservers
+        <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+          <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+        </svg>
+      </a>
+    </h3>
+    <p>Review, add, and edit DNS nameservers.</p>
+  </div>
+  
 
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
-  <li><a href="{{ url }}">DNSSEC</a></li>
-  {% if dns_hosting %}
-    <li><a href="{% url 'domain-dns-records' domain_pk=domain.id %}">Prototype DNS record creator</a></li>
-  {% endif %}
-</ul>
-
+  <h3><a href="{{ url }}">Nameservers</a></h3>
+  <p>Enable digital signatures to DNS records.</p>
 {% endblock %}  {# domain_content #}
