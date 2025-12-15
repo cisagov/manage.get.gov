@@ -1,7 +1,7 @@
 {% extends "domain_base.html" %}
 {% load static field_helpers url_helpers %}
 
-{% block title %}Prototype DNS | {{ domain.name }} | {% endblock %}
+{% block title %}DNS | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
 
@@ -33,6 +33,7 @@
             {% input_with_errors form.name %}
             {% input_with_errors form.content %}
             {% input_with_errors form.ttl %}
+            {% input_with_errors form.comment %}
             <button
                     type="submit"
                     class="usa-button"

@@ -743,7 +743,7 @@ class DomainDNSView(DomainBaseView):
         return context
 
 
-class PrototypeDomainDNSRecordForm(forms.Form):
+class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
     name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
@@ -770,11 +770,23 @@ class PrototypeDomainDNSRecordForm(forms.Form):
         initial=1,
     )
 
+    comment = forms.CharField(
+        label="Comment",
+        required=False,
+        help_text="The information you enter here will not impact DNS record resolution and is meant only for your reference (500 characters max)",
+        max_length=500,
+        widget=forms.Textarea(attrs={
+            'class':'usa-text-area',
+            'rows': 4,
+            'max_length':500
+        })
+    )
+
 
 @grant_access(IS_STAFF)
-class PrototypeDomainDNSRecordView(DomainFormBaseView):
-    template_name = "prototype_domain_dns.html"
-    form_class = PrototypeDomainDNSRecordForm
+class DomainDNSRecordView(DomainFormBaseView):
+    template_name = "domain_dns_records.html"
+    form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
@@ -799,7 +811,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
         return True
 
     def get_success_url(self):
-        return reverse("prototype-domain-dns", kwargs={"domain_pk": self.object.pk})
+        return reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
 
     def find_by_name(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -820,7 +832,7 @@ class PrototypeDomainDNSRecordView(DomainFormBaseView):
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": "Test record",
+                    "comment": form.cleaned_data.get("comment","")
                 }
 
                 domain_name = self.object.name
