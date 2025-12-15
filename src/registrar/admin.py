@@ -1198,10 +1198,8 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             if request.user.is_org_user(request):
                 return self.analyst_readonly_fields
             return self.analyst_readonly_fields_no_portfolio
-
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        """Add user's related domains and requests to context"""
-        obj = self.get_object(request, object_id)
+    
+    def get_domain_and_requests_organized_by_portfolio(self, obj):
         domain_requests = (
             DomainRequest.objects.filter(requester=obj)
             .exclude(
@@ -1249,10 +1247,10 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             email=obj.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
         ).select_related("portfolio")
 
-        formatted_table_data = []
+        organized_by_portfolio_data = []
 
         for portfolio in portfolios:
-            formatted_table_data.append(
+            organized_by_portfolio_data.append(
                 {
                     "portfolio": portfolio,
                     "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
@@ -1261,7 +1259,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             )
 
         if domains_by_portfolio.get(None) or requests_by_portfolio.get(None):
-            formatted_table_data.append(
+            organized_by_portfolio_data.append(
                 {
                     "portfolio": None,
                     "portfolio_domains": domains_by_portfolio.get(None),
@@ -1273,13 +1271,21 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
 
         for portfolio_invitation in portfolio_invitations:
             portfolio = portfolio_invitation.portfolio
-            formatted_table_data.append(
+            organized_by_portfolio_data.append(
                 {
                     "portfolio": portfolio,
                     "pending_invitation": True,
                     "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
                 }
             )
+        
+        return organized_by_portfolio_data
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        """Add user's related domains and requests to context"""
+        obj = self.get_object(request, object_id)
+
+        formatted_table_data = self.get_domain_and_requests_organized_by_portfolio(obj)
         extra_context = {"formatted_table_data": formatted_table_data}
         return super().change_view(request, object_id, form_url, extra_context)
 
