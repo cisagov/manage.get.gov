@@ -1198,7 +1198,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
             if request.user.is_org_user(request):
                 return self.analyst_readonly_fields
             return self.analyst_readonly_fields_no_portfolio
-    
+
     def get_domain_and_requests_organized_by_portfolio(self, obj):
         domain_requests = (
             DomainRequest.objects.filter(requester=obj)
@@ -1278,7 +1278,7 @@ class MyUserAdmin(BaseUserAdmin, ImportExportRegistrarModelAdmin):
                     "portfolio_domains": domains_by_portfolio.get(portfolio.id, []),
                 }
             )
-        
+
         return organized_by_portfolio_data
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
