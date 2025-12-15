@@ -1,4 +1,4 @@
-import logging
+import logging, time
 from datetime import date
 from collections import defaultdict
 from django.contrib import messages
@@ -760,17 +760,32 @@ class DotgovDomain(DomainRequestWizard):
           2: ExecutiveNamingRequirementsYesNoForm
           3: ExecutiveNamingRequirementsDetailsForm
         """
+
+        start_time = time.time()
+        logger.info(
+            f"=== START dotgov domain validation for request_id={getattr(self.domain_request, 'id', 'unknown')} ==="
+        )
+
         logger.debug("Validating dotgov domain form")
         # If FEB questions aren't required, validate only non-FEB forms
         if not self.requires_feb_questions():
             forms_list[2].mark_form_for_deletion()
             forms_list[3].mark_form_for_deletion()
-            return forms_list[0].is_valid() and forms_list[1].is_valid()
+            result = forms_list[0].is_valid() and forms_list[1].is_valid()
+
+            elapsed = time.time() - start_time
+            logger.info(f"=== END dotgov domain validation (no FEB) took {elapsed:.2f} seconds, valid={result} ===")
+
+            return result
 
         if not forms_list[2].is_valid():
             logger.debug("Dotgov domain form is invalid")
             # mark details form for deletion so that its errors don't show up
             forms_list[3].mark_form_for_deletion()
+
+            elapsed = time.time() - start_time
+            logger.info(f"=== END dotgov domain validation (invalid FEB form) took {elapsed:.2f} seconds ===")
+
             return False
 
         if forms_list[2].cleaned_data.get("feb_naming_requirements", None):
@@ -781,6 +796,10 @@ class DotgovDomain(DomainRequestWizard):
         else:
             # "No" was selected – details are required.
             valid = all(form.is_valid() for form in forms_list)
+
+        elapsed = time.time() - start_time
+        logger.info(f"=== END dotgov domain validation (with FEB) took {elapsed:.2f} seconds, valid={valid} ===")
+
         return valid
 
 

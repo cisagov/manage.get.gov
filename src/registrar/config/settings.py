@@ -698,7 +698,7 @@ LOGGING = {
         # DB info
         "django.db.backends": {
             "handlers": django_handlers,
-            "level": "INFO",
+            "level": "DEBUG",  # previously INFO - will show all query and timing
             "propagate": False,
         },
         "django.db.backends.schema": {
