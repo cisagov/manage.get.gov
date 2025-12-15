@@ -23,6 +23,16 @@
         </a>
         {% if request.path|startswith:url %}
         <ul class="usa-sidenav__sublist">
+          {% if dns_hosting %}
+          <li class="usa-sidenav__item">
+            {% url 'domain-dns-records' domain_pk=domain.id as url %} 
+            <a href="{{ url }}"
+              {% if request.path == url %}class="usa-current"{% endif %}
+            >
+                Records
+            </a>
+          </li>
+          {% endif %}
           <li class="usa-sidenav__item">
             {% url 'domain-dns-nameservers' domain_pk=domain.id as url %} 
             <a href="{{ url }}"

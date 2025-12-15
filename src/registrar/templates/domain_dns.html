@@ -30,8 +30,8 @@
 
 
   {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
+  <h3><a href="{{ url }}">Name servers</a></h3>
 <ul class="usa-list">
-<li><a href="{{ url }}">Name servers</a></li>
 
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
   <li><a href="{{ url }}">DNSSEC</a></li>
