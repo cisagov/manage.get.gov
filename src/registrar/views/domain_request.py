@@ -1308,6 +1308,3 @@ class DomainRequestStatusViewOnly(DetailView):
         context["portfolio"] = self.request.session.get("portfolio")
 
         return context
-
-
-# endregion

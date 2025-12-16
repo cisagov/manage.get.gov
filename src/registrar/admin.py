@@ -1,5 +1,5 @@
 from datetime import date
-import logging
+import logging, time
 import copy
 from typing import Optional
 from django import forms
@@ -4346,6 +4346,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def do_extend_expiration_date(self, request, obj):
         """Extends a domains expiration date by one year from the current date"""
 
+        start_time = time.time()
+        logger.info(f"=== START admin extend expiration for domain={obj.name} ===")
         # Make sure we're dealing with a Domain
         if not isinstance(obj, Domain):
             self.message_user(request, "Object is not of type Domain.", messages.ERROR)
@@ -4353,7 +4355,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         # Renew the domain.
         try:
+            renew_start = time.time()
+            logger.info("=== Before obj.renew_domain() ===")
             obj.renew_domain()
+
+            renew_elapsed = time.time() - renew_start
+            logger.info(f"=== obj.renew_domain() took {renew_elapsed:.2f} seconds ===")
             self.message_user(
                 request,
                 "Successfully extended the expiration date.",
@@ -4381,6 +4388,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         except Exception as err:
             logger.error(err, stack_info=True)
             self.message_user(request, "Could not delete: An unspecified error occured", messages.ERROR)
+        elapsed = time.time() - start_time
+        logger.info(f"=== END admin extend expiration took {elapsed:.2f} seconds total ===")
 
         return HttpResponseRedirect(".")
 
@@ -4392,6 +4401,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return date.today()
 
     def do_delete_domain(self, request, obj):
+        start_time = time.time()
+        logger.info(f"=== START admin delete domain for domain={obj.name} ===")
         if not isinstance(obj, Domain):
             # Could be problematic if the type is similar,
             # but not the same (same field/func names).
@@ -4400,7 +4411,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
+            delete_start = time.time()
+            logger.info("=== Before calling obj.deleteInEpp( ===")
             obj.deleteInEpp()
+            delete_elapsed = time.time() - delete_start
+            logger.info(f"=== obj.deleteInEpp() took {delete_elapsed:.2f} seconds ===")
             obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
@@ -4450,8 +4465,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "Domain %s has been deleted. Thanks!" % obj.name,
             )
+            email_start = time.time()
+            logger.info("=== Before sending domain deleted email ===")
             send_domain_deleted_email_to_managers_and_admins(domain=obj)
-
+            email_elapsed = time.time() - email_start
+            logger.info(f"=== send_domain_deleted_email took {email_elapsed:.2f} seconds ===")
+        elapsed = time.time() - start_time
+        logger.info(f"=== END admin delete domain took {elapsed:.2f} seconds total ===")
         return HttpResponseRedirect(".")
 
     def do_get_status(self, request, obj):
@@ -4467,9 +4487,15 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return HttpResponseRedirect(".")
 
     def do_place_client_hold(self, request, obj):
+        start_time = time.time()
+        logger.info(f"=== START /admin place_client_hold for domain={obj.name} ===")
 
         try:
+            hold_start = time.time()
+            logger.info("=== Before calling obj.place_client_hold() ===")
             obj.place_client_hold()
+            hold_elapsed = time.time() - hold_start
+            logger.info(f"=== obj.place_client_hold() took {hold_elapsed:.2f} seconds ===")
             obj.save(optimistic_lock=True)
         except ValidationError:
             self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
@@ -4497,12 +4523,20 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 "%s is in client hold. This domain is no longer accessible on the public internet." % obj.name,
             )
             send_domain_on_hold_admin_email_to_managers_and_admins(obj)
+        elapsed = time.time() - start_time
+        logger.info(f"=== END admin place client hold took {elapsed:.2f} seconds total ===")
 
         return HttpResponseRedirect(".")
 
     def do_remove_client_hold(self, request, obj):
+        start_time = time.time()
+        logger.info(f"=== START /admin remove_client_hold for domain={obj.name} ===")
         try:
+            hold_start = time.time()
+            logger.info("=== Before calling obj.revert_client_hold() ===")
             obj.revert_client_hold()
+            hold_elapsed = time.time() - hold_start
+            logger.info(f"=== obj.revert_client_hold() took {hold_elapsed:.2f} seconds ===")
             obj.save(optimistic_lock=True)
         except ValidationError:
             self.message_user(request, "A newer version of this form exists. Please try again.", messages.ERROR)
@@ -4529,6 +4563,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 request,
                 "%s is ready. This domain is accessible on the public internet." % obj.name,
             )
+        elapsed = time.time() - start_time
+        logger.info(f"=== END admin remove client hold took {elapsed:.2f} seconds total ===")
         return HttpResponseRedirect(".")
 
     def do_edit_domain(self, request, obj):
