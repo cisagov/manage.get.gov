@@ -30,18 +30,18 @@
 
   {% if dns_hosting %}
   {% url 'domain-dns-records' domain_pk=domain.id as url %}
-  <h3>
+  <h3 class="margin-bottom-1 margin-top-2">
     <a href="{{ url }}" class="display-flex ">
       DNS Records <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
       </svg>
     </a>
   </h3>
-  <p>Review, add, and edit DNS records.</p>
+  <p class="margin-top-1 margin-bottom-2">Review, add, and edit DNS records.</p>
   {% endif %}
 
   {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
-  <h3>
+  <h3 class="margin-bottom-1 margin-top-2">
     <a href="{{ url }}" class="display-flex">
       Nameservers
       <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
@@ -49,11 +49,11 @@
       </svg>
     </a>
   </h3>
-  <p>Review, add, and edit DNS nameservers.</p>
+  <p class="margin-top-1 margin-bottom-2">Review, add, and edit DNS nameservers.</p>
   
 
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
-  <h3>
+  <h3 class="margin-bottom-1 margin-top-2">
     <a href="{{ url }}" class="display-flex">
       DNSSEC 
       <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
@@ -61,5 +61,5 @@
       </svg>
     </a>
   </h3>
-  <p>Enable digital signatures to DNS records.</p>
+  <p class="margin-top-1 margin-bottom-2">Enable digital signatures to DNS records.</p>
 {% endblock %}  {# domain_content #}
