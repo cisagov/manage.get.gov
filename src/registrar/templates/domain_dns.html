@@ -31,8 +31,8 @@
   {% if dns_hosting %}
   {% url 'domain-dns-records' domain_pk=domain.id as url %}
   <h3 class="margin-bottom-1 margin-top-2">
-    <a href="{{ url }}" class="display-flex ">
-      DNS Records <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+    <a href="{{ url }}" class="display-inline-flex flex-align-center">
+      DNS Records <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
       </svg>
     </a>
@@ -42,9 +42,9 @@
 
   {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
   <h3 class="margin-bottom-1 margin-top-2">
-    <a href="{{ url }}" class="display-flex">
+    <a href="{{ url }}" class="display-inline-flex flex-align-center">
       Nameservers
-      <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
       </svg>
     </a>
@@ -54,9 +54,9 @@
 
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
   <h3 class="margin-bottom-1 margin-top-2">
-    <a href="{{ url }}" class="display-flex">
+    <a href="{{ url }}" class="display-inline-flex flex-align-center">
       DNSSEC 
-      <svg class="usa-icon flex-align-self-center" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
         <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
       </svg>
     </a>
