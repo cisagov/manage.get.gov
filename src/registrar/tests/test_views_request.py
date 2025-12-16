@@ -2579,7 +2579,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # and then setting the cookie on each request.
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
-        intro_form = intro_page.forms[1]
+        intro_form = intro_page.forms[0]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         intro_result = intro_form.submit()
 
@@ -2589,7 +2589,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
 
         # ---- REQUESTING ENTITY PAGE  ----
-        requesting_entity_form = portfolio_requesting_entity.forms[1]
+        requesting_entity_form = portfolio_requesting_entity.forms[0]
         requesting_entity_form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = False
 
         # test next button
@@ -2957,8 +2957,14 @@ class DomainRequestTests(TestWithUser, WebTest):
         # This user should also be forbidden from editing existing ones
         domain_request = completed_domain_request(user=self.user)
         edit_page = self.app.get(
-            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}), expect_errors=True
+            reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}),
+            expect_errors=True,
         )
+
+        # Follow redirect if the edit URL bounces to the first wizard step
+        if edit_page.status_code in (301, 302, 303, 307, 308):
+            edit_page = edit_page.follow()  # still expect_errors=True behavior
+
         self.assertEqual(edit_page.status_code, 403)
 
         # Cleanup

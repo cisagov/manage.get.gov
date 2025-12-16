@@ -1,9 +1,5 @@
-{% url 'your-organizations' as your_organizations_url %}
-<!-- Display extended header on Select organization page which displays when no active portfolio -->
- <!-- User is guided to Select organization page when no active portfolio so there is no 
-  active portfolio to check user membership of yet -->
-{% if not is_org_user and request.path != your_organizations_url %}
-    {% include "includes/header_basic.html" with logo_clickable=logo_clickable %}
-{% else %}
+{% if show_extended_header %}
     {% include "includes/header_extended.html" with logo_clickable=logo_clickable hide_portfolio_navbar=hide_portfolio_navbar %}
+{% else %}
+    {% include "includes/header_basic.html" with logo_clickable=logo_clickable %}
 {% endif %}
