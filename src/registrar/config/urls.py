@@ -38,7 +38,7 @@ from registrar.views.utility.api_views import (
 from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
-from api.views import available, rdap, get_current_federal, get_current_full
+from api.views import available, rdap, get_current_federal, get_current_full,  get_version_info
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -399,6 +399,8 @@ urlpatterns = [
         views.PortfolioOrganizationSelectView.as_view(),
         name="set-session-portfolio",
     ),
+    path("health", get_version_info, name="health"),
+
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

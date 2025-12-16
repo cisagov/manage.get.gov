@@ -16,6 +16,7 @@ from login_required import login_not_required
 from cachetools.func import ttl_cache
 
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
+from django.conf import settings
 
 
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
@@ -122,3 +123,12 @@ def serve_file(file_name):
 
     response = HttpResponse(file)
     return response
+
+@require_http_methods(["GET"])
+@login_not_required
+def get_version_info(request, info):
+    print(settings.GITHUB_BRANCH)
+    info = {
+        "env": settings.GITHUB_BRANCH
+    }
+    return JsonResponse(info)

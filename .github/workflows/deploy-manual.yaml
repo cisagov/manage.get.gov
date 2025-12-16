@@ -79,4 +79,18 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
           cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
+      - name: Set git info to environment variables
+        run: |
+          echo "GIT_BRANCH=${{ github.ref_name }}"" >> $GITHUB_ENV
+          echo "GIT_COMMIT=${{ github.sha }}"  >> $GITHUB_ENV
+          
+          #check if this is a tag
+          if [[ ${{ github.ref }} == ref/tags/* ]]; then
+            echo "GIT_TAG=${{ github.ref_name }}"  >> $GITHUB_ENV
+            echo "IS_TAG=${{ github.ref_name }}"  >> $GITHUB_ENV
+            echo "GIT_REF=${{ github.ref }}" >> $GITHUB_ENV
+          else 
+            echo "GIT_TAG=" >> $GITHUB_ENV
+            echo "IS_TAG=false" >> $GITHUB_ENV
+          fi
 
