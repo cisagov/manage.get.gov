@@ -21,12 +21,12 @@ Resolves #00
 ## Setup
 
 <!--  Add any steps or code to run in this section to help others run your code.
-    
+
     Example 1:
     ```sh
     echo "Code goes here"
-    ``` 
-    
+    ```
+
     Example 2: If the PR was to add a new link with a redirect, this section could simply be:
     -go to /path/to/start/page
     -click the blue link in the <insert location>
@@ -67,12 +67,17 @@ Resolves #00
 - [ ] Verify migrations are valid and do not conflict with existing migrations
 
 #### Validated user-facing changes as a developer
-**Note:** Multiple code reviewers can share the checklists above, a second reviewer should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
+**Note:** Multiple code reviewers can share the checklists above, a second reviewer should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A.
 
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
-- [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
+- [ ] screen reader ((such as NVDA with Chrome or Voiceover with Safari)):
+  - [ ] Tested general usability
+  - [ ] landmarks
+  - [ ] page header structure
+  - [ ] links
+- [ ] Tested with an a11y browser tool (such as ANDI)
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
 ### As a designer reviewer, I have
