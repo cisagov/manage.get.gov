@@ -746,18 +746,41 @@ class DomainDNSView(DomainBaseView):
 class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
-    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
+    type_field = forms.ChoiceField(
+        label="Type",
+        choices=[("A", "A")],
+        initial="A",
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'usa-select'
+        })
+    )
+    
+    name = forms.CharField(
+        label="DNS record name (A record)", 
+        required=True, 
+        help_text="Use @ for root",
+        widget=forms.TextInput(attrs={
+            'class': 'usa-input',
+            'placeholder': 'Use @ for root',
+        })
+    )
 
     content = forms.GenericIPAddressField(
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
+        help_text="Example: 2001:db8::1234:5678",
+        widget=forms.TextInput(attrs={
+            'class': 'usa-input',
+            'placeholder': 'Example: 2001:db8::1234:5678',
+        })
     )
 
     ttl = forms.ChoiceField(
         label="TTL",
         choices=[
-            (1, "Automatic"),
+            ("", "- Select - "),
             (60, "1 minute"),
             (300, "5 minutes"),
             (1800, "30 minutes"),
@@ -767,7 +790,11 @@ class DomainDNSRecordForm(forms.Form):
             (43200, "12 hours"),
             (86400, "1 day"),
         ],
-        initial=1,
+        initial="",
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'usa-select',
+        })
     )
 
     comment = forms.CharField(
