@@ -15,7 +15,7 @@
     <nav class="usa-nav" aria-label="Primary navigation">
         <div class="usa-nav__inner usa-nav__inner--widescreen padding-x--widescreen">
                 <button type="button" class="usa-nav__close">
-                    <img src="{%static 'img/usa-icons/close.svg'%}" role="img" alt="Close" />
+                    <img src="{%static 'img/usa-icons/close.svg'%}" class="close-icon" role="img" alt="Close" />
                 </button>
                 <div class="usa-nav__secondary">
                     <ul class="usa-nav__secondary-links">
@@ -26,7 +26,7 @@
                             {% endif %}
                         {% endflag %}
                         {% if user.is_authenticated %}
-                        <li class="usa-nav__secondary-item">
+                        <li class="usa-nav__secondary-item desktop-only">
                             <div class="usa-accordion">
                                 <div class="usa-accordion__heading usa-nav__secondary-menu">
                                     <button
@@ -50,8 +50,16 @@
                                 </div>
                             </div>
                         </li> 
-                        <li class="usa-nav__secondary-item">
-                            <a class="usa-nav-link" href="{% url 'logout' %}">Sign out</a>
+                        <li class="usa-nav__secondary-item mobile-only">
+                            <a class="usa-nav-link {% if path == user_profile_url or path == finish_setup_url %}usa-current{% endif %}" href="{{ user_profile_url }}">
+                                Your profile
+                            </a>
+                        </li>
+                        <li class="usa-nav__secondary-item display-flex flex-align-center">
+                            <a class="usa-nav-link" href="{{ logout }}">
+                                Sign out
+                            </a>
+                            <img src="{%static 'img/usa-icons/logout.svg'%}" class="logout-icon mobile-only" role="img" alt="Logout" />
                         </li>
                         {% else %}
                         <li class="usa-nav__secondary-item">
@@ -60,7 +68,7 @@
                         {% endif %}
                     </ul>
                 </div>
-            <ul class="usa-nav__primary usa-accordion">
+            <ul class="usa-nav__primary usa-accordion desktop-only">
                 <li class="usa-nav__primary-item">
                     {% if has_any_domains_portfolio_permission %}
                         {% url 'domains' as url %}
@@ -71,11 +79,6 @@
                         Domains
                     </a>
                 </li>
-            <!-- <li class="usa-nav__primary-item">
-                <a href="#" class="usa-nav-link">
-                    Domain groups
-                </a>
-            </li> -->
 
                 <li class="usa-nav__primary-item">
                     <!-- user has one of the view permissions plus the edit permission, show the dropdown -->
