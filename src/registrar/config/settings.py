@@ -175,18 +175,18 @@ INSTALLED_APPS = [
 # Adding them here turns them "on"; Django will perform the
 # specified routines on each incoming request and outgoing response.
 MIDDLEWARE = [
+    # provide security enhancements to the request/response cycle
+    "django.middleware.security.SecurityMiddleware",
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
     "registrar.registrar_middleware.NoCacheMiddleware",
-    # serve static assets in production
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    # provide security enhancements to the request/response cycle
-    "django.middleware.security.SecurityMiddleware",
     # django-csp: enable use of Content-Security-Policy header
     "csp.middleware.CSPMiddleware",
+    # serve static assets in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
     # add a few conveniences for perfectionists, see documentation
@@ -212,8 +212,6 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
-    "registrar.registrar_middleware.PermissionsPolicyMiddleware",
-    "registrar.registrar_middleware.RemoveServerHeaderMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -840,11 +838,10 @@ SECRET_KEY = secret_key
 SECRET_KEY_FALLBACKS: "list[str]" = []
 
 # ~ Set by django.middleware.security.SecurityMiddleware
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
-SECURE_CROSS_ORIGIN_RESOURCE_POLICY = "same-origin"
+# SECURE_CONTENT_TYPE_NOSNIFF = True
+# SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 # SECURE_REDIRECT_EXEMPT = []
-SECURE_REFERRER_POLICY = "same-origin"
+# SECURE_REFERRER_POLICY = "same-origin"
 # SECURE_SSL_HOST = None
 
 # ~ Overridden from django.middleware.security.SecurityMiddleware
@@ -970,7 +967,7 @@ SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe
-X_FRAME_OPTIONS = "Deny"
+# X_FRAME_OPTIONS = "Deny"
 
 # endregion
 # region: Testing-----------------------------------------------------------###
@@ -1009,7 +1006,7 @@ if DEBUG:
         {"model": "admin.LogEntry", "field": "user"},
     ]
 
-    if env.bool("ENABLE_DEBUG_TOOLBAR", False):        # insert the amazing django-debug-toolbar
+    if env.bool("ENABLE_DEBUG_TOOLBAR", False):  # insert the amazing django-debug-toolbar
         INSTALLED_APPS += ("debug_toolbar",)
         MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 

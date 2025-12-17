@@ -407,24 +407,3 @@ class DatabaseConnectionMiddleware:
                 f"path={request.path}"
             )
         return response
-
-
-class PermissionsPolicyMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        resp = self.get_response(request)
-        if settings.DEBUG:
-            resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-        return resp
-
-
-class RemoveServerHeaderMiddleware:
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        response = self.get_response(request)
-        response.headers.pop("Server", None)
-        return response
