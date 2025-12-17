@@ -460,6 +460,22 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # create suborg
         self.domain_information_11.sub_organization = self.suborganization_1
         self.domain_information_11.save()
+
+        # Added domain with federal agency that is "Non-Federal Agency"
+        self.domain_information_12.federal_agency = self.federal_agency_4
+        self.domain_information_12.organization_name = "InterState Agency"
+        self.domain_information_12.city = "Place"
+        self.domain_information_12.state_territory = "WA"
+        self.domain_information_12.save()
+
+        # Switch domain state to use for additional Non Federal Agency
+        self.domain_2.ready()
+        self.domain_2.save()
+
+        # Setting a portfolio that is non federal
+        self.domain_information_2.portfolio = self.portfolio_2
+        self.domain_information_2.save()
+
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
@@ -477,7 +493,8 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
-            "zdomain12.gov,Interstate,,,,,(blank)\n"
+            "zdomain12.gov,Interstate,InterState Agency,Place,WA,,(blank)\n"
+            "adomain2.gov,Interstate,Portfolio 2,Somewhere,CO,,(blank)\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace

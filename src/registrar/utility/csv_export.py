@@ -643,12 +643,15 @@ class DomainExport(BaseExport):
                 output_field=CharField(),
             ),
             "converted_sub_organization_name": Case(
+                # We use Domain Information to grab the info
+                # Domain Information has portfolio, organization, and sub_org fields
+                # Portfolio must be present in order for suborg to exist
                 # When sub_organization is present, use its name
                 When(sub_organization__isnull=False, then=F("sub_organization__name")),
                 # Use organization for suborg
                 # When federal agency is not null
                 # When federal agency is not a Non Federal Agency
-                # When portfolio is not null
+                # When portfolio is null
                 When(
                     Q(federal_agency__isnull=False)
                     & ~Q(portfolio__isnull=False)
@@ -833,6 +836,7 @@ class DomainExport(BaseExport):
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
             "Organization name": model.get("converted_organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
             "City": model.get("city"),
             "State": model.get("state_territory"),
             "SO": model.get("converted_so_name"),
@@ -1053,14 +1057,11 @@ class DomainDataFull(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    # NOTE - this override is temporary.
-    # We are running into a problem where DomainDataFull is
-    # pulling the wrong data.
-    # For example, the portfolio name, rather than the suborganization name.
-    # This can be removed after that gets fixed.
     # The following fields are changed from DomainExport:
     # converted_so_name => so_name
     # converted_so_email => senior_official__email
+    # city => converted_city
+    # state_territory => converted_state_territory
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
@@ -1170,17 +1171,12 @@ class DomainDataFederal(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    # NOTE - this override is temporary.
-    # We are running into a problem where DomainDataFull is
-    # pulling the wrong data.
-    # For example, the portfolio name, rather than the suborganization name.
-    # This can be removed after that gets fixed.
     # The following fields are changed from DomainExport:
-    # converted_organization_name => organization_name
-    # converted_city => city
-    # converted_state_territory => state_territory
     # converted_so_name => so_name
     # converted_so_email => senior_official__email
+    # city => converted_city
+    # state_territory => converted_state_territory
+
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
