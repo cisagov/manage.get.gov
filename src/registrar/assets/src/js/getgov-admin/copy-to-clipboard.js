@@ -35,17 +35,17 @@ function copyIndividualTextButtonToClipBoard(button) {
     // Assuming the input is the previous sibling of the button
     let input = button.previousElementSibling;
     // Copy input value to clipboard
-    if (input) {
+    if (input && input instanceof HTMLInputElement) {
        const buttonSelector = ".copy-to-clipboard"
        copyToClipboardAndChangeIcon(button, input.value, buttonSelector)
     }
 }
 
 // method checks if emails are captured, and calls the method to capture to clipboard
-function copyAllMembersAdminsToClipboard(button, table, buttonSelector){
-    const membersEmails = helperCopyEmailsFromTableFunction(table);
+function copyAllMembersAdminsToClipboard(button, table_id, button_id){
+    const membersEmails = helperCopyEmailsFromTableFunction(table_id);
     if(membersEmails){
-        copyToClipboardAndChangeIcon(button, membersEmails, buttonSelector)
+        copyToClipboardAndChangeIcon(button, membersEmails, button_id)
     }
 
 }
@@ -90,16 +90,16 @@ export function initCopyToClipboard() {
 
     });
 
-    const portfolioMemberSelectorButton = "#copy-to-clipboard-members"
-    const portfolioMembersButton = document.querySelector(portfolioMemberSelectorButton)
+    const portfolioMemberSelectorId = "#copy-to-clipboard-members"
+    const portfolioMembersButton = document.querySelector(portfolioMemberSelectorId)
     portfolioMembersButton && portfolioMembersButton.addEventListener("click", ()=>{
-        copyAllMembersAdminsToClipboard(portfolioMembersButton, "#portfolio-members-table", portfolioMemberSelectorButton)
+        copyAllMembersAdminsToClipboard(portfolioMembersButton, "#portfolio-members-table", portfolioMemberSelectorId)
     })
 
-    const portfolioAdminsSelectorButton = "#copy-to-clipboard-admins"
-    const portfolioAdminsButton = document.querySelector(portfolioAdminsSelectorButton)
+    const portfolioAdminsSelectorId = "#copy-to-clipboard-admins"
+    const portfolioAdminsButton = document.querySelector(portfolioAdminsSelectorId)
     portfolioAdminsButton && portfolioAdminsButton.addEventListener("click", ()=>{
-        copyAllMembersAdminsToClipboard(portfolioAdminsButton, "#portfolio-admins-table", portfolioAdminsSelectorButton )
+        copyAllMembersAdminsToClipboard(portfolioAdminsButton, "#portfolio-admins-table", portfolioAdminsSelectorId)
      }
     )
 }
