@@ -503,10 +503,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.maxDiff = None
         self.assertEqual(csv_content, expected_content)
 
-        # cleanup
-        self.domain_information_11.sub_organization = None
-        self.domain_information_11.save()
-
     @less_console_noise_decorator
     def test_domain_data_federal(self):
         """Shows security contacts, filtered by state and org type"""
