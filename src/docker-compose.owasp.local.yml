@@ -1,9 +1,0 @@
-services:
-  app:
-    environment:
-      - OWASP_MOCK_LOGIN=True
-      - ENABLE_DEBUG_TOOLBAR=False
-
-  owasp:
-    # keep your existing command; just ensure it can hit the app and uses same config
-    command: zap-baseline.py -t http://app:8080 -c zap.conf -I -r zap_report.html
