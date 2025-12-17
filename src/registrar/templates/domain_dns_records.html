@@ -9,11 +9,6 @@
 
     <h1>Add DNS records</h1>
 
-    <p>
-    This is a prototype that demonstrates adding an 'A' record to a zone.
-    Do note that this just adds records, but does not update or delete existing ones.
-    </p>
-
     <div x-data="{ show_form: false }">
         <button
         class="usa-button"
@@ -31,11 +26,10 @@
         >
             {% csrf_token %}
 
-            {% input_with_errors form.name %}
             <fieldset class="usa-fieldset">
                 <h2>Add record</h2>
-                
-                <div class=""grid-row grid-gap">
+                {% input_with_errors form.name %}    
+                <div class="grid-row grid-gap">
                     <div class="grid-col-8">
                         {% input_with_errors form.content %}
                     </div>

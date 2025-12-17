@@ -762,7 +762,6 @@ class DomainDNSRecordForm(forms.Form):
         help_text="Use @ for root",
         widget=forms.TextInput(attrs={
             'class': 'usa-input',
-            'placeholder': 'Use @ for root',
         })
     )
 
@@ -773,7 +772,6 @@ class DomainDNSRecordForm(forms.Form):
         help_text="Example: 2001:db8::1234:5678",
         widget=forms.TextInput(attrs={
             'class': 'usa-input',
-            'placeholder': 'Example: 2001:db8::1234:5678',
         })
     )
 
