@@ -62,6 +62,7 @@ path = Path(__file__)
 
 env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
+ENABLE_DEBUG_TOOLBAR = env.bool("ENABLE_DEBUG_TOOLBAR", False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_log_format = env.str("DJANGO_LOG_FORMAT", "console")
@@ -211,8 +212,8 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
-    # Add DB info to logs
-    "registrar.registrar_middleware.DatabaseConnectionMiddleware",
+    "registrar.registrar_middleware.PermissionsPolicyMiddleware",
+    "registrar.registrar_middleware.RemoveServerHeaderMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -839,10 +840,11 @@ SECRET_KEY = secret_key
 SECRET_KEY_FALLBACKS: "list[str]" = []
 
 # ~ Set by django.middleware.security.SecurityMiddleware
-# SECURE_CONTENT_TYPE_NOSNIFF = True
-# SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_RESOURCE_POLICY = "same-origin"
 # SECURE_REDIRECT_EXEMPT = []
-# SECURE_REFERRER_POLICY = "same-origin"
+SECURE_REFERRER_POLICY = "same-origin"
 # SECURE_SSL_HOST = None
 
 # ~ Overridden from django.middleware.security.SecurityMiddleware
@@ -968,7 +970,7 @@ SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe
-# X_FRAME_OPTIONS = "Deny"
+X_FRAME_OPTIONS = "Deny"
 
 # endregion
 # region: Testing-----------------------------------------------------------###
@@ -1007,14 +1009,14 @@ if DEBUG:
         {"model": "admin.LogEntry", "field": "user"},
     ]
 
-    # insert the amazing django-debug-toolbar
-    INSTALLED_APPS += ("debug_toolbar",)
-    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    if env.bool("ENABLE_DEBUG_TOOLBAR", False):        # insert the amazing django-debug-toolbar
+        INSTALLED_APPS += ("debug_toolbar",)
+        MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
-    DEBUG_TOOLBAR_CONFIG = {
-        # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
-        "SHOW_TOOLBAR_CALLBACK": lambda _: True,
-    }
+        DEBUG_TOOLBAR_CONFIG = {
+            # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
+            "SHOW_TOOLBAR_CALLBACK": lambda _: True,
+        }
 
 # From https://django-auditlog.readthedocs.io/en/latest/upgrade.html
 # Run:
