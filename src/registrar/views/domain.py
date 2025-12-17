@@ -757,7 +757,7 @@ class DomainDNSRecordForm(forms.Form):
     )
     
     name = forms.CharField(
-        label="DNS record name (A record)", 
+        label="Name", 
         required=True, 
         help_text="Use @ for root",
         widget=forms.TextInput(attrs={
