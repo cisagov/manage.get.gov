@@ -81,7 +81,7 @@ jobs:
           cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
       - name: Set git info to environment variables
         run: |
-          echo "GIT_BRANCH=${{ github.ref_name }}"" >> $GITHUB_ENV
+          echo "GIT_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
           echo "GIT_COMMIT=${{ github.sha }}"  >> $GITHUB_ENV
           
           #check if this is a tag
