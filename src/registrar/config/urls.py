@@ -9,6 +9,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
+from registrar.config import settings
 from registrar.views.report_views import (
     ExportDataDomainsGrowth,
     ExportDataFederal,
@@ -419,9 +420,11 @@ handler404 = "registrar.views.utility.error_views.custom_404_error_view"
 # DEBUG = False even when these apps have been loaded because settings.DEBUG
 # was actually True. Instead, let's add these URLs any time we are able to
 # import the debug toolbar package.
-try:
-    import debug_toolbar  # type: ignore
 
-    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
-except ImportError:
-    pass
+if settings.DEBUG and getattr(settings, "ENABLE_DEBUG_TOOLBAR", False):
+    try:
+        import debug_toolbar  # type: ignore
+
+        urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
+    except ImportError:
+        pass

@@ -62,6 +62,7 @@ path = Path(__file__)
 
 env_db_url = env.dj_db_url("DATABASE_URL")
 env_debug = env.bool("DJANGO_DEBUG", default=False)
+ENABLE_DEBUG_TOOLBAR = env.bool("ENABLE_DEBUG_TOOLBAR", False)
 env_is_production = env.bool("IS_PRODUCTION", default=False)
 env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_log_format = env.str("DJANGO_LOG_FORMAT", "console")
@@ -174,18 +175,18 @@ INSTALLED_APPS = [
 # Adding them here turns them "on"; Django will perform the
 # specified routines on each incoming request and outgoing response.
 MIDDLEWARE = [
+    # provide security enhancements to the request/response cycle
+    "django.middleware.security.SecurityMiddleware",
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
     # django-cors-headers: listen to cors responses
     "corsheaders.middleware.CorsMiddleware",
     # custom middleware to stop caching from CloudFront
     "registrar.registrar_middleware.NoCacheMiddleware",
-    # serve static assets in production
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    # provide security enhancements to the request/response cycle
-    "django.middleware.security.SecurityMiddleware",
     # django-csp: enable use of Content-Security-Policy header
     "csp.middleware.CSPMiddleware",
+    # serve static assets in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     # store and retrieve arbitrary data on a per-site-visitor basis
     "django.contrib.sessions.middleware.SessionMiddleware",
     # add a few conveniences for perfectionists, see documentation
@@ -211,8 +212,6 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RestrictAccessMiddleware",
     # Add User Info to Console logs
     "registrar.registrar_middleware.RequestLoggingMiddleware",
-    # Add DB info to logs
-    "registrar.registrar_middleware.DatabaseConnectionMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
@@ -1007,14 +1006,14 @@ if DEBUG:
         {"model": "admin.LogEntry", "field": "user"},
     ]
 
-    # insert the amazing django-debug-toolbar
-    INSTALLED_APPS += ("debug_toolbar",)
-    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    if env.bool("ENABLE_DEBUG_TOOLBAR", False):  # insert the amazing django-debug-toolbar
+        INSTALLED_APPS += ("debug_toolbar",)
+        MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
-    DEBUG_TOOLBAR_CONFIG = {
-        # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
-        "SHOW_TOOLBAR_CALLBACK": lambda _: True,
-    }
+        DEBUG_TOOLBAR_CONFIG = {
+            # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
+            "SHOW_TOOLBAR_CALLBACK": lambda _: True,
+        }
 
 # From https://django-auditlog.readthedocs.io/en/latest/upgrade.html
 # Run:
