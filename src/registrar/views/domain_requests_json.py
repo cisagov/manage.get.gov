@@ -67,7 +67,7 @@ def _get_domain_request_ids_from_request(request):
         user_qs = qs.filter(requester=request.user)
 
         if flag_is_active(request, "multiple_portfolios"):
-            # Does user has any portfolio requests at all
+            # Check if the user has any portfolio requests at all
             has_portfolio_requests = user_qs.filter(portfolio__isnull=False).exists()
             if has_portfolio_requests:
                 # In the mixed case (user has portfolio + legacy requests)
