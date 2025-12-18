@@ -30,38 +30,32 @@
 
   {% if dns_hosting %}
   {% url 'domain-dns-records' domain_pk=domain.id as url %}
-  <h3 class="margin-bottom-1 margin-top-2">
-    <a href="{{ url }}" class="display-inline-flex flex-align-center">
-      DNS Records <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
-      </svg>
-    </a>
-  </h3>
-  <p class="margin-top-1 margin-bottom-2">Review, add, and edit DNS records.</p>
+  <a href="{{ url }}" class="h3 margin-bottom-1 margin-top-1 display-inline-flex flex-align-center">
+    DNS Records <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+      <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+    </svg>
+  </a>
+  <p class="margin-top-0 margin-bottom-0">Review, add, and edit DNS records.</p>
   {% endif %}
 
   {% if not dns_hosting %}
   {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
-  <h3 class="margin-bottom-1 margin-top-2">
-    <a href="{{ url }}" class="display-inline-flex flex-align-center">
-      Nameservers
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
-      </svg>
-    </a>
-  </h3>
-  <p class="margin-top-1 margin-bottom-2">Review, add, and edit DNS nameservers.</p>
+  <a href="{{ url }}" class="h3 margin-bottom-1 margin-top-1 display-inline-flex flex-align-center">
+    Nameservers
+    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+      <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+    </svg>
+  </a>
+  <p class="margin-top-0 margin-bottom-0">Review, add, and edit DNS nameservers.</p>
   {% endif %}
 
 
   {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
-  <h3 class="margin-bottom-1 margin-top-2">
-    <a href="{{ url }}" class="display-inline-flex flex-align-center">
-      DNSSEC 
-      <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
-        <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
-      </svg>
-    </a>
-  </h3>
-  <p class="margin-top-1 margin-bottom-2">Enable digital signatures to DNS records.</p>
+  <a href="{{ url }}" class="h3 margin-bottom-1 margin-top-2 display-inline-flex flex-align-center">
+    DNSSEC 
+    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+      <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+    </svg>
+  </a>
+  <p class="margin-top-0 margin-bottom-0">Enable digital signatures to DNS records.</p>
 {% endblock %}  {# domain_content #}
