@@ -960,6 +960,23 @@ class DomainDataType(DomainExport):
             "Invited domain managers",
         ]
 
+    # Maybe TODO: Remove for csv updates for domain analytics csv
+    # This overrides the converted_organization_name from DomainExport,
+    # Which displays the federal agency after a conditional is met for the organization field
+    # We remove this check in the override, the fed agency already displays in the "Agency" col
+
+    @classmethod
+    def get_computed_fields(cls, **kwargs):
+        fields = super().get_computed_fields(**kwargs)
+
+        fields["converted_organization_name"] = Case(
+            When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+            default=F("organization_name"),
+            output_field=CharField(),
+        )
+
+        return fields
+
     @classmethod
     def get_annotations_for_sort(cls):
         """
@@ -1370,6 +1387,23 @@ class DomainGrowth(DomainExport):
             "domain__deleted",
             "federal_agency__agency",
         ]
+
+    # Maybe TODO: Remove for csv updates for domain analytics csv
+    # This overrides the converted_organization_name from DomainExport,
+    # Which displays the federal agency after a conditional is met for the organization field
+    # We remove this check in the override, the fed agency already displays in the "Agency" col
+
+    @classmethod
+    def get_computed_fields(cls, **kwargs):
+        fields = super().get_computed_fields(**kwargs)
+
+        fields["converted_organization_name"] = Case(
+            When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+            default=F("organization_name"),
+            output_field=CharField(),
+        )
+
+        return fields
 
 
 class DomainManaged(DomainExport):

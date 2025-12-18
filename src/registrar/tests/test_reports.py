@@ -303,7 +303,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
         )
-        
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
@@ -484,7 +483,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         # We expect READY domains,
         # sorted alphabetially by domain name
-
         expected_content = (
             "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
@@ -526,7 +524,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_content = csv_file.read()
         # We expect READY domains,
         # sorted alphabetially by domain name
-
         expected_content = (
             "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
@@ -548,6 +545,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         columns = [
             "Domain name",
             "Domain type",
+            "Agency",
             "Organization name",
             "City",
             "State",
@@ -580,9 +578,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
                 # We expect READY domains first, created between day-2 and day+2, sorted by created_at then name
                 # and DELETED domains deleted between day-2 and day+2, sorted by deleted then name
                 expected_content = (
-                    "Domain name,Domain type,Organization name,City,"
+                    "Domain name,Domain type,Agency,Organization name,City,"
                     "State,Status,Expiration date, Deleted\n"
-                    "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Ready,(blank)\n"
+                    "cdomain1.gov,Federal-Executive,Portfolio1FederalAgency,Portfolio1FederalAgency,Ready,(blank)\n"
                     "adomain10.gov,Federal,ArmedForcesRetirementHome,Ready,(blank)\n"
                     "cdomain11.gov,Federal,WorldWarICentennialCommission,Ready,(blank)\n"
                     "zdomain12.gov,Interstate,Ready,(blank)\n"
