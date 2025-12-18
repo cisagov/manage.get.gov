@@ -6,6 +6,7 @@ from registrar.models import DomainRequest
 from django.utils.dateformat import format
 from django.urls import reverse
 from django.db.models import Q
+from waffle import flag_is_active
 
 
 @grant_access(ALL)
@@ -61,9 +62,21 @@ def _get_domain_request_ids_from_request(request):
     qs = DomainRequest.objects.exclude(status=DomainRequest.DomainRequestStatus.APPROVED)
     portfolio_id = request.GET.get("portfolio")
 
+    # legacy path
     if not portfolio_id:
-        return qs.filter(requester=request.user).values_list("id", flat=True)
+        user_qs = qs.filter(requester=request.user)
 
+        if flag_is_active(request, "multiple_portfolios"):
+            # Does user has any portfolio requests at all
+            has_portfolio_requests = user_qs.filter(portfolio__isnull=False).exists()
+            if has_portfolio_requests:
+                # In the mixed case (user has portfolio + legacy requests)
+                # the legacy view should show only legacy-only requests
+                user_qs = user_qs.filter(portfolio__isnull=True)
+
+        return user_qs.values_list("id", flat=True)
+
+    # --- existing portfolio logic /real legacy below ---
     Portfolio = apps.get_model("registrar", "Portfolio")
     portfolio = Portfolio.objects.filter(pk=portfolio_id).first()
     if not portfolio or not request.user.has_view_portfolio_permission(portfolio):
