@@ -3,23 +3,49 @@
 {% load static url_helpers %}
 
 {% block detail_content %}
-    <table>
+    <table id="portfolio-members-table">
         <thead>
             <tr>
                 <th>Name</th>
                 <th>Title</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Action</th>
+                <th>Action
+                     <button 
+                               class="
+                                            usa-button--dja 
+                                            usa-button 
+                                            usa-button__small-text 
+                                            usa-button--unstyled 
+                                            padding-right-1 
+                                            padding-top-0
+                                            padding-bottom-0
+                                            usa-button--icon 
+                                            text-no-underline" 
+                                        type="button"
+                                        id="copy-to-clipboard-members"
+                                        >
+                                            <svg 
+                                            class="usa-icon" 
+                                            >
+                                                <use aria-hidden="true" xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                                            </svg>
+                                            
+                                            <span>Copy all</span>
+                                        </button></th>
             </tr>
         </thead>
         <tbody>
             {% for member in members %}
             {% url 'admin:registrar_userportfoliopermission_change' member.pk as url %}
             <tr>
-                <td><a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
-                <td>{{ member.user.title }}</td>
                 <td>
+                    {% if member.has_domain_request_permission %}
+                    *
+                    {% endif %}
+                    <a href={{url}}>{{ member.user.get_formatted_name}}</a></td>
+                <td>{{ member.user.title }}</td>
+                <td data-column-id="email">
                     {% if member.user.email %}
                     {{ member.user.email }}
                     {% else %}
@@ -47,4 +73,5 @@
             {% endfor %}
         </tbody>
     </table>
+    <p class="margin-top-2">* Has domain requester permissions</p>
 {% endblock %}
