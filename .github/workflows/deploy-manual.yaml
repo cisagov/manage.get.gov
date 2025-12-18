@@ -79,18 +79,38 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
           cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
-      - name: Set git info to environment variables
+  
+      - name: Create temporary file
+        uses: cloud-gov/cg-cli-tools@main
+        env: 
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
         run: |
-          echo "GIT_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
-          echo "GIT_COMMIT=${{ github.sha }}"  >> $GITHUB_ENV
+          # Authenticate 
+          cf api api.fr.cloud.gov
+          cf auth "$cf_username" "$cf_password"
+          cf target -o cisa-dotgov -s $ENVIRONMENT
+          cf ssh getgov-$ENVIRONMENT << 'EOF'
+          tmp/lifecycle/shell
+          
+          #Back up
+
+          cp .env .env.backup
+
+          #Remove old git info
+
+          sed - i '/^GIT_/d' .env
+
+          # append new values
+          echo "GIT_BRANCH=${{ github.ref_name }}" >> .env
+          echo "GIT_COMMIT=${{ github.sha }}"  >> .env
           
           #check if this is a tag
           if [[ ${{ github.ref }} == ref/tags/* ]]; then
-            echo "GIT_TAG=${{ github.ref_name }}"  >> $GITHUB_ENV
-            echo "IS_TAG=${{ github.ref_name }}"  >> $GITHUB_ENV
-            echo "GIT_REF=${{ github.ref }}" >> $GITHUB_ENV
+            echo "GIT_TAG=${{ github.ref_name }}"  >> .env
+            echo "IS_TAG=${{ github.ref_name }}"  >> .env
+            echo "GIT_REF=${{ github.ref }}" >> .env
           else 
-            echo "GIT_TAG=" >> $GITHUB_ENV
-            echo "IS_TAG=false" >> $GITHUB_ENV
+            echo "GIT_TAG=" >> .env
+            echo "IS_TAG=false" >> .env
           fi
-
