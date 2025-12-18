@@ -71,14 +71,12 @@ env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
 
 # Github info
 
-env_github_branch = env.str("GIT_BRANCH")
-env_github_hash = env.str("GIT_COMMIT", "")
-env_git_tag = env.str("GIT_TAG", "")
-env_is_tag = env.str("IS_TAG", "")
+GIT_BRANCH = env.str("GIT_BRANCH", "")
+GIT_COMMIT_HASH = env.str("GIT_COMMIT", "")
+GIT_TAG = env.str("GIT_TAG", "")
+IS_TAG = env.str("IS_TAG", "")
 
-GIT_BRANCH = env_github_branch
-GIT_COMMIT = env_github_hash
-LOG_LEVEL = env_log_level
+
 
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
