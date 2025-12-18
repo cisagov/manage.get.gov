@@ -264,7 +264,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_file.seek(0)
 
         actual_rows = list(csv.reader(csv_file))
-
         self.assertEqual(expected_rows, actual_rows)
 
     @less_console_noise_decorator
@@ -293,13 +292,12 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_file.seek(0)
         # Read the content into a variable
         csv_content = csv_file.read()
-
         # We expect only domains associated with the user
         expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Organization name,"
+            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
             "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,,, ,,(blank),"
+            "Portfolio 1 Federal Agency,,, ,,(blank)"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
             "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
             "Portfolio 1 Federal Agency,,, ,,(blank),"
