@@ -751,19 +751,23 @@ class DomainDNSRecordForm(forms.Form):
         choices=[("A", "A")],
         initial="A",
         required=True,
-        widget=forms.Select(attrs={
-            'class': 'usa-select',
-            'required': 'required',
-        })
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+            }
+        ),
     )
-    
+
     name = forms.CharField(
-        label="Name", 
-        required=True, 
+        label="Name",
+        required=True,
         help_text="Use @ for root",
-        widget=forms.TextInput(attrs={
-            'class': 'usa-input',
-        })
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+            }
+        ),
     )
 
     content = forms.GenericIPAddressField(
@@ -771,10 +775,12 @@ class DomainDNSRecordForm(forms.Form):
         required=True,
         protocol="IPv4",
         help_text="Example: 2001:db8::1234:5678",
-        widget=forms.TextInput(attrs={
-            'class': 'usa-input',
-            'hide_character_count': True,
-        })
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+            }
+        ),
     )
 
     ttl = forms.ChoiceField(
@@ -791,10 +797,12 @@ class DomainDNSRecordForm(forms.Form):
         ],
         initial=300,
         required=False,
-        help_text="\u00A0",
-        widget=forms.Select(attrs={
-            'class': 'usa-select',
-        })
+        help_text="\u00a0",
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
     )
 
     comment = forms.CharField(
@@ -802,12 +810,7 @@ class DomainDNSRecordForm(forms.Form):
         required=False,
         help_text="The information you enter here will not impact DNS record resolution and is meant only for your reference (500 characters max)",
         max_length=500,
-        widget=forms.Textarea(attrs={
-            'class': "usa-textarea",
-            'rows': 2,
-            'max_length':500
-            'hide_character_count': True
-        })
+        widget=forms.Textarea(attrs={"class": "usa-textarea", "rows": 2, "hide_character_count": True}),
     )
 
 
@@ -860,7 +863,7 @@ class DomainDNSRecordView(DomainFormBaseView):
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": form.cleaned_data.get("comment","")
+                    "comment": form.cleaned_data.get("comment", ""),
                 }
 
                 domain_name = self.object.name
