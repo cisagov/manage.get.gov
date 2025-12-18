@@ -752,7 +752,8 @@ class DomainDNSRecordForm(forms.Form):
         initial="A",
         required=True,
         widget=forms.Select(attrs={
-            'class': 'usa-select'
+            'class': 'usa-select',
+            'required': 'required',
         })
     )
     
@@ -772,13 +773,13 @@ class DomainDNSRecordForm(forms.Form):
         help_text="Example: 2001:db8::1234:5678",
         widget=forms.TextInput(attrs={
             'class': 'usa-input',
+            'hide_character_count': True,
         })
     )
 
     ttl = forms.ChoiceField(
         label="TTL",
         choices=[
-            ("", "- Select - "),
             (60, "1 minute"),
             (300, "5 minutes"),
             (1800, "30 minutes"),
@@ -788,8 +789,9 @@ class DomainDNSRecordForm(forms.Form):
             (43200, "12 hours"),
             (86400, "1 day"),
         ],
-        initial="",
+        initial=300,
         required=False,
+        help_text="\u00A0",
         widget=forms.Select(attrs={
             'class': 'usa-select',
         })
@@ -801,9 +803,10 @@ class DomainDNSRecordForm(forms.Form):
         help_text="The information you enter here will not impact DNS record resolution and is meant only for your reference (500 characters max)",
         max_length=500,
         widget=forms.Textarea(attrs={
-            'class':'usa-text-area',
-            'rows': 4,
+            'class': "usa-textarea",
+            'rows': 2,
             'max_length':500
+            'hide_character_count': True
         })
     )
 

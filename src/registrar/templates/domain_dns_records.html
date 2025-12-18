@@ -6,62 +6,81 @@
 {% block domain_content %}
 
     {% include "includes/form_errors.html" with form=form %}
-
-    <h1>Records</h1>
+    {% csrf_token %}
 
     <div x-data="{ show_form: false }">
-        <button
-        class="usa-button"
-        type="button"
-        x-on:click="show_form = true"
-        >
-            Add record
-        </button>
-        <form 
-            class="usa-form usa-form--large"
-            method="post"
-            novalidate id="form-container"
-            x-cloak
-            x-show="show_form"
-        >
-            {% csrf_token %}
-
-            <h2>Add record</h2>
-
-            <div class="grid-col-4">
-                    {% input_with_errors form.type_field %}        
+        <div class="display-flex flex-align-center">
+            <div class="grid-col">
+                <h1>Records</h1>
             </div>
-
-            {% input_with_errors form.name %}    
-            <div class="grid-row grid-gap">
-                <div class="grid-col-8">
-                    {% input_with_errors form.content %}
-                </div>
-                <div class="grid-col-4">
-                    {% input_with_errors form.ttl %}        
-                </div>
-            </div>
-        
-            {% input_with_errors form.comment %}
-        
-
-            <button
-                    type="submit"
-                    class="usa-button"
-                >
-                    Save
-            </button>
-            <button
+            
+            <div class="grid-col-auto">
+                <button
+                class="usa-button"
                 type="button"
-                class="usa-button usa-button--outline"
-                x-on:click="show_form = false"
-            >
-                Cancel
-            </button>
-        </form>
-        
-    </div>
+                x-on:click="show_form = true"
+                >
+                    Add record
+                </button>
+            </div>
+        </div>
     
+        <div class="grid-row">
+            <div class="grid-col-12">
+                <p class="measure-none">
+                    Review, add and edit DNS records. Edits will go into effect once saved.
+                </p>
+                <p class="measure-none">
+                    Click "Add record" and enter the values that you need to enter so everything and everyone can get the work done here.
+                </p>
+                <p class="text-italic measure-none">
+                    Required fields are marked with an asterisk(<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).
+                </p>
+
+                <div x-cloak x-show="show_form">
+                    <form 
+                        class="usa-form usa-form--large padding-3 border-1px border-base-light width-full maxw-none margin-top"
+                        method="post"
+                        novalidate id="form-container"
+                        x-cloak
+                        x-show="show_form"
+                    >
+                        <h2 class="margin-top-0">Add record</h2>
+
+                        <div class="grid-col-4">
+                            {% input_with_errors form.type_field %}        
+                        </div>
+
+                        {% input_with_errors form.name %}    
+                        <div class="grid-row grid-gap">
+                            <div class="grid-col-8">
+                                {% input_with_errors form.content %}
+                            </div>
+                            <div class="grid-col-4">
+                                {% input_with_errors form.ttl %}        
+                            </div>
+                        </div>
+                    
+                        {% input_with_errors form.comment %}
+
+                        <button
+                                type="submit"
+                                class="usa-button"
+                            >
+                                Save
+                        </button>
+                        <button
+                            type="button"
+                            class="usa-button usa-button--outline"
+                            x-on:click="show_form = false"
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+             </div>
+        </div>
+    </div>
     {% if dns_record %}
     <p>DNS RECORD: {{ dns_record }} </p>
     {% endif %}
