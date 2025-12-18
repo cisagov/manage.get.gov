@@ -488,7 +488,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
 
         expected_content = (
-            "Domain name,Domain type,Organization name, Suborganization name,City,State,Security contact email\n"
+            "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
@@ -530,7 +530,7 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
 
         expected_content = (
-            "Domain name,Domain type,Organization name, Suborganization name,City,State,Security contact email\n"
+            "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"

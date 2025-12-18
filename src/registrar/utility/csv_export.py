@@ -948,6 +948,7 @@ class DomainDataType(DomainExport):
             "First ready on",
             "Expiration date",
             "Domain type",
+            "Agency",
             "Organization name",
             "City",
             "State",
