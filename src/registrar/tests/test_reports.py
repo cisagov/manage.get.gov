@@ -296,14 +296,14 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
             "City,State,SO,SO email,Security contact email,Domain managers,Invited domain managers\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,,, ,,(blank)"
+            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,Portfolio 1 Federal Agency,"
+            "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"info@example.com, meoward@rocks.com",squeaker@rocks.com\n'
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
+            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,Portfolio 1 Federal Agency,"
             "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
         )
-
+        
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
