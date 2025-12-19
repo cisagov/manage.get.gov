@@ -10,10 +10,10 @@ from django.shortcuts import render
 def health(request):
 
     context = {
-        'git_branch': settings.GIT_BRANCH,
-        'git_commit_hash':  settings.GIT_COMMIT_HASH,
-        'git_tag': settings.GIT_TAG,
-        'is_tag': settings.IS_TAG
+        "git_branch": settings.GIT_BRANCH,
+        "git_commit_hash": settings.GIT_COMMIT_HASH,
+        "git_tag": settings.GIT_TAG,
+        "is_tag": settings.IS_TAG,
     }
 
     return render(request, "health.html", context)

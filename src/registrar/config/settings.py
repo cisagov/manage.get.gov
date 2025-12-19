@@ -67,7 +67,7 @@ env_log_level = env.str("DJANGO_LOG_LEVEL", "DEBUG")
 env_log_format = env.str("DJANGO_LOG_FORMAT", "console")
 env_base_url: str = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
-env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox") 
+env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
 
 # Github info
 
@@ -75,7 +75,6 @@ GIT_BRANCH = env.str("GIT_BRANCH", "")
 GIT_COMMIT_HASH = env.str("GIT_COMMIT", "")
 GIT_TAG = env.str("GIT_TAG", "")
 IS_TAG = env.str("IS_TAG", "")
-
 
 
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
