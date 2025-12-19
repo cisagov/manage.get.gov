@@ -79,8 +79,17 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
           cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
-  
-      - name: Create temporary file
+      - name: Install CF CLI and cg-manage-rds
+        run: | 
+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
+            echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+
+            sudo apt-get update
+            sudo apt-get install cf8-cli
+            
+            # install cg-manage-rds tool
+            pip install git+https://github.com/cloud-gov/cg-manage-rds.git
+      - name: Copy github info to .env
         env: 
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
