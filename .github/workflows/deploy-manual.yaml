@@ -97,7 +97,7 @@ jobs:
         run: |
           # Authenticate 
           cf api api.fr.cloud.gov
-          cf auth "$cf_username" "$cf_password"
+          cf auth "$CF_USERNAME" "$CF_PASSWORD"
           cf target -o cisa-dotgov -s $ENVIRONMENT
           cf ssh getgov-$ENVIRONMENT << 'EOF'
           tmp/lifecycle/shell
