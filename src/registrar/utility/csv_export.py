@@ -1311,6 +1311,7 @@ class DomainGrowth(DomainExport):
         return [
             "Domain name",
             "Domain type",
+            "Agency",
             "Organization name",
             "City",
             "State",
