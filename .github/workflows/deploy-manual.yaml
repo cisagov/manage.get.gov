@@ -96,8 +96,8 @@ jobs:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
         run: |
           # Authenticate 
-          CF_USER= ${{ secrets[env.CF_USERNAME] }}
-          CF_PASS = ${{ secrets[env.CF_PASSWORD] }}
+          CF_USER=${{ secrets[env.CF_USERNAME] }}
+          CF_PASS=${{ secrets[env.CF_PASSWORD] }}
 
           cf api api.fr.cloud.gov
           cf auth "$CF_USER" "$CF_PASS"
