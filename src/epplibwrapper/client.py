@@ -1,6 +1,6 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
-import logging
+import logging, time
 from gevent.lock import BoundedSemaphore
 
 try:
@@ -44,6 +44,8 @@ class EPPLibWrapper:
         # before _client initializes, app should still start and be in a state
         # that it can attempt _client initialization on send attempts
         self._client = None  # type: ignore
+        logger.info(f"=== REQUEST COUNT ===")
+        self._waiting_count = 0  # Track how many requests are waiting
         # prepare (but do not send) a Login command
         self._login = commands.Login(
             cl_id=settings.SECRET_REGISTRY_CL_ID,
@@ -125,12 +127,19 @@ class EPPLibWrapper:
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
 
+        send_start = time.time()
+        logger.info(f"=== STARTING {cmd_type} command to registry ===")
+
         try:
             # check for the condition that the _client was not initialized properly
             # at app initialization
             if self._client is None:
                 self._initialize_client()
+
+            registry_start = time.time()
             response = self._client.send(command)
+            registry_elapsed = time.time() - registry_start
+            logger.info(f"=== Registry responded to {cmd_type} in {registry_elapsed:.2f}s ===")
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
             logger.error(f"{message} Error: {err}")
@@ -150,6 +159,9 @@ class EPPLibWrapper:
             logger.error(f"{message} Error: {err}")
             raise RegistryError(message) from err
         else:
+            send_elapsed = time.time() - send_start
+            logger.info(f"=== Completed {cmd_type} in {send_elapsed:.2f}s total ===")
+
             if response.code >= 2000:
                 raise RegistryError(response.msg, code=response.code, response=response)
             else:
@@ -159,6 +171,10 @@ class EPPLibWrapper:
         """Retry sending a command through EPP by re-initializing the client
         and then sending the command."""
         # re-initialize by disconnecting and initial
+        cmd_type = command.__class__.__name__
+
+        logger.info(f"=== RETRY {cmd_type} command ===")
+
         self._disconnect()
         self._initialize_client()
         return self._send(command)
@@ -167,12 +183,31 @@ class EPPLibWrapper:
         """Login, the send the command. Retry once if an error is found"""
         # try to prevent use of this method without appropriate safeguards
         cmd_type = command.__class__.__name__
+        logger.info(f"=== IN SEND FUNCTION ===")
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
 
+        total_start = time.time()
+        self._waiting_count += 1
+        wait_position = self._waiting_count
+        logger.info(f"=== EPP SEND START: {cmd_type} (queue position: {wait_position}) ===")
+        logger.info(f"=== STARTING CONNECTION LOCK ===")
+
+        lock_start = time.time()
         self.connection_lock.acquire()
+        lock_wait = time.time() - lock_start
+
+        logger.info(f"=== Lock acquired after {lock_wait:.2f}s wait time ===")
+        if lock_wait > 5:
+            logger.warning(f"!!! LONG !!! WAIT for lock: {lock_wait:.2f}s - CAUSE OF TIMEOUTS POSSIBLY???")
+
         try:
-            return self._send(command)
+            result = self._send(command)
+            total_elapsed = time.time() - total_start
+            logger.info(
+                f"=== EPP SEND COMMAND: {cmd_type} took {total_elapsed:.2f}s total (!waited {lock_wait:.2f}s for lock!) ==="
+            )
+            return result
         except RegistryError as err:
             if err.response:
                 logger.info(f"cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
@@ -185,11 +220,16 @@ class EPPLibWrapper:
             ):
                 message = f"{cmd_type} failed and will be retried"
                 logger.info(f"{message} Error: {err}")
-                return self._retry(command)
+                result = self._retry(command)
+                total_elapsed = time.time() - total_start
+                logger.info(f"=== EPP SEND END (!after retry!): {cmd_type} took {total_elapsed:.2f}s total ===")
+                return result
             else:
                 raise err
         finally:
+            self._waiting_count -= 1
             self.connection_lock.release()
+            logger.info(f"=== LOCK RELEASED FOR {cmd_type} ===")
 
 
 try:
