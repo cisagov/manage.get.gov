@@ -102,27 +102,20 @@ jobs:
           cf api api.fr.cloud.gov
           cf auth "$CF_USER" "$CF_PASS"
           cf target -o cisa-dotgov -s $ENVIRONMENT
-          cf ssh getgov-$ENVIRONMENT << 'EOF'
-          tmp/lifecycle/shell
+
+          cf set-env $ENVIRONMENT GIT_BRANCH "${{ github.event.inputs.branch }}"
+          cf set-env $ENVIRONMENT GIT_COMMIT "${{ github.sha }}"
+          cf set-env $ENVIRONMENT GIT_SHORT_COMMIT "${{ GITHUB_SHA::7 }}""
+          cf set-env $ENVIRONMENT GIT-REF "${{ github.ref_nam }}""
           
-          #Back up
-
-          cp .env .env.backup
-
-          #Remove old git info
-
-          sed -i '/^GIT_/d' .env
-
-          # append new values
-          echo "GIT_BRANCH=${{ github.ref_name }}" >> .env
-          echo "GIT_COMMIT=${{ github.sha }}"  >> .env
-          
-          #check if this is a tag
+          # check if there is a tag
           if [[ ${{ github.ref }} == refs/tags/* ]]; then
-            echo "GIT_TAG=${{ github.ref_name }}"  >> .env
-            echo "IS_TAG=true"  >> .env
-            echo "GIT_REF=${{ github.ref }}" >> .env
+            cf set-env $ENVIRONMENT GIT_TAG "${{ github.ref_name }}"
+            cf set-env $ENVIRONMENT IS_TAG "true"
           else 
-            echo "GIT_TAG=" >> .env
-            echo "IS_TAG=false" >> .env
+            cf set-env $ENVIRONMENT IS_TAG "false"
           fi
+
+          #Restart to apply changes
+
+          cf restage $ENVIRONMENT
