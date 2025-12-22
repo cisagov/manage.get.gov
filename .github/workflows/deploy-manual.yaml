@@ -105,14 +105,14 @@ jobs:
 
           cf set-env getgov-$ENVIRONMENT GIT_BRANCH "${{ github.event.inputs.branch }}"
           cf set-env getgov-$ENVIRONMENT GIT_COMMIT "${{ github.sha }}"
-          cf set-env getgov-$ENVIRONMENT GIT-REF "${{ github.ref_nam }}"
+          cf set-env getgov-$ENVIRONMENT GIT_REF "${{ github.ref }}"
           
           # check if there is a tag
-          if [[ ${{ github.ref }} == refs/tags/* ]]; then
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             cf set-env getgov-$ENVIRONMENT GIT_TAG "${{ github.ref_name }}"
-            cf set-env getgov-$ENVIRONMENT IS_TAG "true"
+            cf set-env getgov-$ENVIRONMENT IS_TAG true
           else 
-            cf set-env getgov-$ENVIRONMENT IS_TAG "false"
+            cf set-env getgov-$ENVIRONMENT IS_TAG false
           fi
 
           #Restart to apply changes

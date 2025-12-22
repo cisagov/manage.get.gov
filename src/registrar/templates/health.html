@@ -1,6 +1,6 @@
 <html lang="en">
 <head>
-    <title>OK - Get.gov</title>
+    <title> Build info - Get.gov</title>
 </head>
 
 <body>
@@ -19,5 +19,9 @@
 
     {% if is_tag %}
         <p> Tag: <strong> {{ is_tag }}</strong></p>
+    {% endif %}
+
+    {% if git_ref %}
+        <p> Ref: <strong> {{ git_ref }} </strong></p>
     {% endif %}
 </body>

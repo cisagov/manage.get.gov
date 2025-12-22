@@ -14,6 +14,7 @@ def health(request):
         "git_commit_hash": settings.GIT_COMMIT_HASH,
         "git_tag": settings.GIT_TAG,
         "is_tag": settings.IS_TAG,
+        "git_ref": settings.GIT_REF
     }
 
     return render(request, "health.html", context)
