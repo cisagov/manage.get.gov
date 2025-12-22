@@ -92,10 +92,10 @@ secret_registry_key_passphrase = secret("REGISTRY_KEY_PASSPHRASE", "")
 secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # Used for DNS hosting
-secret_dns_tenant_key = secret("DNS_TENANT_KEY", None)
-secret_dns_tenant_name = secret("DNS_TENANT_NAME", None)
-secret_registry_service_email = secret("DNS_SERVICE_EMAIL", None)
-secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", None)
+secret_dns_tenant_key = secret("DNS_TENANT_KEY", "")
+secret_dns_tenant_name = secret("DNS_TENANT_NAME", "")
+secret_registry_service_email = secret("DNS_SERVICE_EMAIL", "")
+secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", "")
 dns_mock_external_apis = env.bool("DNS_MOCK_EXTERNAL_APIS", default=False)
 
 # region: Basic Django Config-----------------------------------------------###
