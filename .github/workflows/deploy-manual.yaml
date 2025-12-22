@@ -105,8 +105,8 @@ jobs:
 
           cf set-env $ENVIRONMENT GIT_BRANCH "${{ github.event.inputs.branch }}"
           cf set-env $ENVIRONMENT GIT_COMMIT "${{ github.sha }}"
-          cf set-env $ENVIRONMENT GIT_SHORT_COMMIT "${{ GITHUB_SHA::7 }}""
-          cf set-env $ENVIRONMENT GIT-REF "${{ github.ref_nam }}""
+          cf set-env $ENVIRONMENT GIT_SHORT_COMMIT "${{ GITHUB_SHA::7 }}"
+          cf set-env $ENVIRONMENT GIT-REF "${{ github.ref_nam }}"
           
           # check if there is a tag
           if [[ ${{ github.ref }} == refs/tags/* ]]; then
