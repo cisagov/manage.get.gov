@@ -3,28 +3,7 @@
 
 {% block title %}Prototype DNS | {{ domain.name }} | {% endblock %}
 
-{% block breadcrumb %}
-  <!-- Navigation breadcrumbs -->
-  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-    <ol class="usa-breadcrumb__list">
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-dns' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Records</span>
-      </li>
-    </ol>
-  </nav>
-{% endblock breadcrumb %}
-
 {% block domain_content %}
-
     {% include "includes/form_errors.html" with form=form %}
 
     <h1>Add DNS records</h1>
