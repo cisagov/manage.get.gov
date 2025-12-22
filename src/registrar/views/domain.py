@@ -1,6 +1,6 @@
 from datetime import date
 from httpx import Client
-import logging
+import logging, time
 from contextvars import ContextVar
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -518,6 +518,9 @@ class DomainRenewalView(DomainBaseView):
 
     def post(self, request, domain_pk):
 
+        start_time = time.time()
+        logger.info(f"=== START domain renewal for domain_pk={domain_pk} ===")
+
         domain = get_object_or_404(Domain, id=domain_pk)
 
         form = DomainRenewalForm(request.POST)
@@ -527,9 +530,22 @@ class DomainRenewalView(DomainBaseView):
             # check for key in the post request data
             if "submit_button" in request.POST:
                 try:
+                    renew_start = time.time()
+                    logger.info("=== Before domain.renew_domain() ===")
                     domain.renew_domain()
+
+                    renew_elapsed = time.time() - renew_start
+                    logger.info(f"=== domain.renew_domain() took {renew_elapsed:.2f} seconds ===")
+
                     messages.success(request, "This domain has been renewed for one year.")
+
+                    email_start = time.time()
+                    logger.info("=== Before send renewal notification emails ===")
                     send_domain_renewal_notification_emails(domain=domain)
+
+                    email_elapsed = time.time() - email_start
+                    logger.info(f"=== send_domain_renewal_notification_emails took {email_elapsed:.2f} seconds ===")
+
                 except Exception:
                     messages.error(
                         request,
@@ -537,6 +553,9 @@ class DomainRenewalView(DomainBaseView):
                         "please email help@get.gov if this problem persists.",
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
+
+        elapsed = time.time() - start_time
+        logger.info(f"=== END domain renewal took {elapsed:.2f} seconds total ===")
 
         # if not valid, render the template with error messages
         # passing editable and is_editable for re-render
@@ -914,20 +933,34 @@ class DomainNameserversView(DomainFormBaseView):
         self._get_domain(request)
         formset = self.get_form()
 
+        start_time = time.time()
+        logger.info(f"=== START nameservers update in POST ===")
+
         if "btn-cancel-click" in request.POST:
             url = self.get_success_url()
+            elapsed = time.time() - start_time
+            logger.info(f"=== END nameservers (cancel click) took {elapsed:.2f} seconds ===")
             return HttpResponseRedirect(url)
 
         if formset.is_valid():
             logger.debug("formset is valid")
-            return self.form_valid(formset)
+            elapsed = time.time() - start_time
+            result = self.form_valid(formset)
+            logger.info(f"=== END nameservers (form in valid)) took {elapsed:.2f} seconds ===")
+            return result
         else:
             logger.debug("formset is invalid")
             logger.debug(formset.errors)
+            elapsed = time.time() - start_time
+            logger.info(f"=== END nameservers (invalid) took {elapsed:.2f} seconds ===")
+
             return self.form_invalid(formset)
 
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
+
+        logger.info(f"=== START nameservers FORM_VALID for domain_pk={self.object.pk} ===")
+        form_valid_start = time.time()
 
         self.request.session["nameservers_form_domain"] = self.object
         initial_state = self.object.state
@@ -953,7 +986,12 @@ class DomainNameserversView(DomainFormBaseView):
                 # no server information in this field, skip it
                 pass
         try:
+            ns_start = time.time()
+            logger.info(f"=== Before setting nameservers: {nameservers} ===")
             self.object.nameservers = nameservers
+            ns_elapsed = time.time() - ns_start
+            logger.info(f"=== self.object.nameservers = nameservers took {ns_elapsed:.2f} seconds ===")
+
         except NameserverError as Err:
             # NamserverErrors *should* be caught in form; if reached here,
             # there was an uncaught error in submission (through EPP)
@@ -972,13 +1010,21 @@ class DomainNameserversView(DomainFormBaseView):
                 logger.error(f"Registry error: {Err}")
         else:
             if initial_state == Domain.State.READY:
+                email_start = time.time()
+                logger.info("=== Before sending update notification ===")
                 self.send_update_notification(formset)
+                email_elapsed = time.time() - email_start
+                logger.info(f"=== send_update_notification took {email_elapsed:.2f} seconds ===")
+
             messages.success(
                 self.request,
                 "The name servers for this domain have been updated. "
                 "Note that DNS changes could take anywhere from a few minutes to "
                 "48 hours to propagate across the internet.",
             )
+
+        form_valid_elapsed = time.time() - form_valid_start
+        logger.info(f"=== END nameservers form_valid took {form_valid_elapsed:.2f} seconds ===")
 
         # superclass has the redirect
         return super().form_valid(formset)
@@ -1143,6 +1189,9 @@ class DomainSecurityEmailView(DomainFormBaseView):
     def form_valid(self, form):
         """The form is valid, call setter in model."""
 
+        start_time = time.time()
+        logger.info(f"=== START security email update for domain_pk={self.object.pk} ===")
+
         # Set the security email from the form
         new_email: str = form.cleaned_data.get("security_email", "")
 
@@ -1159,12 +1208,19 @@ class DomainSecurityEmailView(DomainFormBaseView):
                 self.request,
                 GenericError(code=GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
             )
+            elapsed = time.time() - start_time
+            logger.info(f"=== END security email (no contact) took {elapsed:.2f} seconds ===")
             return redirect(self.get_success_url())
 
         contact.email = new_email
 
         try:
+            save_start = time.time()
+            logger.info("=== Before saving contact to registry ===")
             contact.save()
+
+            save_elapsed = time.time() - save_start
+            logger.info(f"=== contact.save() took {save_elapsed:.2f} seconds ===")
         except RegistryError as Err:
             if Err.is_connection_error():
                 messages.error(
@@ -1179,11 +1235,21 @@ class DomainSecurityEmailView(DomainFormBaseView):
             messages.error(self.request, SecurityEmailError(code=SecurityEmailErrorCodes.BAD_DATA))
             logger.error(f"Generic registry error: {Err}")
         else:
+            email_start = time.time()
+            logger.info("=== About to send update notification ===")
             self.send_update_notification(form)
+            email_elapsed = time.time() - email_start
+            logger.info(f"=== send_update_notification took {email_elapsed:.2f} seconds ===")
+
             messages.success(self.request, "The security email for this domain has been updated.")
+            elapsed = time.time() - start_time
+            logger.info(f"=== END security email (success) took {elapsed:.2f} seconds total ===")
 
             # superclass has the redirect
             return super().form_valid(form)
+
+        elapsed = time.time() - start_time
+        logger.info(f"=== END security email (error) took {elapsed:.2f} seconds ===")
 
         # superclass has the redirect
         return redirect(self.get_success_url())
