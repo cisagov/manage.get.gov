@@ -1,7 +1,7 @@
 {% extends "domain_base.html" %}
 {% load static field_helpers url_helpers %}
 
-{% block title %}Prototype DNS | {{ domain.name }} | {% endblock %}
+{% block title %}Records | {{ domain.name }} | {% endblock %}
 
 {% block domain_content %}
     {% include "includes/form_errors.html" with form=form %}
