@@ -3,6 +3,23 @@
 
 {% block title %}DNS | {{ domain.name }} | {% endblock %}
 
+{% block breadcrumb %}
+  <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>DNS</span>
+      </li>
+    </ol>
+  </nav>
+{% endblock breadcrumb %}
+
 {% block domain_content %}
 
   <h1>DNS</h1>
