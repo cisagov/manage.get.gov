@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
+from django.test import override_settings
 
 from registrar.models import Domain, DomainInformation, UserDomainRole
 from registrar.models.dns.dns_zone import DnsZone
@@ -33,7 +34,6 @@ class TestWithDNSRecordPermissions(TestWithUser):
         )
 
         self.app.set_user(self.user.username)
-        self.client.force_login(self.user)
 
     def tearDown(self):
         try:
@@ -70,10 +70,9 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         self.assertEqual(form["type_field"].value, "A")
 
     @override_flag("dns_hosting", active=True)
+    @override_settings(CSRF_COOKIE_SECURE=False)
     @less_console_noise_decorator
     def test_post_valid_creates_record_and_renders_result(self):
-        DnsZone.objects.get_or_create(name=self.domain.name)
-
         mock_record = {
             "id": "test1",
             "name": "www",
@@ -83,7 +82,12 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "comment": "Mocked record created",
         }
 
-        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+        with (
+            patch("registrar.views.domain.DnsZone.objects.filter") as mock_filter,
+            patch("registrar.views.domain.DnsHostService") as MockSvc
+        ):
+            mock_filter.return_value.exists.return_value = True
+            
             svc = MockSvc.return_value
             svc.dns_setup.return_value = ["rainbow.dns.gov", "rainbow2.dns.gov"]
             svc.register_nameservers.return_value = None
@@ -102,8 +106,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         result = form.submit(status=200)
 
         # Service calls (behavioral assertions, as validation)
-        svc.dns_setup.assert_called_once_with(self.domain_name)
-        svc.get_x_zone_id_if_zone_exists.assert_called_once_with(self.domain_name)
+        svc.dns_setup.assert_called_once_with(self.domain.name)
+        svc.get_x_zone_id_if_zone_exists.assert_called_once_with(self.domain.name)
         svc.create_and_save_record.assert_called_once()
 
         # User visible result
