@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.urls import reverse
-from django_webtest import WebTest # type: ignore
+from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 
 from registrar.models import Domain, DomainInformation, UserDomainRole
@@ -9,6 +9,7 @@ from registrar.models.dns.dns_zone import DnsZone
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
+
 
 class TestWithDNSRecordPermissions(TestWithUser):
     @less_console_noise_decorator
@@ -44,6 +45,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
             pass
         super().tearDown()
 
+
 class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     def _url(self):
         return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
@@ -62,7 +64,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             # Assert required fields exist by name
             for field in ("type_field", "name", "content", "ttl", "comment"):
                 self.assertIn(field, form.fields)
-            
+
             # Defaults check
             self.assertEqual(str(form["ttl"].value), "300")
             self.assertEqual(form["type_field"].value, "Select a type")

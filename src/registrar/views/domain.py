@@ -739,7 +739,6 @@ class DomainDNSView(DomainBaseView):
     template_name = "domain_dns.html"
 
 
-
 class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
@@ -772,7 +771,8 @@ class DomainDNSRecordForm(forms.Form):
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
-        help_text="Example: 2001:db8::1234:5678",
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
@@ -805,9 +805,17 @@ class DomainDNSRecordForm(forms.Form):
     comment = forms.CharField(
         label="Comment",
         required=False,
-        help_text="The information you enter here will not impact DNS record resolution and is meant only for your reference (500 characters max)",
+        help_text="The information you enter here will not impact DNS record resolution and \
+        is meant only for your reference (500 characters max)",
         max_length=500,
-        widget=forms.Textarea(attrs={"class": "usa-textarea", "rows": 2, "hide_character_count": True, "style": "height: 2rem; min-height: 0;"}),
+        widget=forms.Textarea(
+            attrs={
+                "class": "usa-textarea",
+                "rows": 2,
+                "hide_character_count": True,
+                "style": "height: 2rem; min-height: 0;",
+            }
+        ),
     )
 
 
