@@ -67,16 +67,13 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Install CF CLI and cg-manage-rds
+      - name: Install CF CLI
         run: | 
             wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
             echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
 
             sudo apt-get update
             sudo apt-get install cf8-cli
-            
-            # install cg-manage-rds tool
-            pip install git+https://github.com/cloud-gov/cg-manage-rds.git
       - name: Copy github info to .env
         env:
           ENVIRONMENT: getgov-${{ github.event.inputs.environment }}
@@ -86,7 +83,7 @@ jobs:
           BRANCH: ${{ github.event.inputs.branch }}
           TAG: ${{ startsWith(github.ref, 'refs/tags') && github.ref_name || '' }}
         run: |
-           bash ../../ops/scripts/write_git_info_to_env.sh
+           bash ops/scripts/write_git_info_to_env.sh
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
