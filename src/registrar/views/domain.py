@@ -30,6 +30,7 @@ from registrar.models import (
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
+    DnsRecord,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -147,6 +148,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["domain_is_deletable"] = context["is_domain_manager"] and (
             context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
         )
+        context["dns_hosting"] = flag_is_active_for_user(user, "dns_hosting")
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -736,11 +738,6 @@ class DomainDNSView(DomainBaseView):
 
     template_name = "domain_dns.html"
 
-    def get_context_data(self, **kwargs):
-        """Adds custom context."""
-        context = super().get_context_data(**kwargs)
-        context["dns_hosting"] = flag_is_active_for_user(self.request.user, "dns_hosting")
-        return context
 
 
 class DomainDNSRecordForm(forms.Form):
@@ -828,6 +825,9 @@ class DomainDNSRecordView(DomainFormBaseView):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
+        dns_zone = DnsZone.objects.filter(domain=self.object).first()
+        if dns_zone:
+            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
         return context
 
     def has_permission(self):
@@ -842,6 +842,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         return True
 
     def get_success_url(self):
+        return reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
         return reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
 
     def find_by_name(self, items, name):

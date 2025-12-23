@@ -100,11 +100,14 @@ def portfolio_permissions(request):
         multiple_on = flag_is_active(request, "multiple_portfolios")
         your_orgs_url = reverse("your-organizations")
         if multiple_on:
-            # New enterprise mode look with flag on
-            show_extended_header = is_org_user or has_choice
+            # Enterprise mode:
+            # Show extended header only when there is an org selection
+            # - user has a choices
+            # - OR user is acting as an org user with an active portfolio
+            show_extended_header = has_choice or (is_org_user and portfolio)
         else:
             # Legacy behavior when flag is off
-            show_extended_header = not (not is_org_user and request.path != your_orgs_url)
+            show_extended_header = is_org_user or request.path == your_orgs_url
 
         portfolio_context.update(
             {
