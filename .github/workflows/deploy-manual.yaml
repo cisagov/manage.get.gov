@@ -84,7 +84,7 @@ jobs:
               TAG="${{ github.ref_name }}"
            fi
            
-           bash ../../ops/scripts/write_git_info_to_en.sh "${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
+           bash ../../ops/scripts/write_git_info_to_env.sh "${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
