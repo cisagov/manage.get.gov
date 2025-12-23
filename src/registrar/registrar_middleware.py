@@ -177,8 +177,9 @@ class CheckPortfolioMiddleware:
     def _set_or_clear_portfolio(self, request):
         """Ensure session['portfolio'] is consistent with user/org state."""
 
+        # New user setup: do not set an active portfolio
         # On legacy clicks clear portfolio & stop
-        if request.GET.get(self.legacy_home) == "1":
+        if request.GET.get(self.legacy_home) == "1" or not getattr(request.user, "finished_setup", True):
             request.session.pop("portfolio", None)
             return
 

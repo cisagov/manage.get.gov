@@ -116,7 +116,7 @@ URL_PERMISSIONS = {
     # Invitation
     "invitation-cancel": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     # DNS Hosting
-    "prototype-domain-dns": [IS_STAFF],
+    "domain-dns-records": [IS_STAFF],
     # Domain request wizard
     "start": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "finished": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
