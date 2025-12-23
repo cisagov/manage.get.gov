@@ -67,6 +67,24 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
+      - name: Copy github info to .env
+        uses: cloud-gov/cg-cli-tools@main
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
+          CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ env.ENVIRONMENT }}
+          cf_command: |
+           TAG=""
+           if [[ "{{ github.ref }}" == refs/tags/* ]]; then 
+              TAG="${{ github.ref_name }}"
+           fi
+           
+           bash ../../ops/scripts/write_git_info_to_en.sh "${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
@@ -79,42 +97,3 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
           cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
-      - name: Install CF CLI and cg-manage-rds
-        run: | 
-            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
-            echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-
-            sudo apt-get update
-            sudo apt-get install cf8-cli
-            
-            # install cg-manage-rds tool
-            pip install git+https://github.com/cloud-gov/cg-manage-rds.git
-      - name: Copy github info to .env
-        env: 
-          CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-          CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
-          ENVIRONMENT: ${{ github.event.inputs.environment }}
-        run: |
-          # Authenticate 
-          CF_USER=${{ secrets[env.CF_USERNAME] }}
-          CF_PASS=${{ secrets[env.CF_PASSWORD] }}
-
-          cf api api.fr.cloud.gov
-          cf auth "$CF_USER" "$CF_PASS"
-          cf target -o cisa-dotgov -s $ENVIRONMENT
-
-          cf set-env getgov-$ENVIRONMENT GIT_BRANCH "${{ github.event.inputs.branch }}"
-          cf set-env getgov-$ENVIRONMENT GIT_COMMIT "${{ github.sha }}"
-          cf set-env getgov-$ENVIRONMENT GIT_REF "${{ github.ref }}"
-          
-          # check if there is a tag
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            cf set-env getgov-$ENVIRONMENT GIT_TAG "${{ github.ref_name }}"
-            cf set-env getgov-$ENVIRONMENT IS_TAG true
-          else 
-            cf set-env getgov-$ENVIRONMENT IS_TAG false
-          fi
-
-          #Restart to apply changes
-
-          cf restage getgov-$ENVIRONMENT
