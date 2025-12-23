@@ -78,7 +78,6 @@ jobs:
             # install cg-manage-rds tool
             pip install git+https://github.com/cloud-gov/cg-manage-rds.git
       - name: Copy github info to .env
-        uses: cloud-gov/cg-cli-tools@main
         env:
           ENVIRONMENT: getgov-${{ github.event.inputs.environment }}
           CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
