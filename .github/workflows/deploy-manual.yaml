@@ -56,6 +56,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+      - name: Compile USWDS assets
+        working-directory: ./src
+        run: |
+          docker compose run node npm install npm@latest &&
+          docker compose run node npm install &&
+          docker compose run node npx gulp copyAssets &&
+          docker compose run node npx gulp compile
+      - name: Collect static assets 
+        working-directory: ./src
+        run: docker compose run app python manage.py collectstatic --no-input
       - name: Copy github info to .env
         uses: cloud-gov/cg-cli-tools@main
         env:
@@ -73,18 +84,7 @@ jobs:
               TAG="${{ github.ref_name }}"
            fi
            
-           bash ../../ops/scripts/write_git_info_to_env.sh "${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
-      - name: Compile USWDS assets
-      - uses: actions/checkout@v5
-        working-directory: ./src
-        run: |
-          docker compose run node npm install npm@latest &&
-          docker compose run node npm install &&
-          docker compose run node npx gulp copyAssets &&
-          docker compose run node npx gulp compile
-      - name: Collect static assets 
-        working-directory: ./src
-        run: docker compose run app python manage.py collectstatic --no-input
+           bash ../../ops/scripts/write_git_info_to_env.sh "getgov-${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
