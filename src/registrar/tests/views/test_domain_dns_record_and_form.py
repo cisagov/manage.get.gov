@@ -4,6 +4,7 @@ from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 from django.test import override_settings
+from django.conf import settings
 
 from registrar.models import Domain, DomainInformation, UserDomainRole
 from registrar.models.dns.dns_zone import DnsZone
@@ -70,7 +71,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         self.assertEqual(form["type_field"].value, "A")
 
     @override_flag("dns_hosting", active=True)
-    @override_settings(CSRF_COOKIE_SECURE=False)
     @less_console_noise_decorator
     def test_post_valid_creates_record_and_renders_result(self):
         mock_record = {
@@ -95,15 +95,18 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             svc.create_and_save_record.return_value = {"result": mock_record}
         
         page = self.app.get(self._url(), status=200)
-        form = page.forms["form-container"]
+        record_form = page.forms[0]
 
-        form["type_field"] = "A"
-        form["name"] = "www"
-        form["content"] = "192.0.2.10"
-        form["ttl"] = "300"
-        form["comment"] = "hello"
+        record_form["type_field"] = "A"
+        record_form["name"] = "www"
+        record_form["content"] = "192.0.2.10"
+        record_form["ttl"] = "300"
+        record_form["comment"] = "hello"
 
-        result = form.submit(status=200)
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+        response = record_form.submit()
+        self.assertEqual(response.status_code, 200)
 
         # Service calls (behavioral assertions, as validation)
         svc.dns_setup.assert_called_once_with(self.domain.name)
@@ -111,8 +114,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         svc.create_and_save_record.assert_called_once()
 
         # User visible result
-        self.assertIn("DNS RECORD: ", result.text)
-        self.assertIn("www", result.text)
+        self.assertIn("DNS RECORD: ", response.text)
+        self.assertIn("www", response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
