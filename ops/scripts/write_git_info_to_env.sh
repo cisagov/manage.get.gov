@@ -1,9 +1,3 @@
-ENVIRONMENT=$1
-BRANCH=$2
-COMMIT=$3
-TAG=${4:-""}
-
-
 echo "Updating git info for environment in process"
 echo " Branch: $BRANCH"
 echo " Commit: $COMMIT"
