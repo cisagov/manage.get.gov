@@ -7,6 +7,7 @@
         <tr>
             <th data-sortable scope="col" role="columnheader">Name</th>
             <th data-sortable scope="col" role="columnheader">State</th>
+            {% if needs_suborg %} <th data-sortable scope="col" role="columnheader">Suborganization</th>{% endif %}
         </tr>
     </thead>
     <tbody>
@@ -21,6 +22,7 @@
                 {% else %}
                 <td data-sort-value="None"> None</td>
                 {% endif %}
+                 {% if needs_suborg %}  <td data-sort-value="{{ domain_info.sub_organization.name }}"> {{ domain_info.sub_organization.name | default:"None"}} </td> {% endif %}
             </tr>
             {% endwith %}
         {% endif %}

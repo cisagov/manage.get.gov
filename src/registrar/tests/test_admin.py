@@ -3004,6 +3004,12 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         expected_href = reverse("admin:registrar_domain_change", args=[domain_deleted.pk])
         self.assertNotContains(response, expected_href)
 
+        # We have no pending invitations message for portfolio invites not invited
+        self.assertContains(response, "Pending Invitation", count=2)
+
+        # Portfolio name appears twice(once for domain requests, once for domains)
+        self.assertContains(response, self.portfolio_1.organization_name, count=2)
+
         # Must clean up within test since MockDB is shared across tests for performance reasons
         domain_request_started_id = domain_request_started.id
         domain_request_submitted_id = domain_request_submitted.id
@@ -3041,18 +3047,96 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertNotContains(response, "Portfolio additional permissions:")
 
     @less_console_noise_decorator
-    def test_user_can_see_related_portfolios(self):
-        """Tests if a user can see the portfolios they are associated with on the user page"""
-        portfolio, _ = Portfolio.objects.get_or_create(organization_name="test", requester=self.superuser)
-        permission, _ = UserPortfolioPermission.objects.get_or_create(
+    def test_user_can_see_related_portfolios_and_no_requests_and_no_domains_tables(self):
+        """Tests if a user can see the portfolios with no domains or domain requests"""
+        portfolio, _ = Portfolio.objects.get_or_create(organization_name="TestForUser", requester=self.superuser)
+        UserPortfolioPermission.objects.get_or_create(
             user=self.superuser, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
         response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
         expected_href = reverse("admin:registrar_portfolio_change", args=[portfolio.pk])
         self.assertContains(response, expected_href)
-        self.assertContains(response, str(portfolio))
-        permission.delete()
+
+        # Check if the portfolio name appears once for domains and domain requests
+        # it should indicate there are no domains and no domain requests
+        self.assertContains(response, str(portfolio), count=2)
+        self.assertContains(response, "No domains", count=1)
+        self.assertContains(response, "No domain requests", count=1)
+        self.assertNotContains(response, '<table class="usa-table">')
+
+        # cleanup
         portfolio.delete()
+        UserPortfolioPermission.objects.filter(portfolio=portfolio).delete()
+
+    @less_console_noise_decorator
+    def test_user_no_portfolio_does_not_appear_no_requests_and_no_domains_assoc_with_no_port(self):
+        # Creating domain and domain requests with and without a portfolio
+        draft_domain_port = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
+
+        domain_req = DomainRequest.objects.create(
+            requester=self.superuser,
+            requested_domain=draft_domain_port,
+            status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+            portfolio=self.portfolio_1,
+        )
+
+        perm = UserPortfolioPermission.objects.create(
+            user=self.superuser, portfolio=self.portfolio_1, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        domain_req.submit()
+        # check that the "no portfolio" title does not appear since it has no domain requests or domains associated
+        response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
+        self.assertNotContains(response, "No portfolio")
+        self.assertContains(response, draft_domain_port.name)
+        self.assertContains(response, self.portfolio_1.organization_name)
+
+        # cleanup
+        domain_req.delete()
+        draft_domain_port.delete()
+        perm.delete()
+
+    @less_console_noise_decorator
+    def test_user_with_domains_and_requests_with_no_portfolio_and_with_portfolio(self):
+        # No portfolio domains and domain requests
+        draft_domain_no_port = DraftDomain.objects.create(name="testdomainrequestnoportfolio.gov")
+        domain_req_no_port = DomainRequest.objects.create(
+            requester=self.superuser,
+            requested_domain=draft_domain_no_port,
+            status=DomainRequest.DomainRequestStatus.SUBMITTED,
+        )
+
+        domain_no_portfolio = Domain.objects.create(name="domainnoportfolio.gov")
+        domain_info = DomainInformation.objects.create(domain=domain_no_portfolio, requester=self.superuser)
+        role = UserDomainRole.objects.create(domain=domain_no_portfolio, user=self.superuser)
+
+        # Portfolio with domain
+        # add user portfolio perm
+        perm = UserPortfolioPermission.objects.create(
+            user=self.superuser, portfolio=self.portfolio_1, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+        domain_portfolio = Domain.objects.create(name="domainportfolio.gov")
+        domain_info_2 = DomainInformation.objects.create(
+            domain=domain_portfolio, requester=self.superuser, portfolio=self.portfolio_1
+        )
+        role_2 = UserDomainRole.objects.create(domain=domain_portfolio, user=self.superuser)
+
+        response = self.app.get(reverse("admin:registrar_user_change", args=[self.superuser.pk]))
+
+        # No portfolio should have one domain and one domain request, it will appear twice
+        self.assertContains(response, "No domain requests")
+        self.assertContains(response, "No portfolio", count=2)
+        self.assertContains(response, '<table class="usa-table">', count=3)
+
+        # cleanup
+        domain_req_no_port.delete()
+        draft_domain_no_port.delete()
+        domain_no_portfolio.delete()
+        domain_portfolio.delete()
+        domain_info.delete()
+        domain_info_2.delete()
+        role.delete()
+        role_2.delete()
+        perm.delete()
 
 
 class AuditedAdminTest(TestCase):
@@ -4013,6 +4097,7 @@ class TestPortfolioAdmin(TestCase):
         response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
         self.assertEqual(response.status_code, 302)
         response = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.feb_portfolio.id]))
+
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.feb_portfolio.organization_name)
         # test whether fields are readonly or editable
@@ -4185,7 +4270,7 @@ class TestPortfolioAdmin(TestCase):
             email="thematrix@gov.gov",
         )
 
-        UserPortfolioPermission.objects.all().create(
+        user_portfolo_perm_4 = UserPortfolioPermission.objects.all().create(
             user=admin_user_4,
             portfolio=self.portfolio,
             additional_permissions=[
@@ -4194,12 +4279,23 @@ class TestPortfolioAdmin(TestCase):
             ],
         )
 
-        display_admins = self.admin.display_admins(self.portfolio)
         url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
-        self.assertIn(f'<a href="{url}">2 admins</a>', display_admins)
+        user4_portfolio_perm_url = reverse(
+            "admin:registrar_userportfoliopermission_change", args=[user_portfolo_perm_4.id]
+        )
 
-        display_members = self.admin.display_members(self.portfolio)
-        self.assertIn(f'<a href="{url}">2 basic members</a>', display_members)
+        self.client.force_login(self.staffuser)
+        portfolio_change_form = self.client.get(reverse("admin:registrar_portfolio_change", args=[self.portfolio.id]))
+
+        # members with edit requests should have a asterisk to indicate that
+        self.assertContains(portfolio_change_form, f"<a href={user4_portfolio_perm_url}>Agent Smith</a>")
+        self.assertContains(portfolio_change_form, "*", count=2)
+
+        # copy all button appears on page
+        self.assertContains(portfolio_change_form, "Copy all", count=2)
+
+        self.assertContains(portfolio_change_form, f'<a href="{url}">2 admins</a>')
+        self.assertContains(portfolio_change_form, f'<a href="{url}">2 basic members</a>')
 
     @less_console_noise_decorator
     def test_senior_official_readonly_for_federal_org(self):
