@@ -8,9 +8,10 @@ cf api api.fr.cloud.gov
 cf auth "$CF_USERNAME" "$CF_PASSWORD"
 cf target -o cisa-dotgov -s $ENVIRONMENT
 if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging"]]; then
-    APP_NAME=$ENVIRONMENT
+    APP_NAME="$ENVIRONMENT"
 else
     APP_NAME="getgov-${ENVIRONMENT}"
+fi
 
 
 cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
