@@ -67,24 +67,27 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
+      - name: Install CF CLI and cg-manage-rds
+        run: | 
+            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
+            echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+
+            sudo apt-get update
+            sudo apt-get install cf8-cli
+            
+            # install cg-manage-rds tool
+            pip install git+https://github.com/cloud-gov/cg-manage-rds.git
       - name: Copy github info to .env
         uses: cloud-gov/cg-cli-tools@main
         env:
-          ENVIRONMENT: ${{ github.event.inputs.environment }}
-          CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-          CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
-        with:
-          cf_username: ${{ secrets[env.CF_USERNAME] }}
-          cf_password: ${{ secrets[env.CF_PASSWORD] }}
-          cf_org: cisa-dotgov
-          cf_space: ${{ env.ENVIRONMENT }}
-          cf_command: |
-           TAG=""
-           if [[ "{{ github.ref }}" == refs/tags/* ]]; then 
-              TAG="${{ github.ref_name }}"
-           fi
-           
-           bash ../../ops/scripts/write_git_info_to_env.sh "getgov-${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
+          ENVIRONMENT: getgov-${{ github.event.inputs.environment }}
+          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
+          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
+          COMMIT: ${{ github.sha }}
+          BRANCH: ${{ github.event.inputs.branch }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags') && github.ref_name || '' }}
+        run: |
+           bash ../../ops/scripts/write_git_info_to_env.sh
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
