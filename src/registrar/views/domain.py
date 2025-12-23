@@ -1290,49 +1290,52 @@ class DomainAddUserView(DomainFormBaseView):
 
         # Look up a user with that email
         requested_user = get_requested_user(requested_email)
-        # NOTE: This does not account for multiple portfolios flag being set to True
         domain_org = self.object.domain_info.portfolio
 
         # requestor can only send portfolio invitations if they are staff or if they are a member
         # of the domain's portfolio
-        requestor_can_update_portfolio = (
-            UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).first() is not None
-            or requestor.is_staff
+        requestor_can_update_portfolio = requestor.is_staff or (
+            domain_org and UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).exists()
         )
 
         member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
-            # COMMENT: this code does not take into account multiple portfolios flag being set to TRUE
-
-            # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+            # determine portfolio of the domain
             # if requested_email/user is not member or invited member of this portfolio
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view
-            is_org_user = self.request.user.is_org_user(self.request)
-            if (
-                is_org_user
-                and not flag_is_active_for_user(requestor, "multiple_portfolios")
-                and domain_org is not None
-                and requestor_can_update_portfolio
-                and not member_of_this_org
-            ):
+            if domain_org and requestor_can_update_portfolio and not member_of_this_org:
                 send_portfolio_invitation_email(
-                    email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                    email=requested_email,
+                    requestor=requestor,
+                    portfolio=domain_org,
+                    is_admin_invitation=False,
                 )
                 portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-                    email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+                    email=requested_email,
+                    portfolio=domain_org,
+                    roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
+
                 messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
-                self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
+                self._handle_existing_user(
+                    requested_email,
+                    requestor,
+                    requested_user,
+                    member_of_a_different_org,
+                    domain_org=domain_org,
+                    member_of_this_org=member_of_this_org,
+                )
+
         except Exception as e:
             handle_invitation_exceptions(self.request, e, requested_email)
 
@@ -1350,7 +1353,16 @@ class DomainAddUserView(DomainFormBaseView):
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to this domain.")
 
-    def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
+    def _handle_existing_user(
+        self,
+        email,
+        requestor,
+        requested_user,
+        member_of_different_org,
+        *,
+        domain_org=None,
+        member_of_this_org=False,
+    ):
         """Handle adding an existing user to the domain."""
         if not send_domain_invitation_email(
             email=email,
@@ -1360,11 +1372,31 @@ class DomainAddUserView(DomainFormBaseView):
             requested_user=requested_user,
         ):
             messages.warning(self.request, "Could not send email notification to existing domain managers.")
-        UserDomainRole.objects.create(
+        UserDomainRole.objects.get_or_create(
             user=requested_user,
             domain=self.object,
             role=UserDomainRole.Roles.MANAGER,
         )
+
+        # If the domain belongs to a portfolio, ensure the user is a Basic member of that portfolio too.
+        if domain_org and not member_of_this_org:
+            # retrieving an existing invitation or permission.
+            portfolio_invitation = PortfolioInvitation.objects.filter(
+                email__iexact=email,
+                portfolio=domain_org,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).first()
+
+            if portfolio_invitation:
+                portfolio_invitation.retrieve()
+                portfolio_invitation.save()
+            else:
+                UserPortfolioPermission.objects.get_or_create(
+                    user=requested_user,
+                    portfolio=domain_org,
+                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+                )
+
         messages.success(self.request, f"Added user {email}.")
 
 
