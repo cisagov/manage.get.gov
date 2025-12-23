@@ -50,21 +50,79 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     def _url(self):
         return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
 
-        @override_flag("dns_hosting", active=True)
-        @less_console_noise_decorator
-        def test_get_renders_page_and_form_fields(self):
-            page = self.app.get(self._url(), status=200)
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_renders_page_and_form_fields(self):
+        page = self.app.get(self._url(), status=200)
 
-            self.assertIn("Records", page.text)
-            self.assertIn("Add Record", page.text)
+        self.assertIn("Records", page.text)
+        self.assertIn("Add record", page.text)
 
-            # form exists, even if hidden by Alpine
-            form = page.forms["form-container"]
+        # form exists, even if hidden by Alpine
+        form = page.forms["form-container"]
 
-            # Assert required fields exist by name
-            for field in ("type_field", "name", "content", "ttl", "comment"):
-                self.assertIn(field, form.fields)
+        # Assert required fields exist by name
+        for field in ("type_field", "name", "content", "ttl", "comment"):
+            self.assertIn(field, form.fields)
 
-            # Defaults check
-            self.assertEqual(str(form["ttl"].value), "300")
-            self.assertEqual(form["type_field"].value, "Select a type")
+        # Defaults check
+        self.assertEqual(str(form["ttl"].value), "300")
+        self.assertEqual(form["type_field"].value, "A")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_valid_creates_record_and_renders_result(self):
+        DnsZone.objects.get_or_create(name=self.domain.name)
+
+        mock_record = {
+            "id": "test1",
+            "name": "www",
+            "type": "A",
+            "content": "192.0.2.10",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        }
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.dns_setup.return_value = ["rainbow.dns.gov", "rainbow2.dns.gov"]
+            svc.register_nameservers.return_value = None
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
+            svc.create_and_save_record.return_value = {"result": mock_record}
+        
+        page = self.app.get(self._url(), status=200)
+        form = page.forms["form-container"]
+
+        form["type_field"] = "A"
+        form["name"] = "www"
+        form["content"] = "192.0.2.10"
+        form["ttl"] = "300"
+        form["comment"] = "hello"
+
+        result = form.submit(status=200)
+
+        # Service calls (behavioral assertions, as validation)
+        svc.dns_setup.assert_called_once_with(self.domain_name)
+        svc.get_x_zone_id_if_zone_exists.assert_called_once_with(self.domain_name)
+        svc.create_and_save_record.assert_called_once()
+
+        # User visible result
+        self.assertIn("DNS RECORD: ", result.text)
+        self.assertIn("www", result.text)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_invalid_shows_form_errors(self):
+        page = self.app.get(self._url(), status=200)
+        form = page.forms["form-container"]
+
+        form["type_field"] = "A"
+        form["name"] = ""
+        form["content"] = "not-an-ip"
+
+        result = form.submit(status=200)
+
+        self.assertIn("Name", result.text)
+        self.assertIn("IPv4 Address", result.text)
+
+
