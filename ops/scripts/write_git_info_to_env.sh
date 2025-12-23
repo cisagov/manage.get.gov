@@ -7,8 +7,14 @@ echo "Authenticating"
 cf api api.fr.cloud.gov
 cf auth "$CF_USERNAME" "$CF_PASSWORD"
 cf target -o cisa-dotgov -s $ENVIRONMENT
-cf set-env $ENVIRONMENT GIT_BRANCH "$BRANCH"
-cf set-env $ENVIRONMENT GIT_COMMIT "$COMMIT"
-cf set-env $ENVIRONMENT GIT_TAG "$TAG"
+if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging"]]; then
+    APP_NAME=$ENVIRONMENT
+else
+    APP_NAME="getgov-${ENVIRONMENT}"
+
+
+cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
+cf set-env $APP_NAME GIT_COMMIT "$COMMIT"
+cf set-env $APP_NAME GIT_TAG "$TAG"
 
 echo "Git info Updated for $ENVIRONMENT"

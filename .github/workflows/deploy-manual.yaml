@@ -76,7 +76,7 @@ jobs:
             sudo apt-get install cf8-cli
       - name: Copy github info to .env
         env:
-          ENVIRONMENT: getgov-${{ github.event.inputs.environment }}
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
           CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
           CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
           COMMIT: ${{ github.sha }}
