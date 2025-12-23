@@ -748,13 +748,14 @@ class DomainDNSRecordForm(forms.Form):
 
     type_field = forms.ChoiceField(
         label="Type",
-        choices=[("A", "A")],
+        choices=[("", "Select a type"), ("A", "A")],
         initial="A",
         required=True,
         widget=forms.Select(
             attrs={
                 "class": "usa-select",
                 "required": "required",
+                "x-model": "recordType",
             }
         ),
     )
@@ -797,7 +798,6 @@ class DomainDNSRecordForm(forms.Form):
         ],
         initial=300,
         required=False,
-        help_text="\u00a0",
         widget=forms.Select(
             attrs={
                 "class": "usa-select",
@@ -810,7 +810,7 @@ class DomainDNSRecordForm(forms.Form):
         required=False,
         help_text="The information you enter here will not impact DNS record resolution and is meant only for your reference (500 characters max)",
         max_length=500,
-        widget=forms.Textarea(attrs={"class": "usa-textarea", "rows": 2, "hide_character_count": True}),
+        widget=forms.Textarea(attrs={"class": "usa-textarea", "rows": 2, "hide_character_count": True, "style": "height: 2rem; min-height: 0;"}),
     )
 
 

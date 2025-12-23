@@ -3,12 +3,31 @@
 
 {% block title %}DNS | {{ domain.name }} | {% endblock %}
 
+{% block breadcrumb %}
+    <!-- Navigation breadcrumbs -->
+  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
+    <ol class="usa-breadcrumb__list">
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item">
+        <a href="{% url 'domain-dns' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
+      </li>
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>Records</span>
+      </li>
+    </ol>
+  </nav>
+{% endblock breadcrumb %}
+
 {% block domain_content %}
 
     {% include "includes/form_errors.html" with form=form %}
-    {% csrf_token %}
 
-    <div x-data="{ show_form: false }">
+    <div x-data="{ show_form: false, recordType: '' }">
         <div class="display-flex flex-align-center">
             <div class="grid-col">
                 <h1>Records</h1>
@@ -45,37 +64,40 @@
                         x-cloak
                         x-show="show_form"
                     >
+                        {% csrf_token %}
                         <h2 class="margin-top-0">Add record</h2>
 
                         <div class="grid-col-4">
                             {% input_with_errors form.type_field %}        
                         </div>
 
-                        {% input_with_errors form.name %}    
-                        <div class="grid-row grid-gap">
-                            <div class="grid-col-8">
-                                {% input_with_errors form.content %}
+                        <div x-cloak x-show="recordType">
+                            {% input_with_errors form.name %}    
+                            <div class="grid-row grid-gap flex-align-end">
+                                <div class="grid-col-8">
+                                    {% input_with_errors form.content %}
+                                </div>
+                                <div class="grid-col-4">
+                                    {% input_with_errors form.ttl %}        
+                                </div>
                             </div>
-                            <div class="grid-col-4">
-                                {% input_with_errors form.ttl %}        
-                            </div>
-                        </div>
-                    
-                        {% input_with_errors form.comment %}
+                        
+                            {% input_with_errors form.comment %}
 
-                        <button
-                                type="submit"
-                                class="usa-button"
+                            <button
+                                    type="submit"
+                                    class="usa-button"
+                                >
+                                    Save
+                            </button>
+                            <button
+                                type="button"
+                                class="usa-button usa-button--outline"
+                                x-on:click="show_form = false"
                             >
-                                Save
-                        </button>
-                        <button
-                            type="button"
-                            class="usa-button usa-button--outline"
-                            x-on:click="show_form = false"
-                        >
-                            Cancel
-                        </button>
+                                Cancel
+                            </button>
+                        </div>
                     </form>
                 </div>
              </div>
