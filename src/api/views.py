@@ -16,7 +16,6 @@ from login_required import login_not_required
 from cachetools.func import ttl_cache
 
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
-from django.conf import settings
 
 
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
