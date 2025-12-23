@@ -36,11 +36,11 @@
             </div>
     </button>
     {% elif type == "organizations_nav_menu" %}
-        <button
+    <input type="hidden" name="portfolio_id" value="{{ portfolio.id }}">
+    
+    <button
         type="submit"
         class="usa-button organization-button"
-        name="portfolio_id"
-        value="{{portfolio.id}}"
         >
             <div class="usa-nav-link-text font-ui-xs">
                 <div class="grid-container padding-left-0 padding-right-0">
