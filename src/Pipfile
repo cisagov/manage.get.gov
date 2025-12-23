@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "==4.2.26"
+django = "==5.2"
 cfenv = "*"
 django-cors-headers = "*"
 pycryptodomex = "*"
@@ -21,11 +21,10 @@ whitenoise = "*"
 django-widget-tweaks = "*"
 cachetools = "*"
 requests = "*"
-django-fsm = "2.8.1"
+django-fsm-2 = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
 typing-extensions ='*'
-django-login-required-middleware = "*"
 greenlet = "*"
 gevent = "*"
 fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
