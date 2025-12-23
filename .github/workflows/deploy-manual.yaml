@@ -74,8 +74,8 @@ jobs:
            fi
            
            bash ../../ops/scripts/write_git_info_to_env.sh "${github.event.inputs.environment}" "${github.event.inputs.branch}" "${{ github.sha }}" "$TAG"
-            - uses: actions/checkout@v5
       - name: Compile USWDS assets
+      - uses: actions/checkout@v5
         working-directory: ./src
         run: |
           docker compose run node npm install npm@latest &&
