@@ -71,8 +71,8 @@ env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
 
 # Github info
 
-GIT_BRANCH = env.str("GIT_BRANCH", "")
-GIT_COMMIT_HASH = env.str("GIT_COMMIT", "")
+GIT_BRANCH = env.str("GIT_BRANCH", "Unknown")
+GIT_COMMIT_HASH = env.str("GIT_COMMIT", "Unknown")
 GIT_TAG = env.str("GIT_TAG", "")
 
 

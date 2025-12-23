@@ -5,16 +5,15 @@
 
 <body>
     <h1>Build Info</h1>
-    {% if git_branch %}
-        <p> Running on branch: <strong> {{ git_branch }} </strong></p>
-    {% endif %}
     
-    {% if git_commit_hash %}
-        <p> Commit hash: <strong> {{ git_commit_hash }}</strong></p>
-    {% endif %}
+    <p> Running on branch: <strong> {{ git_branch }} </strong></p>
+  
+    
+    <p> Commit hash: <strong> {{ git_commit_hash }}</strong></p>
+    
 
     {% if git_tag %}
        <p>  Git tag(s): <strong>{{ git_tag }}</strong></p>
     {% endif %}
-    
+
 </body>
