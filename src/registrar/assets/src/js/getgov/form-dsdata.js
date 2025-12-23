@@ -278,7 +278,8 @@ export class DSDataForm {
             if (deleteInput) {
                 deleteInput.checked = true;
             }
-            document.querySelector("form").submit();
+            const form = editRow.closest("form");
+            if (form) form.submit();
         };
         // Check if at least 2 DS data records exist before the delete row action is taken
         const thirdDSData = document.getElementById('id_form-2-key_tag')

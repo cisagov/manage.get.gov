@@ -330,7 +330,8 @@ export class NameserverForm {
                 textInputs.forEach(input => {
                     input.value = "";
                 });
-                document.querySelector("form").submit();
+                const form = editRow.closest("form");
+                if (form) form.submit();
             };
             let modalTrigger = document.querySelector('#delete_trigger');
             if (modalTrigger) {
