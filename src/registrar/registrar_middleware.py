@@ -142,7 +142,6 @@ class CheckPortfolioMiddleware:
         self.legacy_home = "legacy_home"
 
         self.select_portfolios_page = reverse("your-organizations")
-        self.set_portfolio_page = reverse("set-session-portfolio")
         self.setup_page = reverse("finish-user-profile-setup")
         self.profile_page = reverse("user-profile")
         self.logout_page = reverse("logout")
@@ -152,7 +151,6 @@ class CheckPortfolioMiddleware:
             self.logout_page,
             self.profile_page,
             self.select_portfolios_page,
-            self.set_portfolio_page,
             "/admin",
             # These are here as there is a bug with this middleware that breaks djangos built in debug console.
             # The debug console uses this directory, but since this overrides that, it throws errors.
@@ -281,7 +279,7 @@ class CheckPortfolioMiddleware:
             return None
 
         # Always ensure portfolio is set/kept in sync (but with clear logic above)
-        # (Skip admin/debug/data APIs/set-session-portfolio; only do this for HTML page loads)
+        # (Skip admin/debug/data APIs; only do this for HTML page loads)
         if not self._is_excluded(request.path) and not self._is_data_api(request):
             self._set_or_clear_portfolio(request)
 

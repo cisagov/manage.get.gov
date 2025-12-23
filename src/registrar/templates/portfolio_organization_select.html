@@ -1,7 +1,7 @@
 <form
     id="set-session-portfolio-form-{{ forloop.counter }}" 
     method="post"
-    action="{% url 'set-session-portfolio' %}"
+    action="{% url 'your-organizations' %}"
     name="{{portfolio.organization_name}}"
 >
     {% csrf_token %}
@@ -9,8 +9,8 @@
     <button
         type="submit"
         class="usa-card__container margin-left-0"
-        name="set_session_portfolio_button"
-        value="{{portfolio.organization_name}}"
+        name="portfolio_id"
+        value="{{portfolio.id}}"
     >
             <div class="usa-card__header">
                 <h2 class="usa-card__heading">
@@ -38,11 +38,11 @@
     {% elif type == "organizations_nav_menu" %}
         <button
         type="submit"
-        class="usa-button usa-nav-link organization-button"
-        name="set_session_portfolio_button"
-        value="{{portfolio.organization_name}}"
+        class="usa-button organization-button"
+        name="portfolio_id"
+        value="{{portfolio.id}}"
         >
-            <a class="font-ui-xs">
+            <div class="usa-nav-link-text font-ui-xs">
                 <div class="grid-container padding-left-0 padding-right-0">
                     <div class="grid-row flex-align-center">
                         <div class="grid-col-auto height-3 flex-align-self-start">
@@ -66,7 +66,7 @@
                         </div>
                     </div>
                 </div>
-            </a>
+            </div>
         </button>
     {% endif %}
 </form>

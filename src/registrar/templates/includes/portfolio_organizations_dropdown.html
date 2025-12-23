@@ -5,7 +5,7 @@
         <div class="usa-accordion__heading usa-nav__secondary-menu">
             <button
             class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
-            id="organizations-menu"
+            id="organizations-menu-desktop"
             aria-controls="organizations-submenu"
             aria-expanded="false"
             aria-label="organizations-menu"
@@ -13,19 +13,21 @@
                 <span class="ellipsis usa-nav__username">Organizations</span>
             </button>
         </div>
-        <div id="organizations-submenu" class="usa-nav__submenu">
+        <ul id="organizations-submenu" class="usa-nav__submenu">
             {% for user_portfolio_permission in user_portfolio_permissions %}
-            <div class="usa-nav__submenu-item usa-nav-link">
-                {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_nav_menu" %}
+                <li class="usa-nav__submenu-item">
+                    {% include "portfolio_organization_select.html" with portfolio=user_portfolio_permission.portfolio type="organizations_nav_menu" %}
+                </li>
             {% endfor %}
-                {% if has_legacy_domain %}
-                <a class="usa-nav-link organization-button" href="{% url 'home' %}?legacy_home=1">
-                    <span>
-                        {{ request.user.email }}’s account
-                    </span>
-                </a>  
-                {% endif %}    
-        </div>
+
+            {% if has_legacy_domain %}
+                <li class="usa-nav__submenu-item">
+                    <a class="usa-nav-link organization-button" href="{% url 'home' %}?legacy_home=1">
+                        <span>{{ request.user.email }}’s account</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
     </div>
 </li>
 {% for user_portfolio_permission in user_portfolio_permissions %}
@@ -34,7 +36,7 @@
         <div class="usa-accordion__heading usa-nav__secondary-menu">
             <button
             class="usa-button usa-nav__link usa-accordion__button navmenu-dropdown-button" 
-            id="organizations-menu"
+            id="organizations-menu-mobile-{{ forloop.counter }}"        
             aria-controls="portfolio-{{ forloop.counter }}"
             aria-expanded="false"
             aria-label="organizations-menu"

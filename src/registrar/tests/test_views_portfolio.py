@@ -24,7 +24,6 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from registrar.views.portfolios import PortfolioOrganizationSelectView
 from .common import (
     MockEppLib,
     MockSESClient,
@@ -4933,11 +4932,17 @@ class TestPortfolioSelectOrganizationView(WebTest):
     @override_flag("multiple_portfolios", active=True)
     def test_select_portfolio_page_updates_session_portfolio(self):
         """Tests that select organization page updates portfolio in session."""
-        with patch.object(PortfolioOrganizationSelectView, "get_form", self.custom_portfolio_get_form):
-            self.client.post(reverse("set-session-portfolio"))
+        resp = self.client.post(
+            reverse("your-organizations"),
+            data={"portfolio_id": self.portfolio_2.id},
+            follow=False,
+        )
 
-        # Access the session via the request
+        self.assertIn(resp.status_code, (302, 303))
+
         active_portfolio = self.client.session.get("portfolio")
+        self.assertIsNotNone(active_portfolio)
+        self.assertEqual(active_portfolio.id, self.portfolio_2.id)
         self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")
 
 

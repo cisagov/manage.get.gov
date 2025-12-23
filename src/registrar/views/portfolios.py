@@ -1,7 +1,7 @@
 import json
 import logging
 
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -1197,35 +1197,6 @@ class PortfolioAddMemberView(DetailView, FormMixin):
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
-class PortfolioOrganizationsDropdownView(ListView, FormMixin):
-    """
-    View for Organizations dropdown.
-    Actual session switching is handled in PortfolioOrganizationSelectView.
-    """
-
-    model = UserPortfolioPermission
-    template_name = "portfolio_organizations_dropdown.html"
-    context_object_name = "portfolio"
-    pk_url_kwarg = "portfolio_pk"
-    form_class = portfolioForms.PortfolioOrganizationSelectForm
-
-    def get(self, request):
-        """Add additional context data to the template."""
-        return render(request, "portfolio_organizations.html", context=self.get_context_data())
-
-    def get_context_data(self, **kwargs):
-        """Add additional context data to the template."""
-        # We can override the base class. This view only needs this item.
-        context = {}
-        user_portfolio_permissions = UserPortfolioPermission.objects.filter(user=self.request.user).order_by(
-            "portfolio"
-        )
-        context["user_portfolio_permissions"] = user_portfolio_permissions
-        context["has_legacy_domain"] = self.request.user.has_legacy_domain()
-        return context
-
-
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
 class PortfolioOrganizationsView(ListView, FormMixin):
     """
     View for Select Portfolio Organization page when the user does not
@@ -1237,7 +1208,6 @@ class PortfolioOrganizationsView(ListView, FormMixin):
     template_name = "portfolio_organizations.html"
     context_object_name = "portfolio"
     pk_url_kwarg = "portfolio_pk"
-    form_class = portfolioForms.PortfolioOrganizationSelectForm
 
     def get(self, request):
         """Add additional context data to the template."""
@@ -1258,57 +1228,30 @@ class PortfolioOrganizationsView(ListView, FormMixin):
         """
         Handles updating active portfolio in session.
         """
-        self.object = self.get_object()
-        self.form = self.get_form()
+        portfolio_id = request.POST.get("portfolio_id")
+        if not portfolio_id:
+            return JsonResponse({"error": "Missing portfolio"}, status=400)
 
+        perm = (
+            UserPortfolioPermission.objects.filter(user=request.user, portfolio_id=portfolio_id)
+            .select_related("portfolio")
+            .first()
+        )
+        if not perm:
+            raise Http404("Portfolio not found")
 
-@grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
-class PortfolioOrganizationSelectView(DetailView, FormMixin):
-    """
-    View that displays an individual portfolio object and sets
-    active session portfolio to said portfolio when selected.
-    """
+        request.session["portfolio"] = perm.portfolio
 
-    model = UserPortfolioPermission
-    template_name = "portfolio_organization_select.html"
-    context_object_name = "portfolio"
-    form_class = portfolioForms.PortfolioOrganizationSelectForm
-    pk_url_kwarg = "portfolio_pk"
+        logger.info(
+            "Portfolio switched",
+            extra={
+                "user_id": request.user.id,
+                "portfolio": perm.portfolio_id,
+            },
+        )
 
-    def get(self, request):
-        """
-        Prevent user from calling this view directly.
-        View already requires a form to change session and verifies user has permission
-        to call this on passed portfolio, but added for additional protections.
-        """
-        return JsonResponse({"error": "You cannot access this page directly"}, status=404)
-
-    def post(self, request):
-        """
-        Handles updating active portfolio in session.
-        """
-        self.form = self.get_form()
-        portfolio_button = self.form["set_session_portfolio_button"]
-        portfolio_name = portfolio_button.value()
-        portfolio = Portfolio.objects.get(organization_name=portfolio_name)
-
-        # Verify user has permissions to access selected portfolio
-        portfolio_permission = UserPortfolioPermission.objects.filter(portfolio=portfolio, user=request.user).first()
-        if not portfolio_permission:
-            return JsonResponse({"error": "Invalid user portfolio permission"}, status=403)
-        if portfolio_permission.user != request.user:
-            return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
-
-        portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
-        request.session["portfolio"] = portfolio
-        logger.info(f"Successfully set active portfolio to {portfolio}")
-        return self._handle_success_response(request, portfolio)
-
-    def _handle_success_response(self, request, portfolio):
-        """
-        Return a success response (JSON or redirect with messages).
-        """
-        success_message = f"You set your active portfolio to {portfolio}."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": success_message}, status=200)
-        return redirect(reverse("domains"))
+            return HttpResponse(status=204)
+
+        next_url = request.POST.get("next") or reverse("domains")
+        return redirect(next_url)

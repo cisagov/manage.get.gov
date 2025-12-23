@@ -639,45 +639,73 @@ button {
 }
 
 #organizations-submenu {
+
+  padding-left: 0;
+  margin-left: 0;
+  list-style: none;
+
+  @include at-media($theme-header-min-width) {
+    width: 20rem;
+  }
+
+  @include at-media-max($theme-header-min-width) {
+    .usa-tag { display: none !important; }
+  }
+
+  form {
+    margin: 0;
+    width: 100%;
+  }
+
+  .usa-nav__submenu-item {
+    padding: 0;
+    margin: 0;
+  }
+
+  button,
+  button:hover {
+    background-color: inherit;
+  }
+
+  button {
+    font-size: 1rem;
+    font-weight: font-weight("normal");
+    justify-content: flex-start;
+    border-radius: 0;
+    outline-offset: 0;
+
+    padding: 0;
+    margin: 0;
+    width: 100%;
+
+    text-align: left;
+    display: block;
+    text-decoration: none;
+  }
+
+  // old <a> padding behavior
+  button .usa-nav-link-text {
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    padding: units(1.5) units(2);  // recreates anchor spacing
+
     @include at-media($theme-header-min-width) {
-        width: 20rem;
+      font-size: 1rem;
+      color: #{$dhs-light-blue-15};
     }
+  }
 
-    @include at-media-max($theme-header-min-width) {
-        .usa-tag {
-            display: none !important;
-        }
+  @include at-media($theme-header-min-width) {
+    button:hover .usa-nav-link-text {
+      text-decoration: underline;
     }
+  }
 
-    button,
-    button:hover {
-        background-color: inherit;
-    }
-
-    button {
-        font-size: 1rem;
-        font-weight: font-weight("normal");
-        justify-content: flex-start;
-        border-radius: 0;
-        outline-offset: 0;
-        padding: 0 0;
-        margin-right: 0;
-        width: 100%;
-        a {
-            margin-right: auto;
-            text-align: left;
-            width: 100%;
-            @include at-media($theme-header-min-width) {
-                font-size: 1rem;
-                color: #{$dhs-light-blue-15};
-            }
-        }
-        @include at-media($theme-header-min-width) {
-            &:hover {
-                text-decoration: underline;
-            }
-        }
-    }
+  button.usa-button {
+    text-decoration: none;
+  }
 }
 
 .organizations-page-wrapper {

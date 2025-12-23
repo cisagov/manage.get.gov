@@ -499,11 +499,3 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
             # Errors denoted as "__all__" are special error types reserved for the model level clean function
             if override_error and "__all__" in self._errors:
                 del self._errors["__all__"]
-
-
-class PortfolioOrganizationSelectForm(forms.Form):
-    """
-    Form to update active session portfolio.
-    """
-
-    set_session_portfolio_button = forms.CharField()
