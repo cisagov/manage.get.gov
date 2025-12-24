@@ -1,5 +1,3 @@
-from django.http import HttpResponse
-from django.conf import settings
 from login_required import login_not_required
 from django.shortcuts import render
 import os
