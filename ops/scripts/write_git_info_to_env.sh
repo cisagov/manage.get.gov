@@ -47,7 +47,7 @@ if [ $IS_CI = true ]; then
 fi
  
 echo "Setting env variables"
-cf target cisa-dotgov -s "$ENVIRONMENT"
+cf target -s "$ENVIRONMENT"
 cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
 cf set-env $APP_NAME GIT_COMMIT "$COMMIT"
 cf set-env $APP_NAME GIT_TAG "$TAG"
