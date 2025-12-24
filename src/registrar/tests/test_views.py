@@ -57,8 +57,8 @@ class TestHealthPageView(TestCase):
     @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT": "abcdef123456", "GIT_TAG": "v1.0.0"})
     def test_health_contains_git_info(self):
         response = self.client.get("/health")
-
-        self.assertContains(response, status_code=200)
+  
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "main")
         self.assertContains(response, "abcdef123456")
         self.assertContains(response, "v1.0.0")
@@ -73,7 +73,7 @@ class TestHealthPageView(TestCase):
     def test_healh_contains_git_info_without_tag(self):
         response = self.client.get("/health")
 
-        self.assertContains(response, status_code=200)
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "another-branch")
         self.assertContains(response, "bcdefg234567")
         self.assertNotContains(response, "Git tag(s)")

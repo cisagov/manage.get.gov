@@ -29,23 +29,20 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Install CF CLI
-        run: | 
-            wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
-            echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
-
-            sudo apt-get update
-            sudo apt-get install cf8-cli
-      - name: Copy github info to .env
+      - name: Copy to github info
+        uses: cloud-gov/cg-cli-tools@main
         env:
-          ENVIRONMENT: ${{ github.event.inputs.environment }}
-          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
-          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
+          ENVIRONMENT: staging
           COMMIT: ${{ github.sha }}
-          BRANCH: ${{ github.event.inputs.branch }}
+          BRANCH: main
           TAG: ${{ startsWith(github.ref, 'refs/tags') && github.ref_name || '' }}
-        run: |
-           bash ops/scripts/write_git_info_to_env.sh
+        with:
+          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
+          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
+          cf_org: cisa-dotgov
+          cf_space: staging
+          cf_command: |
+              bash ops/scripts/write_git_info_to_env.sh
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         with:
