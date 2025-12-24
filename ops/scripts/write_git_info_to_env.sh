@@ -1,6 +1,6 @@
 #!/bin/sh
 # Running locally,
-# Assumptions: Already logged into the cloud.gov cli
+# Assumptions: Already logged into the cloud.gov cli 
 # Notes: 
 # Script restages app at the end to update changes
 # Versioning info can be found at url: /health
@@ -11,7 +11,7 @@
 # export TAG="tag"
 # 
 
-if [ "$GITHUB_ACTIONS" = true]; then
+if [ $GITHUB_ACTIONS = true]; then
     echo "Running in Github Actions"
     IS_CI=true
 else
@@ -19,7 +19,7 @@ else
     IS_CI=false
 fi
 
-if ["$IS_CI" = true ]; then
+if [ $IS_CI = true ]; then
     echo "Installing CF CLI ...."
     wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
     echo "deb [signed-by=/usr/share/keyrings/cli.cloudfoundry.org.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
