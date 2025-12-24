@@ -11,6 +11,7 @@
 # export TAG="tag"
 # 
 
+echo "$GITHUB_ACTIONS"
 if [ "$GITHUB_ACTIONS" = "true"]; then
     echo "Running in Github Actions"
     IS_CI=true
