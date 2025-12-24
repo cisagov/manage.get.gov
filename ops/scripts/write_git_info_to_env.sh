@@ -44,9 +44,10 @@ if [ $IS_CI = true ]; then
     echo "Authenticating..."
     cf api api.fr.cloud.gov
     cf auth "$CF_USERNAME" "$CF_PASSWORD"
-    cf target cisa-dotgov -s "$ENVIRONMENT"
 fi
-
+ 
+echo "Setting env variables"
+cf target cisa-dotgov -s "$ENVIRONMENT"
 cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
 cf set-env $APP_NAME GIT_COMMIT "$COMMIT"
 cf set-env $APP_NAME GIT_TAG "$TAG"

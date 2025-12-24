@@ -70,10 +70,10 @@ jobs:
       - name: Copy github info to .env
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
-          CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
-          CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
+          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
           COMMIT: ${{ github.sha }}
-          BRANCH: ${{ github.event.inputs.branch }}
+          BRANCH: ${{ github.ref_name }}
         run: |
            bash ops/scripts/write_git_info_to_env.sh
       - name: Deploy to cloud.gov sandbox
