@@ -30,18 +30,15 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Copy to github info
-        uses: cloud-gov/cg-cli-tools@main
         env:
           ENVIRONMENT: staging
           COMMIT: ${{ github.sha }}
           BRANCH: main
           TAG: ${{ startsWith(github.ref, 'refs/tags') && github.ref_name || '' }}
-        with:
-          cf_username: ${{ secrets.CF_STAGING_USERNAME }}
-          cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
-          cf_org: cisa-dotgov
-          cf_space: staging
-          cf_command: sh ops/scripts/write_git_info_to_env.sh
+          CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
+        run: |
+          bash ops/scripts/write_git_info_to_env.s
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         with:
