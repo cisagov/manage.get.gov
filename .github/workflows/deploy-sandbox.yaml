@@ -63,9 +63,9 @@ jobs:
           cf_space: ${{ env.ENVIRONMENT }}
           cf_command: |
             APP_NAME="getgov-${ENVIRONMENT}"
-            cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
-            cf set-env $APP_NAME GIT_COMMIT "$COMMIT"
-            cf set-env $APP_NAME GIT_TAG "$TAG"
+            cf set-env "getgov-$ENVIRONMENT" GIT_BRANCH "$BRANCH"
+            cf set-env "getgov-$ENVIRONMENT"  GIT_COMMIT "$COMMIT"
+            cf set-env "getgov-$ENVIRONMENT"  GIT_TAG "$TAG"
             echo "Git info written to file"
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
