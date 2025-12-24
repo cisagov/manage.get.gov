@@ -53,7 +53,7 @@ jobs:
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
           COMMIT: ${{ github.sha }}
-          BRANCH: ${{ needs.variables.outputs.branch }}
+          BRANCH: ${{ github.ref_name }}
           TAG: ${{ startsWith(github.ref, 'refs/tags') && github.ref_name || '' }}
         run: |
            bash ops/scripts/write_git_info_to_env.sh

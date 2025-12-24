@@ -10,8 +10,9 @@
 # export COMMIT="commit"
 # export TAG="tag"
 # 
+set -euo pipefail
 
-if [ $GITHUB_ACTIONS = true ]; then
+if [[ -n "${GITHUB_ACTIONS:-}" && $GITHUB_ACTIONS = true ]]; then
     echo "Running in Github Actions"
     IS_CI=true
 else
@@ -39,7 +40,7 @@ else
     APP_NAME="getgov-${ENVIRONMENT}"
 fi
 
-if ["$IS_CI" = true ]; then
+if [ $IS_CI = true ]; then
     echo "Authenticating..."
     cf api api.fr.cloud.gov
     cf auth "$CF_USERNAME" "$CF_PASSWORD"
@@ -52,7 +53,7 @@ cf set-env $APP_NAME GIT_TAG "$TAG"
 
 echo "Git info Updated for $ENVIRONMENT"
 
-if [ "$IS_CI" = false ]; then
-    echo "app is restaging for changes to take effect"
-    cf restage "getgov-$ENVIRONMENT"
-fi
+# if [ "$IS_CI" = false ]; then
+#     echo "app is restaging for changes to take effect"
+#     cf restage "getgov-$ENVIRONMENT"
+# fi
