@@ -1,3 +1,5 @@
+#!/bin/sh
+
 echo "Updating git info for environment in process"
 echo " Branch: $BRANCH"
 echo " Commit: $COMMIT"
