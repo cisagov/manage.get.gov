@@ -61,11 +61,10 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
-          cf_command: 
+          cf_command: |
             set-env "getgov-$ENVIRONMENT" GIT_BRANCH "$BRANCH"
-            set-env "getgov-$ENVIRONMENT"  GIT_COMMIT "$COMMIT"
-            set-env "getgov-$ENVIRONMENT"  GIT_TAG "$TAG"
-            echo "Git info written to file"
+            set-env "getgov-$ENVIRONMENT" GIT_COMMIT "$COMMIT"
+            set-env "getgov-$ENVIRONMENT" GIT_TAG "$TAG"
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:
