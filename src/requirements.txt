@@ -1,4 +1,4 @@
--i https://pypi.python.org/simple
+-i https://pypi.org/simple
 annotated-types==0.7.0; python_version >= '3.8'
 anyio==4.11.0; python_version >= '3.9'
 asgiref==3.11.0; python_version >= '3.9'
