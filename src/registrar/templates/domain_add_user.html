@@ -3,39 +3,9 @@
 
 {% block title %}Add a domain manager | {% endblock %}
 
-
   {% block breadcrumb %}
-    {% if portfolio %}
-    <!-- Navigation breadcrumbs -->
-    <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-      <ol class="usa-breadcrumb__list">
-        <li class="usa-breadcrumb__list-item">
-          <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item">
-          <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item">
-          <a href="{% url 'domain-users' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>Domain managers</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-          <span>Add a domain manager</span>
-        </li>
-      </ol>
-    </nav>
-    {% else %}
-    {% url 'domain-users' domain_pk=domain.id as url %}
-    <nav class="usa-breadcrumb padding-top-0" aria-label="Domain manager breadcrumb">
-      <ol class="usa-breadcrumb__list">
-        <li class="usa-breadcrumb__list-item">
-          <a href="{{ url }}" class="usa-breadcrumb__link"><span>Domain managers</span></a>
-        </li>
-        <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-          <span>Add a domain manager</span>
-        </li>
-      </ol>
-    </nav>
-    {% endif %}
+  <!-- Navigation breadcrumbs -->
+    {% include "includes/domain_breadcrumbs.html"%}
   {% endblock breadcrumb %}
 
 {% block domain_content %}

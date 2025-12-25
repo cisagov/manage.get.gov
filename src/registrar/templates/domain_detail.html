@@ -2,18 +2,10 @@
 {% load static url_helpers %}
 {% load custom_filters %}
 
+
   {% block breadcrumb %}
   <!-- Navigation breadcrumbs -->
-  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-    <ol class="usa-breadcrumb__list">
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>{{ domain.name }}</span>
-      </li>
-    </ol>
-  </nav>
+    {% include "includes/domain_breadcrumbs.html" %}
   {% endblock breadcrumb %}
 
 {% block domain_content %}
