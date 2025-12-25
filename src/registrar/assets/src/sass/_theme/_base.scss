@@ -314,5 +314,16 @@ Fit-content itself does not work.
   min-height: 143px;
 }
 
+.heading-link {
+  text-decoration: none;
+  color: #{$dhs-blue};
+  &:visited {
+    color: #{$dhs-blue};
+  }
+  &:hover {
+    color: #{$dhs-blue-70};
+  }
+}
+
 /* Enables Alpine.js x-cloak */
 [x-cloak] { display: none !important; }

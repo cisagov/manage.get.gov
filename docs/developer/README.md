@@ -404,7 +404,7 @@ To manually test locally (if not mocking cloudflare):
 
    - Add env't vars to your .env
    - From localhost:8080 in Enterprise view, go to domains and find one for which you are a domain manager (look for "Manage" under "Action"). Go to that domain's detail page
-   - Add (temporarily) that domain to the list of valid_domains in both the DomainDNSView and PrototypeDomainDNSRecordView. This will allow you to follow a link to a DNS Record page
+   - Add (temporarily) that domain to the list of valid_domains in both the DomainDNSView and DNSRecordView. This will allow you to follow a link to a DNS Record page
    - Click on "DNS" on the left nav menu
    - Click the link below DNSEC: "Prototype DNS record creator"
    - You should see a form for adding DNS records

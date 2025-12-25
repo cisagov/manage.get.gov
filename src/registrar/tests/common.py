@@ -634,9 +634,14 @@ class MockDb(TestCase):
         cls.federal_agency_3, _ = FederalAgency.objects.get_or_create(
             agency="Portfolio 1 Federal Agency", federal_type="executive"
         )
+        cls.federal_agency_4, _ = FederalAgency.objects.get_or_create(agency="Non-Federal Agency")
 
         cls.portfolio_1, _ = Portfolio.objects.get_or_create(
             requester=cls.custom_superuser, federal_agency=cls.federal_agency_3, organization_type="federal"
+        )
+
+        cls.portfolio_2, _ = Portfolio.objects.get_or_create(
+            requester=cls.custom_superuser, organization_name="Portfolio 2", city="Somewhere", state_territory="CO"
         )
 
         cls.suborganization_1, _ = Suborganization.objects.get_or_create(

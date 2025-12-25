@@ -53,6 +53,8 @@ from .common import (
 from datetime import datetime
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
+import csv
+from pathlib import Path
 
 
 class CsvReportsTest(MockDbForSharedTests):
@@ -71,9 +73,12 @@ class CsvReportsTest(MockDbForSharedTests):
             mock_client = MagicMock()
             fake_open = mock_open()
             expected_file_content = [
-                call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
+                call(
+                    "Domain name,Domain type,Organization name,Suborganization name,"
+                    "City,State,Security contact email\r\n"
+                ),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
             ]
@@ -93,9 +98,12 @@ class CsvReportsTest(MockDbForSharedTests):
             mock_client = MagicMock()
             fake_open = mock_open()
             expected_file_content = [
-                call("Domain name,Domain type,Agency,Organization name,City,State,Security contact email\r\n"),
+                call(
+                    "Domain name,Domain type,Organization name,Suborganization name,"
+                    "City,State,Security contact email\r\n"
+                ),
                 call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
-                call("cdomain1.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\r\n"),
+                call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
@@ -225,6 +233,12 @@ class CsvReportsTest(MockDbForSharedTests):
 class ExportDataTest(MockDbForIndividualTests, MockEppLib):
     """Test the ExportData class from csv_export."""
 
+    def rows_from_expected_path(self, file):
+        expected_path = Path(__file__).parent / "data" / file
+        with expected_path.open(newline="") as f:
+            rows = list(csv.reader(f))
+        return rows
+
     @less_console_noise_decorator
     def test_domain_data_type(self):
         """Shows security contacts, domain managers, so"""
@@ -242,46 +256,15 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_1.first_ready = get_default_start_date()
         self.domain_1.save()
         # Create a CSV file in memory
-        csv_file = StringIO()
-        # Call the export functions
+        file = "test_domain_data_type.csv"
+        expected_rows = self.rows_from_expected_path(file)
+
+        csv_file = io.StringIO()
         DomainDataType.export_data_to_csv(csv_file)
-        # Reset the CSV file's position to the beginning
         csv_file.seek(0)
-        # Read the content into a variable
-        csv_content = csv_file.read()
-        # We expect READY domains,
-        # sorted alphabetially by domain name
-        expected_content = (
-            "Domain name,Status,First ready on,Expiration date,Domain type,Agency,"
-            "Organization name,City,State,SO,SO email,"
-            "Security contact email,Domain managers,Invited domain managers\n"
-            "adomain2.gov,Dns needed,(blank),(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
-            "meoward@rocks.com,squeaker@rocks.com\n"
-            "defaultsecurity.gov,Ready,2023-11-01,(blank),Federal - Executive,"
-            "Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,,, ,,(blank),"
-            '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
-            "adomain10.gov,Ready,2024-04-03,(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,"
-            "squeaker@rocks.com\n"
-            "bdomain4.gov,Unknown,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "bdomain5.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "bdomain6.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "ddomain3.gov,On hold,(blank),2023-11-15,Federal,"
-            "Armed Forces Retirement Home,,,, ,,security@mail.gov,,\n"
-            "sdomain8.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "xdomain7.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "zdomain9.gov,Deleted,(blank),(blank),Federal,Armed Forces Retirement Home,,,, ,,(blank),,\n"
-            "cdomain11.gov,Ready,2024-04-02,(blank),Federal,"
-            "World War I Centennial Commission,,,, ,,(blank),"
-            "meoward@rocks.com,\n"
-            "zdomain12.gov,Ready,2024-04-02,(blank),Interstate,,,,, ,,(blank),meoward@rocks.com,\n"
-        )
-        # Normalize line endings and remove commas,
-        # spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
-        self.maxDiff = None
-        self.assertEqual(csv_content, expected_content)
+
+        actual_rows = list(csv.reader(csv_file))
+        self.assertEqual(expected_rows, actual_rows)
 
     @less_console_noise_decorator
     def test_domain_data_type_user(self):
@@ -309,7 +292,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         csv_file.seek(0)
         # Read the content into a variable
         csv_content = csv_file.read()
-
         # We expect only domains associated with the user
         expected_content = (
             "Domain name,Status,First ready on,Expiration date,Domain type,Agency,Organization name,"
@@ -321,7 +303,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Portfolio 1 Federal Agency,,, ,,(blank),"
             '"big_lebowski@dude.co, info@example.com, meoward@rocks.com",woofwardthethird@rocks.com\n'
         )
-
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
         csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
@@ -473,6 +454,25 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # Add a first ready date on the first domain. Leaving the others blank.
         self.domain_1.first_ready = get_default_start_date()
         self.domain_1.save()
+        # create suborg
+        self.domain_information_11.sub_organization = self.suborganization_1
+        self.domain_information_11.save()
+
+        # Added domain with federal agency that is "Non-Federal Agency"
+        self.domain_information_12.federal_agency = self.federal_agency_4
+        self.domain_information_12.organization_name = "InterState Agency"
+        self.domain_information_12.city = "Place"
+        self.domain_information_12.state_territory = "WA"
+        self.domain_information_12.save()
+
+        # Switch domain state to use for additional Non Federal Agency
+        self.domain_2.ready()
+        self.domain_2.save()
+
+        # Setting a portfolio that is non federal
+        self.domain_information_2.portfolio = self.portfolio_2
+        self.domain_information_2.save()
+
         # Create a CSV file in memory
         csv_file = StringIO()
         # Call the export functions
@@ -484,12 +484,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # We expect READY domains,
         # sorted alphabetially by domain name
         expected_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
-            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
-            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
+            "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
-            "zdomain12.gov,Interstate,,,,,(blank)\n"
+            "zdomain12.gov,Interstate,InterState Agency,Place,WA,,(blank)\n"
+            "adomain2.gov,Interstate,Portfolio 2,Somewhere,CO,,(blank)\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
@@ -524,9 +525,9 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # We expect READY domains,
         # sorted alphabetially by domain name
         expected_content = (
-            "Domain name,Domain type,Agency,Organization name,City,State,Security contact email\n"
+            "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
             "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
-            "defaultsecurity.gov,Federal - Executive,World War I Centennial Commission,,,,(blank)\n"
+            "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
         )
