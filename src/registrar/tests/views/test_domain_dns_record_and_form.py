@@ -3,12 +3,10 @@ from unittest.mock import patch
 from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
-from django.test import override_settings
 from django.conf import settings
 from django.db.utils import OperationalError
 
 from registrar.models import Domain, DomainInformation, UserDomainRole
-from registrar.models.dns.dns_zone import DnsZone
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
