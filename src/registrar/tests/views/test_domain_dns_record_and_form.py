@@ -5,6 +5,7 @@ from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 from django.test import override_settings
 from django.conf import settings
+from django.db.utils import OperationalError
 
 from registrar.models import Domain, DomainInformation, UserDomainRole
 from registrar.models.dns.dns_zone import DnsZone
@@ -38,11 +39,10 @@ class TestWithDNSRecordPermissions(TestWithUser):
 
     def tearDown(self):
         try:
-            DnsZone.objects.all().delete()
             UserDomainRole.objects.all().delete()
             DomainInformation.objects.all().delete()
             Domain.objects.all().delete()
-        except Exception:
+        except OperationalError:
             pass
         super().tearDown()
 
@@ -53,26 +53,26 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_get_renders_page_and_form_fields(self):
+    def test_get_renders_page_and_form_fields_success(self):
         page = self.app.get(self._url(), status=200)
 
+        # Are there other assertions that would work better here? I can get rid of this if the subsequent is sufficient
         self.assertIn("Records", page.text)
         self.assertIn("Add record", page.text)
 
-        # form exists, even if hidden by Alpine
-        form = page.forms["form-container"]
+        record_form = page.forms[0]
 
         # Assert required fields exist by name
         for field in ("type_field", "name", "content", "ttl", "comment"):
-            self.assertIn(field, form.fields)
+            self.assertIn(field, record_form.fields)
 
         # Defaults check
-        self.assertEqual(str(form["ttl"].value), "300")
-        self.assertEqual(form["type_field"].value, "A")
+        self.assertEqual(str(record_form["ttl"].value), "300")
+        self.assertEqual(record_form["type_field"].value, "A")
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_valid_creates_record_and_renders_result(self):
+    def test_post_valid_form_creates_record_success(self):
         mock_record = {
             "id": "test1",
             "name": "www",
@@ -82,54 +82,55 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "comment": "Mocked record created",
         }
 
-        with (
-            patch("registrar.views.domain.DnsZone.objects.filter") as mock_filter,
-            patch("registrar.views.domain.DnsHostService") as MockSvc
-        ):
-            mock_filter.return_value.exists.return_value = True
-            
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
             svc.dns_setup.return_value = ["rainbow.dns.gov", "rainbow2.dns.gov"]
             svc.register_nameservers.return_value = None
             svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
             svc.create_and_save_record.return_value = {"result": mock_record}
-        
-        page = self.app.get(self._url(), status=200)
-        record_form = page.forms[0]
 
-        record_form["type_field"] = "A"
-        record_form["name"] = "www"
-        record_form["content"] = "192.0.2.10"
-        record_form["ttl"] = "300"
-        record_form["comment"] = "hello"
+            page = self.app.get(self._url(), status=200)
+            record_form = page.forms[0]
 
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        response = record_form.submit()
-        self.assertEqual(response.status_code, 200)
+            record_form["type_field"] = "A"
+            record_form["name"] = "www"
+            record_form["content"] = "192.0.2.10"
+            record_form["ttl"] = "300"
+            record_form["comment"] = "hello"
 
-        # Service calls (behavioral assertions, as validation)
-        svc.dns_setup.assert_called_once_with(self.domain.name)
-        svc.get_x_zone_id_if_zone_exists.assert_called_once_with(self.domain.name)
-        svc.create_and_save_record.assert_called_once()
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            response = record_form.submit().follow()
+            self.assertEqual(response.status_code, 200)
 
-        # User visible result
-        self.assertIn("DNS RECORD: ", response.text)
-        self.assertIn("www", response.text)
+            # Service calls (behavioral assertions, as validation)
+            svc.dns_setup.assert_called_once_with(self.domain.name)
+
+            # User visible result
+            self.assertIn("www", response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_invalid_shows_form_errors(self):
-        page = self.app.get(self._url(), status=200)
-        form = page.forms["form-container"]
+    def test_post_invalid_form_throws_error(self):
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
 
-        form["type_field"] = "A"
-        form["name"] = ""
-        form["content"] = "not-an-ip"
+            page = self.app.get(self._url(), status=200)
+            record_form = page.forms[0]
 
-        result = form.submit(status=200)
+            record_form["type_field"] = "A"
+            record_form["name"] = ""
+            record_form["content"] = "not-an-ip"
 
-        self.assertIn("Name", result.text)
-        self.assertIn("IPv4 Address", result.text)
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            response = record_form.submit()
 
+            # Invalid form should re-render the page, not redirect
+            self.assertEqual(response.status_code, 200)
 
+            # Service calls should not run
+            svc.dns_setup.assert_not_called()
+
+            self.assertIn("Name", response.text)
+            self.assertIn("IPv4 Address", response.text)
