@@ -73,7 +73,7 @@ jobs:
           CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
           CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
           COMMIT: ${{ github.sha }}
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ github.head_ref }}
         run: |
            bash ops/scripts/write_git_info_to_env.sh
       - name: Deploy to cloud.gov sandbox
