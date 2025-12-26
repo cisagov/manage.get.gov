@@ -49,7 +49,11 @@ error messages, if necessary.
         {{ sublabel_text }}
       {% endif %}
     </p>
-  {% endif %} 
+  {% endif %}
+  
+  {% if field.help_text %}
+    <span class="usa-hint">{{ field.help_text }}</span>
+  {% endif %}
 
   {% if field.errors %}
     <div id="{{ widget.attrs.id }}__error-message">
