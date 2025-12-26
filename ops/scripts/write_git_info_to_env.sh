@@ -33,6 +33,7 @@ echo "Updating git info for environment in process"
 echo " Branch: $BRANCH"
 echo " Commit: $COMMIT"
 echo " TAG: ${TAG:-none}"
+echo "ENVIRONMent: $ENVIRONMENT"
 
 if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging" ]]; then
     APP_NAME="$ENVIRONMENT"
