@@ -34,6 +34,9 @@ jobs:
             let env = '${{ github.head_ref }}'.split("/")[0]
             core.setOutput('environment', env);
             core.setOutput('environment_upper', env.toUpperCase());
+            //Debug
+
+            console.log("uppercase", env.toUpperCase())
   deploy:
     runs-on: ubuntu-latest
     needs: [variables]
@@ -51,7 +54,7 @@ jobs:
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Copy github info to .env
         env:
-          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
+          ENVIRONMENT: ${{ needs.variables.outputs.environment_upper }}
           CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', needs.variables.outputs.environment_upper)] }}
           CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', needs.variables.outputs.environment_upper)] }}
           COMMIT: ${{ github.sha }}
