@@ -31,7 +31,7 @@ jobs:
         id: var
         with:
           script: |
-            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]).toUpperCase();
+            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0].toUpperCase());
   deploy:
     runs-on: ubuntu-latest
     needs: [variables]
