@@ -53,8 +53,8 @@ jobs:
       - name: Copy github info to .env
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
-          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', needs.variables.outputs.environment_upper)] }}
-          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', needs.variables.outputs.environment_upper)] }}
+          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', needs.variables.outputs.environment)] }}
+          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', needs.variables.outputs.environment)] }}
           COMMIT: ${{ github.sha }}
           BRANCH: ${{ github.head_ref }}
           TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
