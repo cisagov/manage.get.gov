@@ -52,9 +52,13 @@ jobs:
         id: var
         with:
           script: |
-            core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0].toUpperCase());
+            let env = '${{ github.head_ref }}'.split("/")[0]
+            core.setOutput('environment', env);
+            core.setOutput('environment_upper', env.toUpperCase())
   deploy:
     runs-on: ubuntu-latest
+    outputs:
+       environment_upper: ${{ steps.var.outputs.environment_upper}}
     steps:
       - uses: actions/checkout@v5
       - name: Compile USWDS assets
@@ -70,8 +74,8 @@ jobs:
       - name: Copy github info to .env
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
-          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
-          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
+          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment_upper)] }}
+          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment_upper)] }}
           COMMIT: ${{ github.sha }}
           BRANCH: ${{ github.head_ref }}
         run: |

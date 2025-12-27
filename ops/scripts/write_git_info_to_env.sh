@@ -58,7 +58,7 @@ cf set-env $APP_NAME GIT_TAG "$TAG"
 
 echo "Git info Updated for $ENVIRONMENT"
 
-# if [ "$IS_CI" = false ]; then
-#     echo "app is restaging for changes to take effect"
-#     cf restage "getgov-$ENVIRONMENT"
-# fi
+if [ "$IS_CI" = false ]; then
+    echo "app is restaging for changes to take effect"
+    cf restage "getgov-$ENVIRONMENT"
+fi
