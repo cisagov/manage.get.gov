@@ -47,6 +47,7 @@ jobs:
   variables:
     runs-on: ubuntu-latest
     outputs:
+       environment: ${{ steps.var.outputs.environment}}
        environment_upper: ${{ steps.var.outputs.environment_upper}}
     steps:
       - name: Setting global variables
@@ -73,7 +74,7 @@ jobs:
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Copy github info to .env
         env:
-          ENVIRONMENT: ${{ github.event.inputs.environment }}
+          ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', needs.variables.outputs.environment_upper)] }}
           CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', needs.variables.outputs.environment_upper)] }}
           COMMIT: ${{ github.sha }}
