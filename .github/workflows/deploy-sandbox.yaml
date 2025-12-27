@@ -24,7 +24,6 @@ jobs:
 
     outputs:
       environment: ${{ steps.var.outputs.environment}}
-      environment_upper: ${{ steps.var.outputs.environment_upper }}
     runs-on: "ubuntu-latest"
     steps:
       - name: Setting global variables
