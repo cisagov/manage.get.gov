@@ -33,7 +33,6 @@ jobs:
           script: |
             let env = '${{ github.head_ref }}'.split("/")[0]
             core.setOutput('environment', env);
-            core.setOutput('environment_upper', env.toUpperCase());
   deploy:
     runs-on: ubuntu-latest
     needs: [variables]
