@@ -21,6 +21,7 @@ else
 fi
 
 # Get the tags
+git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 TAG=$(git tag --points-at HEAD)
 
 if [ $IS_CI = true ]; then

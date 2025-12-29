@@ -41,6 +41,9 @@ jobs:
     needs: [variables]
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
