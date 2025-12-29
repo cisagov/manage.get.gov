@@ -9,7 +9,7 @@ on:
       - 'docs/**'
       - '**.md'
       - '.gitignore'
-      
+    
     tags:
       - v*
 

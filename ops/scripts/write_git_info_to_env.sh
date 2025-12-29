@@ -1,15 +1,13 @@
 #!/bin/sh
 # Running locally,
-# Assumptions: Already logged into the cloud.gov cli 
+# Assumptions: 
+# Already logged into the cloud.gov cli 
+# The branch name follows our branch naming conventions
+# Versioning info can be found at url: /health
 # Notes: 
 # Script restages app at the end to update changes
-# Versioning info can be found at url: /health
-# The following has to be exported on the command line
-# export ENVIRONMENT="yourapp"
-# export BRANCH="branch-name"
-# export COMMIT="commit"
-# export TAG="tag"
 # 
+
 set -euo pipefail
 
 if [[ -n "${GITHUB_ACTIONS:-}" && $GITHUB_ACTIONS = true ]]; then
@@ -17,6 +15,9 @@ if [[ -n "${GITHUB_ACTIONS:-}" && $GITHUB_ACTIONS = true ]]; then
     IS_CI=true
 else
     echo "Running locally"
+    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    COMMIT=$(git rev-parse HEAD)
+    ENVIRONMENT="${BRANCH%%/*}"
     IS_CI=false
 fi
 
@@ -30,10 +31,10 @@ if [ $IS_CI = true ]; then
 fi
 
 echo "Updating git info for environment in process"
-echo " Branch: $BRANCH"
-echo " Commit: $COMMIT"
-echo " TAG: ${TAG:-none}"
-echo "ENVIRONMent: $ENVIRONMENT"
+echo "Branch: $BRANCH"
+echo "Commit: $COMMIT"
+echo "TAG: ${TAG:-none}"
+echo "Environment": $ENVIRONMENT"
 
 if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging" ]]; then
     APP_NAME="$ENVIRONMENT"

@@ -4,6 +4,9 @@ name: Build and deploy developer sandbox
 run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
 
 on:
+  push:
+    tags:
+    - 'test-things-*'
   pull_request:
 
 jobs:
