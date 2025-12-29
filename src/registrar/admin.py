@@ -4326,6 +4326,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def response_change(self, request, obj):
         # Create dictionary of action functions
+        start_time = time.time()
+        logger.info("=== IN RESPONSE_CHANGE FUNCTION ===")
         ACTION_FUNCTIONS = {
             "_place_client_hold": self.do_place_client_hold,
             "_remove_client_hold": self.do_remove_client_hold,
@@ -4335,13 +4337,43 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "_extend_expiration_date": self.do_extend_expiration_date,
         }
 
+        logger.info("=== Checking POST actions ===")
+        check_start = time.time()
         # Check which action button was pressed and call the corresponding function
         for action, function in ACTION_FUNCTIONS.items():
             if action in request.POST:
-                return function(request, obj)
+                action_elapsed = time.time() - check_start
+                logger.info(f"=== Matched action {action} after {action_elapsed:.2f} seconds ===")
+            action_start = time.time()
+            logger.info(f"=== BEFORE CALLING {function.__name__} ===")
 
+            result = function(request, obj)
+
+            action_elapsed = time.time() - action_start
+            logger.info(f"=== {function.__name__} took {action_elapsed:.2f} seconds ===")
+
+            total_elapsed = time.time() - start_time
+            logger.info(f"=== END response_change total {total_elapsed:.2f} seconds ===")
+
+            return result
+
+            # return function(request, obj)
+        check_elapsed = time.time() - check_start
+        logger.info(f"=== NO ACTION MATCH :: POST check took {check_elapsed:.2f} seconds ===")
+
+        super_start = time.time()
+        logger.info("=== BEFORE calling super().response_change ===")
+
+        result = super().response_change(request, obj)
+
+        super_elapsed = time.time() - super_start
+        logger.info(f"=== super().response_change took {super_elapsed:.2f} seconds ===")
+
+        total_elapsed = time.time() - start_time
+        logger.info(f"=== END response_change total {total_elapsed:.2f} seconds ===")
         # If no matching action button is found, return the super method
-        return super().response_change(request, obj)
+        return result
+        # return super().response_change(request, obj)
 
     def do_extend_expiration_date(self, request, obj):
         """Extends a domains expiration date by one year from the current date"""
