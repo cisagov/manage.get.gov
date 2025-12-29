@@ -6,7 +6,6 @@
 # Versioning info can be found at url: /health
 # Notes: 
 # Script restages app at the end to update changes
-# 
 
 set -euo pipefail
 
@@ -17,7 +16,7 @@ else
     echo "Running locally"
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
     COMMIT=$(git rev-parse HEAD)
-    ENVIRONMENT="${BRANCH%%/*}"
+    ENVIRONMENT=${BRANCH%%/*}
     IS_CI=false
 fi
 
@@ -34,7 +33,7 @@ echo "Updating git info for environment in process"
 echo "Branch: $BRANCH"
 echo "Commit: $COMMIT"
 echo "TAG: ${TAG:-none}"
-echo "Environment": $ENVIRONMENT"
+echo "Environment: $ENVIRONMENT"
 
 if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging" ]]; then
     APP_NAME="$ENVIRONMENT"
