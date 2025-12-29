@@ -844,8 +844,19 @@ class Domain(TimeStampedModel, DomainHelper):
 
         A domain's status indicates various properties. See Domain.Status.
         """
+
+        # Check if cache is hit
+        cache_key = f"domain_{self.id}_statuses"
+        cached = getattr(self, "_cached_statuses", None)
+
+        if cached is not None:
+            logger.info(f"!!! CACHE HIT for statuses on domain={self.name} !!!")
+            return cached
+        else:
+            logger.info(f"!!! CACHE MISS for statuses on domain={self.name} !!!")
+
         start_time = time.time()
-        logger.into("=== IN STATUSES FUNCTION ===")
+        logger.info("=== IN STATUSES FUNCTION ===")
         logger.info(f"=== STATUSES START for domain={self.name} (id={self.id}) ===")
 
         try:

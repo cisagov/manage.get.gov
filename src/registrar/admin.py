@@ -4344,18 +4344,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             if action in request.POST:
                 action_elapsed = time.time() - check_start
                 logger.info(f"=== Matched action {action} after {action_elapsed:.2f} seconds ===")
-            action_start = time.time()
-            logger.info(f"=== BEFORE CALLING {function.__name__} ===")
+                action_start = time.time()
+                logger.info(f"=== BEFORE CALLING {function.__name__} ===")
 
-            result = function(request, obj)
+                result = function(request, obj)
 
-            action_elapsed = time.time() - action_start
-            logger.info(f"=== {function.__name__} took {action_elapsed:.2f} seconds ===")
+                action_elapsed = time.time() - action_start
+                logger.info(f"=== {function.__name__} took {action_elapsed:.2f} seconds ===")
 
-            total_elapsed = time.time() - start_time
-            logger.info(f"=== END response_change total {total_elapsed:.2f} seconds ===")
-
-            return result
+                total_elapsed = time.time() - start_time
+                logger.info(f"=== END response_change total {total_elapsed:.2f} seconds ===")
+                return result
 
             # return function(request, obj)
         check_elapsed = time.time() - check_start
