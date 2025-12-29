@@ -10,9 +10,11 @@ from registrar.models.domain import Domain
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio import Portfolio
+from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
 from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.views.domain import DomainNameserversView
 from .common import MockEppLib, create_test_user, less_console_noise  # type: ignore
 from unittest.mock import patch
@@ -813,6 +815,127 @@ class FinishUserProfileTests(TestWithUser, WebTest):
 
             self.assertContains(completed_setup_page, "You’re about to start your .gov domain request")
         incomplete_regular_user.delete()
+
+    def assert_basic_header(self, page):
+        self.assertContains(page, "usa-header--basic")
+        self.assertNotContains(page, "usa-header--extended")
+
+    @less_console_noise_decorator
+    def test_finish_setup_uses_basic_header_for_new_user_flag_on(self):
+        user = get_user_model().objects.create(
+            username="test_finish_setup_basic_header",
+            first_name="New",
+            last_name="",
+            email="finish-setup-basic@igorville.com",
+            verification_type=User.VerificationTypeChoices.REGULAR,
+            title=None,
+        )
+        self.app.set_user(user.username)
+
+        with override_flag("multiple_portfolios", active=True):
+            page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+        self.assertContains(page, "Finish setting up your profile")
+        self.assert_basic_header(page)
+
+        user.delete()
+
+    @less_console_noise_decorator
+    def test_finish_setup_uses_basic_header_for_invited_user_flag_on(self):
+        invited_user = get_user_model().objects.create(
+            username="test_finish_setup_basic_header_invited",
+            first_name="Invited",
+            last_name="",
+            email="finish-setup-invited@igorville.com",
+            verification_type=User.VerificationTypeChoices.REGULAR,
+            title=None,
+        )
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user,
+            organization_name="Test Organization",
+        )
+
+        PortfolioInvitation.objects.create(
+            portfolio=portfolio,
+            email=invited_user.email,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        self.app.set_user(invited_user.username)
+
+        with override_flag("multiple_portfolios", active=True):
+            page = self.app.get(reverse("home")).follow()
+            self._set_session_cookie()
+
+        self.assertContains(page, "Finish setting up your profile")
+        self.assert_basic_header(page)
+
+        PortfolioInvitation.objects.filter(portfolio=portfolio, email=invited_user.email).delete()
+        invited_user.delete()
+
+    @less_console_noise_decorator
+    def test_finish_setup_does_not_render_extended_header_even_if_session_portfolio_is_set(self):
+        user = get_user_model().objects.create(
+            username="test_finish_setup_portfolio_in_session",
+            first_name="New",
+            last_name="",
+            email="finish-setup-session@igorville.com",
+            verification_type=User.VerificationTypeChoices.REGULAR,
+            title=None,
+        )
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user,
+            organization_name="Session Org",
+        )
+
+        self.client.force_login(user)
+        # simulate buggy state: portfolio present in session during setup
+        session = self.client.session
+        session["portfolio"] = portfolio
+        session.save()
+
+        with override_flag("multiple_portfolios", active=True):
+            resp = self.client.get(reverse("finish-user-profile-setup"), follow=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Finish setting up your profile")
+        self.assert_basic_header(resp)
+
+        user.delete()
+
+    @less_console_noise_decorator
+    def test_home_redirects_to_setup_and_renders_basic_header_for_unfinished_user_even_if_session_portfolio_set(self):
+        unfinished_user = get_user_model().objects.create(
+            username="test_unfinished_user_session_portfolio_basic_header",
+            first_name="New",
+            last_name="",
+            email="unfinished-session@igorville.com",
+            verification_type=User.VerificationTypeChoices.REGULAR,
+            title=None,
+        )
+
+        portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user,
+            organization_name="Session Org",
+        )
+
+        self.client.force_login(unfinished_user)
+
+        session = self.client.session
+        session["portfolio"] = portfolio
+        session.save()
+
+        with override_flag("multiple_portfolios", active=True):
+            resp = self.client.get(reverse("home"), follow=True)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Finish setting up your profile")
+        self.assert_basic_header(resp)
+
+        unfinished_user.delete()
 
 
 class FinishUserProfileForOtherUsersTests(TestWithUser, WebTest):
