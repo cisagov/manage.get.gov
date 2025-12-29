@@ -21,7 +21,7 @@ else
 fi
 
 # Get the tags
-TAG=$(git describe --exact-match --tags HEAD)
+TAG=$(git tag --points-at HEAD)
 
 if [ $IS_CI = true ]; then
     echo "Installing CF CLI ...."
