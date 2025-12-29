@@ -42,6 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref:  ${{ github.head_ref }}
           fetch-depth: 0
           fetch-tags: true
       - name: Compile USWDS assets
