@@ -6,7 +6,7 @@ run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
 on:
   push:
     tags:
-    - 'test-things-*'
+    - 'v1.test-v$'
   pull_request:
 
 jobs:
@@ -22,6 +22,7 @@ jobs:
         || startsWith(github.head_ref, 'es/')
         || startsWith(github.head_ref, 'ad/')
         || startsWith(github.head_ref, 'el/')
+        || startsWith(github.head_ref, 'dg/')
         || startsWith(github.head_ref, 'aa/')
 
     outputs:
