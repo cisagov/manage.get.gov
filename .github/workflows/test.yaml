@@ -79,7 +79,7 @@ jobs:
         run: |
           set -o pipefail
           echo '::group::Mypy'
-          docker compose run --rm --no-deps app mypy . --color-output --show-error-codes --no-error-summary --hide-error-context 2>&1 | tee mypy.out
+          docker compose run --rm --no-deps app mypy . --color-output --show-error-codes --hide-error-context 2>&1 | tee mypy.out
           status=${PIPESTATUS[0]}
           echo '::endgroup::'
           exit $status
