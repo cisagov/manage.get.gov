@@ -20,6 +20,9 @@ else
     IS_CI=false
 fi
 
+# Get the tags
+TAG=$(git describe --exact-match --tags)
+
 if [ $IS_CI = true ]; then
     echo "Installing CF CLI ...."
     wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
