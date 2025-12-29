@@ -2,8 +2,8 @@
 annotated-types==0.7.0; python_version >= '3.8'
 anyio==4.12.0; python_version >= '3.9'
 asgiref==3.11.0; python_version >= '3.9'
-boto3==1.42.11; python_version >= '3.9'
-botocore==1.42.11; python_version >= '3.9'
+boto3==1.42.18; python_version >= '3.9'
+botocore==1.42.18; python_version >= '3.9'
 cachetools==6.2.4; python_version >= '3.9'
 certifi==2025.11.12; python_version >= '3.7'
 cfenv==0.5.3
@@ -17,7 +17,7 @@ dj-email-url==1.0.6
 django==4.2.26; python_version >= '3.8'
 django-admin-multiple-choice-list-filter==0.1.1
 django-allow-cidr==0.8.0
-django-auditlog==3.4.0; python_version >= '3.10'
+django-auditlog==3.4.1; python_version >= '3.10'
 django-cache-url==3.4.5
 django-cors-headers==4.9.0; python_version >= '3.9'
 django-csp==4.0
@@ -28,7 +28,7 @@ django-phonenumber-field[phonenumberslite]==8.4.0; python_version >= '3.10'
 django-waffle==5.0.0; python_version >= '3.9'
 django-widget-tweaks==1.5.0; python_version >= '3.8'
 environs[django]==14.5.0; python_version >= '3.10'
-faker==38.2.0; python_version >= '3.10'
+faker==40.1.0; python_version >= '3.10'
 fred-epplib @ git+https://github.com/cisagov/epplib.git@9f0fd0e69665001767f15a034c9c0c919dab5cdd
 furl==2.1.4
 future==1.0.0; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'
@@ -43,11 +43,11 @@ jmespath==1.0.1; python_version >= '3.7'
 lxml==6.0.2; python_version >= '3.8'
 mako==1.3.10; python_version >= '3.8'
 markupsafe==3.0.3; python_version >= '3.9'
-marshmallow==4.1.1; python_version >= '3.10'
+marshmallow==4.1.2; python_version >= '3.10'
 oic==1.7.0; python_version ~= '3.8'
 orderedmultidict==1.0.2
 packaging==25.0; python_version >= '3.8'
-phonenumberslite==9.0.20
+phonenumberslite==9.0.21; python_version >= '2.5'
 pillow==12.0.0; python_version >= '3.10'
 psycopg2-binary==2.9.11; python_version >= '3.9'
 pycparser==2.23; python_version >= '3.8'
@@ -64,7 +64,7 @@ requests==2.32.5; python_version >= '3.9'
 respx==0.22.0; python_version >= '3.8'
 s3transfer==0.16.0; python_version >= '3.9'
 six==1.17.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'
-sqlparse==0.5.4; python_version >= '3.8'
+sqlparse==0.5.5; python_version >= '3.8'
 tablib==3.9.0; python_version >= '3.9'
 tblib==3.2.2; python_version >= '3.9'
 typing-extensions==4.15.0; python_version >= '3.9'
