@@ -19,7 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
@@ -29,6 +32,15 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
+      - name: Adding version info step
+        env:
+          ENVIRONMENT: stable
+          COMMIT: ${{ github.sha }}
+          BRANCH:  main
+          CF_USERNAME: ${{ secrets.CF_STABLE_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_STABLE_PASSWORD }}
+        run: |
+           bash ops/scripts/write_git_info_to_env.sh
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         with:

@@ -38,11 +38,6 @@ class TestViews(TestCase):
         self.client = Client()
 
     @less_console_noise_decorator
-    def test_health_check_endpoint(self):
-        response = self.client.get("/health")
-        self.assertContains(response, "OK", status_code=200)
-
-    @less_console_noise_decorator
     def test_home_page(self):
         """Home page should NOT be available without a login."""
         response = self.client.get("/")
@@ -54,6 +49,36 @@ class TestViews(TestCase):
         response = self.client.get(reverse("domain-request:start"))
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login?next=/request/start/", response.headers["Location"])
+
+
+class TestHealthPageView(TestCase):
+    def setUp(self):
+        self.client = Client()
+        return super().setUp()
+
+    @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT": "abcdef123456", "GIT_TAG": "v1.0.0"})
+    def test_health_contains_git_info(self):
+        response = self.client.get("/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "main")
+        self.assertContains(response, "abcdef123456")
+        self.assertContains(response, "v1.0.0")
+
+    @patch.dict(
+        "os.environ",
+        {
+            "GIT_BRANCH": "another-branch",
+            "GIT_COMMIT": "bcdefg234567",
+        },
+    )
+    def test_healh_contains_git_info_without_tag(self):
+        response = self.client.get("/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "another-branch")
+        self.assertContains(response, "bcdefg234567")
+        self.assertNotContains(response, "Git tag")
 
 
 class TestWithUser(MockEppLib):
