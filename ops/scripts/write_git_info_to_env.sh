@@ -1,5 +1,5 @@
 #!/bin/sh
-# Running locally,
+# Writing to a sandbox manually
 # Assumptions: 
 # Already logged into the cloud.gov cli 
 # The branch name follows our branch naming conventions
@@ -9,20 +9,41 @@
 
 set -euo pipefail
 
-if [[ -n "${GITHUB_ACTIONS:-}" && $GITHUB_ACTIONS = true ]]; then
+# IS_LOCAL_ENV="false"
+
+if ["${1:-}" = "--localenv"]; then
+   IS_LOCAL_ENV="true"
+else
+   IS_LOCAL_ENV="false"
+fi
+
+echo $IS_LOCAL_ENV 
+if [[ -n "${GITHUB_ACTIONS:-}" && $GITHUB_ACTIONS = 'true' ]]; then
     echo "Running in Github Actions"
     IS_CI=true
 else
-    echo "Running locally"
+    echo "Collecting git info from local"
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
     COMMIT=$(git rev-parse HEAD)
-    ENVIRONMENT=${BRANCH%%/*}
     IS_CI=false
+    if [ $IS_LOCAL_ENV = "false" ]; then
+       ENVIRONMENT=${BRANCH%%/*}
+    else
+       ENVIRONMENT="local"
+    fi
 fi
+
+if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging" ]]; then
+    APP_NAME="$ENVIRONMENT"
+else
+    APP_NAME="getgov-${ENVIRONMENT}"
+fi
+
 
 # Get the tags
 TAG=$(git tag --points-at HEAD)
 
+# Install CF CLI for github actions
 if [ $IS_CI = true ]; then
     echo "Installing CF CLI ...."
     wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cli.cloudfoundry.org.gpg
@@ -32,17 +53,11 @@ if [ $IS_CI = true ]; then
     echo "CF CLI installed"
 fi
 
-echo "Updating git info for environment in process"
+echo "Collecting git info for environment in process"
 echo "Branch: $BRANCH"
 echo "Commit: $COMMIT"
 echo "TAG: ${TAG:-none}"
 echo "Environment: $ENVIRONMENT"
-
-if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging" ]]; then
-    APP_NAME="$ENVIRONMENT"
-else
-    APP_NAME="getgov-${ENVIRONMENT}"
-fi
 
 if [ $IS_CI = true ]; then
     echo "Authenticating..."
@@ -53,15 +68,25 @@ if [ $IS_CI = true ]; then
     fi
 fi
 
+if [ $IS_LOCAL_ENV = "false" ]; then 
 echo "Setting env variables"
 cf target -o cisa-dotgov -s "$ENVIRONMENT"
 cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
 cf set-env $APP_NAME GIT_COMMIT "$COMMIT"
 cf set-env $APP_NAME GIT_TAG "$TAG"
+else
+echo "Writing to env"
+cat > .env << EOF
+GIT_BRANCH=$BRANCH
+GIT_COMMIT=$COMMIT
+GIT_TAG=$TAG
+EOF
+fi
+
 
 echo "Git info Updated for $ENVIRONMENT"
 
-if [ "$IS_CI" = false ]; then
-    echo "app is restaging for changes to take effect"
-    cf restage "getgov-$ENVIRONMENT"
+if [ $IS_CI = false ] && [ $IS_LOCAL_ENV = "false" ]; then
+    echo "app is restarting for changes to take effect"
+    cf restart "getgov-$ENVIRONMENT"
 fi

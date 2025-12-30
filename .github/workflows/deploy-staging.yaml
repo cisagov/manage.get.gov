@@ -44,11 +44,11 @@ jobs:
           cf_manifest: "ops/manifests/manifest-staging.yaml"
       - name: Copy github info
         env:
-          ENVIRONMENT: stable
+          ENVIRONMENT: staging
           COMMIT: ${{ github.sha }}
           BRANCH: main
-          CF_USERNAME: ${{ secrets.CF_STABLE_USERNAME }}
-          CF_PASSWORD: ${{ secrets.CF_STABLE_PASSWORD }}
+          CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
         run: |
            bash ops/scripts/write_git_info_to_env.sh
       - name: Run Django migrations
