@@ -440,7 +440,7 @@ class DomainView(DomainBaseView):
     template_name = "domain_detail.html"
 
     def get_breadcrumb_current_label(self):
-        return self.object.name
+        return None
 
     def get_context_data(self, **kwargs):
         """If we don't reference security email in context for older deleted domains
@@ -450,6 +450,8 @@ class DomainView(DomainBaseView):
 
         default_emails = DefaultEmail.get_all_emails()
 
+        context["breadcrumb_domain_is_current"] = True
+        context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=self.request.session.get("portfolio")
@@ -1357,6 +1359,11 @@ class DomainAddUserView(DomainFormBaseView):
 
     def get_breadcrumb_current_label(self):
         return "Add a domain manager"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["hide_domain_base_crumbs"] = not self.in_portfolio_context()
+        return context
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.pk})

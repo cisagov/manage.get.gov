@@ -2,17 +2,26 @@
      aria-label="{% if portfolio %}Domain breadcrumb{% else %}Domain manager breadcrumb{% endif %}">
   <ol class="usa-breadcrumb__list">
 
-    {% if portfolio %}
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domains' %}" class="usa-breadcrumb__link">
-          <span>Domains</span>
-        </a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link">
-          <span>{{ domain.name }}</span>
-        </a>
-      </li>
+    {% if not hide_domain_base_crumbs %}
+    <li class="usa-breadcrumb__list-item">
+      {% if portfolio %}
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      {% else %}
+        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      {% endif %}
+    </li>
+
+    {% if breadcrumb_domain_is_current %}
+    <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+      <span>{{ domain.name }}</span>
+    </li>
+    {% else %}
+    <li class="usa-breadcrumb__list-item">
+      <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link">
+        <span>{{ domain.name }}</span>
+      </a>
+    </li>
+    {% endif %}
     {% endif %}
 
     {% for crumb in breadcrumbs %}
