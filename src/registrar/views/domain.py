@@ -745,7 +745,6 @@ class DomainDNSRecordForm(forms.Form):
     type_field = forms.ChoiceField(
         label="Type",
         choices=[("", "Select a type"), ("A", "A")],
-        initial="A",
         required=True,
         widget=forms.Select(
             attrs={
