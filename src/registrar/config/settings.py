@@ -168,6 +168,7 @@ INSTALLED_APPS = [
     # Waffle feature flags
     "waffle",
     "csp",
+    "django_htmx",
 ]
 
 # Middleware are routines for processing web requests.
@@ -213,6 +214,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RequestLoggingMiddleware",
     # Add DB info to logs
     "registrar.registrar_middleware.DatabaseConnectionMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)
