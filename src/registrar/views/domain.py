@@ -806,14 +806,12 @@ class DomainDNSRecordForm(forms.Form):
         label="Comment",
         required=False,
         help_text="The information you enter here will not impact DNS record resolution and \
-        is meant only for your reference (500 characters max)",
+        is meant only for your reference.",
         max_length=500,
         widget=forms.Textarea(
             attrs={
-                "class": "usa-textarea",
+                "class": "usa-textarea usa-textarea--medium",
                 "rows": 2,
-                "hide_character_count": True,
-                "style": "height: 2rem; min-height: 0;",
             }
         ),
     )
