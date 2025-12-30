@@ -66,7 +66,7 @@ from django_fsm import TransitionNotAllowed  # type: ignore
 from django.utils.safestring import mark_safe
 from django.utils.html import escape
 from django.contrib.auth.forms import UserChangeForm, UsernameField
-from django.contrib.admin.views.main import IGNORED_PARAMS
+from django.contrib.admin.views.main import IGNORED_PARAMS, ChangeList
 from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
@@ -603,7 +603,7 @@ class DomainRequestAdminForm(forms.ModelForm):
 
 
 # Based off of this excellent example: https://djangosnippets.org/snippets/10471/
-class MultiFieldSortableChangeList(admin.views.main.ChangeList):
+class MultiFieldSortableChangeList(ChangeList):
     """
     This class overrides the behavior of column sorting in django admin tables in order
     to allow for multi field sorting on admin_order_field.  It also overrides behavior

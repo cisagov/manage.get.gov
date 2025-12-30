@@ -588,6 +588,8 @@ class DomainExport(BaseExport):
             "converted_organization_name": Case(
                 # When portfolio is present, use its value instead
                 When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+                When(federal_agency__agency="Non-Federal Agency", then=F("organization_name")),
+                When(federal_agency__isnull=False, then=F("federal_agency__agency")),
                 # Otherwise, return the natively assigned value
                 default=F("organization_name"),
                 output_field=CharField(),
@@ -638,6 +640,61 @@ class DomainExport(BaseExport):
                     Coalesce(F("senior_official__last_name"), Value("")),
                     output_field=CharField(),
                 ),
+                output_field=CharField(),
+            ),
+            "converted_sub_organization_name": Case(
+                # We use Domain Information to grab the info
+                # Domain Information has portfolio, organization, and sub_org fields
+                # Portfolio must be present in order for suborg to exist
+                # When sub_organization is present, use its name
+                When(sub_organization__isnull=False, then=F("sub_organization__name")),
+                # Use organization for suborg
+                # When federal agency is not null
+                # When federal agency is not a Non Federal Agency
+                # When portfolio is null
+                When(
+                    Q(federal_agency__isnull=False)
+                    & ~Q(portfolio__isnull=False)
+                    & ~Q(federal_agency__agency="Non-Federal Agency"),
+                    then=F("organization_name"),
+                ),
+                # Otherwise, return empty string
+                default=Value(""),
+                output_field=CharField(),
+            ),
+            # When city and state_territory exists in suborg, use that info from suborg
+            # When city and state_territory exists in portfolio, use that info
+            # Otherwise, use the city, and state from the domain info
+            "converted_city": Case(
+                When(
+                    Q(sub_organization__isnull=False)
+                    & Q(sub_organization__city__isnull=False)
+                    & Q(sub_organization__state_territory__isnull=False),
+                    then=F("sub_organization__city"),
+                ),
+                When(
+                    Q(portfolio__isnull=False)
+                    & Q(portfolio__city__isnull=False)
+                    & Q(portfolio__state_territory__isnull=False),
+                    then=F("portfolio__city"),
+                ),
+                default=F("city"),
+                output_field=CharField(),
+            ),
+            "converted_state_territory": Case(
+                When(
+                    Q(sub_organization__isnull=False)
+                    & Q(sub_organization__city__isnull=False)
+                    & Q(sub_organization__state_territory__isnull=False),
+                    then=F("sub_organization__state_territory"),
+                ),
+                When(
+                    Q(portfolio__isnull=False)
+                    & Q(portfolio__city__isnull=False)
+                    & Q(portfolio__state_territory__isnull=False),
+                    then=F("portfolio__state_territory"),
+                ),
+                default=F("state_territory"),
                 output_field=CharField(),
             ),
         }
@@ -733,6 +790,7 @@ class DomainExport(BaseExport):
 
         # organization_type has organization_type AND is_election
         # domain_org_type includes "- Election" org_type variants
+
         domain_org_type = model.get("converted_org_type")
         human_readable_domain_org_type = DomainRequest.OrgChoicesElectionOffice.get_org_label(domain_org_type)
         domain_federal_type = model.get("converted_federal_type")
@@ -779,6 +837,7 @@ class DomainExport(BaseExport):
             "Domain type": model.get("domain_type"),
             "Agency": model.get("converted_federal_agency"),
             "Organization name": model.get("converted_organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
             "City": model.get("converted_city"),
             "State": model.get("converted_state_territory"),
             "SO": model.get("converted_so_name"),
@@ -901,6 +960,23 @@ class DomainDataType(DomainExport):
             "Invited domain managers",
         ]
 
+    # Maybe TODO: Remove for csv updates for domain analytics csv
+    # This overrides the converted_organization_name from DomainExport,
+    # Which displays the federal agency after a conditional is met for the organization field
+    # We remove this check in the override, the fed agency already displays in the "Agency" col
+
+    @classmethod
+    def get_computed_fields(cls, **kwargs):
+        fields = super().get_computed_fields(**kwargs)
+
+        fields["converted_organization_name"] = Case(
+            When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+            default=F("organization_name"),
+            output_field=CharField(),
+        )
+
+        return fields
+
     @classmethod
     def get_annotations_for_sort(cls):
         """
@@ -1000,17 +1076,11 @@ class DomainDataFull(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    # NOTE - this override is temporary.
-    # We are running into a problem where DomainDataFull is
-    # pulling the wrong data.
-    # For example, the portfolio name, rather than the suborganization name.
-    # This can be removed after that gets fixed.
     # The following fields are changed from DomainExport:
-    # converted_organization_name => organization_name
-    # converted_city => city
-    # converted_state_territory => state_territory
     # converted_so_name => so_name
     # converted_so_email => senior_official__email
+    # city => converted_city
+    # state_territory => converted_state_territory
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
@@ -1019,10 +1089,10 @@ class DomainDataFull(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
-            "City": model.get("city"),
-            "State": model.get("state_territory"),
+            "Organization name": model.get("converted_organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
+            "City": model.get("converted_city"),
+            "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
@@ -1041,8 +1111,8 @@ class DomainDataFull(DomainExport):
         return [
             "Domain name",
             "Domain type",
-            "Agency",
             "Organization name",
+            "Suborganization name",
             "City",
             "State",
             "Security contact email",
@@ -1120,17 +1190,12 @@ class DomainDataFederal(DomainExport):
     Inherits from BaseExport -> DomainExport
     """
 
-    # NOTE - this override is temporary.
-    # We are running into a problem where DomainDataFull is
-    # pulling the wrong data.
-    # For example, the portfolio name, rather than the suborganization name.
-    # This can be removed after that gets fixed.
     # The following fields are changed from DomainExport:
-    # converted_organization_name => organization_name
-    # converted_city => city
-    # converted_state_territory => state_territory
     # converted_so_name => so_name
     # converted_so_email => senior_official__email
+    # city => converted_city
+    # state_territory => converted_state_territory
+
     @classmethod
     def get_fields(cls, model):
         FIELDS = {
@@ -1139,10 +1204,10 @@ class DomainDataFederal(DomainExport):
             "First ready on": model.get("first_ready_on"),
             "Expiration date": model.get("expiration_date"),
             "Domain type": model.get("domain_type"),
-            "Agency": model.get("federal_agency__agency"),
-            "Organization name": model.get("organization_name"),
-            "City": model.get("city"),
-            "State": model.get("state_territory"),
+            "Organization name": model.get("converted_organization_name"),
+            "Suborganization name": model.get("converted_sub_organization_name"),
+            "City": model.get("converted_city"),
+            "State": model.get("converted_state_territory"),
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
@@ -1161,8 +1226,8 @@ class DomainDataFederal(DomainExport):
         return [
             "Domain name",
             "Domain type",
-            "Agency",
             "Organization name",
+            "Suborganization name",
             "City",
             "State",
             "Security contact email",
@@ -1217,10 +1282,7 @@ class DomainDataFederal(DomainExport):
         """
         return Q(
             organization_type__icontains="federal",
-            domain__state__in=[
-                Domain.State.READY,
-                Domain.State.ON_HOLD,
-            ],
+            domain__state__in=[Domain.State.READY, Domain.State.ON_HOLD],
         )
 
     @classmethod
@@ -1326,6 +1388,23 @@ class DomainGrowth(DomainExport):
             "domain__deleted",
             "federal_agency__agency",
         ]
+
+    # Maybe TODO: Remove for csv updates for domain analytics csv
+    # This overrides the converted_organization_name from DomainExport,
+    # Which displays the federal agency after a conditional is met for the organization field
+    # We remove this check in the override, the fed agency already displays in the "Agency" col
+
+    @classmethod
+    def get_computed_fields(cls, **kwargs):
+        fields = super().get_computed_fields(**kwargs)
+
+        fields["converted_organization_name"] = Case(
+            When(portfolio__isnull=False, then=F("portfolio__organization_name")),
+            default=F("organization_name"),
+            output_field=CharField(),
+        )
+
+        return fields
 
 
 class DomainManaged(DomainExport):
