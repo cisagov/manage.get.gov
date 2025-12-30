@@ -141,6 +141,7 @@ class AnalyticsView(View):
                 ],
                 "user_count": models.User.objects.all().count(),
                 "domain_count": models.Domain.objects.all().count(),
+                "federal_domain_count": models.DomainInformation.objects.filter(federal_agency__isnull=False, portfolio__federal_agency__isnull=False).count(),
                 "ready_domain_count": models.Domain.objects.filter(state=models.Domain.State.READY).count(),
                 "last_30_days_applications": last_30_days_applications.count(),
                 "last_30_days_approved_applications": last_30_days_approved_applications.count(),
