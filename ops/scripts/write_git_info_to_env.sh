@@ -2,10 +2,12 @@
 # Writing to a sandbox manually
 # Assumptions: 
 # Already logged into the cloud.gov cli 
-# The branch name follows our branch naming conventions
 # Versioning info can be found at url: /health
-# Notes: 
-# Script rest app at the end to update changes
+# Notes:
+# you must include enviromnent(i.e, ad, aa, etc) in bash command
+# bash ./ops/scripts/write_git_info_to_env.sh ad
+# Script restarts app at the end to update changes
+# 
 
 set -euo pipefail
 
