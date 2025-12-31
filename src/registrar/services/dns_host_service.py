@@ -45,6 +45,14 @@ class DnsHostService:
     def _find_nameservers_by_zone_id(self, items, x_zone_id):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
+    
+    def _get_nameservers_from_db(self, domain_name) -> list[str]:
+        try:
+            zone = DnsZone.objects.get(name=domain_name)
+        except DnsZone.DoesNotExist:
+            return []
+        
+        return zone.nameservers or []
 
     def dns_setup(self, domain_name):
         # Set up a vendor ACCOUNT
@@ -71,24 +79,25 @@ class DnsHostService:
         _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
 
         if has_zone:
-            logger.info("Already has an existing zone")
+            logger.info("Already has an existing zone and nameservers")
+            return 
+
+        try:
+            nameservers, zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
+        except APIError as e:
+            logger.error(e)
+            raise
+
+        if zone_data:
+            self.save_db_zone({"result": zone_data}, domain_name)
         else:
             try:
-                nameservers, zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
-            except APIError as e:
-                logger.error(e)
+                nameservers = self.create_and_save_zone(domain_name, x_account_id)
+            except Exception as e:
+                logger.error(f"dnsSetup for zone failed {e}")
                 raise
 
-            if zone_data:
-                self.save_db_zone({"result": zone_data}, domain_name)
-            else:
-                try:
-                    nameservers = self.create_and_save_zone(domain_name, x_account_id)
-                except Exception as e:
-                    logger.error(f"dnsSetup for zone failed {e}")
-                    raise
-
-        return nameservers
+        return
 
     def create_and_save_account(self, account_name):
         try:

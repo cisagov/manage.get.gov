@@ -834,10 +834,22 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
+                
                 has_zone = DnsZone.objects.filter(name=domain_name).exists()
                 if has_zone:
                     zone_name = domain_name
-                    # post nameservers to registry
+                    
+                    nameservers = self.dns_host_service._get_nameservers_from_db(domain_name)
+                    if not nameservers:
+                        logger.error(f"No nameservers found in DB for domain {domain_name}")
+                        return JsonResponse(
+                            {
+                                "status": "error",
+                                "message": "DNS nameservers not available"
+                            },
+                            status=400,
+                        )
+                    
                     try:
                         self.dns_host_service.register_nameservers(zone_name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
