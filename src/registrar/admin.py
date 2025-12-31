@@ -4135,8 +4135,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "on_hold_date_display",
                     "days_on_hold_display",
                     "deleted",
-                    "dnssecdata",
-                    "nameservers",
+                    # "dnssecdata",
+                    # "nameservers",
                 ]
             },
         ),

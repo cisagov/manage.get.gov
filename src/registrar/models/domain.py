@@ -11,6 +11,7 @@ from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
 from functools import cached_property
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from typing import Any
 from registrar.models.domain_invitation import DomainInvitation
@@ -432,7 +433,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         raise NotImplementedError()
 
-    @Cache
+    @property
     def nameservers(self) -> list[tuple[str, list]]:
         """
         Get or set a complete list of nameservers for this domain.
@@ -444,6 +445,16 @@ class Domain(TimeStampedModel, DomainHelper):
         Subordinate hosts (something.your-domain.gov) MUST have IP addresses,
         while non-subordinate hosts MUST NOT.
         """
+
+        cache_key = f"domain_{self.id}_nameservers"
+        cached = cache.get(cache_key)
+
+        if cached is not None:
+            logger.info(f"!!! CACHE HIT for NAMESERVERS on domain={self.name} !!!")
+            return cached
+
+        logger.info(f"!!! CACHE MISS for NAMESERVERS on domain={self.name} !!!")
+
         try:
             # attempt to retrieve hosts from registry and store in cache and db
             hosts = self._get_property("hosts")
@@ -459,6 +470,10 @@ class Domain(TimeStampedModel, DomainHelper):
         hostList = []
         for host in hosts:
             hostList.append((host["name"], host["addrs"]))
+
+        cache.set(cache_key, hosts, timeout=300)
+        logger.info(f"!!! Cached NAMESERRVERS for domain={self.name} !!!")
+
         return hostList
 
     def _create_host(self, host, addrs):
@@ -678,7 +693,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         return [deleteObj], len(deleteStrList)
 
-    @Cache
+    @property
     def dnssecdata(self) -> Optional[extensions.DNSSECExtension]:
         """
         Get a complete list of dnssecdata extensions for this domain.
@@ -691,8 +706,19 @@ class Domain(TimeStampedModel, DomainHelper):
             keyData: Optional[Sequence[DNSSECKeyData]]
 
         """
+
+        cache_key = f"domain_{self.id}_dnssecdata"
+        cached = cache.get(cache_key)
+
+        if cached is not None:
+            logger.info(f"!!! CACHE HIT for DNSSECDATA on domain={self.name} !!!")
+            return cached
+
+        logger.info(f"!!! CACHE MISS for DNSSECDATA on domain={self.name} !!!")
         try:
-            return self._get_property("dnssecdata")
+            result = self._get_property("dnssecdata")
+            cache.set(cache_key, result, timeout=300)
+            return result
         except Exception as err:
             # Don't throw error as this is normal for a new domain
             logger.info("Domain does not have dnssec data defined %s" % err)
@@ -837,7 +863,7 @@ class Domain(TimeStampedModel, DomainHelper):
             except Exception as err:
                 logger.info("nameserver setter checked for create state and it did not succeed. Warning: %s" % err)
 
-    @Cache
+    @property
     def statuses(self) -> list[str]:
         """
         Get the domain `status` elements from the registry.
@@ -847,13 +873,15 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # Check if cache is hit
         cache_key = f"domain_{self.id}_statuses"
-        cached = getattr(self, "_cached_statuses", None)
 
-        if cached is not None:
+        # Grab from cache first
+        cached_statuses = cache.get(cache_key)
+
+        if cached_statuses is not None:
             logger.info(f"!!! CACHE HIT for statuses on domain={self.name} !!!")
-            return cached
-        else:
-            logger.info(f"!!! CACHE MISS for statuses on domain={self.name} !!!")
+            return cached_statuses
+
+        logger.info(f"!!! CACHE MISS for statuses on domain={self.name} !!!")
 
         start_time = time.time()
         logger.info("=== IN STATUSES FUNCTION ===")
@@ -865,15 +893,9 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.info("=== !!! BEFORE EPP get_statuses ===")
 
             result = self._get_property("statuses")
-            logger.info("=== !!! AFTER EPP get_statuses ===")
 
-            prop_elapsed = time.time() - prop_start
-            logger.info(f"=== _get_property('statuses') took {prop_elapsed:.2f}s for domain={self.name} ===")
-
-            elapsed = time.time() - start_time
-            logger.info(
-                f"=== STATUSES END for domain={self.name} took {elapsed:.2f}s total, returned {len(result)} statuses ==="
-            )
+            # Cache for 5 min
+            cache.set(cache_key, result, timeout=300)
 
             return result
         except KeyError:
@@ -2500,9 +2522,17 @@ class Domain(TimeStampedModel, DomainHelper):
         """Remove cache data when updates are made.
         NOTE: The "on hold date" property is a one off addition - we want to
         make sure that when there is state change we delete the on hold date as well."""
-        self._cache = {}
+
+        logger.info(f">>> Invalidating cache for domain={self.name}")
+
+        # Clear all cached properties
+        cache.delete(f"domain_{self.id}_statuses")
+        cache.delete(f"domain_{self.id}_nameservers")
+        cache.delete(f"domain_{self.id}_dnssecdata")
+
         logging.info(f"Delete hold date on {self.name}")
         delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
+        logger.info(f">>> Cache invalidated for domain={self.name}")
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""
