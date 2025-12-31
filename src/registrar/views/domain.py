@@ -804,6 +804,13 @@ class DomainDNSRecordView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
+    def get(self, request, *args, **kwargs):
+        """Get all DNS records of a given domain."""
+        self.object = self.get_object()
+        return JsonResponse(
+            self.get_context_data()
+        )
+
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission."""
         self.object = self.get_object()
