@@ -46,7 +46,7 @@ if [ $IS_CI = true ]; then
     echo "CF CLI installed"
 fi
 
-echo "Collecting git info for environment in process"
+echo "Git info for environment in process"
 echo "Branch: $BRANCH"
 echo "Commit: $COMMIT"
 echo "TAG: ${TAG:-none}"
