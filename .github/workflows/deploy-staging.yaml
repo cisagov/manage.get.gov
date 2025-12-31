@@ -49,6 +49,7 @@ jobs:
           BRANCH: main
           CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
           CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
+          TAG: ${{ github.ref_name }}
         run: |
            bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
       - name: Run Django migrations

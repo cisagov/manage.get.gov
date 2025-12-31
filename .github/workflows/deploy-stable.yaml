@@ -39,6 +39,7 @@ jobs:
           BRANCH:  main
           CF_USERNAME: ${{ secrets.CF_STABLE_USERNAME }}
           CF_PASSWORD: ${{ secrets.CF_STABLE_PASSWORD }}
+          TAG: ${{ github.ref_name }}
         run: |
            bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
       - name: Deploy to cloud.gov sandbox
