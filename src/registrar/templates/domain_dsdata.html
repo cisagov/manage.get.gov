@@ -6,30 +6,7 @@
 
   {% block breadcrumb %}
   <!-- Navigation breadcrumbs -->
-   {% if portfolio %}
-    {% url 'domains' as url %}
-   {% else %}
-     {% url 'home' as url %}
-   {% endif %}
-  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-    <ol class="usa-breadcrumb__list">
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{ domain.name }}</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-dns' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNS</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-dns-dnssec' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>DNSSEC</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>DS data</span>
-      </li>
-    </ol>
-  </nav>
+    {% include "includes/domain_breadcrumbs.html" %}  
   {% endblock breadcrumb %}
 
   {% block domain_content %}
