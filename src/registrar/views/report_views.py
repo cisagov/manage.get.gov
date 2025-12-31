@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.views import View
 from django.shortcuts import render
 from django.contrib import admin
-from django.db.models import Avg, F
+from django.db.models import Avg, F, Q
 
 from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
 from .. import models
@@ -118,6 +118,10 @@ class AnalyticsView(View):
             filter_submitted_requests_end_date
         )
 
+        filter_federal_domains = Q(portfolio__isnull=True) & Q(
+            generic_org_type=models.DomainRequest.OrganizationChoices.FEDERAL
+        ) | Q(portfolio__organization_type=models.DomainRequest.OrganizationChoices.FEDERAL)
+
         context = dict(
             # Generate a dictionary of context variables that are common across all admin templates
             # (site_header, site_url, ...),
@@ -141,9 +145,7 @@ class AnalyticsView(View):
                 ],
                 "user_count": models.User.objects.all().count(),
                 "domain_count": models.Domain.objects.all().count(),
-                "federal_domain_count": models.DomainInformation.objects.filter(
-                    generic_org_type=models.DomainRequest.OrganizationChoices.FEDERAL
-                ).count(),
+                "federal_domain_count": models.DomainInformation.objects.filter(filter_federal_domains).count(),
                 "ready_domain_count": models.Domain.objects.filter(state=models.Domain.State.READY).count(),
                 "last_30_days_applications": last_30_days_applications.count(),
                 "last_30_days_approved_applications": last_30_days_approved_applications.count(),
