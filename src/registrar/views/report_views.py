@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.views import View
 from django.shortcuts import render
 from django.contrib import admin
-from django.db.models import Avg, F, Q
+from django.db.models import Avg, F
 
 from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
 from .. import models
@@ -142,7 +142,7 @@ class AnalyticsView(View):
                 "user_count": models.User.objects.all().count(),
                 "domain_count": models.Domain.objects.all().count(),
                 "federal_domain_count": models.DomainInformation.objects.filter(
-                    Q(federal_agency__isnull=False) | Q(portfolio__federal_agency__isnull=False)
+                    generic_org_type=models.DomainRequest.OrganizationChoices.FEDERAL
                 ).count(),
                 "ready_domain_count": models.Domain.objects.filter(state=models.Domain.State.READY).count(),
                 "last_30_days_applications": last_30_days_applications.count(),
