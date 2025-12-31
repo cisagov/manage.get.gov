@@ -50,7 +50,7 @@ jobs:
           CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
           CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
         run: |
-           bash ops/scripts/write_git_info_to_env.sh
+           bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
       - name: Run Django migrations
         uses: cloud-gov/cg-cli-tools@main
         with:
