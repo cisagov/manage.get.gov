@@ -76,7 +76,7 @@ jobs:
           BRANCH: ${{ github.event.inputs.branch }}
           TAG: ${{ startsWith(github.ref, 'refs/tags') && github.ref_name || '' }}
         run: |
-          bash ops/scripts/write_git_info_to_env.sh
+          bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:

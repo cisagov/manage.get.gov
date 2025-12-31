@@ -5,19 +5,17 @@
 # The branch name follows our branch naming conventions
 # Versioning info can be found at url: /health
 # Notes: 
-# Script restages app at the end to update changes
+# Script rest app at the end to update changes
 
 set -euo pipefail
 
-# IS_LOCAL_ENV="false"
+ENVIRONMENT=${1:-}
 
-if ["${1:-}" = "--localenv"]; then
-   IS_LOCAL_ENV="true"
-else
-   IS_LOCAL_ENV="false"
+if [ -z "$ENVIRONMENT" ]; then
+    echo "ERROR: Environment missing"
+    exit 1
 fi
 
-echo $IS_LOCAL_ENV 
 if [[ -n "${GITHUB_ACTIONS:-}" && $GITHUB_ACTIONS = 'true' ]]; then
     echo "Running in Github Actions"
     IS_CI=true
@@ -26,11 +24,6 @@ else
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
     COMMIT=$(git rev-parse HEAD)
     IS_CI=false
-    if [ $IS_LOCAL_ENV = "false" ]; then
-       ENVIRONMENT=${BRANCH%%/*}
-    else
-       ENVIRONMENT="local"
-    fi
 fi
 
 if [[ "$ENVIRONMENT" == "stable" || "$ENVIRONMENT" == "staging" ]]; then
@@ -59,6 +52,7 @@ echo "Commit: $COMMIT"
 echo "TAG: ${TAG:-none}"
 echo "Environment: $ENVIRONMENT"
 
+
 if [ $IS_CI = true ]; then
     echo "Authenticating..."
     cf api api.fr.cloud.gov
@@ -68,25 +62,15 @@ if [ $IS_CI = true ]; then
     fi
 fi
 
-if [ $IS_LOCAL_ENV = "false" ]; then 
 echo "Setting env variables"
 cf target -o cisa-dotgov -s "$ENVIRONMENT"
 cf set-env $APP_NAME GIT_BRANCH "$BRANCH"
 cf set-env $APP_NAME GIT_COMMIT "$COMMIT"
 cf set-env $APP_NAME GIT_TAG "$TAG"
-else
-echo "Writing to env"
-cat > .env << EOF
-GIT_BRANCH=$BRANCH
-GIT_COMMIT=$COMMIT
-GIT_TAG=$TAG
-EOF
-fi
-
 
 echo "Git info Updated for $ENVIRONMENT"
 
-if [ $IS_CI = false ] && [ $IS_LOCAL_ENV = "false" ]; then
+if [ $IS_CI = false ]; then
     echo "app is restarting for changes to take effect"
     cf restart "getgov-$ENVIRONMENT"
 fi

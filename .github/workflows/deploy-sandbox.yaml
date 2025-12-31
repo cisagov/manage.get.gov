@@ -54,7 +54,7 @@ jobs:
           COMMIT: ${{ github.sha }}
           BRANCH: ${{ github.head_ref }}
         run: |
-           bash ops/scripts/write_git_info_to_env.sh
+           bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:

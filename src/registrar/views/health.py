@@ -1,4 +1,5 @@
 from login_required import login_not_required
+from django.http import JsonResponse
 from django.shortcuts import render
 import os
 
@@ -14,4 +15,7 @@ def health(request):
         "git_tag": os.getenv("GIT_TAG", ""),
     }
 
-    return render(request, "health.html", context)
+    if 'text/html' in request.headers.get('Accept', ''):
+        return render(request, "health.html", context)
+    else:
+        return JsonResponse(context, status=200)
