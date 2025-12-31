@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.views import View
 from django.shortcuts import render
 from django.contrib import admin
-from django.db.models import Avg, F
+from django.db.models import Avg, F, Q
 
 from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
 from .. import models

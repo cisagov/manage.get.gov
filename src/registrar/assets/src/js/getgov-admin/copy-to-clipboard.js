@@ -66,7 +66,7 @@ function helperCopyEmailsFromTableFunction(table){
 
 // method that captures the data on the "at a glance section" of the analytics page
 
-function copyAtAGlanceAnalytics(button,contentListId,selector){
+function copyAtAGlanceAnalytics(button,contentListId,selector) {
     // Get ul list 
     const contentList = document.querySelector(contentListId)
     // Get li elements 
@@ -78,6 +78,7 @@ function copyAtAGlanceAnalytics(button,contentListId,selector){
           textToCopy+= currText + "\n"
           copyToClipboardAndChangeIcon(button, textToCopy, selector)
     }   
+ }
 }
 
 /**
