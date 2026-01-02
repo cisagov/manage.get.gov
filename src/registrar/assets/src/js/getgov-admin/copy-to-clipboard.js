@@ -64,6 +64,23 @@ function helperCopyEmailsFromTableFunction(table){
     return emails.join(",")
 }
 
+// method that captures the data on the "at a glance section" of the analytics page
+
+function copyAtAGlanceAnalytics(button,contentListId,selector) {
+    // Get ul list 
+    const contentList = document.querySelector(contentListId)
+    // Get li elements 
+    const itemsFromList = contentList.querySelectorAll(':scope > li')
+    let textToCopy = "";
+    if(itemsFromList){
+        for(let item of itemsFromList){
+          let currText = item.innerText
+          textToCopy+= currText + "\n"
+        }  
+    copyToClipboardAndChangeIcon(button, textToCopy, selector) 
+ }
+}
+
 /**
  * A function for pages in DjangoAdmin that use a clipboard button
 */
@@ -102,4 +119,11 @@ export function initCopyToClipboard() {
         copyAllMembersAdminsToClipboard(portfolioAdminsButton, "#portfolio-admins-table", portfolioAdminsSelectorId)
      }
     )
+    const copyToClipboardAnalyticsId = '#copy-to-clipboard-analytics' 
+    const atAGlanceDashBoardButton = document.querySelector(copyToClipboardAnalyticsId)
+    atAGlanceDashBoardButton && atAGlanceDashBoardButton.addEventListener("click", ()=>{
+        copyAtAGlanceAnalytics(atAGlanceDashBoardButton, "#analytics-dashboard-glance", copyToClipboardAnalyticsId)
+      }
+    )
+
 }
