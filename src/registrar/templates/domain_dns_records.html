@@ -4,7 +4,7 @@
 {% block title %}DNS | {{ domain.name }} | {% endblock %}
 
 {% block breadcrumb %}
-    <!-- Navigation breadcrumbs -->
+<!-- Navigation breadcrumbs -->
   <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
     <ol class="usa-breadcrumb__list">
       <li class="usa-breadcrumb__list-item">
@@ -52,20 +52,21 @@
                 <p class="measure-none">
                     Click "Add record" and enter the values that you need to enter so everything and everyone can get the work done here.
                 </p>
-                <p class="text-italic measure-none">
-                    Required fields are marked with an asterisk(<abbr class="usa-hint usa-hint--required" title="required">*</abbr>).
-                </p>
 
                 <div x-cloak x-show="show_form">
+                    {% include "includes/required_fields.html" %}
+                
+                    <section class="section-outlined section-outlined--extra-padding">
                     <form 
-                        class="usa-form usa-form--large padding-3 border-1px radius-md border-base-lighter width-full maxw-none margin-top"
+                        class="usa-form usa-form--extra-large"
                         method="post"
                         novalidate id="form-container"
                         x-cloak
+                        x-ref="dnsForm"
                         x-show="show_form"
                     >
                         {% csrf_token %}
-                        <h2 class="margin-top-0">Add record</h2>
+                        <h2>Add record</h2>
 
                         <div class="grid-row grid-gap">
                             <div class="grid-col-3">
@@ -87,7 +88,7 @@
                             {% input_with_errors form.comment %}
 
                             <button
-                                type="button"
+                                type="reset"
                                 class="usa-button usa-button--outline"
                                 x-on:click="show_form = false"
                             >
@@ -101,6 +102,7 @@
                             </button>
                         </div>
                     </form>
+                    </section>
                 </div>
              </div>
         </div>
