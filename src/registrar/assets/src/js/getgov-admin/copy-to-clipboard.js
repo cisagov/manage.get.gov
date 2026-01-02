@@ -71,12 +71,12 @@ function copyAtAGlanceAnalytics(button,contentListId,selector) {
     const contentList = document.querySelector(contentListId)
     // Get li elements 
     const itemsFromList = contentList.querySelectorAll(':scope > li')
+    let textToCopy = "";
     if(itemsFromList){
-        let textToCopy = "";
         for(let item of itemsFromList){
           let currText = item.innerText
           textToCopy+= currText + "\n"
-    }  
+        }  
     copyToClipboardAndChangeIcon(button, textToCopy, selector) 
  }
 }
