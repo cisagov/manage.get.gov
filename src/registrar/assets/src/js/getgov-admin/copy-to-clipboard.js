@@ -76,8 +76,8 @@ function copyAtAGlanceAnalytics(button,contentListId,selector) {
         for(let item of itemsFromList){
           let currText = item.innerText
           textToCopy+= currText + "\n"
-          copyToClipboardAndChangeIcon(button, textToCopy, selector)
-    }   
+    }  
+    copyToClipboardAndChangeIcon(button, textToCopy, selector) 
  }
 }
 
