@@ -1,8 +1,8 @@
 #!/bin/sh
 # Writing to a sandbox manually
+# Versioning info can be found at url: /health
 # Assumptions: 
 # Already logged into the cloud.gov cli 
-# Versioning info can be found at url: /health
 # Notes:
 # you must include enviromnent(i.e, ad, aa, etc) in bash command
 # bash ./ops/scripts/write_git_info_to_env.sh ad
