@@ -871,6 +871,14 @@ class DomainDNSRecordView(DomainFormBaseView):
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
 
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Records"
+
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
