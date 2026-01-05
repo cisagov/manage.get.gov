@@ -118,9 +118,13 @@ class AnalyticsView(View):
             filter_submitted_requests_end_date
         )
 
-        filter_federal_domains = Q(portfolio__isnull=True) & Q(
+        query_fed_domains_no_port = Q(portfolio__isnull=True) & Q(
             generic_org_type=models.DomainRequest.OrganizationChoices.FEDERAL
-        ) | Q(portfolio__organization_type=models.DomainRequest.OrganizationChoices.FEDERAL)
+        )
+
+        query_fed_domains_port = Q(portfolio__organization_type=models.DomainRequest.OrganizationChoices.FEDERAL)
+
+        filter_federal_domains = query_fed_domains_no_port | query_fed_domains_port
 
         context = dict(
             # Generate a dictionary of context variables that are common across all admin templates
