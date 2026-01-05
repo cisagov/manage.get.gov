@@ -105,6 +105,12 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
 
+    def get_portfolio(self):
+        return self.request.session.get("portfolio")
+
+    def in_portfolio_context(self) -> bool:
+        return bool(self.get_portfolio())
+
     def _get_domain(self, request):
         """
         get domain from session cache or from db and set
@@ -149,6 +155,10 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
         )
         context["dns_hosting"] = flag_is_active_for_user(user, "dns_hosting")
+        context["breadcrumbs"] = self.get_breadcrumb_items()
+        context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
+        context["breadcrumb_aria_label"] = "Domain breadcrumb"
+        context["portfolio"] = self.get_portfolio()
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -268,6 +278,16 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         # and it is in a valid status
         return True
 
+    def get_breadcrumb_items(self):
+        return []
+
+    def get_breadcrumb_current_label(self):
+        """Child views should override to set the current page label (non-link)."""
+        return None
+
+    def get_breadcrumb_aria_label(self):
+        return "Domain breadcrumb" if self.in_portfolio_context() else "Domain manager breadcrumb"
+
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
     """
@@ -354,7 +374,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
                     is_org_user = self.request.user.is_org_user(self.request)
-                    if is_org_user and (not info or info.portfolio):
+                    if is_org_user and (
+                        not info or info.portfolio
+                    ):  # if it's a portfolio user and the domain is in a portfolio, don't notify
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -417,6 +439,9 @@ class DomainView(DomainBaseView):
 
     template_name = "domain_detail.html"
 
+    def get_breadcrumb_current_label(self):
+        return None
+
     def get_context_data(self, **kwargs):
         """If we don't reference security email in context for older deleted domains
         there wont be a 500 error (bc it was referencing something that didn't exist
@@ -425,6 +450,8 @@ class DomainView(DomainBaseView):
 
         default_emails = DefaultEmail.get_all_emails()
 
+        context["breadcrumb_domain_is_current"] = True
+        context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=self.request.session.get("portfolio")
@@ -478,6 +505,9 @@ class DomainLifecycleView(DomainBaseView):
 
     template_name = "domain_lifecycle.html"
 
+    def get_breadcrumb_current_label(self):
+        return "Domain lifecycle"
+
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
@@ -489,6 +519,12 @@ class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
+
+    def get_breadcrumb_items(self):
+        return [{"label": "Domain lifecycle", "url": reverse("domain-lifecycle", kwargs={"domain_pk": self.object.id})}]
+
+    def get_breadcrumb_current_label(self):
+        return "Renewal form"
 
     def get_context_data(self, **kwargs):
         """Grabs the security email information and adds security_email to the renewal form context
@@ -636,6 +672,9 @@ class DomainSubOrganizationView(DomainFormBaseView):
     context_object_name = "domain"
     form_class = DomainSuborganizationForm
 
+    def get_breadcrumb_current_label(self):
+        return "Suborganization"
+
     def has_permission(self):
         """Override for the has_permission class to exclude non-portfolio users"""
 
@@ -682,6 +721,9 @@ class DomainSeniorOfficialView(DomainFormBaseView):
     template_name = "domain_senior_official.html"
     context_object_name = "domain"
     form_class = SeniorOfficialContactForm
+
+    def get_breadcrumb_current_label(self):
+        return "Senior official"
 
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.senior_official instance to make a bound form."""
@@ -737,6 +779,9 @@ class DomainDNSView(DomainBaseView):
     """DNS Information View."""
 
     template_name = "domain_dns.html"
+
+    def get_breadcrumb_current_label(self):
+        return "DNS"
 
 
 class DomainDNSRecordForm(forms.Form):
@@ -920,6 +965,12 @@ class DomainNameserversView(DomainFormBaseView):
     form_class = NameserverFormset
     model = Domain
 
+    def get_breadcrumb_items(self):
+        return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
+
+    def get_breadcrumb_current_label(self):
+        return "DNS name servers"
+
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
         nameservers = self.object.nameservers
@@ -1039,6 +1090,12 @@ class DomainDNSSECView(DomainFormBaseView):
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
 
+    def get_breadcrumb_items(self):
+        return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
+
+    def get_breadcrumb_current_label(self):
+        return "DNSSEC"
+
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
@@ -1077,6 +1134,15 @@ class DomainDsDataView(DomainFormBaseView):
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
     form = DomainDsdataForm
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+            {"label": "DNSSEC", "url": reverse("domain-dns-dnssec", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "DS data"
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
@@ -1172,6 +1238,9 @@ class DomainSecurityEmailView(DomainFormBaseView):
     template_name = "domain_security_email.html"
     form_class = DomainSecurityEmailForm
 
+    def get_breadcrumb_current_label(self):
+        return "Security email"
+
     def get_initial(self):
         """The initial value for the form."""
         initial = super().get_initial()
@@ -1242,6 +1311,9 @@ class DomainUsersView(DomainBaseView):
     """Domain managers page in the domain details."""
 
     template_name = "domain_users.html"
+
+    def get_breadcrumb_current_label(self):
+        return "Domain managers"
 
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
@@ -1328,6 +1400,19 @@ class DomainAddUserView(DomainFormBaseView):
 
     template_name = "domain_add_user.html"
     form_class = DomainAddUserForm
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "Domain managers", "url": reverse("domain-users", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Add a domain manager"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["hide_domain_base_crumbs"] = not self.in_portfolio_context()
+        return context
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.pk})
@@ -1451,6 +1536,14 @@ class DomainDeleteUserView(DeleteView):
     object: UserDomainRole
     model = UserDomainRole
     context_object_name = "userdomainrole"
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "Domain lifecycle", "url": reverse("domain-lifecycle", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Request deletion"
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""

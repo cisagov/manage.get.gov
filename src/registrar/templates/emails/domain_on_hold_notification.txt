@@ -14,7 +14,6 @@ If you would like to release the hold and cancel the deletion, reply to this ema
 ----------------------------------------------------------------
 
 WHAT DOES “ON HOLD” MEAN?
-
 When a domain is placed on hold: 
 
 - The domain and its subdomains no longer resolve in DNS. 
@@ -25,7 +24,6 @@ The domain is still registered to your organization until it’s officially dele
 
 
 SOMETHING WRONG?
-
 If you’re not affiliated with this .gov domain or think you received this message in error, reply to this email. 
 
 THANK YOU
