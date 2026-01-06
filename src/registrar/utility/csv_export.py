@@ -343,7 +343,7 @@ class MemberExport(BaseExport):
             "domain_info",
             "type",
             "joined_date",
-            "invited_by",
+            "invited_by_user",
         ]
 
         # Permissions
@@ -376,16 +376,16 @@ class MemberExport(BaseExport):
                     default=Value(""),
                     output_field=CharField(),
                 ),
-                domain_info=ArrayAgg(
+                domain_info=ArrayAgg(  # creates array
                     F("user__permissions__domain__name"),
                     distinct=True,
                     # only include domains in portfolio
                     filter=Q(user__permissions__domain__isnull=False)
                     & Q(user__permissions__domain__domain_info__portfolio=portfolio),
                 ),
-                type=Value("member", output_field=CharField()),
+                type=Value("member", output_field=CharField()),  # but these lines are textfield which is mistmatch
                 joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
-                invited_by=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
+                invited_by_user=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
             )
             .values(*shared_columns)
         )
@@ -416,7 +416,9 @@ class MemberExport(BaseExport):
                 domain_info=domain_invitations,
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
-                invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
+                invited_by_user=cls.get_invited_by_query(
+                    object_id_query=Cast(OuterRef("id"), output_field=CharField())
+                ),
             )
             .values(*shared_columns)
         )
