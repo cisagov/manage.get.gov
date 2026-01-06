@@ -4,7 +4,6 @@ from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 from django.conf import settings
-from django.db.utils import OperationalError
 
 from registrar.models import Domain, DomainInformation, UserDomainRole
 
