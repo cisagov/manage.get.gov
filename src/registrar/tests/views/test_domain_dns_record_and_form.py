@@ -36,13 +36,9 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.app.set_user(self.user.username)
 
     def tearDown(self):
-        try:
-            UserDomainRole.objects.all().delete()
-            DomainInformation.objects.all().delete()
-            Domain.objects.all().delete()
-        except OperationalError:
-            pass
-        super().tearDown()
+        UserDomainRole.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
 
 
 class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
