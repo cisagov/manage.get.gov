@@ -1306,18 +1306,26 @@ class TestDomainManagers(TestDomainOverview):
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             add_page.form.submit()
 
-        # check the mock instance to see if `send_email` was called right
-        mock_client_instance.send_email.assert_called_once_with(
-            FromEmailAddress=settings.DEFAULT_FROM_EMAIL,
-            Destination={"ToAddresses": [email_address]},
-            Content=ANY,
-        )
+        # should send two emails: portfolio invite + domain invite
+        self.assertEqual(mock_client_instance.send_email.call_count, 2)
+
+        # Find the domain invitation email call (subject contains "manage")
+        domain_call = None
+        for call_ in mock_client_instance.send_email.call_args_list:
+            _, kwargs = call_
+            subject = kwargs["Content"]["Simple"]["Subject"]["Data"]
+            if "invited to manage" in subject:
+                domain_call = kwargs
+                break
+
+        self.assertIsNotNone(domain_call, "Expected a domain invitation email to be sent")
 
         # Check the arguments passed to send_email method
-        _, kwargs = mock_client_instance.send_email.call_args
+        self.assertEqual(domain_call["FromEmailAddress"], settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(domain_call["Destination"], {"ToAddresses": [email_address]})
 
         # Extract the email content, and check that the message is as we expect
-        email_content = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+        email_content = domain_call["Content"]["Simple"]["Body"]["Text"]["Data"]
         self.assertIn("help@get.gov", email_content)
 
         # Check that the requestors first/last name do not exist
