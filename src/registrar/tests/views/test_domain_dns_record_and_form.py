@@ -5,7 +5,7 @@ from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 from django.conf import settings
 
-from registrar.models import Domain, DomainInformation, UserDomainRole
+from registrar.models import Domain, DomainInformation, UserDomainRole, User
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
