@@ -38,6 +38,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
         UserDomainRole.objects.all().delete()
         DomainInformation.objects.all().delete()
         Domain.objects.all().delete()
+        User.objects.all().delete
 
 
 class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
