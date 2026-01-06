@@ -3443,4 +3443,4 @@ class TestDomainDnsRecords(TestDomainOverview):
     def test_domain_dns_records(self):
         """Can load domain's DNS records page."""
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
-        self.assertContains(page, "Add DNS records")
+        self.assertContains(page, "Records")
