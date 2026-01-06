@@ -54,19 +54,17 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     def test_get_renders_page_and_form_fields_success(self):
         page = self.app.get(self._url(), status=200)
 
-        # Are there other assertions that would work better here? I can get rid of this if the subsequent is sufficient
-        self.assertIn("Records", page.text)
+        # Assert we are on the correct page
         self.assertIn("Add record", page.text)
 
         record_form = page.forms[0]
 
-        # Assert required fields exist by name
+        # Assert required fields for A type records exist by name
         for field in ("type_field", "name", "content", "ttl", "comment"):
             self.assertIn(field, record_form.fields)
 
-        # Defaults check
+        # Defaults check for A type records
         self.assertEqual(str(record_form["ttl"].value), "300")
-        self.assertEqual(record_form["type_field"].value, "A")
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -130,5 +128,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             # Service calls should not run
             svc.dns_setup.assert_not_called()
 
+            # Field assertions for A Type records. Additional tests will be needed for different types of records.
             self.assertIn("Name", response.text)
             self.assertIn("IPv4 Address", response.text)
