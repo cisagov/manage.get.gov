@@ -869,7 +869,7 @@ class DomainDNSRecordView(DomainFormBaseView):
 
                 domain_name = self.object.name
                 try:
-                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                    self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
