@@ -15,13 +15,13 @@ We've reviewed your domain request, but we need more information about the senio
 - {{ domain_request.senior_official.get_formatted_name }}
 - {{ domain_request.senior_official.title }}
 
-We expect a senior official to be someone in a role of significant, executive responsibility within the organization. Our guidelines are open-ended to accommodate the wide variety of government organizations that are eligible for .gov domains, but the person you listed does not meet our expectations for your type of organization. Read more about our guidelines for senior officials. <https://get.gov/domains/eligibility/>
+We expect a senior official to be someone in a role of significant, executive responsibility within the organization. Our guidelines are open-ended to accommodate the wide variety of government organizations that are eligible for .gov domains, but the person you listed does not meet our expectations for your type of organization. Read more about our guidelines for senior officials <https://get.gov/domains/eligibility/>.
 
 
 ACTION NEEDED
 Reply to this email with a justification for naming {{ domain_request.senior_official.get_formatted_name }} as the senior official. If you have questions or comments, include those in your reply.
 
-Alternatively, you can log in to the registrar and enter a different senior official for this domain request. <{{ manage_url }}> Once you submit your updated request, we’ll resume the adjudication process.
+Alternatively, you can log in to the registrar and enter a different senior official for this domain request <{{ manage_url }}>. Once you submit your updated request, we’ll resume the adjudication process.
 
 
 THANK YOU
