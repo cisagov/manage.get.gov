@@ -376,14 +376,14 @@ class MemberExport(BaseExport):
                     default=Value(""),
                     output_field=CharField(),
                 ),
-                domain_info=ArrayAgg(  # creates array
+                domain_info=ArrayAgg(
                     F("user__permissions__domain__name"),
                     distinct=True,
                     # only include domains in portfolio
                     filter=Q(user__permissions__domain__isnull=False)
                     & Q(user__permissions__domain__domain_info__portfolio=portfolio),
                 ),
-                type=Value("member", output_field=CharField()),  # but these lines are textfield which is mistmatch
+                type=Value("member", output_field=CharField()),
                 joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
                 invited_by_user=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
             )
