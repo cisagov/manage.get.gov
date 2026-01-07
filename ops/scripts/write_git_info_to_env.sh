@@ -74,5 +74,5 @@ echo "Git info Updated for $ENVIRONMENT"
 
 if [ $IS_CI = false ]; then
     echo "app is restarting for changes to take effect"
-    cf restart "getgov-$ENVIRONMENT"
+    cf restart $APP_NAME
 fi
