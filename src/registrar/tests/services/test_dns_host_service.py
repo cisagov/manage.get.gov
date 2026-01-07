@@ -125,7 +125,6 @@ class TestDnsHostService(TestCase):
 
                 self.service.dns_setup(case["domain_name"])
                 zone = DnsZone.objects.get(name=case["domain_name"])
-                returned_nameservers = zone.nameservers
 
                 self.assertEqual(zone.nameservers, case["expected_nameservers"])
 
