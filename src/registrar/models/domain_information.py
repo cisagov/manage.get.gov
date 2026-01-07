@@ -24,6 +24,11 @@ class DomainInformation(TimeStampedModel):
     the domain request once approved, so copying them that way we can make changes
     after its approved. Most fields here are copied from DomainRequest."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Cache the original generic_org_type to detect changes on save
+        self._original_generic_org_type = self.generic_org_type
+
     class Meta:
         """Contains meta information about this class"""
 
@@ -340,6 +345,50 @@ class DomainInformation(TimeStampedModel):
         org_type_helper.create_or_update_organization_type()
 
         return self
+    
+    def clear_irrelevant_fields(self):
+        """Clears fields that are no longer relevant when the organization type changes.
+
+        When generic_org_type changes, certain conditional fields become irrelevant:
+        - federal_agency, federal_type: Only relevant for Federal orgs
+        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
+        - is_election_board: Not applicable to Federal, Interstate, or School District
+        - about_your_organization: Only for Special District or Interstate orgs
+        """
+        
+        old_org_type = self._original_generic_org_type
+        new_org_type = self.generic_org_type
+
+        # Only clear fields if the org type actually changed
+        if old_org_type and new_org_type != old_org_type:
+            # Clear federal-specific fields if not federal
+            if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
+                self.federal_agency = None
+                self.federal_type = None
+
+            # Clear tribal-specific fields if not tribal
+            if new_org_type != DomainRequest.OrganizationChoices.TRIBAL:
+                self.federally_recognized_tribe = None
+                self.state_recognized_tribe = None
+                self.tribe_name = None
+
+            # Clear election board field if org type doesn't show election question
+            # Election question shows for all types except Federal, Interstate, and School District
+            excluded_from_election = [
+                DomainRequest.OrganizationChoices.FEDERAL,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
+            ]
+            if new_org_type in excluded_from_election:
+                self.is_election_board = None
+
+            # Clear "about your organization" field if not special district or interstate
+            about_org_types = [
+                DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+            ]
+            if new_org_type not in about_org_types:
+                self.about_your_organization = None
 
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
