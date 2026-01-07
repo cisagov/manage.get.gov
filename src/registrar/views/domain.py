@@ -787,18 +787,47 @@ class DomainDNSView(DomainBaseView):
 class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
-    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
+    type_field = forms.ChoiceField(
+        label="Type",
+        choices=[("", "Select a type"), ("A", "A")],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
+
+    name = forms.CharField(
+        label="Name",
+        required=True,
+        help_text="Use @ for root",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+            }
+        ),
+    )
 
     content = forms.GenericIPAddressField(
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+            }
+        ),
     )
 
     ttl = forms.ChoiceField(
         label="TTL",
         choices=[
-            (1, "Automatic"),
             (60, "1 minute"),
             (300, "5 minutes"),
             (1800, "30 minutes"),
@@ -808,19 +837,47 @@ class DomainDNSRecordForm(forms.Form):
             (43200, "12 hours"),
             (86400, "1 day"),
         ],
-        initial=1,
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+
+    comment = forms.CharField(
+        label="Comment",
+        required=False,
+        help_text="The information you enter here will not impact DNS record resolution and \
+        is meant only for your reference.",
+        max_length=500,
+        widget=forms.Textarea(
+            attrs={
+                "class": "usa-textarea usa-textarea--medium",
+                "rows": 2,
+            }
+        ),
     )
 
 
 @grant_access(IS_STAFF)
 class DomainDNSRecordView(DomainFormBaseView):
-    template_name = "domain_dns_record.html"
+    template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Records"
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -864,7 +921,7 @@ class DomainDNSRecordView(DomainFormBaseView):
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": "Test record",
+                    "comment": form.cleaned_data.get("comment", ""),
                 }
 
                 domain_name = self.object.name
