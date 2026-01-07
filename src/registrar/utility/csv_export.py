@@ -513,7 +513,7 @@ class MemberExport(BaseExport):
         FIELDS = {
             "Email": model.get("email_display"),
             "Member role": get_role_display(roles),
-            "Invited by": model.get("invited_by"),
+            "Invited by": model.get("invited_by_user"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
             "Domain requests": f"{get_domain_requests_display(roles, permissions)}",
