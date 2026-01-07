@@ -15,7 +15,7 @@ def health(request):
         "git_tag": os.getenv("GIT_TAG", ""),
     }
 
-    if 'text/html' in request.headers.get('Accept', ''):
+    if "text/html" in request.headers.get("Accept", ""):
         return render(request, "health.html", context)
     else:
         return JsonResponse(context, status=200)
