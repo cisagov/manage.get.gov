@@ -95,7 +95,7 @@ class TestDnsHostService(TestCase):
             with self.subTest(msg=case["test_name"], **case):
                 if case["test_name"] != "has db account, has db zone":
                     DnsZone.objects.filter(name=domain_name).delete()
-                
+
                 mock_find_existing_account_in_db.return_value = case["x_account_id"]
                 mock_get_x_zone_id_if_zone_exists.return_value = case["x_zone_id"], case["expected_nameservers"]
 
@@ -105,12 +105,12 @@ class TestDnsHostService(TestCase):
                     mock_find_existing_zone_in_cf.return_value = (
                         case["expected_nameservers"],
                         {
-                            "id": case.get("expected_zone_id"), 
+                            "id": case.get("expected_zone_id"),
                             "name": case["domain_name"],
                             "account": {"name": dns_acc.name},
                             "name_servers": case["expected_nameservers"],
                             "created_on": "2024-01-01 00:00:00+00:00",
-                        }
+                        },
                     )
 
                     mock_get_page_accounts.return_value = {
