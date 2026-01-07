@@ -31,7 +31,7 @@ class DnsZone(TimeStampedModel):
 
     name = models.CharField(null=True, blank=True, unique=True)
 
-    nameservers = ArrayField(models.CharField(), null=False, blank=True, default=[])
+    nameservers = ArrayField(models.CharField(), null=False, blank=True, default=list)
 
     flatten_all_cnames = models.BooleanField(default=False)
 
