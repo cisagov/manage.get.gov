@@ -3292,14 +3292,14 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is ON
         * Domain state = DNS_NEEDED
         * Domain is NOT expiring
-        * Should NOT see domain lifecycle, request deletion, or renewal form
+        * Should see domain lifecycle, request deletion, but no renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
             response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
 
-            self.assertNotContains(response, "Domain lifecycle")
-            self.assertNotContains(response, "Request deletion")
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
 
     @less_console_noise_decorator
@@ -3413,6 +3413,22 @@ class TestDomainDeletion(TestWithUser):
 
         self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
         self.assertContains(json_response, "On Hold")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_text_for_dns_needed(self):
+        """
+        * Domain deletion waffle is on ON
+        * Domain is DNS_NEEDED
+        * Domain Deletion text says it will be deleted immediately
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("domain-delete", kwargs={"domain_pk": self.dns_needed_not_expiring.id}),
+        )
+
+        self.assertNotContains(response,"Once you request to delete this domain, it will be placed “on hold” for seven days before deletion.")
+        self.assertContains(response,"Domain will be deleted immediately")
+
 
 
 class TestDomainDnsRecords(TestDomainOverview):

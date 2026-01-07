@@ -150,9 +150,9 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
-        context["domain_is_ready"] = domain.state == domain.State.READY
+        context["domain_state_is_deletable"] = domain.state == domain.State.READY or domain.state == domain.State.DNS_NEEDED
         context["domain_is_deletable"] = context["is_domain_manager"] and (
-            context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
+            context["domain_state_is_deletable"] or context["domain_is_expiring_or_expired"]
         )
         context["dns_hosting"] = flag_is_active_for_user(user, "dns_hosting")
         context["breadcrumbs"] = self.get_breadcrumb_items()
