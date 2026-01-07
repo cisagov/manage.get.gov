@@ -246,6 +246,7 @@ class MockCloudflareService:
         content = request_as_json["content"]
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
+        comment = request_as_json.get("comment") or ""
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -279,7 +280,7 @@ class MockCloudflareService:
                     "ttl": ttl,
                     "settings": {},
                     "meta": {},
-                    "comment": "Mocked A record created",
+                    "comment": comment,
                     "tags": [],
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
