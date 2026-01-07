@@ -4,6 +4,7 @@ from django.db import IntegrityError, transaction
 from registrar.models.dns.dns_vendor import DnsVendor
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
 
+
 class VendorDnsAccountTest(TestCase):
     def setUp(self):
         self.vendor = DnsVendor.objects.get(name=DnsVendor.CF)
@@ -23,6 +24,5 @@ class VendorDnsAccountTest(TestCase):
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 VendorDnsAccount.objects.create(
-                    x_account_id=self.vendor_dns_account.x_account_id,
-                    dns_vendor=self.vendor
+                    x_account_id=self.vendor_dns_account.x_account_id, dns_vendor=self.vendor
                 )

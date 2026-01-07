@@ -9,9 +9,7 @@ class DnsZoneVendorDnsZoneTest(TestCase):
         self.dns_domain = Domain.objects.create(name="dns-test.gov")
         self.dns_account = DnsAccount.objects.create(name="acct-base")
         self.dns_zone = DnsZone.objects.create(
-            dns_account=self.dns_account,
-            domain=self.dns_domain,
-            nameservers=["ns1.dns-test.gov", "ns2.dns-test.gov"]
+            dns_account=self.dns_account, domain=self.dns_domain, nameservers=["ns1.dns-test.gov", "ns2.dns-test.gov"]
         )
         self.dns_vendor = DnsVendor.objects.create(name="Cloudflare")
         self.vendor_dns_zone = VendorDnsZone.objects.create(
