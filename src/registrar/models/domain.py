@@ -217,23 +217,29 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+        from registrar.services.epp_registry_service import EPPRegistryService
+
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
             # validate_and_handle_errors in domain_helper
             raise errors.InvalidDomainError()
 
-        return cls().epp_service.is_domain_available(domain)
+        return EPPRegistryService().is_domain_available(domain)
 
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
+        from registrar.services.epp_registry_service import EPPRegistryService
+
         """Check if domain is pendingDelete state via response from registry."""
-        return cls().epp_service.is_pending_delete(domain)
+        return EPPRegistryService().is_pending_delete(domain)
 
     @classmethod
     def is_not_deleted(cls, domain: str) -> bool:
+        from registrar.services.epp_registry_service import EPPRegistryService
+
         """Check if the domain is NOT DELETED."""
-        return cls().epp_service.is_not_deleted(domain)
+        return EPPRegistryService().is_not_deleted(domain)
 
     @classmethod
     def registered(cls, domain: str) -> bool:
