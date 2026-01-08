@@ -18,6 +18,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
+from registrar.services.epp_registry_service import EPPRegistryService
 from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
@@ -2675,7 +2676,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake.gov",
                             add=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2707,7 +2708,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake-on-hold.gov",
                             add=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2739,7 +2740,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake-on-hold.gov",
                             rem=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2771,7 +2772,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake.gov",
                             rem=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2981,7 +2982,9 @@ class TestAnalystDelete(MockEppLib):
                 call(
                     commands.UpdateDomain(
                         name="freeman.gov",
-                        add=[common.Status(state=Domain.Status.CLIENT_HOLD, description="", lang="en")],
+                        add=[
+                            common.Status(state=EPPRegistryService.DomainStatus.CLIENT_HOLD, description="", lang="en")
+                        ],
                         rem=[],
                         nsset=None,
                         keyset=None,
