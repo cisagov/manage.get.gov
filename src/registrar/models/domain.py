@@ -852,7 +852,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
-        errorCode = self.epp_service.create_contact(contact)
+        errorCode = self.epp_service.create_contact(contact, self)
 
         # contact is already added to the domain, but something may have changed on it
         alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
@@ -1788,10 +1788,6 @@ class Domain(TimeStampedModel, DomainHelper):
         ip_addr = ipaddress.ip_address(ip)
         return ip_addr.version == 6
 
-    def _fetch_hosts_from_epp(self, host_data):
-        """Fetch host info from EPP. Returns host dicts."""
-        return self.epp_service.fetch_hosts(host_data)
-
     def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
         """Update an existing host object in EPP. Sends the update host command
         can result in a RegistryError
@@ -2115,7 +2111,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def _get_hosts(self, hosts):
         cleaned_hosts = []
         if hosts and isinstance(hosts, list):
-            cleaned_hosts = self._fetch_hosts_from_epp(hosts)
+            cleaned_hosts = self.epp_service.fetch_hosts(hosts)
         return cleaned_hosts
 
     def _get_or_create_public_contact(self, public_contact: PublicContact):

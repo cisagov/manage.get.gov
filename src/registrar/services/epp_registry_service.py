@@ -186,7 +186,7 @@ class EPPRegistryService:
 
     def is_domain_available(self, domain_name: str) -> bool:
         """Check if domain is available for registration in EPP registry."""
-        req = commands.CheckDomain([domain_name])
+        req = commands.CheckDomain([domain_name.lower()])
         response = registry.send(req, cleaned=True)
         return response.res_data[0].avail
 
@@ -291,17 +291,29 @@ class EPPRegistryService:
         """
         Fetch detailed contact information from EPP registry.
 
+        Args:
+            registry_id: Registry ID of the contact
+
         Returns:
             EPP InfoContactResultData object
 
         Raises:
             RegistryError: If EPP call fails
         """
-        req = commands.InfoContact(id=registry_id)
-        response = registry.send(req, cleaned=True)
-        return response.res_data[0]
+        try:
+            req = commands.InfoContact(id=registry_id)
+            response = registry.send(req, cleaned=True)
+            return response.res_data[0]
+        except RegistryError as error:
+            logger.error(
+                "Registry threw error for contact id %s, error code is %s, full error is %s",
+                registry_id,
+                error.code,
+                error,
+            )
+            raise error
 
-    def create_contact(self, contact: "PublicContact") -> int:
+    def create_contact(self, contact: "PublicContact", domain: "Domain") -> int:
         """
         Create a contact in the EPP registry.
 
@@ -313,14 +325,14 @@ class EPPRegistryService:
         """
         create = commands.CreateContact(
             id=contact.registry_id,
-            postal_info=self._make_epp_postal_info(contact),
+            postal_info=domain._make_epp_contact_postal_info(contact),
             email=contact.email,
             voice=contact.voice,
             fax=contact.fax,
             auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
         )  # type: ignore
         # security contacts should only show email addresses, for now
-        create.disclose = self._make_disclose_fields(contact)
+        create.disclose = domain._disclose_fields(contact)
         try:
             registry.send(create, cleaned=True)
             logger.info(f"Created contact {contact.registry_id} in registry")
@@ -446,10 +458,10 @@ class EPPRegistryService:
                 host = {
                     "name": name,
                     "addrs": [item.addr for item in getattr(data, "addrs", [])],
-                    "cr_date": getattr(data, "cr_date", None),
-                    "statuses": getattr(data, "statuses", None),
-                    "tr_date": getattr(data, "tr_date", None),
-                    "up_date": getattr(data, "up_date", None),
+                    "cr_date": getattr(data, "cr_date", ...),
+                    "statuses": getattr(data, "statuses", ...),
+                    "tr_date": getattr(data, "tr_date", ...),
+                    "up_date": getattr(data, "up_date", ...),
                 }
 
                 hosts.append({k: v for k, v in host.items() if v is not ...})
@@ -567,45 +579,6 @@ class EPPRegistryService:
             sp=(addr.sp or "") if addr else "",
             **streets,
         )
-
-    def _make_epp_postal_info(self, contact: "PublicContact"):
-        """Create EPP PostalInfo from PublicContact."""
-        return epp.PostalInfo(
-            name=contact.name,
-            addr=epp.ContactAddr(
-                street=[
-                    getattr(contact, street)
-                    for street in ["street1", "street2", "street3"]
-                    if hasattr(contact, street) and getattr(contact, street)
-                ],
-                city=contact.city,
-                pc=contact.pc,
-                cc=contact.cc,
-                sp=contact.sp,
-            ),
-            org=contact.org,
-            type="loc",
-        )
-
-    def _make_disclose_fields(self, contact: "PublicContact"):
-        """Create EPP Disclose object for contact."""
-        from registrar.utility.enums import DefaultEmail
-        from registrar.models.public_contact import PublicContact
-
-        DF = epp.DiscloseField
-        all_fields = {field for field in DF}
-
-        fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
-
-        if contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
-            if contact.email not in DefaultEmail.get_all_emails():
-                fields_to_remove.add(DF.EMAIL)
-        elif contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-            fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
-
-        disclose_fields = all_fields - fields_to_remove
-
-        return epp.Disclose(flag=False, fields=disclose_fields, types={DF.ADDR: "loc", DF.NAME: "loc"})
 
     def _convert_ips(self, ip_list: List[str]) -> List:
         """Convert Ips to a list of epp.Ip objects
