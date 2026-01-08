@@ -9,7 +9,6 @@ import logging
 from enum import Enum
 from datetime import date
 from typing import Dict, List, Optional
-from urllib import response
 from epplibwrapper import (
     CLIENT as registry,
     commands,
