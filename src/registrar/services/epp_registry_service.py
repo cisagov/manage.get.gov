@@ -38,7 +38,7 @@ class EPPRegistryService:
     - NEVER touch the database
     - NEVER hold database transactions
     """
-    
+
     class DomainStatus(str, Enum):
         """
         The status codes we can receive from the registry.
