@@ -31,8 +31,14 @@
 
 .usa-textarea {
   @include at-media('tablet') {
-    height: units('mobile');
+    min-height: units('mobile');
   }
+}
+
+.usa-textarea--medium {
+  height: auto;
+  min-height: 3rem;
+  resize: vertical;
 }
 
 .usa-form-editable {
