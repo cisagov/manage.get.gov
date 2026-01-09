@@ -1275,7 +1275,10 @@ class DomainSecurityEmailView(DomainFormBaseView):
         if new_email is None or new_email.strip() == "":
             new_email = PublicContact.get_default_security().email
 
-        contact = self.object.security_contact
+        try:
+            contact = self.object.security_contact
+        except ContactError:
+            contact = None
 
         # If no default is created for security_contact,
         # then we cannot connect to the registry.
