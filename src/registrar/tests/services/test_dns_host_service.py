@@ -52,6 +52,9 @@ class TestDnsHostService(TestCase):
         DnsZone.objects.create(
             domain=domain, dns_account=dns_acc, name=domain_name, nameservers=["ex1.dns.gov", "ex2.dns.gov"]
         )
+
+        domain_name2 = "exists.gov"
+        
         test_cases = [
             # Case A: Database has account + zone
             {
@@ -59,8 +62,6 @@ class TestDnsHostService(TestCase):
                 "domain_name": "test.gov",
                 "x_account_id": "12345",
                 "x_zone_id": "8765",
-                "cf_account": None,
-                "cf_zone": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
                 "expected_nameservers": ["ex1.dns.gov", "ex2.dns.gov"],
@@ -68,11 +69,9 @@ class TestDnsHostService(TestCase):
             # Case B: Database empty, but CF has account
             {
                 "test_name": "no db account or zone, has cf account",
-                "domain_name": "test.gov",
+                "domain_name": "exists.gov",
                 "x_account_id": None,
                 "x_zone_id": None,
-                "cf_account": "12345",
-                "cf_zone": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
                 "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
@@ -80,11 +79,9 @@ class TestDnsHostService(TestCase):
             # Case C: Database and CF empty
             {
                 "test_name": "no db account or zone, no cf account",
-                "domain_name": "test.gov",
+                "domain_name": "exists.gov",
                 "x_account_id": None,
                 "x_zone_id": None,
-                "cf_account": None,
-                "cf_zone": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
                 "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
@@ -93,25 +90,19 @@ class TestDnsHostService(TestCase):
 
         for case in test_cases:
             with self.subTest(msg=case["test_name"], **case):
-                if case["test_name"] != "has db account, has db zone":
-                    DnsZone.objects.filter(name=domain_name).delete()
-
                 mock_find_existing_account_in_db.return_value = case["x_account_id"]
                 mock_get_x_zone_id_if_zone_exists.return_value = case["x_zone_id"], case["expected_nameservers"]
 
                 if mock_find_existing_account_in_db.return_value is None:
                     mock_create_and_save_account.return_value = case["expected_account_id"]
-                    mock_create_and_save_zone.return_value = (case["expected_zone_id"], case["expected_nameservers"])
-                    mock_find_existing_zone_in_cf.return_value = (
-                        case["expected_nameservers"],
-                        {
-                            "id": case.get("expected_zone_id"),
-                            "name": case["domain_name"],
-                            "account": {"name": dns_acc.name},
-                            "name_servers": case["expected_nameservers"],
-                            "created_on": "2024-01-01 00:00:00+00:00",
-                        },
-                    )
+                    mock_create_and_save_zone.return_value = case["expected_nameservers"]
+                    mock_find_existing_zone_in_cf.return_value = {
+                        "id": case.get("expected_zone_id"),
+                        "name": case["domain_name"],
+                        "account": {"name": dns_acc.name},
+                        "name_servers": case["expected_nameservers"],
+                        "created_on": "2024-01-01 00:00:00+00:00",
+                    }
 
                     mock_get_page_accounts.return_value = {
                         "result": [{"id": case.get("expected_account_id")}],
