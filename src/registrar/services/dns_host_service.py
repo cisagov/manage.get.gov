@@ -139,9 +139,8 @@ class DnsHostService:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise
 
-        # Create and save record in registrar db
+        # Create and save dns record in registrar db
         try:
-            # Do we want to save record referencing returned CF data or user input data?
             self.save_db_record(x_zone_id, vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
