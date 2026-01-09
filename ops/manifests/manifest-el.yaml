@@ -27,6 +27,8 @@ applications:
     GETGOV_PUBLIC_SITE_URL: https://get.gov
     # Flag to disable/enable features in prod environments
     IS_PRODUCTION: False
+    # Git commit sha
+    GIT_COMMIT_SHA: ((COMMIT_SHA))
   routes:
     - route: getgov-el.app.cloud.gov
   services:
