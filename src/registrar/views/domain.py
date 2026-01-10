@@ -160,7 +160,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
-        context["enterprise_mode"] = flag_is_active(user, "multiple_portfolios")
+        context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
 
         # Stored in a variable for the linter
         action = "analyst_action"
