@@ -16,7 +16,7 @@ fake = Faker()
 class MockCloudflareService:
     _instance = None
     _mock_context = None
-    fake_zone_id = fake.uuid4()
+    fake_zone_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     new_account_name = f"account-{fake.domain_name()}"
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
@@ -32,7 +32,7 @@ class MockCloudflareService:
             self.is_active = False
         self.domain_name = fake.domain_name()
         self.new_account_name = make_dns_account_name(self.domain_name)
-        self.new_account_id = fake.uuid4()
+        self.new_account_id = self._mock_create_cf_id()
 
     def start(self):
         """Start mocking external APIs"""
@@ -100,7 +100,7 @@ class MockCloudflareService:
                         },
                     },
                     {
-                        "account_tag": fake.uuid4(),
+                        "account_tag": self._mock_create_cf_id(),
                         "account_pubname": "Fake account name",
                         "account_type": "enterprise",
                         "created_on": "2025-10-08T21:21:38.401706Z",
@@ -165,7 +165,7 @@ class MockCloudflareService:
                 "success": True,
                 "result": [
                     {
-                        "id": fake.uuid4(),
+                        "id": self._mock_create_cf_id(),
                         "account": {"id": account_id, "name": self.new_account_name},
                         "created_on": "2014-01-01T05:20:00.12345Z",
                         "modified_on": "2014-01-01T05:20:00.12345Z",
@@ -178,7 +178,7 @@ class MockCloudflareService:
                         "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
                     },
                     {
-                        "id": fake.uuid4(),
+                        "id": self._mock_create_cf_id(),
                         "account": {"id": account_id, "name": self.new_account_name},
                         "created_on": "2014-01-01T05:20:00.12345Z",
                         "modified_on": "2014-01-01T05:20:00.12345Z",
@@ -246,6 +246,7 @@ class MockCloudflareService:
         content = request_as_json["content"]
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
+        comment = request_as_json.get("comment") or ""
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -270,7 +271,7 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": {
-                    "id": fake.uuid4(),
+                    "id": self._mock_create_cf_id(),
                     "name": record_name,
                     "type": type,
                     "content": content,
@@ -279,7 +280,7 @@ class MockCloudflareService:
                     "ttl": ttl,
                     "settings": {},
                     "meta": {},
-                    "comment": "Mocked A record created",
+                    "comment": comment,
                     "tags": [],
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
@@ -289,3 +290,7 @@ class MockCloudflareService:
                 "messages": [],
             },
         )
+
+    def _mock_create_cf_id(self):
+        """Create a 32 character UUID by removing the 4 -'s in a UUID4."""
+        return fake.uuid4().replace("-", "")

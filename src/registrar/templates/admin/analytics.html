@@ -28,10 +28,20 @@ https://github.com/django/django/blob/main/django/contrib/admin/templates/admin/
       <div class="tablet:grid-col-6 margin-top-2">
         <div class="module height-full">
           <h2>At a glance</h2>
-          <div class="padding-top-2 padding-x-2">
-            <ul>
+  
+          <div class="padding-top-3 padding-x-3">
+            <button class="usa-button usa-button--dja" id="copy-to-clipboard-analytics" type="button">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{%static 'img/sprite.svg'%}#content_copy"></use>
+                </svg><span class="margin-left-05">Copy to clipboard</span>
+            </button>
+            <ul class="margin-top-3" id="analytics-dashboard-glance">
               <li>User Count: {{ data.user_count }}</li>
-              <li>Domain Count: {{ data.domain_count }}</li>
+              <li> Domain Count: {{ data.domain_count }}
+                <ul>
+                   <li>Federal Domains: {{ data.federal_domain_count }} </li>
+                </ul>
+              </li>
               <li>Domains in READY state: {{ data.ready_domain_count }}</li>
               <li>Domain applications (last 30 days): {{ data.last_30_days_applications }}</li>
               <li>Approved applications (last 30 days): {{ data.last_30_days_approved_applications }}</li>
