@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from waffle import flag_is_active
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -159,6 +160,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
+        context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
 
         # Stored in a variable for the linter
         action = "analyst_action"
