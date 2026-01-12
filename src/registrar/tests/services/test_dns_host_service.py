@@ -26,7 +26,6 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    # Should we create another dns_setup test method for just zones?
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService.get_x_zone_id_if_zone_exists")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
@@ -35,8 +34,10 @@ class TestDnsHostService(TestCase):
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     def test_dns_setup_success(
         self,
+        mock_find_existing_account_in_cf,
         mock_save_db_record,
         mock_create_and_save_account,
         mock_create_and_save_zone,
@@ -65,6 +66,7 @@ class TestDnsHostService(TestCase):
                 "domain_name": "test.gov",
                 "x_account_id": "12345",
                 "x_zone_id": "8765",
+                "cf_account_data": {"id": "12345", "name": "test", "created_on": "2024-01-01 00:00:00+00:00"},
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
                 "expected_nameservers": ["ex1.dns.gov", "ex2.dns.gov"],
@@ -75,6 +77,7 @@ class TestDnsHostService(TestCase):
                 "domain_name": "exists.gov",
                 "x_account_id": None,
                 "x_zone_id": None,
+                "cf_account_data": {"id": "12345", "name": "test", "created_on": "2024-01-01 00:00:00+00:00"},
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
                 "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
@@ -85,6 +88,7 @@ class TestDnsHostService(TestCase):
                 "domain_name": "exists.gov",
                 "x_account_id": None,
                 "x_zone_id": None,
+                "cf_account_data": None,
                 "expected_account_id": "12345",
                 "expected_zone_id": "8765",
                 "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
@@ -97,6 +101,7 @@ class TestDnsHostService(TestCase):
                 mock_get_x_zone_id_if_zone_exists.return_value = case["x_zone_id"], case["expected_nameservers"]
 
                 if mock_find_existing_account_in_db.return_value is None:
+                    mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
                     mock_create_and_save_account.return_value = case["expected_account_id"]
                     mock_create_and_save_zone.return_value = case["expected_nameservers"]
                     mock_find_existing_zone_in_cf.return_value = {
