@@ -46,6 +46,7 @@ class TestDnsHostService(TestCase):
         mock_get_x_zone_id_if_zone_exists,
         mock_find_existing_zone_in_cf,
     ):
+        # Domain with account and zone in DB
         domain_name = "test.gov"
         domain = Domain.objects.create(name=domain_name)
         dns_acc = DnsAccount.objects.create(name=domain_name)
@@ -53,8 +54,10 @@ class TestDnsHostService(TestCase):
             domain=domain, dns_account=dns_acc, name=domain_name, nameservers=["ex1.dns.gov", "ex2.dns.gov"]
         )
 
+        # Domain without account or zone
         domain_name2 = "exists.gov"
-        
+        Domain.objects.create(name=domain_name2)
+
         test_cases = [
             # Case A: Database has account + zone
             {
