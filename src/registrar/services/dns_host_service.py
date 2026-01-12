@@ -46,14 +46,6 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
 
-    def _get_nameservers_from_db(self, domain_name) -> list[str]:
-        try:
-            zone = DnsZone.objects.get(name=domain_name)
-        except DnsZone.DoesNotExist:
-            return []
-
-        return zone.nameservers or []
-
     def dns_setup(self, domain_name):
         # Set up a vendor ACCOUNT
         account_name = make_dns_account_name(domain_name)
