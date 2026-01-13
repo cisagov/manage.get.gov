@@ -8,6 +8,9 @@ from registrar.models import (
     VendorDnsZone,
     DnsRecord,
     VendorDnsRecord,
+    DnsAccount_VendorDnsAccount as AccountsJoin,
+    DnsZone_VendorDnsZone as ZonesJoin,
+    DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 
@@ -115,3 +118,17 @@ def make_dns_record(zone, **kwargs):
     dns_record.vendor_dns_record.add(vendor_dns_record)
 
     return dns_record
+
+
+def delete_all_dns_data():
+    """Utility function to delete all DNS related data from the database"""
+    VendorDnsAccount.objects.all().delete()
+    DnsAccount.objects.all().delete()
+    AccountsJoin.objects.all().delete()
+    VendorDnsZone.objects.all().delete()
+    DnsZone.objects.all().delete()
+    ZonesJoin.objects.all().delete()
+    Domain.objects.all().delete()
+    RecordsJoin.objects.all().delete()
+    VendorDnsRecord.objects.all().delete()
+    DnsRecord.objects.all().delete()

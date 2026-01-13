@@ -18,7 +18,12 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
-from registrar.tests.helpers.data_generator import make_domain, make_dns_account, make_zone, make_initial_dns_setup
+from registrar.tests.helpers.data_generator import (
+    make_domain,
+    make_dns_account,
+    make_initial_dns_setup,
+    delete_all_dns_data
+)
 
 
 class TestDnsHostService(TestCase):
@@ -51,7 +56,7 @@ class TestDnsHostService(TestCase):
         # Domain with account and zone in DB
         domain_name = "test.gov"
         domain = make_domain(domain_name=domain_name)
-        _, dns_acc, _ =make_initial_dns_setup(domain=domain)
+        _, dns_acc, _ = make_initial_dns_setup(domain=domain)
 
         # Domain without account or zone
         domain_name2 = "exists.gov"
@@ -238,17 +243,7 @@ class TestDnsHostServiceDB(TestCase):
         }
 
     def tearDown(self):
-        DnsVendor.objects.all().delete()
-        VendorDnsAccount.objects.all().delete()
-        DnsAccount.objects.all().delete()
-        AccountsJoin.objects.all().delete()
-        VendorDnsZone.objects.all().delete()
-        DnsZone.objects.all().delete()
-        ZonesJoin.objects.all().delete()
-        Domain.objects.all().delete()
-        RecordsJoin.objects.all().delete()
-        VendorDnsRecord.objects.all().delete()
-        DnsRecord.objects.all().delete()
+        delete_all_dns_data()
 
     def test_find_existing_account_success(self):
         account_name = "Account for test.gov"
@@ -379,7 +374,12 @@ class TestDnsHostServiceDB(TestCase):
         expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
 
         zone_domain = make_domain(domain_name=zone_name)
-        make_initial_dns_setup(zone_domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers)d
+        make_initial_dns_setup(
+            zone_domain,
+            x_account_id=test_x_account_id,
+            x_zone_id=x_zone_id,
+            nameservers=expected_nameservers
+        )
 
         found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
 

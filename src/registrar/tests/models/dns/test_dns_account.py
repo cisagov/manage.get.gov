@@ -5,7 +5,6 @@ from registrar.models.dns.dns_account import DnsAccount
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount as AccountsJoin
 from registrar.models.dns.dns_vendor import DnsVendor
 from registrar.models.dns.vendor_dns_account import VendorDnsAccount
-from registrar.tests.helpers.data_generator import make_dns_account
 
 
 class DnsAccountTest(TestCase):
