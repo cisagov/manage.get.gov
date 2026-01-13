@@ -3473,9 +3473,22 @@ class TestRequestingEntity(WebTest):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_requesting_entity_submission_email_sent(self):
-        """Tests that an email is sent out on successful form submission"""
+    def test_requesting_entity_submission_email_sent_multiple_org_admin(self):
+        """Tests that an email is sent out on successful form submission with
+        multiple org admins"""
         AllowedEmail.objects.create(email=self.user.email)
+
+        # Create another admin user
+        another_admin = User.objects.create(
+            username="another_admin", email="another.admin@example.com", first_name="Another", last_name="Admin"
+        )
+        AllowedEmail.objects.create(email=another_admin.email)
+
+        # Add another user as a portfolio admin
+        UserPortfolioPermission.objects.create(
+            user=another_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
         domain_request = completed_domain_request(
             user=self.user,
             # This is the additional details field
@@ -3497,6 +3510,34 @@ class TestRequestingEntity(WebTest):
         self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertIn("Administrators from your organization:", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_requesting_entity_submission_email_sent_one_org_admin(self):
+        """Tests that an email is sent out on successful form submission where
+        the requestor is the only org admin"""
+        AllowedEmail.objects.create(email=self.user.email)
+        domain_request = completed_domain_request(
+            user=self.user,
+            # This is the additional details field
+            has_anything_else=True,
+        )
+        domain_request.portfolio = self.portfolio
+        domain_request.requested_suborganization = "moon"
+        domain_request.suborganization_city = "kepler"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.ALABAMA
+        domain_request.save()
+        domain_request.refresh_from_db()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            domain_request.submit()
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertNotIn("Anything else", body)
+        self.assertIn("kepler, AL", body)
+        self.assertIn("Requesting entity:", body)
+        self.assertNotIn("Administrators from your organization:", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
