@@ -9,6 +9,9 @@ from registrar.models import (
     DnsRecord,
     VendorDnsRecord,
 )
+from registrar.services.utility.dns_helper import make_dns_account_name
+
+
 def make_domain(**kwargs):
     """Generate a domain object"""
     domain_name = kwargs.get("domain_name", "example.gov")
@@ -25,10 +28,13 @@ def make_dns_account(domain=None, **kwargs):
     domain = domain or make_domain()
     vendor = DnsVendor.objects.get(name=DnsVendor.CF)
     x_account_id = kwargs.get("x_account_id", "example_x_account_id")
+    account_name = kwargs.get("account_name", make_dns_account_name(domain.name))
     try:
-        dns_account = DnsAccount.objects.create(name=domain.name)
+        dns_account = DnsAccount.objects.create(name=account_name)
     except IntegrityError as e:
-        print(f"Error creating DNS account. May be a duplicate. Consider creating an account with a different name: {e}")
+        print(
+            f"Error creating DNS account. May be a duplicate. Consider creating an account with a different name: {e}"
+        )
         raise
     x_created_at = kwargs.get("acc_x_created_at", "2025-01-01T00:00:00Z")
     x_updated_at = kwargs.get("acc_x_updated_at", "2025-01-01T00:00:00Z")
@@ -43,6 +49,7 @@ def make_dns_account(domain=None, **kwargs):
     dns_account.vendor_dns_account.add(vendor_dns_account)
 
     return dns_account
+
 
 def make_zone(domain, account, **kwargs):
     """Generate a zone object and its vendor link"""
@@ -72,13 +79,12 @@ def make_zone(domain, account, **kwargs):
 
     return dns_zone
 
+
 def make_initial_dns_setup(domain=None, **kwargs):
     """Generate a domain, DNS account and zone object and its vendor link"""
     domain = domain or make_domain()
     dns_account = kwargs.get("dns_account", make_dns_account(domain))
-    dns_zone = make_zone(
-        domain=domain,
-        account=dns_account, **kwargs)
+    dns_zone = make_zone(domain=domain, account=dns_account, **kwargs)
 
     return domain, dns_account, dns_zone
 
@@ -89,8 +95,8 @@ def make_dns_record(zone, **kwargs):
     record_type = kwargs.get("record_type", "A")
     record_content = kwargs.get("record_content", "192.168.1.1")
     x_record_id = kwargs.get("x_record_id", "example_x_record_id")
-    x_created_at = kwargs.get("x_created_at", "2025-01-01T00:00:00Z")
-    x_updated_at = kwargs.get("x_updated_at", "2025-01-01T00:00:00Z")
+    x_created_at = kwargs.get("record_x_created_at", "2025-01-01T00:00:00Z")
+    x_updated_at = kwargs.get("record_x_updated_at", "2025-01-01T00:00:00Z")
     ttl = kwargs.get("ttl", 300)
     dns_record = DnsRecord.objects.create(
         dns_zone=zone,
