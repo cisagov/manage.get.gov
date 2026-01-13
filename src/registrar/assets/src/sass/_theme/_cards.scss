@@ -19,6 +19,24 @@
     color: #{$dhs-blue};
     display: flex;
     align-items: center;
+    min-width: 0;
+}
+
+.usa-card__heading .organizations-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.usa-card__heading .organizations-org-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.usa-card__heading .organizations-arrow {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
 }
 
 /* ----------------------------------
