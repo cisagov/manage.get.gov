@@ -1,48 +1,19 @@
 {% extends 'domain_request_form.html' %}
 {% load static field_helpers url_helpers %}
 
-{% block form_instructions %}
-  <p>
-    Before requesting a .gov domain, please make sure it meets the
-    {% if requires_feb_questions %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">naming requirements for executive branch agencies</a>. Your domain name must:
-    {% else %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">naming requirements</a>. Your domain name must:
-    {% endif %}
-    <ul class="usa-list">
-      <li>Be available </li>
-      <li>Relate to your organization’s name, location, and/or services </li>
-      <li>Be unlikely to mislead or confuse the general public (even if your domain is only intended for a specific audience) </li>
-    </ul>
-  </p>
-
-  <p>Names that <em>uniquely apply to your organization</em> are likely to be approved over names that could also apply to other organizations. 
-    {% if not is_federal %}In most instances, this requires including your state’s two-letter abbreviation.{% endif %}</p> 
-  
-  {% if not portfolio %}
-  <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
-  {% endif %}
-
-  <p>Read about  <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/requirements/">activities that are prohibited on .gov domains</a>.</p>
-  {% if not portfolio %}
-  <h2 class="margin-top-3">Domain examples for your type of organization</h2>
-  <div class="domain_example">
-    {% include "includes/domain_example.html" %}
-  </div>
-  {% endif %}
-{% endblock %}
-
-
 {% block form_required_fields_help_text %}
 {# empty this block so it doesn’t show on this page #}
 {% endblock %}
 
-
 {% block form_fields %}
-
-  {{ forms.0.management_form }}
+  {% include "includes/naming_requirements.html"  %}
 
   <fieldset class="usa-fieldset margin-top-4">
+  {% include "includes/domain_example.html" with generic_org_type=generic_org_type %}
+  </fieldset>
+
+  {{ forms.0.management_form }}
+  <fieldset class="usa-fieldset margin-top-2">
     <legend>
       <h2>What .gov domain do you want?</h2>
     </legend>

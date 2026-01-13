@@ -12,3 +12,17 @@ dd {
     margin-left: 0;
 }
 
+.checklist-text-wrapper {
+    line-height: 1;
+}
+
+.checklist-bold-text {
+    margin-bottom: 0.25rem;
+}
+
+.usa-list--unstyled .checklist-item svg.usa-icon {
+    width: 1em !important;
+    height: 1em !important;
+    min-width: 1em !important;
+    min-height: 1em !important;
+}

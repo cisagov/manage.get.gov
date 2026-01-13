@@ -1,69 +1,265 @@
-{% load field_helpers url_helpers %}
+{% load static field_helpers %}
+{% load static form_helpers url_helpers %}
 
-{% if is_federal %}
-  {% if federal_type == 'executive' %}
-
-    <ul class="usa-list">
-      <li>fema.gov</li>
-      <li>medicare.gov</li>
-      <li>usda.gov</li>
-    </ul>
-
-  {% elif federal_type == 'judicial' %}
-
-    <ul class="usa-list">
-      <li>uscourts.gov</li>
-      <li>ustaxcourt.gov</li>
-      <li>ussc.gov</li>
-    </ul>
-
-  {% elif federal_type == 'legislative' %}
-  
-    <ul class="usa-list">
-      <li>gao.gov</li>
-      <li>gpo.gov</li>
-      <li>loc.gov</li>
-    </ul>
+{% if generic_org_type == 'state_or_territory' %}
+  <legend>
+    <h2>Naming requirements for U.S. states and territories</h2>
+  </legend>
+{% elif generic_org_type == 'federal' %}
+  <legend>
+    <h2>Naming requirements for federal agencies</h2>
+  </legend>
+{% elif generic_org_type == 'special_district' %}
+  <legend>
+    <h2>Naming requirements for special districts</h2>
+  </legend>
+{% elif generic_org_type == 'school_district' %}
+  <legend>
+    <h2>Naming requirements for school districts</h2>
+  </legend>
+{% elif generic_org_type == 'tribal' %}
+  <legend>
+    <h2>Naming requirements for tribal organizations</h2>
+  </legend>
+{% elif generic_org_type == 'interstate' %}
+  <legend>
+    <h2>Naming requirements for interstate organizations</h2>
+  </legend>
+{% elif generic_org_type == 'county' %}
+  <legend>
+    <h2>Naming requirements for counties</h2>
+  </legend>
+{% elif generic_org_type == 'city' %}
+  <legend>
+    <h2>Naming requirements for cities</h2>
+  </legend>
 {% endif %}
 
-{% elif generic_org_type == 'interstate' %}
+<!-- <p>is_federal = {{ is_federal }}</p>
+<p>generic_org_type = {{ generic_org_type }}</p> -->
 
-  <ul class="usa-list">
-    <li>EMScompact.gov</li>
-    <li>wmataOIG.gov</li>
-    <li>trpa.gov</li>
-  </ul>
+{% if is_federal %}
+  <p>
+  Federal agencies may request generic domain names. Generic names may not be approved when an agency lacks significant or singular authority over a thematic topic.
+  </p>
+  <p>
+  Federal agencies in the executive branch are subject to <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://whitehouse.gov/wp-content/uploads/2023/02/M-23-10-DOTGOV-Act-Guidance.pdf">M-23-10</a> 
+  and its <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url '/domains/executive-branch-guidance/' %}">implementation guidance</a>.
+  </p>
+
+{% elif generic_org_type == 'interstate' %}
+  <p>
+  Names that uniquely apply to your organization are likely to be approved over names that could also apply to others. 
+  Requests for your organization’s initials alone may not be approved.
+  </p>
 
 {% elif generic_org_type == 'state_or_territory' %}
   <p>State .gov domains must include the two-letter state abbreviation or clearly spell out the state name.</p> 
-  <p><strong>Examples:</strong></p>
-  <ul class="usa-list">
-    <li>AmericanSamoa.gov</li>
-    <li>Colorado.gov</li>
-    <li>MN.gov</li>
-    <li>Guam.gov</li>
-  </ul>
+  <div class="grid-row">
+
+    <div class="grid-col-6">Likely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>MSAG.gov</b></div>
+            <div class="margin-bottom-2"><i>Has state abbreviation</i></div>
+          </div>
+        </li>
+
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>IndianaCourts.gov</b></div>
+            <div class="margin-bottom-2"><i>References state</i></div>
+          </div>
+        </li>
+
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>AmericanSamoa.gov</b></div>
+            <div class="margin-bottom-2"><i>References territory</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="grid-col-6">Unlikely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>MissAG.gov</b></div>
+            <div class="margin-bottom-2"><i>Doesn't clearly reference state name</i></div>
+          </div>
+        </li>
+    
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>INCourts.gov</b></div>
+            <div class="margin-bottom-2"><i>Likely to confuse</i></div>
+          </div>
+        </li>
+    
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>AmericanS.gov</b></div>
+            <div class="margin-bottom-2"><i>Becomes a different word; changes meaning</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
 {% elif generic_org_type == 'tribal' %}
-  <p>Tribal domains may include the suffix -nsn, for native sovereign nation.</p>
-  <p><strong>Examples:</strong></p>
-  <ul class="usa-list">
-    <li>tbyi.gov</li>
-    <li>pitu.gov</li>
-    <li>TulalipTribalCourt-nsn.gov</li>
-  </ul>
+TODO: Come back to check spacing in this section
+<p>Tribal domains may include the suffix -nsn, for native sovereign nation.</p>
+<div class="grid-row">
+
+  <div class="grid-col-6">Likely to be approved:
+    <ul class="usa-list usa-list--unstyled margin-top-2">
+      <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+        <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+        </svg>
+        <div class="checklist-text-wrapper"> 
+          <div class="checklist-bold-text"><b>KingSalmonTribe.gov</b></div>
+          <div class="margin-bottom-2"><i>Uses the recognized name to uniquely apply to the tribe</i></div>
+        </div>
+      </li>
+
+      <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+        <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+        </svg>
+        <div class="checklist-text-wrapper">
+          <div class="checklist-bold-text"><b>ChoctawNation.gov</b></div>
+          <div class="margin-bottom-2"><i>Uses the recognized name to uniquely apply to the tribe</i></div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="grid-col-6">Unlikely to be approved:
+    <ul class="usa-list usa-list--unstyled margin-top-2">
+      <li class="checklist-item display-flex flex-align-start margin-bottom-10">
+        <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+        </svg>
+        <div class="checklist-text-wrapper"> 
+          <div class="checklist-bold-text"><b>KingSalmon.gov</b></div>
+          <div class="margin-bottom-2"><i>Could have several meanings</i></div>
+        </div>
+      </li>
+  
+      <li class="checklist-item display-flex flex-align-start margin-bottom-10">
+        <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+          <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+        </svg>
+        <div class="checklist-text-wrapper">
+          <div class="checklist-bold-text"><b>Choctaw.gov</b></div>
+          <div class="margin-bottom-2"><i>There are several “Choctaw” tribes</i></div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
 {% elif generic_org_type == 'county' %}
   <p>Most county .gov domains must include the two-letter state abbreviation or the full state name. County names that aren’t shared by any other city, county, parish, town, borough, village or equivalent in the U.S. (at the time a domain is granted) don’t have to refer to their state in their domain name. Counties can include “county” in their domain to distinguish it from other places with similar names.</p> 
+      
+  <p>We use the <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html">Census Bureau’s National Places Gazetteer Files</a> to determine if county names are unique.</p>
+
+  <div class="grid-row">
+
+    <div class="grid-col-6">Likely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>JeffersonCountyKY.gov</b></div>
+            <div class="margin-bottom-2"><i>References county and state</i></div>
+          </div>
+        </li>
+  
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>MiamiDade.gov</b></div>
+            <div class="margin-bottom-2"><i>County with a unique name</i></div>
+          </div>
+        </li>
+
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>JeffersonCoKY</b></div>
+            <div class="margin-bottom-2"><i>Has county and state abbreviation</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  
+    <div class="grid-col-6">Unlikely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>JCounty.gov</b></div>
+            <div class="margin-bottom-2"><i>There are many 'J' counties</i></div>
+          </div>
+        </li>
     
-<p>We use the <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html">Census Bureau’s National Places Gazetteer Files</a> to determine if county names are unique.</p>
-  <p><strong>Examples:</strong></p>
-  <ul class="usa-list">
-    <li>LACounty.gov</li>
-    <li>LivingstonParishLA.gov</li>
-    <li>MitchellCountyNC.gov</li>
-    <li>MiamiDade.gov</li>
-  </ul>
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>MiDa.gov</b></div>
+            <div class="margin-bottom-2"><i>Too few characters</i></div>
+          </div>
+        </li>
+
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>JeffersonCounty.gov</b></div>
+            <div class="margin-bottom-2"><i>There are 25 Jefferson counties</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
 {% elif generic_org_type == 'city' %}
   <p>Most city domains must include the two-letter state abbreviation or clearly spell out the state name. Using phrases like “City of” or “Town of” is optional.</p>
@@ -73,31 +269,141 @@
       <li>The city is so well known that it doesn’t need a state reference to communicate location. We use the list of U.S. “dateline cities” in the Associated Press Stylebook as part of our decision.</li>
       <li>It’s one of the 150 largest cities by population, <a class="usa-link usa-link--external" rel="noopener noreferrer" target="_blank" href="https://www.census.gov/data/tables/time-series/demo/popest/2020s-total-cities-and-towns.html">according to the Census Bureau.</a></li>
     </ul>
- <p><strong>Examples:</strong></p>
-    <ul class="usa-list">
-      <li>CityofEudoraKS.gov</li>
-      <li>WallaWallaWA.gov</li>
-      <li>Pocatello.gov</li>
-    </ul>
-  </p>
+
+  <div class="grid-row">
+
+    <div class="grid-col-6">Likely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>CityofEudoraKS.gov</b></div>
+            <div class="margin-bottom-2"><i>References county and state</i></div>
+          </div>
+        </li>
+  
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>WallaWallaWA.gov</b></div>
+            <div class="margin-bottom-2"><i>Inclues state</i></div>
+          </div>
+        </li>
+
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>Seattle.gov</b></div>
+            <div class="margin-bottom-2"><i>Well-known city</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  
+    <div class="grid-col-6">Unlikely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>Eudora.gov</b></div>
+            <div class="margin-bottom-2"><i>Lacks local identifier</i></div>
+          </div>
+        </li>
+    
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>WaWaWA.gov</b></div>
+            <div class="margin-bottom-2"><i>Likely to confuse</i></div>
+          </div>
+        </li>
+
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>Sea.gov</b></div>
+            <div class="margin-bottom-2"><i>Too few characters; name is generic</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
 {% elif generic_org_type == 'special_district' %}
   <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name.</p>
-  <p><strong>Examples:</strong></p>
-  <ul class="usa-list">
-    <li>GlacierViewFire.gov</li>
-    <li>TechshareTX.gov</li>
-    <li>UtahTrust.gov</li>
-  </ul>
+  <div class="grid-row">
 
-{% elif generic_org_type == 'school_district' %}
-  <p>Domain names must represent your organization or institutional name.</p>
-    <p><strong>Examples:</strong></p>
-  <ul class="usa-list">
-    <li>mckinneyISDTX.gov</li>
-    <li>BooneCSDIA.gov</li>
-  </ul>
+    <div class="grid-col-6">Likely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>BridgeportHousingWV.gov</b></div>
+            <div class="margin-bottom-2"><i>Includes locale, service, and state</i></div>
+          </div>
+        </li>
   
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-green margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>DallasTransitNC.gov</b></div>
+            <div class="margin-bottom-2"><i>Inclues state</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  
+    <div class="grid-col-6">Unlikely to be approved:
+      <ul class="usa-list usa-list--unstyled margin-top-2">
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper"> 
+            <div class="checklist-bold-text"><b>BridgeportHousing.gov</b></div>
+            <div class="margin-bottom-2"><i>Multiple Bridgeports in the US</i></div>
+          </div>
+        </li>
+    
+        <li class="checklist-item display-flex flex-align-start margin-bottom-2">
+          <svg class="usa-icon text-red margin-right-1 flex-shrink-0" aria-hidden="true" focusable="false" role="img">
+            <use xlink:href="{% static 'img/sprite.svg' %}#cancel"></use>
+          </svg>
+          <div class="checklist-text-wrapper">
+            <div class="checklist-bold-text"><b>DTNC.gov</b></div>
+            <div class="margin-bottom-2"><i>Name is too short and likely to confuse</i></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
+  <p>Requests for your organization’s initials alone may not be approved.</p>
+{% elif generic_org_type == 'school_district' %}
+  <p>School districts that aren’t part of a local government are eligible for .gov domains. However, consider the following when deciding whether .gov is a good fit for your school district:</p>
+  <li>While school district employees work in the public sector, most of their external interactions (e.g., teacher-to-parent/student, or administration-to-vendor) are different in nature from typical government interactions.</li>
+  <li>Students should never be given email addresses that use a .gov domain.</li>
+
+  <p>Domain names must represent your organization or institutional name. Names that uniquely apply to your organization are likely to be approved over names that could also apply to others.</p>
+  <p>Requests for your organization’s initials or an abbreviated name are unlikely to be approved.</p>
+
 
 {%endif %}
 
