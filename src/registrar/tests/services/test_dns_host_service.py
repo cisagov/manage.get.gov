@@ -18,6 +18,7 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
+from registrar.tests.helpers.data_generator import make_domain, make_dns_account, make_zone, make_initial_dns_setup
 
 
 class TestDnsHostService(TestCase):
@@ -49,11 +50,8 @@ class TestDnsHostService(TestCase):
     ):
         # Domain with account and zone in DB
         domain_name = "test.gov"
-        domain = Domain.objects.create(name=domain_name)
-        dns_acc = DnsAccount.objects.create(name=domain_name)
-        DnsZone.objects.create(
-            domain=domain, dns_account=dns_acc, name=domain_name, nameservers=["ex1.dns.gov", "ex2.dns.gov"]
-        )
+        domain = make_domain(domain_name=domain_name)
+        make_initial_dns_setup(domain=domain)
 
         # Domain without account or zone
         domain_name2 = "exists.gov"
