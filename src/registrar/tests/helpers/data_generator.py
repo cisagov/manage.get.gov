@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from registrar.models import (
     Domain,
     DnsAccount,
@@ -11,21 +12,32 @@ from registrar.models import (
 def make_domain(**kwargs):
     """Generate a domain object"""
     domain_name = kwargs.get("domain_name", "example.gov")
-    domain = Domain.objects.create(name=domain_name)
-    return domain
+    try:
+        domain = Domain.objects.create(name=domain_name)
+        return domain
+    except IntegrityError as e:
+        print(f"Error creating domain. May be a duplicate. Consider creating a domain with a different name: {e}")
+        raise
 
-def make_dns_account(domain, **kwargs):
+
+def make_dns_account(domain=None, **kwargs):
     """Generate a DNS account object and its vendor link"""
-    vendor_name = DnsVendor.CF
-    vendor = DnsVendor.objects.get(name=vendor_name)
+    domain = domain or make_domain()
+    vendor = DnsVendor.objects.get(name=DnsVendor.CF)
     x_account_id = kwargs.get("x_account_id", "example_x_account_id")
-    dns_account = DnsAccount.objects.create(name=domain.name)
+    try:
+        dns_account = DnsAccount.objects.create(name=domain.name)
+    except IntegrityError as e:
+        print(f"Error creating DNS account. May be a duplicate. Consider creating an account with a different name: {e}")
+        raise
+    x_created_at = kwargs.get("acc_x_created_at", "2025-01-01T00:00:00Z")
+    x_updated_at = kwargs.get("acc_x_updated_at", "2025-01-01T00:00:00Z")
 
     vendor_dns_account = VendorDnsAccount.objects.create(
         dns_vendor=vendor,
         x_account_id=x_account_id,
-        x_created_at="2025-01-01T00:00:00Z",
-        x_updated_at="2025-01-01T00:00:00Z",
+        x_created_at=x_created_at,
+        x_updated_at=x_updated_at,
     )
 
     dns_account.vendor_dns_account.add(vendor_dns_account)
@@ -37,14 +49,18 @@ def make_zone(domain, account, **kwargs):
     zone_name = kwargs.get("zone_name", domain.name)
     x_zone_id = kwargs.get("x_zone_id", "example_x_zone_id")
     nameservers = kwargs.get("nameservers", ["ex1.dns.gov", "ex2.dns.gov"])
-    x_created_at = kwargs.get("x_created_at", "2025-01-01T00:00:00Z")
-    x_updated_at = kwargs.get("x_updated_at", "2025-01-01T00:00:00Z")
-    dns_zone = DnsZone.objects.create(
-        domain=domain,
-        dns_account=account,
-        name=zone_name,
-        nameservers=nameservers,
-    )
+    x_created_at = kwargs.get("zone_x_created_at", "2025-01-01T00:00:00Z")
+    x_updated_at = kwargs.get("zone_x_updated_at", "2025-01-01T00:00:00Z")
+    try:
+        dns_zone = DnsZone.objects.create(
+            domain=domain,
+            dns_account=account,
+            name=zone_name,
+            nameservers=nameservers,
+        )
+    except IntegrityError as e:
+        print(f"Error creating DNS zone. May be a duplicate. Consider creating a zone with a different name: {e}")
+        raise
 
     vendor_dns_zone = VendorDnsZone.objects.create(
         x_zone_id=x_zone_id,
