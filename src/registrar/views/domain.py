@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from waffle import flag_is_active
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -159,6 +160,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
+        context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -787,18 +789,47 @@ class DomainDNSView(DomainBaseView):
 class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
-    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
+    type_field = forms.ChoiceField(
+        label="Type",
+        choices=[("", "Select a type"), ("A", "A")],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
+
+    name = forms.CharField(
+        label="Name",
+        required=True,
+        help_text="Use @ for root",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+            }
+        ),
+    )
 
     content = forms.GenericIPAddressField(
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+            }
+        ),
     )
 
     ttl = forms.ChoiceField(
         label="TTL",
         choices=[
-            (1, "Automatic"),
             (60, "1 minute"),
             (300, "5 minutes"),
             (1800, "30 minutes"),
@@ -808,19 +839,47 @@ class DomainDNSRecordForm(forms.Form):
             (43200, "12 hours"),
             (86400, "1 day"),
         ],
-        initial=1,
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+
+    comment = forms.CharField(
+        label="Comment",
+        required=False,
+        help_text="The information you enter here will not impact DNS record resolution and \
+        is meant only for your reference.",
+        max_length=500,
+        widget=forms.Textarea(
+            attrs={
+                "class": "usa-textarea usa-textarea--medium",
+                "rows": 2,
+            }
+        ),
     )
 
 
 @grant_access(IS_STAFF)
 class DomainDNSRecordView(DomainFormBaseView):
-    template_name = "domain_dns_record.html"
+    template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Records"
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -864,12 +923,12 @@ class DomainDNSRecordView(DomainFormBaseView):
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": "Test record",
+                    "comment": form.cleaned_data.get("comment", ""),
                 }
 
                 domain_name = self.object.name
                 try:
-                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                    self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -879,12 +938,21 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(name=domain_name).exists()
-                if has_zone:
-                    zone_name = domain_name
-                    # post nameservers to registry
+
+                zones = DnsZone.objects.filter(name=domain_name)
+                if zones.exists():
+                    zone = zones.first()
+                    nameservers = zone.nameservers
+
+                    if not nameservers:
+                        logger.error(f"No nameservers found in DB for domain {domain_name}")
+                        return JsonResponse(
+                            {"status": "error", "message": "DNS nameservers not available"},
+                            status=400,
+                        )
+
                     try:
-                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                        self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
@@ -1375,49 +1443,52 @@ class DomainAddUserView(DomainFormBaseView):
 
         # Look up a user with that email
         requested_user = get_requested_user(requested_email)
-        # NOTE: This does not account for multiple portfolios flag being set to True
         domain_org = self.object.domain_info.portfolio
 
         # requestor can only send portfolio invitations if they are staff or if they are a member
         # of the domain's portfolio
-        requestor_can_update_portfolio = (
-            UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).first() is not None
-            or requestor.is_staff
+        requestor_can_update_portfolio = requestor.is_staff or (
+            domain_org and UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).exists()
         )
 
         member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
-            # COMMENT: this code does not take into account multiple portfolios flag being set to TRUE
-
-            # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+            # determine portfolio of the domain
             # if requested_email/user is not member or invited member of this portfolio
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view
-            is_org_user = self.request.user.is_org_user(self.request)
-            if (
-                is_org_user
-                and not flag_is_active_for_user(requestor, "multiple_portfolios")
-                and domain_org is not None
-                and requestor_can_update_portfolio
-                and not member_of_this_org
-            ):
+            if domain_org and requestor_can_update_portfolio and not member_of_this_org:
                 send_portfolio_invitation_email(
-                    email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                    email=requested_email,
+                    requestor=requestor,
+                    portfolio=domain_org,
+                    is_admin_invitation=False,
                 )
                 portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-                    email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+                    email=requested_email,
+                    portfolio=domain_org,
+                    roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
+
                 messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
-                self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
+                self._handle_existing_user(
+                    requested_email,
+                    requestor,
+                    requested_user,
+                    member_of_a_different_org,
+                    domain_org=domain_org,
+                    member_of_this_org=member_of_this_org,
+                )
+
         except Exception as e:
             handle_invitation_exceptions(self.request, e, requested_email)
 
@@ -1435,7 +1506,16 @@ class DomainAddUserView(DomainFormBaseView):
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to this domain.")
 
-    def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
+    def _handle_existing_user(
+        self,
+        email,
+        requestor,
+        requested_user,
+        member_of_different_org,
+        *,
+        domain_org=None,
+        member_of_this_org=False,
+    ):
         """Handle adding an existing user to the domain."""
         if not send_domain_invitation_email(
             email=email,
@@ -1445,11 +1525,31 @@ class DomainAddUserView(DomainFormBaseView):
             requested_user=requested_user,
         ):
             messages.warning(self.request, "Could not send email notification to existing domain managers.")
-        UserDomainRole.objects.create(
+        UserDomainRole.objects.get_or_create(
             user=requested_user,
             domain=self.object,
             role=UserDomainRole.Roles.MANAGER,
         )
+
+        # If the domain belongs to a portfolio, ensure the user is a Basic member of that portfolio too.
+        if domain_org and not member_of_this_org:
+            # retrieving an existing invitation or permission.
+            portfolio_invitation = PortfolioInvitation.objects.filter(
+                email__iexact=email,
+                portfolio=domain_org,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).first()
+
+            if portfolio_invitation:
+                portfolio_invitation.retrieve()
+                portfolio_invitation.save()
+            else:
+                UserPortfolioPermission.objects.get_or_create(
+                    user=requested_user,
+                    portfolio=domain_org,
+                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+                )
+
         messages.success(self.request, f"Added user {email}.")
 
 

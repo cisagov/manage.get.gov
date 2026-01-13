@@ -4,11 +4,15 @@
 
     {% if not hide_domain_base_crumbs %}
     <li class="usa-breadcrumb__list-item">
+    {% if enterprise_mode %}
       {% if portfolio %}
         <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
       {% else %}
-        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+        <a href="{% url 'home' %}?legacy_home=1" class="usa-breadcrumb__link"><span>Domains</span></a>
       {% endif %}
+    {% else %}
+      <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+    {% endif %}
     </li>
 
     {% if breadcrumb_domain_is_current %}
