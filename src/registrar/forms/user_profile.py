@@ -9,6 +9,7 @@ from registrar.models.utility.domain_helper import DomainHelper
 
 class UserProfileForm(forms.ModelForm):
     """Form for updating user profile."""
+    """Making a random change"
 
     redirect = forms.CharField(widget=forms.HiddenInput(), required=False)
 
