@@ -1,0 +1,17 @@
+<table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
+    <caption class="sr-only">Your DNS records</caption>
+    <thead>
+        <tr>
+        <th scope="col" role="columnheader">Type</th>
+        <th scope="col" role="columnheader">Name</th>
+        <th scope="col" role="columnheader">Content</th>
+        <th scope="col" role="columnheader">TTL</th>
+        <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+        </tr>
+    </thead>
+    <tbody id="dns-records-table" hx-trigger="create-dns-record from:body">
+        {% for dns_record in dns_records %}
+            {% include "domain_dns_record_row.html" with counter=forloop.counter dns_record=dns_record %}
+        {% endfor %}
+    </tbody>
+</table>

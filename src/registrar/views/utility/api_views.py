@@ -1,7 +1,10 @@
 import logging
+from django.apps import apps
+from django.core import serializers
 from django.http import JsonResponse
+from django.template.response import TemplateResponse
 from django.forms.models import model_to_dict
-from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, grant_access
+from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, IS_STAFF, grant_access
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
@@ -157,3 +160,21 @@ def get_rejection_email_for_user_json(request):
     domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
     email = get_rejection_reason_default_email(domain_request, reason)
     return JsonResponse({"email": email}, status=200)
+
+@grant_access(IS_STAFF)
+# rename method to remove json if we end up using template
+def get_dns_records_for_domain_json(request, domain_pk):
+    """Returns JSON of all DNS records of a given domain."""
+    print("request: ",request.__dict__)
+    if domain_pk:
+        DnsZone = apps.get_model("registrar.DnsZone")
+        print("domain: ", domain_pk)
+        print("DNS zone objects: ", DnsZone.objects.all())
+        domain_zone = DnsZone.objects.filter(domain__id=domain_pk).first()
+        if domain_zone:
+            DnsRecord = apps.get_model("registrar.DnsRecord")
+            records = DnsRecord.objects.filter(dns_zone=domain_zone).values()
+            return TemplateResponse(
+                request, "domain_dns_records_table.html", {"dns_records": records})
+    return JsonResponse({"dns_records": []}, status=200)
+

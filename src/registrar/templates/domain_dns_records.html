@@ -1,0 +1,102 @@
+{% extends "domain_base.html" %}
+{% load static field_helpers url_helpers %}
+
+{% block title %}Records | {{ domain.name }} | {% endblock %}
+
+{% block breadcrumb %}
+    {% include "includes/domain_breadcrumbs.html"%}
+{% endblock breadcrumb %}
+
+{% block domain_content %}
+
+    {% include "includes/form_errors.html" with form=form %}
+
+    <div x-data="{ show_form: false, recordType: '' }">
+        <div class="display-flex flex-align-center">
+            <div class="grid-col">
+                <h1>Records</h1>
+            </div>
+            
+            <div class="grid-col-auto">
+                <button
+                class="usa-button"
+                type="button"
+                x-on:click="show_form = true"
+                >
+                    Add record
+                </button>
+            </div>
+        </div>
+    
+        <div class="grid-row">
+            <div class="grid-col-12">
+                <p class="measure-none">
+                    Review, add and edit DNS records. Edits will go into effect once saved.
+                </p>
+                <p class="measure-none">
+                    Click "Add record" and enter the values that you need to enter so everything and everyone can get the work done here.
+                </p>
+
+                <div x-cloak x-show="show_form">
+                    {% include "includes/required_fields.html" %}
+                
+                    <section class="section-outlined section-outlined--extra-padding">
+                    <!-- remove hx-swap none after and hide_clear form after submit -->
+                    <form 
+                        class="usa-form usa-form--extra-large"
+                        hx-post="{% url 'domain-dns-create-record' domain.pk %}"
+                        hx-swap="none"
+                        method="post"
+                        novalidate id="form-container"
+                        x-cloak
+                        x-ref="dnsForm"
+                        x-show="show_form"
+                    >
+                        {% csrf_token %}
+                        <h2>Add record</h2>
+
+                        <div class="grid-row grid-gap">
+                            <div class="grid-col-3">
+                                {% input_with_errors form.type_field %}        
+                            </div>
+                        </div>
+
+                        <div x-cloak x-show="recordType">
+                            {% input_with_errors form.name %}    
+                            <div class="grid-row grid-gap flex-align-end">
+                                <div class="grid-col-9">
+                                    {% input_with_errors form.content %}
+                                </div>
+                                <div class="grid-col-3">
+                                    {% input_with_errors form.ttl %}        
+                                </div>
+                            </div>
+                        
+                            {% input_with_errors form.comment %}
+
+                            <button
+                                type="reset"
+                                class="usa-button usa-button--outline"
+                                x-on:click="show_form = false"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                    class="usa-button"
+                                >
+                                    Save
+                            </button>
+                        </div>
+                    </form>
+                    </section>
+                </div>
+             </div>
+        </div>
+    </div>
+    
+    {% if dns_records %}
+        <div hx-get="{% url 'get-dns-records-for-domain-json' domain.pk %}" hx-trigger="create-dns-record from:body">
+            {% include "domain_dns_records_table.html" %}
+        </div>
+    {% endif %}
+{% endblock %}  {# domain_content #}

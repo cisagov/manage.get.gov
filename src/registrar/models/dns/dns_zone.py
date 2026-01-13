@@ -6,6 +6,7 @@ from registrar.models.dns.dns_soa import DnsSoa
 from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesLink
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,9 @@ class DnsZone(TimeStampedModel):
         "registrar.DnsSoa", on_delete=models.SET_DEFAULT, related_name="+", default=DnsSoa.get_default_pk
     )
 
-    name = models.CharField(null=True, blank=True)
+    name = models.CharField(null=True, blank=True, unique=True)
 
-    nameservers = ArrayField(models.CharField(), null=True, blank=True)
+    nameservers = ArrayField(models.CharField(), null=False, blank=True, default=list)
 
     flatten_all_cnames = models.BooleanField(default=False)
 
@@ -53,6 +54,12 @@ class DnsZone(TimeStampedModel):
         if not self.soa:
             self.soa = DnsSoa
         super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        # Zone must have at least 2 nameservers
+        if len(self.nameservers) < 2:
+            return ValidationError({"nameservers": "DNS zone must have at least 2 nameservers."})
 
     def get_active_x_zone_id(self):
         try:
