@@ -5314,7 +5314,7 @@ class TestMultiplePortfolios(WebTest):
     def _assert_domains_breadcrumb_href(self, response, expected_href):
         self.assertContains(response, '<ol class="usa-breadcrumb__list">')
         self.assertContains(response, f'href="{expected_href}"')
-        
+
     @override_flag("multiple_portfolios", active=True)
     @less_console_noise_decorator
     def test_domain_breadcrumb_domains_link_enterprise_on_legacy_domain_goes_to_legacy_home(self):
@@ -5334,17 +5334,17 @@ class TestMultiplePortfolios(WebTest):
         )
 
         page = self.client.get(reverse("domain", kwargs={"domain_pk": legacy_domain.id}), follow=True)
-        self._assert_domains_breadcrumb_href(page, reverse("home") +"?legacy_home=1")
-        
+        self._assert_domains_breadcrumb_href(page, reverse("home") + "?legacy_home=1")
+
     @override_flag("multiple_portfolios", active=True)
     @less_console_noise_decorator
     def test_domain_breadcrumb_domains_link_enterprise_on_with_portfolio_goes_to_domains(self):
         self.client.force_login(self.user)
-        
+
         UserPortfolioPermission.objects.get_or_create(
-        user=self.user,
-        portfolio=self.portfolio,
-        defaults={
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults={
                 "additional_permissions": [
                     UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
                     UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
@@ -5358,7 +5358,7 @@ class TestMultiplePortfolios(WebTest):
         # Domain is associated to portfolio already in setUp via DomainInformation
         page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}), follow=True)
         self._assert_domains_breadcrumb_href(page, reverse("domains"))
-        
+
     @override_flag("multiple_portfolios", active=False)
     @less_console_noise_decorator
     def test_domain_breadcrumb_domains_link_flag_off_goes_to_home(self):
