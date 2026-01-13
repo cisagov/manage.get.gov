@@ -2,6 +2,7 @@ import logging
 from django import template
 import re
 from django.contrib.contenttypes.models import ContentType
+from django.template.loader import render_to_string
 from registrar.models.domain_request import DomainRequest
 from phonenumber_field.phonenumber import PhoneNumber
 from registrar.views.domain_request import DomainRequestWizard
@@ -318,3 +319,17 @@ def get_dict_value(dictionary, key):
 def button_class(custom_class):
     default_class = "usa-button"
     return f"{default_class} {custom_class}" if custom_class else default_class
+
+
+@register.filter
+def contact_text(contact, num_newlines=2):
+    """
+    Renders contact.txt for the given contact and ensures
+    specified number of new lines at the end.
+    """
+    if not contact:
+        return ""
+    text = render_to_string("emails/includes/contact.txt", {"contact": contact})
+    # Remove whitespace/trailing + add exact new line(s) amount at end
+    text = text.rstrip("\n")
+    return text + "\n" * num_newlines

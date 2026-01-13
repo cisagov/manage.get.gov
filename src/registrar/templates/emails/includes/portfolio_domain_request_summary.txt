@@ -23,10 +23,7 @@ Target time frame:
 {% else %}{{ domain_request.purpose }}{% endif %}{% if domain_request.anything_else %}
 Additional details:
 {{ domain_request.anything_else }}{% endif %}
-{% if recipient %}
-Your contact information:
-{% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
-{% endif %}
-Administrators from your organization:{% for admin in domain_request.portfolio.portfolio_admin_users %}
-{% spaceless %}{% if not recipient or admin != recipient %}{% include "emails/includes/contact.txt" with contact=admin %}{% endif %}{% endspaceless %}
-{% endfor %}
+{% if recipient %}Your contact information:
+{{ recipient|contact_text:2 }}{% endif %}
+{% with admins=domain_request.portfolio.portfolio_admin_users %}{% if admins|length > 1 or not recipient %}Administrators from your organization:
+{% for admin in admins %}{% if not recipient or admin != recipient %}{{ admin|contact_text }}{% endif %}{% endfor %}{% endif %}{% endwith %}
