@@ -11,6 +11,9 @@ from registrar.models import (
     VendorDnsAccount,
     VendorDnsZone,
     VendorDnsRecord,
+    DnsAccount_VendorDnsAccount as AccountsJoin,
+    DnsZone_VendorDnsZone as ZonesJoin,
+    DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
@@ -227,7 +230,10 @@ class DnsHostService:
 
                 dns_acc = DnsAccount.objects.create(name=result["name"])
 
-                dns_acc.vendor_dns_account.add(vendor_acc)
+                AccountsJoin.objects.create(
+                    dns_account=dns_acc,
+                    vendor_dns_account=vendor_acc,
+                )
 
         except Exception as e:
             logger.error(f"Failed to save account to database: {str(e)}.")
@@ -255,7 +261,10 @@ class DnsHostService:
                     dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
                 )
 
-                dns_zone.vendor_dns_zone.add(vendor_dns_zone)
+                ZonesJoin.objects.create(
+                    dns_zone=dns_zone,
+                    vendor_dns_zone=vendor_dns_zone,
+                )
         except Exception as e:
             logger.error(f"Failed to save zone to database: {str(e)}.")
             raise
@@ -286,7 +295,10 @@ class DnsHostService:
                     tags=record_data["tags"],
                 )
 
-                dns_record.vendor_dns_record.add(vendor_dns_record)
+                RecordsJoin.objects.create(
+                    dns_record=dns_record,
+                    vendor_dns_record=vendor_dns_record,
+                )
 
         except Exception as e:
             logger.error(f"Failed to save record to database: {str(e)}.")
