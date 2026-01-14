@@ -72,9 +72,7 @@ services:
       - "5678:5678"  # debugger port
     # command: "python"
     command: >
-      bash -c " python manage.py migrate &&
-      python manage.py createcachetable &&
-      python manage.py load &&
+      bash -c "
       if [ \"$DEBUG_MODE\" = \"true\" ]; then
         echo 'Starting in debug mode... Your app is now ready for debugging.';
         python -m debugpy --listen 0.0.0.0:5678 --wait-for-client manage.py runserver 0.0.0.0:8080;

@@ -389,7 +389,7 @@ class DatabaseConnectionMiddleware:
 
         # Log connection state
         connection = connections["default"]
-        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
+        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}, start_time={request._db_start_time}")
         response = self.get_response(request)
         if hasattr(request, "_db_start_time"):
             connection = connections["default"]
@@ -404,6 +404,7 @@ class DatabaseConnectionMiddleware:
                 f"duration={duration:.3f}s, "
                 f"total_queries={len(connection.queries)}, "
                 f"status={response.status_code}, "
-                f"path={request.path}"
+                f"path={request.path}, "
+                f"start_time={request._db_start_time}"
             )
         return response
