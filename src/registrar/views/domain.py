@@ -927,17 +927,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
-                try:
-                    self.dns_host_service.dns_setup(domain_name)
-                except APIError as e:
-                    logger.error(f"dnsSetup failed {e}")
-                    return JsonResponse(
-                        {
-                            "status": "error",
-                            "message": "DNS setup failed",
-                        },
-                        status=400,
-                    )
 
                 zones = DnsZone.objects.filter(name=domain_name)
                 if zones.exists():

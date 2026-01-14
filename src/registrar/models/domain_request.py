@@ -12,9 +12,11 @@ from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTy
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from registrar.utility.waffle import flag_is_active_for_user
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 from datetime import date
+from httpx import Client
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -1246,6 +1248,22 @@ class DomainRequest(TimeStampedModel):
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
+
+        # Engage DNS Setup if the flag is active
+        if flag_is_active_for_user(self.requester, "dns_hosting"):
+            # Need to import DnsHostService here to avoid circular import error
+            from registrar.services.dns_host_service import DnsHostService
+
+            client = Client()
+            dns_service = DnsHostService(client)
+
+            try:
+                x_account_id = dns_service.dns_account_setup(created_domain.name)
+                dns_service.dns_zone_setup(created_domain.name, x_account_id)
+
+            except Exception:
+                logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
+                raise
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")

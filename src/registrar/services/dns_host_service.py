@@ -46,8 +46,11 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
 
-    def dns_setup(self, domain_name):
-        # Set up a vendor ACCOUNT
+    def dns_account_setup(self, domain_name):
+        """
+        Ensure a DNS Vendor account exists for this domain.
+        Returns x_account_id.
+        """
         account_name = make_dns_account_name(domain_name)
 
         x_account_id = self._find_existing_account_in_db(account_name)
@@ -55,17 +58,17 @@ class DnsHostService:
 
         if has_db_account:
             logger.info("Already has an existing vendor account")
-        else:
-            cf_account_data = self._find_existing_account_in_cf(account_name)
-            has_cf_account = bool(cf_account_data)
+            return x_account_id
 
-            if has_cf_account:
-                x_account_id = self.save_db_account({"result": cf_account_data})
-            else:
-                x_account_id = self.create_and_save_account(account_name)
+        cf_account_data = self._find_existing_account_in_cf(account_name)
+        has_cf_account = bool(cf_account_data)
 
-        # Set up a vendor ZONE
-        # For now, we only expect one zone per account
+        if has_cf_account:
+            return self.save_db_account({"result": cf_account_data})
+
+        return self.create_and_save_account(account_name)
+
+    def dns_zone_setup(self, domain_name, x_account_id):
         has_zone = DnsZone.objects.filter(name=domain_name).exists()
 
         if has_zone:
