@@ -3489,6 +3489,16 @@ class TestRequestingEntity(WebTest):
             user=another_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         )
 
+        another_admin_2 = User.objects.create(
+            username="another_admin_2", email="another.admin2@example.com", first_name="Another", last_name="Admin2"
+        )
+        AllowedEmail.objects.create(email=another_admin_2.email)
+
+        # Add another user as a portfolio admin
+        UserPortfolioPermission.objects.create(
+            user=another_admin_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
         domain_request = completed_domain_request(
             user=self.user,
             # This is the additional details field
