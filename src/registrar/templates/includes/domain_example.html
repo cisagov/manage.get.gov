@@ -42,13 +42,13 @@
   <p>
   Federal agencies may request generic domain names. Generic names may not be approved when an agency lacks significant or singular authority over a thematic topic.
   </p>
-  <p>
+  <p class="margin-bottom-0">
   Federal agencies in the executive branch are subject to <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://whitehouse.gov/wp-content/uploads/2023/02/M-23-10-DOTGOV-Act-Guidance.pdf">M-23-10</a> 
   and its <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url '/domains/executive-branch-guidance/' %}">implementation guidance</a>.
   </p>
 
 {% elif generic_org_type == 'interstate' %}
-  <p>
+  <p class="margin-bottom-0">
   Names that uniquely apply to your organization are likely to be approved over names that could also apply to others. 
   Requests for your organization’s initials alone may not be approved.
   </p>
@@ -125,10 +125,8 @@
       </ul>
     </div>
   </div>
-  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
-
+  <p class=margin-bottom-0>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 {% elif generic_org_type == 'tribal' %}
-TODO: Come back to check spacing in this section
 <p>Tribal domains may include the suffix -nsn, for native sovereign nation.</p>
 <div class="grid-row">
 
@@ -164,7 +162,7 @@ TODO: Come back to check spacing in this section
         </svg>
         <div class="checklist-text-wrapper"> 
           <div class="checklist-bold-text"><b>KingSalmon.gov</b></div>
-          <div class="margin-bottom-2"><i>Could have several meanings</i></div>
+          <div class="margin-bottom-4"><i>Could have several meanings</i></div>
         </div>
       </li>
   
@@ -181,7 +179,7 @@ TODO: Come back to check spacing in this section
   </div>
 </div>
 
-<p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
+<p class=margin-bottom-0>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
 {% elif generic_org_type == 'county' %}
   <p>Most county .gov domains must include the two-letter state abbreviation or the full state name. County names that aren’t shared by any other city, county, parish, town, borough, village or equivalent in the U.S. (at the time a domain is granted) don’t have to refer to their state in their domain name. Counties can include “county” in their domain to distinguish it from other places with similar names.</p> 
@@ -217,7 +215,7 @@ TODO: Come back to check spacing in this section
             <use xlink:href="{% static 'img/sprite.svg' %}#check_circle"></use>
           </svg>
           <div class="checklist-text-wrapper">
-            <div class="checklist-bold-text"><b>JeffersonCoKY</b></div>
+            <div class="checklist-bold-text"><b>JeffersonCoKY.gov</b></div>
             <div class="margin-bottom-2"><i>Has county and state abbreviation</i></div>
           </div>
         </li>
@@ -258,9 +256,7 @@ TODO: Come back to check spacing in this section
       </ul>
     </div>
   </div>
-
-  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
-
+  <p class=margin-bottom-0>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 {% elif generic_org_type == 'city' %}
   <p>Most city domains must include the two-letter state abbreviation or clearly spell out the state name. Using phrases like “City of” or “Town of” is optional.</p>
   <p>Cities that meet one of the criteria below don’t have to refer to their state in their domain name.
@@ -290,7 +286,7 @@ TODO: Come back to check spacing in this section
           </svg>
           <div class="checklist-text-wrapper">
             <div class="checklist-bold-text"><b>WallaWallaWA.gov</b></div>
-            <div class="margin-bottom-2"><i>Inclues state</i></div>
+            <div class="margin-bottom-2"><i>Includes state</i></div>
           </div>
         </li>
 
@@ -340,7 +336,7 @@ TODO: Come back to check spacing in this section
       </ul>
     </div>
   </div>
-  <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
+  <p class=margin-bottom-0>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
 
 {% elif generic_org_type == 'special_district' %}
   <p>Domain names must represent your organization or institutional name, not solely the services you provide. It also needs to include your two-letter state abbreviation or clearly spell out the state name.</p>
@@ -395,15 +391,15 @@ TODO: Come back to check spacing in this section
     </div>
   </div>
   <p>Names that <i>uniquely apply to your organization</i> are likely to be approved over names that could also apply to others.</p>
-  <p>Requests for your organization’s initials alone may not be approved.</p>
+  <p class="margin-bottom-0">Requests for your organization's initials alone may not be approved.</p>
+
 {% elif generic_org_type == 'school_district' %}
   <p>School districts that aren’t part of a local government are eligible for .gov domains. However, consider the following when deciding whether .gov is a good fit for your school district:</p>
-  <li>While school district employees work in the public sector, most of their external interactions (e.g., teacher-to-parent/student, or administration-to-vendor) are different in nature from typical government interactions.</li>
-  <li>Students should never be given email addresses that use a .gov domain.</li>
-
+  <ul>
+    <li>While school district employees work in the public sector, most of their external interactions (e.g., teacher-to-parent/student, or administration-to-vendor) are different in nature from typical government interactions.</li>
+    <li>Students should never be given email addresses that use a .gov domain.</li>
+  </ul>
   <p>Domain names must represent your organization or institutional name. Names that uniquely apply to your organization are likely to be approved over names that could also apply to others.</p>
-  <p>Requests for your organization’s initials or an abbreviated name are unlikely to be approved.</p>
-
-
+  <p class=margin-bottom-0>Requests for your organization's initials or an abbreviated name are unlikely to be approved.</p>
 {%endif %}
 
