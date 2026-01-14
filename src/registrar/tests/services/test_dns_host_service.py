@@ -22,7 +22,7 @@ from registrar.tests.helpers.data_generator import (
     make_domain,
     make_dns_account,
     make_initial_dns_setup,
-    delete_all_dns_data
+    delete_all_dns_data,
 )
 
 
@@ -375,11 +375,8 @@ class TestDnsHostServiceDB(TestCase):
 
         zone_domain = make_domain(domain_name=zone_name)
         make_initial_dns_setup(
-            zone_domain,
-            x_account_id=test_x_account_id,
-            x_zone_id=x_zone_id,
-            nameservers=expected_nameservers
-            )
+            zone_domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
+        )
 
         found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
 
