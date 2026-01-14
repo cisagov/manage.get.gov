@@ -18,6 +18,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact
 from registrar.models.user import User
+from registrar.services.epp_registry_service import EPPRegistryService
 from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
@@ -659,7 +660,7 @@ class TestDomainAvailable(MockEppLib):
             )
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
 
@@ -693,7 +694,7 @@ class TestDomainAvailable(MockEppLib):
             )
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
 
@@ -721,22 +722,15 @@ class TestDomainAvailable(MockEppLib):
         * Validate response given mock
         """
 
-        with patch("registrar.models.domain.registry.send") as mocked_send, patch(
-            "registrar.models.domain.Domain._extract_data_from_response"
-        ) as mocked_extract:
-
+        with patch("registrar.services.epp_registry_service.registry.send") as mocked_send:
             # Mock the registry response
             mock_response = MagicMock()
             mock_response.res_data = [MagicMock(statuses=[MagicMock(state="pendingDelete")])]
             mocked_send.return_value = mock_response
 
-            # Mock JSONified response
-            mocked_extract.return_value = {"statuses": ["pendingDelete"]}
-
             result = Domain.is_pending_delete("is-pending-delete.gov")
 
             mocked_send.assert_called_once_with(commands.InfoDomain("is-pending-delete.gov"), cleaned=True)
-            mocked_extract.assert_called_once()
 
             self.assertTrue(result)
 
@@ -749,10 +743,7 @@ class TestDomainAvailable(MockEppLib):
         * Validate response given mock
         """
 
-        with patch("registrar.models.domain.registry.send") as mocked_send, patch(
-            "registrar.models.domain.Domain._extract_data_from_response"
-        ) as mocked_extract:
-
+        with patch("registrar.services.epp_registry_service.registry.send") as mocked_send:
             # Mock the registry response
             mock_response = MagicMock()
             mock_response.res_data = [
@@ -760,15 +751,10 @@ class TestDomainAvailable(MockEppLib):
             ]
             mocked_send.return_value = mock_response
 
-            # Mock JSONified response
-            mocked_extract.return_value = {"statuses": ["serverTransferProhibited", "ok"]}
-
             result = Domain.is_pending_delete("is-not-pending.gov")
 
             # Assertions
             mocked_send.assert_called_once_with(commands.InfoDomain("is-not-pending.gov"), cleaned=True)
-            mocked_extract.assert_called_once()
-
             self.assertFalse(result)
 
     def test_is_not_deleted_returns_true_when_domain_exists(self):
@@ -782,7 +768,7 @@ class TestDomainAvailable(MockEppLib):
         * Validate send is called with correct domain
         * Validate response is True
         """
-        with patch("registrar.models.domain.registry.send") as mocked_send:
+        with patch("registrar.services.epp_registry_service.registry.send") as mocked_send:
             mock_response = MagicMock()
             mock_response.res_data = [MagicMock()]  # non-empty res_data
             mocked_send.return_value = mock_response
@@ -802,7 +788,7 @@ class TestDomainAvailable(MockEppLib):
         * Mock registry.send to raise RegistryError with code 2303
         * Validate response is False
         """
-        with patch("registrar.models.domain.registry.send") as mocked_send:
+        with patch("registrar.services.epp_registry_service.registry.send") as mocked_send:
             error = RegistryError("Object does not exist")
             error.code = 2303
             error.is_connection_error = MagicMock(return_value=False)
@@ -845,7 +831,7 @@ class TestDomainAvailable(MockEppLib):
             raise RegistryError(code=ErrorCode.COMMAND_SYNTAX_ERROR)
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
 
@@ -1082,7 +1068,7 @@ class TestRegistrantContacts(MockEppLib):
             def side_effect(_request, cleaned):
                 raise RegistryError(code=ErrorCode.COMMAND_FAILED)
 
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             # when get_security_email is called, the registry error will force the security contact
@@ -1960,7 +1946,7 @@ class TestRegistrantNameservers(MockEppLib):
             def side_effect(_request, cleaned):
                 raise RegistryError(code=ErrorCode.COMMAND_FAILED)
 
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             nameservers = domain.nameservers
@@ -2194,7 +2180,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
@@ -2287,7 +2273,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
@@ -2369,7 +2355,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             domain, _ = Domain.objects.get_or_create(name="dnssec-multdsdata.gov")
@@ -2434,7 +2420,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             else:
                 return MagicMock(res_data=[self.mockDataInfoHosts])
 
-        with patch("registrar.models.domain.registry.send") as mocked_send:
+        with patch("registrar.services.epp_registry_service.registry.send") as mocked_send:
             mocked_send.side_effect = side_effect
 
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
@@ -2675,7 +2661,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake.gov",
                             add=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2707,7 +2693,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake-on-hold.gov",
                             add=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2739,7 +2725,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake-on-hold.gov",
                             rem=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2771,7 +2757,7 @@ class TestAnalystClientHold(MockEppLib):
                             name="fake.gov",
                             rem=[
                                 common.Status(
-                                    state=Domain.Status.CLIENT_HOLD,
+                                    state=EPPRegistryService.DomainStatus.CLIENT_HOLD,
                                     description="",
                                     lang="en",
                                 )
@@ -2798,7 +2784,7 @@ class TestAnalystClientHold(MockEppLib):
             raise RegistryError(code=ErrorCode.OBJECT_STATUS_PROHIBITS_OPERATION)
 
         with less_console_noise():
-            patcher = patch("registrar.models.domain.registry.send")
+            patcher = patch("registrar.services.epp_registry_service.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
             # if RegistryError is raised, admin formats user-friendly
@@ -2970,7 +2956,7 @@ class TestAnalystDelete(MockEppLib):
                 return MagicMock(res_data=[fake_info])
             return self.mockedSendFunction(request, cleaned=cleaned)
 
-        with patch("registrar.models.domain.registry.send", side_effect=side_effect):
+        with patch("registrar.services.epp_registry_service.registry.send", side_effect=side_effect):
             self.domain_with_contacts.deleteInEpp()
             self.domain_with_contacts.save()
 
@@ -2981,7 +2967,9 @@ class TestAnalystDelete(MockEppLib):
                 call(
                     commands.UpdateDomain(
                         name="freeman.gov",
-                        add=[common.Status(state=Domain.Status.CLIENT_HOLD, description="", lang="en")],
+                        add=[
+                            common.Status(state=EPPRegistryService.DomainStatus.CLIENT_HOLD, description="", lang="en")
+                        ],
                         rem=[],
                         nsset=None,
                         keyset=None,
