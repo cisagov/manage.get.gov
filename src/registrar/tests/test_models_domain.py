@@ -1148,6 +1148,14 @@ class TestRegistrantContacts(MockEppLib):
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact, disclose=False, disclose_fields=disclose_fields
                     )
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
+                    DF = common.DiscloseField
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact,
+                        disclose=True,
+                        disclose_fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
+                        disclose_types={DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+                    )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
                     expectedCreateCommand = self._convertPublicContactToEpp(
@@ -1163,6 +1171,18 @@ class TestRegistrantContacts(MockEppLib):
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
                 # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)
+
+    def test_registrant_discloses_org_city_state_country_only(self):
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="example.gov")
+            registrant = domain.get_default_registrant_contact()
+
+            disclose = domain._disclose_fields(registrant)
+            DF = common.DiscloseField
+
+            self.assertTrue(disclose.flag)
+            self.assertEqual(disclose.fields, {DF.ORG, DF.CITY, DF.SP, DF.CC})
+            self.assertEqual(disclose.types, {DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"})
 
     def test_convert_public_contact_to_epp(self):
         with less_console_noise():

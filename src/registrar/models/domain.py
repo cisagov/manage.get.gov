@@ -1546,10 +1546,47 @@ class Domain(TimeStampedModel, DomainHelper):
         contact.domain = self
         return contact
 
+    def _update_registrant_public_contact_defaults(self, contact: PublicContact) -> PublicContact:
+        """Update default registrant PublicContact values using registrar inputs.
+
+        This is intended for new registrant contacts only. If domain_info is not available,
+        the PublicContact defaults are preserved.
+        """
+        domain_info = getattr(self, "domain_info", None)
+        if not domain_info:
+            return contact
+
+        # Prefer enterprise/portfolio-backed values.
+        is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
+
+        registrant_org = None
+        if is_federal:
+            federal_agency = domain_info.converted_federal_agency
+            registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
+        else:
+            registrant_org = domain_info.converted_organization_name
+
+        if registrant_org:
+            contact.org = registrant_org
+
+        if domain_info.converted_city:
+            contact.city = domain_info.converted_city
+
+        state_territory = None
+        if domain_info.portfolio:
+            state_territory = domain_info.portfolio.state_territory
+        else:
+            state_territory = domain_info.state_territory
+        if state_territory:
+            contact.sp = state_territory
+
+        return contact
+
     def get_default_registrant_contact(self):
         """Gets the default registrant contact."""
         logger.info("get_default_security_contact() -> Adding default registrant contact")
         contact = PublicContact.get_default_registrant()
+        contact = self._update_registrant_public_contact_defaults(contact)
         contact.domain = self
         return contact
 
@@ -1638,6 +1675,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def addRegistrant(self):
         """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
+        registrant = self._update_registrant_public_contact_defaults(registrant)
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
@@ -1849,6 +1887,15 @@ class Domain(TimeStampedModel, DomainHelper):
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
         all_disclose_fields = {field for field in DF}
+
+        # Registrant contacts should publish only org + city/state/country (not full street address).
+        if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
+            return epp.Disclose(
+                flag=True,
+                fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
+                types={DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+            )
+
         disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
 
         fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
