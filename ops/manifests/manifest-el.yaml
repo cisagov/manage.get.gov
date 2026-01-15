@@ -20,13 +20,14 @@ applications:
     # Tell Django where it is being hosted
     DJANGO_BASE_URL: https://getgov-el.app.cloud.gov
     # Tell Django how much stuff to log
-    DJANGO_LOG_LEVEL: INFO
+    DJANGO_LOG_LEVEL: DEBUG
     # tell django what log format to use: console or json. See settings.py for more details.
     DJANGO_LOG_FORMAT: console 
     # default public site location
     GETGOV_PUBLIC_SITE_URL: https://get.gov
     # Flag to disable/enable features in prod environments
     IS_PRODUCTION: False
+    DJANGO_DEBUG: True
   routes:
     - route: getgov-el.app.cloud.gov
   services:
