@@ -408,25 +408,3 @@ class DatabaseConnectionMiddleware:
                 f"path={request.path}"
             )
         return response
-    
-class SecurityHeadersMiddleware:
-    """
-    Adds security headers to all responses to address OWASP ZAP warnings.
-    Note: Some headers are already set in production by Cloud.gov, but we set
-    them here for owasp.
-    """
-    
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        resp = self.get_response(request)
-
-        resp["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()"
-        )
-
-        resp["Cross-Origin-Opener-Policy"] = "same-origin"
-        resp["Cross-Origin-Resource-Policy"] = "same-origin"
-
-        return resp

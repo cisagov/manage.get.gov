@@ -176,7 +176,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # provide security enhancements to the request/response cycle
     "django.middleware.security.SecurityMiddleware",
-    "registrar.registrar_middleware.SecurityHeadersMiddleware",
     # django-allow-cidr: enable use of CIDR IP ranges in ALLOWED_HOSTS
     "allow_cidr.middleware.AllowCIDRMiddleware",
     # django-cors-headers: listen to cors responses
