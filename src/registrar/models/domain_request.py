@@ -1251,8 +1251,9 @@ class DomainRequest(TimeStampedModel):
 
         # Engage DNS Setup if the flag is active
         if flag_is_active_for_user(self.requester, "dns_hosting"):
-            # Need to import DnsHostService here to avoid circular import error
+            # Need to import DnsHostService and DnsZone here to avoid circular import error
             from registrar.services.dns_host_service import DnsHostService
+            from registrar.models.dns.dns_zone import DnsZone
 
             client = Client()
             dns_service = DnsHostService(client)
