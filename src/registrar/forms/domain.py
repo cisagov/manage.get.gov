@@ -763,12 +763,18 @@ class DomainRenewalForm(forms.Form):
 class DomainDeleteForm(forms.Form):
     """Form making sure domain deletion ack is checked"""
 
-    is_policy_acknowledged = forms.BooleanField(
-        required=True,
-        label="I understand that my domain will be deleted within 7 days of my request. "
-        "After that, it cannot be recovered.",
-        error_messages={
-            "required": "Check the box if you understand that your domain will be deleted within 7 days of "
-            "making this request."
-        },
-    )
+    is_policy_acknowledged = forms.BooleanField(required=True)
+
+    def __init__(self, *args, domain_state=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if domain_state == Domain.State.DNS_NEEDED:
+            label = "I understand that my domain will be deleted immediately. It cannot be recovered"
+            error = "Check the box if you understand that your domain will be deleted."
+        else:
+            label = "I understand that my domain will be deleted within 7 days of my request. After that, it cannot be recovered."
+            error = (
+                "Check the box if you understand that your domain will be deleted within 7 days of making this request."
+            )
+
+        self.fields["is_policy_acknowledged"].label = label
+        self.fields["is_policy_acknowledged"].error_messages = {"required": error}
