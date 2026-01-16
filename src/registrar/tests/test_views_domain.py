@@ -3294,6 +3294,7 @@ class TestDomainDeletion(TestWithUser):
         * Domain is NOT expiring
         * Should see domain lifecycle
         * Should see request deletion
+        * Should not see domain renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
@@ -3447,9 +3448,9 @@ class TestDomainDeletion(TestWithUser):
     @override_flag("domain_deletion", active=True)
     def test_domain_deletion_dns_needed_post_successful(self):
         """
-        Domain State in DNS NEEDED
-        Posting to the endpoint with a state of DNS Needed
-        Should delete the Domain
+        * Domain State in DNS NEEDED
+        * Posting to the endpoint with a state of DNS Needed
+        * Should delete the Domain
         """
         self.client.force_login(self.user)
         domain_id = self.dns_needed_not_expiring.id
