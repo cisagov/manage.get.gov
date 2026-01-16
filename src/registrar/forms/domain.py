@@ -771,7 +771,8 @@ class DomainDeleteForm(forms.Form):
             label = "I understand that my domain will be deleted immediately. It cannot be recovered"
             error = "Check the box if you understand that your domain will be deleted."
         else:
-            label = "I understand that my domain will be deleted within 7 days of my request. After that, it cannot be recovered."
+            label = "I understand that my domain will be deleted within 7 days of my request."
+            "After that, it cannot be recovered."
             error = (
                 "Check the box if you understand that your domain will be deleted within 7 days of making this request."
             )

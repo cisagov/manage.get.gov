@@ -624,6 +624,8 @@ class DomainDeleteView(DomainFormBaseView):
             elif domain.state == Domain.State.DNS_NEEDED:
                 try:
                     domain_name = domain.name
+                    # Associated PublicContacts need to be deleted due to the protected relationship
+                    PublicContact.objects.filter(domain=domain).delete()
                     domain.delete()
                     messages.success(request, f"{domain_name} has been deleted successfully")
                     return redirect(reverse("domains"))
