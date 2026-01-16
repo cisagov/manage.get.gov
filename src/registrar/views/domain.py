@@ -787,17 +787,8 @@ class DomainDNSView(DomainBaseView):
         return "DNS"
 
 
-class DomainDNSRecordForm(forms.ModelForm):
+class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
-    class Meta:
-        model = DnsRecord
-        fields = [
-            "type",
-            "name",
-            "ttl",
-            "content",
-            "comment"
-        ]
 
     type_field = forms.ChoiceField(
         label="Type",
