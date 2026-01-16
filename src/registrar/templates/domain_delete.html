@@ -24,7 +24,7 @@
     <p>
       If you no longer need this domain, you can request that it be deleted at any time.
       <ul class="usa-list">
-      {% if domain.state == domain.State.Ready %}
+      {% if domain.state == domain.State.READY %}
       <li>Once you request to delete this domain, it will be placed “on hold” for seven days before deletion. While “on hold,” the domain will be administratively paused, so it can’t be edited and won’t resolve in DNS.
       </li>
       {% endif %}
@@ -34,7 +34,7 @@
       <li>After the domain is deleted from the .gov registry, it can't be recovered.
         To obtain the same domain name, you will have to make a new request.
       </li>
-        {% if domain.state == domain.State.Ready %}
+        {% if domain.state == domain.State.READY %}
         <li>A domain manager can cancel the deletion request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>.
       </li>
       {% endif %}
