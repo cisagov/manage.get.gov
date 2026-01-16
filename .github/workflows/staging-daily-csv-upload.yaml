@@ -20,7 +20,7 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ secrets.CF_REPORT_ENV_STAGING }}
-          cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV_STAGING }} --command 'python manage.py generate_current_federal_report' --name federal"
+          cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV_STAGING }} --command 'python manage.py generate_current_federal_report --skip-checks' --name federal"
 
       - name: Generate current-full.csv
         uses: cloud-gov/cg-cli-tools@main
@@ -29,4 +29,4 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ secrets.CF_REPORT_ENV_STAGING }}
-          cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV_STAGING }} --command 'python manage.py generate_current_full_report' --name full"
+          cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV_STAGING }} --command 'python manage.py generate_current_full_report --skip-checks' --name full"
