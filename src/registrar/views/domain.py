@@ -8,6 +8,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import get_template
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views import View
 from django.views.generic import DeleteView, DetailView, UpdateView
@@ -786,8 +787,17 @@ class DomainDNSView(DomainBaseView):
         return "DNS"
 
 
-class DomainDNSRecordForm(forms.Form):
+class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records in prototype."""
+    class Meta:
+        model = DnsRecord
+        fields = [
+            "type",
+            "name",
+            "ttl",
+            "content",
+            "comment"
+        ]
 
     type_field = forms.ChoiceField(
         label="Type",
@@ -1039,6 +1049,25 @@ class DomainDNSRecordFormView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
+            new_form = DomainDNSRecordForm()
+            return TemplateResponse(
+                request, 
+                "domain_dns_record_row_response.html",
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form
+                },
+                status=200
+            )
+            return TemplateResponse(
+                request, 
+                "domain_dns_record_row.html",
+                {
+                    "dns_record": self.dns_record
+                },
+                status=200
+            )
             return HttpResponse(
                 headers={
                     "HX-TRIGGER": "create-dns-record",

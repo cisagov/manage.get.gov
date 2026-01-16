@@ -36,7 +36,7 @@
                     type="button"
                     class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
                     aria-expanded="false"
-                    aria-controls="more-actions-dnsrecord-{{ forloop.counter }}"
+                    aria-controls="more-actions-dnsrecord-{{ counter }}"
                     aria-label="More Actions for DNS record"
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -44,7 +44,7 @@
                     </svg>
                 </button>
                 </div>
-                <div id="more-actions-dnsrecord-{{ forloop.counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                <div id="more-actions-dnsrecord-{{ counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
                 <h2>More options</h2>
                 <button
                     type="button"

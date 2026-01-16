@@ -1,6 +1,5 @@
 import logging
 from django.apps import apps
-from django.core import serializers
 from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.forms.models import model_to_dict

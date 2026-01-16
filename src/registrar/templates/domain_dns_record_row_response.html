@@ -1,0 +1,102 @@
+<template>
+    <tbody hx-swap-oob="beforeend:#dnsrecords-table">
+        <tr id="dnsrecord-row_{{counter}}" >
+            <td data-label="Type">
+                {{dns_record.type}}
+            </td>
+            <td data-label="Name">
+                {{dns_record.name}}
+            </td>
+            <td data-label="TTL">
+                {{dns_record.content}}
+            </td>
+            <td data-label="Type">
+                {{dns_record.ttl}}
+            </td>
+            <td class="padding-right-0" data-label="Action">
+                <div class="tablet:display-flex tablet:flex-row">
+                    <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0'>
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                        <use xlink:href="/public/img/sprite.svg#edit"></use>
+                        </svg>
+                        Edit <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
+                    </button>
+                    <a 
+                        role="button"
+                        id="button-trigger-delete-dnsrecord-{{ forloop.counter }}"
+                        class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
+                        >
+                        <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                            <use xlink:href="/public/img/sprite.svg#delete"></use>
+                        </svg>
+                        Delete
+                    </a>
+        
+                    <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
+                        <div class="usa-accordion__heading">
+                        <button
+                            type="button"
+                            class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
+                            aria-expanded="false"
+                            aria-controls="more-actions-dnsrecord-{{ counter }}"
+                            aria-label="More Actions for DNS record"
+                        >
+                            <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
+                            <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                            </svg>
+                        </button>
+                        </div>
+                        <div id="more-actions-dnsrecord-{{ counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                        <h2>More options</h2>
+                        <button
+                            type="button"
+                            class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
+                            aria-label="Delete DNS record from Cloudflare"
+                        >
+                            Delete
+                        </button>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</template>
+{% load static field_helpers url_helpers %}
+
+{% csrf_token %}
+<h2>Add record</h2>
+
+<div class="grid-row grid-gap">
+    <div class="grid-col-3">
+        {% input_with_errors form.type_field %}        
+    </div>
+</div>
+
+<div x-cloak x-show="recordType">
+    {% input_with_errors form.name %}    
+    <div class="grid-row grid-gap flex-align-end">
+        <div class="grid-col-9">
+            {% input_with_errors form.content %}
+        </div>
+        <div class="grid-col-3">
+            {% input_with_errors form.ttl %}        
+        </div>
+    </div>
+
+    {% input_with_errors form.comment %}
+
+    <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="show_form = false"
+    >
+        Cancel
+    </button>
+    <button
+            class="usa-button"
+        >
+            Save
+    </button>
+</div>
+
