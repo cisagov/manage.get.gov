@@ -105,8 +105,7 @@
     aria-describedby="domain-deletion-confirm-button-desc"
   >
   {% if domain.state == domain.State.DNS_NEEDED %}
-     {% include 'includes/modal.html' with modal_heading="Are you sure you'd like to delete "|add:domain.name|add:"?" modal_description=""
-     modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}  
+    {% include 'includes/modal.html' with modal_heading="Are you sure you'd like to delete "|add:domain.name|add:"?" modal_description="" modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}   
   {% else %}
     {% include 'includes/modal.html' with modal_heading="Are you sure you'd like to request to delete "|add:domain.name|add:"?" modal_description="The domain will be placed on hold for seven days. After that, it will be deleted from the .gov registry. Websites and emails associated with the domain will no longer work.<br><br>If you change your mind, you can cancel this request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>."|safe modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
   {% endif %}

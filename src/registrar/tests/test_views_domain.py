@@ -3280,7 +3280,7 @@ class TestDomainDeletion(TestWithUser):
             response = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_not_expiring.id}),
             )
-            
+
             self.assertContains(response, "Domain lifecycle")
             self.assertContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
