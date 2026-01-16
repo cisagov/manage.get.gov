@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from waffle import flag_is_active
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -159,6 +160,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
+        context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -787,18 +789,47 @@ class DomainDNSView(DomainBaseView):
 class DomainDNSRecordForm(forms.Form):
     """Form for adding DNS records in prototype."""
 
-    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
+    type_field = forms.ChoiceField(
+        label="Type",
+        choices=[("", "Select a type"), ("A", "A")],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
+
+    name = forms.CharField(
+        label="Name",
+        required=True,
+        help_text="Use @ for root",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+            }
+        ),
+    )
 
     content = forms.GenericIPAddressField(
         label="IPv4 Address",
         required=True,
         protocol="IPv4",
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+            }
+        ),
     )
 
     ttl = forms.ChoiceField(
         label="TTL",
         choices=[
-            (1, "Automatic"),
             (60, "1 minute"),
             (300, "5 minutes"),
             (1800, "30 minutes"),
@@ -808,19 +839,47 @@ class DomainDNSRecordForm(forms.Form):
             (43200, "12 hours"),
             (86400, "1 day"),
         ],
-        initial=1,
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+
+    comment = forms.CharField(
+        label="Comment",
+        required=False,
+        help_text="The information you enter here will not impact DNS record resolution and \
+        is meant only for your reference.",
+        max_length=500,
+        widget=forms.Textarea(
+            attrs={
+                "class": "usa-textarea usa-textarea--medium",
+                "rows": 2,
+            }
+        ),
     )
 
 
 @grant_access(IS_STAFF)
 class DomainDNSRecordView(DomainFormBaseView):
-    template_name = "domain_dns_record.html"
+    template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Records"
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -864,12 +923,12 @@ class DomainDNSRecordView(DomainFormBaseView):
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": "Test record",
+                    "comment": form.cleaned_data.get("comment", ""),
                 }
 
                 domain_name = self.object.name
                 try:
-                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                    self.dns_host_service.dns_setup(domain_name)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -879,12 +938,21 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(name=domain_name).exists()
-                if has_zone:
-                    zone_name = domain_name
-                    # post nameservers to registry
+
+                zones = DnsZone.objects.filter(name=domain_name)
+                if zones.exists():
+                    zone = zones.first()
+                    nameservers = zone.nameservers
+
+                    if not nameservers:
+                        logger.error(f"No nameservers found in DB for domain {domain_name}")
+                        return JsonResponse(
+                            {"status": "error", "message": "DNS nameservers not available"},
+                            status=400,
+                        )
+
                     try:
-                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                        self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev

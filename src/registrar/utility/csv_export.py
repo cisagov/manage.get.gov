@@ -343,7 +343,7 @@ class MemberExport(BaseExport):
             "domain_info",
             "type",
             "joined_date",
-            "invited_by",
+            "invited_by_user",
         ]
 
         # Permissions
@@ -385,7 +385,7 @@ class MemberExport(BaseExport):
                 ),
                 type=Value("member", output_field=CharField()),
                 joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
-                invited_by=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
+                invited_by_user=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
             )
             .values(*shared_columns)
         )
@@ -416,7 +416,9 @@ class MemberExport(BaseExport):
                 domain_info=domain_invitations,
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
-                invited_by=cls.get_invited_by_query(object_id_query=Cast(OuterRef("id"), output_field=CharField())),
+                invited_by_user=cls.get_invited_by_query(
+                    object_id_query=Cast(OuterRef("id"), output_field=CharField())
+                ),
             )
             .values(*shared_columns)
         )
@@ -511,7 +513,7 @@ class MemberExport(BaseExport):
         FIELDS = {
             "Email": model.get("email_display"),
             "Member role": get_role_display(roles),
-            "Invited by": model.get("invited_by"),
+            "Invited by": model.get("invited_by_user"),
             "Joined date": model.get("joined_date"),
             "Last active": model.get("last_active"),
             "Domain requests": f"{get_domain_requests_display(roles, permissions)}",
