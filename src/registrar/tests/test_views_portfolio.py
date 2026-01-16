@@ -5235,9 +5235,7 @@ class TestMultiplePortfolios(WebTest):
         self.assertIn("your-organizations", response.url)
 
         # Now manually set a portfolio in session to simulate user selection
-        session = self.client.session
-        session["portfolio"] = self.portfolio
-        session.save()
+        self.set_session_portfolio()
 
         # Get a page with the header - should now show the dropdown
         domains_page = self.client.get(reverse("domains"))
@@ -5312,3 +5310,58 @@ class TestMultiplePortfolios(WebTest):
 
         self.assertEqual(final_page.status_code, 200)
         self.assertNotEqual(final_page.request.path, reverse("your-organizations"))
+
+    def _assert_domains_breadcrumb_href(self, response, expected_href):
+        self.assertContains(response, '<ol class="usa-breadcrumb__list">')
+        self.assertContains(response, f'href="{expected_href}"')
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_domain_breadcrumb_domains_link_enterprise_on_legacy_domain_goes_to_legacy_home(self):
+        self.client.force_login(self.user)
+
+        # Create a legacy domain: DomainInformation.portfolio is NULL
+        legacy_domain, _ = Domain.objects.get_or_create(name="breadcrumb-legacy.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user,
+            domain=legacy_domain,
+            defaults={"portfolio": None},
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=legacy_domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        page = self.client.get(reverse("domain", kwargs={"domain_pk": legacy_domain.id}), follow=True)
+        self._assert_domains_breadcrumb_href(page, reverse("home") + "?legacy_home=1")
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_domain_breadcrumb_domains_link_enterprise_on_with_portfolio_goes_to_domains(self):
+        self.client.force_login(self.user)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults={
+                "additional_permissions": [
+                    UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                    UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+                ]
+            },
+        )
+
+        # Simulate user selected a portfolio
+        self.set_session_portfolio()
+
+        # Domain is associated to portfolio already in setUp via DomainInformation
+        page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}), follow=True)
+        self._assert_domains_breadcrumb_href(page, reverse("domains"))
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_domain_breadcrumb_domains_link_flag_off_goes_to_home(self):
+        self.client.force_login(self.user)
+        page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}), follow=True)
+        self._assert_domains_breadcrumb_href(page, reverse("home"))
