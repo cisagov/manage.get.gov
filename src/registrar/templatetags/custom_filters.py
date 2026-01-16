@@ -12,6 +12,8 @@ from registrar.models.utility.generic_helper import get_url_name
 register = template.Library()
 logger = logging.getLogger(__name__)
 
+CONTACT_TEMPLATE = "emails/includes/contact.txt"
+
 
 @register.filter(name="extract_value")
 def extract_value(html_input):
@@ -329,7 +331,7 @@ def contact_text(contact, num_newlines=2):
     """
     if not contact:
         return ""
-    text = render_to_string("emails/includes/contact.txt", {"contact": contact})
+    text = render_to_string(CONTACT_TEMPLATE, {"contact": contact})
     # Remove whitespace/trailing + add exact new line(s) amount at end
     text = text.rstrip("\n")
     return text + "\n" * num_newlines
