@@ -12,9 +12,11 @@ from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTy
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from registrar.utility.waffle import flag_is_active_for_user
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 from datetime import date
+from httpx import Client
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
@@ -1246,6 +1248,40 @@ class DomainRequest(TimeStampedModel):
         # == Create the domain and related components == #
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
+
+        # Engage DNS Setup if the flag is active
+        if flag_is_active_for_user(self.requester, "dns_hosting"):
+            # Need to import DnsHostService and DnsZone here to avoid circular import error
+            from registrar.services.dns_host_service import DnsHostService
+            from registrar.models.dns.dns_zone import DnsZone
+
+            client = Client()
+            dns_service = DnsHostService(client)
+
+            try:
+                x_account_id = dns_service.dns_account_setup(created_domain.name)
+                dns_service.dns_zone_setup(created_domain.name, x_account_id)
+
+            except Exception:
+                logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
+            
+            zones = DnsZone.objects.filter(name=domain_name)
+            if zones.exists():
+                zone = zones.first()
+                nameservers = zone.nameservers
+
+                if not nameservers:
+                    logger.error(f"No nameservers found in DB for domain {domain_name}")
+                    return JsonResponse(
+                        {"status": "error", "message": "DNS nameservers not available"},
+                        status=400,
+                    )
+
+                try:
+                    self.dns_host_service.register_nameservers(zone.name, nameservers)
+                except (RegistryError, RegistrySystemError, Exception) as e:
+                    logger.error(f"Error updating registry: {e}")
+                    # Don't raise an error here in order to bypass blocking error in local dev
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
