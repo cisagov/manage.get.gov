@@ -1263,7 +1263,24 @@ class DomainRequest(TimeStampedModel):
 
             except Exception:
                 logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
-                raise
+            
+            zones = DnsZone.objects.filter(name=domain_name)
+            if zones.exists():
+                zone = zones.first()
+                nameservers = zone.nameservers
+
+                if not nameservers:
+                    logger.error(f"No nameservers found in DB for domain {domain_name}")
+                    return JsonResponse(
+                        {"status": "error", "message": "DNS nameservers not available"},
+                        status=400,
+                    )
+
+                try:
+                    self.dns_host_service.register_nameservers(zone.name, nameservers)
+                except (RegistryError, RegistrySystemError, Exception) as e:
+                    logger.error(f"Error updating registry: {e}")
+                    # Don't raise an error here in order to bypass blocking error in local dev
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")

@@ -48,7 +48,7 @@ class DnsHostService:
 
     def dns_account_setup(self, domain_name):
         """
-        Ensure a DNS Vendor account exists for this domain.
+        Ensure a DNS Vendor account exists for this domain and is saved to the database.
         Returns x_account_id.
         """
         account_name = make_dns_account_name(domain_name)
@@ -69,6 +69,9 @@ class DnsHostService:
         return self.create_and_save_account(account_name)
 
     def dns_zone_setup(self, domain_name, x_account_id):
+        """
+        Ensure a DNS Vendor zone exists for this domain and is saved to the database.
+        """
         has_zone = DnsZone.objects.filter(name=domain_name).exists()
 
         if has_zone:

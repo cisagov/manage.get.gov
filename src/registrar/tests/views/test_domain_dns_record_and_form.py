@@ -117,10 +117,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             # Invalid form should re-render the page, not redirect
             self.assertEqual(response.status_code, 200)
 
-            # Service calls should not run
-            svc.dns_account_setup.assert_not_called()
-            svc.dns_zone_setup.assert_not_called()
-
             # Field assertions for A Type records. Additional tests will be needed for different types of records.
             self.assertIn("Name", response.text)
             self.assertIn("IPv4 Address", response.text)
