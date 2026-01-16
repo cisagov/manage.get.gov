@@ -77,10 +77,10 @@
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
             <label class="usa-checkbox__label" for="delete-domain-checkbox">
-              {% if domain.state == domain.State.READY %}
-              I understand the domain will be deleted seven days after I submit this request. After that, it can't be recovered.
-              {% else %}
+              {% if domain.state == domain.State.DNS_NEEDED %}
                I understand the domain will be deleted after I submit this request.
+              {% else %}
+                I understand the domain will be deleted seven days after I submit this request. After that, it can't be recovered.
               {% endif %}
             </label>
           </div>

@@ -768,7 +768,7 @@ class DomainDeleteForm(forms.Form):
     def __init__(self, *args, domain_state=None, **kwargs):
         super().__init__(*args, **kwargs)
         if domain_state == Domain.State.DNS_NEEDED:
-            label = "I understand that my domain will be deleted immediately. It cannot be recovered"
+            label = "I understand the domain will be deleted seven days after I submit this request."
             error = "Check the box if you understand that your domain will be deleted."
         else:
             label = "I understand that my domain will be deleted within 7 days of my request."
