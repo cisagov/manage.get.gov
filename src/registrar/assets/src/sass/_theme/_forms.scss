@@ -96,3 +96,12 @@ legend.float-left-tablet + button.float-right-tablet {
 .usa-form .usa-button.margin-top-2 {
   margin-top: units(2) !important;
 }
+
+.domain-placeholder-right {
+  &::placeholder {
+    text-align: right;
+    padding-right: 10px;
+  }
+  
+  text-align: left;
+}

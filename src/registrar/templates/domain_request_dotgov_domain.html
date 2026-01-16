@@ -21,7 +21,7 @@
       If the domain you want is available, we'll verify it meets all our naming requirements after you submit this form.
       You may also provide alternative domains in case we can't approve your first choice.
     </p>
-    {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
+    {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast"  attr_placeholder=".gov" add_class="domain-placeholder-right"%}
       {# attr_validate / validate="domain" invokes code in getgov.min.js #}
       {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
         {% input_with_errors forms.0.requested_domain %}
