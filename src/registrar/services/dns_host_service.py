@@ -234,6 +234,7 @@ class DnsHostService:
                     dns_account=dns_acc,
                     vendor_dns_account=vendor_acc,
                 )
+
         except Exception as e:
             logger.error(f"Failed to save account to database: {str(e)}.")
             raise
@@ -298,6 +299,7 @@ class DnsHostService:
                     dns_record=dns_record,
                     vendor_dns_record=vendor_dns_record,
                 )
+
         except Exception as e:
             logger.error(f"Failed to save record to database: {str(e)}.")
             raise

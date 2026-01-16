@@ -18,6 +18,12 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
+from registrar.tests.helpers.data_generator import (
+    make_domain,
+    make_dns_account,
+    make_initial_dns_setup,
+    delete_all_dns_data,
+)
 
 
 class TestDnsHostService(TestCase):
@@ -49,15 +55,12 @@ class TestDnsHostService(TestCase):
     ):
         # Domain with account and zone in DB
         domain_name = "test.gov"
-        domain = Domain.objects.create(name=domain_name)
-        dns_acc = DnsAccount.objects.create(name=domain_name)
-        DnsZone.objects.create(
-            domain=domain, dns_account=dns_acc, name=domain_name, nameservers=["ex1.dns.gov", "ex2.dns.gov"]
-        )
+        domain = make_domain(domain_name=domain_name)
+        _, dns_acc, _ = make_initial_dns_setup(domain=domain)
 
         # Domain without account or zone
         domain_name2 = "exists.gov"
-        Domain.objects.create(name=domain_name2)
+        make_domain(domain_name=domain_name2)
 
         test_cases = [
             # Case A: Database has account + zone
@@ -240,17 +243,7 @@ class TestDnsHostServiceDB(TestCase):
         }
 
     def tearDown(self):
-        DnsVendor.objects.all().delete()
-        VendorDnsAccount.objects.all().delete()
-        DnsAccount.objects.all().delete()
-        AccountsJoin.objects.all().delete()
-        VendorDnsZone.objects.all().delete()
-        DnsZone.objects.all().delete()
-        ZonesJoin.objects.all().delete()
-        Domain.objects.all().delete()
-        RecordsJoin.objects.all().delete()
-        VendorDnsRecord.objects.all().delete()
-        DnsRecord.objects.all().delete()
+        delete_all_dns_data()
 
     def test_find_existing_account_success(self):
         account_name = "Account for test.gov"
@@ -287,7 +280,7 @@ class TestDnsHostServiceDB(TestCase):
         dns_acc = DnsAccount.objects.create(name=account_name)
 
         AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
-
+        make_dns_account
         result = self.service._find_existing_account_in_db(account_name)
         self.assertIsNone(result)
 
@@ -380,39 +373,9 @@ class TestDnsHostServiceDB(TestCase):
         x_zone_id = "zone-999"
         expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
 
-        zone_domain = Domain.objects.create(
-            name=zone_name,
-        )
-
-        vendor_zone = VendorDnsZone.objects.create(
-            x_zone_id=x_zone_id,
-            x_created_at="2024-01-02T03:04:05Z",
-            x_updated_at="2024-01-02T03:04:05Z",
-        )
-
-        vendor_dns_acc = VendorDnsAccount.objects.create(
-            dns_vendor=self.vendor,
-            x_account_id=test_x_account_id,
-            x_created_at="2024-01-02T03:04:05Z",
-            x_updated_at="2024-01-02T03:04:05Z",
-        )
-
-        dns_acc = DnsAccount.objects.create(name=zone_name)
-
-        AccountsJoin.objects.create(
-            dns_account=dns_acc,
-            vendor_dns_account=vendor_dns_acc,
-            is_active=True,
-        )
-
-        zone = DnsZone.objects.create(
-            domain=zone_domain, dns_account=dns_acc, name=zone_name, nameservers=expected_nameservers
-        )
-
-        ZonesJoin.objects.create(
-            dns_zone=zone,
-            vendor_dns_zone=vendor_zone,
-            is_active=True,
+        zone_domain = make_domain(domain_name=zone_name)
+        make_initial_dns_setup(
+            zone_domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
         )
 
         found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
