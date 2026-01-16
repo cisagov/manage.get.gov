@@ -624,11 +624,15 @@ class DomainDeleteView(DomainFormBaseView):
             elif domain.state == Domain.State.DNS_NEEDED:
                 try:
                     domain_name = domain.name
+                    has_port = domain.domain_info.portfolio
                     # Associated PublicContacts need to be deleted due to the protected relationship
                     PublicContact.objects.filter(domain=domain).delete()
                     domain.delete()
                     messages.success(request, f"{domain_name} has been deleted successfully")
-                    return redirect(reverse("domains"))
+                    if has_port:
+                        return redirect(reverse("domains"))
+                    else:
+                        return redirect(reverse("home"))
                 except Exception:
                     messages.error(request, f"Failed to delete {domain.name}. Please try again.")
                     return self.render_to_response(self.get_context_data(form=form))
@@ -1464,7 +1468,7 @@ class DomainAddUserView(DomainFormBaseView):
         requestor_can_update_portfolio = requestor.is_staff or (
             domain_org and UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).exists()
         )
-
+    
         member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
             # determine portfolio of the domain
