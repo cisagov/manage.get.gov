@@ -632,7 +632,7 @@ class DomainDeleteView(DomainFormBaseView):
                     if has_port:
                         return redirect(reverse("domains"))
                     else:
-                        return redirect(reverse("home",kwargs={"legacy_home": "1"}))
+                        return redirect(reverse("home") + '?legacy_home=1')
                 except Exception:
                     messages.error(request, f"Failed to delete {domain.name}. Please try again.")
                     return self.render_to_response(self.get_context_data(form=form))
