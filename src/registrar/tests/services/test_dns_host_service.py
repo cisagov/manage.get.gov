@@ -69,19 +69,11 @@ class TestDnsHostService(TestCase):
 
         for case in account_test_cases:
             with self.subTest(msg=case["test_name"]):
-                # Database lookup happens first
                 mock_find_existing_account_in_db.return_value = case["db_account_id"]
 
-                # Only configure CF path if DB lookup is unsuccessful. There are two options:
-                if case["db_account_id"] is None:
-                    mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
-
-                    # 1. The database is empty, but CF account exists. Save to db.
-                    if case["cf_account_data"] and not case["db_account_id"]:
-                        mock_save_db_account.return_value = case["expected_account_id"]
-                    # 2. Both the db and CF are empty. Create in CF and save to db.
-                    else:
-                        mock_create_and_save_account.return_value = case["expected_account_id"]
+                mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
+                mock_save_db_account.return_value = case["expected_account_id"]
+                mock_create_and_save_account.return_value = case["expected_account_id"]
 
                 x_account_id = self.service.dns_account_setup(case["domain_name"])
 
