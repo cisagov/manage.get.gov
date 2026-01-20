@@ -100,9 +100,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_form_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService") as MockSvc:
-            svc = MockSvc.return_value
-
+        with patch("registrar.views.domain.DnsHostService"):
             page = self.app.get(self._url(), status=200)
             record_form = page.forms[0]
 

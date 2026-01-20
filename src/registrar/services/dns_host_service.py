@@ -120,7 +120,6 @@ class DnsHostService:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
             logger.info(f"Successfully created zone {domain_name}.")
-            nameservers = zone_data["result"].get("name_servers")
 
         except APIError as e:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
@@ -133,7 +132,6 @@ class DnsHostService:
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
             raise
-        return nameservers
 
     def create_and_save_record(self, x_zone_id, form_record_data):
         """Calls create method of vendor service to create a DNS record"""
