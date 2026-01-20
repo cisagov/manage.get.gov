@@ -3343,7 +3343,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             original_obj.status != models.DomainRequest.DomainRequestStatus.APPROVED
             and obj.status == models.DomainRequest.DomainRequestStatus.APPROVED
             and original_obj.requested_domain is not None
-            and not settings.IS_LOCAL # Allow approving pending delete domains in local dev to avoid EPP issues
+            and not settings.IS_LOCAL  # Allow approving pending delete domains in local dev to avoid EPP issues
             and Domain.is_pending_delete(domain_name)
 
         ):

@@ -4,7 +4,7 @@ Feature being tested: Registry Integration
 This file tests the various ways in which the registrar interacts with the registry.
 """
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime, date, timedelta
@@ -636,8 +636,7 @@ class TestDomainStatuses(MockEppLib):
         Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
-
-
+@override_settings(IS_LOCAL=False)
 class TestDomainAvailable(MockEppLib):
     """Test Domain.available"""
 
@@ -652,6 +651,7 @@ class TestDomainAvailable(MockEppLib):
             Validate CheckDomain command is called
             Validate response given mock
         """
+
 
         def side_effect(_request, cleaned):
             return MagicMock(

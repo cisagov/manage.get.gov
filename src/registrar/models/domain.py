@@ -267,7 +267,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         throws- RegistryError or InvalidDomainError"""
         if settings.IS_LOCAL:
-            logger.info("IS_LOCAL is set, so skipping registry check for domain availability")
+            logger.info("IS_LOCAL is true, so skipping registry check for domain availability")
             return True
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
