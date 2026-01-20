@@ -636,6 +636,8 @@ class TestDomainStatuses(MockEppLib):
         Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
+
+
 @override_settings(IS_LOCAL=False)
 class TestDomainAvailable(MockEppLib):
     """Test Domain.available"""
@@ -651,7 +653,6 @@ class TestDomainAvailable(MockEppLib):
             Validate CheckDomain command is called
             Validate response given mock
         """
-
 
         def side_effect(_request, cleaned):
             return MagicMock(

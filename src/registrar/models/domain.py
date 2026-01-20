@@ -284,7 +284,8 @@ class Domain(TimeStampedModel, DomainHelper):
         """Check if domain is pendingDelete state via response from registry."""
         if settings.IS_LOCAL:
             logger.info(
-                "IS_LOCAL is true, so skipping registry check for pending delete. This enables 'approve' of domain requests locally."
+                "IS_LOCAL is true, so skipping registry check for pending delete. "
+                "This enables 'approve' of domain requests locally."
             )
             return False
 
