@@ -1253,39 +1253,9 @@ class DomainRequest(TimeStampedModel):
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
 
-        # Engage DNS Setup if the flag is active
+        # TODO: Remove this DNS Setup action from the approval workflow to the appropriate analyst action
         if flag_is_active_for_user(self.requester, "dns_hosting"):
-            # Need to import DnsHostService and DnsZone here to avoid circular import error
-            from registrar.services.dns_host_service import DnsHostService
-            from registrar.models.dns.dns_zone import DnsZone
-
-            client = Client()
-            dns_service = DnsHostService(client)
-
-            try:
-                x_account_id = dns_service.dns_account_setup(created_domain.name)
-                dns_service.dns_zone_setup(created_domain.name, x_account_id)
-
-            except Exception:
-                logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
-
-            zones = DnsZone.objects.filter(name=created_domain.name)
-            if zones.exists():
-                zone = zones.first()
-                nameservers = zone.nameservers
-
-                if not nameservers:
-                    logger.error(f"No nameservers found in DB for domain {created_domain.name}")
-                    return JsonResponse(
-                        {"status": "error", "message": "DNS nameservers not available"},
-                        status=400,
-                    )
-
-                try:
-                    self.dns_host_service.register_nameservers(zone.name, nameservers)
-                except (RegistryError, RegistrySystemError, Exception) as e:
-                    logger.error(f"Error updating registry: {e}")
-                    # Don't raise an error here in order to bypass blocking error in local dev
+            self.temp_dns_setup_action(created_domain)
 
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
@@ -1626,6 +1596,40 @@ class DomainRequest(TimeStampedModel):
         """Returns the cisa representatives name in Western order."""
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
+
+    def temp_dns_setup_action(self, created_domain):
+        """Engage DNS Setup if the flag is active"""
+        # Need to import DnsHostService and DnsZone here to avoid circular import error
+        from registrar.services.dns_host_service import DnsHostService
+        from registrar.models.dns.dns_zone import DnsZone
+
+        client = Client()
+        dns_host_service = DnsHostService(client)
+
+        try:
+            x_account_id = dns_host_service.dns_account_setup(created_domain.name)
+            dns_host_service.dns_zone_setup(created_domain.name, x_account_id)
+
+        except Exception:
+            logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
+
+        zones = DnsZone.objects.filter(name=created_domain.name)
+        if zones.exists():
+            zone = zones.first()
+            nameservers = zone.nameservers
+
+            if not nameservers:
+                logger.error(f"No nameservers found in DB for domain {created_domain.name}")
+                return JsonResponse(
+                    {"status": "error", "message": "DNS nameservers not available"},
+                    status=400,
+                )
+
+            try:
+                dns_host_service.register_nameservers(zone.name, nameservers)
+            except (RegistryError, RegistrySystemError, Exception) as e:
+                logger.error(f"Error updating registry: {e}")
+                # Don't raise an error here in order to bypass blocking error in local dev
 
     """The following converted_ property methods get field data from this domain request's portfolio,
     if there is an associated portfolio. If not, they return data from the domain request model."""
