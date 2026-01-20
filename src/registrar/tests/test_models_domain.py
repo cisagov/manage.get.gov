@@ -711,6 +711,7 @@ class TestDomainAvailable(MockEppLib):
             self.assertFalse(available)
             patcher.stop()
 
+    @override_settings(IS_LOCAL=False)
     def test_is_pending_delete(self):
         """
         Scenario: Testing if a domain is in pendingDelete status from the registry
@@ -740,6 +741,7 @@ class TestDomainAvailable(MockEppLib):
 
             self.assertTrue(result)
 
+    @override_settings(IS_LOCAL=False)
     def test_is_not_pending_delete(self):
         """
         Scenario: Testing if a domain is NOT in pendingDelete status.

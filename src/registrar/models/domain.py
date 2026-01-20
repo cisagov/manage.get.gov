@@ -282,6 +282,12 @@ class Domain(TimeStampedModel, DomainHelper):
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
         """Check if domain is pendingDelete state via response from registry."""
+        if settings.IS_LOCAL:
+            logger.info(
+                "IS_LOCAL is true, so skipping registry check for pending delete. This enables 'approve' of domain requests locally."
+            )
+            return False
+
         domain_name = domain.lower()
 
         try:
