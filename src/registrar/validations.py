@@ -70,7 +70,7 @@ def validate_dns_name(name: str) -> None:
     if not name[-1].isalnum():
         raise ValidationError("DNS name must end with a letter or digit.")
     
-    if not DNS_LABEL_REGEX.match(value):
+    if not DNS_LABEL_REGEX.match(name):
         raise ValidationError(
             "DNS name must contain only letters, digits, or hyphens."
         )
