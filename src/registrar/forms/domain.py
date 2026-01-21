@@ -777,21 +777,18 @@ class DomainDeleteForm(forms.Form):
 
 class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records in prototype."""
+
     class Meta:
         model = DnsRecord
         fields = ["name", "content", "ttl", "comment"]
         widgets = {
-            "name": forms.TextInput(
-                attrs={
-                    "class": "usa-input"
-                }
-            ),
+            "name": forms.TextInput(attrs={"class": "usa-input"}),
             "comment": forms.Textarea(
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
                 }
-            )
+            ),
         }
 
     type_field = forms.ChoiceField(
@@ -867,6 +864,6 @@ class DomainDNSRecordForm(forms.ModelForm):
     )
 
     def clean(self):
-        cleaned_data=super().clean()
+        cleaned_data = super().clean()
         cleaned_data["type"] = cleaned_data.get("type_field")
         return cleaned_data

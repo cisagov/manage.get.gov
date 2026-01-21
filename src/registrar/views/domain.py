@@ -83,7 +83,6 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
-from django import forms
 
 logger = logging.getLogger(__name__)
 

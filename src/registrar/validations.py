@@ -52,8 +52,10 @@ def get_max_length_validator(limit: int) -> MaxLengthValidator:
 def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
 
+
 # For use on DNS record names
 DNS_LABEL_REGEX = re.compile(r"^[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$")
+
 
 def validate_dns_name(value: str) -> None:
     """
