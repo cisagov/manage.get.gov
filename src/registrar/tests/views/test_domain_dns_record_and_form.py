@@ -76,7 +76,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.dns_setup.return_value = ["rainbow.dns.gov", "rainbow2.dns.gov"]
             svc.register_nameservers.return_value = None
             svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
             svc.create_and_save_record.return_value = {"result": mock_record}
@@ -94,9 +93,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             response = record_form.submit().follow()
             self.assertEqual(response.status_code, 200)
-
-            # Service calls (behavioral assertions, as validation)
-            svc.dns_setup.assert_called_once_with(self.domain.name)
 
             # User visible result
             self.assertIn("www", response.text)

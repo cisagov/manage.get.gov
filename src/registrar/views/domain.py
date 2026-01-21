@@ -849,8 +849,13 @@ class DomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
+
+                # TODO: Delete this dns setup and registering nameservers code after we have determined
+                # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
+                # creation on submission of the DNS Record form.
                 try:
-                    self.dns_host_service.dns_setup(domain_name)
+                    x_account_id = self.dns_host_service.dns_account_setup(domain_name)
+                    self.dns_host_service.dns_zone_setup(domain_name, x_account_id)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
