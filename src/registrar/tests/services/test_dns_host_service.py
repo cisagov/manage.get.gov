@@ -23,6 +23,7 @@ from registrar.tests.helpers.data_generator import (
     make_dns_account,
     make_initial_dns_setup,
     delete_all_dns_data,
+    make_zone,
 )
 
 
@@ -32,103 +33,149 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
-    @patch("registrar.services.dns_host_service.DnsHostService.get_x_zone_id_if_zone_exists")
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
-    @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
-    @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
-    @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
-    def test_dns_setup_success(
+    def test_dns_account_setup_success(
         self,
         mock_find_existing_account_in_cf,
-        mock_save_db_record,
         mock_create_and_save_account,
-        mock_create_and_save_zone,
-        mock_get_page_accounts,
-        mock_get_account_zones,
         mock_find_existing_account_in_db,
-        mock_get_x_zone_id_if_zone_exists,
-        mock_find_existing_zone_in_cf,
+        mock_save_db_account,
     ):
-        # Domain with account and zone in DB
-        domain_name = "test.gov"
-        domain = make_domain(domain_name=domain_name)
-        _, dns_acc, _ = make_initial_dns_setup(domain=domain)
+        make_domain(domain_name="test.gov")
+        make_domain(domain_name="exists.gov")
 
-        # Domain without account or zone
-        domain_name2 = "exists.gov"
-        make_domain(domain_name=domain_name2)
-
-        test_cases = [
-            # Case A: Database has account + zone
+        account_test_cases = [
+            # Case A: Database has account
             {
-                "test_name": "has db account, has db zone",
+                "test_name": "has db account",
                 "domain_name": "test.gov",
-                "x_account_id": "12345",
-                "x_zone_id": "8765",
+                "db_account_id": "12345",
                 "cf_account_data": {"id": "12345", "name": "test", "created_on": "2024-01-01 00:00:00+00:00"},
                 "expected_account_id": "12345",
-                "expected_zone_id": "8765",
-                "expected_nameservers": ["ex1.dns.gov", "ex2.dns.gov"],
             },
             # Case B: Database empty, but CF has account
             {
                 "test_name": "no db account or zone, has cf account",
                 "domain_name": "exists.gov",
-                "x_account_id": None,
-                "x_zone_id": None,
+                "db_account_id": None,
                 "cf_account_data": {"id": "12345", "name": "test", "created_on": "2024-01-01 00:00:00+00:00"},
                 "expected_account_id": "12345",
-                "expected_zone_id": "8765",
-                "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
             },
             # Case C: Database and CF empty
             {
                 "test_name": "no db account or zone, no cf account",
                 "domain_name": "exists.gov",
-                "x_account_id": None,
-                "x_zone_id": None,
+                "db_account_id": None,
                 "cf_account_data": None,
                 "expected_account_id": "12345",
-                "expected_zone_id": "8765",
-                "expected_nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"],
             },
         ]
 
-        for case in test_cases:
-            with self.subTest(msg=case["test_name"], **case):
-                mock_find_existing_account_in_db.return_value = case["x_account_id"]
-                mock_get_x_zone_id_if_zone_exists.return_value = case["x_zone_id"], case["expected_nameservers"]
+        for case in account_test_cases:
+            with self.subTest(msg=case["test_name"]):
+                mock_find_existing_account_in_db.return_value = case["db_account_id"]
 
-                if mock_find_existing_account_in_db.return_value is None:
-                    mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
-                    mock_create_and_save_account.return_value = case["expected_account_id"]
-                    mock_create_and_save_zone.return_value = case["expected_nameservers"]
-                    mock_find_existing_zone_in_cf.return_value = {
-                        "id": case.get("expected_zone_id"),
-                        "name": case["domain_name"],
-                        "account": {"name": dns_acc.name},
-                        "name_servers": case["expected_nameservers"],
-                        "created_on": "2024-01-01 00:00:00+00:00",
-                    }
+                mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
+                mock_save_db_account.return_value = case["expected_account_id"]
+                mock_create_and_save_account.return_value = case["expected_account_id"]
 
-                    mock_get_page_accounts.return_value = {
-                        "result": [{"id": case.get("expected_account_id")}],
-                        "result_info": {"total_count": 18},
-                    }
-                    mock_get_account_zones.return_value = {
-                        "result": [
-                            {"id": case.get("expected_zone_id"), "nameservers": ["rainbow.dns.gov", "rainbow1.dns.gov"]}
-                        ]
-                    }
+                x_account_id = self.service.dns_account_setup(case["domain_name"])
 
-                self.service.dns_setup(case["domain_name"])
-                zone = DnsZone.objects.get(name=case["domain_name"])
+                self.assertEqual(x_account_id, case["expected_account_id"])
 
-                self.assertEqual(zone.nameservers, case["expected_nameservers"])
+                # Now, some behavioral assertions to make sure flow was correct
+                if case["db_account_id"]:
+                    mock_find_existing_account_in_cf.assert_not_called()
+                    mock_create_and_save_account.assert_not_called()
+                    mock_save_db_account.assert_not_called()
+                elif case["cf_account_data"]:
+                    mock_save_db_account.assert_called_once()
+                    mock_create_and_save_account.assert_not_called()
+                else:
+                    mock_create_and_save_account.assert_called_once()
+                    mock_save_db_account.assert_called_once()
+
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
+    @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService.save_db_zone")
+    def test_dns_zone_setup_success(
+        self,
+        mock_save_db_zone,
+        mock_create_and_save_zone,
+        mock_find_existing_zone_in_cf,
+    ):
+        zone_test_cases = [
+            # Case A: DB has zone
+            {
+                "test_name": "has db zone",
+                "domain_name": "test.gov",
+                "db_account_id": "12345",
+                "x_account_id": "ABCDE",
+
+                "db_zone": {
+                    "name": "test.gov",
+                    "nameservers": ["ns1.test.gov", "ns2.test.gov"],
+                },
+                "cf_zone_data": {
+                    "id": "XYZ",
+                    "name": "test.gov",
+                    "account": {"name": "test.gov"},
+                    "name_servers": ["ns1.test.gov", "ns2.test.gov"],
+                    "created_on": "2024-01-01 00:00:00+00:00",
+                },
+            },
+            # Case B: DB empty, but has zone in CF
+            {
+                "test_name": "has cf zone, no db zone",
+                "domain_name": "exists.gov",
+                "db_account_id": "67890",
+                "x_account_id": "LMNOP",
+                "db_zone": None,
+                "cf_zone_data": {
+                    "id": "ABC",
+                    "name": "exists.gov",
+                    "account": {"name": "exists.gov"},
+                    "name_servers": ["ns1.exists.gov", "ns2.exists.gov"],
+                    "created_on": "2024-01-01 00:00:00+00:00",
+                },
+            },
+            # Case C: Both DB and CF empty
+            {
+                "test_name": "zone does not exist in cf",
+                "domain_name": "other-domain.gov",
+                "db_account_id": "34567",
+                "x_account_id": "QRSTU",
+                "db_zone": None,
+                "cf_zone_data": None,
+            },
+        ]
+
+        for case in zone_test_cases:
+            with self.subTest(msg=case["test_name"]):
+                domain = make_domain(domain_name=case["domain_name"])
+                dns_account = make_dns_account(domain, x_account_id=case["x_account_id"])
+
+                if case["db_zone"]:
+                    make_zone(domain, dns_account, zone_name=case["db_zone"]["name"], nameservers=case["db_zone"]["nameservers"])
+
+                mock_find_existing_zone_in_cf.return_value = case["cf_zone_data"]
+
+                self.service.dns_zone_setup(case["domain_name"], case["x_account_id"])
+
+                # Behavioral assertions
+                if case["db_zone"]:
+                    mock_find_existing_zone_in_cf.assert_not_called()
+                    mock_create_and_save_zone.assert_not_called()
+                    mock_save_db_zone.assert_not_called()
+                elif case["cf_zone_data"]:
+                    mock_save_db_zone.assert_called_once()
+                    mock_create_and_save_zone.assert_not_called()
+                else:
+                    mock_create_and_save_zone.assert_called_once()
+                    mock_save_db_zone.assert_called_once()
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
@@ -139,7 +186,8 @@ class TestDnsHostService(TestCase):
         mock_find_existing_account_in_db.return_value = None
         mock_find_existing_account_in_cf.side_effect = APIError("DNS setup failed when finding account in cf")
         with self.assertRaises(APIError) as context:
-            self.service.dns_setup(domain_name)
+            x_account_id = self.service.dns_account_setup(domain_name)
+            self.service.dns_zone_setup(domain_name, x_account_id)
         self.assertIn("DNS setup failed when finding account in cf", str(context.exception))
 
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
@@ -155,7 +203,8 @@ class TestDnsHostService(TestCase):
         mock_create_and_save_account.side_effect = APIError("DNS setup failed to create account")
 
         with self.assertRaises((APIError, Exception)):
-            self.service.dns_setup(domain_name)
+            x_account_id = self.service.dns_account_setup(domain_name)
+            self.service.dns_zone_setup(domain_name, x_account_id)
 
     @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
@@ -168,7 +217,8 @@ class TestDnsHostService(TestCase):
         mock_create_cf_account.side_effect = APIError("DNS setup failed to create zone")
 
         with self.assertRaises(APIError) as context:
-            self.service.dns_setup(domain_name)
+            x_account_id = self.service.dns_account_setup(domain_name)
+            self.service.dns_zone_setup(domain_name, x_account_id)
 
         mock_create_cf_account.assert_called_once_with(account_name)
         # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
