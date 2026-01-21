@@ -57,12 +57,20 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
 DNS_LABEL_REGEX = re.compile(r"^[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$")
 
 
-def validate_dns_name(value: str) -> None:
+def validate_dns_name(name: str) -> None:
     """
     Validates a DNS record name (single label, excluding the root '@')
     """
+    if len(name) > DOMAIN_LABEL:
+        raise ValidationError("DNS name must be 63 characters or fewer.")
+    
+    if not name[0].isalpha():
+        raise ValidationError("DNS name must start with a letter or be @.")
+
+    if not name[-1].isalnum():
+        raise ValidationError("DNS name must end with a letter or digit.")
+    
     if not DNS_LABEL_REGEX.match(value):
         raise ValidationError(
-            "DNS record name must be 63 characters or fewer, start with a letter, "
-            "end with a letter or digit, and contain only letters, digits, or hyphens."
+            "DNS name must contain only letters, digits, or hyphens."
         )
