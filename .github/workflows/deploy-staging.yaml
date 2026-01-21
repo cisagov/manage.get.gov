@@ -19,11 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: main
-          fetch-depth: 0
-          fetch-tags: true
-
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
