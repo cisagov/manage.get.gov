@@ -246,41 +246,23 @@ class TestDnsHostServiceDB(TestCase):
         delete_all_dns_data()
 
     def test_find_existing_account_success(self):
-        account_name = "Account for test.gov"
+        domain = make_domain(domain_name="democracy.gov")
         test_x_account_id = "12345"
+        account_name = make_dns_account_name(domain.name)
 
         # Paginated endpoint returns the above dictionary
         self.service.dns_vendor_service.get_page_accounts.return_value = self.vendor_zone_data
 
         self.service._find_account_tag_by_pubname = Mock(return_value=test_x_account_id)
 
-        vendor_dns_acc = VendorDnsAccount.objects.create(
-            dns_vendor=self.vendor,
-            x_account_id="12345",
-            x_created_at="2024-01-02T03:04:05Z",
-            x_updated_at="2024-01-02T03:04:05Z",
-        )
-
-        dns_acc = DnsAccount.objects.create(name=account_name)
-
-        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=True)
+        make_dns_account(domain=domain, x_account_id=test_x_account_id)
 
         found_id = self.service._find_existing_account_in_db(account_name)
         self.assertEqual(found_id, test_x_account_id)
 
     def test_find_existing_account_in_db_does_not_exist_returns_none(self):
-        account_name = "Account for inactive.gov"
+        account_name = "Account for nonexistent.gov"
 
-        vendor_dns_acc = VendorDnsAccount.objects.create(
-            dns_vendor=self.vendor,
-            x_account_id="acc_inactive",
-            x_created_at="2024-01-02T03:04:05Z",
-            x_updated_at="2024-01-02T03:04:05Z",
-        )
-        dns_acc = DnsAccount.objects.create(name=account_name)
-
-        AccountsJoin.objects.create(dns_account=dns_acc, vendor_dns_account=vendor_dns_acc, is_active=False)
-        make_dns_account
         result = self.service._find_existing_account_in_db(account_name)
         self.assertIsNone(result)
 
