@@ -995,7 +995,19 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200
             )
         else:
-            return self.form_invalid(form)
+            return TemplateResponse(
+                request, 
+                "domain_dns_record_row_response.html",
+                {
+                    "dns_record": None,
+                    "domain": self.object,
+                    "form": form
+                },
+                headers={
+                    "HX-TRIGGER": "messagesRefresh",
+                },
+                status=200
+            )
 
     # def get(self, request, *args, **kwargs):
     #     """Get all DNS records of a given domain."""
