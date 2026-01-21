@@ -32,24 +32,23 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Adding version info step
-        env:
-          ENVIRONMENT: stable
-          COMMIT: ${{ github.sha }}
-          BRANCH:  main
-          CF_USERNAME: ${{ secrets.CF_STABLE_USERNAME }}
-          CF_PASSWORD: ${{ secrets.CF_STABLE_PASSWORD }}
-          TAG: ${{ github.ref_name }}
-        run: |
-           bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
-      - name: Deploy to cloud.gov sandbox
+      - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
         uses: cloud-gov/cg-cli-tools@main
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.head_ref }}
+          GIT_TAG: ${{ github.ref_name }}
         with:
           cf_username: ${{ secrets.CF_STABLE_USERNAME }}
           cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: stable
-          cf_manifest: "ops/manifests/manifest-stable.yaml"
+          cf_command: >-
+            push -f ops/manifests/manifest-stable.yaml
+            --var GIT_BRANCH="$GIT_BRANCH"
+            --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
+            --var GIT_TAG="$GIT_TAG"
+            --strategy rolling
       - name: Run Django migrations
         uses: cloud-gov/cg-cli-tools@main
         with:

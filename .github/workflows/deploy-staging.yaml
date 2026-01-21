@@ -41,17 +41,12 @@ jobs:
           cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: staging
-          cf_manifest: "ops/manifests/manifest-staging.yaml"
-      - name: Copy github info
-        env:
-          ENVIRONMENT: staging
-          COMMIT: ${{ github.sha }}
-          BRANCH: main
-          CF_USERNAME: ${{ secrets.CF_STAGING_USERNAME }}
-          CF_PASSWORD: ${{ secrets.CF_STAGING_PASSWORD }}
-          TAG: ${{ github.ref_name }}
-        run: |
-           bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
+          cf_command: >-
+            push -f ops/manifests/manifest-staging.yaml
+            --var GIT_BRANCH="$GIT_BRANCH"
+            --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
+            --var GIT_TAG="$GIT_TAG"
+            --strategy rolling
       - name: Run Django migrations
         uses: cloud-gov/cg-cli-tools@main
         with:

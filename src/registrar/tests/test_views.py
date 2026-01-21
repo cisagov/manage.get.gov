@@ -74,7 +74,7 @@ class TestHealthPageView(TestCase):
         "os.environ",
         {
             "GIT_BRANCH": "another-branch",
-            "GIT_COMMIT": "bcdefg234567",
+            "GIT_COMMIT_SHA": "bcdefg234567",
         },
     )
     def test_healh_contains_git_info_without_tag(self):

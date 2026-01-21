@@ -8,7 +8,7 @@ def version_info(request):
 
     context = {
         "git_branch": os.getenv("GIT_BRANCH", "Not Found"),
-        "git_commit_hash": os.getenv("GIT_COMMIT", "Not Found"),
+        "git_commit_hash": os.getenv("GIT_COMMIT_SHA", "Not Found"),
         "git_tag": os.getenv("GIT_TAG", ""),
     }
 
