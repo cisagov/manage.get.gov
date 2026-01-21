@@ -53,7 +53,7 @@ jobs:
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
           GIT_COMMIT_SHA: ${{ github.sha }}
-          GIT_BRANCH: ${{ github.head_ref }}
+          GIT_BRANCH: ${{ github.ref_name }}
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}

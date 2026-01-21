@@ -36,7 +36,6 @@ jobs:
         uses: cloud-gov/cg-cli-tools@main
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
-          GIT_BRANCH: ${{ github.head_ref }}
           GIT_TAG: ${{ github.ref_name }}
         with:
           cf_username: ${{ secrets.CF_STABLE_USERNAME }}
@@ -45,7 +44,6 @@ jobs:
           cf_space: stable
           cf_command: >-
             push -f ops/manifests/manifest-stable.yaml
-            --var GIT_BRANCH="$GIT_BRANCH"
             --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
             --var GIT_TAG="$GIT_TAG"
             --strategy rolling
