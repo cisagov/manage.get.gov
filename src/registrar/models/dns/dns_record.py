@@ -30,7 +30,7 @@ class DnsRecord(TimeStampedModel):
 
     def clean(self):
         super().clean()
-        
+
         # TTL must be between 60 and 86400.
         # If we add proxy field to records in the future, we can also allow TTL=1 as below:
         # if self.ttl == 1: return self.proxy

@@ -817,7 +817,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     content = forms.CharField(
         label="IPv4 Address",
-        required=False, # requirement for data is enforced in model.clean() for A records
+        required=False,  # requirement for data is enforced in model.clean() for A records
         # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
         help_text="Example: 192.0.2.10",
         widget=forms.TextInput(
@@ -868,5 +868,5 @@ class DomainDNSRecordForm(forms.ModelForm):
 
         # maps UI field to model field
         cleaned_data["type"] = cleaned_data.get("type_field")
-        
+
         return cleaned_data

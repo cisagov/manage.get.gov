@@ -63,14 +63,12 @@ def validate_dns_name(name: str) -> None:
     """
     if len(name) > DOMAIN_LABEL:
         raise ValidationError("DNS name must be 63 characters or fewer.")
-    
+
     if not name[0].isalpha():
         raise ValidationError("DNS name must start with a letter or be @.")
 
     if not name[-1].isalnum():
         raise ValidationError("DNS name must end with a letter or digit.")
-    
+
     if not DNS_LABEL_REGEX.match(name):
-        raise ValidationError(
-            "DNS name must contain only letters, digits, or hyphens."
-        )
+        raise ValidationError("DNS name must contain only letters, digits, or hyphens.")
