@@ -6,6 +6,7 @@ from django.core.validators import RegexValidator, MaxLengthValidator
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
+from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
@@ -772,3 +773,100 @@ class DomainDeleteForm(forms.Form):
             "making this request."
         },
     )
+
+
+class DomainDNSRecordForm(forms.ModelForm):
+    """Form for adding DNS records in prototype."""
+    class Meta:
+        model = DnsRecord
+        fields = ["name", "content", "ttl", "comment"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "usa-input"
+                }
+            ),
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "usa-textarea usa-textarea--medium",
+                    "rows": 2,
+                }
+            )
+        }
+
+    type_field = forms.ChoiceField(
+        label="Type",
+        choices=[("", "Select a type"), ("A", "A")],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
+
+    name = forms.CharField(
+        label="Name",
+        required=True,
+        help_text="Use @ for root",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+            }
+        ),
+    )
+
+    content = forms.CharField(
+        label="IPv4 Address",
+        required=False,
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+            }
+        ),
+    )
+
+    ttl = forms.ChoiceField(
+        label="TTL",
+        choices=[
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (7200, "2 hours"),
+            (18000, "5 hours"),
+            (43200, "12 hours"),
+            (86400, "1 day"),
+        ],
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+
+    comment = forms.CharField(
+        label="Comment",
+        required=False,
+        help_text="The information you enter here will not impact DNS record resolution and \
+        is meant only for your reference.",
+        max_length=500,
+        widget=forms.Textarea(
+            attrs={
+                "class": "usa-textarea usa-textarea--medium",
+                "rows": 2,
+            }
+        ),
+    )
+
+    def clean(self):
+        cleaned_data=super().clean()
+        cleaned_data["type"] = cleaned_data.get("type_field")
+        return cleaned_data

@@ -2,6 +2,8 @@ from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_ipv4_address
+from registrar.validations import validate_dns_name
 import re
 
 
@@ -33,14 +35,17 @@ class DnsRecord(TimeStampedModel):
         # If we add proxy field to records in the future, we can also allow TTL=1 as below:
         # if self.ttl == 1: return self.proxy
         if self.ttl < 60 or self.ttl > 84600:
-            return ValidationError({"ttl": "TTL for unproxied records must be between 60 and 86400."})
+            raise ValidationError({"ttl": "TTL for unproxied records must be between 60 and 86400."})
+        
+        # DNS Record name validation. This will apply for A, AAAA, and CNAME record types.
+        if self.name != "@":
+            validate_dns_name(self.name)
 
-        # Record name must either be '@' (root domain) or a subdomain of DNS zone domain
-        return self.name == "@" or self.is_subdomain(self.name, self.zone.domain.name)
-
-    def is_subdomain(self, name: str, root_domain: str):
-        """Returns boolean if the domain name is found in the argument passed"""
-        subdomain_pattern = r"([\w-]+\.)*"
-        full_pattern = subdomain_pattern + root_domain
-        regex = re.compile(full_pattern)
-        return bool(regex.match(name))
+        # A record-specific validation
+        if self.type == self.RecordTypes.A:
+            if not self.content:
+                raise ValidationError(
+                    {"content": "IPv4 address is required for A records."}
+                )
+            
+            validate_ipv4_address(self.content)
