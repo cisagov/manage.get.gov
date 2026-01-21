@@ -140,7 +140,7 @@ URL_PERMISSIONS = {
     "domain-delete": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-lifecycle": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "version": [ALL],
-}   
+}
 
 UNCHECKED_URLS = [
     "health",
@@ -151,7 +151,7 @@ UNCHECKED_URLS = [
     "rdap",
     "todo",
     "logout",
-    "version"
+    "version",
 ]
 
 

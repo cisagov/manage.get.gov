@@ -38,16 +38,16 @@ class TestViews(TestCase):
         self.client = Client()
 
     @less_console_noise_decorator
+    def test_health_check_endpoint(self):
+        response = self.client.get("/health")
+        self.assertContains(response, "OK", status_code=200)
+
+    @less_console_noise_decorator
     def test_home_page(self):
         """Home page should NOT be available without a login."""
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
 
-    @less_console_noise_decorator
-    def test_health_check_endpoint(self):
-        response = self.client.get("/health")
-        self.assertContains(response, "OK", status_code=200)
-    
     @less_console_noise_decorator
     def test_domain_request_form_not_logged_in(self):
         """Domain request form not accessible without a logged-in user."""
@@ -61,7 +61,7 @@ class TestHealthPageView(TestCase):
         self.client = Client()
         return super().setUp()
 
-    @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT": "abcdef123456", "GIT_TAG": "v1.0.0"})
+    @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT_SHA": "abcdef123456", "GIT_TAG": "v1.0.0"})
     def test_health_contains_git_info(self):
         response = self.client.get("/version")
 
