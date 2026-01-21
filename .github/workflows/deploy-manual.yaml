@@ -67,15 +67,6 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Copy github info to .env
-        env:
-          ENVIRONMENT: ${{ github.event.inputs.environment }}
-          CF_USERNAME: ${{ secrets[format('CF_{0}_USERNAME', github.event.inputs.environment)] }}
-          CF_PASSWORD: ${{ secrets[format('CF_{0}_PASSWORD', github.event.inputs.environment)] }}
-          COMMIT: ${{ github.sha }}
-          BRANCH: ${{ github.event.inputs.branch }}
-        run: |
-          bash ops/scripts/write_git_info_to_env.sh $ENVIRONMENT
       - name: Deploy to cloud.gov sandbox
         uses: cloud-gov/cg-cli-tools@main
         env:

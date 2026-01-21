@@ -20,6 +20,7 @@ from .domain import (
 )
 from .user_profile import UserProfileView, FinishProfileSetupView
 from .health import *
+from .version_info import *
 from .index import *
 from .portfolios import *
 from .transfer_user import TransferUserView

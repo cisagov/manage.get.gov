@@ -399,6 +399,11 @@ urlpatterns = [
         views.PortfolioOrganizationSelectView.as_view(),
         name="set-session-portfolio",
     ),
+    path(
+        "version",
+        views.version_info,
+        name="version"
+    )
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

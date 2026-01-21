@@ -44,6 +44,11 @@ class TestViews(TestCase):
         self.assertEqual(response.status_code, 302)
 
     @less_console_noise_decorator
+    def test_health_check_endpoint(self):
+        response = self.client.get("/health")
+        self.assertContains(response, "OK", status_code=200)
+    
+    @less_console_noise_decorator
     def test_domain_request_form_not_logged_in(self):
         """Domain request form not accessible without a logged-in user."""
         response = self.client.get(reverse("domain-request:start"))
@@ -58,7 +63,7 @@ class TestHealthPageView(TestCase):
 
     @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT": "abcdef123456", "GIT_TAG": "v1.0.0"})
     def test_health_contains_git_info(self):
-        response = self.client.get("/health")
+        response = self.client.get("/version")
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "main")
@@ -73,7 +78,7 @@ class TestHealthPageView(TestCase):
         },
     )
     def test_healh_contains_git_info_without_tag(self):
-        response = self.client.get("/health")
+        response = self.client.get("/version")
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "another-branch")
