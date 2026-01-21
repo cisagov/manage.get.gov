@@ -1,3 +1,4 @@
+import logging
 from django.db import IntegrityError
 from registrar.models import (
     Domain,
@@ -14,6 +15,7 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 
+logger = logging.getLogger(__name__)
 
 def make_domain(**kwargs):
     """Generate a domain object"""
@@ -22,7 +24,7 @@ def make_domain(**kwargs):
         domain = Domain.objects.create(name=domain_name)
         return domain
     except IntegrityError as e:
-        print(f"Error creating domain. May be a duplicate. Consider creating a domain with a different name: {e}")
+        logger.error(f"Error creating domain. May be a duplicate. Consider creating a domain with a different name: {e}")
         raise
 
 
@@ -35,7 +37,7 @@ def make_dns_account(domain=None, **kwargs):
     try:
         dns_account = DnsAccount.objects.create(name=account_name)
     except IntegrityError as e:
-        print(
+        logger.error(
             f"Error creating DNS account. May be a duplicate. Consider creating an account with a different name: {e}"
         )
         raise
@@ -69,7 +71,7 @@ def make_zone(domain, account, **kwargs):
             nameservers=nameservers,
         )
     except IntegrityError as e:
-        print(f"Error creating DNS zone. May be a duplicate. Consider creating a zone with a different name: {e}")
+        logger.error(f"Error creating DNS zone. May be a duplicate. Consider creating a zone with a different name: {e}")
         raise
 
     vendor_dns_zone = VendorDnsZone.objects.create(
