@@ -793,7 +793,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     type_field = forms.ChoiceField(
         label="Type",
-        choices=[("", "Select a type"), ("A", "A")],
+        choices=[("", "- Select -"), ("A", "A")],
         required=True,
         widget=forms.Select(
             attrs={
