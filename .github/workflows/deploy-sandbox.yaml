@@ -53,8 +53,8 @@ jobs:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
-          GIT_COMMIT_SHA: ${{ github.sha }}
-          GIT_BRANCH: ${{ github.ref_name }}
+          GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha}}
+          GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
