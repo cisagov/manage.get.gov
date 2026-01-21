@@ -90,7 +90,7 @@ class DnsHostService:
         logger.info(f"DNS setup completed successfully for domain {domain_name}")
         return
 
-    def create_and_save_account(self, account_name):
+    def create_and_save_account(self, account_name) -> str:
         try:
             account_data = self.dns_vendor_service.create_cf_account(account_name)
             logger.info("Successfully created account at vendor")
@@ -108,7 +108,7 @@ class DnsHostService:
 
         return x_account_id
 
-    def create_and_save_zone(self, domain_name, x_account_id):
+    def create_and_save_zone(self, domain_name, x_account_id) -> list[str]:
         # Create zone in vendor service
         try:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
@@ -129,7 +129,7 @@ class DnsHostService:
             raise
         return nameservers
 
-    def create_and_save_record(self, x_zone_id, form_record_data):
+    def create_and_save_record(self, x_zone_id, form_record_data) -> dict:
         """Calls create method of vendor service to create a DNS record"""
         # Create record in vendor service
         try:
@@ -147,7 +147,7 @@ class DnsHostService:
             raise
         return vendor_record_data
 
-    def _find_existing_account_in_cf(self, account_name):
+    def _find_existing_account_in_cf(self, account_name) -> dict | None:
         per_page = 50
         page = 0
         is_last_page = False
@@ -168,7 +168,7 @@ class DnsHostService:
 
         return account_data
 
-    def _find_existing_account_in_db(self, account_name):
+    def _find_existing_account_in_db(self, account_name) -> str | None:
         try:
             dns_account = DnsAccount.objects.get(name=account_name)
         except DnsAccount.DoesNotExist:
@@ -177,7 +177,7 @@ class DnsHostService:
 
         return dns_account.get_active_x_account_id()
 
-    def _find_existing_zone_in_cf(self, zone_name, x_account_id):
+    def _find_existing_zone_in_cf(self, zone_name, x_account_id) -> dict | None:
         try:
             all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
             zones = all_zones_data["result"]
@@ -188,7 +188,7 @@ class DnsHostService:
 
         return zone_data
 
-    def get_x_zone_id_if_zone_exists(self, domain_name):
+    def get_x_zone_id_if_zone_exists(self, domain_name) -> tuple[str | None, list[str] | None]:
         # returns x_zone_id (and temporarily returns nameservers)
         try:
             zone = DnsZone.objects.get(name=domain_name)
