@@ -7,10 +7,14 @@
     {% include "includes/domain_breadcrumbs.html"%}
 {% endblock breadcrumb %}
 
+<!-- Form messages -->
+{% block message_alerts %}
+<div id="messages-container" hx-get="{% url 'get-messages' %}" hx-trigger="messagesRefresh from:body">
+</div>
+{% endblock message_alerts%}
+
 {% block domain_content %}
-
     {% include "includes/form_errors.html" with form=form %}
-
     <div x-data="{ show_form: false, recordType: '' }">
         <div class="display-flex flex-align-center">
             <div class="grid-col">
@@ -19,9 +23,10 @@
             
             <div class="grid-col-auto">
                 <button
-                class="usa-button"
-                type="button"
-                x-on:click="show_form = true"
+                    class="usa-button"
+                    id="add-dnsrecord-button"
+                    type="button"
+                    x-on:click="show_form = true"
                 >
                     Add record
                 </button>
@@ -44,8 +49,9 @@
                     <!-- remove hx-swap none after and hide_clear form after submit -->
                     <form 
                         class="usa-form usa-form--extra-large"
-                        hx-post="{% url 'domain-dns-create-record' domain.pk %}"
+                        hx-post="{% url 'domain-dns-records' domain.pk %}"
                         method="post"
+                        _="on htmx:afterRequest trigger messageRefresh"
                         novalidate id="form-container"
                         x-cloak
                         x-ref="dnsForm"

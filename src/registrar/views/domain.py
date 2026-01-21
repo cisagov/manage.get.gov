@@ -909,6 +909,94 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
+    def post(self, request, *args, **kwargs):  # noqa: C901
+        """Handle form submission."""
+        self.object = self.get_object()
+        form = self.get_form()
+        self._get_domain(request)
+        errors = []
+        if form.is_valid():
+            try:
+                if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
+                    raise Exception(f"create dns record was called for domain {self.name}")
+
+                form_record_data = {
+                    "type": "A",
+                    "name": form.cleaned_data["name"],  # record name
+                    "content": form.cleaned_data["content"],  # IPv4
+                    "ttl": int(form.cleaned_data["ttl"]),
+                    "comment": form.cleaned_data.get("comment", ""),
+                }
+
+                domain_name = self.object.name
+                try:
+                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                except APIError as e:
+                    logger.error(f"dnsSetup failed {e}")
+                    return JsonResponse(
+                        {
+                            "status": "error",
+                            "message": "DNS setup failed",
+                        },
+                        status=400,
+                    )
+                has_zone = DnsZone.objects.filter(name=domain_name).exists()
+                if has_zone:
+                    zone_name = domain_name
+                    # post nameservers to registry
+                    try:
+                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                    except (RegistryError, RegistrySystemError, Exception) as e:
+                        logger.error(f"Error updating registry: {e}")
+                        # Don't raise an error here in order to bypass blocking error in local dev
+
+                    # post a new record
+                    try:
+                        x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
+                        record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
+                        logger.info(f"Created DNS record: {record_response['result']}")
+                        self.dns_record = record_response["result"]
+                        dns_name = record_response["result"]["name"]
+                        messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+                    except APIError as e:
+                        logger.error(f"API error in view: {str(e)}")
+
+                context_dns_record.set(self.dns_record)
+            finally:
+                self.client.close()
+                if errors:
+                    messages.error(request, f"Request errors: {errors}")
+            new_form = DomainDNSRecordForm()
+            return TemplateResponse(
+                request, 
+                "domain_dns_record_row_response.html",
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form
+                },
+                headers={
+                    "HX-TRIGGER": "messagesRefresh",
+                },
+                status=200
+            )
+            return TemplateResponse(
+                request, 
+                "domain_dns_record_row.html",
+                {
+                    "dns_record": self.dns_record
+                },
+                status=200
+            )
+            return HttpResponse(
+                headers={
+                    "HX-TRIGGER": "create-dns-record",
+                },
+                status=200
+            )
+        else:
+            return self.form_invalid(form)
+
     # def get(self, request, *args, **kwargs):
     #     """Get all DNS records of a given domain."""
     #     self.object = self.get_object()
@@ -1065,7 +1153,8 @@ class DomainDNSRecordFormView(DomainFormBaseView):
                 },
                 status=200
             )
-            
+        else:
+            return self.form_invalid(form)
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
