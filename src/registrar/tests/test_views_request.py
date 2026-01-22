@@ -3566,7 +3566,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # Create a domain request with special district org type and about_your_organization set
         domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
         domain_request.organization_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
-        domain_request.about_your_organization="Test description for special district"
+        domain_request.about_your_organization = "Test description for special district"
         domain_request.last_submitted_date = datetime.now()
         domain_request.save()
 
@@ -3577,7 +3577,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
-        form = org_type_page.forms[0] # OrganizationTypeForm
+        form = org_type_page.forms[0]  # OrganizationTypeForm
         form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
         form.submit()
 

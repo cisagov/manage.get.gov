@@ -705,7 +705,7 @@ class OrganizationType(DomainRequestWizard):
         if old_org_type and new_org_type != old_org_type:
             if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
                 self.domain_request.federal_type = None
-            
+
             if new_org_type != DomainRequest.OrganizationChoices.TRIBAL:
                 self.domain_request.federally_recognized_tribe = None
                 self.domain_request.state_recognized_tribe = None
@@ -725,7 +725,7 @@ class OrganizationType(DomainRequestWizard):
             ]
             if new_org_type not in about_org_types:
                 self.domain_request.about_your_organization = None
-        
+
         super().save(forms)
 
 
