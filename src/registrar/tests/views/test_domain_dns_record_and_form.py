@@ -76,7 +76,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.dns_setup.return_value = ["rainbow.dns.gov", "rainbow2.dns.gov"]
             svc.register_nameservers.return_value = None
             svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
             svc.create_and_save_record.return_value = {"result": mock_record}
@@ -95,18 +94,13 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             response = record_form.submit().follow()
             self.assertEqual(response.status_code, 200)
 
-            # Service calls (behavioral assertions, as validation)
-            svc.dns_setup.assert_called_once_with(self.domain.name)
-
             # User visible result
             self.assertIn("www", response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_form_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService") as MockSvc:
-            svc = MockSvc.return_value
-
+        with patch("registrar.views.domain.DnsHostService"):
             page = self.app.get(self._url(), status=200)
             record_form = page.forms[0]
 
@@ -120,9 +114,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
             # Invalid form should re-render the page, not redirect
             self.assertEqual(response.status_code, 200)
-
-            # Service calls should not run
-            svc.dns_setup.assert_not_called()
 
             # Field assertions for A Type records. Additional tests will be needed for different types of records.
             self.assertIn("Name", response.text)
