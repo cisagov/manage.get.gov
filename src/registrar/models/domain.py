@@ -1893,7 +1893,7 @@ class Domain(TimeStampedModel, DomainHelper):
             return epp.Disclose(
                 flag=True,
                 fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
-                types={DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+                types={DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
             )
 
         disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}

@@ -2632,7 +2632,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
             self.default_registrant_old_email,
             disclose=True,
             disclose_fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
-            disclose_types={DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+            disclose_types={DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 

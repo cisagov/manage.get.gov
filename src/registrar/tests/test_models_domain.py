@@ -1154,7 +1154,7 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact,
                         disclose=True,
                         disclose_fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
-                        disclose_types={DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+                        disclose_types={DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
@@ -1182,7 +1182,7 @@ class TestRegistrantContacts(MockEppLib):
 
             self.assertTrue(disclose.flag)
             self.assertEqual(disclose.fields, {DF.ORG, DF.CITY, DF.SP, DF.CC})
-            self.assertEqual(disclose.types, {DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"})
+            self.assertEqual(disclose.types, {DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"})
 
     def test_convert_public_contact_to_epp(self):
         with less_console_noise():
