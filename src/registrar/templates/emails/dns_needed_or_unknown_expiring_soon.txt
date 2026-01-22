@@ -13,7 +13,7 @@ There’s no cost to renew a domain. After renewal, the domain will be registere
 
 Any domain manager can complete the process within the .gov registrar <{{ manage_url }}>. {% if portfolio %} Organization admins are cc’d on this email for awareness but do not need to take action.{% endif %}
 
-If you no longer need {{ domain }}, simply let the domain expire.
+If you no longer need {{ domain }}, simply let the domain expire. We’ll delete the domain after expiration.
 
 
 THANK YOU
