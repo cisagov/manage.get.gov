@@ -18,12 +18,12 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
-from registrar.tests.helpers.data_generator import (
-    make_domain,
-    make_dns_account,
-    make_initial_dns_setup,
+from registrar.tests.helpers.dns_data_generator import (
+    create_domain,
+    create_dns_account,
+    create_initial_dns_setup,
     delete_all_dns_data,
-    make_zone,
+    create_dns_zone,
 )
 
 
@@ -44,8 +44,8 @@ class TestDnsHostService(TestCase):
         mock_find_existing_account_in_db,
         mock_save_db_account,
     ):
-        make_domain(domain_name="test.gov")
-        make_domain(domain_name="exists.gov")
+        create_domain(domain_name="test.gov")
+        create_domain(domain_name="exists.gov")
 
         account_test_cases = [
             # Case A: Database has account
@@ -114,7 +114,6 @@ class TestDnsHostService(TestCase):
                 "domain_name": "test.gov",
                 "db_account_id": "12345",
                 "x_account_id": "ABCDE",
-
                 "db_zone": {
                     "name": "test.gov",
                     "nameservers": ["ns1.test.gov", "ns2.test.gov"],
@@ -155,11 +154,16 @@ class TestDnsHostService(TestCase):
 
         for case in zone_test_cases:
             with self.subTest(msg=case["test_name"]):
-                domain = make_domain(domain_name=case["domain_name"])
-                dns_account = make_dns_account(domain, x_account_id=case["x_account_id"])
+                domain = create_domain(domain_name=case["domain_name"])
+                dns_account = create_dns_account(domain, x_account_id=case["x_account_id"])
 
                 if case["db_zone"]:
-                    make_zone(domain, dns_account, zone_name=case["db_zone"]["name"], nameservers=case["db_zone"]["nameservers"])
+                    create_dns_zone(
+                        domain,
+                        dns_account,
+                        zone_name=case["db_zone"]["name"],
+                        nameservers=case["db_zone"]["nameservers"],
+                    )
 
                 mock_find_existing_zone_in_cf.return_value = case["cf_zone_data"]
 
@@ -296,7 +300,7 @@ class TestDnsHostServiceDB(TestCase):
         delete_all_dns_data()
 
     def test_find_existing_account_success(self):
-        domain = make_domain(domain_name="democracy.gov")
+        domain = create_domain(domain_name="democracy.gov")
         test_x_account_id = "12345"
         account_name = make_dns_account_name(domain.name)
 
@@ -305,7 +309,7 @@ class TestDnsHostServiceDB(TestCase):
 
         self.service._find_account_tag_by_pubname = Mock(return_value=test_x_account_id)
 
-        make_dns_account(domain=domain, x_account_id=test_x_account_id)
+        create_dns_account(domain=domain, x_account_id=test_x_account_id)
 
         found_id = self.service._find_existing_account_in_db(account_name)
         self.assertEqual(found_id, test_x_account_id)
@@ -405,8 +409,8 @@ class TestDnsHostServiceDB(TestCase):
         x_zone_id = "zone-999"
         expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
 
-        zone_domain = make_domain(domain_name=zone_name)
-        make_initial_dns_setup(
+        zone_domain = create_domain(domain_name=zone_name)
+        create_initial_dns_setup(
             zone_domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
         )
 
