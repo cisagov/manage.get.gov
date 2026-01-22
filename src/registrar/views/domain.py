@@ -995,6 +995,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200
             )
         else:
+            form_errors = dict(form.errors)
+            if form_errors:
+                for error_key in form_errors:
+                    errors = form_errors[error_key]
+                    for error in errors:
+                        messages.error(request, f"{error}")
+            self.form_invalid(form)
             return TemplateResponse(
                 request, 
                 "domain_dns_record_row_response.html",
@@ -1005,8 +1012,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 },
                 headers={
                     "HX-TRIGGER": "messagesRefresh",
-                },
-                status=200
+                }
             )
 
     # def get(self, request, *args, **kwargs):
