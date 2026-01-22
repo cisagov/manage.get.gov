@@ -17,28 +17,29 @@
     @include at-media(mobile-lg) {
       width: 479px;
     }
-}
 
-.usa-search__submit-text {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: flex;
-    padding: 0 1rem;
-    border: 1px solid #565c65;
-    border-left: none;
-    align-items: center;
-    color: #1b1b1b;
-    font-weight: bold;
-    height: 2.125rem;
-    background-color: #AFD5E6;
-    margin: 0;
-}
+    // Style only when its within for the blue .gov 
+    .domain-gov-suffix{
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        padding: 0 1rem;
+        border: 1px solid #565c65;
+        border-left: none;
+        align-items: center;
+        color: #1b1b1b;
+        font-weight: bold;
+        height: 2.125rem;
+        background-color: #AFD5E6;
+        margin: 0;
+    }
 
-.usa-search--domain__form-group input {
-    height: 2.125rem;
-    border-right: none;
-    line-height: 2.125rem;
+    input {
+        height: 2.125rem;
+        border-right: none;
+        line-height: 2.125rem;
+    }
 }
 
 // This is so that the input + .gov portion is 480px total

@@ -21,14 +21,14 @@
       If the domain you want is available, we'll verify it meets all our naming requirements after you submit this form.
       You may also provide alternative domains in case we can't approve your first choice.
     </p>
-    <div class="usa-search--domain__form-group margin-bottom-2">
+    <div class="usa-search--domain__form-group">
       {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" add_class="input-width-416" %}
         {# attr_validate / validate="domain" invokes code in getgov.min.js #}
         {% with attr_validate="domain" add_label_class="usa-sr-only" %}
           {% input_with_errors forms.0.requested_domain %}
         {% endwith %}
       {% endwith %}
-      <span class="usa-search__submit-text">.gov</span>
+      <span class="domain-gov-suffix">.gov</span>
     </div>
     <button
       type="button"
@@ -48,12 +48,15 @@
     </p>
     {% with attr_aria_labelledby="alt_domain_instructions" %}
       {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
-      {% with attr_validate="domain" append_gov=True add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
+      {% with attr_validate="domain" add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input input-width-416" %}
         {% for form in forms.1 %}
           <div class="repeatable-form">
+            <div class="usa-search--domain__form-group margin-bottom-2">
             {% with attr_aria_describedby=form.alternative_domain.auto_id|stringformat:"s"|add:"--toast" %}
               {% input_with_errors form.alternative_domain %}
             {% endwith %}
+            <span class="domain-gov-suffix">.gov</span>
+            </div>
           </div>
         {% endfor %}
       {% endwith %}
