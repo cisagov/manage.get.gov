@@ -268,7 +268,7 @@ class TestDnsHostServiceDB(TestCase):
         self.service = DnsHostService(client=mock_client)
         self.service.dns_vendor_service = vendor_mock
         self.vendor_account_data = {
-            "result": {"id": "12345", "name": "Account for test.gov", "created_on": "2024-01-02T03:04:05Z"}
+            "result": {"id": "12345", "name": "Account for dns-test.gov", "created_on": "2024-01-02T03:04:05Z"}
         }
         self.vendor_zone_data = {
             "result": {
@@ -330,11 +330,11 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(vendor_accts.count(), 1)
 
         # Validate there's one DnsAccount row with the given name
-        dns_accts = DnsAccount.objects.filter(name="Account for test.gov")
+        dns_accts = DnsAccount.objects.filter(name="Account for dns-test.gov")
         self.assertEqual(dns_accts.count(), 1)
 
         # Testing the join row for DnsAccount_VendorDnsAccount
-        dns_acc = DnsAccount.objects.get(name="Account for test.gov")
+        dns_acc = DnsAccount.objects.get(name="Account for dns-test.gov")
         vendor_acc = VendorDnsAccount.objects.get(x_account_id="12345")
         join_exists = AccountsJoin.objects.filter(dns_account=dns_acc, vendor_dns_account=vendor_acc).exists()
         self.assertTrue(join_exists)
@@ -432,8 +432,9 @@ class TestDnsHostServiceDB(TestCase):
     def test_save_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
         # Create account object referenced in zone
-        self.service.save_db_account(self.vendor_account_data)
+
         zone_domain = Domain.objects.create(name="dns-test.gov")
+        create_dns_account(zone_domain, x_account_id = self.vendor_account_data["result"].get("id"), x_account_name = self.vendor_account_data["result"].get("name"))
 
         self.service.save_db_zone(self.vendor_zone_data, zone_domain)
 
@@ -529,13 +530,11 @@ class TestDnsHostServiceDB(TestCase):
     def test_save_db_record_success(self):
         """Successfully creates registrar db record objects."""
         x_zone_id = self.vendor_account_data["result"].get("id")
-        domain_name = "test.gov"
-        domain = Domain.objects.create(name=domain_name)
 
-        # Create account and zone associated with record
-        self.service.save_db_account(self.vendor_account_data)
-        self.service.save_db_zone(self.vendor_zone_data, domain_name)
-        zone = DnsZone.objects.get(domain=domain)
+        _, _, zone =create_initial_dns_setup(
+            x_zone_id=self.vendor_zone_data["result"].get("id"),
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
 
         self.service.save_db_record(x_zone_id, self.vendor_record_data)
 
@@ -557,12 +556,12 @@ class TestDnsHostServiceDB(TestCase):
 
     def test_save_db_record_with_error_fails(self):
         x_zone_id = self.vendor_account_data["result"].get("id")
-        domain_name = "test.gov"
-        Domain.objects.create(name=domain_name)
+        nameservers=self.vendor_zone_data["result"].get("name_servers")
 
-        # Create account and zone associated with record
-        self.service.save_db_account(self.vendor_account_data)
-        self.service.save_db_zone(self.vendor_zone_data, domain_name)
+        create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=nameservers,
+        )
 
         expected_vendor_records = VendorDnsRecord.objects.count()
         expected_dns_records = DnsRecord.objects.count()
@@ -610,12 +609,11 @@ class TestDnsHostServiceDB(TestCase):
             },
         ]
         x_zone_id = self.vendor_account_data["result"].get("id")
-        domain_name = "dns-test.gov"
-        Domain.objects.create(name=domain_name)
 
-        # Create account and zone associated with record
-        self.service.save_db_account(self.vendor_account_data)
-        self.service.save_db_zone(self.vendor_zone_data, domain_name)
+        create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
 
         expected_vendor_records = VendorDnsRecord.objects.count()
         expected_dns_records = DnsRecord.objects.count()
@@ -633,16 +631,16 @@ class TestDnsHostServiceDB(TestCase):
 
     def test_save_db_record_on_failed_join_creation_throws_error(self):
         x_zone_id = self.vendor_account_data["result"].get("id")
-        domain_name = "dns-test.gov"
-        Domain.objects.create(name=domain_name)
 
         expected_vendor_records = VendorDnsRecord.objects.count()
         expected_dns_records = DnsRecord.objects.count()
         expected_record_joins = RecordsJoin.objects.count()
 
         # Create account and zone associated with record
-        self.service.save_db_account(self.vendor_account_data)
-        self.service.save_db_zone(self.vendor_zone_data, domain_name)
+        create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
 
         with patch(
             "registrar.models.DnsRecord_VendorDnsRecord.objects.create",

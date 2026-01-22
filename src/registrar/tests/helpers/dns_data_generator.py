@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from django.db import IntegrityError
 from registrar.models import (
@@ -45,9 +46,9 @@ def create_dns_account(domain, **kwargs):
             f"Error creating DNS account. May be a duplicate. Consider creating an account with a different name: {e}"
         )
         raise
-    datetime = datetime(2025, 1, 1, 12, 0, 0)
-    x_created_at = kwargs.get("acc_x_created_at", "2025-01-01T00:00:00Z")
-    x_updated_at = kwargs.get("acc_x_updated_at", "2025-01-01T00:00:00Z")
+    default_datetime = datetime(2026, 1, 19, 12, 0, 0)
+    x_created_at = kwargs.get("acc_x_created_at", default_datetime)
+    x_updated_at = kwargs.get("acc_x_updated_at", default_datetime)
 
     vendor_dns_account = VendorDnsAccount.objects.create(
         dns_vendor=vendor,
@@ -71,8 +72,9 @@ def create_dns_zone(domain, account, **kwargs):
     zone_name = kwargs.get("zone_name", domain.name)
     x_zone_id = kwargs.get("x_zone_id", "example_x_zone_id")
     nameservers = kwargs.get("nameservers", ["ex1.dns.gov", "ex2.dns.gov"])
-    x_created_at = kwargs.get("zone_x_created_at", "2025-01-01T00:00:00Z")
-    x_updated_at = kwargs.get("zone_x_updated_at", "2025-01-01T00:00:00Z")
+    default_datetime = datetime(2026, 1, 19, 12, 0, 0)
+    x_created_at = kwargs.get("zone_x_created_at", default_datetime)
+    x_updated_at = kwargs.get("zone_x_updated_at", default_datetime)
     try:
         dns_zone = DnsZone.objects.create(
             domain=domain,
@@ -117,8 +119,9 @@ def create_dns_record(zone, **kwargs):
     record_type = kwargs.get("record_type", "A")
     record_content = kwargs.get("record_content", "192.168.1.1")
     x_record_id = kwargs.get("x_record_id", "example_x_record_id")
-    x_created_at = kwargs.get("record_x_created_at", "2025-01-01T00:00:00Z")
-    x_updated_at = kwargs.get("record_x_updated_at", "2025-01-01T00:00:00Z")
+    default_datetime = datetime(2026, 1, 19, 12, 0, 0)
+    x_created_at = kwargs.get("record_x_created_at", default_datetime)
+    x_updated_at = kwargs.get("record_x_updated_at", default_datetime)
     ttl = kwargs.get("ttl", 300)
     dns_record = DnsRecord.objects.create(
         dns_zone=zone,
