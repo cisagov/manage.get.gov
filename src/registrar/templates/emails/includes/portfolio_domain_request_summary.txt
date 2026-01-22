@@ -19,14 +19,12 @@ Interagency initiative:
 {% if domain_request.is_interagency_initiative %}{{ domain_request.interagency_initiative_details }}{% else %}No{% endif %}
 
 Target time frame:
-{% if domain_request.has_timeframe %}{{ domain_request.time_frame_details }}{% else %}No{% endif %}
-{% else %}{{ domain_request.purpose }}{% endif %}{% if domain_request.anything_else %}
+{% if domain_request.has_timeframe %}{{ domain_request.time_frame_details }}
+{% else %}No
+{% endif %}{% else %}{{ domain_request.purpose }}{% endif %}{% if domain_request.anything_else %}
 Additional details:
 {{ domain_request.anything_else }}{% endif %}
-{% if recipient %}
-Your contact information:
-{% spaceless %}{% include "emails/includes/contact.txt" with contact=recipient %}{% endspaceless %}
-{% endif %}
-Administrators from your organization:{% for admin in domain_request.portfolio.portfolio_admin_users %}
-{% spaceless %}{% if not recipient or admin != recipient %}{% include "emails/includes/contact.txt" with contact=admin %}{% endif %}{% endspaceless %}
-{% endfor %}
+{% with admins=domain_request.portfolio.portfolio_admin_users %}
+{% if recipient %}Your contact information:
+{% if admins|length > 1 or not recipient %}{{ recipient|contact_text:2 }}{% else %}{{ recipient|contact_text:1 }}{% endif %}{% endif %}{% if admins|length > 1 or not recipient %}Administrators from your organization:
+{% for admin in admins %}{% if not recipient or admin != recipient %}{{ admin|contact_text:2 }}{% endif %}{% endfor %}{% endif %}{% endwith %}
