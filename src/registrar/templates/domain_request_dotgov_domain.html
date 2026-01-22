@@ -21,12 +21,15 @@
       If the domain you want is available, we'll verify it meets all our naming requirements after you submit this form.
       You may also provide alternative domains in case we can't approve your first choice.
     </p>
-    {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast"  attr_placeholder=".gov" add_class="domain-placeholder-right"%}
-      {# attr_validate / validate="domain" invokes code in getgov.min.js #}
-      {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
-        {% input_with_errors forms.0.requested_domain %}
+    <div class="usa-search--domain__form-group margin-bottom-2">
+      {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" add_class="input-width-416" %}
+        {# attr_validate / validate="domain" invokes code in getgov.min.js #}
+        {% with attr_validate="domain" add_label_class="usa-sr-only" %}
+          {% input_with_errors forms.0.requested_domain %}
+        {% endwith %}
       {% endwith %}
-    {% endwith %}
+      <span class="usa-search__submit-text">.gov</span>
+    </div>
     <button
       type="button"
       class="usa-button usa-button--outline"
@@ -38,7 +41,7 @@
 
   <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
     <legend>
-      <h2 id="alternative-domains-title">Alternative domains (optional)</h2>
+      <h3 id="alternative-domains-title">Alternative domains (optional)</h3>
     </legend>
     <p id="alt_domain_instructions" class="margin-top-05">
       Are there other domains you’d like if we can’t give you your first choice?
@@ -61,7 +64,7 @@
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{% static 'img/sprite.svg' %}#add_circle"></use>
       </svg>
-      <span class="margin-left-05">Add another alternative</span>
+      <span class="margin-left-05">Add alternative domain</span>
     </button>
     <div class="margin-bottom-3">
       <div class="usa-sr-only" id="alternative-domains__check-availability">Check domain availability</div> 
