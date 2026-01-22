@@ -2429,3 +2429,9 @@ class Domain(TimeStampedModel, DomainHelper):
             return self._cache[property]
         else:
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
+
+    def delete_with_no_dns(self, *args, **kwargs):
+        # Delete a domain with associated PublicContacts
+        PublicContact.objects.filter(domain=self).delete()
+        # Delete domain
+        self.delete()
