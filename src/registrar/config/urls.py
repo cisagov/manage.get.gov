@@ -33,7 +33,6 @@ from registrar.views.utility.api_views import (
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
     get_rejection_email_for_user_json,
-    get_dns_records_for_domain_json,
     get_alert_messages
 )
 
@@ -250,11 +249,6 @@ urlpatterns = [
         "admin/api/get-rejection-email-for-user-json/",
         get_rejection_email_for_user_json,
         name="get-rejection-email-for-user-json",
-    ),
-    path(
-        "domain/<int:domain_pk>/get-dns-records-for-domain-json/",
-        get_dns_records_for_domain_json,
-        name="get-dns-records-for-domain-json"
     ),
     path("admin/", admin.site.urls),
     path(
