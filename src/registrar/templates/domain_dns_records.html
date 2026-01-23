@@ -15,7 +15,7 @@
 
 {% block domain_content %}
     {% include "includes/form_errors.html" with form=form %}
-    <div x-data="{ show_form: false, recordType: '' }">
+    <div id="dnsrecords-form-container" x-data="{ show_form: false, recordType: '' }">
         <div class="display-flex flex-align-center">
             <div class="grid-col">
                 <h1>Records</h1>
@@ -56,6 +56,7 @@
                         x-cloak
                         x-ref="dnsForm"
                         x-show="show_form"
+                        @record-submit-success.camel="show_form = false"
                     >
                         {% csrf_token %}
                         <h2>Add record</h2>

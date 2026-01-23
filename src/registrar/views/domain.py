@@ -1,4 +1,5 @@
 from datetime import date
+import json
 from httpx import Client
 import logging
 from contextvars import ContextVar
@@ -967,6 +968,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
             new_form = DomainDNSRecordForm()
+            hx_trigger_events = json.dumps({"messagesRefresh": "","recordSubmitSuccess": ""})
             return TemplateResponse(
                 request, 
                 "domain_dns_record_row_response.html",
@@ -976,21 +978,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     "form": new_form
                 },
                 headers={
-                    "HX-TRIGGER": "messagesRefresh",
-                },
-                status=200
-            )
-            return TemplateResponse(
-                request, 
-                "domain_dns_record_row.html",
-                {
-                    "dns_record": self.dns_record
-                },
-                status=200
-            )
-            return HttpResponse(
-                headers={
-                    "HX-TRIGGER": "create-dns-record",
+                    "HX-TRIGGER": hx_trigger_events
                 },
                 status=200
             )
