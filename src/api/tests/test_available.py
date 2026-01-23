@@ -3,7 +3,7 @@
 import json
 
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 
 from ..views import available, check_domain_available
 from .common import less_console_noise
@@ -17,7 +17,7 @@ from epplibwrapper import (
 
 API_BASE_PATH = "/api/v1/available/?domain="
 
-
+@override_settings(IS_LOCAL=False)
 class AvailableViewTest(MockEppLib):
     """Test that the view function works as expected."""
 
