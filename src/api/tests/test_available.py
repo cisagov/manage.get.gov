@@ -17,6 +17,7 @@ from epplibwrapper import (
 
 API_BASE_PATH = "/api/v1/available/?domain="
 
+
 @override_settings(IS_LOCAL=False)
 class AvailableViewTest(MockEppLib):
     """Test that the view function works as expected."""
