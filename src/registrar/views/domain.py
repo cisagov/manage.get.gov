@@ -8,10 +8,8 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
-from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.urls import reverse
-from django.views import View
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -968,19 +966,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
             new_form = DomainDNSRecordForm()
-            hx_trigger_events = json.dumps({"messagesRefresh": "","recordSubmitSuccess": ""})
+            hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
             return TemplateResponse(
-                request, 
+                request,
                 "domain_dns_record_row_response.html",
-                {
-                    "dns_record": self.dns_record,
-                    "domain": self.object,
-                    "form": new_form
-                },
-                headers={
-                    "HX-TRIGGER": hx_trigger_events
-                },
-                status=200
+                {"dns_record": self.dns_record, "domain": self.object, "form": new_form},
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
             )
         else:
             form_errors = dict(form.errors)
@@ -991,16 +983,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         messages.error(request, f"{error}")
             self.form_invalid(form)
             return TemplateResponse(
-                request, 
+                request,
                 "domain_dns_record_row_response.html",
-                {
-                    "dns_record": None,
-                    "domain": self.object,
-                    "form": form
-                },
+                {"dns_record": None, "domain": self.object, "form": form},
                 headers={
                     "HX-TRIGGER": "messagesRefresh",
-                }
+                },
             )
 
     # def get(self, request, *args, **kwargs):
@@ -1068,6 +1056,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
     #                 messages.error(request, f"Request errors: {errors}")
     #     return super().post(request)
 
+
 @grant_access(IS_STAFF)
 class DomainDNSRecordFormView(DomainFormBaseView):
     template_name = "domain_dns_record_row.html"
@@ -1077,7 +1066,7 @@ class DomainDNSRecordFormView(DomainFormBaseView):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
-    
+
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission."""
         self.object = self.get_object()
@@ -1136,31 +1125,21 @@ class DomainDNSRecordFormView(DomainFormBaseView):
                     messages.error(request, f"Request errors: {errors}")
             new_form = DomainDNSRecordForm()
             return TemplateResponse(
-                request, 
+                request,
                 "domain_dns_record_row_response.html",
-                {
-                    "dns_record": self.dns_record,
-                    "domain": self.object,
-                    "form": new_form
-                },
-                status=200
+                {"dns_record": self.dns_record, "domain": self.object, "form": new_form},
+                status=200,
             )
-            return TemplateResponse(
-                request, 
-                "domain_dns_record_row.html",
-                {
-                    "dns_record": self.dns_record
-                },
-                status=200
-            )
+            return TemplateResponse(request, "domain_dns_record_row.html", {"dns_record": self.dns_record}, status=200)
             return HttpResponse(
                 headers={
                     "HX-TRIGGER": "create-dns-record",
                 },
-                status=200
+                status=200,
             )
         else:
             return self.form_invalid(form)
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
