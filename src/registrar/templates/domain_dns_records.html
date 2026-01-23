@@ -99,28 +99,6 @@
              </div>
         </div>
     </div>
-<!-- 
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
-        <caption class="sr-only">Your DNS records</caption>
-        <thead>
-            <tr>
-            <th scope="col" role="columnheader">Type</th>
-            <th scope="col" role="columnheader">Name</th>
-            <th scope="col" role="columnheader">Content</th>
-            <th scope="col" role="columnheader">TTL</th>
-            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
-            </tr>
-        </thead>
-        <tbody id="dns-records-table">
-            {% for dns_record in dns_records %}
-                {% include "domain_dns_record_row.html" with counter=forloop.counter dns_record=dns_record %}
-            {% endfor %}
-        </tbody>
-    </table> -->
     
-    <!-- {% if dns_records %} -->
-        <!-- <div hx-get="{% url 'get-dns-records-for-domain-json' domain.pk %}" hx-trigger="create-dns-record from:body"> -->
-            {% include "domain_dns_records_table.html" %}
-        <!-- </div> -->
-    <!-- {% endif %} -->
+    {% include "domain_dns_records_table.html" %}
 {% endblock %}  {# domain_content #}
