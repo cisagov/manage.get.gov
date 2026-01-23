@@ -5,9 +5,10 @@
 
 <body>
     <h1>Build Info</h1>
-    
+
+    {% if git_branch %}
     <p> Running on branch: <strong> {{ git_branch }} </strong></p>
-  
+    {% endif %}
     
     <p> Commit hash: <strong> {{ git_commit_hash }}</strong></p>
     
