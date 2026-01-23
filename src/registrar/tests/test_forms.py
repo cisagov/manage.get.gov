@@ -105,6 +105,7 @@ class TestFormValidation(MockEppLib):
         )
 
     @less_console_noise_decorator
+    @override_settings(IS_LOCAL=False)
     def test_requested_domain_errors_consistent(self):
         """Tests if the errors on submit and with the check availability buttons are consistent
         for requested_domains
