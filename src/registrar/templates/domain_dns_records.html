@@ -100,5 +100,7 @@
         </div>
     </div>
     
-    {% include "domain_dns_records_table.html" %}
+    {% if dns_records %}
+        {% include "domain_dns_records_table.html" %}
+    {% endif %}
 {% endblock %}  {# domain_content #}

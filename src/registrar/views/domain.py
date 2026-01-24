@@ -967,10 +967,16 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     messages.error(request, f"Request errors: {errors}")
             new_form = DomainDNSRecordForm()
             hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
+            row_index = len(self.get_context_data()["dns_records"])
             return TemplateResponse(
                 request,
                 "domain_dns_record_row_response.html",
-                {"dns_record": self.dns_record, "domain": self.object, "form": new_form},
+                {
+                    "dns_record": self.dns_record, 
+                    "domain": self.object, 
+                    "form": new_form,
+                    "counter": row_index
+                },
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )

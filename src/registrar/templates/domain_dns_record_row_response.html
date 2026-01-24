@@ -1,6 +1,6 @@
 {% if dns_record %}
 <template>
-    <tbody hx-swap-oob="beforeend:#dnsrecords-table">
+    <tbody hx-swap-oob="beforeend:#dnsrecords-table-body">
         <tr id="dnsrecord-row_{{counter}}" >
             <td data-label="Type">
                 {{dns_record.type}}
