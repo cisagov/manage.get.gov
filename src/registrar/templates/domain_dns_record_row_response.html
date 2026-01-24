@@ -1,6 +1,21 @@
 {% if dns_record %}
 <template>
-    <tbody hx-swap-oob="beforeend:#dnsrecords-table-body">
+    {% if counter == 1%}
+    <table hx-swap-oob="beforeend:#dnsrecords-table">
+        <caption class="sr-only">Your DNS records</caption>
+        <thead>
+            <tr>
+            <th scope="col" role="columnheader">Type</th>
+            <th scope="col" role="columnheader">Name</th>
+            <th scope="col" role="columnheader">Content</th>
+            <th scope="col" role="columnheader">TTL</th>
+            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+            </tr>
+        </thead>
+        <tbody id="dnsrecords-table-body">
+    {% else %}
+    <tbody id="dnsrecords-table-body" hx-swap-oob="beforeend:#dnsrecords-table-body">
+    {% endif %}
         <tr id="dnsrecord-row_{{counter}}" >
             <td data-label="Type">
                 {{dns_record.type}}
@@ -62,6 +77,9 @@
             </td>
         </tr>
     </tbody>
+    {% if counter == 1%}
+    </table>
+    {% endif %}
 </template>
 {% endif %}
 

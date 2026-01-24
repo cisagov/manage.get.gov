@@ -1,5 +1,6 @@
 <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
     <caption class="sr-only">Your DNS records</caption>
+    {% if dns_records %}
     <thead>
         <tr>
         <th scope="col" role="columnheader">Type</th>
@@ -14,4 +15,9 @@
             {% include "domain_dns_record_row.html" with counter=forloop.counter dns_record=dns_record %}
         {% endfor %}
     </tbody>
+    {% else %}
+    <caption class="sr-only">You currently have no DNS records.</caption>
+    {% endif %}
+
+
 </table>
