@@ -14,8 +14,6 @@ from registrar.models import (
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
 )
-from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
-from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 logger = logging.getLogger(__name__)

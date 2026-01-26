@@ -434,7 +434,11 @@ class TestDnsHostServiceDB(TestCase):
         # Create account object referenced in zone
 
         zone_domain = Domain.objects.create(name="dns-test.gov")
-        create_dns_account(zone_domain, x_account_id = self.vendor_account_data["result"].get("id"), x_account_name = self.vendor_account_data["result"].get("name"))
+        create_dns_account(
+            zone_domain,
+            x_account_id=self.vendor_account_data["result"].get("id"),
+            x_account_name=self.vendor_account_data["result"].get("name"),
+        )
 
         self.service.save_db_zone(self.vendor_zone_data, zone_domain)
 
@@ -531,7 +535,7 @@ class TestDnsHostServiceDB(TestCase):
         """Successfully creates registrar db record objects."""
         x_zone_id = self.vendor_account_data["result"].get("id")
 
-        _, _, zone =create_initial_dns_setup(
+        _, _, zone = create_initial_dns_setup(
             x_zone_id=self.vendor_zone_data["result"].get("id"),
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
@@ -556,7 +560,7 @@ class TestDnsHostServiceDB(TestCase):
 
     def test_save_db_record_with_error_fails(self):
         x_zone_id = self.vendor_account_data["result"].get("id")
-        nameservers=self.vendor_zone_data["result"].get("name_servers")
+        nameservers = self.vendor_zone_data["result"].get("name_servers")
 
         create_initial_dns_setup(
             x_zone_id=x_zone_id,
