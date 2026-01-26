@@ -58,7 +58,7 @@ def create_dns_account(domain, **kwargs):
     )
 
     is_active = kwargs.get("acc_is_active", True)
-    DnsAccount_VendorDnsAccount.objects.create(
+    AccountsJoin.objects.create(
         dns_account=dns_account,
         vendor_dns_account=vendor_dns_account,
         is_active=is_active,
@@ -95,7 +95,7 @@ def create_dns_zone(domain, account, **kwargs):
     )
 
     is_active = kwargs.get("zone_is_active", True)
-    DnsZone_VendorDnsZone.objects.create(
+    ZonesJoin.objects.create(
         dns_zone=dns_zone,
         vendor_dns_zone=vendor_dns_zone,
         is_active=is_active,
@@ -137,7 +137,12 @@ def create_dns_record(zone, **kwargs):
         x_updated_at=x_updated_at,
     )
 
-    dns_record.vendor_dns_record.add(vendor_dns_record)
+    is_active = kwargs.get("dns_record_is_active", True)
+    RecordsJoin.objects.create(
+        dns_record=dns_record,
+        vendor_dns_record=vendor_dns_record,
+        is_active=is_active,
+    )
 
     return dns_record
 
