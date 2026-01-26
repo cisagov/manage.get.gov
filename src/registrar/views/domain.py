@@ -867,7 +867,7 @@ class DomainDNSRecordForm(forms.Form):
 class DomainDNSRecordView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
-
+    # Comes from DnsZone
     def __init__(self):
         self.dns_record = None
         self.client = Client()
@@ -888,6 +888,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
             context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            context["name_servers"] = dns_zone.nameservers
         return context
 
     def has_permission(self):

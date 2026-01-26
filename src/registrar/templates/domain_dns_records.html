@@ -169,5 +169,24 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% if name_servers|length > 0 %}
+        <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+        <tr>
+            <thead>
+                <th scope="col" role="columnheader">Name Servers</th>
+            </thead>
+            <tbody>
+              {% for name_server in name_servers%}
+                <tr>
+                    <td data-label="name servers">
+                        {{ name_server }}
+                    </td>
+                </tr>
+              {% endfor %}
+
+            </tbody>
+        </tr>
+        </table>
+        {% endif %}
     {% endif %}
 {% endblock %}  {# domain_content #}
