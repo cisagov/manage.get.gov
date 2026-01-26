@@ -270,6 +270,7 @@ class TestDnsHostServiceDB(TestCase):
                     "name": self.vendor_account_data["result"].get("name"),
                 },
                 "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
+                "vanity_name_servers": ["mosaic.gov", "plaid.gov"]
             }
         }
 
@@ -703,3 +704,15 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
+    
+    def test_save_db_vanity_name_servers(self):
+        # Create domain object
+        domain_name = "dns-test.gov"
+        domain = Domain.objects.create(name=domain_name)
+        self.service.save_db_account(self.vendor_account_data)
+        # save vendor zone data with domain
+        self.service.save_db_zone(self.vendor_zone_data, domain_name)
+        # Check if the dns zone has the vanity name servers
+        dns_zone = DnsZone.objects.get(domain=domain)
+        van_name_servers = self.vendor_zone_data["result"]["vanity_name_servers"]
+        self.assertEqual(dns_zone.nameservers, van_name_servers)

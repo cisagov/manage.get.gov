@@ -3444,3 +3444,12 @@ class TestDomainDnsRecords(TestDomainOverview):
         """Can load domain's DNS records page."""
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Records")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records_with_name_servers_table(self):
+        """Name Servers table appears when there are nameservers on DNS records"""
+        domain = Domain.objects.create(name="exists.gov")
+        nameservers = []
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Name Servers")
