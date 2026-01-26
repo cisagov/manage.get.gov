@@ -409,9 +409,9 @@ class TestDnsHostServiceDB(TestCase):
         x_zone_id = "zone-999"
         expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
 
-        zone_domain = create_domain(domain_name=zone_name)
+        domain = create_domain(domain_name=zone_name)
         create_initial_dns_setup(
-            zone_domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
+            domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
         )
 
         found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
