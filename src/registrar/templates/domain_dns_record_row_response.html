@@ -1,5 +1,6 @@
 {% if dns_record %}
 <template>
+    <!-- Populate table columns when creating first DNS record row  -->
     {% if counter == 1%}
     <table hx-swap-oob="beforeend:#dnsrecords-table">
         <caption class="sr-only">Your DNS records</caption>
