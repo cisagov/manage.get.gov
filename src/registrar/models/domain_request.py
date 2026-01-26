@@ -6,19 +6,25 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from django.http import JsonResponse
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from registrar.utility.waffle import flag_is_active_for_user
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 from datetime import date
+from httpx import Client
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
+
+from epplibwrapper.errors import RegistryError
+from registrar.utility.errors import RegistrySystemError
 
 logger = logging.getLogger(__name__)
 
@@ -1247,6 +1253,10 @@ class DomainRequest(TimeStampedModel):
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
 
+        # TODO: Remove this DNS Setup action from the approval workflow to the appropriate analyst action
+        if flag_is_active_for_user(self.requester, "dns_hosting"):
+            self.temp_dns_setup_action(created_domain)
+
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
         DomainInformation.create_from_dr(domain_request=self, domain=created_domain)
@@ -1586,6 +1596,40 @@ class DomainRequest(TimeStampedModel):
         """Returns the cisa representatives name in Western order."""
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
+
+    def temp_dns_setup_action(self, created_domain):
+        """Engage DNS Setup if the flag is active"""
+        # Need to import DnsHostService and DnsZone here to avoid circular import error
+        from registrar.services.dns_host_service import DnsHostService
+        from registrar.models.dns.dns_zone import DnsZone
+
+        client = Client()
+        dns_host_service = DnsHostService(client)
+
+        try:
+            x_account_id = dns_host_service.dns_account_setup(created_domain.name)
+            dns_host_service.dns_zone_setup(created_domain.name, x_account_id)
+
+        except Exception:
+            logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
+
+        zones = DnsZone.objects.filter(name=created_domain.name)
+        if zones.exists():
+            zone = zones.first()
+            nameservers = zone.nameservers
+
+            if not nameservers:
+                logger.error(f"No nameservers found in DB for domain {created_domain.name}")
+                return JsonResponse(
+                    {"status": "error", "message": "DNS nameservers not available"},
+                    status=400,
+                )
+
+            try:
+                dns_host_service.register_nameservers(zone.name, nameservers)
+            except (RegistryError, RegistrySystemError, Exception) as e:
+                logger.error(f"Error updating registry: {e}")
+                # Don't raise an error here in order to bypass blocking error in local dev
 
     """The following converted_ property methods get field data from this domain request's portfolio,
     if there is an associated portfolio. If not, they return data from the domain request model."""

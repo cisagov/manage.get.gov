@@ -3473,9 +3473,32 @@ class TestRequestingEntity(WebTest):
 
     @boto3_mocking.patching
     @less_console_noise_decorator
-    def test_requesting_entity_submission_email_sent(self):
-        """Tests that an email is sent out on successful form submission"""
+    def test_requesting_entity_submission_email_sent_multiple_org_admin(self):
+        """Tests that an email is sent out on successful form submission with
+        multiple org admins"""
         AllowedEmail.objects.create(email=self.user.email)
+
+        # Create another admin user
+        another_admin = User.objects.create(
+            username="another_admin", email="another.admin@example.com", first_name="Another", last_name="Admin"
+        )
+        AllowedEmail.objects.create(email=another_admin.email)
+
+        # Add another user as a portfolio admin
+        UserPortfolioPermission.objects.create(
+            user=another_admin, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
+        another_admin_2 = User.objects.create(
+            username="another_admin_2", email="another.admin2@example.com", first_name="Another", last_name="Admin2"
+        )
+        AllowedEmail.objects.create(email=another_admin_2.email)
+
+        # Add another user as a portfolio admin
+        UserPortfolioPermission.objects.create(
+            user=another_admin_2, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+        )
+
         domain_request = completed_domain_request(
             user=self.user,
             # This is the additional details field
@@ -3497,6 +3520,34 @@ class TestRequestingEntity(WebTest):
         self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertIn("Administrators from your organization:", body)
+
+    @boto3_mocking.patching
+    @less_console_noise_decorator
+    def test_requesting_entity_submission_email_sent_one_org_admin(self):
+        """Tests that an email is sent out on successful form submission where
+        the requestor is the only org admin"""
+        AllowedEmail.objects.create(email=self.user.email)
+        domain_request = completed_domain_request(
+            user=self.user,
+            # This is the additional details field
+            has_anything_else=True,
+        )
+        domain_request.portfolio = self.portfolio
+        domain_request.requested_suborganization = "moon"
+        domain_request.suborganization_city = "kepler"
+        domain_request.suborganization_state_territory = DomainRequest.StateTerritoryChoices.ALABAMA
+        domain_request.save()
+        domain_request.refresh_from_db()
+
+        with boto3_mocking.clients.handler_for("sesv2", self.mock_client_class):
+            domain_request.submit()
+        _, kwargs = self.mock_client.send_email.call_args
+        body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
+
+        self.assertNotIn("Anything else", body)
+        self.assertIn("kepler, AL", body)
+        self.assertIn("Requesting entity:", body)
+        self.assertNotIn("Administrators from your organization:", body)
 
     @boto3_mocking.patching
     @less_console_noise_decorator
@@ -5235,9 +5286,7 @@ class TestMultiplePortfolios(WebTest):
         self.assertIn("your-organizations", response.url)
 
         # Now manually set a portfolio in session to simulate user selection
-        session = self.client.session
-        session["portfolio"] = self.portfolio
-        session.save()
+        self.set_session_portfolio()
 
         # Get a page with the header - should now show the dropdown
         domains_page = self.client.get(reverse("domains"))
@@ -5312,3 +5361,58 @@ class TestMultiplePortfolios(WebTest):
 
         self.assertEqual(final_page.status_code, 200)
         self.assertNotEqual(final_page.request.path, reverse("your-organizations"))
+
+    def _assert_domains_breadcrumb_href(self, response, expected_href):
+        self.assertContains(response, '<ol class="usa-breadcrumb__list">')
+        self.assertContains(response, f'href="{expected_href}"')
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_domain_breadcrumb_domains_link_enterprise_on_legacy_domain_goes_to_legacy_home(self):
+        self.client.force_login(self.user)
+
+        # Create a legacy domain: DomainInformation.portfolio is NULL
+        legacy_domain, _ = Domain.objects.get_or_create(name="breadcrumb-legacy.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user,
+            domain=legacy_domain,
+            defaults={"portfolio": None},
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=legacy_domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        page = self.client.get(reverse("domain", kwargs={"domain_pk": legacy_domain.id}), follow=True)
+        self._assert_domains_breadcrumb_href(page, reverse("home") + "?legacy_home=1")
+
+    @override_flag("multiple_portfolios", active=True)
+    @less_console_noise_decorator
+    def test_domain_breadcrumb_domains_link_enterprise_on_with_portfolio_goes_to_domains(self):
+        self.client.force_login(self.user)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults={
+                "additional_permissions": [
+                    UserPortfolioPermissionChoices.VIEW_PORTFOLIO,
+                    UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS,
+                ]
+            },
+        )
+
+        # Simulate user selected a portfolio
+        self.set_session_portfolio()
+
+        # Domain is associated to portfolio already in setUp via DomainInformation
+        page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}), follow=True)
+        self._assert_domains_breadcrumb_href(page, reverse("domains"))
+
+    @override_flag("multiple_portfolios", active=False)
+    @less_console_noise_decorator
+    def test_domain_breadcrumb_domains_link_flag_off_goes_to_home(self):
+        self.client.force_login(self.user)
+        page = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}), follow=True)
+        self._assert_domains_breadcrumb_href(page, reverse("home"))

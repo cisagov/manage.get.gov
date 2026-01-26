@@ -8,7 +8,6 @@ You can view this status update in the .gov registrar {{ manage_url }}
 ----------------------------------------------------------------
 
 WHAT DOES “DELETED” MEAN?
-
 When a domain is deleted: 
     - The domain and its subdomains no longer resolve in DNS. 
     - Any email or websites using the domain are unavailable.

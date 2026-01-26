@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from waffle import flag_is_active
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -161,6 +162,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
+        context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -1022,8 +1024,13 @@ class DomainDNSRecordFormView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
+
+                # TODO: Delete this dns setup and registering nameservers code after we have determined
+                # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
+                # creation on submission of the DNS Record form.
                 try:
-                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                    x_account_id = self.dns_host_service.dns_account_setup(domain_name)
+                    self.dns_host_service.dns_zone_setup(domain_name, x_account_id)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -1033,12 +1040,21 @@ class DomainDNSRecordFormView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(name=domain_name).exists()
-                if has_zone:
-                    zone_name = domain_name
-                    # post nameservers to registry
+
+                zones = DnsZone.objects.filter(name=domain_name)
+                if zones.exists():
+                    zone = zones.first()
+                    nameservers = zone.nameservers
+
+                    if not nameservers:
+                        logger.error(f"No nameservers found in DB for domain {domain_name}")
+                        return JsonResponse(
+                            {"status": "error", "message": "DNS nameservers not available"},
+                            status=400,
+                        )
+
                     try:
-                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                        self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
