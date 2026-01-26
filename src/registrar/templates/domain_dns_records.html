@@ -46,12 +46,10 @@
                     {% include "includes/required_fields.html" %}
                 
                     <section class="section-outlined section-outlined--extra-padding">
-                    <!-- remove hx-swap none after and hide_clear form after submit -->
                     <form 
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
                         method="post"
-                        _="on htmx:afterRequest trigger messageRefresh"
                         novalidate id="form-container"
                         x-cloak
                         x-ref="dnsForm"

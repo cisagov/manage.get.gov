@@ -6,7 +6,7 @@ from contextvars import ContextVar
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
