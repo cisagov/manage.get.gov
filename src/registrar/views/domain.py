@@ -930,8 +930,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
+                # TODO: Delete this dns setup and registering nameservers code after we have determined
+                # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
+                # creation on submission of the DNS Record form.
                 try:
-                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                    x_account_id = self.dns_host_service.dns_account_setup(domain_name)
+                    self.dns_host_service.dns_zone_setup(domain_name, x_account_id)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -993,97 +997,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     "HX-TRIGGER": "messagesRefresh",
                 },
             )
-
-
-@grant_access(IS_STAFF)
-class DomainDNSRecordFormView(DomainFormBaseView):
-    template_name = "domain_dns_record_row.html"
-    form_class = DomainDNSRecordForm
-
-    def __init__(self):
-        self.dns_record = None
-        self.client = Client()
-        self.dns_host_service = DnsHostService(client=self.client)
-
-    def post(self, request, *args, **kwargs):  # noqa: C901
-        """Handle form submission."""
-        self.object = self.get_object()
-        form = self.get_form()
-        errors = []
-        if form.is_valid():
-            try:
-                if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
-                    raise Exception(f"create dns record was called for domain {self.name}")
-
-                form_record_data = {
-                    "type": "A",
-                    "name": form.cleaned_data["name"],  # record name
-                    "content": form.cleaned_data["content"],  # IPv4
-                    "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": form.cleaned_data.get("comment", ""),
-                }
-
-                domain_name = self.object.name
-
-                # TODO: Delete this dns setup and registering nameservers code after we have determined
-                # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
-                # creation on submission of the DNS Record form.
-                try:
-                    x_account_id = self.dns_host_service.dns_account_setup(domain_name)
-                    self.dns_host_service.dns_zone_setup(domain_name, x_account_id)
-                except APIError as e:
-                    logger.error(f"dnsSetup failed {e}")
-                    return JsonResponse(
-                        {
-                            "status": "error",
-                            "message": "DNS setup failed",
-                        },
-                        status=400,
-                    )
-
-                zones = DnsZone.objects.filter(name=domain_name)
-                if zones.exists():
-                    zone = zones.first()
-                    nameservers = zone.nameservers
-
-                    if not nameservers:
-                        logger.error(f"No nameservers found in DB for domain {domain_name}")
-                        return JsonResponse(
-                            {"status": "error", "message": "DNS nameservers not available"},
-                            status=400,
-                        )
-
-                    try:
-                        self.dns_host_service.register_nameservers(zone.name, nameservers)
-                    except (RegistryError, RegistrySystemError, Exception) as e:
-                        logger.error(f"Error updating registry: {e}")
-                        # Don't raise an error here in order to bypass blocking error in local dev
-
-                    # post a new record
-                    try:
-                        x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
-                        record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
-                        logger.info(f"Created DNS record: {record_response['result']}")
-                        self.dns_record = record_response["result"]
-                        dns_name = record_response["result"]["name"]
-                        messages.success(request, f"DNS A record '{dns_name}' created successfully.")
-                    except APIError as e:
-                        logger.error(f"API error in view: {str(e)}")
-
-                context_dns_record.set(self.dns_record)
-            finally:
-                self.client.close()
-                if errors:
-                    messages.error(request, f"Request errors: {errors}")
-            new_form = DomainDNSRecordForm()
-            return TemplateResponse(
-                request,
-                "domain_dns_record_row_response.html",
-                {"dns_record": self.dns_record, "domain": self.object, "form": new_form},
-                status=200,
-            )
-        else:
-            return self.form_invalid(form)
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
