@@ -3537,9 +3537,10 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         # Create a domain request with city org type and election board set
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED, 
-            user=self.user, 
-            organization_type = DomainRequest.OrganizationChoices.CITY,
-            is_election_board = True)
+            user=self.user,
+            is_election_board=True
+        )
+        domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_request.save()
 
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
