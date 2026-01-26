@@ -3535,10 +3535,11 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
     def test_org_type_change_clears_election_board_for_federal(self):
         """Test that changing org type to federal clears is_election_board."""
         # Create a domain request with city org type and election board set
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
-        domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
-        domain_request.is_election_board = True
-        domain_request.last_submitted_date = datetime.now()
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, 
+            user=self.user, 
+            organization_type = DomainRequest.OrganizationChoices.CITY,
+            is_election_board = True)
         domain_request.save()
 
         # DO NOT add a portfolio (this test applies to legacy domain requests only)
