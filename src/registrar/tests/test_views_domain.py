@@ -15,6 +15,7 @@ from .common import GenericTestHelper, MockEppLib, create_user, form_with_field,
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
+from httpx import Client
 
 from registrar.utility.errors import (
     NameserverError,
@@ -44,6 +45,7 @@ from registrar.models import (
     Suborganization,
     UserPortfolioPermission,
 )
+from registrar.services.dns_host_service import DnsHostService
 from datetime import date, datetime, timedelta
 from django.utils import timezone
 
@@ -3433,8 +3435,8 @@ class TestDomainDnsRecords(TestDomainOverview):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.service = CloudflareService(self.client)
-        # DNS Hosting requires staff user role
+        self.service = CloudflareService(Client())
+        self.dns_host_service = DnsHostService(self.service)
         self.user = create_user()
         self.client.force_login(self.user)
 
@@ -3450,6 +3452,15 @@ class TestDomainDnsRecords(TestDomainOverview):
     def test_domain_dns_records_with_name_servers_table(self):
         """Name Servers table appears when there are nameservers on DNS records"""
         domain = Domain.objects.create(name="exists.gov")
-        nameservers = []
+        # Get accounts data
+        print("we are getting accounts data")
+        id = self.service.new_account_id
+        account_data = self.service.get_account_zones(id)
+        # Save accounts data
+        # self.dns_host_service.save_db_account(account_data)
+        # # Get zone data
+        # account_id = self.service.new_account_id
+        # # Save zone data
+        # self.dns_host_service.save_db_zone(account_data, domain.name)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name Servers")
