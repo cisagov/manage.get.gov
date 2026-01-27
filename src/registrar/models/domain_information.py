@@ -345,7 +345,7 @@ class DomainInformation(TimeStampedModel):
         org_type_helper.create_or_update_organization_type()
 
         return self
-    
+
     def clear_irrelevant_fields(self):
         """Clears fields that are no longer relevant when the organization type changes.
 
@@ -355,7 +355,7 @@ class DomainInformation(TimeStampedModel):
         - is_election_board: Not applicable to Federal, Interstate, or School District
         - about_your_organization: Only for Special District or Interstate orgs
         """
-        
+
         old_org_type = self._original_generic_org_type
         new_org_type = self.generic_org_type
 
