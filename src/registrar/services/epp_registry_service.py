@@ -441,7 +441,7 @@ class EPPRegistryService:
         Fetch host information from EPP registry.
 
         Args:
-            host_names: List of host names to fetch
+            host_data: List of host names to fetch
 
         Returns:
             List of dicts with keys: name, addrs, cr_date, statuses, tr_date, up_date
