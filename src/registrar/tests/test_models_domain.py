@@ -4,7 +4,7 @@ Feature being tested: Registry Integration
 This file tests the various ways in which the registrar interacts with the registry.
 """
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime, date, timedelta
@@ -639,6 +639,7 @@ class TestDomainStatuses(MockEppLib):
         super().tearDown()
 
 
+@override_settings(IS_LOCAL=False)
 class TestDomainAvailable(MockEppLib):
     """Test Domain.available"""
 
@@ -712,6 +713,7 @@ class TestDomainAvailable(MockEppLib):
             self.assertFalse(available)
             patcher.stop()
 
+    @override_settings(IS_LOCAL=False)
     def test_is_pending_delete(self):
         """
         Scenario: Testing if a domain is in pendingDelete status from the registry
@@ -734,6 +736,7 @@ class TestDomainAvailable(MockEppLib):
 
             self.assertTrue(result)
 
+    @override_settings(IS_LOCAL=False)
     def test_is_not_pending_delete(self):
         """
         Scenario: Testing if a domain is NOT in pendingDelete status.
