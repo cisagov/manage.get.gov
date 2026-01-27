@@ -794,7 +794,7 @@ class DomainRequest(TimeStampedModel):
     def clear_irrelevant_fields(self):
         """Clears fields that are no longer relevant based on current data.
         This helps ensure that stale data isn't kept around.
-        
+
         When generic_org_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
         - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
@@ -827,7 +827,6 @@ class DomainRequest(TimeStampedModel):
             ]
             if new_org_type not in about_org_types:
                 self.about_your_organization = None
-
 
     def save(self, *args, optimistic_lock=False, **kwargs):
         """Save override for custom properties"""

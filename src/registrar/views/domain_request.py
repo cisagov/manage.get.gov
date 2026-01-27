@@ -694,6 +694,7 @@ class OrganizationType(DomainRequestWizard):
     template_name = "domain_request_org_type.html"
     forms = [forms.OrganizationTypeForm]
 
+
 class TribalGovernment(DomainRequestWizard):
     template_name = "domain_request_tribal_government.html"
     forms = [forms.TribalGovernmentForm]
