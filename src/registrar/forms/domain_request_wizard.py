@@ -309,7 +309,7 @@ class OrganizationFederalForm(RegistrarForm):
 
 
 class OrganizationElectionForm(RegistrarForm):
-    is_election_board = forms.NullBooleanField(
+    is_election_board = forms.BooleanField(
         widget=forms.RadioSelect(
             choices=[
                 (True, "Yes"),
@@ -317,6 +317,7 @@ class OrganizationElectionForm(RegistrarForm):
             ],
         ),
         label="Is your organization an election office?",
+        required=False,
     )
 
     def clean_is_election_board(self):
