@@ -394,6 +394,7 @@ class DomainInformation(TimeStampedModel):
         """Save override for custom properties"""
         self.sync_yes_no_form_fields()
         self.sync_organization_type()
+        self.clear_irrelevant_fields()
         super().save(*args, **kwargs)
 
     @classmethod

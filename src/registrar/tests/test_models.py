@@ -2059,7 +2059,7 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertTrue(domain_information.is_election_board)
 
         # Change org type to federal
-        domain_information.generic_org_type.  DomainRequest.OrganizationChoices.FEDERAL
+        domain_information.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
         domain_information.save()
 
         # Verify is_election_board was cleared
