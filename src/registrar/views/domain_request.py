@@ -694,41 +694,6 @@ class OrganizationType(DomainRequestWizard):
     template_name = "domain_request_org_type.html"
     forms = [forms.OrganizationTypeForm]
 
-    def save(self, forms: list):
-        form = forms[0]
-        if not form.is_valid():
-            return
-
-        new_org_type = form.cleaned_data.get("generic_org_type")
-        old_org_type = self.domain_request.generic_org_type
-
-        if old_org_type and new_org_type != old_org_type:
-            if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
-                self.domain_request.federal_type = None
-
-            if new_org_type != DomainRequest.OrganizationChoices.TRIBAL:
-                self.domain_request.federally_recognized_tribe = None
-                self.domain_request.state_recognized_tribe = None
-                self.domain_request.tribe_name = None
-
-            excluded_from_election = [
-                DomainRequest.OrganizationChoices.FEDERAL,
-                DomainRequest.OrganizationChoices.INTERSTATE,
-                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-            ]
-            if new_org_type in excluded_from_election:
-                self.domain_request.is_election_board = None
-
-            about_org_types = [
-                DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
-                DomainRequest.OrganizationChoices.INTERSTATE,
-            ]
-            if new_org_type not in about_org_types:
-                self.domain_request.about_your_organization = None
-
-        super().save(forms)
-
-
 class TribalGovernment(DomainRequestWizard):
     template_name = "domain_request_tribal_government.html"
     forms = [forms.TribalGovernmentForm]
