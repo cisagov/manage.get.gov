@@ -945,12 +945,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(name=domain_name).exists()
-                if has_zone:
+                zone = DnsZone.objects.filter(name=domain_name)
+                if zone:
                     zone_name = domain_name
                     # post nameservers to registry
                     try:
-                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                        if zone.nameservers:
+                            self.dns_host_service.register_nameservers(zone_name, zone.nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
