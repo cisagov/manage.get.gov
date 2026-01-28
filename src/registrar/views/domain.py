@@ -154,9 +154,9 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
-        context["domain_is_ready"] = domain.state == domain.State.READY
+        context["domain_is_in_deletable_state"] = domain.state in [domain.State.READY, domain.State.DNS_NEEDED]
         context["domain_is_deletable"] = context["is_domain_manager"] and (
-            context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
+            context["domain_is_in_deletable_state"] or context["domain_is_expiring_or_expired"]
         )
         context["dns_hosting"] = flag_is_active_for_user(user, "dns_hosting")
         context["breadcrumbs"] = self.get_breadcrumb_items()
@@ -605,22 +605,38 @@ class DomainDeleteView(DomainFormBaseView):
     def post(self, request, domain_pk):
         domain = get_object_or_404(Domain, pk=domain_pk)
         self.object = domain
-        form = self.form_class(request.POST)
-        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
+        # passing in domain state when initiating the folorm
+        form = self.form_class(request.POST, domain_state=domain.state)
 
         if form.is_valid():
-            if domain.state != "ready":
+            # Validate domain state
+            if domain.state not in [Domain.State.READY, Domain.State.DNS_NEEDED]:
                 messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
                 return self.render_to_response(self.get_context_data(form=form))
-            if is_policy_acknowledged:
+
+            # READY state will place domain on hold
+            if domain.state == Domain.State.READY:
                 domain.place_client_hold()
                 domain.save()
-                # Email all domain managers that domain manager has been removed
                 send_domain_manager_on_hold_email_to_domain_managers(domain=domain, requestor=request.user)
                 messages.success(request, "The deletion request for this domain has been submitted.")
-                # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
-            return self.render_to_response(self.get_context_data(form=form))
+
+            # DNS_NEEDED state will delete domain
+            elif domain.state == Domain.State.DNS_NEEDED:
+                try:
+                    domain_name = domain.name
+                    has_port = domain.domain_info.portfolio
+                    domain.delete_with_no_dns()
+                    messages.success(request, f"{domain_name} has been deleted successfully")
+                    if has_port:
+                        return redirect(reverse("domains"))
+                    else:
+                        return redirect(reverse("home") + "?legacy_home=1")
+                except Exception:
+                    messages.error(request, f"Failed to delete {domain.name}. Please try again.")
+                    return self.render_to_response(self.get_context_data(form=form))
 
         # Form not valid -> redisplay with errors
         return self.render_to_response(self.get_context_data(form=form))
