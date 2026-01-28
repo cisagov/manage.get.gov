@@ -31,19 +31,32 @@ class DnsRecord(TimeStampedModel):
     def clean(self):
         super().clean()
 
+        errors = {}
+
         # TTL must be between 60 and 86400.
         # If we add proxy field to records in the future, we can also allow TTL=1 as below:
         # if self.ttl == 1: return self.proxy
         if self.ttl < 60 or self.ttl > 84600:
-            raise ValidationError({"ttl": "TTL for unproxied records must be between 60 and 86400."})
+            errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
 
         # DNS Record name validation. This will apply for A, AAAA, and CNAME record types.
-        if self.name != "@":
-            validate_dns_name(self.name)
+        if not self.name:
+            errors["name"] = "Enter the name of this record."    
+        else:
+            try:
+                validate_dns_name(self.name)
+            except ValidationError as e:
+                errors["name"] = e.messages
 
         # A record-specific validation
         if self.type == self.RecordTypes.A:
             if not self.content:
-                raise ValidationError({"content": "IPv4 address is required for A records."})
-
-            validate_ipv4_address(self.content)
+                errors["content"] = ["IPv4 address is required."]
+            else:
+                try:
+                    validate_ipv4_address(self.content)
+                except ValidationError as e:
+                    errors["content"] = e.messages
+        
+        if errors:
+            raise ValidationError(errors)

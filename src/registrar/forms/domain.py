@@ -783,7 +783,7 @@ class DomainDeleteForm(forms.Form):
 
 
 class DomainDNSRecordForm(forms.ModelForm):
-    """Form for adding DNS records in prototype."""
+    """Form for adding DNS records"""
 
     class Meta:
         model = DnsRecord
