@@ -6,6 +6,7 @@ import time
 from auditlog.models import LogEntry
 from datetime import date, timedelta
 from typing import Optional
+from django.conf import settings
 from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
@@ -22,6 +23,7 @@ from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )
+
 
 from epplibwrapper import (
     CLIENT as registry,
@@ -264,6 +266,9 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+        if settings.IS_LOCAL:
+            logger.info("IS_LOCAL is true, so skipping registry check for domain availability")
+            return True
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -277,6 +282,13 @@ class Domain(TimeStampedModel, DomainHelper):
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
         """Check if domain is pendingDelete state via response from registry."""
+        if settings.IS_LOCAL:
+            logger.info(
+                "IS_LOCAL is true, so skipping registry check for pending delete. "
+                "This enables 'approve' of domain requests locally."
+            )
+            return False
+
         domain_name = domain.lower()
 
         try:
@@ -2429,3 +2441,9 @@ class Domain(TimeStampedModel, DomainHelper):
             return self._cache[property]
         else:
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
+
+    def delete_with_no_dns(self, *args, **kwargs):
+        # Delete a domain with associated PublicContacts
+        PublicContact.objects.filter(domain=self).delete()
+        # Delete domain
+        self.delete()
