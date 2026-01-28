@@ -49,15 +49,18 @@
         </div>
         {% endif %}
         {# messages block is under the back breadcrumb link #}
-        {% if messages %}
-        {% for message in messages %}
-        <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2" role="alert">
-            <div class="usa-alert__body">
-            {{ message }}
+        {% block message_alerts %}
+          {% if messages %}
+            {% for message in messages %}
+            <div class="usa-alert usa-alert--{{ message.tags }} usa-alert--slim margin-bottom-2" role="alert">
+                <div class="usa-alert__body">
+                {{ message }}
+                </div>
             </div>
-        </div>
-        {% endfor %}
-        {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endblock message_alerts %}
+        
 
         {% block domain_content %}
         {% if request.path|endswith:"renewal"%}
