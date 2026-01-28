@@ -5,6 +5,15 @@
 {# empty this block so it doesn’t show on this page #}
 {% endblock %}
 
+<!-- {% block extra_scripts %}
+<script type="text/javascript" nonce="{{request.csp_nonce}}">
+    console.log('INLINE SCRIPT IS RUNNING!');
+    console.log('Nonce value from template:', "{{request.csp_nonce}}");
+    window.CSP_NONCE = "{{request.csp_nonce}}";
+</script>
+<script nonce="{{request.csp_nonce}}" src="{% static 'js/getgov/domain-gov-alignment.js' %}"></script>
+{% endblock %} -->
+
 {% block form_fields %}
   {% include "includes/naming_requirements.html"  %}
 
@@ -21,8 +30,8 @@
       If the domain you want is available, we'll verify it meets all our naming requirements after you submit this form.
       You may also provide alternative domains in case we can't approve your first choice.
     </p>
-    <div class="usa-search--domain__form-group">
-      {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" add_class="input-width-416" %}
+    <div class="domain-input-wrapper">
+      {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
         {# attr_validate / validate="domain" invokes code in getgov.min.js #}
         {% with attr_validate="domain" add_label_class="usa-sr-only" %}
           {% input_with_errors forms.0.requested_domain %}
@@ -37,27 +46,65 @@
     >Check availability</button>
   </fieldset>
 
-  {{ forms.1.management_form }}
-
   <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
     <legend>
       <h3 id="alternative-domains-title">Alternative domains (optional)</h3>
     </legend>
-    <p id="alt_domain_instructions" class="margin-top-05">
-      Are there other domains you’d like if we can’t give you your first choice?
+    <p id="alt_domain_instructions" class="margin-top-05 margin-bottom-05">
+      Are there other domains you’d like if we can’t give you your first choice? We will confirm with you before approving an alternative domain.
     </p>
+    {{ forms.1.management_form }}
+
     {% with attr_aria_labelledby="alt_domain_instructions" %}
       {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
-      {% with attr_validate="domain" add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input input-width-416" %}
-        {% for form in forms.1 %}
-          <div class="repeatable-form">
-            <div class="usa-search--domain__form-group margin-bottom-2">
-            {% with attr_aria_describedby=form.alternative_domain.auto_id|stringformat:"s"|add:"--toast" %}
-              {% input_with_errors form.alternative_domain %}
-            {% endwith %}
-            <span class="domain-gov-suffix">.gov</span>
+      {% with attr_validate="domain" add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
+        {% for form in forms.1.forms %}
+        <div class="repeatable-form padding-y-1">
+          <fieldset class="usa-fieldset">
+            <!-- legend has to be direct child of fieldset to be valid html, in div would break it - need for labelling/sr -->
+            <legend class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}"> Alternative domain {{ forloop.counter }}</legend>
+            <div class="alternative-domain-header display-flex flex-justify flex-align-baseline flex-wrap margin-bottom-1">
+              <h4 class="line-height-heading-2 margin-0" aria-hidden="true"> Alternative domain {{ forloop.counter }}</h4>
+              
+              {% if form.alternative_domain.value %}
+                <span class="usa-sr-only delete-button-description" id="alternative-domain-{{ forloop.counter }}__name">Delete {{ form.alternative_domain.value }}.gov</span>
+              {% else %}
+                <span class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}__name">Delete alternative domain</span>
+              {% endif %}
+              
+              <button 
+                aria-labelledby="alternative-domain-{{ forloop.counter }}" 
+                aria-describedby="alternative-domain-{{ forloop.counter }}__name" 
+                type="button" 
+                class="usa-button usa-button--unstyled display-block delete-record text-secondary usa-button--with-icon margin-bottom-1">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{% static 'img/sprite.svg' %}#delete"></use>
+                </svg>Delete
+              </button>
             </div>
-          </div>
+            {% if forms.1.can_delete %}
+              {{ form.DELETE }}
+            {% endif %}
+            
+            <div class="clear-both">
+              <div class="domain-input-wrapper margin-bottom-0">
+                {% with attr_aria_describedby=form.alternative_domain.auto_id|stringformat:"s"|add:"--toast" %}
+                {% input_with_errors form.alternative_domain %}
+                {% endwith %}
+                <span class="domain-gov-suffix">.gov</span>
+              </div>
+              
+              <div class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}__check-availability">Check domain availability for alternative domain {{ forloop.counter }}</div>
+              <button
+                type="button"
+                class="usa-button usa-button--outline"
+                validate-for="{{ form.alternative_domain.auto_id }}"
+                aria-labelledby="alternative-domain-{{ forloop.counter }}"
+                aria-describedby="alternative-domain-{{ forloop.counter }}__check-availability"
+              >Check availability</button>
+            </div>
+          </fieldset>
+        </div>
         {% endfor %}
       {% endwith %}
     {% endwith %}
@@ -69,20 +116,6 @@
       </svg>
       <span class="margin-left-05">Add alternative domain</span>
     </button>
-    <div class="margin-bottom-3">
-      <div class="usa-sr-only" id="alternative-domains__check-availability">Check domain availability</div> 
-      <button
-      id="validate-alt-domains-availability"
-      type="button"
-      class="usa-button usa-button--outline"
-      validate-for="{{ forms.1.requested_domain.auto_id }}"
-      aria-labelledby="alternative-domains-title"
-      aria-describedby="alternative-domains__check-availability"
-      >Check availability</button>
-    </div>
-    <p class="margin-top-05">
-      If you’re not sure this is the domain you want, that’s ok. You can change the domain later.
-    </p>
   </fieldset>
 
   {{ forms.2.management_form }}

@@ -389,6 +389,7 @@ CONTENT_SECURITY_POLICY = {
         "form-action": (SELF,),
         "frame-ancestors": (SELF,),
         "img-src": [SELF, "https://www.ssa.gov/accessibility/andi/icons/"],
+        # "script-src": [SELF, NONCE],
         "script-src-elem": [
             SELF,
             NONCE,
