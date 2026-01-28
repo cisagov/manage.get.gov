@@ -1,4 +1,5 @@
 from datetime import date
+import json
 from httpx import Client
 import logging
 from contextvars import ContextVar
@@ -7,6 +8,7 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
@@ -802,7 +804,7 @@ class DomainDNSView(DomainBaseView):
 
 
 @grant_access(IS_STAFF)
-class DomainDNSRecordView(DomainFormBaseView):
+class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
@@ -850,6 +852,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
+        self._get_domain(request)
         errors = []
         if form.is_valid():
             try:
@@ -865,7 +868,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
-
                 # TODO: Delete this dns setup and registering nameservers code after we have determined
                 # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
                 # creation on submission of the DNS Record form.
@@ -881,21 +883,13 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-
-                zones = DnsZone.objects.filter(name=domain_name)
-                if zones.exists():
-                    zone = zones.first()
-                    nameservers = zone.nameservers
-
-                    if not nameservers:
-                        logger.error(f"No nameservers found in DB for domain {domain_name}")
-                        return JsonResponse(
-                            {"status": "error", "message": "DNS nameservers not available"},
-                            status=400,
-                        )
-
+                zone = DnsZone.objects.filter(name=domain_name)
+                if zone:
+                    zone_name = domain_name
+                    # post nameservers to registry
                     try:
-                        self.dns_host_service.register_nameservers(zone.name, nameservers)
+                        if zone.nameservers:
+                            self.dns_host_service.register_nameservers(zone_name, zone.nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
@@ -916,7 +910,32 @@ class DomainDNSRecordView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-        return super().post(request)
+            new_form = DomainDNSRecordForm()
+            hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
+            row_index = len(self.get_context_data()["dns_records"])
+            return TemplateResponse(
+                request,
+                "domain_dns_record_row_response.html",
+                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
+            )
+        else:
+            form_errors = dict(form.errors)
+            if form_errors:
+                for error_key in form_errors:
+                    errors = form_errors[error_key]
+                    for error in errors:
+                        messages.error(request, f"{error}")
+            self.form_invalid(form)
+            return TemplateResponse(
+                request,
+                "domain_dns_record_row_response.html",
+                {"dns_record": None, "domain": self.object, "form": form},
+                headers={
+                    "HX-TRIGGER": "messagesRefresh",
+                },
+            )
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
