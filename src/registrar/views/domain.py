@@ -1,4 +1,5 @@
 from datetime import date
+from itertools import chain
 import json
 from httpx import Client
 import logging
@@ -983,12 +984,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200,
             )
         else:
-            form_errors = dict(form.errors)
-            if form_errors:
-                for error_key in form_errors:
-                    errors = form_errors[error_key]
-                    for error in errors:
-                        messages.error(request, f"{error}")
+            form_errors_dict = dict(form.errors)
+            errors = list(chain(*form_errors_dict.values()))
+            for error in errors:
+                messages.error(request, f"{error}")
             self.form_invalid(form)
             return TemplateResponse(
                 request,
