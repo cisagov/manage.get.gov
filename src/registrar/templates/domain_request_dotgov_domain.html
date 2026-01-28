@@ -5,15 +5,6 @@
 {# empty this block so it doesn’t show on this page #}
 {% endblock %}
 
-<!-- {% block extra_scripts %}
-<script type="text/javascript" nonce="{{request.csp_nonce}}">
-    console.log('INLINE SCRIPT IS RUNNING!');
-    console.log('Nonce value from template:', "{{request.csp_nonce}}");
-    window.CSP_NONCE = "{{request.csp_nonce}}";
-</script>
-<script nonce="{{request.csp_nonce}}" src="{% static 'js/getgov/domain-gov-alignment.js' %}"></script>
-{% endblock %} -->
-
 {% block form_fields %}
   {% include "includes/naming_requirements.html"  %}
 

@@ -231,40 +231,17 @@ function removeFormErrors(input, removeStaleAlerts=false){
     }
 }
 
-// export function initDomainValidators() {
-//     "use strict";
-//     const needsValidation = document.querySelectorAll('[validate]');
-//     for (const input of needsValidation) {
-//         input.addEventListener('input', handleInputValidation);
-//     }
-  
-//     const alternativeDomainsAvailability = document.getElementById('validate-alt-domains-availability');
-//     const activatesValidation = document.querySelectorAll('[validate-for]');
-  
-//     for (const button of activatesValidation) {
-//         if (button === alternativeDomainsAvailability) {
-//             button.addEventListener('click', (e) => {
-//             validateFormsetInputs(e, alternativeDomainsAvailability);
-//             });
-//         } else {
-//             button.addEventListener('click', validateFieldInput);
-//         }
-//     }
-// }
-
 export function initDomainValidators() {
     "use strict";
     const needsValidation = document.querySelectorAll('[validate]');
     for (const input of needsValidation) {
         input.addEventListener('input', handleInputValidation);
     }
-  
-    // const alternativeDomainsAvailability = document.getElementById('validate-alt-domains-availability');
-  
-    // Event delegation - listens for ALL clicks on buttons with validate-for
+    
+    // Listening for ALL clicks on buttons with validate-for
     document.addEventListener('click', function(e) {
         const button = e.target.closest('button[validate-for]');
-        if (!button) return;  // Not a validate button, ignore
+        if (!button) return;  // If not a validate button, ignore
         
         const targetInputId = button.getAttribute('validate-for');
 

@@ -13,7 +13,6 @@ dd {
 }
 
 .checklist-text-wrapper {
-    // min-width: 0;
     line-height: 1;
 }
 
@@ -22,24 +21,8 @@ dd {
 }
 
 .usa-list--unstyled .checklist-item svg.usa-icon {
-    // display: block;
-    width: 1em !important;
-    height: 1em !important;
-    min-width: 1em !important;
-    min-height: 1em !important;
+    width: 1em;
+    height: 1em;
+    min-width: 1em;
+    min-height: 1em;
 }
-
-// .checklist-item > svg.usa-icon {
-//     vertical-align: initial;
-//     align-self: flex-start;
-//     flex: 0 0 auto;
-//   }
-  
-// .checklist-text-wrapper {
-//     min-width: 0;
-// }
-
-// .checklist-bold-text {
-//     display: block;
-//     line-height: 1;
-// }
