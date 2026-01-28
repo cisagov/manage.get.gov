@@ -2528,7 +2528,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.follow()
 
-        self.assertContains(dotgov_page, "medicare.gov")
+        self.assertContains(dotgov_page, "Federal agencies may request generic domain names.")
 
         # Go back to organization type page and change type
         type_page = dotgov_page.click(str(self.TITLES["generic_org_type"]), index=0)
@@ -2549,7 +2549,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         dotgov_page = current_sites_result.click(str(self.TITLES["dotgov_domain"]), index=0)
         self.assertContains(dotgov_page, "CityofEudoraKS.gov")
-        self.assertNotContains(dotgov_page, "medicare.gov")
+        self.assertNotContains(dotgov_page, "Federal agencies may request generic domain names.")
 
     # @less_console_noise_decorator
     def test_domain_request_FEB_questions(self):

@@ -68,10 +68,6 @@ error messages, if necessary.
     </div>
   {% endif %}
 
-  {% if append_gov %}
-    <div class="display-flex flex-align-center">
-  {% endif %}
-
   {% if toggleable_input %}
     {% include "includes/toggleable_input.html" %}
   {% endif %}
@@ -80,13 +76,6 @@ error messages, if necessary.
   {% with aria_label=aria_label %}
       {% include widget.template_name %}
   {% endwith %}
-  
-  
-
-  {% if append_gov %}
-      <span class="padding-top-05 padding-left-2px">.gov </span>
-    </div>
-  {% endif %}
 
   {% if field.widget_type == "checkbox" %}
     {% include "django/forms/label.html" %}
