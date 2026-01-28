@@ -446,6 +446,15 @@
             "index": "pypi",
             "version": "==2.8.1"
         },
+        "django-htmx": {
+            "hashes": [
+                "sha256:036e5da801bfdf5f1ca815f21592cfb9f004a898f330c842f15e55c70e301a75",
+                "sha256:13e1e13b87d39b57f95aae6e4987cb3df056d0b1373a41f4a94504a00298ffd8"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.10'",
+            "version": "==1.27.0"
+        },
         "django-import-export": {
             "hashes": [
                 "sha256:224c7d909fec607378bc58271db38b9c6065982306aa644d26a529fcde64869e",

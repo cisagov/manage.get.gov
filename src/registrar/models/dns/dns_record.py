@@ -2,7 +2,8 @@ from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-import re
+from django.core.validators import validate_ipv4_address
+from registrar.validations import validate_dns_name
 
 
 class DnsRecord(TimeStampedModel):
@@ -29,18 +30,33 @@ class DnsRecord(TimeStampedModel):
 
     def clean(self):
         super().clean()
+
+        errors = {}
+
         # TTL must be between 60 and 86400.
         # If we add proxy field to records in the future, we can also allow TTL=1 as below:
         # if self.ttl == 1: return self.proxy
         if self.ttl < 60 or self.ttl > 84600:
-            return ValidationError({"ttl": "TTL for unproxied records must be between 60 and 86400."})
+            errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
 
-        # Record name must either be '@' (root domain) or a subdomain of DNS zone domain
-        return self.name == "@" or self.is_subdomain(self.name, self.zone.domain.name)
+        # DNS Record name validation. This will apply for A, AAAA, and CNAME record types.
+        if not self.name:
+            errors["name"] = "Enter the name of this record."    
+        else:
+            try:
+                validate_dns_name(self.name)
+            except ValidationError as e:
+                errors["name"] = e.messages
 
-    def is_subdomain(self, name: str, root_domain: str):
-        """Returns boolean if the domain name is found in the argument passed"""
-        subdomain_pattern = r"([\w-]+\.)*"
-        full_pattern = subdomain_pattern + root_domain
-        regex = re.compile(full_pattern)
-        return bool(regex.match(name))
+        # A record-specific validation
+        if self.type == self.RecordTypes.A:
+            if not self.content:
+                errors["content"] = ["IPv4 address is required."]
+            else:
+                try:
+                    validate_ipv4_address(self.content)
+                except ValidationError as e:
+                    errors["content"] = e.messages
+        
+        if errors:
+            raise ValidationError(errors)

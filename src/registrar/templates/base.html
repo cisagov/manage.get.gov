@@ -1,10 +1,12 @@
 <!doctype html>{# keep this on the first line #}
 {% load i18n static %}
 {% load static url_helpers %}
+{% load django_htmx static%}
 
 <html class="no-js" lang="{{ LANGUAGE_CODE }}">
 
 <head>
+  {% htmx_script minified=false %}
   {% if IS_PRODUCTION %}
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-PZ5QSP6QPL"></script>
@@ -73,7 +75,11 @@
   <!-- ================================= -->
 </head>
 
-<body id="{% block body_id %}default{% endblock %}" class="{% block body_class %}section_front{% endblock %}">
+<body 
+  id="{% block body_id %}default{% endblock %}"
+  class="{% block body_class %}section_front{% endblock %}"
+  hx-headers='{"x-csrftoken": "{{ csrf_token }}"}'
+>
   <a class="usa-skipnav" href="#main-content">Skip to main content</a>
 
   {% if not IS_PRODUCTION %}
