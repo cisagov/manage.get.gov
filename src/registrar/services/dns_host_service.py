@@ -248,19 +248,21 @@ class DnsHostService:
         x_zone_id = zone_data["id"]
         zone_name = zone_data["name"]
         zone_account_name = zone_data["account"]["name"]
-        # Check for vanity nameservers
-        nameservers = zone_data.get("vanity_name_servers")
-        if nameservers and len(nameservers) == 0:
-            nameservers = zone_data["name_servers"]
 
+        # Check for vanity nameservers
+        nameservers = zone_data["vanity_name_servers"]
+        if len(nameservers) == 0:
+            nameservers = zone_data["name_servers"]
         # TODO: handle transaction failure
         try:
             with transaction.atomic():
+
                 vendor_dns_zone = VendorDnsZone.objects.create(
                     x_zone_id=x_zone_id,
                     x_created_at=zone_data["created_on"],
                     x_updated_at=zone_data["created_on"],
                 )
+
                 dns_account = DnsAccount.objects.get(name=zone_account_name)
                 dns_domain = Domain.objects.get(name=domain_name)
 
@@ -268,10 +270,8 @@ class DnsHostService:
                     dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
                 )
 
-                ZonesJoin.objects.create(
-                    dns_zone=dns_zone,
-                    vendor_dns_zone=vendor_dns_zone,
-                )
+                ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
+                print("ZONE JOIN OBJECTS")
         except Exception as e:
             logger.error(f"Failed to save zone to database: {str(e)}.")
             raise

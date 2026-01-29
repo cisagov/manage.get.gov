@@ -14,18 +14,26 @@ from registrar.models import (
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
+    User,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.tests.common import create_user
 
 logger = logging.getLogger(__name__)
 
+dns_host_user = create_user(
+    username="dns_hosting_test",
+    email="dns_data@gov.com",
+)
 
-def create_domain(user, **kwargs):
+
+def create_domain(**kwargs):
     """Generate a domain object"""
     domain_name = kwargs.get("domain_name", "example.gov")
     try:
+
         domain = Domain.objects.create(name=domain_name)
-        DomainInformation.objects.get_or_create(requester=user, domain=domain)
+        DomainInformation.objects.get_or_create(requester=dns_host_user, domain=domain)
         return domain
     except IntegrityError as e:
         logger.error(
@@ -39,13 +47,16 @@ def create_dns_account(domain, **kwargs):
     vendor = DnsVendor.objects.get(name=DnsVendor.CF)
     x_account_id = kwargs.get("x_account_id", "example_x_account_id")
     account_name = kwargs.get("account_name", make_dns_account_name(domain.name))
+
     try:
         dns_account = DnsAccount.objects.create(name=account_name)
+
     except IntegrityError as e:
         logger.error(
             f"Error creating DNS account. May be a duplicate. Consider creating an account with a different name: {e}"
         )
         raise
+
     default_datetime = datetime(2026, 1, 19, 12, 0, 0)
     x_created_at = kwargs.get("acc_x_created_at", default_datetime)
     x_updated_at = kwargs.get("acc_x_updated_at", default_datetime)
@@ -72,16 +83,19 @@ def create_dns_zone(domain, account, **kwargs):
     zone_name = kwargs.get("zone_name", domain.name)
     x_zone_id = kwargs.get("x_zone_id", "example_x_zone_id")
     nameservers = kwargs.get("nameservers", ["ex1.dns.gov", "ex2.dns.gov"])
+    vanity_nameservers = kwargs.get("vanity_nameservers", [])
     default_datetime = datetime(2026, 1, 19, 12, 0, 0)
     x_created_at = kwargs.get("zone_x_created_at", default_datetime)
     x_updated_at = kwargs.get("zone_x_updated_at", default_datetime)
- 
+
+    nameservers_to_use = vanity_nameservers or nameservers
+
     try:
         dns_zone = DnsZone.objects.create(
             domain=domain,
             dns_account=account,
             name=zone_name,
-            nameservers=nameservers,
+            nameservers=nameservers_to_use,
         )
     except IntegrityError as e:
         logger.error(
@@ -105,9 +119,9 @@ def create_dns_zone(domain, account, **kwargs):
     return dns_zone
 
 
-def create_initial_dns_setup(user, domain=None, **kwargs):
+def create_initial_dns_setup(domain=None, **kwargs):
     """Generate a domain, account objects and zone object and their links"""
-    domain = domain or create_domain(user)
+    domain = domain or create_domain()
     dns_account = kwargs.get("dns_account", create_dns_account(domain))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
 
@@ -132,7 +146,6 @@ def create_dns_record(zone, **kwargs):
         ttl=ttl,
     )
     vendor_dns_record = VendorDnsRecord.objects.create(
-        name="cloudflare",
         x_record_id=x_record_id,
         x_created_at=x_created_at,
         x_updated_at=x_updated_at,

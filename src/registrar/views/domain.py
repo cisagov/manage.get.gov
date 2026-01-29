@@ -883,7 +883,7 @@ class DomainDNSRecordForm(forms.Form):
 class DomainDNSRecordView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
- 
+
     def __init__(self):
         self.dns_record = None
         self.client = Client()

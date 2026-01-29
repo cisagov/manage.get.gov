@@ -1069,6 +1069,7 @@ def create_user(**kwargs):
         password=kwargs.get("password", p),
         phone=kwargs.get("phone", "8003111234"),
     )
+
     # Retrieve the group or create it if it doesn't exist
     group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
     # Add the user to the group
