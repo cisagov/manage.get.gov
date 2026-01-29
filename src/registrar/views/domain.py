@@ -437,6 +437,15 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     exc_info=True,
                 )
 
+    def get_form_errors(self, form):
+        """
+        Queue all errors from a form submission into Django message queue.
+        Used mainly to prompt form errors before a page refresh.
+        """
+        form_errors_dict = dict(form.errors)
+        errors = list(chain(*form_errors_dict.values()))
+        return errors
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
@@ -1006,8 +1015,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200,
             )
         else:
-            form_errors_dict = dict(form.errors)
-            errors = list(chain(*form_errors_dict.values()))
+            errors = self.get_form_errors(form)
             for error in errors:
                 messages.error(request, f"{error}")
             self.form_invalid(form)
