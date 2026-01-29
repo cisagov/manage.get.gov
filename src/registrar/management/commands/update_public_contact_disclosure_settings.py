@@ -30,9 +30,7 @@ class Command(BaseCommand):
             "--target-domain",
             "--target_domain",
             required=True,
-            help=(
-                "Only update contacts for a given domain name - case insensitive. "
-            ),
+            help="Only update contacts for a given domain name (case insensitive).",
         )
 
         parser.add_argument(
@@ -66,7 +64,12 @@ class Command(BaseCommand):
 
     def _contact_ref(self, contact: PublicContact) -> str:
         domain_name = getattr(contact.domain, "name", "<unknown>")
-        return f"db_pk={contact.pk} registry_id={contact.registry_id} domain={domain_name} type={contact.contact_type}"
+        return (
+            f"db_pk={contact.pk} "
+            f"registry_id={contact.registry_id} "
+            f"domain={domain_name} "
+            f"type={contact.contact_type}"
+        )
 
     def _format_disclose(self, disclose: Any) -> str:
         flag = getattr(disclose, "flag", None)
@@ -82,7 +85,10 @@ class Command(BaseCommand):
         if not target_domain:
             raise ValueError("--target-domain is required")
 
-        qs = self._build_queryset(target_domain=target_domain, contact_types=contact_types)
+        qs = self._build_queryset(
+            target_domain=target_domain,
+            contact_types=contact_types,
+        )
         total_count = qs.count()
         logger.info("Found %s PublicContact record(s) in scope.", total_count)
 
@@ -128,7 +134,10 @@ class Command(BaseCommand):
                     contact.domain._update_epp_contact(contact=contact)
             except Exception:
                 failed += 1
-                logger.exception("Failed to update disclose settings for %s", self._contact_ref(contact))
+                logger.exception(
+                    "Failed to update disclose settings for %s",
+                    self._contact_ref(contact),
+                )
 
         header = (
             "FINISHED (DRY RUN): Update PublicContact disclose settings"
