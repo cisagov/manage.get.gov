@@ -1,13 +1,10 @@
 """Update registry disclose settings for existing PublicContact records.
 
-This command is intended for operational backfills against a 3rd-party registry.
+This command is intended to update the registry with new PublicContact disclosure defaults.
 
-Version 1 keeps the behavior intentionally narrow:
-- Computes disclose via Domain._disclose_fields
 - In dry-run mode (default), only logs what would be changed
 - With --no-dry-run, sends registry updates via Domain._update_epp_contact
-
-Safety rail: --target-domain is required to avoid mass updates.
+- Use --target-domain to only update an existing domain
 """
 
 import argparse
