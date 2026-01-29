@@ -48,6 +48,7 @@
                     <form 
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
+                        hx-swap="innerHTML show:top"
                         method="post"
                         novalidate id="form-container"
                         x-cloak
