@@ -151,6 +151,7 @@ class MockCloudflareService:
                                 "rainbow.dns.gov",
                                 "rainbow2.dns.gov",
                             ],
+                            "vanity_name_servers": [],
                             "status": "pending",
                             "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
                         }
@@ -187,6 +188,7 @@ class MockCloudflareService:
                             "rainbow.dns.gov",
                             "rainbow2.dns.gov",
                         ],
+                        "vanity_name_servers": [],
                         "status": "pending",
                         "tenant": {"id": CloudflareService.tenant_id, "name": "Yet another fake dotgov"},
                     },

@@ -44,6 +44,8 @@ from registrar.models import (
     Portfolio,
     Suborganization,
     UserPortfolioPermission,
+    DnsZone,
+    DnsAccount
 )
 from registrar.services.dns_host_service import DnsHostService
 from datetime import date, datetime, timedelta
@@ -3430,13 +3432,16 @@ class TestDomainDnsRecords(TestDomainOverview):
     def tearDownClass(cls):
         """Stop mock service after all tests"""
         cls.mock_api_service.stop()
+        DnsZone.objects.all().delete()
+        # VendorDnsAccount.objects.all().delete()
+        # DnsAccount.objects.all().delete()
         super().tearDownClass()
 
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.service = CloudflareService(Client())
-        self.dns_host_service = DnsHostService(self.service)
+        self.service = CloudflareService(self.client)
+        self.dns_host_service = DnsHostService(Client())
         self.user = create_user()
         self.client.force_login(self.user)
 
@@ -3451,16 +3456,18 @@ class TestDomainDnsRecords(TestDomainOverview):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_name_servers_table(self):
         """Name Servers table appears when there are nameservers on DNS records"""
-        domain = Domain.objects.create(name="exists.gov")
-        # Get accounts data
-        print("we are getting accounts data")
-        id = self.service.new_account_id
-        account_data = self.service.get_account_zones(id)
-        # Save accounts data
-        # self.dns_host_service.save_db_account(account_data)
-        # # Get zone data
-        # account_id = self.service.new_account_id
-        # # Save zone data
-        # self.dns_host_service.save_db_zone(account_data, domain.name)
-        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
-        self.assertContains(page, "Name Servers")
+        # Rename existing domain to match domain in mock cloudflare api
+        self.domain.name = "exists.gov"
+        self.domain.save()
+        # Get account id
+        cf_account_id = self.mock_api_service.existing_account_id 
+        
+        # Set up dns account and dns zone
+        # Name servers are saved in the dns_zone_setup_method
+        db_id = self.dns_host_service.dns_account_setup(self.domain.name)
+        self.dns_host_service.dns_zone_setup(self.domain.name, ac_id)
+        
+        # Load page
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
+        self.assertContains(page,"Name Servers")
+        self.assertContains(page, "rainbow.dns.gov")

@@ -93,7 +93,7 @@
     </div>
     
     {% if dns_records %}
-    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
+        <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
             <caption class="sr-only">Your DNS records</caption>
             <thead>
                 <tr>
@@ -169,7 +169,8 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% if name_servers|length > 0 %}
+    {% endif %}
+    {% if name_servers|length > 0 %}
         <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
         <tr>
             <thead>
@@ -187,6 +188,5 @@
             </tbody>
         </tr>
         </table>
-        {% endif %}
     {% endif %}
 {% endblock %}  {# domain_content #}
