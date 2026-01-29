@@ -15,7 +15,6 @@ from .common import GenericTestHelper, MockEppLib, create_user, form_with_field,
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
-from httpx import Client
 
 from registrar.utility.errors import (
     NameserverError,
@@ -46,7 +45,6 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 
-from registrar.services.dns_host_service import DnsHostService
 from datetime import date, datetime, timedelta
 from django.utils import timezone
 

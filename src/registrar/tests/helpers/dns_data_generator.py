@@ -75,7 +75,7 @@ def create_dns_zone(domain, account, **kwargs):
     default_datetime = datetime(2026, 1, 19, 12, 0, 0)
     x_created_at = kwargs.get("zone_x_created_at", default_datetime)
     x_updated_at = kwargs.get("zone_x_updated_at", default_datetime)
-    print(nameservers)
+ 
     try:
         dns_zone = DnsZone.objects.create(
             domain=domain,

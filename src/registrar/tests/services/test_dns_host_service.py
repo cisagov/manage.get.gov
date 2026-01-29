@@ -280,7 +280,6 @@ class TestDnsHostServiceDB(TestCase):
                     "name": self.vendor_account_data["result"].get("name"),
                 },
                 "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
-                "vanity_name_servers": ["mosaic.gov", "plaid.gov"],
             }
         }
 
