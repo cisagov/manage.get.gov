@@ -3501,11 +3501,12 @@ class TestDomainDnsRecords(TestDomainOverview):
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_name_servers_table(self):
-        """Name Servers table appears when there are nameservers on DNS records"""
+        """Name Servers table appears when there are nameservers and shows DNS records"""
         domain, _, dns_zone = create_initial_dns_setup()
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name Servers")
+        self.assertContains(page, "192.168.1.1")
         self.assertContains(page, "ex1.dns.gov")
 
     @less_console_noise_decorator

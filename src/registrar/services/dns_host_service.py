@@ -271,7 +271,6 @@ class DnsHostService:
                 )
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
-                print("ZONE JOIN OBJECTS")
         except Exception as e:
             logger.error(f"Failed to save zone to database: {str(e)}.")
             raise
