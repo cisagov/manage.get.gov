@@ -23,17 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Update registry disclose settings for PublicContact records."
+    help = "Updates registry disclose settings for PublicContact records to whatever the website currently computes."
 
     def add_arguments(self, parser):
-        """Adds command line arguments."""
         parser.add_argument(
             "--target-domain",
             "--target_domain",
             required=True,
             help=(
-                "Only update contacts for a given domain name (case insensitive). "
-                "Required to avoid doing a mass-update of every public contact record."
+                "Only update contacts for a given domain name - case insensitive. "
             ),
         )
 
@@ -43,9 +41,8 @@ class Command(BaseCommand):
             action="append",
             choices=[choice.value for choice in PublicContact.ContactTypeChoices],
             help=(
-                "Restrict to one or more contact types. "
-                "May be specified multiple times (e.g. --contact-type registrant --contact-type security). "
-                "If omitted, all contact types are included."
+                "Restrict to one or more contact types. (e.g. --contact-type registrant --contact-type security)."
+                "If omitted, all contact types are included.  The website currently updates registrant only."
             ),
         )
 
@@ -55,7 +52,7 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             default=True,
             help=(
-                "When enabled (default), does not call the registry; only reports what would be updated. "
+                "When enabled (which is the default), does not call the registry; only reports what would be updated. "
                 "Disable with --no-dry-run to perform updates."
             ),
         )
