@@ -3296,24 +3296,26 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is ON
         * Domain state = DNS_NEEDED
         * Domain is NOT expiring
-        * Should NOT see domain lifecycle, request deletion, or renewal form
+        * Should see domain lifecycle
+        * Should see request deletion
+        * Should not see domain renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
             response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
 
-            self.assertNotContains(response, "Domain lifecycle")
-            self.assertNotContains(response, "Request deletion")
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
 
     @less_console_noise_decorator
     @override_flag("domain_deletion", active=True)
     def test_domain_lifecycle_dns_needed_expiring(self):
         """
-        Domain deletion flag is ON
-        Domain state = DNS_NEEDED
-        Domain IS expiring
-        Should see domain lifecycle, renewal form, but NOT request deletion
+        * Domain deletion flag is ON
+        * Domain state = DNS_NEEDED
+        * Domain IS expiring
+        * Should see domain lifecycle, renewal form, request deletion
         """
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
             self.client.force_login(self.user)
@@ -3321,7 +3323,7 @@ class TestDomainDeletion(TestWithUser):
 
             self.assertContains(response, "Domain lifecycle")
             self.assertContains(response, "Renewal form")
-            self.assertNotContains(response, "Request deletion")
+            self.assertContains(response, "Request deletion")
 
     @override_flag("domain_deletion", active=True)
     def test_if_acknowledged_is_not_checked_error_resp(self):
@@ -3339,6 +3341,18 @@ class TestDomainDeletion(TestWithUser):
             message,
             "Check the box if you understand that your domain will be deleted within 7 days of " "making this request.",
         )
+
+    @override_flag("domain_deletion", active=True)
+    def test_if_acknowledged_is_not_checked_error_resp_dns_needed(self):
+        """
+        * Domain is in dns needed state
+        * We have domain deletion waffle turned on
+        * if acknowlege is not checked, it should throw an error
+        """
+        self.client.force_login(self.user)
+
+        message = self.client.post(reverse("domain-delete", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+        self.assertContains(message, "Check the box if you understand that your domain will be deleted.")
 
     @override_flag("domain_deletion", active=True)
     def test_domain_post_successful(self):
@@ -3417,6 +3431,41 @@ class TestDomainDeletion(TestWithUser):
 
         self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
         self.assertContains(json_response, "On Hold")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_state_dns_needed_shows_diff_text(self):
+        """
+        Domain State in DNS NEEDED
+        The text for the domain delete page should not indicate the seven days hold
+        It should show that the domain will delete
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("domain-delete", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+        self.assertNotContains(
+            response,
+            "Once you request to delete this domain, it will be placed “on hold” for seven days before deletion",
+        )
+        self.assertNotContains(response, "A domain manager can cancel the deletion request by emailing help@get.gov.")
+        self.assertNotContains(response, "The domain will be placed on hold for seven days.")
+        self.assertContains(response, "Yes, delete")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_dns_needed_post_successful(self):
+        """
+        * Domain State in DNS NEEDED
+        * Posting to the endpoint with a state of DNS Needed
+        * Should delete the Domain
+        """
+        self.client.force_login(self.user)
+        domain_id = self.dns_needed_not_expiring.id
+        self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain_id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        json_response = self.client.get("/get-domains-json/")
+        self.assertNotContains(json_response, self.dns_needed_not_expiring.name)
 
 
 class TestDomainDnsRecords(TestDomainOverview):
