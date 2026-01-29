@@ -973,9 +973,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                             {"status": "error", "message": "DNS nameservers not available"},
                             status=400,
                         )
-                    # post nameservers to registry
                     try:
-                            self.dns_host_service.register_nameservers(zone.name, nameservers)
+                        self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
