@@ -2,7 +2,7 @@
 <template>
     <!-- Populate table columns when creating first DNS record row  -->
     {% if counter == 1 %}
-    <table hx-swap-oob="beforeend:#dnsrecords-table">
+    <table hx-swap-oob="afterbegin:#dnsrecords-table">
         <caption class="sr-only">Your DNS records</caption>
         <thead>
             <tr>
@@ -15,7 +15,7 @@
         </thead>
         <tbody id="dnsrecords-table-body">
     {% else %}
-    <tbody id="dnsrecords-table-body" hx-swap-oob="beforeend:#dnsrecords-table-body">
+    <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
     {% endif %}
         <tr id="dnsrecord-row_{{counter}}" >
             <td data-label="Type">
