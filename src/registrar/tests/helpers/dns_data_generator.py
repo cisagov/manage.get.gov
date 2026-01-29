@@ -3,6 +3,7 @@ import logging
 from django.db import IntegrityError
 from registrar.models import (
     Domain,
+    DomainInformation,
     DnsAccount,
     VendorDnsAccount,
     DnsVendor,
@@ -19,11 +20,12 @@ from registrar.services.utility.dns_helper import make_dns_account_name
 logger = logging.getLogger(__name__)
 
 
-def create_domain(**kwargs):
+def create_domain(user, **kwargs):
     """Generate a domain object"""
     domain_name = kwargs.get("domain_name", "example.gov")
     try:
         domain = Domain.objects.create(name=domain_name)
+        DomainInformation.objects.get_or_create(requester=user, domain=domain)
         return domain
     except IntegrityError as e:
         logger.error(
@@ -73,6 +75,7 @@ def create_dns_zone(domain, account, **kwargs):
     default_datetime = datetime(2026, 1, 19, 12, 0, 0)
     x_created_at = kwargs.get("zone_x_created_at", default_datetime)
     x_updated_at = kwargs.get("zone_x_updated_at", default_datetime)
+    print(nameservers)
     try:
         dns_zone = DnsZone.objects.create(
             domain=domain,
@@ -102,9 +105,9 @@ def create_dns_zone(domain, account, **kwargs):
     return dns_zone
 
 
-def create_initial_dns_setup(domain=None, **kwargs):
+def create_initial_dns_setup(user, domain=None, **kwargs):
     """Generate a domain, account objects and zone object and their links"""
-    domain = domain or create_domain()
+    domain = domain or create_domain(user)
     dns_account = kwargs.get("dns_account", create_dns_account(domain))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
 

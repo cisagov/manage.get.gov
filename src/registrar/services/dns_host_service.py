@@ -248,12 +248,10 @@ class DnsHostService:
         x_zone_id = zone_data["id"]
         zone_name = zone_data["name"]
         zone_account_name = zone_data["account"]["name"]
-
-        # Check for vanity nameservers 
-        nameservers = zone_data["vanity_name_servers"]
-        if len(nameservers) == 0:
+        # Check for vanity nameservers
+        nameservers = zone_data.get("vanity_name_servers")
+        if nameservers and len(nameservers) == 0:
             nameservers = zone_data["name_servers"]
-
 
         # TODO: handle transaction failure
         try:

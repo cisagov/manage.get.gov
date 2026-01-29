@@ -62,7 +62,7 @@ class TestDnsHostService(TestCase):
                 "domain_name": "exists.gov",
                 "db_account_id": None,
                 "cf_account_data": {"id": "12345", "name": "test", "created_on": "2024-01-01 00:00:00+00:00"},
-                "expected_account_id": "12345
+                "expected_account_id": "12345",
             },
             # Case C: Database and CF empty
             {
@@ -280,7 +280,7 @@ class TestDnsHostServiceDB(TestCase):
                     "name": self.vendor_account_data["result"].get("name"),
                 },
                 "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
-                "vanity_name_servers": ["mosaic.gov", "plaid.gov"]
+                "vanity_name_servers": ["mosaic.gov", "plaid.gov"],
             }
         }
 
@@ -658,7 +658,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
-    
+
     def test_save_db_vanity_name_servers(self):
         # Create domain object
         domain_name = "dns-test.gov"
