@@ -18,7 +18,6 @@ from registrar.models import (
     UserGroup
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.tests.common import create_user
 
 logger = logging.getLogger(__name__)
 
