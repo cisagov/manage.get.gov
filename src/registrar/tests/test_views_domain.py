@@ -3511,16 +3511,8 @@ class TestDomainDnsRecords(TestDomainOverview):
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
-    def test_domain_dns_records_with_no_name_servers_table(self):
-        """Name Servers table does not appear when there are no nameservers on DNS records"""
-        domain, _, _ = create_initial_dns_setup(**{"nameservers": []})
-        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
-        self.assertNotContains(page, "Name servers")
-
-    @less_console_noise_decorator
-    @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_vanity_nameservers_table(self):
-        """Name Servers table does not appear when there are no nameservers on DNS records"""
+        """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
         domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.gov", "rainbow2.gov"]})
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")

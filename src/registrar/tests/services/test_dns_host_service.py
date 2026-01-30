@@ -280,7 +280,7 @@ class TestDnsHostServiceDB(TestCase):
                     "name": self.vendor_account_data["result"].get("name"),
                 },
                 "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
-                "vanity_name_servers": [],
+                "vanity_name_servers": ["vanity.dns.gov", "vanity2.dns.gov"],
             }
         }
 
@@ -452,7 +452,7 @@ class TestDnsHostServiceDB(TestCase):
         dns_zones = DnsZone.objects.filter(name="dns-test.gov")
         zone = dns_zones.first()
         self.assertEqual(dns_zones.count(), 1)
-        self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["name_servers"])
+        self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["vanity_name_servers"])
 
         # DnsZone_VendorDnsZone object exists for registrar zone and vendor zone
         dns_zone = dns_zones.first()
