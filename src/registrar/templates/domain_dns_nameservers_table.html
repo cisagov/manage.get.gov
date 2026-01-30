@@ -1,0 +1,20 @@
+   <!-- #TODO: Remove this conditional after there is a CTA for the analyst to set up DNS Hosting -->
+    {% if name_servers|length > 0 %}
+        <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+            <thead>
+                <tr>
+                    <th scope="col" role="columnheader">Name servers</th>
+                </tr>
+            </thead>
+            <tbody>
+              {% for name_server in name_servers%}
+                <tr>
+                    <td data-label="name servers">
+                        {{ name_server }}
+                    </td>
+                </tr>
+              {% endfor %}
+
+            </tbody>
+    </table>
+    {% endif %}
