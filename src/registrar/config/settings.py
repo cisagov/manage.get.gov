@@ -701,12 +701,12 @@ LOGGING = {
         # DB info
         "django.db.backends": {
             "handlers": django_handlers,
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "django.db.backends.schema": {
             "handlers": django_handlers,
-            "level": "WARNING",
+            "level": "DEBUG",
             "propagate": False,
         },
     },
