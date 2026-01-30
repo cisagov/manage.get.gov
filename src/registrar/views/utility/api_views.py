@@ -1,7 +1,16 @@
 import logging
+from django.contrib.messages import get_messages as django_get_messages
+from django.shortcuts import render
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
-from registrar.decorators import IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST, grant_access
+from registrar.decorators import (
+    IS_CISA_ANALYST,
+    IS_FULL_ACCESS,
+    IS_OMB_ANALYST,
+    IS_STAFF,
+    IS_DOMAIN_MANAGER,
+    grant_access,
+)
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
 from registrar.utility.admin_helpers import get_action_needed_reason_default_email, get_rejection_reason_default_email
 from registrar.models.portfolio import Portfolio
@@ -157,3 +166,10 @@ def get_rejection_email_for_user_json(request):
     domain_request = DomainRequest.objects.filter(id=domain_request_id).first()
     email = get_rejection_reason_default_email(domain_request, reason)
     return JsonResponse({"email": email}, status=200)
+
+
+@grant_access(IS_STAFF, IS_DOMAIN_MANAGER)
+def get_alert_messages(request):
+    """Serve all Django messages."""
+    messages = django_get_messages(request)
+    return render(request, "includes/form_messages.html", {"messages": messages})
