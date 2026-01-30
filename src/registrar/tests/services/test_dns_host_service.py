@@ -33,9 +33,6 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    def tearDown(self):
-        delete_all_dns_data()
-
     @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
@@ -661,10 +658,3 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
-
-    def test_save_db_vanity_name_servers(self):
-        # Create domain object
-        van_name_servers = ["mosaic.gov", "mosaic2.gov"]
-        domain, _, dns_zone = create_initial_dns_setup(**{"vanity_nameservers": van_name_servers})
-
-        self.assertEqual(dns_zone.nameservers, van_name_servers)

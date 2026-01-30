@@ -15,11 +15,12 @@ from registrar.models import (
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
     User,
-    UserGroup
+    UserGroup,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 logger = logging.getLogger(__name__)
+
 
 def get_user():
     user, created = User.objects.get_or_create(
@@ -28,19 +29,17 @@ def get_user():
     )
     if created:
         group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
-        user.set_password("apw")
         user.groups.set([group])
         user.save()
-    
-    return user
 
+    return user
 
 
 def create_domain(**kwargs):
     """Generate a domain object"""
     domain_name = kwargs.get("domain_name", "example.gov")
     dns_host_user = get_user()
- 
+
     try:
         domain = Domain.objects.create(name=domain_name)
         DomainInformation.objects.get_or_create(requester=dns_host_user, domain=domain)

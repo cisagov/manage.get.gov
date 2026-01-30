@@ -172,9 +172,10 @@
     {% endif %}
     {% if name_servers|length > 0 %}
         <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
-        <tr>
             <thead>
-                <th scope="col" role="columnheader">Name Servers</th>
+                <tr>
+                    <th scope="col" role="columnheader">Name servers</th>
+                </tr>
             </thead>
             <tbody>
               {% for name_server in name_servers%}
@@ -186,7 +187,6 @@
               {% endfor %}
 
             </tbody>
-        </tr>
         </table>
     {% endif %}
 {% endblock %}  {# domain_content #}
