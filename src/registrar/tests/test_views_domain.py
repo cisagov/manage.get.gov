@@ -3505,7 +3505,7 @@ class TestDomainDnsRecords(TestDomainOverview):
         domain, _, dns_zone = create_initial_dns_setup()
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
-        self.assertContains(page, "Name Servers")
+        self.assertContains(page, "Name servers")
         self.assertContains(page, "192.168.1.1")
         self.assertContains(page, "ex1.dns.gov")
 
