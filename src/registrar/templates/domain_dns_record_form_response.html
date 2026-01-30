@@ -21,8 +21,34 @@
     </tbody>
     {% if counter == 1%}
     </table>
+
+
     {% endif %}
 </template>
+
+  <template>
+    {% if counter == 1 %}
+        <table hx-swap-oob="afterbegin" id="dns-nameservers-table">
+            <thead>
+                <tr>
+                    <th scope="col" role="columnheader">Name servers</th>
+                </tr>
+            </thead>
+            <tbody>
+        
+              {% for nameserver in nameservers%}
+                <tr>
+                    <td data-label="name servers">
+                        {{ nameserver }}
+                    </td>
+                </tr>
+              {% endfor %}
+
+            </tbody> 
+        </table>
+    {% endif %}
+    </template>
+
 {% endif %}
 
 {% include "domain_dns_record_form_content.html" with form=form %}
