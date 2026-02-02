@@ -63,11 +63,11 @@ def validate_dns_name(name: str) -> None:
     """
 
     # Because blank=False on the model for the field 'name', empty string never reaches the validator.
-    # I'm leaving this code in here in case we want this custom messaging. Otherwise, the error 
+    # I'm leaving this code in here in case we want this custom messaging. Otherwise, the error
     # message will read, "This field is required."
     if not name:
         raise ValidationError("Enter the name of this record.")
-    
+
     if name == "@":
         return
 

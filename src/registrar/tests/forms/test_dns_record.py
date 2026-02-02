@@ -1,5 +1,4 @@
 from django.test import TestCase
-from django.core.exceptions import ValidationError
 
 from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
@@ -52,8 +51,6 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         data = self.valid_form_data_for_a_record()
         form = self.make_form(data)
         self.assertTrue(form.is_valid())
-
-        print("form.errors===", form.errors)
 
     def test_blank_dns_name_throws_error(self):
         data = self.valid_form_data_for_a_record()
