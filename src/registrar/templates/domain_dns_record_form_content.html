@@ -1,0 +1,37 @@
+{% load static field_helpers url_helpers %}
+
+{% csrf_token %}
+<h2>Add record</h2>
+
+<div class="grid-row grid-gap">
+    <div class="grid-col-3">
+        {% input_with_errors form.type_field %}        
+    </div>
+</div>
+
+<div x-cloak x-show="recordType">
+    {% input_with_errors form.name %}    
+    <div class="grid-row grid-gap flex-align-end">
+        <div class="grid-col-9">
+            {% input_with_errors form.content %}
+        </div>
+        <div class="grid-col-3">
+            {% input_with_errors form.ttl %}        
+        </div>
+    </div>
+
+    {% input_with_errors form.comment %}
+
+    <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="show_form = false"
+    >
+        Cancel
+    </button>
+    <button
+            class="usa-button"
+        >
+            Save
+    </button>
+</div>

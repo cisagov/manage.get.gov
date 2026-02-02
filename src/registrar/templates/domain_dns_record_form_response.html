@@ -1,0 +1,28 @@
+{% if dns_record %}
+<template>
+    <!-- Populate table columns when creating first DNS record row  -->
+    {% if counter == 1 %}
+    <table hx-swap-oob="afterbegin:#dnsrecords-table">
+        <caption class="sr-only">Your DNS records</caption>
+        <thead>
+            <tr>
+            <th scope="col" role="columnheader">Type</th>
+            <th scope="col" role="columnheader">Name</th>
+            <th scope="col" role="columnheader">Content</th>
+            <th scope="col" role="columnheader">TTL</th>
+            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+            </tr>
+        </thead>
+        <tbody id="dnsrecords-table-body">
+    {% else %}
+    <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
+    {% endif %}
+        {% include "domain_dns_record_row.html" with counter=counter dns_record=dns_record %}
+    </tbody>
+    {% if counter == 1%}
+    </table>
+    {% endif %}
+</template>
+{% endif %}
+
+{% include "domain_dns_record_form_content.html" with form=form %}

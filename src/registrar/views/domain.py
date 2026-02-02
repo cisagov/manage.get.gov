@@ -1,4 +1,5 @@
 from datetime import date
+from itertools import chain
 import json
 from httpx import Client
 import logging
@@ -434,6 +435,15 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     f"  Error: {err}",
                     exc_info=True,
                 )
+
+    def get_form_errors(self, form):
+        """
+        Queue all errors from a form submission into Django message queue.
+        Used mainly to prompt form errors before a page refresh.
+        """
+        form_errors_dict = dict(form.errors)
+        errors = list(chain(*form_errors_dict.values()))
+        return errors
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
@@ -883,13 +893,19 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                zone = DnsZone.objects.filter(name=domain_name)
-                if zone:
-                    zone_name = domain_name
-                    # post nameservers to registry
+                zones = DnsZone.objects.filter(name=domain_name)
+                if zones.exists():
+                    zone = zones.first()
+                    nameservers = zone.nameservers
+
+                    if not nameservers:
+                        logger.error(f"No nameservers found in DB for domain {domain_name}")
+                        return JsonResponse(
+                            {"status": "error", "message": "DNS nameservers not available"},
+                            status=400,
+                        )
                     try:
-                        if zone.nameservers:
-                            self.dns_host_service.register_nameservers(zone_name, zone.nameservers)
+                        self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
@@ -915,22 +931,19 @@ class DomainDNSRecordsView(DomainFormBaseView):
             row_index = len(self.get_context_data()["dns_records"])
             return TemplateResponse(
                 request,
-                "domain_dns_record_row_response.html",
+                "domain_dns_record_form_response.html",
                 {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )
         else:
-            form_errors = dict(form.errors)
-            if form_errors:
-                for error_key in form_errors:
-                    errors = form_errors[error_key]
-                    for error in errors:
-                        messages.error(request, f"{error}")
+            errors = self.get_form_errors(form)
+            for error in errors:
+                messages.error(request, f"{error}")
             self.form_invalid(form)
             return TemplateResponse(
                 request,
-                "domain_dns_record_row_response.html",
+                "domain_dns_record_form_response.html",
                 {"dns_record": None, "domain": self.object, "form": form},
                 headers={
                     "HX-TRIGGER": "messagesRefresh",
