@@ -50,7 +50,9 @@
       {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
       {% with attr_validate="domain" add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
         {% for form in forms.1.forms %}
-        <div class="repeatable-form padding-y-1">
+        <!-- <div class="repeatable-form padding-y-1 "> -->
+          <div class="repeatable-form padding-y-1 {% if not form.alternative_domain.value %}display-none{% endif %}">
+
           <fieldset class="usa-fieldset">
             <!-- legend has to be direct child of fieldset to be valid html, in div would break it - need for labelling/sr -->
             <legend class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}"> Alternative domain {{ forloop.counter }}</legend>

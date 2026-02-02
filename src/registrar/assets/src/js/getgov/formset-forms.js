@@ -181,6 +181,7 @@ export function initFormsetsForms() {
     container = document.querySelector("#other-employees");
     formIdentifier = "other_contacts"
   } else if (isDotgovDomain) {
+    formLabel = "Alternative domain";
     formIdentifier = "dotgov_domain"
   }
   let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
@@ -207,6 +208,15 @@ export function initFormsetsForms() {
       // For the eample on Nameservers
       let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
+      // Make sure it's counting visible forms and remove display-none to make new form visible
+      if (isDotgovDomain) {
+        let visibleForms = document.querySelectorAll(`.repeatable-form:not(.display-none):not([style*="display: none"])`).length;
+        formNum = visibleForms + 1;
+        newForm.classList.remove('display-none'); 
+      } else {
+        formNum++;
+      }
+
       formNum++;
 
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
@@ -230,6 +240,11 @@ export function initFormsetsForms() {
         let deleteButton = newForm.querySelector('button');
         deleteButton.setAttribute("aria-labelledby", header.id);
         deleteButton.setAttribute("aria-describedby", deleteDescription.id);
+      } else if (isDotgovDomain) {
+        // Update title text for visible forms
+        let visibleForms = document.querySelectorAll(`.repeatable-form:not(.display-none):not([style*="display: none"])`).length;
+        let newFormCount = visibleForms + 1;
+        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Alternative domain ${newFormCount}`);
       } else {
         newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
       }
