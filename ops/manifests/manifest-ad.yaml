@@ -28,8 +28,8 @@ applications:
     # Flag to disable/enable features in prod environments
     IS_PRODUCTION: False
     # VERSION INFO 
-    GIT_BRANCH: ((GIT_BRANCH:default=))
-    GIT_COMMIT_SHA: ((GIT_COMMIT_SHA:default=))
+    GIT_BRANCH: ((GIT_BRANCH:default=''))
+    GIT_COMMIT_SHA: ((GIT_COMMIT_SHA:default=''))
   routes:
     - route: getgov-ad.app.cloud.gov
   services:
