@@ -26,33 +26,6 @@
     {% endif %}
 </template>
 
-
-    {% if counter == 1 %}
-        <div id="dns-nameservers-container" hx-swap-oob="true">
-          <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
-             <caption class="sr-only"> Name Servers Table</caption>
-            <thead>
-                <tr>
-                    <th scope="col" role="columnheader">Name servers</th>
-                </tr>
-            </thead>
-            <tbody>
-        
-              {% for nameserver in nameservers%}
-                <tr>
-                    <td data-label="name servers">
-                        {{ nameserver }}
-                    </td>
-                </tr>
-              {% endfor %}
-
-            </tbody> 
-        </table>
-        </div>
-    {% endif %}
-    
-
-
 {% endif %}
 
 {% include "domain_dns_record_form_content.html" with form=form %}
