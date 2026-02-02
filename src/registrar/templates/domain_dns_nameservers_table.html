@@ -1,6 +1,7 @@
-   <!-- #TODO: Remove this conditional after there is a CTA for the analyst to set up DNS Hosting -->
-    
-        <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dns-nameservers-table">
+<div id="dns-nameservers-container">
+    {% if nameservers %}
+    <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+        <caption class="sr-only"> Name Servers Table</caption>
           <thead>
                 <tr>
                     <th scope="col" role="columnheader">Name servers</th>
@@ -17,5 +18,8 @@
 
             </tbody>
          
-        </table>
-   
+    </table>
+    {% endif %}
+
+</div>
+

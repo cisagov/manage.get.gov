@@ -26,9 +26,11 @@
     {% endif %}
 </template>
 
-  <template>
+
     {% if counter == 1 %}
-        <table hx-swap-oob="afterbegin" id="dns-nameservers-table">
+        <div id="dns-nameservers-container" hx-swap-oob="true">
+          <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked">
+             <caption class="sr-only"> Name Servers Table</caption>
             <thead>
                 <tr>
                     <th scope="col" role="columnheader">Name servers</th>
@@ -46,8 +48,10 @@
 
             </tbody> 
         </table>
+        </div>
     {% endif %}
-    </template>
+    
+
 
 {% endif %}
 
