@@ -1,6 +1,21 @@
    <!-- #TODO: Remove this conditional after there is a CTA for the analyst to set up DNS Hosting -->
     
         <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dns-nameservers-table">
+          <thead>
+                <tr>
+                    <th scope="col" role="columnheader">Name servers</th>
+                </tr>
+            </thead>
+            <tbody>
+              {% for nameserver in nameservers%}
+                <tr>
+                    <td data-label="name servers">
+                        {{ nameserver }}
+                    </td>
+                </tr>
+              {% endfor %}
+
+            </tbody>
          
         </table>
    

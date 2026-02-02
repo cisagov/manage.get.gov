@@ -1011,7 +1011,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index, "nameservers": nameservers},
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form,
+                    "counter": row_index,
+                    "nameservers": nameservers,
+                },
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )
