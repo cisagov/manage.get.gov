@@ -1,4 +1,6 @@
 from datetime import date
+from itertools import chain
+import json
 from httpx import Client
 import logging
 from contextvars import ContextVar
@@ -7,6 +9,7 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
@@ -433,6 +436,15 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     f"  Error: {err}",
                     exc_info=True,
                 )
+
+    def get_form_errors(self, form):
+        """
+        Queue all errors from a form submission into Django message queue.
+        Used mainly to prompt form errors before a page refresh.
+        """
+        form_errors_dict = dict(form.errors)
+        errors = list(chain(*form_errors_dict.values()))
+        return errors
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
@@ -880,7 +892,7 @@ class DomainDNSRecordForm(forms.Form):
 
 
 @grant_access(IS_STAFF)
-class DomainDNSRecordView(DomainFormBaseView):
+class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
@@ -928,6 +940,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
+        self._get_domain(request)
         errors = []
         if form.is_valid():
             try:
@@ -943,7 +956,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
-
                 # TODO: Delete this dns setup and registering nameservers code after we have determined
                 # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
                 # creation on submission of the DNS Record form.
@@ -959,7 +971,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-
                 zones = DnsZone.objects.filter(name=domain_name)
                 if zones.exists():
                     zone = zones.first()
@@ -971,7 +982,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                             {"status": "error", "message": "DNS nameservers not available"},
                             status=400,
                         )
-
                     try:
                         self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
@@ -994,7 +1004,29 @@ class DomainDNSRecordView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-        return super().post(request)
+            new_form = DomainDNSRecordForm()
+            hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
+            row_index = len(self.get_context_data()["dns_records"])
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
+            )
+        else:
+            errors = self.get_form_errors(form)
+            for error in errors:
+                messages.error(request, f"{error}")
+            self.form_invalid(form)
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {"dns_record": None, "domain": self.object, "form": form},
+                headers={
+                    "HX-TRIGGER": "messagesRefresh",
+                },
+            )
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
