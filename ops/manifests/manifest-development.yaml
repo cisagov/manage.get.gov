@@ -27,6 +27,9 @@ applications:
     GETGOV_PUBLIC_SITE_URL: https://get.gov
     # Flag to disable/enable features in prod environments
     IS_PRODUCTION: False
+    # VERSION INFO 
+    GIT_BRANCH: "Not Found"
+    GIT_COMMIT_SHA: "Not Found"
   routes:
     - route: getgov-development.app.cloud.gov
   services:
