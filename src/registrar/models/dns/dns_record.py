@@ -40,13 +40,10 @@ class DnsRecord(TimeStampedModel):
             errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
 
         # DNS Record name validation. This will apply for A, AAAA, and CNAME record types.
-        if not self.name:
-            errors["name"] = "Enter the name of this record."    
-        else:
-            try:
-                validate_dns_name(self.name)
-            except ValidationError as e:
-                errors["name"] = e.messages
+        try:
+            validate_dns_name(self.name)
+        except ValidationError as e:
+            errors["name"] = e.messages
 
         # A record-specific validation
         if self.type == self.RecordTypes.A:
@@ -57,6 +54,6 @@ class DnsRecord(TimeStampedModel):
                     validate_ipv4_address(self.content)
                 except ValidationError as e:
                     errors["content"] = e.messages
-        
+
         if errors:
             raise ValidationError(errors)

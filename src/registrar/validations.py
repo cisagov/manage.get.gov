@@ -54,7 +54,7 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
 
 
 # For use on DNS record names
-DNS_NAME_FIELD_REGEX = re.compile(r"^[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$")
+DNS_NAME_FIELD_REGEX = re.compile(r"^[a-zA-Z0-9.-]+$")
 
 
 def validate_dns_name(name: str) -> None:
@@ -62,22 +62,23 @@ def validate_dns_name(name: str) -> None:
     Validates a DNS record name (single label, excluding the root '@')
     """
 
+    # Because blank=False on the model for the field 'name', empty string never reaches the validator.
+    # I'm leaving this code in here in case we want this custom messaging. Otherwise, the error 
+    # message will read, "This field is required."
+    if not name:
+        raise ValidationError("Enter the name of this record.")
+    
     if name == "@":
         return
 
-    errors = {}
+    if " " in name:
+        raise ValidationError("Enter the DNS name without any spaces.")
+
+    if not DNS_NAME_FIELD_REGEX.fullmatch(name):
+        raise ValidationError("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.")
 
     if len(name) > DOMAIN_LABEL:
         raise ValidationError("Name must be no more than 63 characters.")
 
-    if not name[0].isalpha():
-        errors["first_char"] = "Enter a name that begins with a letter and ends with a letter or digit."
-
-    if not name[-1].isalnum():
-        errors["last_char"] = "Enter a name that begins with a letter and ends with a letter or digit."
-
-    if not DNS_NAME_FIELD_REGEX.match(name):
-        errors["regex"] = "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol."
-    
-    if errors:
-        raise ValidationError(errors)
+    if not name[0].isalpha() or not name[-1].isalnum():
+        raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
