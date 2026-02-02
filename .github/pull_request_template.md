@@ -97,7 +97,7 @@ Resolves #00
 #### Validated user-facing changes as a designer
 
 - [ ] Checked keyboard navigability
-- [ ] Test [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md) using screen reader (such as NVDA with Chrome or Voiceover with Safari):
+- [ ] Review [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari):
   - [ ] Tested general usability
   - [ ] Page structure
   - [ ] Links and buttons
