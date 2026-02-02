@@ -22,6 +22,7 @@ django-cache-url==3.4.5
 django-cors-headers==4.9.0; python_version >= '3.9'
 django-csp==4.0
 django-fsm==2.8.1
+django-htmx==1.27.0; python_version >= '3.10'
 django-import-export==4.3.14; python_version >= '3.9'
 django-login-required-middleware==0.9.0
 django-phonenumber-field[phonenumberslite]==8.4.0; python_version >= '3.10'
