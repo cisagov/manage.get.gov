@@ -256,7 +256,8 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
 
-        if self.is_enrolled_in_dns_hosting:
+        # Prevent enrolling legacy domains into DNS hosting
+        if self.is_enrolled_in_dns_hosting and self._is_legacy():
             if self._is_legacy():
                 raise ValidationError(
                     "DNS hosting cannot be enabled for legacy domains without a portfolio."
