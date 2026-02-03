@@ -3183,15 +3183,13 @@ class TestAnalystDelete(MockEppLib):
         # deleted should be null
         self.assertEqual(self.domain.deleted, None)
 
+
 class TestDomainDNSHostingEnrollment(MockEppLib):
     """Rule: DNS hosting enrollment requires a portfolio"""
-    
+
     def setUp(self):
         super().setUp()
-        self.user = User.objects.create(
-            username="test_user",
-            email="test@example.gov"
-        )
+        self.user = User.objects.create(username="test_user", email="test@example.gov")
 
     @less_console_noise_decorator
     def test_legacy_domain_cannot_enroll_in_dns_hosting(self):
@@ -3205,22 +3203,17 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         # Create a domain with domain_info but no portfolio (legacy domain)
         domain = Domain.objects.create(name="legacy.gov")
         domain_info = DomainInformation.objects.create(
-            domain=domain,
-            requester=self.user,
-            portfolio=None  # No portfolio = legacy domain
+            domain=domain, requester=self.user, portfolio=None  # No portfolio = legacy domain
         )
 
         # Attempt to enable DNS hosting should fail
         domain.is_enrolled_in_dns_hosting = True
-        
+
         with self.assertRaises(ValidationError) as context:
             domain.save()
-        
-        self.assertIn(
-            "DNS hosting cannot be enabled for legacy domains",
-            str(context.exception)
-        )
-        
+
+        self.assertIn("DNS hosting cannot be enabled for legacy domains", str(context.exception))
+
         # Verify domain is still not enrolled (re-fetch instead of refresh)
         domain = Domain.objects.get(name="legacy.gov")
         self.assertFalse(domain.is_enrolled_in_dns_hosting)
@@ -3235,23 +3228,16 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
             And no error is raised
         """
         from registrar.models import Portfolio
-        
+
         # Create a portfolio and domain connected to it
-        portfolio = Portfolio.objects.create(
-            requester=self.user,
-            organization_name="Test Org"
-        )
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")
         domain = Domain.objects.create(name="enterprise.gov")
-        domain_info = DomainInformation.objects.create(
-            domain=domain,
-            requester=self.user,
-            portfolio=portfolio
-        )
+        domain_info = DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=portfolio)
 
         # Enable DNS hosting should succeed
         domain.is_enrolled_in_dns_hosting = True
         domain.save()  # Should not raise
-        
+
         # Verify domain is enrolled (re-fetch instead of refresh)
         domain = Domain.objects.get(name="enterprise.gov")
         self.assertTrue(domain.is_enrolled_in_dns_hosting)
@@ -3265,27 +3251,20 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
             Then the changes are saved successfully
         """
         from registrar.models import Portfolio
-        
-        portfolio = Portfolio.objects.create(
-            requester=self.user,
-            organization_name="Test Org"
-        )
+
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")
         domain = Domain.objects.create(name="toggle.gov")
-        domain_info = DomainInformation.objects.create(
-            domain=domain,
-            requester=self.user,
-            portfolio=portfolio
-        )
+        domain_info = DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=portfolio)
 
         # Enable DNS hosting
         domain.is_enrolled_in_dns_hosting = True
         domain.save()
         self.assertTrue(domain.is_enrolled_in_dns_hosting)
-        
+
         # Disable DNS hosting
         domain.is_enrolled_in_dns_hosting = False
         domain.save()
-        
+
         # Verify it's disabled (re-fetch instead of refresh)
         domain = Domain.objects.get(name="toggle.gov")
         self.assertFalse(domain.is_enrolled_in_dns_hosting)
@@ -3300,15 +3279,13 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         """
         domain = Domain.objects.create(name="legacy-ok.gov")
         domain_info = DomainInformation.objects.create(
-            domain=domain,
-            requester=self.user,
-            portfolio=None  # Legacy domain
+            domain=domain, requester=self.user, portfolio=None  # Legacy domain
         )
 
         # Should be able to save with DNS hosting disabled
         domain.is_enrolled_in_dns_hosting = False
         domain.save()  # Should not raise
-        
+
         # Verify it stayed disabled (re-fetch instead of refresh)
         domain = Domain.objects.get(name="legacy-ok.gov")
         self.assertFalse(domain.is_enrolled_in_dns_hosting)
@@ -3325,7 +3302,7 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         with is_enrolled_in_dns_hosting=False.
         """
         domain = Domain.objects.create(name="newdomain.gov")
-        
+
         self.assertFalse(domain.is_enrolled_in_dns_hosting)
 
     @less_console_noise_decorator
@@ -3340,25 +3317,16 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         if a domain can enroll in DNS hosting.
         """
         from registrar.models import Portfolio
-        
+
         # Legacy domain (no portfolio)
         legacy_domain = Domain.objects.create(name="legacy.gov")
-        legacy_info = DomainInformation.objects.create(
-            domain=legacy_domain,
-            requester=self.user,
-            portfolio=None
-        )
+        legacy_info = DomainInformation.objects.create(domain=legacy_domain, requester=self.user, portfolio=None)
         self.assertTrue(legacy_domain._is_legacy())
-        
+
         # Portfolio domain
-        portfolio = Portfolio.objects.create(
-            requester=self.user,  # Added required field
-            organization_name="Test Org"
-        )
+        portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")  # Added required field
         portfolio_domain = Domain.objects.create(name="portfolio.gov")
         portfolio_info = DomainInformation.objects.create(
-            domain=portfolio_domain,
-            requester=self.user,
-            portfolio=portfolio
+            domain=portfolio_domain, requester=self.user, portfolio=portfolio
         )
         self.assertFalse(portfolio_domain._is_legacy())

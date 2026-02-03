@@ -259,10 +259,8 @@ class Domain(TimeStampedModel, DomainHelper):
         # Prevent enrolling legacy domains into DNS hosting
         if self.is_enrolled_in_dns_hosting and self._is_legacy():
             if self._is_legacy():
-                raise ValidationError(
-                    "DNS hosting cannot be enabled for legacy domains without a portfolio."
-                )
-                
+                raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
+
         super().save(force_insert, force_update, using, update_fields)
         self._original_updated_at = self.updated_at
 
@@ -1041,9 +1039,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _is_legacy(self):
         """Check if domain is a legacy domain."""
-        if not hasattr(self, 'domain_info') or self.domain_info is None:
+        if not hasattr(self, "domain_info") or self.domain_info is None:
             return False
-        
+
         return self.domain_info.portfolio_id is None
 
     @security_contact.setter  # type: ignore
@@ -1360,12 +1358,10 @@ class Domain(TimeStampedModel, DomainHelper):
         blank=True,
         help_text="Record of the last change event for ds data",
     )
-    
+
     is_enrolled_in_dns_hosting = models.BooleanField(
         default=False,
-        help_text=(
-            "Indicates whether this domain is enrolled in internal DNS hosting. "
-        ),
+        help_text=("Indicates whether this domain is enrolled in internal DNS hosting. "),
     )
 
     def isActive(self):
