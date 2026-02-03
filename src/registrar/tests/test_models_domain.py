@@ -864,10 +864,18 @@ class TestRegistrantContacts(MockEppLib):
             And the registrant is the admin on a domain
         """
         super().setUp()
+        self.requester, _ = User.objects.get_or_create(
+            username="requester",
+            defaults={"email": "requester@example.com"},
+        )
         # Creates a domain with no contact associated to it
         self.domain, _ = Domain.objects.get_or_create(name="security.gov")
         # Creates a domain with an associated contact
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        # DomainInformation is required
+        DomainInformation.objects.get_or_create(domain=self.domain, defaults={"requester": self.requester})
+        DomainInformation.objects.get_or_create(domain=self.domain_contact, defaults={"requester": self.requester})
         DF = common.DiscloseField
         excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
