@@ -3202,7 +3202,7 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         """
         # Create a domain with domain_info but no portfolio (legacy domain)
         domain = Domain.objects.create(name="legacy.gov")
-        domain_info = DomainInformation.objects.create(
+        DomainInformation.objects.create(
             domain=domain, requester=self.user, portfolio=None  # No portfolio = legacy domain
         )
 
@@ -3232,7 +3232,7 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         # Create a portfolio and domain connected to it
         portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")
         domain = Domain.objects.create(name="enterprise.gov")
-        domain_info = DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=portfolio)
+        DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=portfolio)
 
         # Enable DNS hosting should succeed
         domain.is_enrolled_in_dns_hosting = True
@@ -3254,7 +3254,7 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
 
         portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")
         domain = Domain.objects.create(name="toggle.gov")
-        domain_info = DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=portfolio)
+        DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=portfolio)
 
         # Enable DNS hosting
         domain.is_enrolled_in_dns_hosting = True
@@ -3278,7 +3278,7 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
             Then the domain saves successfully
         """
         domain = Domain.objects.create(name="legacy-ok.gov")
-        domain_info = DomainInformation.objects.create(
+        DomainInformation.objects.create(
             domain=domain, requester=self.user, portfolio=None  # Legacy domain
         )
 
@@ -3320,13 +3320,13 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
 
         # Legacy domain (no portfolio)
         legacy_domain = Domain.objects.create(name="legacy.gov")
-        legacy_info = DomainInformation.objects.create(domain=legacy_domain, requester=self.user, portfolio=None)
+        DomainInformation.objects.create(domain=legacy_domain, requester=self.user, portfolio=None)
         self.assertTrue(legacy_domain._is_legacy())
 
         # Portfolio domain
         portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")  # Added required field
         portfolio_domain = Domain.objects.create(name="portfolio.gov")
-        portfolio_info = DomainInformation.objects.create(
+        DomainInformation.objects.create(
             domain=portfolio_domain, requester=self.user, portfolio=portfolio
         )
         self.assertFalse(portfolio_domain._is_legacy())
