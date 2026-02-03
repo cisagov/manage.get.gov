@@ -29,7 +29,6 @@ jobs:
         uses: actions/github-script@v6
         id: var
         with:
-          fetch-depth: 0
           script: |
             core.setOutput('environment', '${{ github.head_ref }}'.split("/")[0]);
   deploy:
