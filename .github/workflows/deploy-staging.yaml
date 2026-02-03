@@ -28,7 +28,7 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Deploy to cloud.gov sandbox
+      - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
         uses: cloud-gov/cg-cli-tools@main
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
