@@ -115,3 +115,17 @@ class CloudflareService:
         logger.info(f"Retrieved record {record_id} from {zone_id}: {resp}")
 
         return resp.json()
+
+    def update_dns_record(self, zone_id: str, record_id: str, record_data: dict[str, Any]):
+        appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
+        try:
+            resp = self.client.patch(appended_url, headers=self.headers, json=record_data)
+            resp.raise_for_status()
+            logger.info(f"Updated dns record for record {record_id} in zone {zone_id}.")
+        except RequestError as e:
+            logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
+            raise
+        except HTTPStatusError as e:
+            logger.error(f"Error {e.response.status_code} while creating dns record: {e}")
+            raise
+        return resp.json()
