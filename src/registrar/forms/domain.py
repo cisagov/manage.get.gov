@@ -788,15 +788,6 @@ class DomainDNSRecordForm(forms.ModelForm):
     class Meta:
         model = DnsRecord
         fields = ["name", "content", "ttl", "comment"]
-        widgets = {
-            "name": forms.TextInput(attrs={"class": "usa-input"}),
-            "comment": forms.Textarea(
-                attrs={
-                    "class": "usa-textarea usa-textarea--medium",
-                    "rows": 2,
-                }
-            ),
-        }
 
     type_field = forms.ChoiceField(
         label="Type",
