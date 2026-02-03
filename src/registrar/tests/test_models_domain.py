@@ -1183,6 +1183,7 @@ class TestRegistrantContacts(MockEppLib):
     def test_registrant_discloses_org_city_state_country_only(self):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="example.gov")
+            DomainInformation.objects.get_or_create(domain=domain, defaults={"requester": self.requester})
             registrant = domain.get_default_registrant_contact()
 
             disclose = domain._disclose_fields(registrant)

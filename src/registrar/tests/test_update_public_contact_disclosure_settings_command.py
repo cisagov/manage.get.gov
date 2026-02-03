@@ -19,7 +19,7 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
 
         self.contact = PublicContact.get_default_registrant()
         self.contact.domain = self.domain
-        self.contact.registry_id = "regContact12345678"
+        self.contact.registry_id = "regContact123456"
         self.contact.save(skip_epp_save=True)
 
     def test_dry_run_does_not_update_registry(self):
@@ -59,7 +59,8 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
 
         with self.subTest(contact_type="security_non_default_email"):
             security = self.domain.get_default_security_contact()
-            security.registry_id = "regIdentifa12345678"
+            # PublicContact.registry_id is constrained to max_length=16.
+            security.registry_id = "regIdentifa123456"
             security.email = "security@example.gov"
 
             security.save(skip_epp_save=True)
