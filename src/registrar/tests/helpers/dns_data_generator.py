@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 def get_user():
     user, created = User.objects.get_or_create(
-        username="dns_host_user",
+        username="dns_host_test_user",
         email="dns_test@dot.gov",
     )
 
