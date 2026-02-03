@@ -815,6 +815,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         label="Name",
         required=True,
         help_text="Use @ for root",
+        error_messages={"required": "Enter the name of this record."},
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
@@ -824,9 +825,10 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     content = forms.CharField(
         label="IPv4 Address",
-        required=False,  # requirement for data is enforced in model.clean() for A records
+        required=True,
         # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
         help_text="Example: 192.0.2.10",
+        error_messages={"required": "Enter a valid IPv4 address using numbers and periods."},
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",

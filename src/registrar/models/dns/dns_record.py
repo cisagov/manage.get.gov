@@ -46,14 +46,11 @@ class DnsRecord(TimeStampedModel):
             errors["name"] = e.messages
 
         # A record-specific validation
-        if self.type == self.RecordTypes.A:
-            if not self.content:
-                errors["content"] = ["IPv4 address is required."]
-            else:
-                try:
-                    validate_ipv4_address(self.content)
-                except ValidationError as e:
-                    errors["content"] = e.messages
+        if self.type == self.RecordTypes.A and self.content:
+            try:
+                validate_ipv4_address(self.content)
+            except ValidationError as e:
+                errors["content"] = e.messages
 
         if errors:
             raise ValidationError(errors)
