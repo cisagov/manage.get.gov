@@ -16,6 +16,7 @@ from registrar.models import (
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
     User,
+    DomainInformation,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
@@ -301,6 +302,7 @@ class TestDnsHostServiceDB(TestCase):
     def tearDown(self):
         delete_all_dns_data()
         User.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
     def test_find_existing_account_success(self):
         domain = create_domain(domain_name="democracy.gov")

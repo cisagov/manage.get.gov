@@ -3484,6 +3484,7 @@ class TestDomainDnsRecords(TestDomainOverview):
     def tearDown(self):
         delete_all_dns_data()
         User.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
     @less_console_noise_decorator
     def setUp(self):
@@ -3514,8 +3515,8 @@ class TestDomainDnsRecords(TestDomainOverview):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_vanity_nameservers_table(self):
         """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
-        domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.gov", "rainbow2.gov"]})
+        domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]})
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")
-        self.assertContains(page, "rainbow.gov")
+        self.assertContains(page, "rainbow.dns.gov")
         self.assertNotContains(page, "ex1.dns.gov")
