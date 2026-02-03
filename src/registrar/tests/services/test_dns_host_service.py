@@ -15,6 +15,7 @@ from registrar.models import (
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
+    User,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
