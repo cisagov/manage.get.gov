@@ -3483,6 +3483,7 @@ class TestDomainDnsRecords(TestDomainOverview):
 
     def tearDown(self):
         delete_all_dns_data()
+        User.objects.all().delete()
 
     @less_console_noise_decorator
     def setUp(self):

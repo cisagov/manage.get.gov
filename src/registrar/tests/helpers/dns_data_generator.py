@@ -15,9 +15,9 @@ from registrar.models import (
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
     User,
-    UserGroup,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.tests.common import create_test_user
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +27,6 @@ def get_user():
         username="dns_host_user",
         email="dns_test@dot.gov",
     )
-    if created:
-        group, _ = UserGroup.objects.get_or_create(name="cisa_analysts_group")
-        user.groups.set([group])
-        user.save()
 
     return user
 

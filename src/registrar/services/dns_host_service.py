@@ -253,7 +253,6 @@ class DnsHostService:
         # TODO: handle transaction failure
         try:
             with transaction.atomic():
-
                 vendor_dns_zone = VendorDnsZone.objects.create(
                     x_zone_id=x_zone_id,
                     x_created_at=zone_data["created_on"],
