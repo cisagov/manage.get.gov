@@ -77,11 +77,11 @@ Resolves #00
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
-- [ ] screen reader (such as NVDA with Chrome or Voiceover with Safari):
+- [ ] Review [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari):
   - [ ] Tested general usability
-  - [ ] landmarks
-  - [ ] page header structure
-  - [ ] links
+  - [ ] Page header structure
+  - [ ] Landmarks
+  - [ ] Links and buttons
 - [ ] Checked for errors or warnings with an a11y browser tool (such as ANDI or WAVE)
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
@@ -97,11 +97,11 @@ Resolves #00
 #### Validated user-facing changes as a designer
 
 - [ ] Checked keyboard navigability
-- [ ] Review [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari):
+- [ ] Screen reader (such as NVDA with Chrome or Voiceover with Safari):
   - [ ] Tested general usability
-  - [ ] Page structure
-  - [ ] Links and buttons
-  - [ ] Keyboard focus
+  - [ ] Page header structure
+  - [ ] Landmarks
+  - [ ] Links
 - [ ] Checked for errors or warnings with an a11y browser tool (such as ANDI or WAVE)
 - [ ] Tested with multiple browsers (check off which ones were used)
   - [ ] Chrome
