@@ -34,11 +34,11 @@ def get_user():
 def create_domain(**kwargs):
     """Generate a domain object"""
     domain_name = kwargs.get("domain_name", "example.gov")
-    dns_host_user = get_user()
+    user = get_user()
 
     try:
         domain = Domain.objects.create(name=domain_name)
-        DomainInformation.objects.get_or_create(requester=dns_host_user, domain=domain)
+        DomainInformation.objects.get_or_create(requester=user, domain=domain)
         return domain
     except IntegrityError as e:
         logger.error(
