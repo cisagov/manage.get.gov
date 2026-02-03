@@ -356,7 +356,7 @@ class DomainInformation(TimeStampedModel):
         - about_your_organization: Only for Special District or Interstate orgs
         """
 
-        old_org_type = self._original_generic_org_type
+        old_org_type = getattr(self, '_original_generic_org_type', None)
         new_org_type = self.generic_org_type
 
         # Only clear fields if the org type actually changed
