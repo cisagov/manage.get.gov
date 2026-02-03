@@ -60,7 +60,7 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
         with self.subTest(contact_type="security_non_default_email"):
             security = self.domain.get_default_security_contact()
             # PublicContact.registry_id is constrained to max_length=16.
-            security.registry_id = "regIdentifa123456"
+            security.registry_id = "regContact123456"
             security.email = "security@example.gov"
 
             security.save(skip_epp_save=True)
