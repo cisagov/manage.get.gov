@@ -3278,9 +3278,7 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
             Then the domain saves successfully
         """
         domain = Domain.objects.create(name="legacy-ok.gov")
-        DomainInformation.objects.create(
-            domain=domain, requester=self.user, portfolio=None  # Legacy domain
-        )
+        DomainInformation.objects.create(domain=domain, requester=self.user, portfolio=None)  # Legacy domain
 
         # Should be able to save with DNS hosting disabled
         domain.is_enrolled_in_dns_hosting = False
@@ -3326,7 +3324,5 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         # Portfolio domain
         portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")  # Added required field
         portfolio_domain = Domain.objects.create(name="portfolio.gov")
-        DomainInformation.objects.create(
-            domain=portfolio_domain, requester=self.user, portfolio=portfolio
-        )
+        DomainInformation.objects.create(domain=portfolio_domain, requester=self.user, portfolio=portfolio)
         self.assertFalse(portfolio_domain._is_legacy())
