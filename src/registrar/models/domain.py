@@ -1361,7 +1361,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     is_enrolled_in_dns_hosting = models.BooleanField(
         default=False,
-        help_text=("Indicates whether this domain is enrolled in internal DNS hosting. "),
+        help_text=("Indicates whether this domain is enrolled in internal DNS hosting."),
     )
 
     def isActive(self):
