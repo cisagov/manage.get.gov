@@ -56,7 +56,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         record_form = page.forms[0]
 
         # Assert required fields for A type records exist by name
-        for field in ("type_field", "name", "content", "ttl", "comment"):
+        for field in ("type", "name", "content", "ttl", "comment"):
             self.assertIn(field, record_form.fields)
 
         # Defaults check for A type records
@@ -83,7 +83,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             page = self.app.get(self._url(), status=200)
             record_form = page.forms[0]
 
-            record_form["type_field"] = "A"
+            record_form["type"] = "A"
             record_form["name"] = "www"
             record_form["content"] = "192.0.2.10"
             record_form["ttl"] = "300"
@@ -104,7 +104,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             page = self.app.get(self._url(), status=200)
             record_form = page.forms[0]
 
-            record_form["type_field"] = "A"
+            record_form["type"] = "A"
             record_form["name"] = "@"
             record_form["content"] = "not-an-ip"
 
@@ -117,16 +117,16 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
             # Field assertions for A Type records. Additional tests will be needed for different types of records.
             self.assertIn("Name", response.text)
-            self.assertIn("IPv4 Address", response.text)
+            self.assertIn("Enter a valid IPv4 Address", response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_invalid_dns_name_fails(self):
+    def test_post_invalid_dns_name_throws_error(self):
         with patch("registrar.views.domain.DnsHostService"):
             page = self.app.get(self._url(), status=200)
             record_form = page.forms[0]
 
-            record_form["type_field"] = "A"
+            record_form["type"] = "A"
             record_form["name"] = "testing!"
             record_form["content"] = "192.0.2.10"
 
@@ -135,5 +135,5 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             response = record_form.submit()
 
             # Field assertions for A Type records. Additional tests will be needed for different types of records.
-            self.assertIn("Name", response.text)
+            self.assertIn("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text)
             self.assertIn("IPv4 Address", response.text)

@@ -15,7 +15,7 @@ class BaseDomainDNSRecordFormTest(TestCase):
 
     def valid_form_data_for_a_record(self):
         return {
-            "type_field": "A",
+            "type": "A",
             "name": "www",
             "content": "1.1.1.1",
             "ttl": 300,
@@ -60,7 +60,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertEqual(form.errors["name"], ["This field is required."])
+        self.assertEqual(form.errors["name"], ["Enter a name for this record."])
 
     def test_invalid_dns_name_throws_error(self):
         # Testing invalid first character
@@ -92,4 +92,4 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         form = self.make_form(data)
 
         self.assertFalse(form.is_valid())
-        self.assertIn("IPv4 address is required.", form.errors["content"])
+        self.assertIn("Enter a valid IPv4 address using numbers and periods.", form.errors["content"])

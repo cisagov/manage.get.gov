@@ -785,21 +785,13 @@ class DomainDeleteForm(forms.Form):
 
 class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["type"].choices = [("", "- Select -")] + list(self.fields["type"].choices)
-
+    
     class Meta:
         model = DnsRecord
         fields = ["type", "name", "content", "ttl", "comment"]
         widgets = {
-            "type": forms.Select(
-                attrs={
-                    "class": "usa-select",
-                    "x-model": "recordType",
-                }
-            ),
             "name": forms.TextInput(
                 attrs={
                     "class": "usa-input",
@@ -819,7 +811,24 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {
+            "name": {
+                "required": "Enter a name for this record."
+            }
+        }
+    
+    type = forms.ChoiceField(
+        label="Type",
+        choices=[("", "- Select -"), ("A", "A")],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
 
     content = forms.CharField(
         label="IPv4 Address",

@@ -16,13 +16,12 @@ class DnsRecord(TimeStampedModel):
         "registrar.VendorDnsRecord", through="DnsRecord_VendorDnsRecord", related_name="records"
     )  # type: ignore
 
-    type = models.CharField(choices=RecordTypes.choices, default="a")
+    type = models.CharField(choices=RecordTypes.choices)
 
     name = models.CharField(
         max_length=255,
         blank=False,
         null=False,
-        default="@",
         validators=[validate_dns_name],
     )
 
