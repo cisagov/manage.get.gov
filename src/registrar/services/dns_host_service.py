@@ -33,7 +33,7 @@ class DnsHostService:
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
     def _find_account_json_by_pubname(self, items, name):
-        return next((item for item in items if item.get("account_pubname" == name)), None)
+        return next((item for item in items if item.get("account_pubname") == name), None)
 
     def _find_zone_json_by_name(self, items, name):
         return next((item for item in items if item.get("name") == name), None)
@@ -55,15 +55,16 @@ class DnsHostService:
 
         x_account_id = self._find_existing_account_in_db(account_name)
         has_db_account = bool(x_account_id)
-
+        print("DO WE HAVE A DB Account", has_db_account)
         if has_db_account:
             logger.info("Already has an existing vendor account")
             return x_account_id
 
         cf_account_data = self._find_existing_account_in_cf(account_name)
         has_cf_account = bool(cf_account_data)
-
+        print("is there a cf account_data", cf_account_data)
         if has_cf_account:
+            print("WE ARE IN THIS CHECK")
             return self.save_db_account({"result": cf_account_data})
 
         logger.info(f"Account setup completed successfully for account for {domain_name}")
@@ -159,6 +160,7 @@ class DnsHostService:
             page += 1
             try:
                 page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
+                print(page_accounts_data)
                 accounts = page_accounts_data["result"]
                 account_data = self._find_account_json_by_pubname(accounts, account_name)
                 if account_data:
