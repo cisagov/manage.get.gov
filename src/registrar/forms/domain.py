@@ -803,7 +803,6 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
-                    "hide_character_count": True,
                 }
             ),
         }
