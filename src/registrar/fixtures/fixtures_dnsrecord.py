@@ -28,9 +28,7 @@ class DnsRecordFixture(DomainFixture):
             logger.info(f"Found {domains.count()} domains enrolled in DNS hosting (taking first 5)")
 
             if not domains:
-                logger.info(
-                    "No domains available. Make sure domains have is_enrolled_in_dns_hosting=True"
-                )
+                logger.info("No domains available. Make sure domains have is_enrolled_in_dns_hosting=True")
                 return
 
             dns_zones_to_create = []
