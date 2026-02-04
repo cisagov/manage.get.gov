@@ -4672,6 +4672,42 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
 
+from django.contrib import admin
+from .models import DnsRecord
+
+
+@admin.register(DnsRecord)
+class DnsRecordAdmin(admin.ModelAdmin):
+    list_display = (
+        "type",
+        "name",
+        "ttl",
+        "content",
+        "comment",
+        "tags",
+        "created_at",
+        "updated_at",
+    )
+
+    fields = (
+        "dns_zone",
+        "type",
+        "name",
+        "ttl",
+        "content",
+        "comment",
+        "tags",
+        "created_at",
+        "updated_at",
+    )
+
+    readonly_fields = ("created_at", "updated_at")
+
+    list_filter = ("type", "created_at", "updated_at")
+
+    search_fields = ("name", "content", "comment")
+
+
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""

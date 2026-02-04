@@ -108,7 +108,7 @@ class DomainFixture(DomainRequestFixture):
         # Retrieve all domains associated with the domain requests
         domains_to_update = Domain.objects.filter(domain_info__domain_request__in=domain_requests_to_update)
 
-        # Loop through and update expiration dates for domains
+        # Loop through and update expiration dates and DNS enrollment for domains
         for domain in domains_to_update:
             domain_request = domain.domain_info.domain_request
 
@@ -117,6 +117,10 @@ class DomainFixture(DomainRequestFixture):
                 domain.expiration_date = cls._generate_fake_expiration_date_in_past()
             else:
                 domain.expiration_date = cls._generate_fake_expiration_date()
+
+            # Only enroll non-legacy domains in DNS hosting
+            if not domain._is_legacy():
+                domain.is_enrolled_in_dns_hosting = random.choice([True, False])  # nosec
 
         # Perform bulk update for the domains
         cls._bulk_update_domains(domains_to_update)
@@ -136,7 +140,7 @@ class DomainFixture(DomainRequestFixture):
         """Bulk update domains with expiration dates."""
         if domains_to_update:
             try:
-                Domain.objects.bulk_update(domains_to_update, ["expiration_date"])
+                Domain.objects.bulk_update(domains_to_update, ["expiration_date", "is_enrolled_in_dns_hosting"])
                 logger.info(f"Successfully updated {len(domains_to_update)} domains.")
             except Exception as e:
                 logger.error(f"Unexpected error during domains bulk update: {e}")
