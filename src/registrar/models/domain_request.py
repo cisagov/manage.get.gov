@@ -801,7 +801,7 @@ class DomainRequest(TimeStampedModel):
         - is_election_board: Not applicable to Federal, Interstate, or School District
         - about_your_organization: Only for Special District or Interstate orgs
         """
-        old_org_type = getattr(self, '_cached_generic_org_type', None)
+        old_org_type = getattr(self, "_cached_generic_org_type", None)
         new_org_type = self.generic_org_type
 
         if old_org_type and new_org_type != old_org_type:
