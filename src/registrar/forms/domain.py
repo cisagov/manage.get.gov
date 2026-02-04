@@ -2,7 +2,8 @@
 
 import logging
 from django import forms
-from django.core.validators import RegexValidator, MaxLengthValidator
+from django.core.validators import RegexValidator, MaxLengthValidator, validate_ipv4_address
+from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
@@ -785,34 +786,40 @@ class DomainDeleteForm(forms.Form):
 class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["type"].choices = [("", "- Select -")] + list(self.fields["type"].choices)
+
     class Meta:
         model = DnsRecord
-        fields = ["name", "content", "ttl", "comment"]
-
-    type_field = forms.ChoiceField(
-        label="Type",
-        choices=[("", "- Select -"), ("A", "A")],
-        required=True,
-        widget=forms.Select(
-            attrs={
-                "class": "usa-select",
-                "required": "required",
-                "x-model": "recordType",
-            }
-        ),
-    )
-
-    name = forms.CharField(
-        label="Name",
-        required=True,
-        help_text="Use @ for root",
-        error_messages={"required": "Enter the name of this record."},
-        widget=forms.TextInput(
-            attrs={
-                "class": "usa-input",
-            }
-        ),
-    )
+        fields = ["type", "name", "content", "ttl", "comment"]
+        widgets = {
+            "type": forms.Select(
+                attrs={
+                    "class": "usa-select",
+                    "x-model": "recordType",
+                }
+            ),
+            "name": forms.TextInput(
+                attrs={
+                    "class": "usa-input",
+                    "hide_character_count": True,
+                }
+            ),
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "usa-textarea usa-textarea--medium",
+                    "rows": 2,
+                    "hide_character_count": True,
+                }
+            ),
+        }
+        help_texts = {
+            "comment": "The information you enter here will not impact DNS record resolution and \
+            is meant only for your reference.",
+            "name": "Use @ for root",
+        }
+        error_messages = {"name": {"required": "Enter a name for this record."}}
 
     content = forms.CharField(
         label="IPv4 Address",
@@ -849,24 +856,15 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    comment = forms.CharField(
-        label="Comment",
-        required=False,
-        help_text="The information you enter here will not impact DNS record resolution and \
-        is meant only for your reference.",
-        max_length=500,
-        widget=forms.Textarea(
-            attrs={
-                "class": "usa-textarea usa-textarea--medium",
-                "rows": 2,
-            }
-        ),
-    )
-
     def clean(self):
         cleaned_data = super().clean()
 
-        # maps UI field to model field
-        cleaned_data["type"] = cleaned_data.get("type_field")
+        record_type = cleaned_data.get("type")
+        content = cleaned_data.get("content")
 
+        if record_type == "a" and content:
+            try:
+                validate_ipv4_address(content)
+            except ValidationError as e:
+                self.add_error("content", e)
         return cleaned_data

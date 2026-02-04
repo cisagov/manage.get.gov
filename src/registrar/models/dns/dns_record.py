@@ -18,13 +18,19 @@ class DnsRecord(TimeStampedModel):
 
     type = models.CharField(choices=RecordTypes.choices, default="a")
 
-    name = models.CharField(max_length=255, blank=False, null=False, default="@")
+    name = models.CharField(
+        max_length=255,
+        blank=False,
+        null=False,
+        default="@",
+        validators=[validate_dns_name],
+    )
 
     ttl = models.PositiveIntegerField(default=1)
 
     content = models.CharField(blank=True, null=True)
 
-    comment = models.CharField(blank=True, null=True)
+    comment = models.CharField(blank=True, null=True, max_length=500)
 
     tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
 
@@ -36,14 +42,8 @@ class DnsRecord(TimeStampedModel):
         # TTL must be between 60 and 86400.
         # If we add proxy field to records in the future, we can also allow TTL=1 as below:
         # if self.ttl == 1: return self.proxy
-        if self.ttl < 60 or self.ttl > 84600:
+        if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
-
-        # DNS Record name validation. This will apply for A, AAAA, and CNAME record types.
-        try:
-            validate_dns_name(self.name)
-        except ValidationError as e:
-            errors["name"] = e.messages
 
         # A record-specific validation
         if self.type == self.RecordTypes.A and self.content:
