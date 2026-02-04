@@ -1,7 +1,4 @@
-from datetime import timedelta
-from django.utils import timezone
 import logging
-import random
 from faker import Faker
 
 from registrar.fixtures.fixtures_domains import DomainFixture
@@ -32,7 +29,7 @@ class DnsRecordFixture(DomainFixture):
 
             if not domains:
                 logger.info(
-                    "No domains available for DNS record fixtures. Make sure domains have is_enrolled_in_dns_hosting=True"
+                    "No domains available. Make sure domains have is_enrolled_in_dns_hosting=True"
                 )
                 return
 

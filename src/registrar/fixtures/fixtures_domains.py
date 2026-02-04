@@ -80,31 +80,41 @@ class DomainFixture(DomainRequestFixture):
                 requester=user, status=DomainRequest.DomainRequestStatus.IN_REVIEW
             ).order_by("-id")[:2]
 
-            # Latest domain request
-            domain_request = domain_requests[0] if domain_requests else None
-            # Second-to-last domain request (expired)
-            domain_request_expired = domain_requests[1] if len(domain_requests) > 1 else None
+            cls._process_user_domain_requests(domain_requests, users, domain_requests_to_update, expired_requests)
 
-            # Approve the current domain request
-            if domain_request:
-                try:
-                    cls._approve_request(domain_request, users)
-                except Exception as err:
-                    logger.warning(f"Cannot approve domain request in fixtures: {err}")
-                domain_requests_to_update.append(domain_request)
-
-            # Approve the expired domain request
-            if domain_request_expired:
-                try:
-                    cls._approve_request(domain_request_expired, users)
-                except Exception as err:
-                    logger.warning(f"Cannot approve domain request (expired) in fixtures: {err}")
-                domain_requests_to_update.append(domain_request_expired)
-                expired_requests.append(domain_request_expired)
-
-        # Perform bulk update for the domain requests
         cls._bulk_update_requests(domain_requests_to_update)
 
+        # Update domains with expiration dates and DNS enrollment
+        cls._update_approved_domains(domain_requests_to_update, expired_requests)
+
+    @classmethod
+    def _process_user_domain_requests(cls, domain_requests, users, domain_requests_to_update, expired_requests):
+        """Process current and expired domain requests for a single user."""
+        # Latest domain request
+        domain_request = domain_requests[0] if domain_requests else None
+        # Second-to-last domain request (expired)
+        domain_request_expired = domain_requests[1] if len(domain_requests) > 1 else None
+
+        # Approve the current domain request
+        if domain_request:
+            try:
+                cls._approve_request(domain_request, users)
+            except Exception as err:
+                logger.warning(f"Cannot approve domain request in fixtures: {err}")
+            domain_requests_to_update.append(domain_request)
+
+        # Approve the expired domain request
+        if domain_request_expired:
+            try:
+                cls._approve_request(domain_request_expired, users)
+            except Exception as err:
+                logger.warning(f"Cannot approve domain request (expired) in fixtures: {err}")
+            domain_requests_to_update.append(domain_request_expired)
+            expired_requests.append(domain_request_expired)
+
+    @classmethod
+    def _update_approved_domains(cls, domain_requests_to_update, expired_requests):
+        """Update domains with expiration dates and DNS enrollment status."""
         # Retrieve all domains associated with the domain requests
         domains_to_update = Domain.objects.filter(domain_info__domain_request__in=domain_requests_to_update)
 

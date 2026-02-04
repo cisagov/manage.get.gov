@@ -76,6 +76,8 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
 from django.db.models import Exists, OuterRef
+from .models import DnsRecord
+
 
 logger = logging.getLogger(__name__)
 
@@ -4670,10 +4672,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         form.is_omb_analyst = is_omb_analyst
 
         return form
-
-
-from django.contrib import admin
-from .models import DnsRecord
 
 
 @admin.register(DnsRecord)
