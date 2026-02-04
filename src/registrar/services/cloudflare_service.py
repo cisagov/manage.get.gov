@@ -123,9 +123,9 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Updated dns record for record {record_id} in zone {zone_id}.")
         except RequestError as e:
-            logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
+            logger.error(f"Failed to update dns record {record_id} for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while creating dns record: {e}")
+            logger.error(f"Error {e.response.status_code} while updating dns record: {e}")
             raise
         return resp.json()
