@@ -217,8 +217,6 @@ export function initFormsetsForms() {
         formNum++;
       }
 
-      formNum++;
-
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
       if (isOtherContactsForm) {
         // For the other contacts form, we need to update the fieldset headers based on what's visible vs hidden,
@@ -226,7 +224,7 @@ export function initFormsetsForms() {
         let totalShownForms = document.querySelectorAll(`.repeatable-form:not([style*="display: none"])`).length;
         let newFormCount = totalShownForms + 1;
         // update the header
-        let header = newForm.querySelector('legend h3, h3, h4, legend');
+        let header = newForm.querySelector('legend h3');
         if (header) {
           header.textContent = `${formLabel} ${newFormCount}`;
           if (isOtherContactsForm) {
