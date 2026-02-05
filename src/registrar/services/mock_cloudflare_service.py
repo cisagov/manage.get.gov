@@ -310,7 +310,7 @@ class MockCloudflareService:
         # Get record id from request url to return back in response
         request_url = str(request.url)
         # Split string between "/dns_records/ and extract second partition
-        record_id = request_url.split('/dns_records/')[1]
+        record_id = request_url.split("/dns_records/")[1]
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -329,7 +329,7 @@ class MockCloudflareService:
                     403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
                 )
             return httpx.Response(500)
-        
+
         # Update response so it fits with whatever record we're returning
         return httpx.Response(
             200,
@@ -355,7 +355,6 @@ class MockCloudflareService:
                 "messages": [],
             },
         )
-
 
     def _mock_create_cf_id(self):
         """Create a 32 character UUID by removing the 4 -'s in a UUID4."""

@@ -248,7 +248,7 @@ class TestCloudflareService(SimpleTestCase):
     def test_update_dns_record_failure(self):
         """Test update_cf_zone with API failure"""
         zone_id = "54321"
-        record_id="6789"
+        record_id = "6789"
         record_data_invalid_content = {
             "name": "democracy.gov",
             "content": "not an IP address",
