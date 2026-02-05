@@ -20,7 +20,7 @@ fi
 ../ops/scripts/build.sh
 
 # Collect git info
-if [[ "$SANDBOXNAME" == "staging" ]]; then
+if [ "$SANDBOXNAME" == "staging" ]; then
     TAG=$(git describe --tags --abbrev=0)
 else
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
