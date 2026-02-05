@@ -17,13 +17,23 @@
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="/public/img/sprite.svg#edit"></use>
                 </svg>
-                Edit <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
+                Edit 
+                <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
+
+                    <svg @click="expanded = !expanded" 
+                        hx-target="#edit-row-{{ dns_record.id }}"
+                        class="usa-icon font-body-xl text-primary text-middle expand-more" aria-hidden="true" focusable="false" role="img">
+                        <use x-show="!expanded" xlink:href="/public/img/sprite.svg#expand_more"></use>
+                        <use x-show="expanded" xlink:href="/public/img/sprite.svg#expand_less"></use>
+                    </svg>
+            
             </button>
             <a 
                 role="button"
                 id="button-trigger-delete-dnsrecord-{{ forloop.counter }}"
                 class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
                 >
+
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                     <use xlink:href="/public/img/sprite.svg#delete"></use>
                 </svg>
@@ -58,3 +68,5 @@
         </div>
     </td>
 </tr>
+
+{% include "domain_dns_record_edit_form_partial.html" %}

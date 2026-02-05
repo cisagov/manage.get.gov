@@ -1,0 +1,17 @@
+<tr x-show="expanded">
+    <td colspan="5">
+        <form method="post" class="usa-form usa-form--extra-large">
+            {% csrf_token %}
+            {% for field in form %}
+                {{ field }}
+            {% endfor %}
+            <button>
+                Cancel
+            </button>
+            <button type="Submit">
+                Save
+            </button>
+        </form>
+    </td>
+</tr>
+
