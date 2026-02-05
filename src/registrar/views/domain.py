@@ -1,4 +1,6 @@
 from datetime import date
+from itertools import chain
+import json
 from httpx import Client
 import logging
 from contextvars import ContextVar
@@ -7,10 +9,12 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from waffle import flag_is_active
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -21,7 +25,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
-from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, DomainDNSRecordForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -82,7 +86,6 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
-from django import forms
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +107,12 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         self._get_domain(request)
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
+
+    def get_portfolio(self):
+        return self.request.session.get("portfolio")
+
+    def in_portfolio_context(self) -> bool:
+        return bool(self.get_portfolio())
 
     def _get_domain(self, request):
         """
@@ -144,11 +153,16 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
-        context["domain_is_ready"] = domain.state == domain.State.READY
+        context["domain_is_in_deletable_state"] = domain.state in [domain.State.READY, domain.State.DNS_NEEDED]
         context["domain_is_deletable"] = context["is_domain_manager"] and (
-            context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
+            context["domain_is_in_deletable_state"] or context["domain_is_expiring_or_expired"]
         )
         context["dns_hosting"] = flag_is_active_for_user(user, "dns_hosting")
+        context["breadcrumbs"] = self.get_breadcrumb_items()
+        context["breadcrumb_current_label"] = self.get_breadcrumb_current_label()
+        context["breadcrumb_aria_label"] = "Domain breadcrumb"
+        context["portfolio"] = self.get_portfolio()
+        context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -268,6 +282,16 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         # and it is in a valid status
         return True
 
+    def get_breadcrumb_items(self):
+        return []
+
+    def get_breadcrumb_current_label(self):
+        """Child views should override to set the current page label (non-link)."""
+        return None
+
+    def get_breadcrumb_aria_label(self):
+        return "Domain breadcrumb" if self.in_portfolio_context() else "Domain manager breadcrumb"
+
 
 class DomainFormBaseView(DomainBaseView, FormMixin):
     """
@@ -354,7 +378,9 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     # some forms shouldn't cause notifications if they are in a portfolio
                     info = self.get_domain_info_from_domain()
                     is_org_user = self.request.user.is_org_user(self.request)
-                    if is_org_user and (not info or info.portfolio):
+                    if is_org_user and (
+                        not info or info.portfolio
+                    ):  # if it's a portfolio user and the domain is in a portfolio, don't notify
                         logger.debug("No notification sent: Domain is part of a portfolio")
                         should_notify = False
         else:
@@ -410,12 +436,24 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     exc_info=True,
                 )
 
+    def get_form_errors(self, form):
+        """
+        Queue all errors from a form submission into Django message queue.
+        Used mainly to prompt form errors before a page refresh.
+        """
+        form_errors_dict = dict(form.errors)
+        errors = list(chain(*form_errors_dict.values()))
+        return errors
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
     """Domain detail overview page"""
 
     template_name = "domain_detail.html"
+
+    def get_breadcrumb_current_label(self):
+        return None
 
     def get_context_data(self, **kwargs):
         """If we don't reference security email in context for older deleted domains
@@ -425,6 +463,8 @@ class DomainView(DomainBaseView):
 
         default_emails = DefaultEmail.get_all_emails()
 
+        context["breadcrumb_domain_is_current"] = True
+        context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=self.request.session.get("portfolio")
@@ -478,6 +518,9 @@ class DomainLifecycleView(DomainBaseView):
 
     template_name = "domain_lifecycle.html"
 
+    def get_breadcrumb_current_label(self):
+        return "Domain lifecycle"
+
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
@@ -489,6 +532,12 @@ class DomainRenewalView(DomainBaseView):
     """Domain detail overview page."""
 
     template_name = "domain_renewal.html"
+
+    def get_breadcrumb_items(self):
+        return [{"label": "Domain lifecycle", "url": reverse("domain-lifecycle", kwargs={"domain_pk": self.object.id})}]
+
+    def get_breadcrumb_current_label(self):
+        return "Renewal form"
 
     def get_context_data(self, **kwargs):
         """Grabs the security email information and adds security_email to the renewal form context
@@ -564,22 +613,38 @@ class DomainDeleteView(DomainFormBaseView):
     def post(self, request, domain_pk):
         domain = get_object_or_404(Domain, pk=domain_pk)
         self.object = domain
-        form = self.form_class(request.POST)
-        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
+        # passing in domain state when initiating the folorm
+        form = self.form_class(request.POST, domain_state=domain.state)
 
         if form.is_valid():
-            if domain.state != "ready":
+            # Validate domain state
+            if domain.state not in [Domain.State.READY, Domain.State.DNS_NEEDED]:
                 messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
                 return self.render_to_response(self.get_context_data(form=form))
-            if is_policy_acknowledged:
+
+            # READY state will place domain on hold
+            if domain.state == Domain.State.READY:
                 domain.place_client_hold()
                 domain.save()
-                # Email all domain managers that domain manager has been removed
                 send_domain_manager_on_hold_email_to_domain_managers(domain=domain, requestor=request.user)
                 messages.success(request, "The deletion request for this domain has been submitted.")
-                # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
-            return self.render_to_response(self.get_context_data(form=form))
+
+            # DNS_NEEDED state will delete domain
+            elif domain.state == Domain.State.DNS_NEEDED:
+                try:
+                    domain_name = domain.name
+                    has_port = domain.domain_info.portfolio
+                    domain.delete_with_no_dns()
+                    messages.success(request, f"{domain_name} has been deleted successfully")
+                    if has_port:
+                        return redirect(reverse("domains"))
+                    else:
+                        return redirect(reverse("home") + "?legacy_home=1")
+                except Exception:
+                    messages.error(request, f"Failed to delete {domain.name}. Please try again.")
+                    return self.render_to_response(self.get_context_data(form=form))
 
         # Form not valid -> redisplay with errors
         return self.render_to_response(self.get_context_data(form=form))
@@ -636,6 +701,9 @@ class DomainSubOrganizationView(DomainFormBaseView):
     context_object_name = "domain"
     form_class = DomainSuborganizationForm
 
+    def get_breadcrumb_current_label(self):
+        return "Suborganization"
+
     def has_permission(self):
         """Override for the has_permission class to exclude non-portfolio users"""
 
@@ -682,6 +750,9 @@ class DomainSeniorOfficialView(DomainFormBaseView):
     template_name = "domain_senior_official.html"
     context_object_name = "domain"
     form_class = SeniorOfficialContactForm
+
+    def get_breadcrumb_current_label(self):
+        return "Senior official"
 
     def get_form_kwargs(self, *args, **kwargs):
         """Add domain_info.senior_official instance to make a bound form."""
@@ -738,44 +809,27 @@ class DomainDNSView(DomainBaseView):
 
     template_name = "domain_dns.html"
 
-
-class DomainDNSRecordForm(forms.Form):
-    """Form for adding DNS records in prototype."""
-
-    name = forms.CharField(label="DNS record name (A record)", required=True, help_text="DNS record name")
-
-    content = forms.GenericIPAddressField(
-        label="IPv4 Address",
-        required=True,
-        protocol="IPv4",
-    )
-
-    ttl = forms.ChoiceField(
-        label="TTL",
-        choices=[
-            (1, "Automatic"),
-            (60, "1 minute"),
-            (300, "5 minutes"),
-            (1800, "30 minutes"),
-            (3600, "1 hour"),
-            (7200, "2 hours"),
-            (18000, "5 hours"),
-            (43200, "12 hours"),
-            (86400, "1 day"),
-        ],
-        initial=1,
-    )
+    def get_breadcrumb_current_label(self):
+        return "DNS"
 
 
 @grant_access(IS_STAFF)
-class DomainDNSRecordView(DomainFormBaseView):
-    template_name = "domain_dns_record.html"
+class DomainDNSRecordsView(DomainFormBaseView):
+    template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Records"
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -784,6 +838,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
             context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            context["nameservers"] = dns_zone.nameservers
         return context
 
     def has_permission(self):
@@ -808,6 +863,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
+        self._get_domain(request)
         errors = []
         if form.is_valid():
             try:
@@ -819,12 +875,16 @@ class DomainDNSRecordView(DomainFormBaseView):
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": "Test record",
+                    "comment": form.cleaned_data.get("comment", ""),
                 }
 
                 domain_name = self.object.name
+                # TODO: Delete this dns setup and registering nameservers code after we have determined
+                # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
+                # creation on submission of the DNS Record form.
                 try:
-                    nameservers = self.dns_host_service.dns_setup(domain_name)
+                    x_account_id = self.dns_host_service.dns_account_setup(domain_name)
+                    self.dns_host_service.dns_zone_setup(domain_name, x_account_id)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -834,12 +894,19 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-                has_zone = DnsZone.objects.filter(name=domain_name).exists()
-                if has_zone:
-                    zone_name = domain_name
-                    # post nameservers to registry
+                zones = DnsZone.objects.filter(name=domain_name)
+                if zones.exists():
+                    zone = zones.first()
+                    nameservers = zone.nameservers
+
+                    if not nameservers:
+                        logger.error(f"No nameservers found in DB for domain {domain_name}")
+                        return JsonResponse(
+                            {"status": "error", "message": "DNS nameservers not available"},
+                            status=400,
+                        )
                     try:
-                        self.dns_host_service.register_nameservers(zone_name, nameservers)
+                        self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
                         logger.error(f"Error updating registry: {e}")
                         # Don't raise an error here in order to bypass blocking error in local dev
@@ -860,7 +927,35 @@ class DomainDNSRecordView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-        return super().post(request)
+            new_form = DomainDNSRecordForm()
+            hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
+            row_index = len(self.get_context_data()["dns_records"])
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form,
+                    "counter": row_index,
+                    "nameservers": nameservers,
+                },
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
+            )
+        else:
+            errors = self.get_form_errors(form)
+            for error in errors:
+                messages.error(request, f"{error}")
+            self.form_invalid(form)
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {"dns_record": None, "domain": self.object, "form": form},
+                headers={
+                    "HX-TRIGGER": "messagesRefresh",
+                },
+            )
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -870,6 +965,12 @@ class DomainNameserversView(DomainFormBaseView):
     template_name = "domain_nameservers.html"
     form_class = NameserverFormset
     model = Domain
+
+    def get_breadcrumb_items(self):
+        return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
+
+    def get_breadcrumb_current_label(self):
+        return "DNS name servers"
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
@@ -990,6 +1091,12 @@ class DomainDNSSECView(DomainFormBaseView):
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
 
+    def get_breadcrumb_items(self):
+        return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
+
+    def get_breadcrumb_current_label(self):
+        return "DNSSEC"
+
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
         context = super().get_context_data(**kwargs)
@@ -1028,6 +1135,15 @@ class DomainDsDataView(DomainFormBaseView):
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
     form = DomainDsdataForm
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
+            {"label": "DNSSEC", "url": reverse("domain-dns-dnssec", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "DS data"
 
     def get_initial(self):
         """The initial value for the form (which is a formset here)."""
@@ -1123,6 +1239,9 @@ class DomainSecurityEmailView(DomainFormBaseView):
     template_name = "domain_security_email.html"
     form_class = DomainSecurityEmailForm
 
+    def get_breadcrumb_current_label(self):
+        return "Security email"
+
     def get_initial(self):
         """The initial value for the form."""
         initial = super().get_initial()
@@ -1193,6 +1312,9 @@ class DomainUsersView(DomainBaseView):
     """Domain managers page in the domain details."""
 
     template_name = "domain_users.html"
+
+    def get_breadcrumb_current_label(self):
+        return "Domain managers"
 
     def get_context_data(self, **kwargs):
         """The initial value for the form (which is a formset here)."""
@@ -1280,6 +1402,19 @@ class DomainAddUserView(DomainFormBaseView):
     template_name = "domain_add_user.html"
     form_class = DomainAddUserForm
 
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "Domain managers", "url": reverse("domain-users", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Add a domain manager"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["hide_domain_base_crumbs"] = not self.in_portfolio_context()
+        return context
+
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.pk})
 
@@ -1290,49 +1425,52 @@ class DomainAddUserView(DomainFormBaseView):
 
         # Look up a user with that email
         requested_user = get_requested_user(requested_email)
-        # NOTE: This does not account for multiple portfolios flag being set to True
         domain_org = self.object.domain_info.portfolio
 
         # requestor can only send portfolio invitations if they are staff or if they are a member
         # of the domain's portfolio
-        requestor_can_update_portfolio = (
-            UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).first() is not None
-            or requestor.is_staff
+        requestor_can_update_portfolio = requestor.is_staff or (
+            domain_org and UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).exists()
         )
 
         member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
-            # COMMENT: this code does not take into account multiple portfolios flag being set to TRUE
-
-            # determine portfolio of the domain (code currently is looking at requestor's portfolio)
+            # determine portfolio of the domain
             # if requested_email/user is not member or invited member of this portfolio
             #   send portfolio invitation email
             #   create portfolio invitation
             #   create message to view
-            is_org_user = self.request.user.is_org_user(self.request)
-            if (
-                is_org_user
-                and not flag_is_active_for_user(requestor, "multiple_portfolios")
-                and domain_org is not None
-                and requestor_can_update_portfolio
-                and not member_of_this_org
-            ):
+            if domain_org and requestor_can_update_portfolio and not member_of_this_org:
                 send_portfolio_invitation_email(
-                    email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
+                    email=requested_email,
+                    requestor=requestor,
+                    portfolio=domain_org,
+                    is_admin_invitation=False,
                 )
                 portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-                    email=requested_email, portfolio=domain_org, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+                    email=requested_email,
+                    portfolio=domain_org,
+                    roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
                 # if user exists for email, immediately retrieve portfolio invitation upon creation
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
+
                 messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
-                self._handle_existing_user(requested_email, requestor, requested_user, member_of_a_different_org)
+                self._handle_existing_user(
+                    requested_email,
+                    requestor,
+                    requested_user,
+                    member_of_a_different_org,
+                    domain_org=domain_org,
+                    member_of_this_org=member_of_this_org,
+                )
+
         except Exception as e:
             handle_invitation_exceptions(self.request, e, requested_email)
 
@@ -1350,7 +1488,16 @@ class DomainAddUserView(DomainFormBaseView):
         DomainInvitation.objects.get_or_create(email=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to this domain.")
 
-    def _handle_existing_user(self, email, requestor, requested_user, member_of_different_org):
+    def _handle_existing_user(
+        self,
+        email,
+        requestor,
+        requested_user,
+        member_of_different_org,
+        *,
+        domain_org=None,
+        member_of_this_org=False,
+    ):
         """Handle adding an existing user to the domain."""
         if not send_domain_invitation_email(
             email=email,
@@ -1360,11 +1507,31 @@ class DomainAddUserView(DomainFormBaseView):
             requested_user=requested_user,
         ):
             messages.warning(self.request, "Could not send email notification to existing domain managers.")
-        UserDomainRole.objects.create(
+        UserDomainRole.objects.get_or_create(
             user=requested_user,
             domain=self.object,
             role=UserDomainRole.Roles.MANAGER,
         )
+
+        # If the domain belongs to a portfolio, ensure the user is a Basic member of that portfolio too.
+        if domain_org and not member_of_this_org:
+            # retrieving an existing invitation or permission.
+            portfolio_invitation = PortfolioInvitation.objects.filter(
+                email__iexact=email,
+                portfolio=domain_org,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).first()
+
+            if portfolio_invitation:
+                portfolio_invitation.retrieve()
+                portfolio_invitation.save()
+            else:
+                UserPortfolioPermission.objects.get_or_create(
+                    user=requested_user,
+                    portfolio=domain_org,
+                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+                )
+
         messages.success(self.request, f"Added user {email}.")
 
 
@@ -1402,6 +1569,14 @@ class DomainDeleteUserView(DeleteView):
     object: UserDomainRole
     model = UserDomainRole
     context_object_name = "userdomainrole"
+
+    def get_breadcrumb_items(self):
+        return [
+            {"label": "Domain lifecycle", "url": reverse("domain-lifecycle", kwargs={"domain_pk": self.object.id})},
+        ]
+
+    def get_breadcrumb_current_label(self):
+        return "Request deletion"
 
     def get_object(self, queryset=None):
         """Custom get_object definition to grab a UserDomainRole object from a domain_id and user_id"""

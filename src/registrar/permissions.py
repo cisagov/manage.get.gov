@@ -111,6 +111,7 @@ URL_PERMISSIONS = {
     "get_domain_requests_json": [ALL],
     "get_portfolio_members_json": [HAS_PORTFOLIO_MEMBERS_ANY_PERM],
     "get_member_domains_json": [HAS_PORTFOLIO_MEMBERS_ANY_PERM],
+    "get-messages": [IS_DOMAIN_MANAGER, IS_STAFF],
     # User profile
     "finish-user-profile-setup": [ALL],
     "user-profile": [ALL],

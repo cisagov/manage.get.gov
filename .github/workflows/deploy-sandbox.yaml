@@ -17,7 +17,6 @@ jobs:
         || startsWith(github.head_ref, 'nl/')
         || startsWith(github.head_ref, 'kma/')
         || startsWith(github.head_ref, 'es/')
-        || startsWith(github.head_ref, 'ad/')
         || startsWith(github.head_ref, 'el/')
         || startsWith(github.head_ref, 'aa/')
 

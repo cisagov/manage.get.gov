@@ -9,7 +9,6 @@ The domain was deleted because it expired and no name servers were added to the 
 ----------------------------------------------------------------
 
 WHAT DOES “DELETED” MEAN?
-
 When a domain is deleted: 
 
     - The domain and its subdomains no longer resolve in DNS. 

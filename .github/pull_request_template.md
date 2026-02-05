@@ -21,12 +21,12 @@ Resolves #00
 ## Setup
 
 <!--  Add any steps or code to run in this section to help others run your code.
-    
+
     Example 1:
     ```sh
     echo "Code goes here"
-    ``` 
-    
+    ```
+
     Example 2: If the PR was to add a new link with a redirect, this section could simply be:
     -go to /path/to/start/page
     -click the blue link in the <insert location>
@@ -54,7 +54,12 @@ Resolves #00
 - [ ] [Follow the process for requesting a design review](https://dhscisa.enterprise.slack.com/docs/T02QH7E1MHA/F06CZ6MRUKA). If code is not user-facing, delete design reviewer checklist
 - [ ] Verify new pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
 - [ ] Checked keyboard navigability
-- [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
+- [ ] Reviewed [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari), ANDI, or WAVE:
+  - [ ] Tested general usability
+  - [ ] Page header structure
+  - [ ] Landmarks
+  - [ ] Links and buttons
+- [ ] Checked for errors or warnings with an a11y browser tool (such as ANDI or WAVE)
 
 ### As a code reviewer, I have
 
@@ -67,12 +72,17 @@ Resolves #00
 - [ ] Verify migrations are valid and do not conflict with existing migrations
 
 #### Validated user-facing changes as a developer
-**Note:** Multiple code reviewers can share the checklists above, a second reviewer should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A. 
+**Note:** Multiple code reviewers can share the checklists above, a second reviewer should not make a duplicate checklist. All checks should be checked before approving, even those labeled N/A.
 
 - [ ] New pages have been added to .pa11yci file so that they will be tested with our automated accessibility testing
-- [ ] Checked keyboard navigability
 - [ ] Meets all designs and user flows provided by design/product
-- [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
+- [ ] Checked keyboard navigability
+- [ ] Reviewed [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari), ANDI, or WAVE:
+  - [ ] Tested general usability
+  - [ ] Page header structure
+  - [ ] Landmarks
+  - [ ] Links and buttons
+- [ ] Checked for errors or warnings with an a11y browser tool (such as ANDI or WAVE)
 - [ ] (Rarely needed) Tested as both an analyst and applicant user
 
 ### As a designer reviewer, I have
@@ -87,7 +97,12 @@ Resolves #00
 #### Validated user-facing changes as a designer
 
 - [ ] Checked keyboard navigability
-- [ ] Tested general usability, landmarks, page header structure, and links with a screen reader (such as Voiceover or ANDI)
+- [ ] Reviewed [accessibility checklist](https://github.com/cisagov/manage.get.gov/blob/main/docs/dev-practices/code_review.md#accessibility-checklist) using screen reader (such as NVDA with Chrome or Voiceover with Safari), ANDI, or WAVE:
+  - [ ] Tested general usability
+  - [ ] Page header structure
+  - [ ] Landmarks
+  - [ ] Links and buttons
+- [ ] Checked for errors or warnings with an a11y browser tool (such as ANDI or WAVE)
 - [ ] Tested with multiple browsers (check off which ones were used)
   - [ ] Chrome
   - [ ] Microsoft Edge

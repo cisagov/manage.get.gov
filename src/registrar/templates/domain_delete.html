@@ -4,23 +4,7 @@
   {% block breadcrumb %}
 
   <!-- Navigation breadcrumbs -->
-  <nav class="usa-breadcrumb padding-top-0" aria-label="Domain breadcrumb">
-    <ol class="usa-breadcrumb__list">
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>{{domain.name}}</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item">
-        <a href="{% url 'domain-lifecycle' domain_pk=domain.id %}" class="usa-breadcrumb__link"><span>Domain lifecycle</span></a>
-      </li>
-      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
-        <span>Request deletion</span>
-      </li>
-
-    </ol>
-  </nav>
+  {% include "includes/domain_breadcrumbs.html" %}
   {% endblock breadcrumb %}
 
   {% block domain_content %}
@@ -37,18 +21,23 @@
 
   {{ block.super }}
   <div class="margin-top-4 tablet:grid-col-10">
-    <p>If you no longer need this domain, you can request that it be deleted at any time.
+    <p>
+      If you no longer need this domain, you can request that it be deleted at any time.
       <ul class="usa-list">
+      {% if domain.state == domain.State.READY %}
       <li>Once you request to delete this domain, it will be placed “on hold” for seven days before deletion. While “on hold,” the domain will be administratively paused, so it can’t be edited and won’t resolve in DNS.
       </li>
+      {% endif %}
       <li>When your domain is deleted, it will be removed from the .gov registry. 
         This means that websites and emails associated with the domain will no longer work.
       </li>
       <li>After the domain is deleted from the .gov registry, it can't be recovered.
         To obtain the same domain name, you will have to make a new request.
       </li>
+        {% if domain.state == domain.State.READY %}
         <li>A domain manager can cancel the deletion request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>.
       </li>
+      {% endif %}
       </ul>
     </p>
 
@@ -71,7 +60,7 @@
             {% if form.is_policy_acknowledged.errors %}
             {% for error in form.is_policy_acknowledged.errors %}
             <div class="usa-error-message display-flex" role="alert">
-              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error: Check the box if you understand that your domain will be deleted within 7 days of making this request.">
+              <svg class="usa-icon usa-icon--large" focusable="true" role="img" aria-label="Error: {{ error }}">
                 <use xlink:href="{%static 'img/sprite.svg'%}#error"></use>
               </svg>
               <span class="margin-left-05">{{ error }}</span>
@@ -88,7 +77,11 @@
             {% if form.is_policy_acknowledged.value %}checked{% endif %}
             >
             <label class="usa-checkbox__label" for="delete-domain-checkbox">
-              I understand the domain will be deleted seven days after I submit this request. After that, it can't be recovered.
+              {% if domain.state == domain.State.DNS_NEEDED %}
+               I understand the domain will be deleted after I submit this request.
+              {% else %}
+                I understand the domain will be deleted seven days after I submit this request. After that, it can't be recovered.
+              {% endif %}
             </label>
           </div>
 
@@ -111,7 +104,11 @@
     aria-labelledby="domain-deletion-confirm-button-heading"
     aria-describedby="domain-deletion-confirm-button-desc"
   >
+  {% if domain.state == domain.State.DNS_NEEDED %}
+    {% include 'includes/modal.html' with modal_heading="Are you sure you'd like to delete "|add:domain.name|add:"?" modal_description="" modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}   
+  {% else %}
     {% include 'includes/modal.html' with modal_heading="Are you sure you'd like to request to delete "|add:domain.name|add:"?" modal_description="The domain will be placed on hold for seven days. After that, it will be deleted from the .gov registry. Websites and emails associated with the domain will no longer work.<br><br>If you change your mind, you can cancel this request by emailing <a href='mailto:help@get.gov' class='usa-link'>help@get.gov</a>."|safe modal_button_id="domain-deletion-confirm-button" modal_button_text="Yes, request deletion" modal_button_class="usa-button--secondary" %}  
+  {% endif %}
   </div>
   
  <!-- hidden modal trigger-->

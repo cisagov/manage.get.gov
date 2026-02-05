@@ -43,6 +43,13 @@ class UserFixture:
             "title": "Grove keeper",
         },
         {
+            "username": "47b9668b-6764-4818-a8cd-3505494093a6",
+            "first_name": "Natalie",
+            "last_name": "Wong",
+            "email": "Wai-wan.wong@ecstech.com",
+            "title": "Designer",
+        },
+        {
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",
             "first_name": "Gaby",
             "last_name": "DiSarli",
@@ -55,12 +62,6 @@ class UserFixture:
             "last_name": "Dixon",
             "email": "cameron.dixon@cisa.dhs.gov",
             "title": "Product owner",
-        },
-        {
-            "username": "2bf518c2-485a-4c42-ab1a-f5a8b0a08484",
-            "first_name": "Paul",
-            "last_name": "Kuykendall",
-            "title": "Dr. Silvertongue",
         },
         {
             "username": "2a88a97b-be96-4aad-b99e-0b605b492c78",
@@ -87,13 +88,6 @@ class UserFixture:
             "first_name": "Kristina",
             "last_name": "Yin",
             "title": "Hufflepuff prefect",
-        },
-        {
-            "username": "66bb1a5a-a091-4d7f-a6cf-4d772b4711c7",
-            "first_name": "Christina",
-            "last_name": "Burnett",
-            "email": "christina.burnett@cisa.dhs.gov",
-            "title": "Groovy",
         },
         {
             "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
@@ -157,19 +151,6 @@ class UserFixture:
             "email": "charles.wells@ecstech.com",
             "title": "ADMIN",
         },
-        {
-            "username": "8facfafb-a55e-4743-bc87-1db82cc09fd3",
-            "first_name": "Agapito",
-            "last_name": "Pabalan",
-            "email": "agapito.pabalan@ecstech.com",
-            "title": "ADMIN",
-        },
-        {
-            "username": "285df9a1-0139-49df-878f-e15f0c991a05",
-            "first_name": "Erin",
-            "last_name": "Tingler",
-            "email": "erin.tingler@associates.cisa.dhs.gov",
-        },
     ]
 
     STAFF = [
@@ -191,11 +172,6 @@ class UserFixture:
             "first_name": "Katherine-Analyst",
             "last_name": "Osos-Analyst",
             "email": "kosos+1@truss.works",
-        },
-        {
-            "username": "57ab5847-7789-49fe-a2f9-21d38076d699",
-            "first_name": "Paul-Analyst",
-            "last_name": "Kuykendall-Analyst",
         },
         {
             "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
@@ -224,12 +200,6 @@ class UserFixture:
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
             "email": "kristina.yin+1@gsa.gov",
-        },
-        {
-            "username": "22f88aa5-3b54-4b1f-9c57-201fb02ddba7",
-            "first_name": "Christina-Analyst",
-            "last_name": "Burnett-Analyst",
-            "email": "christina.burnett@gwe.cisa.dhs.gov",
         },
         {
             "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
@@ -279,20 +249,6 @@ class UserFixture:
             "last_name": "Wells",
             "email": "charles.wells.analyst@ecstech.com",
             "title": "ANALYST",
-        },
-        {
-            "username": "949210d7-62b7-4dcb-8134-194e39eec0f3",
-            "first_name": "Erin",
-            "last_name": "Tingler",
-            "title": "Erin-Analyst",
-            "email": "erin.tingler@ecstech.com",
-        },
-        {
-            "username": "ad74ef51-8cab-4c2a-8d06-c357f138cc2f",
-            "first_name": "Agapito",
-            "last_name": "Pabalan",
-            "title": "ANALYST",
-            "email": "agapito.pabalan.analyst@ecstech.com",
         },
     ]
 

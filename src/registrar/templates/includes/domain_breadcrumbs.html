@@ -1,0 +1,46 @@
+<nav class="usa-breadcrumb padding-top-0"
+     aria-label="{% if portfolio %}Domain breadcrumb{% else %}Domain manager breadcrumb{% endif %}">
+  <ol class="usa-breadcrumb__list">
+
+    {% if not hide_domain_base_crumbs %}
+    <li class="usa-breadcrumb__list-item">
+    {% if enterprise_mode %}
+      {% if portfolio %}
+        <a href="{% url 'domains' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+      {% else %}
+        <a href="{% url 'home' %}?legacy_home=1" class="usa-breadcrumb__link"><span>Domains</span></a>
+      {% endif %}
+    {% else %}
+      <a href="{% url 'home' %}" class="usa-breadcrumb__link"><span>Domains</span></a>
+    {% endif %}
+    </li>
+
+    {% if breadcrumb_domain_is_current %}
+    <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+      <span>{{ domain.name }}</span>
+    </li>
+    {% else %}
+    <li class="usa-breadcrumb__list-item">
+      <a href="{% url 'domain' domain_pk=domain.id %}" class="usa-breadcrumb__link">
+        <span>{{ domain.name }}</span>
+      </a>
+    </li>
+    {% endif %}
+    {% endif %}
+
+    {% for crumb in breadcrumbs %}
+      <li class="usa-breadcrumb__list-item">
+        <a href="{{ crumb.url }}" class="usa-breadcrumb__link">
+          <span>{{ crumb.label }}</span>
+        </a>
+      </li>
+    {% endfor %}
+
+    {% if breadcrumb_current_label %}
+      <li class="usa-breadcrumb__list-item usa-current" aria-current="page">
+        <span>{{ breadcrumb_current_label }}</span>
+      </li>
+    {% endif %}
+
+  </ol>
+</nav>

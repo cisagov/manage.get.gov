@@ -3469,40 +3469,151 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         domain_request = completed_domain_request(federal_agency=federal_agency, user=self.user)
         self.assertTrue(domain_request.unlock_organization_contact())
 
-
-class TestPortfolioDomainRequestViewonly(TestWithUser, WebTest):
-
-    # Doesn't work with CSRF checking
-    # hypothesis is that CSRF_USE_SESSIONS is incompatible with WebTest
-    csrf_checks = False
-
-    def setUp(self):
-        super().setUp()
-        self.federal_agency, _ = FederalAgency.objects.get_or_create(agency="General Services Administration")
-        self.app.set_user(self.user.username)
-        self.TITLES = DomainRequestWizard.REGULAR_TITLES
-
-    def tearDown(self):
-        super().tearDown()
-        DomainRequest.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        self.federal_agency.delete()
-
     @less_console_noise_decorator
-    def test_domain_request_viewonly_displays_correct_fields(self):
-        """Tests that the viewonly page displays different fields"""
-        portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Test Portfolio")
-        UserPortfolioPermission.objects.get_or_create(
-            user=self.user, portfolio=portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
-        dummy_user, _ = User.objects.get_or_create(username="testusername123456")
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.SUBMITTED, user=dummy_user, portfolio=portfolio
-        )
+    def test_org_type_change_clears_federal_fields(self):
+        """Test that changing org type from federal to non-federal clears federal_type."""
+        # Create a domain request with federal org type and federal_type set
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        domain_request.federal_type = BranchChoices.EXECUTIVE
+        domain_request.last_submitted_date = datetime.now()
         domain_request.save()
 
-        detail_page = self.app.get(f"/domain-request/viewonly/{domain_request.id}")
-        self.assertContains(detail_page, "Requesting entity")
-        self.assertNotContains(detail_page, "Type of organization")
-        self.assertContains(detail_page, "city.gov")
-        self.assertContains(detail_page, "Status:")
+        # DO NOT add a portfolio (this test applies to legacy domain requests only)
+
+        # Visit the org type page and change to City
+        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form = org_type_page.forms[0]
+        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
+        form.submit()
+
+        # Refresh from DB and verify federal_type was cleared
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertIsNone(domain_request.federal_type)
+
+        # Clean up
+        domain_request.delete()
+
+    @less_console_noise_decorator
+    def test_org_type_change_clears_tribal_fields(self):
+        """Test that changing org type from tribal to non-tribal clears tribal fields."""
+        # Create a domain request with tribal org type
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.organization_type = DomainRequest.OrganizationChoices.TRIBAL
+        domain_request.tribe_name = "Test Tribe"
+        domain_request.federally_recognized_tribe = True
+        domain_request.state_recognized_tribe = False
+        domain_request.last_submitted_date = datetime.now()
+        domain_request.save()
+
+        # DO NOT add a portfolio (this test applies to legacy domain requests only)
+
+        # Visit the org type page and change to City
+        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form = org_type_page.forms[0]
+        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
+        form.submit()
+
+        # Refresh from DB and verify tribal fields were cleared
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertIsNone(domain_request.tribe_name)
+        self.assertIsNone(domain_request.federally_recognized_tribe)
+        self.assertIsNone(domain_request.state_recognized_tribe)
+
+        # Clean up
+        domain_request.delete()
+
+    @less_console_noise_decorator
+    def test_org_type_change_clears_election_board_for_federal(self):
+        """Test that changing org type to federal clears is_election_board."""
+        # Create a domain request with city org type and election board set
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, is_election_board=True
+        )
+        domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
+        domain_request.save()
+
+        # DO NOT add a portfolio (this test applies to legacy domain requests only)
+
+        # Visit the org type page and change to Federal
+        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form = org_type_page.forms[0]
+        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.FEDERAL
+        form.submit()
+
+        # Refresh from DB and verify is_election_board was cleared
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
+        self.assertIsNone(domain_request.is_election_board)
+
+        # Clean up
+        domain_request.delete()
+
+    @less_console_noise_decorator
+    def test_org_type_change_clears_about_your_organization(self):
+        """Test that changing org type clears about_your_organization when not applicable."""
+        # Create a domain request with special district org type and about_your_organization set
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.organization_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
+        domain_request.about_your_organization = "Test description for special district"
+        domain_request.last_submitted_date = datetime.now()
+        domain_request.save()
+
+        # DO NOT add a portfolio (this test applies to legacy domain requests only)
+
+        # Visit the org type page and change to City (which doesn't require about_your_organization)
+        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form = org_type_page.forms[0]  # OrganizationTypeForm
+        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.CITY
+        form.submit()
+
+        # Refresh from DB and verify about_your_organization was cleared
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+        self.assertIsNone(domain_request.about_your_organization)
+
+        # Clean up
+        domain_request.delete()
+
+    @less_console_noise_decorator
+    def test_org_type_same_type_no_clearing(self):
+        """Test that submitting the same org type doesn't clear related fields."""
+        # Create a domain request with federal org type and federal_type set
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request.organization_type = DomainRequest.OrganizationChoices.FEDERAL
+        domain_request.federal_type = BranchChoices.EXECUTIVE
+        domain_request.last_submitted_date = datetime.now()
+        domain_request.save()
+
+        # DO NOT add a portfolio (this test applies to legacy domain requests only)
+
+        # Visit the org type page and submit the same type
+        org_type_page = self.app.get(f"/request/{domain_request.id}/generic_org_type/")
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        form = org_type_page.forms[0]
+        form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.FEDERAL
+        form.submit()
+
+        # Refresh from DB and verify federal_type was NOT cleared
+        domain_request.refresh_from_db()
+        self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
+        self.assertEqual(domain_request.federal_type, BranchChoices.EXECUTIVE)
+
+        # Clean up
+        domain_request.delete()
