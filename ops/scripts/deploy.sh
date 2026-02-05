@@ -39,3 +39,4 @@ fi
 
 # migrations need to be run manually. Developers can use this command
 #cf run-task getgov-SANDBOXNAME --command 'python manage.py migrate' --name migrate
+
