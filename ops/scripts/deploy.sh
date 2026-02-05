@@ -1,7 +1,13 @@
 #!/bin/sh
 
-# Check for app name
+# This deploy script is inteneded to be used for staging and sandboxes. It can not be used for stable. 
+# To use this script:
+#  - make sure you are in the src directory#.
+#  - In your terminal, add this '../ops/scripts/deploy.sh {sandbox name}'
+#  - Hit enter
 
+
+# Check for app name
 SANDBOXNAME=${1:-}
 
 if [ -z "$SANDBOXNAME" ]; then
