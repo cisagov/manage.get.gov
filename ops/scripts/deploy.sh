@@ -15,7 +15,6 @@ fi
 
 # Collect git info
 if [[ "$SANDBOXNAME" == "staging" ]]; then
-    echo "HERE WE ARE"
     TAG=$(git describe --tags --abbrev=0)
 else
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -26,7 +25,7 @@ COMMIT=$(git rev-parse HEAD)
 # Deploy to sandbox 
 cf target -o cisa-dotgov -s $1
 
-if [ "$SANDBOXNAME" = "staging"]; then   
+if [ "$SANDBOXNAME" = "staging" ]; then   
     cf push getgov-$1 -f  ../ops/manifests/manifest-$1.yaml --var GIT_TAG="$TAG" --var GIT_COMMIT_SHA="$COMMIT" --strategy rolling 
 else
     cf push getgov-$1 -f  ../ops/manifests/manifest-$1.yaml --var GIT_BRANCH="$BRANCH" --var GIT_COMMIT_SHA="$COMMIT" --strategy rolling 
