@@ -1984,6 +1984,142 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertEqual(domain_information_election.is_election_board, True)
         self.assertEqual(domain_information_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
 
+    @less_console_noise_decorator
+    def test_clear_irrelevant_fields_federal_to_city(self):
+        """Test that changing org type from federal to city clears federal fields."""
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            name="federal-to-city.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+        domain_information = DomainInformation.create_from_dr(domain_request)
+
+        # Set federal-specific fields
+        federal_agency = FederalAgency.objects.first()
+        domain_information.federal_agency = federal_agency
+        domain_information.federal_type = "executive"
+        domain_information.save()
+
+        # Verify fields are set
+        self.assertEqual(domain_information.federal_agency, federal_agency)
+        self.assertEqual(domain_information.federal_type, "executive")
+
+        # Change org type to city
+        domain_information.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        domain_information.save()
+
+        # Verify federal fields were cleared
+        self.assertIsNone(domain_information.federal_agency)
+        self.assertIsNone(domain_information.federal_type)
+        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+
+    @less_console_noise_decorator
+    def test_clear_irrelevant_fields_tribal_to_city(self):
+        """Test that changing org type from tribal to city clears tribal fields."""
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            name="tribal-to-city.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
+        )
+        domain_information = DomainInformation.create_from_dr(domain_request)
+
+        # Set tribal-specific fields
+        domain_information.tribe_name = "Test Tribe"
+        domain_information.federally_recognized_tribe = True
+        domain_information.state_recognized_tribe = False
+        domain_information.save()
+
+        # Verify fields are set
+        self.assertEqual(domain_information.tribe_name, "Test Tribe")
+        self.assertTrue(domain_information.federally_recognized_tribe)
+        self.assertFalse(domain_information.state_recognized_tribe)
+
+        # Change org type to city
+        domain_information.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        domain_information.save()
+
+        # Verify tribal fields were cleared
+        self.assertIsNone(domain_information.tribe_name)
+        self.assertIsNone(domain_information.federally_recognized_tribe)
+        self.assertIsNone(domain_information.state_recognized_tribe)
+        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+
+    @less_console_noise_decorator
+    def test_clear_irrelevant_fields_city_to_federal_clears_election_board(self):
+        """Test that changing org type to federal clears is_election_board."""
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            name="city-to-federal.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.CITY,
+            is_election_board=True,
+        )
+        domain_information = DomainInformation.create_from_dr(domain_request)
+
+        # Verify election board is set
+        self.assertTrue(domain_information.is_election_board)
+
+        # Change org type to federal
+        domain_information.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
+        domain_information.save()
+
+        # Verify is_election_board was cleared
+        self.assertIsNone(domain_information.is_election_board)
+        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
+
+    @less_console_noise_decorator
+    def test_clear_irrelevant_fields_special_district_to_city_clears_about_org(self):
+        """Test that changing org type from special district clears about_your_organization."""
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            name="special-to-city.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+        )
+        domain_information = DomainInformation.create_from_dr(domain_request)
+
+        # Set about_your_organization
+        domain_information.about_your_organization = "Test description for special district"
+        domain_information.save()
+
+        # Verify field is set
+        self.assertEqual(domain_information.about_your_organization, "Test description for special district")
+
+        # Change org type to city
+        domain_information.generic_org_type = DomainRequest.OrganizationChoices.CITY
+        domain_information.save()
+
+        # Verify about_your_organization was cleared
+        self.assertIsNone(domain_information.about_your_organization)
+        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+
+    @less_console_noise_decorator
+    def test_clear_irrelevant_fields_same_org_type_no_clearing(self):
+        """Test that saving with the same org type doesn't clear related fields."""
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED,
+            name="federal-same.gov",
+            generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
+        )
+        domain_information = DomainInformation.create_from_dr(domain_request)
+
+        # Set federal-specific fields
+        federal_agency = FederalAgency.objects.first()
+        domain_information.federal_agency = federal_agency
+        domain_information.federal_type = "executive"
+        domain_information.save()
+
+        # Verify fields are set
+        self.assertEqual(domain_information.federal_agency, federal_agency)
+        self.assertEqual(domain_information.federal_type, "executive")
+
+        # Save again with the same org type
+        domain_information.city = "Washington"
+        domain_information.save()
+
+        # Verify federal fields were NOT cleared
+        self.assertEqual(domain_information.federal_agency, federal_agency)
+        self.assertEqual(domain_information.federal_type, "executive")
+        self.assertEqual(domain_information.city, "Washington")
+
 
 class TestDomainRequestIncomplete(TestCase):
 
