@@ -15,6 +15,8 @@ from registrar.models import (
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
+    User,
+    DomainInformation,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
@@ -280,6 +282,7 @@ class TestDnsHostServiceDB(TestCase):
                     "name": self.vendor_account_data["result"].get("name"),
                 },
                 "name_servers": ["mosaic.dns.gov", "plaid.dns.gov"],
+                "vanity_name_servers": ["vanity.dns.gov", "vanity2.dns.gov"],
             }
         }
 
@@ -298,6 +301,8 @@ class TestDnsHostServiceDB(TestCase):
 
     def tearDown(self):
         delete_all_dns_data()
+        User.objects.all().delete()
+        DomainInformation.objects.all().delete()
 
     def test_find_existing_account_success(self):
         domain = create_domain(domain_name="democracy.gov")
@@ -451,7 +456,7 @@ class TestDnsHostServiceDB(TestCase):
         dns_zones = DnsZone.objects.filter(name="dns-test.gov")
         zone = dns_zones.first()
         self.assertEqual(dns_zones.count(), 1)
-        self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["name_servers"])
+        self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["vanity_name_servers"])
 
         # DnsZone_VendorDnsZone object exists for registrar zone and vendor zone
         dns_zone = dns_zones.first()
