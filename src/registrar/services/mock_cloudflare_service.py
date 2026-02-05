@@ -77,6 +77,11 @@ class MockCloudflareService:
             side_effect=self._mock_create_dns_record_response
         )
 
+        # Mock the api with any record id
+        self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
+            side_effect=self._mock_update_dns_record_response
+        )
+
     def _mock_get_page_accounts_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking accounts GET")
         # use exists.gov domain to simulate an account that already exists
@@ -292,13 +297,20 @@ class MockCloudflareService:
         )
 
     def _mock_update_dns_record_response(self, request) -> httpx.Response:
-        logger.debug("🐟 mocking dns record update")
+        # Mocks updating a DNS A record.
+        # If we want to mock updating other DNS records, we may want to split
+        # this out and write a method to return a DNS record response by type.
+        logger.debug("🐟 mocking dns A record update")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
         content = request_as_json["content"]
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        # Get record id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        record_id = request_url.split('/dns_records/')[1]
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -324,7 +336,7 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": {
-                    "id": self._mock_create_cf_id(),
+                    "id": record_id,
                     "name": record_name,
                     "type": type,
                     "content": content,
