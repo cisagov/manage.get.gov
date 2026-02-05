@@ -916,6 +916,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
             context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            context["nameservers"] = dns_zone.nameservers
         return context
 
     def has_permission(self):
@@ -1010,7 +1011,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form,
+                    "counter": row_index,
+                    "nameservers": nameservers,
+                },
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )
