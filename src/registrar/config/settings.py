@@ -114,6 +114,9 @@ IS_PRODUCTION = env_is_production
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 
+# Controls local-specific toggles
+IS_LOCAL = "localhost" in env_base_url
+
 # Applications are modular pieces of code.
 # They are provided by Django, by third-parties, or by yourself.
 # Installing them here makes them available for execution.
@@ -168,6 +171,7 @@ INSTALLED_APPS = [
     # Waffle feature flags
     "waffle",
     "csp",
+    "django_htmx",
 ]
 
 # Middleware are routines for processing web requests.
@@ -213,6 +217,7 @@ MIDDLEWARE = [
     "registrar.registrar_middleware.RequestLoggingMiddleware",
     # Add DB info to logs
     "registrar.registrar_middleware.DatabaseConnectionMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 # application object used by Django's built-in servers (e.g. `runserver`)

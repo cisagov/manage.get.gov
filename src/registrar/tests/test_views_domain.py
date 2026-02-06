@@ -44,11 +44,13 @@ from registrar.models import (
     Suborganization,
     UserPortfolioPermission,
 )
+
 from datetime import date, datetime, timedelta
 from django.utils import timezone
 
 from .common import less_console_noise
 from .test_views import TestWithUser
+from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data, create_dns_record
 
 import logging
 
@@ -3292,24 +3294,26 @@ class TestDomainDeletion(TestWithUser):
         * Domain deletion flag is ON
         * Domain state = DNS_NEEDED
         * Domain is NOT expiring
-        * Should NOT see domain lifecycle, request deletion, or renewal form
+        * Should see domain lifecycle
+        * Should see request deletion
+        * Should not see domain renewal form
         """
         with patch.object(Domain, "is_expired", self.custom_is_expired_false):
             self.client.force_login(self.user)
             response = self.client.get(reverse("domain", kwargs={"domain_pk": self.dns_needed_not_expiring.id}))
 
-            self.assertNotContains(response, "Domain lifecycle")
-            self.assertNotContains(response, "Request deletion")
+            self.assertContains(response, "Domain lifecycle")
+            self.assertContains(response, "Request deletion")
             self.assertNotContains(response, "Renewal form")
 
     @less_console_noise_decorator
     @override_flag("domain_deletion", active=True)
     def test_domain_lifecycle_dns_needed_expiring(self):
         """
-        Domain deletion flag is ON
-        Domain state = DNS_NEEDED
-        Domain IS expiring
-        Should see domain lifecycle, renewal form, but NOT request deletion
+        * Domain deletion flag is ON
+        * Domain state = DNS_NEEDED
+        * Domain IS expiring
+        * Should see domain lifecycle, renewal form, request deletion
         """
         with patch.object(Domain, "is_expiring", self.custom_is_expiring):
             self.client.force_login(self.user)
@@ -3317,7 +3321,7 @@ class TestDomainDeletion(TestWithUser):
 
             self.assertContains(response, "Domain lifecycle")
             self.assertContains(response, "Renewal form")
-            self.assertNotContains(response, "Request deletion")
+            self.assertContains(response, "Request deletion")
 
     @override_flag("domain_deletion", active=True)
     def test_if_acknowledged_is_not_checked_error_resp(self):
@@ -3335,6 +3339,18 @@ class TestDomainDeletion(TestWithUser):
             message,
             "Check the box if you understand that your domain will be deleted within 7 days of " "making this request.",
         )
+
+    @override_flag("domain_deletion", active=True)
+    def test_if_acknowledged_is_not_checked_error_resp_dns_needed(self):
+        """
+        * Domain is in dns needed state
+        * We have domain deletion waffle turned on
+        * if acknowlege is not checked, it should throw an error
+        """
+        self.client.force_login(self.user)
+
+        message = self.client.post(reverse("domain-delete", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+        self.assertContains(message, "Check the box if you understand that your domain will be deleted.")
 
     @override_flag("domain_deletion", active=True)
     def test_domain_post_successful(self):
@@ -3414,6 +3430,41 @@ class TestDomainDeletion(TestWithUser):
         self.assertContains(json_response, self.domain_with_expiring_soon_date.name)
         self.assertContains(json_response, "On Hold")
 
+    @override_flag("domain_deletion", active=True)
+    def test_domain_state_dns_needed_shows_diff_text(self):
+        """
+        Domain State in DNS NEEDED
+        The text for the domain delete page should not indicate the seven days hold
+        It should show that the domain will delete
+        """
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("domain-delete", kwargs={"domain_pk": self.dns_needed_expiring.id}))
+        self.assertNotContains(
+            response,
+            "Once you request to delete this domain, it will be placed “on hold” for seven days before deletion",
+        )
+        self.assertNotContains(response, "A domain manager can cancel the deletion request by emailing help@get.gov.")
+        self.assertNotContains(response, "The domain will be placed on hold for seven days.")
+        self.assertContains(response, "Yes, delete")
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_dns_needed_post_successful(self):
+        """
+        * Domain State in DNS NEEDED
+        * Posting to the endpoint with a state of DNS Needed
+        * Should delete the Domain
+        """
+        self.client.force_login(self.user)
+        domain_id = self.dns_needed_not_expiring.id
+        self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain_id}),
+            data={"is_policy_acknowledged": "True"},
+            follow=True,
+        )
+
+        json_response = self.client.get("/get-domains-json/")
+        self.assertNotContains(json_response, self.dns_needed_not_expiring.name)
+
 
 class TestDomainDnsRecords(TestDomainOverview):
     mock_api_service = MockCloudflareService()
@@ -3430,11 +3481,15 @@ class TestDomainDnsRecords(TestDomainOverview):
         cls.mock_api_service.stop()
         super().tearDownClass()
 
+    def tearDown(self):
+        delete_all_dns_data()
+        User.objects.all().delete()
+        DomainInformation.objects.all().delete()
+
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
         self.service = CloudflareService(self.client)
-        # DNS Hosting requires staff user role
         self.user = create_user()
         self.client.force_login(self.user)
 
@@ -3444,3 +3499,24 @@ class TestDomainDnsRecords(TestDomainOverview):
         """Can load domain's DNS records page."""
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Records")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records_with_name_servers_no_vanity_servers_table(self):
+        """Name Servers table appears when there are nameservers and shows DNS records"""
+        domain, _, dns_zone = create_initial_dns_setup()
+        create_dns_record(dns_zone)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Name servers")
+        self.assertContains(page, "192.168.1.1")
+        self.assertContains(page, "ex1.dns.gov")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records_with_vanity_nameservers_table(self):
+        """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
+        domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]})
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Name servers")
+        self.assertContains(page, "rainbow.dns.gov")
+        self.assertNotContains(page, "ex1.dns.gov")

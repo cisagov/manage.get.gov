@@ -1,4 +1,6 @@
+import re
 from django.core.validators import MaxLengthValidator
+from django.core.exceptions import ValidationError
 
 """
 Centralized character length "buckets" to keep server-side validation and
@@ -49,3 +51,27 @@ def get_max_length_validator(limit: int) -> MaxLengthValidator:
 # For use by the USWDS framework to display the max length to the user
 def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
+
+
+# For use on DNS record names
+DNS_NAME_FIELD_REGEX = re.compile(r"^[a-zA-Z0-9.-]+$")
+
+
+def validate_dns_name(name: str) -> None:
+    """
+    Validates a DNS record name (single label, excluding the root '@')
+    """
+    if name == "@":
+        return
+
+    if " " in name:
+        raise ValidationError("Enter the DNS name without any spaces.")
+
+    if not DNS_NAME_FIELD_REGEX.fullmatch(name):
+        raise ValidationError("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.")
+
+    if len(name) > DOMAIN_LABEL:
+        raise ValidationError("Name must be no more than 63 characters.")
+
+    if not name[0].isalpha() or not name[-1].isalnum():
+        raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
