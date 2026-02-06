@@ -1,0 +1,19 @@
+<html lang="en">
+<head>
+    <title> Build info - Get.gov</title>
+</head>
+
+<body>
+    <h1>Build Info</h1>
+
+    {% if git_branch %}
+    <p> Running on branch: <strong> {{ git_branch }} </strong></p>
+    {% endif %}
+    
+    <p> Commit hash: <strong> {{ git_commit_hash }}</strong></p>
+    
+    {% if git_tag %}
+       <p>  Git tag: <strong>{{ git_tag }}</strong></p>
+    {% endif %}
+
+</body>
