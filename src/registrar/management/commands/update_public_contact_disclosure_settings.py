@@ -89,7 +89,8 @@ class Command(BaseCommand):
         else:
             types = ",".join(
                 sorted(
-                    f"{getattr(field, 'value', str(field))}:{type_value}" for field, type_value in types_value.items()
+                    f"{getattr(field, 'value', str(field))}:{type_value}"
+                    for field, type_value in types_value.items()
                 )
             )
 
