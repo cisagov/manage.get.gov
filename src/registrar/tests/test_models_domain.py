@@ -38,7 +38,6 @@ import boto3_mocking  # type: ignore
 import copy
 from django.core.exceptions import ValidationError
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -2651,9 +2650,7 @@ class TestCreationDate(MockEppLib):
         # force fetch_cache to be called
         self.domain.statuses
         registry_created_at, created_at_reference = (
-            Domain.objects.filter(pk=self.domain.pk)
-            .values_list("registry_created_at", "created_at_reference")
-            .get()
+            Domain.objects.filter(pk=self.domain.pk).values_list("registry_created_at", "created_at_reference").get()
         )
         self.assertEquals(registry_created_at, self.creation_date)
         self.assertEquals(created_at_reference, original_created_at)
