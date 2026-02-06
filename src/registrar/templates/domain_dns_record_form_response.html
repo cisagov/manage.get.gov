@@ -13,7 +13,7 @@
             <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
             </tr>
         </thead>
-        <tbody id="dnsrecords-table-body">
+        <tbody id="dnsrecords-table-body" x-data="{ expandedId: null }">
     {% else %}
     <tbody id="dnsrecords-table-body"hx-swap-oob="afterbegin:#dnsrecords-table-body">
     {% endif %}

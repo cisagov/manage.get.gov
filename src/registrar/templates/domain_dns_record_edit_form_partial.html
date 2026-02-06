@@ -1,16 +1,26 @@
-<tr x-show="expanded">
+<tr x-show="expandedId == {{dns_record.id}}">
     <td colspan="5">
         <form method="post" class="usa-form usa-form--extra-large">
             {% csrf_token %}
-            {% for field in form %}
-                {{ field }}
+            {% for field in dns_record.form %}
+              {% if field.name != "type_field" %}
+                 {{ field.label_tag }}
+                 {{ field }}
+               {%endif%}
             {% endfor %}
-            <button>
-                Cancel
-            </button>
-            <button type="Submit">
-                Save
-            </button>
+          {{ dns_record.form  }}
+             <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="show_form = false"
+    >
+        Cancel
+    </button>
+    <button
+            class="usa-button"
+        >
+            Save
+    </button>
         </form>
     </td>
 </tr>
