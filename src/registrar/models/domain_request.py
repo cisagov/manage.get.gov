@@ -6,19 +6,25 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
+from django.http import JsonResponse
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
+from registrar.utility.waffle import flag_is_active_for_user
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 from datetime import date
+from httpx import Client
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
+
+from epplibwrapper.errors import RegistryError
+from registrar.utility.errors import RegistrySystemError
 
 logger = logging.getLogger(__name__)
 
@@ -729,6 +735,8 @@ class DomainRequest(TimeStampedModel):
         self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
+        # Cache the original generic_org_type to detect changes on save
+        self._cached_generic_org_type = self.generic_org_type
 
     def clean(self):
         """
@@ -783,6 +791,44 @@ class DomainRequest(TimeStampedModel):
                         )
                 raise ValidationError(errors)
 
+    def clear_irrelevant_fields(self):
+        """Clears fields that are no longer relevant based on current data.
+        This helps ensure that stale data isn't kept around.
+
+        When generic_org_type changes, certain conditional fields become irrelevant:
+        - federal_agency, federal_type: Only relevant for Federal orgs
+        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
+        - is_election_board: Not applicable to Federal, Interstate, or School District
+        - about_your_organization: Only for Special District or Interstate orgs
+        """
+        old_org_type = getattr(self, "_cached_generic_org_type", None)
+        new_org_type = self.generic_org_type
+
+        if old_org_type and new_org_type != old_org_type:
+            if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
+                self.federal_type = None
+                self.federal_agency = None
+
+            if new_org_type != DomainRequest.OrganizationChoices.TRIBAL:
+                self.federally_recognized_tribe = None
+                self.state_recognized_tribe = None
+                self.tribe_name = None
+
+            excluded_from_election = [
+                DomainRequest.OrganizationChoices.FEDERAL,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
+            ]
+            if new_org_type in excluded_from_election:
+                self.is_election_board = None
+
+            about_org_types = [
+                DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+            ]
+            if new_org_type not in about_org_types:
+                self.about_your_organization = None
+
     def save(self, *args, optimistic_lock=False, **kwargs):
         """Save override for custom properties"""
         if optimistic_lock and self.pk is not None:
@@ -800,6 +846,7 @@ class DomainRequest(TimeStampedModel):
 
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+        self.clear_irrelevant_fields()
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()
@@ -1247,6 +1294,10 @@ class DomainRequest(TimeStampedModel):
         created_domain = Domain.objects.create(name=self.requested_domain.name)
         self.approved_domain = created_domain
 
+        # TODO: Remove this DNS Setup action from the approval workflow to the appropriate analyst action
+        if flag_is_active_for_user(self.requester, "dns_hosting"):
+            self.temp_dns_setup_action(created_domain)
+
         # copy the information from DomainRequest into domaininformation
         DomainInformation = apps.get_model("registrar.DomainInformation")
         DomainInformation.create_from_dr(domain_request=self, domain=created_domain)
@@ -1586,6 +1637,40 @@ class DomainRequest(TimeStampedModel):
         """Returns the cisa representatives name in Western order."""
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
+
+    def temp_dns_setup_action(self, created_domain):
+        """Engage DNS Setup if the flag is active"""
+        # Need to import DnsHostService and DnsZone here to avoid circular import error
+        from registrar.services.dns_host_service import DnsHostService
+        from registrar.models.dns.dns_zone import DnsZone
+
+        client = Client()
+        dns_host_service = DnsHostService(client)
+
+        try:
+            x_account_id = dns_host_service.dns_account_setup(created_domain.name)
+            dns_host_service.dns_zone_setup(created_domain.name, x_account_id)
+
+        except Exception:
+            logger.error(f"DNS Setup failed during approval for domain {created_domain.name}", exc_info=True)
+
+        zones = DnsZone.objects.filter(name=created_domain.name)
+        if zones.exists():
+            zone = zones.first()
+            nameservers = zone.nameservers
+
+            if not nameservers:
+                logger.error(f"No nameservers found in DB for domain {created_domain.name}")
+                return JsonResponse(
+                    {"status": "error", "message": "DNS nameservers not available"},
+                    status=400,
+                )
+
+            try:
+                dns_host_service.register_nameservers(zone.name, nameservers)
+            except (RegistryError, RegistrySystemError, Exception) as e:
+                logger.error(f"Error updating registry: {e}")
+                # Don't raise an error here in order to bypass blocking error in local dev
 
     """The following converted_ property methods get field data from this domain request's portfolio,
     if there is an associated portfolio. If not, they return data from the domain request model."""

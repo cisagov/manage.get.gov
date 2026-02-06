@@ -6,6 +6,7 @@ import time
 from auditlog.models import LogEntry
 from datetime import date, timedelta
 from typing import Optional
+from django.conf import settings
 from django.db import transaction, models, IntegrityError
 from django_fsm import FSMField, transition, TransitionNotAllowed  # type: ignore
 from django.utils import timezone
@@ -22,6 +23,7 @@ from registrar.utility.errors import (
     NameserverError,
     NameserverErrorCodes as nsErrorCodes,
 )
+
 
 from epplibwrapper import (
     CLIENT as registry,
@@ -254,6 +256,11 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
 
+        # Prevent enrolling legacy domains into DNS hosting
+        if self.is_enrolled_in_dns_hosting and self._is_legacy():
+            if self._is_legacy():
+                raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
+
         super().save(force_insert, force_update, using, update_fields)
         self._original_updated_at = self.updated_at
 
@@ -264,6 +271,9 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+        if settings.IS_LOCAL:
+            logger.info("IS_LOCAL is true, so skipping registry check for domain availability")
+            return True
         if not cls.string_could_be_domain(domain):
             logger.warning("Not a valid domain: %s" % str(domain))
             # throw invalid domain error so that it can be caught in
@@ -277,6 +287,13 @@ class Domain(TimeStampedModel, DomainHelper):
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
         """Check if domain is pendingDelete state via response from registry."""
+        if settings.IS_LOCAL:
+            logger.info(
+                "IS_LOCAL is true, so skipping registry check for pending delete. "
+                "This enables 'approve' of domain requests locally."
+            )
+            return False
+
         domain_name = domain.lower()
 
         try:
@@ -1020,6 +1037,13 @@ class Domain(TimeStampedModel, DomainHelper):
                 security_contact = self.get_default_security_contact()
                 security_contact.save()
 
+    def _is_legacy(self):
+        """Check if domain is a legacy domain."""
+        if not hasattr(self, "domain_info") or self.domain_info is None:
+            return False
+
+        return self.domain_info.portfolio_id is None
+
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
         """makes the contact in the registry,
@@ -1333,6 +1357,11 @@ class Domain(TimeStampedModel, DomainHelper):
         null=True,
         blank=True,
         help_text="Record of the last change event for ds data",
+    )
+
+    is_enrolled_in_dns_hosting = models.BooleanField(
+        default=False,
+        help_text=("Indicates whether this domain is enrolled in internal DNS hosting."),
     )
 
     def isActive(self):
@@ -2429,3 +2458,9 @@ class Domain(TimeStampedModel, DomainHelper):
             return self._cache[property]
         else:
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
+
+    def delete_with_no_dns(self, *args, **kwargs):
+        # Delete a domain with associated PublicContacts
+        PublicContact.objects.filter(domain=self).delete()
+        # Delete domain
+        self.delete()

@@ -1,4 +1,6 @@
 from datetime import date
+from itertools import chain
+import json
 from httpx import Client
 import logging
 from contextvars import ContextVar
@@ -7,6 +9,7 @@ from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
+from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
@@ -22,7 +25,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
-from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, DomainDNSRecordForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -83,7 +86,6 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
-from django import forms
 
 logger = logging.getLogger(__name__)
 
@@ -151,9 +153,9 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
-        context["domain_is_ready"] = domain.state == domain.State.READY
+        context["domain_is_in_deletable_state"] = domain.state in [domain.State.READY, domain.State.DNS_NEEDED]
         context["domain_is_deletable"] = context["is_domain_manager"] and (
-            context["domain_is_ready"] or context["domain_is_expiring_or_expired"]
+            context["domain_is_in_deletable_state"] or context["domain_is_expiring_or_expired"]
         )
         context["dns_hosting"] = flag_is_active_for_user(user, "dns_hosting")
         context["breadcrumbs"] = self.get_breadcrumb_items()
@@ -434,6 +436,15 @@ class DomainFormBaseView(DomainBaseView, FormMixin):
                     exc_info=True,
                 )
 
+    def get_form_errors(self, form):
+        """
+        Queue all errors from a form submission into Django message queue.
+        Used mainly to prompt form errors before a page refresh.
+        """
+        form_errors_dict = dict(form.errors)
+        errors = list(chain(*form_errors_dict.values()))
+        return errors
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN, HAS_PORTFOLIO_DOMAINS_VIEW_ALL)
 class DomainView(DomainBaseView):
@@ -602,22 +613,38 @@ class DomainDeleteView(DomainFormBaseView):
     def post(self, request, domain_pk):
         domain = get_object_or_404(Domain, pk=domain_pk)
         self.object = domain
-        form = self.form_class(request.POST)
-        is_policy_acknowledged = request.POST.get("is_policy_acknowledged", "False") == "True"
+
+        # passing in domain state when initiating the folorm
+        form = self.form_class(request.POST, domain_state=domain.state)
 
         if form.is_valid():
-            if domain.state != "ready":
+            # Validate domain state
+            if domain.state not in [Domain.State.READY, Domain.State.DNS_NEEDED]:
                 messages.error(request, f"Cannot delete domain {domain.name} from current state {domain.state}.")
                 return self.render_to_response(self.get_context_data(form=form))
-            if is_policy_acknowledged:
+
+            # READY state will place domain on hold
+            if domain.state == Domain.State.READY:
                 domain.place_client_hold()
                 domain.save()
-                # Email all domain managers that domain manager has been removed
                 send_domain_manager_on_hold_email_to_domain_managers(domain=domain, requestor=request.user)
                 messages.success(request, "The deletion request for this domain has been submitted.")
-                # redirect to domain overview
                 return redirect(reverse("domain", kwargs={"domain_pk": domain.pk}))
-            return self.render_to_response(self.get_context_data(form=form))
+
+            # DNS_NEEDED state will delete domain
+            elif domain.state == Domain.State.DNS_NEEDED:
+                try:
+                    domain_name = domain.name
+                    has_port = domain.domain_info.portfolio
+                    domain.delete_with_no_dns()
+                    messages.success(request, f"{domain_name} has been deleted successfully")
+                    if has_port:
+                        return redirect(reverse("domains"))
+                    else:
+                        return redirect(reverse("home") + "?legacy_home=1")
+                except Exception:
+                    messages.error(request, f"Failed to delete {domain.name}. Please try again.")
+                    return self.render_to_response(self.get_context_data(form=form))
 
         # Form not valid -> redisplay with errors
         return self.render_to_response(self.get_context_data(form=form))
@@ -786,85 +813,8 @@ class DomainDNSView(DomainBaseView):
         return "DNS"
 
 
-class DomainDNSRecordForm(forms.Form):
-    """Form for adding DNS records in prototype."""
-
-    type_field = forms.ChoiceField(
-        label="Type",
-        choices=[("", "Select a type"), ("A", "A")],
-        required=True,
-        widget=forms.Select(
-            attrs={
-                "class": "usa-select",
-                "required": "required",
-                "x-model": "recordType",
-            }
-        ),
-    )
-
-    name = forms.CharField(
-        label="Name",
-        required=True,
-        help_text="Use @ for root",
-        widget=forms.TextInput(
-            attrs={
-                "class": "usa-input",
-            }
-        ),
-    )
-
-    content = forms.GenericIPAddressField(
-        label="IPv4 Address",
-        required=True,
-        protocol="IPv4",
-        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
-        help_text="Example: 192.0.2.10",
-        widget=forms.TextInput(
-            attrs={
-                "class": "usa-input",
-                "hide_character_count": True,
-            }
-        ),
-    )
-
-    ttl = forms.ChoiceField(
-        label="TTL",
-        choices=[
-            (60, "1 minute"),
-            (300, "5 minutes"),
-            (1800, "30 minutes"),
-            (3600, "1 hour"),
-            (7200, "2 hours"),
-            (18000, "5 hours"),
-            (43200, "12 hours"),
-            (86400, "1 day"),
-        ],
-        initial=300,
-        required=False,
-        widget=forms.Select(
-            attrs={
-                "class": "usa-select",
-            }
-        ),
-    )
-
-    comment = forms.CharField(
-        label="Comment",
-        required=False,
-        help_text="The information you enter here will not impact DNS record resolution and \
-        is meant only for your reference.",
-        max_length=500,
-        widget=forms.Textarea(
-            attrs={
-                "class": "usa-textarea usa-textarea--medium",
-                "rows": 2,
-            }
-        ),
-    )
-
-
 @grant_access(IS_STAFF)
-class DomainDNSRecordView(DomainFormBaseView):
+class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
 
@@ -888,6 +838,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
             context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            context["nameservers"] = dns_zone.nameservers
         return context
 
     def has_permission(self):
@@ -912,6 +863,7 @@ class DomainDNSRecordView(DomainFormBaseView):
         """Handle form submission."""
         self.object = self.get_object()
         form = self.get_form()
+        self._get_domain(request)
         errors = []
         if form.is_valid():
             try:
@@ -927,8 +879,12 @@ class DomainDNSRecordView(DomainFormBaseView):
                 }
 
                 domain_name = self.object.name
+                # TODO: Delete this dns setup and registering nameservers code after we have determined
+                # the final analyst action to create an account and zone. The MVP should not trigger DNS account/zone
+                # creation on submission of the DNS Record form.
                 try:
-                    self.dns_host_service.dns_setup(domain_name)
+                    x_account_id = self.dns_host_service.dns_account_setup(domain_name)
+                    self.dns_host_service.dns_zone_setup(domain_name, x_account_id)
                 except APIError as e:
                     logger.error(f"dnsSetup failed {e}")
                     return JsonResponse(
@@ -938,7 +894,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                         },
                         status=400,
                     )
-
                 zones = DnsZone.objects.filter(name=domain_name)
                 if zones.exists():
                     zone = zones.first()
@@ -950,7 +905,6 @@ class DomainDNSRecordView(DomainFormBaseView):
                             {"status": "error", "message": "DNS nameservers not available"},
                             status=400,
                         )
-
                     try:
                         self.dns_host_service.register_nameservers(zone.name, nameservers)
                     except (RegistryError, RegistrySystemError, Exception) as e:
@@ -973,7 +927,35 @@ class DomainDNSRecordView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-        return super().post(request)
+            new_form = DomainDNSRecordForm()
+            hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
+            row_index = len(self.get_context_data()["dns_records"])
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form,
+                    "counter": row_index,
+                    "nameservers": nameservers,
+                },
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
+            )
+        else:
+            errors = self.get_form_errors(form)
+            for error in errors:
+                messages.error(request, f"{error}")
+            self.form_invalid(form)
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {"dns_record": None, "domain": self.object, "form": form},
+                headers={
+                    "HX-TRIGGER": "messagesRefresh",
+                },
+            )
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
