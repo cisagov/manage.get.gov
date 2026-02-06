@@ -72,6 +72,12 @@ class Domain(TimeStampedModel, DomainHelper):
        domain meets the required checks.
     """
 
+    @cached_property
+    def epp_service(self):
+        from registrar.services.epp_registry_service import EPPRegistryService
+
+        return EPPRegistryService()
+
     class Meta:
         """Contains meta information about this class"""
 
@@ -92,59 +98,6 @@ class Domain(TimeStampedModel, DomainHelper):
         self._cache = {}
         super(Domain, self).__init__(*args, **kwargs)
         self._original_updated_at = self.__dict__.get("updated_at", None)
-
-    class Status(models.TextChoices):
-        """
-        The status codes we can receive from the registry.
-
-        These are detailed in RFC 5731 in section 2.3.
-        https://www.rfc-editor.org/std/std69.txt
-        """
-
-        # Requests to delete the object MUST be rejected.
-        CLIENT_DELETE_PROHIBITED = "clientDeleteProhibited"
-        SERVER_DELETE_PROHIBITED = "serverDeleteProhibited"
-
-        # DNS delegation information MUST NOT be published for the object.
-        CLIENT_HOLD = "clientHold"
-        SERVER_HOLD = "serverHold"
-
-        # Requests to renew the object MUST be rejected.
-        CLIENT_RENEW_PROHIBITED = "clientRenewProhibited"
-        SERVER_RENEW_PROHIBITED = "serverRenewProhibited"
-
-        # Requests to transfer the object MUST be rejected.
-        CLIENT_TRANSFER_PROHIBITED = "clientTransferProhibited"
-        SERVER_TRANSFER_PROHIBITED = "serverTransferProhibited"
-
-        # Requests to update the object (other than to remove this status)
-        # MUST be rejected.
-        CLIENT_UPDATE_PROHIBITED = "clientUpdateProhibited"
-        SERVER_UPDATE_PROHIBITED = "serverUpdateProhibited"
-
-        # Delegation information has not been associated with the object.
-        # This is the default status when a domain object is first created
-        # and there are no associated host objects for the DNS delegation.
-        # This status can also be set by the server when all host-object
-        # associations are removed.
-        INACTIVE = "inactive"
-
-        # This is the normal status value for an object that has no pending
-        # operations or prohibitions.  This value is set and removed by the
-        # server as other status values are added or removed.
-        OK = "ok"
-
-        # A transform command has been processed for the object, but the
-        # action has not been completed by the server.  Server operators can
-        # delay action completion for a variety of reasons, such as to allow
-        # for human review or third-party action.  A transform command that
-        # is processed, but whose requested action is pending, is noted with
-        # response code 1001.
-        PENDING_CREATE = "pendingCreate"
-        PENDING_DELETE = "pendingDelete"
-        PENDING_RENEW = "pendingRenew"
-        PENDING_TRANSFER = "pendingTransfer"
-        PENDING_UPDATE = "pendingUpdate"
 
     class State(models.TextChoices):
         """These capture (some of) the states a domain object can be in."""
@@ -271,6 +224,8 @@ class Domain(TimeStampedModel, DomainHelper):
         is called in the validate function on the request/domain page
 
         throws- RegistryError or InvalidDomainError"""
+        from registrar.services.epp_registry_service import EPPRegistryService
+
         if settings.IS_LOCAL:
             logger.info("IS_LOCAL is true, so skipping registry check for domain availability")
             return True
@@ -280,12 +235,11 @@ class Domain(TimeStampedModel, DomainHelper):
             # validate_and_handle_errors in domain_helper
             raise errors.InvalidDomainError()
 
-        domain_name = domain.lower()
-        req = commands.CheckDomain([domain_name])
-        return registry.send(req, cleaned=True).res_data[0].avail
+        return EPPRegistryService().is_domain_available(domain)
 
     @classmethod
     def is_pending_delete(cls, domain: str) -> bool:
+        from registrar.services.epp_registry_service import EPPRegistryService
         """Check if domain is pendingDelete state via response from registry."""
         if settings.IS_LOCAL:
             logger.info(
@@ -294,47 +248,14 @@ class Domain(TimeStampedModel, DomainHelper):
             )
             return False
 
-        domain_name = domain.lower()
-
-        try:
-            info_req = commands.InfoDomain(domain_name)
-            info_response = registry.send(info_req, cleaned=True)
-            # Ensure res_data exists and is not empty
-            if info_response and info_response.res_data:
-                # Use _extract_data_from_response bc it's same thing but jsonified
-                domain_response = cls._extract_data_from_response(cls, info_response)  # type: ignore
-                domain_status_state = domain_response.get("statuses")
-                if "pendingDelete" in str(domain_status_state):
-                    return True
-        except RegistryError as err:
-            if not err.is_connection_error():
-                logger.info(f"Domain does not exist yet so it won't be in pending delete -- {err}")
-                return False
-            else:
-                raise err
-        return False
+        return EPPRegistryService().is_pending_delete(domain)
 
     @classmethod
     def is_not_deleted(cls, domain: str) -> bool:
-        """Check if the domain is NOT DELETED."""
-        domain_name = domain.lower()
+        from registrar.services.epp_registry_service import EPPRegistryService
 
-        try:
-            info_req = commands.InfoDomain(domain_name)
-            info_response = registry.send(info_req, cleaned=True)
-            if info_response and info_response.res_data:
-                return True
-            # No res_data implies likely deleted
-            return False
-        except RegistryError as err:
-            if not err.is_connection_error():
-                # 2303 = Object does not exist -> Domain is deleted
-                if err.code == 2303:
-                    return False
-                logger.info(f"Unexpected registry error while checking domain -- {err}")
-                return True
-            else:
-                raise err
+        """Check if the domain is NOT DELETED."""
+        return EPPRegistryService().is_not_deleted(domain)
 
     @classmethod
     def registered(cls, domain: str) -> bool:
@@ -412,13 +333,12 @@ class Domain(TimeStampedModel, DomainHelper):
             # if no expiration date from registry, set it to today
             logger.warning("current expiration date not set; setting to today", exc_info=True)
             exp_date = date.today()
-        # create RenewDomain request
-        request = commands.RenewDomain(name=self.name, cur_exp_date=exp_date, period=epp.Period(length, unit))
 
         try:
             # update expiration date in registry, and set the updated
             # expiration date in the registrar, and in the cache
-            self._cache["ex_date"] = registry.send(request, cleaned=True).res_data[0].ex_date
+            new_exp_date = self.epp_service.renew_domain(self.name, exp_date, length, unit)
+            self._cache["ex_date"] = new_exp_date
             self.expiration_date = self._cache["ex_date"]
             if persist:
                 if optimistic_lock:
@@ -481,18 +401,9 @@ class Domain(TimeStampedModel, DomainHelper):
         """Creates the host object in the registry
         doesn't add the created host to the domain
         returns ErrorCode (int)"""
-        if addrs is not None and addrs != []:
-            addresses = [epp.Ip(addr=addr, ip="v6" if self.is_ipv6(addr) else None) for addr in addrs]
-            request = commands.CreateHost(name=host, addrs=addresses)
-        else:
-            request = commands.CreateHost(name=host)
-
         try:
-            logger.info("_create_host()-> sending req as %s" % request)
-            response = registry.send(request, cleaned=True)
-            return response.code
+            return self.epp_service.create_host(host, addrs if addrs else [])
         except RegistryError as e:
-            logger.error("Error _create_host, code was %s error was %s" % (e.code, e))
             # OBJECT_EXISTS is an expected error code that should not raise
             # an exception, rather return the code to be handled separately
             if e.code == ErrorCode.OBJECT_EXISTS:
@@ -858,7 +769,7 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         Get the domain `status` elements from the registry.
 
-        A domain's status indicates various properties. See Domain.Status.
+        A domain's status indicates various properties. See EPPRegistryService.Status.
         """
         try:
             return self._get_property("statuses")
@@ -905,41 +816,23 @@ class Domain(TimeStampedModel, DomainHelper):
         should be used when changing email address
         or other contact info on an existing domain
         """
-        updateContact = commands.UpdateContact(
-            id=contact.registry_id,
-            # type: ignore
-            postal_info=self._make_epp_contact_postal_info(contact=contact),
-            email=contact.email,
-            voice=contact.voice,
-            fax=contact.fax,
-            auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-        )  # type: ignore
-
-        updateContact.disclose = self._disclose_fields(contact=contact)  # type: ignore
         try:
-            registry.send(updateContact, cleaned=True)
+            self.epp_service.update_contact(contact, self)
         except RegistryError as e:
             logger.error("Error updating contact, code was %s error was %s" % (e.code, e))
+            raise
             # TODO - ticket 433 human readable error handling here
 
     def _update_domain_with_contact(self, contact: PublicContact, rem=False):
         """adds or removes a contact from a domain
         rem being true indicates the contact will be removed from registry"""
         logger.info("_update_domain_with_contact() received type %s " % contact.contact_type)
-        domainContact = epp.DomainContact(contact=contact.registry_id, type=contact.contact_type)
-
-        updateDomain = commands.UpdateDomain(name=self.name, add=[domainContact])
-        if rem:
-            updateDomain = commands.UpdateDomain(name=self.name, rem=[domainContact])
 
         try:
-            registry.send(updateDomain, cleaned=True)
+            self.epp_service.update_domain_contact(self.name, contact.registry_id, contact.contact_type, remove=rem)
         except RegistryError as e:
             logger.error("Error changing contact on a domain. Error code is %s error was %s" % (e.code, e))
-            action = "add"
-            if rem:
-                action = "remove"
-
+            action = "add" if not rem else "remove"
             raise Exception("Can't %s the contact of type %s" % (action, contact.contact_type))
 
     @Cache
@@ -950,11 +843,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _add_registrant_to_existing_domain(self, contact: PublicContact):
         """Used to change the registrant contact on an existing domain"""
-        updateDomain = commands.UpdateDomain(name=self.name, registrant=contact.registry_id)
         try:
-            registry.send(updateDomain, cleaned=True)
+            self.epp_service.update_domain_registrant(self.name, contact.registry_id)
         except RegistryError as e:
             logger.error("Error changing to new registrant error code is %s, error is %s" % (e.code, e))
+            raise
             # TODO-error handling better here?
 
     def _set_singleton_contact(self, contact: PublicContact, expectedType: str):  # noqa
@@ -981,7 +874,7 @@ class Domain(TimeStampedModel, DomainHelper):
         )
         # if no record exists with this contact type
         # make contact in registry, duplicate and errors handled there
-        errorCode = self._make_contact_in_registry(contact)
+        errorCode = self.epp_service.create_contact(contact, self)
 
         # contact is already added to the domain, but something may have changed on it
         alreadyExistsInRegistry = errorCode == ErrorCode.OBJECT_EXISTS
@@ -1120,15 +1013,11 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             return None
 
-    def clientHoldStatus(self):
-        return epp.Status(state=self.Status.CLIENT_HOLD, description="", lang="en")
-
     def _place_client_hold(self):
         """This domain should not be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
-        request = commands.UpdateDomain(name=self.name, add=[self.clientHoldStatus()])
         try:
-            registry.send(request, cleaned=True)
+            self.epp_service.place_client_hold(self.name)
             self._invalidate_cache()
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
@@ -1138,9 +1027,8 @@ class Domain(TimeStampedModel, DomainHelper):
     def _remove_client_hold(self):
         """This domain is okay to be active.
         may raises RegistryError, should be caught or handled correctly by caller"""
-        request = commands.UpdateDomain(name=self.name, rem=[self.clientHoldStatus()])
         try:
-            registry.send(request, cleaned=True)
+            self.epp_service.remove_client_hold(self.name)
             self._invalidate_cache()
         except RegistryError as err:
             # if registry error occurs, log the error, and raise it as well
@@ -1149,9 +1037,19 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _delete_domain(self):  # noqa
         """This domain should be deleted from the registry
-        may raises RegistryError, should be caught or handled correctly by caller"""
+        Complete deletion process:
+        1. Validate no hosts are in use by other domains
+        2. Remove nameservers and hosts from registry
+        3. Remove non-registrant contacts from registry
+        4. Remove DNSSEC data from registry
+        5. Poll to confirm domain is ready for deletion
+        6. Delete domain from registry
+        7. Delete related objects from database
+        may raise RegistryError, should be caught or handled correctly by caller
+        """
+        logger.info("Starting deletion process for domain %s", self.name)
 
-        logger.info("Deleting subdomains for %s", self.name)
+        logger.info("Validating subdomains for %s", self.name)
         # check if any subdomains are in use by another domain
         hosts = Host.objects.filter(name__regex=r".+\.{}".format(self.name))
         for host in hosts:
@@ -1161,11 +1059,13 @@ class Domain(TimeStampedModel, DomainHelper):
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
                 )
-
+        # Delete nameservers and hosts from EPP
         self._delete_nameservers_and_hosts()
 
+        # Delete non-registrant contacts from EPP
         self._delete_nonregistrant_contacts()
 
+        # Delete DNSSEC data from EPP
         self._delete_dnssecdata()
 
         # Check if the domain can be deleted
@@ -1173,10 +1073,9 @@ class Domain(TimeStampedModel, DomainHelper):
             note = "Domain has associated objects that prevent deletion."
             raise RegistryError(code=ErrorCode.COMMAND_FAILED, note=note)
 
-        # Delete the domain
-        request = commands.DeleteDomain(name=self.name)
+        # Delete domain from EPP registry
         try:
-            registry.send(request, cleaned=True)
+            self.epp_service.delete_domain(self.name)
             logger.info("Domain %s deleted successfully.", self.name)
         except RegistryError as e:
             logger.error("Error deleting domain %s: %s", self.name, e)
@@ -1184,15 +1083,38 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.info("Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s", self.name)
         self._delete_related_objects_from_db()
+        logger.info("Completed deletion process for domain %s", self.name)
 
     def _delete_nameservers_and_hosts(self):
-        """Removes nameservers and deletes associated hosts in EPP if not in use."""
+        """Delete all nameservers and host objects from EPP registry.
+
+        This removes hosts from the domain first, then deletes the host
+        objects themselves from the registry.
+        This method:
+        1. Calculates which hosts need to be removed (getNameserverChanges)
+        2. Updates any hosts that changed IPs
+        3. Removes all hosts from the domain object (UpdateDomain)
+        4. Deletes host objects from registry (DeleteHost)
+        Raises:
+                RegistryError: If EPP operations fail
+                NameserverError: If host removal fails
+        """
+
+        logger.info("Deleting nameservers and hosts for %s", self.name)
+
         try:
+            # Get the changes needed to remove all nameservers (empty list = remove all)
             deleted_values, updated_values, new_values, oldNameservers = self.getNameserverChanges(hosts=[])
-            self._update_host_values(updated_values, oldNameservers)  # Returns nothing, just need to be run and errors
+
+            # Update any hosts that have IP changes
+            self._update_host_values(updated_values, oldNameservers)
+
             addToDomainList, _ = self.createNewHostList(new_values)
             deleteHostList, _ = self.createDeleteHostList(deleted_values)
+
+            # Remove hosts from domain in EPP (uses epp_service.update_domain_hosts)
             responseCode = self.addAndRemoveHostsFromDomain(hostsToAdd=addToDomainList, hostsToDelete=deleteHostList)
+
         except RegistryError as e:
             logger.error(f"Error trying to delete hosts from domain {self}: {e}")
             raise
@@ -1220,12 +1142,15 @@ class Domain(TimeStampedModel, DomainHelper):
                     try:
                         self._update_domain_with_contact(contact, rem=True)
                     except Exception as e:
-                        logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
-                    request = commands.DeleteContact(contact.registry_id)
-                    registry.send(request, cleaned=True)
-                    logger.info(f"sent DeleteContact for {contact}")
-            except RegistryError as e:
-                logger.error(f"Error deleting contact: {contact}, {e}", exc_info=True)
+                        logger.error(f"Error removing contact {contact.registry_id} from domain: {e}", exc_info=True)
+
+                    try:
+                        self.epp_service.delete_contact(contact.registry_id)
+                        logger.info(f"Deleted contact {contact.registry_id} from registry")
+                    except RegistryError as e:
+                        logger.error(f"Registry Error deleting contact {contact}: {e}", exc_info=True)
+            except Exception as e:
+                logger.error(f"Error processing contact {contact}: {e}", exc_info=True)
 
         logger.info(f"Finished deleting contacts for {self.name}")
 
@@ -1281,7 +1206,7 @@ class Domain(TimeStampedModel, DomainHelper):
         last_info_error = None
         for attempt in range(max_attempts):
             try:
-                info_response = registry.send(commands.InfoDomain(name=self.name), cleaned=True)
+                info_response = self.epp_service.fetch_domain_info(self.name)
                 domain_info = info_response.res_data[0]
                 hosts_associated = getattr(domain_info, "hosts", None)
                 if hosts_associated is None or len(hosts_associated) == 0:
@@ -1503,8 +1428,7 @@ class Domain(TimeStampedModel, DomainHelper):
         by using the InfoContact command.
         Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
         try:
-            req = commands.InfoContact(id=contact.registry_id)
-            result = registry.send(req, cleaned=True).res_data[0]
+            result = self.epp_service.fetch_contact_info(contact.registry_id)
             return result if not get_result_as_dict else vars(result)
         except RegistryError as error:
             logger.error(
@@ -1641,8 +1565,7 @@ class Domain(TimeStampedModel, DomainHelper):
         count = 0
         while not exitEarly and count < 3:
             try:
-                req = commands.InfoDomain(name=self.name)
-                domainInfoResponse = registry.send(req, cleaned=True)
+                domainInfoResponse = self.epp_service.fetch_domain_info(self.name)
                 exitEarly = True
                 return domainInfoResponse
             except RegistryError as e:
@@ -1677,20 +1600,14 @@ class Domain(TimeStampedModel, DomainHelper):
 
         registrantID = self.addRegistrant()
 
-        req = commands.CreateDomain(
-            name=self.name,
-            registrant=registrantID,
-            auth_info=epp.DomainAuthInfo(pw="2fooBAR123fooBaz"),  # not a password
-        )
-
         try:
-            registry.send(req, cleaned=True)
-
+            self.epp_service.create_domain(self.name, registrantID)
         except RegistryError as err:
             if err.code != ErrorCode.OBJECT_EXISTS:
                 raise err
 
-        self.addAllDefaults()
+        with transaction.atomic():
+            self.addAllDefaults()
 
     def addAllDefaults(self):
         """Adds default security, technical, and administrative contacts"""
@@ -1797,29 +1714,11 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             self._invalidate_cache()
 
-    # def is_dns_needed(self):
-    #     """Commented out and kept in the codebase
-    #     as this call should be made, but adds
-    #     a lot of processing time
-    #     when EPP calling is made more efficient
-    #     this should be added back in
-
-    #     The goal is to double check that
-    #     the nameservers we set are in fact
-    #     on the registry
-    #     """
-    #     self._invalidate_cache()
-    #     nameserverList = self.nameservers
-    #     return len(nameserverList) < 2
-
-    # def dns_not_needed(self):
-    #     return not self.is_dns_needed()
-
     @transition(
         field="state",
         source=[State.DNS_NEEDED, State.READY],
         target=State.READY,
-        # conditions=[dns_not_needed]
+        # conditions=[self.epp_service.dns_not_needed]
     )
     def ready(self):
         """Transition to the ready state
@@ -1838,7 +1737,7 @@ class Domain(TimeStampedModel, DomainHelper):
         field="state",
         source=[State.READY],
         target=State.DNS_NEEDED,
-        # conditions=[is_dns_needed]
+        # conditions=[self.epp_service.is_dns_needed]
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
@@ -1908,134 +1807,20 @@ class Domain(TimeStampedModel, DomainHelper):
             type="loc",
         )
 
-    def _make_contact_in_registry(self, contact: PublicContact):
-        """Create the contact in the registry, ignore duplicate contact errors
-        returns int corresponding to ErrorCode values"""
+    def _fetch_contacts_from_epp(self, contact_data):
+        """Fetch contact info from EPP. Returns dict of unsaved PublicContact objects."""
+        contacts_dict = self.epp_service.fetch_contacts(contact_data)
 
-        create = commands.CreateContact(
-            id=contact.registry_id,
-            postal_info=self._make_epp_contact_postal_info(contact=contact),
-            email=contact.email,
-            voice=contact.voice,
-            fax=contact.fax,
-            auth_info=epp.ContactAuthInfo(pw="2fooBAR123fooBaz"),
-        )  # type: ignore
-        # security contacts should only show email addresses, for now
-        create.disclose = self._disclose_fields(contact=contact)
-        try:
-            registry.send(create, cleaned=True)
-            return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
-        except RegistryError as err:
-            # don't throw an error if it is just saying this is a duplicate contact
-            if err.code != ErrorCode.OBJECT_EXISTS:
-                logger.error(
-                    "Registry threw error for contact id %s"
-                    " contact type is %s,"
-                    " error code is\n %s"
-                    " full error is %s",
-                    contact.registry_id,
-                    contact.contact_type,
-                    err.code,
-                    err,
-                )
-                # TODO - 433 Error handling here
+        # Set domain reference for each contact
+        for contact_type, contact_obj in contacts_dict.items():
+            if contact_obj:
+                contact_obj.domain = self
 
-            else:
-                logger.warning(
-                    "Registrar tried to create duplicate contact for id %s",
-                    contact.registry_id,
-                )
-            return err.code
-
-    def _fetch_contacts(self, contact_data):
-        """Fetch contact info."""
-        choices = PublicContact.ContactTypeChoices
-        # We expect that all these fields get populated,
-        # so we can create these early, rather than waiting.
-        contacts_dict = {
-            choices.ADMINISTRATIVE: None,
-            choices.SECURITY: None,
-            choices.TECHNICAL: None,
-        }
-        for domainContact in contact_data:
-            req = commands.InfoContact(id=domainContact.contact)
-            data = registry.send(req, cleaned=True).res_data[0]
-            logger.info(f"_fetch_contacts => this is the data: {data}")
-
-            # Map the object we recieved from EPP to a PublicContact
-            mapped_object = self.map_epp_contact_to_public_contact(data, domainContact.contact, domainContact.type)
-            logger.info(f"_fetch_contacts => mapped_object: {mapped_object}")
-
-            # Find/create it in the DB
-            in_db = self._get_or_create_public_contact(mapped_object)
-            contacts_dict[in_db.contact_type] = in_db.registry_id
         return contacts_dict
-
-    def _get_or_create_contact(self, contact: PublicContact):
-        """Try to fetch info about a contact. Create it if it does not exist."""
-        logger.info("_get_or_create_contact() -> Fetching contact info")
-        try:
-            return self._request_contact_info(contact)
-        except RegistryError as e:
-            if e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
-                logger.info("_get_or_create_contact()-> contact doesn't exist so making it")
-                contact.domain = self
-                contact.save()  # this will call the function based on type of contact
-                return self._request_contact_info(contact=contact)
-            else:
-                logger.error(
-                    "Registry threw error for contact id %s"
-                    " contact type is %s,"
-                    " error code is\n %s"
-                    " full error is %s",
-                    contact.registry_id,
-                    contact.contact_type,
-                    e.code,
-                    e,
-                )
-
-                raise e
 
     def is_ipv6(self, ip: str):
         ip_addr = ipaddress.ip_address(ip)
         return ip_addr.version == 6
-
-    def _fetch_hosts(self, host_data):
-        """Fetch host info."""
-        hosts = []
-        for name in host_data:
-            req = commands.InfoHost(name=name)
-            data = registry.send(req, cleaned=True).res_data[0]
-            host = {
-                "name": name,
-                "addrs": [item.addr for item in getattr(data, "addrs", [])],
-                "cr_date": getattr(data, "cr_date", ...),
-                "statuses": getattr(data, "statuses", ...),
-                "tr_date": getattr(data, "tr_date", ...),
-                "up_date": getattr(data, "up_date", ...),
-            }
-            hosts.append({k: v for k, v in host.items() if v is not ...})
-        return hosts
-
-    def _convert_ips(self, ip_list: list[str]):
-        """Convert Ips to a list of epp.Ip objects
-        use when sending update host command.
-        if there are no ips an empty list will be returned
-
-        Args:
-            ip_list (list[str]): the new list of ips, may be empty
-        Returns:
-            edited_ip_list (list[epp.Ip]): list of epp.ip objects ready to
-            be sent to the registry
-        """
-        edited_ip_list = []
-        if ip_list is None:
-            return []
-
-        for ip_addr in ip_list:
-            edited_ip_list.append(epp.Ip(addr=ip_addr, ip="v6" if self.is_ipv6(ip_addr) else None))
-
-        return edited_ip_list
 
     def _update_host(self, nameserver: str, ip_list: list[str], old_ip_list: list[str]):
         """Update an existing host object in EPP. Sends the update host command
@@ -2056,16 +1841,9 @@ class Domain(TimeStampedModel, DomainHelper):
             added_ip_list = set(ip_list).difference(old_ip_list)
             removed_ip_list = set(old_ip_list).difference(ip_list)
 
-            request = commands.UpdateHost(
-                name=nameserver,
-                add=self._convert_ips(list(added_ip_list)),
-                rem=self._convert_ips(list(removed_ip_list)),
-            )
-            response = registry.send(request, cleaned=True)
-            logger.info("_update_host()-> sending req as %s" % request)
-            return response.code
+            response_code = self.epp_service.update_host(nameserver, list(added_ip_list), list(removed_ip_list))
+            return response_code
         except RegistryError as e:
-            logger.error("Error _update_host, code was %s error was %s" % (e.code, e))
             # OBJECT_EXISTS is an expected error code that should not raise
             # an exception, rather return the code to be handled separately
             if e.code == ErrorCode.OBJECT_EXISTS:
@@ -2088,14 +1866,9 @@ class Domain(TimeStampedModel, DomainHelper):
             return ErrorCode.COMMAND_COMPLETED_SUCCESSFULLY
 
         try:
-            updateReq = commands.UpdateDomain(name=self.name, rem=hostsToDelete, add=hostsToAdd)
-
-            logger.info("addAndRemoveHostsFromDomain()-> sending update domain req as %s" % updateReq)
-            response = registry.send(updateReq, cleaned=True)
-
-            return response.code
+            return self.epp_service.update_domain_hosts(self.name, hostsToAdd, hostsToDelete)
         except RegistryError as e:
-            logger.error("Error addAndRemoveHostsFromDomain, code was %s error was %s" % (e.code, e))
+            logger.error(f"Error updating domain hosts: {e.code} - {e}")
             return e.code
 
     def _delete_hosts_if_not_used(self, hostsToDelete: list[str]):
@@ -2108,17 +1881,14 @@ class Domain(TimeStampedModel, DomainHelper):
             None
 
         """
-        try:
-            for nameserver in hostsToDelete:
-                deleteHostReq = commands.DeleteHost(name=nameserver)
-                registry.send(deleteHostReq, cleaned=True)
-                logger.info("_delete_hosts_if_not_used()-> sending delete host req as %s" % deleteHostReq)
-
-        except RegistryError as e:
-            if e.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
-                logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
-            else:
-                logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
+        for nameserver in hostsToDelete:
+            try:
+                self.epp_service.delete_host(nameserver)
+            except RegistryError as e:
+                if e.code == ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION:
+                    logger.info("Did not remove host %s because it is in use on another domain." % nameserver)
+                else:
+                    logger.error("Error _delete_hosts_if_not_used, code was %s error was %s" % (e.code, e))
 
     def _fix_unknown_state(self, cleaned):
         """
@@ -2185,20 +1955,54 @@ class Domain(TimeStampedModel, DomainHelper):
             data_response = self._get_or_create_domain_in_registry()
             cache = self._extract_data_from_response(data_response)
             cleaned = self._clean_cache(cache, data_response)
-            self._update_hosts_and_contacts(cleaned, fetch_hosts, fetch_contacts)
 
-            if self.state == self.State.UNKNOWN:
-                self._fix_unknown_state(cleaned)
-            if fetch_hosts:
-                self._update_hosts_and_ips_in_db(cleaned)
-            if fetch_contacts:
-                self._update_security_contact_in_db(cleaned)
-            self._update_dates(cleaned)
+            # Fetch hosts and contacts
+            cleaned = self._update_cache_hosts(cleaned, fetch_hosts)
+            cleaned = self._update_cache_contacts(cleaned, fetch_contacts)
+
+            # Perform db updates
+            self._update_database(cleaned, fetch_hosts, fetch_contacts)
+
+            # After DB save, convert objects to strings for cache
+            if fetch_contacts and "contacts" in cleaned:
+                cleaned["contacts"] = {k: (v.registry_id if v else None) for k, v in cleaned["contacts"].items()}
 
             self._cache = cleaned
 
         except RegistryError as e:
             logger.error(e)
+
+    def _update_cache_hosts(self, cleaned, fetch_hosts):
+        """Update hosts in cache."""
+        if fetch_hosts:
+            cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
+        else:
+            old_cache_hosts = self._cache.get("hosts")
+            if old_cache_hosts is not None:
+                cleaned["hosts"] = old_cache_hosts
+        return cleaned
+
+    def _update_cache_contacts(self, cleaned, fetch_contacts):
+        """Update contacts in cache."""
+        if fetch_contacts:
+            fetched_contacts = self._get_contacts(cleaned.get("_contacts", []))
+            cleaned["contacts"] = fetched_contacts
+        else:
+            old_cache_contacts = self._cache.get("contacts")
+            if old_cache_contacts is not None:
+                cleaned["contacts"] = old_cache_contacts
+        return cleaned
+
+    def _update_database(self, cleaned, fetch_hosts, fetch_contacts):
+        """Update database with cleaned cache data."""
+        with transaction.atomic():
+            if self.state == self.State.UNKNOWN:
+                self._fix_unknown_state(cleaned)
+            if fetch_hosts:
+                self._update_hosts_and_ips_in_db(cleaned)
+            if fetch_contacts:
+                self._update_contacts_in_db(cleaned)
+            self._update_dates(cleaned)
 
     def _extract_data_from_response(self, data_response):
         """extract data from response from registry"""
@@ -2238,26 +2042,6 @@ class Domain(TimeStampedModel, DomainHelper):
             if isinstance(extension, extensions.DNSSECExtension):
                 dnssec_data = extension
         return dnssec_data
-
-    def _update_hosts_and_contacts(self, cleaned, fetch_hosts, fetch_contacts):
-        """
-        Update hosts and contacts if fetch_hosts and/or fetch_contacts.
-        Additionally, capture and cache old hosts and contacts from cache if they
-        don't exist in cleaned
-        """
-        old_cache_hosts = self._cache.get("hosts")
-        old_cache_contacts = self._cache.get("contacts")
-
-        if fetch_contacts:
-            cleaned["contacts"] = self._get_contacts(cleaned.get("_contacts", []))
-            if old_cache_hosts is not None:
-                logger.debug("resetting cleaned['hosts'] to old_cache_hosts")
-                cleaned["hosts"] = old_cache_hosts
-
-        if fetch_hosts:
-            cleaned["hosts"] = self._get_hosts(cleaned.get("_hosts", []))
-            if old_cache_contacts is not None:
-                cleaned["contacts"] = old_cache_contacts
 
     def _update_hosts_and_ips_in_db(self, cleaned):
         """Update hosts and host_ips in database if retrieved from registry.
@@ -2307,21 +2091,22 @@ class Domain(TimeStampedModel, DomainHelper):
             for ip_address in cleaned_ips:
                 HostIP.objects.get_or_create(address=ip_address, host=host_in_db)
 
-    def _update_security_contact_in_db(self, cleaned):
-        """Update security contact registry id in database if retrieved from registry.
-        If no value is retrieved from registry, set to empty string in db.
+    def _update_contacts_in_db(self, cleaned):
+        """Save all contacts to DB using pre-fetched EPP data."""
+        cleaned_contacts = cleaned.get("contacts", {})
 
-        Parameters:
-            self: the domain to be updated with security from cleaned
-            cleaned: dict containing contact registry ids. Security contact is of type
-                PublicContact.ContactTypeChoices.SECURITY
-        """
-        cleaned_contacts = cleaned["contacts"]
-        security_contact_registry_id = ""
-        security_contact = cleaned_contacts[PublicContact.ContactTypeChoices.SECURITY]
-        if security_contact:
-            security_contact_registry_id = security_contact
-        self.security_contact_registry_id = security_contact_registry_id
+        # Save ALL contact types to DB
+        for contact_type, contact_obj in cleaned_contacts.items():
+            if contact_obj:
+                self._get_or_create_public_contact(contact_obj)
+
+        # Update security contact registry_id on domain
+        security_contact_obj = cleaned_contacts.get(PublicContact.ContactTypeChoices.SECURITY)
+        if security_contact_obj:
+            self.security_contact_registry_id = security_contact_obj.registry_id
+        else:
+            self.security_contact_registry_id = ""
+
         self.save()
 
     def _update_dates(self, cleaned):
@@ -2354,13 +2139,13 @@ class Domain(TimeStampedModel, DomainHelper):
             choices.TECHNICAL: None,
         }
         if contacts and isinstance(contacts, list) and len(contacts) > 0:
-            cleaned_contacts = self._fetch_contacts(contacts)
+            cleaned_contacts = self._fetch_contacts_from_epp(contacts)
         return cleaned_contacts
 
     def _get_hosts(self, hosts):
         cleaned_hosts = []
         if hosts and isinstance(hosts, list):
-            cleaned_hosts = self._fetch_hosts(hosts)
+            cleaned_hosts = self.epp_service.fetch_hosts(hosts)
         return cleaned_hosts
 
     def _get_or_create_public_contact(self, public_contact: PublicContact):
@@ -2425,8 +2210,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def _registrant_to_public_contact(self, registry_id: str):
         """EPPLib returns the registrant as a string,
-        which is the registrants associated registry_id. This function is used to
-        convert that id to a useable object by calling commands.InfoContact
         on that ID, then mapping that object to type PublicContact."""
         contact = PublicContact(
             registry_id=registry_id,
