@@ -87,8 +87,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
             ),
             models.CheckConstraint(
-                check=models.Q(registry_created_at__isnull=True)
-                | models.Q(created_at_reference__lte=models.F("registry_created_at")),
+                check=models.Q(registry_created_at__isnull=True) | models.Q(created_at=models.F("registry_created_at")),
                 name="domain_created_at_reference_lte_registry_created_at",
             ),
         ]
