@@ -11,9 +11,9 @@ There’s no cost to renew a domain. After renewal, the domain will be registere
 Any domain manager can complete the process within the .gov registrar <{{ manage_url }}>. {% if portfolio %} Organization admins are cc’d on this email for awareness but do not need to take action. {% endif %}
 
 WHAT HAPPENS IF THE DOMAIN EXPIRES?
-When a .gov domain expires, it’s not automatically put on hold or deleted. It continues to resolve online even after its expiration date. Before we delete the domain, we’ll make every effort to contact your organization. We encourage you to renew the domain promptly if you're still using it.
+When a .gov domain expires, it’s not automatically put on hold or deleted. It continues to resolve online even after its expiration date. Before we delete the domain, we’ll make an extensive effort to contact your organization. We encourage you to renew the domain promptly if you're still using it.
 
-If you no longer need {{ domain }}, reply to this email and let us know that you’d like to delete it.
+If you no longer need {{ domain }}, you can request that it be deleted. Learn more about deleting a domain <https://get.gov/help/domain-management/#delete-a-gov-domain>
 
 
 THANK YOU
