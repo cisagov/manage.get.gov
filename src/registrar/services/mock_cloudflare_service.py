@@ -78,7 +78,7 @@ class MockCloudflareService:
         )
 
         # Mock the api with any record id
-        self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
+        self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
             side_effect=self._mock_update_dns_record_response
         )
 
@@ -294,7 +294,6 @@ class MockCloudflareService:
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
-                "success": True,
                 "errors": [],
                 "messages": [],
             },
@@ -354,7 +353,6 @@ class MockCloudflareService:
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
-                "success": True,
                 "errors": [],
                 "messages": [],
             },
