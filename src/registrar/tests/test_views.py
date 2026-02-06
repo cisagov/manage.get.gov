@@ -56,6 +56,36 @@ class TestViews(TestCase):
         self.assertIn("/login?next=/request/start/", response.headers["Location"])
 
 
+class TestHealthPageView(TestCase):
+    def setUp(self):
+        self.client = Client()
+        return super().setUp()
+
+    @patch.dict("os.environ", {"GIT_BRANCH": "main", "GIT_COMMIT_SHA": "abcdef123456", "GIT_TAG": "v1.0.0"})
+    def test_health_contains_git_info(self):
+        response = self.client.get("/version")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "main")
+        self.assertContains(response, "abcdef123456")
+        self.assertContains(response, "v1.0.0")
+
+    @patch.dict(
+        "os.environ",
+        {
+            "GIT_BRANCH": "another-branch",
+            "GIT_COMMIT_SHA": "bcdefg234567",
+        },
+    )
+    def test_healh_contains_git_info_without_tag(self):
+        response = self.client.get("/version")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "another-branch")
+        self.assertContains(response, "bcdefg234567")
+        self.assertNotContains(response, "Git tag")
+
+
 class TestWithUser(MockEppLib):
     """Class for executing tests with a test user.
     Note that tests share the test user within their test class, so the user
