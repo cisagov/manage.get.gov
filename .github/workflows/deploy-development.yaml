@@ -40,8 +40,8 @@ jobs:
           cf_password: ${{ secrets.CF_DEVELOPMENT_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: development
-          cf_command: >-
-            push -f ops/manifests/manifest-development.yaml
+          push_arguments: >-
+            -f ops/manifests/manifest-development.yaml
             --var GIT_BRANCH="$GIT_BRANCH"
             --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
             --strategy rolling
