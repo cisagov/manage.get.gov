@@ -400,6 +400,7 @@ urlpatterns = [
         views.PortfolioOrganizationSelectView.as_view(),
         name="set-session-portfolio",
     ),
+    path("version", views.version_info, name="version"),
     path("messages/", get_alert_messages, name="get-messages"),
 ]
 
