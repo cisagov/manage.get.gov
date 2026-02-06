@@ -163,7 +163,7 @@ class DnsHostService:
 
         # Update and save dns record in registrar db
         try:
-            self.create_db_record(x_zone_id, vendor_record_data)
+            self.update_db_record(x_zone_id, vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
@@ -258,7 +258,7 @@ class DnsHostService:
                 )
 
         except Exception as e:
-            logger.error(f"Failed to save account to database: {str(e)}.")
+            logger.error(f"Failed to create and save account to database: {str(e)}.")
             raise
 
     def create_db_zone(self, vendor_zone_data, domain_name):
@@ -286,7 +286,7 @@ class DnsHostService:
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
         except Exception as e:
-            logger.error(f"Failed to save zone to database: {str(e)}.")
+            logger.error(f"Failed to create and save zone to database: {str(e)}.")
             raise
 
     def create_db_record(self, x_zone_id, vendor_record_data):
@@ -321,5 +321,29 @@ class DnsHostService:
                 )
 
         except Exception as e:
-            logger.error(f"Failed to save record to database: {str(e)}.")
+            logger.error(f"Failed to create and save record to database: {str(e)}.")
+            raise
+
+    def update_db_record(self, x_zone_id, vendor_record_data):
+        record_data = vendor_record_data["result"]
+        x_record_id = record_data["id"]
+
+        try:
+            with transaction.atomic():
+                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
+                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+                dns_record = DnsRecord.objects.get(
+                    vendor_dns_record=vendor_dns_record,
+                    dns_zone=vendor_dns_zone
+                )
+
+                dns_record.update(
+                    name=record_data["name"],
+                    ttl=record_data["ttl"],
+                    content=record_data["content"],
+                    comment=record_data["comment"],
+                    tags=record_data["tags"],
+                )
+        except Exception as e:
+            logger.error(f"Failed to update and save record to database: {str(e)}.")
             raise
