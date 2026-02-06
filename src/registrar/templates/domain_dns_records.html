@@ -69,26 +69,4 @@
     {% include "domain_dns_records_table.html" %}
 
     {% include "domain_dns_nameservers_table.html" %}
-
-    {# Unsaved changes modal #}
-    {% include 'includes/modal_trigger.html' with 
-        trigger_id="unsaved_changes_trigger" 
-        modal_id="unsaved-changes-modal" 
-        modal_heading="Are you sure you want to continue?" 
-        modal_description="You have unsaved changes that will be lost." 
-        modal_button_id="unsaved-changes-click-button" 
-        modal_button_text="Continue without saving" 
-        cancel_button_text="Go back"
-    %}
-
-    {# Cancel changes modal #}
-    {% include 'includes/modal_trigger.html' with 
-        trigger_id="cancel_changes_trigger" 
-        modal_id="cancel-changes-modal" 
-        modal_heading="Are you sure you want to cancel your changes?" 
-        modal_description="You have unsaved changes that will be lost." 
-        modal_button_id="cancel-changes-click-button" 
-        modal_button_text="Yes, cancel" 
-        cancel_button_text="Go back"
-    %}
 {% endblock %}  {# domain_content #}
