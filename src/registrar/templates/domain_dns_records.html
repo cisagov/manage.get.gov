@@ -17,7 +17,7 @@
     <div id="dnsrecords-form-container" x-data="{ show_form: false, recordType: '' }">
         <div class="display-flex flex-align-center">
             <div class="grid-col">
-                <h1>Records</h1>
+                <h1>DNS records</h1>
             </div>
             
             <div class="grid-col-auto">
@@ -35,10 +35,12 @@
         <div class="grid-row">
             <div class="grid-col-12">
                 <p class="measure-none">
-                    Review, add and edit DNS records. Edits will go into effect once saved.
+                    Review, add, and edit DNS records for this domain. Changes take effect once they’re saved.                </p>
+                <p class="measure-none">
+                    To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
                 <p class="measure-none">
-                    Click "Add record" and enter the values that you need to enter so everything and everyone can get the work done here.
+                    Required fields are marked with an asterisk (*).
                 </p>
 
                 <div x-cloak x-show="show_form">
@@ -67,4 +69,26 @@
     {% include "domain_dns_records_table.html" %}
 
     {% include "domain_dns_nameservers_table.html" %}
+
+    {# Unsaved changes modal #}
+    {% include 'includes/modal_trigger.html' with 
+        trigger_id="unsaved_changes_trigger" 
+        modal_id="unsaved-changes-modal" 
+        modal_heading="Are you sure you want to continue?" 
+        modal_description="You have unsaved changes that will be lost." 
+        modal_button_id="unsaved-changes-click-button" 
+        modal_button_text="Continue without saving" 
+        cancel_button_text="Go back"
+    %}
+
+    {# Cancel changes modal #}
+    {% include 'includes/modal_trigger.html' with 
+        trigger_id="cancel_changes_trigger" 
+        modal_id="cancel-changes-modal" 
+        modal_heading="Are you sure you want to cancel your changes?" 
+        modal_description="You have unsaved changes that will be lost." 
+        modal_button_id="cancel-changes-click-button" 
+        modal_button_text="Yes, cancel" 
+        cancel_button_text="Go back"
+    %}
 {% endblock %}  {# domain_content #}
