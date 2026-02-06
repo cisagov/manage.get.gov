@@ -29,6 +29,9 @@ applications:
     OIDC_ACTIVE_PROVIDER: login.gov production
     # Flag to disable/enable features in prod environments
     IS_PRODUCTION: True
+    # VERSION INFO 
+    GIT_COMMIT_SHA: ((GIT_COMMIT_SHA))
+    GIT_TAG: ((GIT_TAG))
   routes:
     - route: getgov-stable.app.cloud.gov
   services:
