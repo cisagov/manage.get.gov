@@ -85,12 +85,7 @@ class Domain(TimeStampedModel, DomainHelper):
         constraints = [
             models.UniqueConstraint(
                 fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
-            ),
-            models.CheckConstraint(
-                check=models.Q(registry_created_at__isnull=True)
-                | models.Q(created_at_reference__lte=models.F("registry_created_at")),
-                name="domain_created_at_reference_lte_registry_created_at",
-            ),
+            )
         ]
 
     def __init__(self, *args, **kwargs):
@@ -251,7 +246,6 @@ class Domain(TimeStampedModel, DomainHelper):
             super().__delete__(obj)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
-        is_adding = self._state.adding
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -268,12 +262,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
 
         super().save(force_insert, force_update, using, update_fields)
-
-        if is_adding and not self.created_at_reference:
-            type(self).objects.filter(pk=self.pk, created_at_reference__isnull=True).update(
-                created_at_reference=self.created_at
-            )
-            self.created_at_reference = self.created_at
         self._original_updated_at = self.updated_at
 
     @classmethod
@@ -1345,20 +1333,6 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Date the domain expires in the registry"),
     )
 
-    created_at_reference = models.DateTimeField(
-        null=True,
-        blank=True,
-        editable=False,
-        help_text=("Date the domain record was created in the registrar"),
-    )
-
-    registry_created_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        editable=False,
-        help_text=("Date the domain record was created in the registry"),
-    )
-
     security_contact_registry_id = TextField(
         null=True,
         help_text=("Duplication of registry's security contact id for when registry unavailable"),
@@ -2362,16 +2336,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # if creation_date from registry does not match what is in db,
         # update the db
-        if "cr_date" in cleaned:
-            cr_date = cleaned["cr_date"]
-
-            if cr_date and cr_date != self.created_at:
-                self.created_at = cr_date
-                requires_save = True
-
-            if cr_date and self.registry_created_at != cr_date:
-                self.registry_created_at = cr_date
-                requires_save = True
+        if "cr_date" in cleaned and cleaned["cr_date"] != self.created_at:
+            self.created_at = cleaned["cr_date"]
+            requires_save = True
 
         # if either registration date or creation date need updating
         if requires_save:
