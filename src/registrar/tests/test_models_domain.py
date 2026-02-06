@@ -2650,17 +2650,25 @@ class TestCreationDate(MockEppLib):
         original_created_at = self.domain.created_at
         # force fetch_cache to be called
         self.domain.statuses
-        self.domain.refresh_from_db()
-        self.assertEquals(self.domain.registry_created_at, self.creation_date)
-        self.assertEquals(self.domain.created_at_reference, original_created_at)
+        registry_created_at, created_at_reference = (
+            Domain.objects.filter(pk=self.domain.pk)
+            .values_list("registry_created_at", "created_at_reference")
+            .get()
+        )
+        self.assertEquals(registry_created_at, self.creation_date)
+        self.assertEquals(created_at_reference, original_created_at)
 
 
 class TestDomainCreatedAtReference(TestCase):
     def test_created_at_reference_populated_on_create(self):
         domain = Domain.objects.create(name="created-at-ref.gov")
-        domain.refresh_from_db()
-        self.assertEqual(domain.created_at_reference, domain.created_at)
-        self.assertIsNone(domain.registry_created_at)
+        created_at_reference, created_at, registry_created_at = (
+            Domain.objects.filter(pk=domain.pk)
+            .values_list("created_at_reference", "created_at", "registry_created_at")
+            .get()
+        )
+        self.assertEqual(created_at_reference, created_at)
+        self.assertIsNone(registry_created_at)
 
 
 class TestAnalystClientHold(MockEppLib):
