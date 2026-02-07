@@ -22,17 +22,23 @@ body:
       description: |
         "What research method (usability testing, highlighter test, log analysis, survey, etc.) will be used?"
   - type: checkboxes
-    id: checklist
+    id: research-checklist
     attributes:
-      label: "Pre-Report Checklist"
-      description: "Please confirm the following before submitting:"
+      label: Research checklist
+      description: "Adjust the following as needed"
       options:
-        - label: "I have searched existing issues to avoid duplicates"
-          required: true
-        - label: "I am using the latest version"
-          required: true
-        - label: "I have included steps to reproduce the issue"
-          required: true
+        - label: "Prepare a research plan"
+          required: false
+        - label: "Recruit participants"
+          required: false
+        - label: "Conduct research"
+          required: false
+        - label: "Synthesize results"
+          required: false
+        - label: "Summarize findings"
+          required: false
+        - label: "Share insights"
+          required: false
   - type: textarea
     id: research-artifacts
     attributes:
