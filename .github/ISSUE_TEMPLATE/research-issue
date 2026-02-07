@@ -1,1 +1,41 @@
+name: Issue / story
+description: Describe an idea, problem, feature, or story. (Report bugs in the Bug template.)
 
+body:
+  - type: markdown
+    id: title-help
+    attributes:
+      value: |
+        > Titles should be short, descriptive, and compelling. Use sentence case: don't capitalize words unnecessarily.
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Issue description
+      description: |
+        Describe the issue so that someone who wasn't present for its discovery can understand why it matters. For stories, use the user story format (e.g., As a user, I want, so that). Use full sentences, plain language, and [good formatting](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: "If known, share 1-3 statements that would need to be true for this issue to be considered resolved. Use a [task list](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/about-task-lists#creating-task-lists) if appropriate. Designers: [Additional considerations](https://github.com/cisagov/manage.get.gov/wiki/Design-work-considerations) are listed in the wiki and can be adapted to ACs here."
+      placeholder: "- [ ]"
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: "Share any other thoughts, like how this might be implemented or fixed. Screenshots and links to documents/discussions are welcome."
+  - type: textarea
+    id: links-to-other-issues
+    attributes:
+      label: Links to other issues
+      description: |
+        "Use a dash (`-`) to start the line. Add an issue by typing "`#`" then the issue number. Add information to describe any dependancies, blockers, etc. (e.g., 🚧 [construction] Blocks, ⛔️ [no_entry] Is blocked by, 🔄 [arrows_counterclockwise] Relates to). If this is a parent issue, use sub-issues instead of linking other issues here."
+      placeholder: "- 🔄 Relates to..."
+  - type: markdown
+    id: note
+    attributes:
+      value: |
+        > We may edit the text in this issue to document our understanding and clarify the product work.
+        
