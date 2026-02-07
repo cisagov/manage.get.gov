@@ -1,4 +1,4 @@
-name: Research issue
+lname: Research issue
 description: Describe work conducted for a research initative 
 
 body:
@@ -25,7 +25,7 @@ body:
     id: research-checklist
     attributes:
       label: Research checklist
-      description: "Adjust the following as needed"
+      description: "Adjust the checklist as needed"
       options:
         - label: "Prepare a research plan"
           required: false
