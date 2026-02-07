@@ -25,10 +25,10 @@ body:
     id: research-checklist
     attributes:
        value: |
-        Please complete the checklist before submitting:
+        "Please complete the checklist before submitting:
         - [ ] I have searched for existing issues
         - [ ] I have provided clear reproduction steps
-        - [ ] I have included screenshots or logs if applicable
+        - [ ] I have included screenshots or logs if applicable"
       description: |
         "Adjust this checklist as needed."
   - type: textarea
