@@ -1,5 +1,6 @@
 name: Research issue
 description: Describe work conducted for a research initative 
+labels: ["research"]
 
 body:
   - type: markdown
