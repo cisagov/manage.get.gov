@@ -21,6 +21,16 @@ body:
       label: Research method
       description: |
         "What research method (usability testing, highlighter test, log analysis, survey, etc.) will be used?"
+  - type: markdown
+    id: research-checklist
+    attributes:
+       value: |
+        Please complete the checklist before submitting:
+        - [ ] I have searched for existing issues
+        - [ ] I have provided clear reproduction steps
+        - [ ] I have included screenshots or logs if applicable
+      description: |
+        "Adjust this checklist as needed."
   - type: textarea
     id: research-artifacts
     attributes:
