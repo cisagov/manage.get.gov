@@ -56,5 +56,5 @@ body:
     id: note
     attributes:
       value: |
-        > We may edit the text in this issue to document our understanding and clarify the product work.
+        > We may edit the text in this issue to document our understanding and clarify the work.
         
