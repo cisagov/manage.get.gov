@@ -7,7 +7,6 @@ body:
     id: title-help
     attributes:
       value: |
-      "Research: "
         > Titles should be short, descriptive, and compelling. Use sentence case: don't capitalize words unnecessarily.
   - type: textarea
     id: research-questions
