@@ -1132,11 +1132,14 @@ class DomainDataFull(DomainExport):
         """
         Returns the sort fields.
         """
-        # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
             "organization_type",
             Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
+            Case(
+                When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
+                default=F("federal_agency"),
+            ),
+            # "federal_agency",
             "domain__name",
         ]
 
@@ -1248,10 +1251,16 @@ class DomainDataFederal(DomainExport):
         Returns the sort fields.
         """
         # Coalesce is used to replace federal_type of None with ZZZZZ
+        # Case used for if domain belongs to a portfolio, then use
+        # portfolio's federal agency otherwise fall back to federal_type
         return [
             "organization_type",
             Coalesce("federal_type", Value("ZZZZZ")),
-            "federal_agency",
+            Case(
+                When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
+                default=F("federal_agency"),
+            ),
+            # "federal_agency",
             "domain__name",
         ]
 
