@@ -1,18 +1,18 @@
-<tr x-show="expandedId == {{dns_record.id}}">
+<tr x-show="showFormId == {{ counter }}">
     <td colspan="5">
         <form method="post" class="usa-form usa-form--extra-large">
             {% csrf_token %}
-            {% for field in dns_record.form %}
+            {% for field in form %}
               {% if field.name != "type_field" %}
                  {{ field.label_tag }}
                  {{ field }}
                {%endif%}
             {% endfor %}
-          {{ dns_record.form  }}
+       
              <button
         type="reset"
         class="usa-button usa-button--outline"
-        x-on:click="show_form = false"
+        x-on:click="showFormId = null"
     >
         Cancel
     </button>

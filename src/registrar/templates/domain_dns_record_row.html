@@ -19,12 +19,11 @@
                 </svg>
                 Edit 
                 <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
-
-                    <svg x-on:click="expandedId = (expandedId === {{ dns_record.id }} ? null : {{ dns_record.id }})" 
-                        hx-target="#edit-row-{{ dns_record.id }}"
+                    <svg x-on:click="showFormId = (showFormId === {{ counter }} ? null : {{ counter }})" 
+                        hx-target="#edit-row-{{ counter }}"
                         class="usa-icon font-body-xl text-primary text-middle expand-more" aria-hidden="true" focusable="false" role="img">
-                        <use x-show="expandedId" xlink:href="/public/img/sprite.svg#expand_more"></use>
-                        <use x-show="!expandedId" xlink:href="/public/img/sprite.svg#expand_less"></use>
+                        <use x-show="showFormId == {{ counter }}" xlink:href="/public/img/sprite.svg#expand_more"></use>
+                        <use x-show="showFormId != {{ counter }}" xlink:href="/public/img/sprite.svg#expand_less"></use>
                     </svg>
             
             </button>
