@@ -29,8 +29,7 @@ body:
     id: research-checklist
     attributes:
       label: Research checklist
-      description: |
-      "Adjust the following checklist as needed."
+      description: "Adjust the following checklist as needed."
       options:
         - label: "Prepare a research plan"
           required: false
