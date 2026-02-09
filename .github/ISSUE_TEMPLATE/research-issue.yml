@@ -26,7 +26,8 @@ body:
     id: research-checklist
     attributes:
       label: Research checklist
-      description: "Adjust the checklist as needed"
+      description: |
+      "See the [research guide on Slack](https://dhscisa.enterprise.slack.com/docs/T02QH7E1MHA/F0ADPRJ1ARF) for more details and best practices. Adjust the following checklist as needed."
       options:
         - label: "Prepare a research plan"
           required: false
