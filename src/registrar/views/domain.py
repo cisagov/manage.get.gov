@@ -25,7 +25,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
-from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, DomainDNSRecordForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -86,7 +86,6 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
-from django import forms
 
 logger = logging.getLogger(__name__)
 
@@ -814,83 +813,6 @@ class DomainDNSView(DomainBaseView):
         return "DNS"
 
 
-class DomainDNSRecordForm(forms.Form):
-    """Form for adding DNS records in prototype."""
-
-    type_field = forms.ChoiceField(
-        label="Type",
-        choices=[("", "Select a type"), ("A", "A")],
-        required=True,
-        widget=forms.Select(
-            attrs={
-                "class": "usa-select",
-                "required": "required",
-                "x-model": "recordType",
-            }
-        ),
-    )
-
-    name = forms.CharField(
-        label="Name",
-        required=True,
-        help_text="Use @ for root",
-        widget=forms.TextInput(
-            attrs={
-                "class": "usa-input",
-            }
-        ),
-    )
-
-    content = forms.GenericIPAddressField(
-        label="IPv4 Address",
-        required=True,
-        protocol="IPv4",
-        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
-        help_text="Example: 192.0.2.10",
-        widget=forms.TextInput(
-            attrs={
-                "class": "usa-input",
-                "hide_character_count": True,
-            }
-        ),
-    )
-
-    ttl = forms.ChoiceField(
-        label="TTL",
-        choices=[
-            (60, "1 minute"),
-            (300, "5 minutes"),
-            (1800, "30 minutes"),
-            (3600, "1 hour"),
-            (7200, "2 hours"),
-            (18000, "5 hours"),
-            (43200, "12 hours"),
-            (86400, "1 day"),
-        ],
-        initial=300,
-        required=False,
-        widget=forms.Select(
-            attrs={
-                "class": "usa-select",
-            }
-        ),
-    )
-
-    comment = forms.CharField(
-        label="Comment",
-        required=False,
-        help_text="The information you enter here will not impact DNS record resolution and \
-        is meant only for your reference.",
-        max_length=500,
-        widget=forms.Textarea(
-            attrs={
-                "class": "usa-textarea usa-textarea--medium",
-                "rows": 2,
-            }
-        ),
-    )
-
-
 @grant_access(IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
@@ -932,6 +854,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
             self.attach_edit_form(dns_records)
             context["dns_records"] = dns_records
+            context["nameservers"] = dns_zone.nameservers
         return context
 
     def has_permission(self):
@@ -1031,7 +954,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": new_form,
+                    "counter": row_index,
+                    "nameservers": nameservers,
+                },
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )
