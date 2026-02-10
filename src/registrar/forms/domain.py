@@ -789,6 +789,19 @@ class DomainDNSRecordForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        record_type = self.data.get("type") or self.initial.get("type")
+
+        self.fields["content"].help_text = ""
+        
+        if record_type == "A":
+            self.fields["content"].label = "IPv4 Address"
+            self.fields["content"].help_text = "Example: 192.0.2.10"
+        
+        elif record_type == "AAAA":
+            self.fields["content"].label = "IPv6 Address"
+            self.fields["content"].help_text = "Example: 2001:db8::1"
+
+
     class Meta:
         model = DnsRecord
         fields = ["type", "name", "content", "ttl", "comment"]
@@ -815,7 +828,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     type = forms.ChoiceField(
         label="Type",
-        choices=[("", "- Select -"), ("a", "A")],
+        choices=[("", "- Select -"), ("A", "A"), ("AAAA", "AAAA")],
         required=True,
         widget=forms.Select(
             attrs={
@@ -827,7 +840,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     )
 
     content = forms.CharField(
-        label="IPv4 Address",
+        label="Content",
         required=True,
         # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
         help_text="Example: 192.0.2.10",
@@ -867,7 +880,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = cleaned_data.get("type")
         content = cleaned_data.get("content")
 
-        if record_type == "a" and content:
+        if record_type == "A" and content:
             try:
                 validate_ipv4_address(content)
             except ValidationError as e:

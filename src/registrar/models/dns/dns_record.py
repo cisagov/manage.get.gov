@@ -8,7 +8,8 @@ from registrar.validations import validate_dns_name
 
 class DnsRecord(TimeStampedModel):
     class RecordTypes(models.TextChoices):
-        A = "a", "A"
+        A = "A", "A"
+        AAAA = "AAAA", "AAAA"
 
     dns_zone = models.ForeignKey("DnsZone", on_delete=models.CASCADE, related_name="records")
 
