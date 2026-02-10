@@ -1131,15 +1131,24 @@ class DomainDataFull(DomainExport):
     def get_sort_fields(cls):
         """
         Returns the sort fields.
+        Coalesce is used to replace federal_type of None with ZZZZZ
+        1. Sort by org type
+        2. Sort by federal type (executive, legislative, judicial)
+        3. Sort by specific federal agency
         """
         return [
             "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
+            Coalesce(
+                Case(
+                    When(portfolio__isnull=False, then=F("portfolio__federal_agency__federal_type")),
+                    default=F("federal_agency__federal_type"),
+                ),
+                Value("ZZZZZ"),
+            ),
             Case(
                 When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
                 default=F("federal_agency"),
             ),
-            # "federal_agency",
             "domain__name",
         ]
 
@@ -1249,18 +1258,25 @@ class DomainDataFederal(DomainExport):
     def get_sort_fields(cls):
         """
         Returns the sort fields.
+        Coalesce is used to replace federal_type of None with ZZZZZ
+        1. Sort by org type
+        2. Sort by federal type (executive, legislative, judicial)
+        3. Sort by specific federal agency
         """
-        # Coalesce is used to replace federal_type of None with ZZZZZ
-        # Case used for if domain belongs to a portfolio, then use
-        # portfolio's federal agency otherwise fall back to federal_type
+
         return [
             "organization_type",
-            Coalesce("federal_type", Value("ZZZZZ")),
+            Coalesce(
+                Case(
+                    When(portfolio__isnull=False, then=F("portfolio__federal_agency__federal_type")),
+                    default=F("federal_agency__federal_type"),
+                ),
+                Value("ZZZZZ"),
+            ),
             Case(
                 When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
                 default=F("federal_agency"),
             ),
-            # "federal_agency",
             "domain__name",
         ]
 
