@@ -1146,8 +1146,8 @@ class DomainDataFull(DomainExport):
                 Value("ZZZZZ"),
             ),
             Case(
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
-                default=F("federal_agency"),
+                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
+                default=F("federal_agency__agency"),
             ),
             "domain__name",
         ]
@@ -1274,8 +1274,8 @@ class DomainDataFederal(DomainExport):
                 Value("ZZZZZ"),
             ),
             Case(
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency")),
-                default=F("federal_agency"),
+                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
+                default=F("federal_agency__agency"),
             ),
             "domain__name",
         ]
