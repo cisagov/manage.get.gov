@@ -909,16 +909,18 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def get_breadcrumb_current_label(self):
         return "Records"
     
+    def record_dict_for_initial_data(self, dns_record):
+        # Converting model values into a dict to fill in edit form
+        rec_dict = {}
+        for field in dns_record._meta.fields:
+            rec_dict[f'{field.name}'] =  getattr(dns_record, field.name)
+        return rec_dict
+å
     def attach_edit_form(self, dns_records):
+        # adding a form instance to the dns_record objects to display corresponding values in the table rows
         for record in dns_records:
-            record.form = DomainDNSRecordForm(initial=
-            {
-               "name": record.name,
-               "type": record.type,
-               "content":record.content,
-               "ttl": record.ttl,
-               "comment": record.comment
-            })
+            data_dict = self.record_dict_for_initial_data(record)
+            record.form = DomainDNSRecordForm(initial=data_dict)
     
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -1017,14 +1019,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-            initial_dict = {
-                            "name": self.dns_record["name"],
-                            "type": self.dns_record["type"],
-                            "content" :self.dns_record["content"],
-                            "ttl": self.dns_record["ttl"],
-                            "comment": self.dns_record["comment"]
-            }
-            filled_form = DomainDNSRecordForm(initial=initial_dict)
+                    
+            filled_form = DomainDNSRecordForm(initial=self.dns_record)
+            # Grabbed result data to pass into the form response
             self.dns_record["form"] = filled_form
             hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
             row_index = len(self.get_context_data()["dns_records"])
