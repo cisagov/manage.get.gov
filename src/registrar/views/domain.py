@@ -908,14 +908,27 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def get_breadcrumb_current_label(self):
         return "Records"
-
+    
+    def attach_edit_form(self, dns_records):
+        for record in dns_records:
+            record.form = DomainDNSRecordForm(initial=
+            {
+               "name": record.name,
+               "type": record.type,
+               "content":record.content,
+               "ttl": record.ttl,
+               "comment": record.comment
+            })
+    
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
-            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
+            self.attach_edit_form(dns_records)
+            context["dns_records"] = dns_records
         return context
 
     def has_permission(self):
@@ -993,7 +1006,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
                         record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
-                        self.dns_record = record_response["result"]
+                        self.dns_record = record_response['result']
                         dns_name = record_response["result"]["name"]
                         messages.success(request, f"DNS A record '{dns_name}' created successfully.")
                     except APIError as e:
@@ -1004,13 +1017,23 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-            new_form = DomainDNSRecordForm()
+            initial_dict = {
+                            "name": self.dns_record["name"],
+                            "type": self.dns_record["type"],
+                            "content" :self.dns_record["content"],
+                            "ttl": self.dns_record["ttl"],
+                            "comment": self.dns_record["comment"]
+            }
+            filled_form = DomainDNSRecordForm(initial=initial_dict)
+            self.dns_record["form"] = filled_form
             hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
             row_index = len(self.get_context_data()["dns_records"])
+            new_form = DomainDNSRecordForm()
+
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
+                {"dns_record": self.dns_record, "domain": self.object,"form": new_form, "counter": row_index},
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )

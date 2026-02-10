@@ -1,0 +1,33 @@
+{% load static field_helpers url_helpers %}
+<tr x-show="showFormId == {{ counter }}">
+    <td colspan="5">
+        <h2 class="margin-top-0"> Edit Record </h2>
+        <form method="#" class="usa-form usa-form--extra-large">
+            {% csrf_token %}
+               {% input_with_errors dns_record.form.name %}  
+             <div class="grid-row grid-gap flex-align-end">
+                    <div class="grid-col-9">
+                            {% input_with_errors dns_record.form.content %}
+                        </div>
+                        <div class="grid-col-3">
+                            {% input_with_errors dns_record.form.ttl %}        
+                        </div>
+             
+                </div>
+      {% input_with_errors dns_record.form.comment %}
+             <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="showFormId = null"
+    >
+        Cancel
+    </button>
+    <button
+            class="usa-button"
+        >
+            Save
+    </button>
+        </form>
+    </td>
+</tr>
+
