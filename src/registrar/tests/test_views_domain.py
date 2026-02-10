@@ -3529,3 +3529,4 @@ class TestDomainDnsRecords(TestDomainOverview):
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Edit Record")
+        
