@@ -908,20 +908,21 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def get_breadcrumb_current_label(self):
         return "Records"
-    
+
     def record_dict_for_initial_data(self, dns_record):
         # Converting model values into a dict to fill in edit form
         rec_dict = {}
         for field in dns_record._meta.fields:
-            rec_dict[f'{field.name}'] =  getattr(dns_record, field.name)
+            rec_dict[f"{field.name}"] = getattr(dns_record, field.name)
         return rec_dict
-å
+
     def attach_edit_form(self, dns_records):
-        # adding a form instance to the dns_record objects to display corresponding values in the table rows
+        # adding a form instance to the dns_record objects
+        # to display corresponding values in the table rows
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
             record.form = DomainDNSRecordForm(initial=data_dict)
-    
+
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
@@ -1008,7 +1009,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
                         record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
                         logger.info(f"Created DNS record: {record_response['result']}")
-                        self.dns_record = record_response['result']
+                        self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
                         messages.success(request, f"DNS A record '{dns_name}' created successfully.")
                     except APIError as e:
@@ -1019,7 +1020,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-                    
+
             filled_form = DomainDNSRecordForm(initial=self.dns_record)
             # Grabbed result data to pass into the form response
             self.dns_record["form"] = filled_form
@@ -1030,7 +1031,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": self.dns_record, "domain": self.object,"form": new_form, "counter": row_index},
+                {"dns_record": self.dns_record, "domain": self.object, "form": new_form, "counter": row_index},
                 headers={"HX-TRIGGER": hx_trigger_events},
                 status=200,
             )
