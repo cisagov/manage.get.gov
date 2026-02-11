@@ -869,10 +869,18 @@ class TestRegistrantContacts(MockEppLib):
             And the registrant is the admin on a domain
         """
         super().setUp()
+        self.requester, _ = User.objects.get_or_create(
+            username="requester",
+            defaults={"email": "requester@example.com"},
+        )
         # Creates a domain with no contact associated to it
         self.domain, _ = Domain.objects.get_or_create(name="security.gov")
         # Creates a domain with an associated contact
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        # DomainInformation is required
+        DomainInformation.objects.get_or_create(domain=self.domain, defaults={"requester": self.requester})
+        DomainInformation.objects.get_or_create(domain=self.domain_contact, defaults={"requester": self.requester})
         DF = common.DiscloseField
         excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
@@ -1153,6 +1161,14 @@ class TestRegistrantContacts(MockEppLib):
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact, disclose=False, disclose_fields=disclose_fields
                     )
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
+                    DF = common.DiscloseField
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact,
+                        disclose=True,
+                        disclose_fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
+                        disclose_types={DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+                    )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
                     expectedCreateCommand = self._convertPublicContactToEpp(
@@ -1168,6 +1184,19 @@ class TestRegistrantContacts(MockEppLib):
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
                 # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)
+
+    def test_registrant_discloses_org_city_state_country_only(self):
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="example.gov")
+            DomainInformation.objects.get_or_create(domain=domain, defaults={"requester": self.requester})
+            registrant = domain.get_default_registrant_contact()
+
+            disclose = domain._disclose_fields(registrant)
+            DF = common.DiscloseField
+
+            self.assertTrue(disclose.flag)
+            self.assertEqual(disclose.fields, {DF.ORG, DF.CITY, DF.SP, DF.CC})
+            self.assertEqual(disclose.types, {DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"})
 
     def test_convert_public_contact_to_epp(self):
         with less_console_noise():
