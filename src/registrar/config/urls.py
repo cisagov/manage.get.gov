@@ -9,6 +9,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
+from registrar.config.settings import INSTALLED_APPS
 from registrar.views.report_views import (
     ExportDataDomainsGrowth,
     ExportDataFederal,
@@ -40,6 +41,9 @@ from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
+from django.conf import settings
+import sys
+
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -418,13 +422,12 @@ handler500 = "registrar.views.utility.error_views.custom_500_error_view"
 handler403 = "registrar.views.utility.error_views.custom_403_error_view"
 handler404 = "registrar.views.utility.error_views.custom_404_error_view"
 
-# we normally would guard these with `if settings.DEBUG` but tests run with
-# DEBUG = False even when these apps have been loaded because settings.DEBUG
-# was actually True. Instead, let's add these URLs any time we are able to
-# import the debug toolbar package.
-try:
+# Only include debug toolbar URLs when the app is actually local
+# and we are not running tests.
+
+if ( settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not settings.RUNNING_TESTS):
     import debug_toolbar  # type: ignore
 
-    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
-except ImportError:
-    pass
+    urlpatterns += [
+        path("__debug__/", include(debug_toolbar.urls)),
+    ]

@@ -31,12 +31,18 @@ from ..logging_context import get_user_log_context
 
 from csp.constants import NONCE, SELF
 
+import sys
+import os
+
+
+
 # # #                          ###
 #      Setup code goes here      #
 # # #                          ###
 
 env = environs.Env()
 
+RUNNING_TESTS = "test" in sys.argv
 # Get secrets from Cloud.gov user provided service, if exists
 # If not, get secrets from environment variables
 key_service = AppEnv().get_service(name="getgov-credentials")
@@ -897,6 +903,11 @@ ALLOWED_HOSTS = [
     "manage.get.gov",
 ]
 
+# Allow Django test client w/localhost during tests
+if RUNNING_TESTS:
+    ALLOWED_HOSTS += ["localhost", "localhost:8080", "testserver"]
+    SECURE_SSL_REDIRECT = False
+
 # Extend ALLOWED_HOSTS.
 # IP addresses can also be hosts, which are used by internal
 # load balancers for health checks, etc.
@@ -990,7 +1001,7 @@ FIXTURE_DIRS: "list[str]" = []
 #      Development settings      #
 # # #                          ###
 
-if DEBUG:
+if DEBUG and not RUNNING_TESTS:
     # used by debug() context processor
     INTERNAL_IPS = [
         "127.0.0.1",
