@@ -1,0 +1,64 @@
+name: Research issue
+description: Describe work conducted for a research initative 
+labels: ["research"]
+
+body:
+  - type: markdown
+    id: title-help
+    attributes:
+      value: |
+        > Titles should be short, descriptive, and compelling. Use sentence case: don't capitalize words unnecessarily.
+  - type: textarea
+    id: research-questions
+    attributes:
+      label: Research question(s)
+      description: |
+        "What question(s) are we hoping to answer with this initiative?"
+    validations:
+      required: true
+  - type: textarea
+    id: research-method
+    attributes:
+      label: Research method
+      description: |
+        "What research method (usability testing, highlighter test, log analysis, survey, etc.) will be used?"
+  - type: markdown
+    attributes:
+      value: "See the [research guide on Slack](https://dhscisa.enterprise.slack.com/docs/T02QH7E1MHA/F0ADPRJ1ARF) for more details and best practices." 
+  - type: checkboxes
+    id: research-checklist
+    attributes:
+      label: Research checklist
+      description: "Adjust the following checklist as needed. Consider creating subissues for any items as needed."
+      options:
+        - label: "Prepare a research plan"
+          required: false
+        - label: "Recruit participants"
+          required: false
+        - label: "Conduct research"
+          required: false
+        - label: "Synthesize results"
+          required: false
+        - label: "Summarize findings"
+          required: false
+        - label: "Share insights"
+          required: false
+  - type: textarea
+    id: research-artifacts
+    attributes:
+      label: Links to research artifacts
+      description: |
+        "Link any artifacts (Drive folder, research plan, analysis boards, etc.) here."
+  - type: textarea
+    id: links-to-other-issues
+    attributes:
+      label: Links to other issues
+      description: |
+        "Use a dash (`-`) to start the line. Add an issue by typing "`#`" then the issue number. Add information to describe any dependancies, blockers, etc. (e.g., 🚧 [construction] Blocks, ⛔️ [no_entry] Is blocked by, 🔄 [arrows_counterclockwise] Relates to). If this is a parent issue, use sub-issues instead of linking other issues here."
+      placeholder: "- 🔄 Relates to..."
+  - type: markdown
+    id: note
+    attributes:
+      value: |
+        > We may edit the text in this issue to document our understanding and clarify the work.
+        
