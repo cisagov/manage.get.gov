@@ -18,6 +18,7 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
+from httpx import Client
 
 
 logger = logging.getLogger(__name__)
@@ -25,8 +26,9 @@ logger = logging.getLogger(__name__)
 
 class DnsHostService:
 
-    def __init__(self, client):
-        self.dns_vendor_service = CloudflareService(client)
+    def __init__(self, client=None):
+        self.client = client or Client()
+        self.dns_vendor_service = CloudflareService(self.client)
 
     def _find_account_tag_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -303,3 +305,35 @@ class DnsHostService:
         except Exception as e:
             logger.error(f"Failed to save record to database: {str(e)}.")
             raise
+
+    def enroll_domain(self, domain: Domain):
+        """
+        Enrols a domain in DNS hosting.
+        """
+
+        if domain.is_enrolled_in_dns_hosting:
+            logger.info("Domain already enrolled in DNS hosting")
+            return
+
+        domain_name = domain.name
+
+        with transaction.atomic():
+            # Save Account
+            x_account_id = self.dns_account_setup(domain_name)
+
+            # Save Zone
+            self.dns_zone_setup(domain_name, x_account_id)
+
+            # Fetch nameservers from DB zone
+            _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
+            if not nameservers:
+                raise RuntimeError("Zone exists but nameservers not found")
+
+            # Register nameservers with registry
+            self.register_nameservers(domain_name, nameservers)
+
+            # Mark domain as enrolled
+            domain.is_enrolled_in_dns_hosting = True
+            domain.save(optimistic_lock=True)
+
+        logger.info("Successfully enrolled %s in DNS hosting", domain_name)
