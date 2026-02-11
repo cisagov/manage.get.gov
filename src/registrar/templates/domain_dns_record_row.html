@@ -1,4 +1,4 @@
-<tr id="dnsrecord-row_{{counter}}">
+<tr id="dnsrecord-row_{{counter}}" :class="showFormId == {{ counter }} ? 'hide-td-borders' : ''">
     <td data-label="Type">
         {{dns_record.type}}
     </td>
@@ -27,8 +27,11 @@
                     <svg
                         hx-target="#edit-row-{{ counter }}"
                         aria-label="Access edit form"
-                        role="button"
-                        class="usa-icon font-body-xl text-primary text-middle expand-more" aria-hidden="true" focusable="false" role="img">
+                        class="usa-icon" 
+                        aria-hidden="true" 
+                        focusable="false" 
+                        role="img"
+                        width="8">
                         <use x-show="showFormId == {{ counter }}" xlink:href="/public/img/sprite.svg#expand_more" ></use>
                         <use x-show="showFormId != {{ counter }}" xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
@@ -39,11 +42,9 @@
                 id="button-trigger-delete-dnsrecord-{{ forloop.counter }}"
                 class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
                 >
-
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                     <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg>
-                Delete
+                </svg>Delete
             </a>
 
             <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
