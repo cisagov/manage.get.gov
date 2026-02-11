@@ -1,6 +1,7 @@
-name: Research issue
-description: Describe work conducted for a research initative 
+name: Research epic
+description: Documents work conducted for a research initative 
 labels: ["research"]
+type: ["epic"]
 
 body:
   - type: markdown
@@ -28,8 +29,8 @@ body:
   - type: checkboxes
     id: research-checklist
     attributes:
-      label: Research checklist
-      description: "Adjust the following checklist as needed. Consider creating subissues for any items as needed."
+      label: Subissue checklist
+      description: "Create subissues for the following items as needed."
       options:
         - label: "Prepare a research plan"
           required: false
@@ -48,7 +49,8 @@ body:
     attributes:
       label: Links to research artifacts
       description: |
-        "Link any artifacts (Drive folder, research plan, analysis boards, etc.) here."
+        "Link any past artifacts that could provide helpful context."
+      placeholder: "- 🔗 Relates to..."
   - type: textarea
     id: links-to-other-issues
     attributes:
