@@ -3526,7 +3526,16 @@ class TestDomainDnsRecords(TestDomainOverview):
     def test_edit_form_is_available_for_new_dns_record(self):
         """User should be able to leave edit form with clicking cancel"""
         domain, _, dns_zone = create_initial_dns_setup()
+        page = self.app.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         create_dns_record(dns_zone)
-        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        print("response",page.content.decode('utf-8'))
         self.assertContains(page, "Edit Record")
-        
+        self.assertContains(page, "aria-expanded = false")
+
+        # print("RECORD", record)
+        # self.app.set_user(self.user.username)
+        # page = self.app.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        # self.assertContains(page, "Edit Record")
+        # print("response",page.content.decode('utf-8'))
+        # page.click("Edit", index=0)
+        # self.assertContains(page, "aria-expanded=true")
