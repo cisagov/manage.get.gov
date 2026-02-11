@@ -143,12 +143,12 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
         zone_id = self.mock_api_service.fake_zone_id
-        zone_id = self.mock_api_service.fake_zone_id
+        record_id = self.mock_api_service.fake_record_id
         initial_record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
         self.service.create_dns_record(zone_id, initial_record_data)
 
         updated_record_data = {"type": "A", "name": "newblog", "content": "55.66.77.88"}
-        resp = self.service.create_dns_record(zone_id, updated_record_data)
+        resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         result = resp["result"]
 
         self.assertEquals(result["name"], updated_record_data["name"])
