@@ -662,3 +662,31 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
+
+    def test_update_db_record_success(self):
+        """Successfully creates registrar db record objects."""
+        x_zone_id = self.vendor_account_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=self.vendor_zone_data["result"].get("id"),
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
+
+        # VendorDnsRecord row exists with matching record xid as cloudflare id
+        x_record_id = self.vendor_record_data["result"].get("id")
+        updated_record_data = {
+            "result": {
+                "name": "new-record-name.gov",  # record name
+                "content": "2.2.2.2",  # IPv4
+                "ttl": 1800,
+                "comment": "Updated test record comment",
+            }
+        }
+        self.service.update_db_record(x_record_id, x_record_id, updated_record_data)
+
+        # DnsRecord row exists with the matching record data
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+        self.assertEqual(dns_record.name, updated_record_data["result"].get("name"))
+        self.assertEqual(dns_record.content, updated_record_data["result"].get("content"))
+        self.assertEqual(dns_record.ttl, updated_record_data["result"].get("ttl"))
+        self.assertEqual(dns_record.comment, updated_record_data["result"].get("comment"))
