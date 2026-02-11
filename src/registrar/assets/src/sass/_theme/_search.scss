@@ -1,4 +1,5 @@
 @use "base" as *;
+@use "uswds-core" as *;
 
 .usa-search--show-label {
     flex-wrap: wrap;
@@ -7,5 +8,75 @@
     }
     .usa-search--show-label__input-wrapper {
         flex: 1;
+    }
+}
+
+.domain-input-wrapper {
+    width: 480px;
+    @include at-media(mobile-lg) {
+      width: auto;
+    }
+
+    // Turns wrapper into CSS grid container
+    display: grid;
+    // Creates 2 colum; 1 fr (input), 63px (.gov suffix)
+    grid-template-columns: 1fr 63px;
+    
+    /* "Invisible" to the grid layout so it doesn't mess up
+    when the layout changes bc of error messaging
+    IE removing box but keeping contents */
+    .usa-character-count {
+        display: contents;
+    }
+    
+    // Form group (label + input, no .gov) in column 1
+    .usa-form-group {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    
+    // Alert/toast goes full width below
+    // This lets the input and .gov to stay together
+    .usa-alert {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin-top: 0.5rem;
+    }
+    
+    // Character count msgs in column 1, row 3
+    // So the char count doesn't mess with the toast/alert
+    .usa-character-count__message,
+    .usa-character-count__status {
+        grid-column: 1;
+        grid-row: 3;
+    }
+    
+    input {
+        width: 100%;
+        height: 2.5rem;
+        border: 1px solid #565c65;
+        border-right: none;
+        line-height: 2.25rem;
+    }
+
+    /* 
+    .gov suffix goes in column 2 (63px), row 1 (aligned with form group)
+    align-self: end VERY important bc it aligns to bottom of form group row (input)
+    */
+    .domain-gov-suffix {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: end;
+        display: flex;
+        height: 2.5rem;
+        padding: 0 1rem;
+        border: 1px solid #565c65;
+        border-left: none;
+        align-items: center;
+        justify-content: center;
+        color: #1b1b1b;
+        font-weight: bold;
+        background-color: #AFD5E6;
+        pointer-events: none;
     }
 }
