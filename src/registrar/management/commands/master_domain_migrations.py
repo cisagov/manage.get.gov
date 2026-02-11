@@ -133,12 +133,10 @@ class Command(BaseCommand):
             duplicates and in which tables
         """
 
-        logger.info(
-            f"""{TerminalColors.OKCYAN}
+        logger.info(f"""{TerminalColors.OKCYAN}
             ============= BEGINNING ANALYSIS ===============
             {TerminalColors.ENDC}
-            """
-        )
+            """)
 
         # TODO: would filteredRelation be faster?
 
@@ -202,8 +200,7 @@ class Command(BaseCommand):
         missing_domain_informations_as_string = "{}".format(", ".join(map(str, missing_domain_informations)))
         missing_domain_invites_as_string = "{}".format(", ".join(map(str, missing_domain_invites)))
 
-        logger.info(
-            f"""{TerminalColors.OKGREEN}
+        logger.info(f"""{TerminalColors.OKGREEN}
             ============= FINISHED ANALYSIS ===============
 
             {total_missing_domains} Missing Domains:
@@ -226,8 +223,7 @@ class Command(BaseCommand):
             {TerminalColors.YELLOW}{missing_domain_invites_as_string}
             {TerminalColors.OKGREEN}
             {TerminalColors.ENDC}
-            """
-        )
+            """)
 
     # ======================================================
     # =================    MIGRATIONS    ===================
@@ -336,8 +332,7 @@ class Command(BaseCommand):
             # Allow the user to inspect the filepath
             # data given in the arguments, and prompt
             # the user to verify this info before proceeding
-            files_are_correct = TerminalHelper.query_yes_no(
-                f"""
+            files_are_correct = TerminalHelper.query_yes_no(f"""
                 {TerminalColors.OKCYAN}
                 *** IMPORTANT:  VERIFY THE FOLLOWING ***
 
@@ -348,21 +343,18 @@ class Command(BaseCommand):
                 {migration_json_filename}
 
                 {TerminalColors.FAIL}
-                Does this look correct?{TerminalColors.ENDC}"""
-            )
+                Does this look correct?{TerminalColors.ENDC}""")
 
             # If the user rejected the filepath information
             # as incorrect, prompt the user to provide
             # correct file inputs in their original command
             # prompt and exit this subroutine
             if not files_are_correct:
-                logger.info(
-                    f"""
+                logger.info(f"""
                 {TerminalColors.YELLOW}
                 PLEASE Re-Run the script with the correct
                 JSON filename and directory:
-                """
-                )
+                """)
                 return
 
         # Proceed executing the migration scripts
@@ -468,12 +460,10 @@ class Command(BaseCommand):
         # STEP 2 -- SEND INVITES
         proceed_with_sending_invites = run_migrations_enabled
         if prompts_enabled and run_migrations_enabled:
-            proceed_with_sending_invites = TerminalHelper.query_yes_no(
-                f"""{TerminalColors.FAIL}
+            proceed_with_sending_invites = TerminalHelper.query_yes_no(f"""{TerminalColors.FAIL}
                 Proceed with sending user invites for all transition domains?
                 (Y = proceed, N = skip)
-                {TerminalColors.ENDC}"""
-            )
+                {TerminalColors.ENDC}""")
         if proceed_with_sending_invites:
             self.run_send_invites_script(debug_on, prompts_enabled)
             prompt_continuation_of_analysis = True
@@ -482,12 +472,10 @@ class Command(BaseCommand):
         # Analyze tables for corrupt data...
         if prompt_continuation_of_analysis and prompts_enabled:
             # ^ (only prompt if we ran steps 1 and/or 2)
-            analyze_tables = TerminalHelper.query_yes_no(
-                f"""{TerminalColors.FAIL}
+            analyze_tables = TerminalHelper.query_yes_no(f"""{TerminalColors.FAIL}
                 Proceed with table analysis?
                 (Y = proceed, N = exit)
-                {TerminalColors.ENDC}"""
-            )
+                {TerminalColors.ENDC}""")
             if not analyze_tables:
                 return
         self.compare_tables(debug_on)

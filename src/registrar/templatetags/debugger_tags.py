@@ -30,7 +30,6 @@ https://github.com/django-extensions/django-extensions/
 
 from django import template
 
-
 register = template.Library()
 
 
