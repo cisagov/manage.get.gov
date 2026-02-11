@@ -43,7 +43,7 @@
                     Click "Add record" and enter the values that you need to enter so everything and everyone can get the work done here.
                 </p>
 
-                <div x-cloak x-show="showFormId == 1000">
+                <div x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
                 
                     <section class="section-outlined section-outlined--extra-padding">
@@ -55,7 +55,7 @@
                         novalidate id="form-container"
                         x-cloak
                         x-ref="dnsForm"
-                        x-show="showFormId == 1000"
+                        x-show="showFormId == 0"
                         @record-submit-success.camel="showFormId = null"
                     >
                         {% include "domain_dns_record_form_content.html" with form=form %}
