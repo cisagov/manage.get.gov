@@ -32,9 +32,6 @@ from ..logging_context import get_user_log_context
 from csp.constants import NONCE, SELF
 
 import sys
-import os
-
-
 
 # # #                          ###
 #      Setup code goes here      #

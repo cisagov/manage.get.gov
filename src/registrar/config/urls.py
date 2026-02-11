@@ -9,7 +9,6 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from registrar import views
-from registrar.config.settings import INSTALLED_APPS
 from registrar.views.report_views import (
     ExportDataDomainsGrowth,
     ExportDataFederal,
@@ -43,7 +42,6 @@ from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
 from django.conf import settings
 import sys
-
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -425,7 +423,7 @@ handler404 = "registrar.views.utility.error_views.custom_404_error_view"
 # Only include debug toolbar URLs when the app is actually local
 # and we are not running tests.
 
-if ( settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not settings.RUNNING_TESTS):
+if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not settings.RUNNING_TESTS:
     import debug_toolbar  # type: ignore
 
     urlpatterns += [
