@@ -30,15 +30,20 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Deploy to cloud.gov sandbox
-        uses: 18f/cg-deploy-action@main
+        uses: cloud-gov/cg-cli-tools@main
         env:
-          DEPLOY_NOW: thanks
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
         with:
           cf_username: ${{ secrets.CF_DEVELOPMENT_USERNAME }}
           cf_password: ${{ secrets.CF_DEVELOPMENT_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: development
-          push_arguments: "-f ops/manifests/manifest-development.yaml"
+          cf_command: >-
+            push -f ops/manifests/manifest-development.yaml
+            --var GIT_BRANCH="$GIT_BRANCH"
+            --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
+            --strategy rolling
       - name: Run Django migrations
         uses: cloud-gov/cg-cli-tools@main
         with:
