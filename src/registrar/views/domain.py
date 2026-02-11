@@ -829,7 +829,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         ]
 
     def get_breadcrumb_current_label(self):
-        return "Records"
+        return "DNS records"
 
     def record_dict_for_initial_data(self, dns_record):
         # Converting model values into a dict to fill in edit form
