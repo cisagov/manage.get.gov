@@ -54,16 +54,22 @@ class DnsHostService:
         Returns x_account_id.
         """
         account_name = make_dns_account_name(domain_name)
-
+        # Check if account exists in DB
         x_account_id = self._find_existing_account_in_db(account_name)
         has_db_account = bool(x_account_id)
         if has_db_account:
             logger.info("Already has an existing vendor account")
             return x_account_id
-
+        # If not in DB, check if account exists in vendor (CF) service
         cf_account_data = self._find_existing_account_in_cf(account_name)
+        logger.error(
+                "CF ACCOUNT RAW RESPONSE TYPE=%s VALUE=%s",
+                type(cf_account_data),
+                cf_account_data,
+            )
         has_cf_account = bool(cf_account_data)
         if has_cf_account:
+            logger.info("Found existing account in Cloudflare")
             return self.save_db_account({"result": cf_account_data})
 
         logger.info(f"Account setup completed successfully for account for {domain_name}")
