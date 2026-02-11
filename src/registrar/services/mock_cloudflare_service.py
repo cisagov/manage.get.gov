@@ -17,6 +17,7 @@ class MockCloudflareService:
     _instance = None
     _mock_context = None
     fake_zone_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
+    fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     new_account_name = f"account-{fake.domain_name()}"
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
@@ -75,6 +76,11 @@ class MockCloudflareService:
         # Mock the api with any zone id
         self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
+        )
+
+        # Mock the api with any record id
+        self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
+            side_effect=self._mock_update_dns_record_response
         )
 
     def _mock_get_page_accounts_response(self, request) -> httpx.Response:
@@ -289,7 +295,65 @@ class MockCloudflareService:
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
+                "errors": [],
+                "messages": [],
+            },
+        )
+
+    def _mock_update_dns_record_response(self, request) -> httpx.Response:
+        # Mocks updating a DNS A record.
+        # If we want to mock updating other DNS records, we may want to split
+        # this out and write a method to return a DNS record response by type.
+        logger.debug("🐟 mocking dns A record update")
+        request_as_json = json.loads(request.content.decode("utf-8"))
+        record_name = request_as_json["name"]
+        content = request_as_json["content"]
+        type = request_as_json["type"]
+        ttl = request_as_json.get("ttl") or 1
+        comment = request_as_json.get("comment") or ""
+        # Get record id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        record_id = request_url.split("/dns_records/")[1]
+
+        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
+        if record_name.startswith("error"):
+            if record_name.startswith("error-400"):
+                return httpx.Response(
+                    400,
+                    json={
+                        "result": None,
+                        "success": False,
+                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
+                        "messages": [],
+                    },
+                )
+            if record_name.startswith("error-403"):
+                return httpx.Response(
+                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
+                )
+            return httpx.Response(500)
+
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
                 "success": True,
+                "result": {
+                    "id": record_id,
+                    "name": record_name,
+                    "type": type,
+                    "content": content,
+                    "proxiable": True,
+                    "proxied": False,
+                    "ttl": ttl,
+                    "settings": {},
+                    "meta": {},
+                    "comment": comment,
+                    "tags": [],
+                    "created_on": datetime.now(timezone.utc).isoformat(),
+                    "modified_on": datetime.now(timezone.utc).isoformat(),
+                },
                 "errors": [],
                 "messages": [],
             },
