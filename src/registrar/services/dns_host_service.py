@@ -380,7 +380,7 @@ class DnsHostService:
                     self.register_nameservers(domain_name, nameservers)
                 logger.info("After register: %s", domain.updated_at)
                     
-                domain.refresh_from_db()
+                domain.refresh_from_db(fields=["updated_at"])
 
                 # Mark domain as enrolled
                 domain.is_enrolled_in_dns_hosting = True
