@@ -78,7 +78,6 @@ from django.utils.dateparse import parse_datetime
 from django.db.models import Exists, OuterRef
 from .models import DnsRecord
 
-
 logger = logging.getLogger(__name__)
 
 

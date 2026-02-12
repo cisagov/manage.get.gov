@@ -19,7 +19,6 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 
-
 logger = logging.getLogger(__name__)
 
 

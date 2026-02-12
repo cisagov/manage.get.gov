@@ -17,7 +17,6 @@ from cachetools.func import ttl_cache
 
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
-
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
 
