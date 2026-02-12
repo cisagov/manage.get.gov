@@ -139,3 +139,36 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         with self.assertRaises(HTTPStatusError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+
+    def test_mock_update_dns_record_response(self):
+        # Create initial DNS record
+        zone_id = self.mock_api_service.fake_zone_id
+        record_id = self.mock_api_service.fake_record_id
+        initial_record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
+        self.service.create_dns_record(zone_id, initial_record_data)
+
+        updated_record_data = {"type": "A", "name": "newblog", "content": "55.66.77.88"}
+        resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
+        result = resp["result"]
+
+        self.assertEquals(result["name"], updated_record_data["name"])
+        self.assertEquals(result["content"], updated_record_data["content"])
+        self.assertEquals(result["type"], updated_record_data["type"])
+
+        error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "55.66.77.88"}
+
+        with self.assertRaises(HTTPStatusError) as context:
+            self.service.create_dns_record(zone_id, error_403_record_data)
+        self.assertTrue("403" in str(context.exception))
+
+        error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
+
+        with self.assertRaises(HTTPStatusError) as context:
+            self.service.create_dns_record(zone_id, error_400_record_data)
+        self.assertTrue("400" in str(context.exception))
+
+        error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
+
+        with self.assertRaises(HTTPStatusError) as context:
+            self.service.create_dns_record(zone_id, error_500_record_data)
+        self.assertTrue("500" in str(context.exception))

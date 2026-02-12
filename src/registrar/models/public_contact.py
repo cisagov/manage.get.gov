@@ -9,7 +9,6 @@ from registrar.utility.enums import DefaultEmail
 
 from .utility.time_stamped_model import TimeStampedModel
 
-
 logger = logging.getLogger(__name__)
 
 

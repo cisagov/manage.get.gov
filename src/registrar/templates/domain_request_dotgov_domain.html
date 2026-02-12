@@ -1,61 +1,35 @@
 {% extends 'domain_request_form.html' %}
 {% load static field_helpers url_helpers %}
 
-{% block form_instructions %}
-  <p>
-    Before requesting a .gov domain, please make sure it meets the
-    {% if requires_feb_questions %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/executive-branch-guidance/">naming requirements for executive branch agencies</a>. Your domain name must:
-    {% else %}
-      <a class="usa-link" rel="noopener noreferrer" target="_blank" href="{% public_site_url 'domains/choosing' %}">naming requirements</a>. Your domain name must:
-    {% endif %}
-    <ul class="usa-list">
-      <li>Be available </li>
-      <li>Relate to your organization’s name, location, and/or services </li>
-      <li>Be unlikely to mislead or confuse the general public (even if your domain is only intended for a specific audience) </li>
-    </ul>
-  </p>
-
-  <p>Names that <em>uniquely apply to your organization</em> are likely to be approved over names that could also apply to other organizations. 
-    {% if not is_federal %}In most instances, this requires including your state’s two-letter abbreviation.{% endif %}</p> 
-  
-  {% if not portfolio %}
-  <p>Requests for your organization’s initials or an abbreviated name might not be approved, but we encourage you to request the name you want.</p> 
-  {% endif %}
-
-  <p>Read about  <a class="usa-link" rel="noopener noreferrer" target="_blank" href="https://get.gov/domains/requirements/">activities that are prohibited on .gov domains</a>.</p>
-  {% if not portfolio %}
-  <h2 class="margin-top-3">Domain examples for your type of organization</h2>
-  <div class="domain_example">
-    {% include "includes/domain_example.html" %}
-  </div>
-  {% endif %}
-{% endblock %}
-
-
 {% block form_required_fields_help_text %}
 {# empty this block so it doesn’t show on this page #}
 {% endblock %}
 
-
 {% block form_fields %}
-
-  {{ forms.0.management_form }}
+  {% include "includes/naming_requirements.html"  %}
 
   <fieldset class="usa-fieldset margin-top-4">
+  {% include "includes/domain_example.html" with generic_org_type=generic_org_type %}
+  </fieldset>
+
+  {{ forms.0.management_form }}
+  <fieldset class="usa-fieldset">
     <legend>
-      <h2>What .gov domain do you want?</h2>
+      <h2 class="margin-top-0">What .gov domain do you want?</h2>
     </legend>
-    <p id="domain_instructions" class="margin-top-05">
-      After you enter your domain, we’ll make sure it’s available and that it meets some of the naming requirements. 
-      If your domain passes these initial checks, we’ll verify that it meets all the requirements after you complete the rest of this form.
+    <p id="domain_instructions" class="margin-top-1">
+      If the domain you want is available, we'll verify it meets all our naming requirements after you submit this form.
+      You may also provide alternative domains in case we can't approve your first choice.
     </p>
-    {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
-      {# attr_validate / validate="domain" invokes code in getgov.min.js #}
-      {% with append_gov=True attr_validate="domain" add_label_class="usa-sr-only" %}
-        {% input_with_errors forms.0.requested_domain %}
+    <div class="domain-input-wrapper">
+      {% with attr_aria_labelledby="domain_instructions domain_instructions2" attr_aria_describedby="id_dotgov_domain-requested_domain--toast" %}
+        {# attr_validate / validate="domain" invokes code in getgov.min.js #}
+        {% with attr_validate="domain" add_label_class="usa-sr-only" %}
+          {% input_with_errors forms.0.requested_domain %}
+        {% endwith %}
       {% endwith %}
-    {% endwith %}
+      <span class="domain-gov-suffix">.gov</span>
+    </div>
     <button
       type="button"
       class="usa-button usa-button--outline"
@@ -63,49 +37,76 @@
     >Check availability</button>
   </fieldset>
 
-  {{ forms.1.management_form }}
-
   <fieldset class="usa-fieldset margin-top-1 dotgov-domain-form" id="form-container">
     <legend>
-      <h2 id="alternative-domains-title">Alternative domains (optional)</h2>
+      <h3 id="alternative-domains-title">Alternative domains (optional)</h3>
     </legend>
-    <p id="alt_domain_instructions" class="margin-top-05">
-      Are there other domains you’d like if we can’t give you your first choice?
+    <p id="alt_domain_instructions" class="margin-top-05 margin-bottom-05">
+      Are there other domains you’d like if we can’t give you your first choice? We will confirm with you before approving an alternative domain.
     </p>
+    {{ forms.1.management_form }}
+
     {% with attr_aria_labelledby="alt_domain_instructions" %}
       {# Will probably want to remove blank-ok and do related cleanup when we implement delete #}
-      {% with attr_validate="domain" append_gov=True add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
-        {% for form in forms.1 %}
-          <div class="repeatable-form">
-            {% with attr_aria_describedby=form.alternative_domain.auto_id|stringformat:"s"|add:"--toast" %}
-              {% input_with_errors form.alternative_domain %}
-            {% endwith %}
-          </div>
+      {% with attr_validate="domain" add_label_class="usa-sr-only" add_class="blank-ok alternate-domain-input" %}
+        {% for form in forms.1.forms %}
+          <div class="repeatable-form padding-y-1 {% if not form.alternative_domain.value %}display-none{% endif %}">
+          <fieldset class="usa-fieldset">
+            <!-- legend has to be direct child of fieldset to be valid html, in div would break it - need for labelling/sr -->
+            <legend class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}"> Alternative domain {{ forloop.counter }}</legend>
+            <div class="alternative-domain-header display-flex flex-justify flex-align-baseline flex-wrap margin-bottom-2">
+              <h4 class="line-height-heading-2 margin-0" aria-hidden="true"> Alternative domain {{ forloop.counter }}</h4>
+              
+              {% if form.alternative_domain.value %}
+                <span class="usa-sr-only delete-button-description" id="alternative-domain-{{ forloop.counter }}__name">Delete {{ form.alternative_domain.value }}.gov</span>
+              {% else %}
+                <span class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}__name">Delete alternative domain</span>
+              {% endif %}
+              
+              <button 
+                aria-labelledby="alternative-domain-{{ forloop.counter }}" 
+                aria-describedby="alternative-domain-{{ forloop.counter }}__name" 
+                type="button" 
+                class="usa-button usa-button--unstyled display-block delete-record text-secondary usa-button--with-icon margin-bottom-1">
+                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
+                  <use xlink:href="{% static 'img/sprite.svg' %}#delete"></use>
+                </svg>Delete
+              </button>
+            </div>
+            {% if forms.1.can_delete %}
+              {{ form.DELETE }}
+            {% endif %}
+            
+            <div class="clear-both">
+              <div class="domain-input-wrapper margin-bottom-0">
+                {% with attr_aria_describedby=form.alternative_domain.auto_id|stringformat:"s"|add:"--toast" %}
+                {% input_with_errors form.alternative_domain %}
+                {% endwith %}
+                <span class="domain-gov-suffix">.gov</span>
+              </div>
+              
+              <div class="usa-sr-only" id="alternative-domain-{{ forloop.counter }}__check-availability">Check domain availability for alternative domain {{ forloop.counter }}</div>
+              <button
+                type="button"
+                class="usa-button usa-button--outline"
+                validate-for="{{ form.alternative_domain.auto_id }}"
+                aria-labelledby="alternative-domain-{{ forloop.counter }}"
+                aria-describedby="alternative-domain-{{ forloop.counter }}__check-availability"
+              >Check availability</button>
+            </div>
+          </fieldset>
+        </div>
         {% endfor %}
       {% endwith %}
     {% endwith %}
     
-    <div class="usa-sr-only" id="alternative-domains__add-another-alternative">Add another alternative domain</div> 
+    <div class="usa-sr-only" id="alternative-domains__add-another-alternative">Add alternative domain</div> 
     <button aria-labelledby="alternative-domains-title" aria-describedby="alternative-domains__add-another-alternative" type="button" value="save" class="usa-button usa-button--unstyled usa-button--with-icon" id="add-form">
       <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24" height="24">
         <use xlink:href="{% static 'img/sprite.svg' %}#add_circle"></use>
       </svg>
-      <span class="margin-left-05">Add another alternative</span>
+      <span class="margin-left-05">Add alternative domain</span>
     </button>
-    <div class="margin-bottom-3">
-      <div class="usa-sr-only" id="alternative-domains__check-availability">Check domain availability</div> 
-      <button
-      id="validate-alt-domains-availability"
-      type="button"
-      class="usa-button usa-button--outline"
-      validate-for="{{ forms.1.requested_domain.auto_id }}"
-      aria-labelledby="alternative-domains-title"
-      aria-describedby="alternative-domains__check-availability"
-      >Check availability</button>
-    </div>
-    <p class="margin-top-05">
-      If you’re not sure this is the domain you want, that’s ok. You can change the domain later.
-    </p>
   </fieldset>
 
   {{ forms.2.management_form }}

@@ -7,7 +7,6 @@ from registrar.models import (
 )
 from registrar.models.allowed_email import AllowedEmail
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 
