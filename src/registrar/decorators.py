@@ -9,7 +9,6 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from functools import wraps
 from registrar.utility.db_timeouts import pg_timeouts
 
-
 logger = logging.getLogger(__name__)
 
 # Constants for clarity

@@ -45,18 +45,24 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Deploy to cloud.gov sandbox
+      - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
         uses: cloud-gov/cg-cli-tools@main
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
           CF_USERNAME: CF_${{ needs.variables.outputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ needs.variables.outputs.environment }}_PASSWORD
+          GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
-          cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
+          cf_command: >-
+            push -f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
+            --var GIT_BRANCH="$GIT_BRANCH"
+            --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
+            --strategy rolling
   comment:
     runs-on: ubuntu-latest
     needs: [variables, deploy]

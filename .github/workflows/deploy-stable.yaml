@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
@@ -29,14 +28,21 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Deploy to cloud.gov sandbox
+      - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
         uses: cloud-gov/cg-cli-tools@main
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_TAG: ${{ github.ref_name }}
         with:
           cf_username: ${{ secrets.CF_STABLE_USERNAME }}
           cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
           cf_org: cisa-dotgov
           cf_space: stable
-          cf_manifest: "ops/manifests/manifest-stable.yaml"
+          cf_command: >-
+            push -f ops/manifests/manifest-stable.yaml
+            --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
+            --var GIT_TAG="$GIT_TAG"
+            --strategy rolling
       - name: Run Django migrations
         uses: cloud-gov/cg-cli-tools@main
         with:

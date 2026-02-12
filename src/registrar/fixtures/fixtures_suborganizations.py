@@ -4,7 +4,6 @@ from faker import Faker
 from registrar.models.portfolio import Portfolio
 from registrar.models.suborganization import Suborganization
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 
