@@ -4,7 +4,6 @@ from registrar.management.commands.utility.terminal_helper import PopulateScript
 from registrar.models import FederalAgency, DomainInformation
 from registrar.utility.constants import BranchChoices
 
-
 logger = logging.getLogger(__name__)
 
 

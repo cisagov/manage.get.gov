@@ -7,7 +7,6 @@ from django.core.management import BaseCommand
 from registrar.utility import csv_export
 from registrar.utility.s3_bucket import S3ClientHelper
 
-
 logger = logging.getLogger(__name__)
 
 
