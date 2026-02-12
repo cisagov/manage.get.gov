@@ -829,7 +829,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         ]
 
     def get_breadcrumb_current_label(self):
-        return "Records"
+        return "DNS records"
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""

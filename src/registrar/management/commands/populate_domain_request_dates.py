@@ -33,12 +33,10 @@ class Command(BaseCommand, PopulateScriptTemplate):
                 record.first_submitted_date = log_entry.timestamp.date()
                 break
 
-        logger.info(
-            f"""{TerminalColors.OKCYAN}Updating {record} =>
+        logger.info(f"""{TerminalColors.OKCYAN}Updating {record} =>
                 first submitted date: {record.first_submitted_date},
                 last status update: {record.last_status_update}{TerminalColors.ENDC}
-            """
-        )
+            """)
 
     def should_skip_record(self, record) -> bool:
         # make sure the record had some kind of history

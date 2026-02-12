@@ -38,7 +38,6 @@ import boto3_mocking  # type: ignore
 import copy
 from django.core.exceptions import ValidationError
 
-
 logger = logging.getLogger(__name__)
 
 

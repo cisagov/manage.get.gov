@@ -21,7 +21,6 @@ from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 from httpx import Client
 
-
 logger = logging.getLogger(__name__)
 
 
