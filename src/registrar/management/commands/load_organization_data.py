@@ -174,9 +174,11 @@ class Command(BaseCommand):
 
         # === Log results and return data === #
         if len(self.domains_failed_to_update) > 0:
-            logger.error(f"""{TerminalColors.FAIL}
+            logger.error(
+                f"""{TerminalColors.FAIL}
                 Failed to update. An exception was encountered on the following Domains: {self.domains_failed_to_update}
-                {TerminalColors.ENDC}""")
+                {TerminalColors.ENDC}"""
+            )
             raise LoadOrganizationError(code=LoadOrganizationErrorCodes.UPDATE_DOMAIN_INFO_FAILED)
 
         if debug:

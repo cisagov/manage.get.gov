@@ -57,43 +57,53 @@ class Command(BaseCommand):
 
         entries_to_remove_by_name = list(portfolios_to_delete.values_list("organization_name", flat=True))
         formatted_entries = "\n\t\t".join(entries_to_remove_by_name)
-        confirm_delete = TerminalHelper.query_yes_no(f"""
+        confirm_delete = TerminalHelper.query_yes_no(
+            f"""
             {TerminalColors.FAIL}
             WARNING: You are about to delete the following portfolios:
 
                 {formatted_entries}
 
-            Are you sure you want to continue?{TerminalColors.ENDC}""")
+            Are you sure you want to continue?{TerminalColors.ENDC}"""
+        )
         if confirm_delete:
-            logger.info(f"""{TerminalColors.YELLOW}
+            logger.info(
+                f"""{TerminalColors.YELLOW}
             ----------Deleting entries----------
             (please wait)
-            {TerminalColors.ENDC}""")
+            {TerminalColors.ENDC}"""
+            )
             self.delete_entries(portfolios_to_delete, debug_on)
         else:
-            logger.info(f"""{TerminalColors.OKCYAN}
+            logger.info(
+                f"""{TerminalColors.OKCYAN}
             ----------No entries deleted----------
             (exiting script)
-            {TerminalColors.ENDC}""")
+            {TerminalColors.ENDC}"""
+            )
 
     def delete_entries(self, portfolios_to_delete, debug_on):  # noqa: C901
         # Log the number of entries being removed
         count = portfolios_to_delete.count()
         if count == 0:
-            logger.info(f"""{TerminalColors.OKCYAN}
+            logger.info(
+                f"""{TerminalColors.OKCYAN}
                 No entries to remove.
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
             return
 
         # If debug mode is on, print out entries being removed
         if debug_on:
             entries_to_remove_by_name = list(portfolios_to_delete.values_list("organization_name", flat=True))
             formatted_entries = ", ".join(entries_to_remove_by_name)
-            logger.info(f"""{TerminalColors.YELLOW}
+            logger.info(
+                f"""{TerminalColors.YELLOW}
                 Entries to be removed: {formatted_entries}
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
         # Check for portfolios with non-empty related objects
         # (These will throw integrity errors if they are not updated)
@@ -116,7 +126,8 @@ class Command(BaseCommand):
             formatted_entries = "\n\t\t".join(
                 f"{portfolio.organization_name}" for portfolio in portfolios_with_assignments
             )
-            confirm_cascade_delete = TerminalHelper.query_yes_no(f"""
+            confirm_cascade_delete = TerminalHelper.query_yes_no(
+                f"""
                 {TerminalColors.FAIL}
                 WARNING: these entries have related objects.
 
@@ -127,12 +138,15 @@ class Command(BaseCommand):
                 and suborganizations.  Any suborganizations that get deleted will also orphan (not delete) their
                 associated domains / domain requests.
 
-                Are you sure you want to continue?{TerminalColors.ENDC}""")
+                Are you sure you want to continue?{TerminalColors.ENDC}"""
+            )
             if not confirm_cascade_delete:
-                logger.info(f"""{TerminalColors.OKCYAN}
+                logger.info(
+                    f"""{TerminalColors.OKCYAN}
                     Operation canceled by the user.
                     {TerminalColors.ENDC}
-                    """)
+                    """
+                )
                 return
 
         # Try to delete the portfolios
@@ -197,21 +211,25 @@ class Command(BaseCommand):
                     summary_string = "\n\n".join(summary)
 
                 # Output a success message with detailed summary
-                logger.info(f"""{TerminalColors.OKCYAN}
+                logger.info(
+                    f"""{TerminalColors.OKCYAN}
                     Successfully removed {count} portfolios.
 
                     The following portfolio deletions had cascading effects;
 
                     {summary_string}
                     {TerminalColors.ENDC}
-                    """)
+                    """
+                )
 
         except IntegrityError as e:
-            logger.info(f"""{TerminalColors.FAIL}
+            logger.info(
+                f"""{TerminalColors.FAIL}
                 Could not delete some portfolios due to integrity constraints:
                 {e}
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
     def handle(self, *args, **options):
         # Get all Portfolio entries not in the allowed portfolios list
