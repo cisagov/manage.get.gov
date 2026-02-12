@@ -11,7 +11,6 @@ from registrar.utility import csv_export
 from io import StringIO
 from ...utility.email import send_templated_email, EmailSendingError
 
-
 logger = logging.getLogger(__name__)
 
 
