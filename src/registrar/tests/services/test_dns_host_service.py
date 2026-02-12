@@ -299,6 +299,15 @@ class TestDnsHostServiceDB(TestCase):
             }
         }
 
+        self.updated_record_data = {
+            "result": {
+                "name": "new-record-name.gov",  # record name
+                "content": "2.2.2.2",  # IPv4
+                "ttl": 1800,
+                "comment": "Updated test record comment",
+            }
+        }
+
     def tearDown(self):
         delete_all_dns_data()
         User.objects.all().delete()
@@ -665,28 +674,88 @@ class TestDnsHostServiceDB(TestCase):
 
     def test_update_db_record_success(self):
         """Successfully creates registrar db record objects."""
-        x_zone_id = self.vendor_account_data["result"].get("id")
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
         _, _, zone = create_initial_dns_setup(
-            x_zone_id=self.vendor_zone_data["result"].get("id"),
+            x_zone_id=x_zone_id,
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
         self.service.create_db_record(x_zone_id, self.vendor_record_data)
 
         # VendorDnsRecord row exists with matching record xid as cloudflare id
-        x_record_id = self.vendor_record_data["result"].get("id")
-        updated_record_data = {
-            "result": {
-                "name": "new-record-name.gov",  # record name
-                "content": "2.2.2.2",  # IPv4
-                "ttl": 1800,
-                "comment": "Updated test record comment",
-            }
-        }
-        self.service.update_db_record(x_record_id, x_record_id, updated_record_data)
+        
+        self.service.update_db_record(x_zone_id, x_record_id, self.updated_record_data)
 
         # DnsRecord row exists with the matching record data
         dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
-        self.assertEqual(dns_record.name, updated_record_data["result"].get("name"))
-        self.assertEqual(dns_record.content, updated_record_data["result"].get("content"))
-        self.assertEqual(dns_record.ttl, updated_record_data["result"].get("ttl"))
-        self.assertEqual(dns_record.comment, updated_record_data["result"].get("comment"))
+        self.assertEqual(dns_record.name, self.updated_record_data["result"].get("name"))
+        self.assertEqual(dns_record.content, self.updated_record_data["result"].get("content"))
+        self.assertEqual(dns_record.ttl, self.updated_record_data["result"].get("ttl"))
+        self.assertEqual(dns_record.comment, self.updated_record_data["result"].get("comment"))
+
+    def test_update_db_record_with_error_fails(self):
+        """Preserve original DNS record data when update fails."""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
+
+        x_record_id = self.vendor_record_data["result"].get("id")
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+
+        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transcation
+        with patch("registrar.models.DnsRecord.objects.get", side_effect=IntegrityError("simulated failure")):
+            with self.assertRaises(IntegrityError):
+                self.service.update_db_record(x_zone_id, x_record_id, self.updated_record_data)
+
+        # Record data should still preserve original vendor record data on failed update
+        self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
+        self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
+        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
+
+    def test_create_db_record_with_bad_data_fails(self):
+        """Do not update db record objects when passed invalid Cloudlfare data."""
+        invalid_result_payloads = [
+            {"test_name": "Empty payload test case"},
+            {
+                "test_name": "Update with invalid IPv4 data",
+                "result": {
+                    "content": "invalid IP data",  # IPv4
+                },
+            },
+        ]
+
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
+
+        x_record_id = self.vendor_record_data["result"].get("id")
+        vendor_dns_record = VendorDnsRecord.get(x_record_id=x_record_id)
+        dns_record = DnsRecord.objects.filter(vendor_dns_record=vendor_dns_record).first()
+
+        for payload in invalid_result_payloads:
+            with self.subTest(msg=payload["test_name"], payload=payload):
+                with self.assertRaises(KeyError):
+                    self.service.update_db_record(x_zone_id, x_record_id, payload)
+
+                    # Record data should still preserve original vendor record data on failed update
+                    self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
+                    self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
+                    self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+                    self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
+
+    def _create_dns_record(self, x_zone_id, record_data):
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, record_data)
