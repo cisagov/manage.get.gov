@@ -4,7 +4,6 @@ from registrar.models import Suborganization, DomainRequest, DomainInformation
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models.utility.generic_helper import count_capitals, normalize_string
 
-
 logger = logging.getLogger(__name__)
 
 

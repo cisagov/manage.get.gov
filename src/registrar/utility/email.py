@@ -13,7 +13,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from waffle import flag_is_active
 
-
 logger = logging.getLogger(__name__)
 
 

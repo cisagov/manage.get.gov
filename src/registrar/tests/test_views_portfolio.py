@@ -44,7 +44,6 @@ from django.test import Client
 import logging
 import json
 
-
 logger = logging.getLogger(__name__)
 
 
