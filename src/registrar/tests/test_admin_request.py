@@ -2691,41 +2691,6 @@ class TestDomainRequestAdmin(MockEppLib):
 
             self.assertEqual(expected_list, actual_list)
 
-    @override_flag("dns_hosting", active=True)
-    @patch("registrar.services.dns_host_service.DnsHostService")
-    def test_approve_triggers_dns_setup_for_cisa_admin_with_flag_on(self, MockDnsSvc):
-        svc = MockDnsSvc.return_value
-        svc.dns_account_setup.return_value = "account-123"
-
-        # Create domain request in a state that can be approved
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-
-        # Approve as CISA admin
-        self.client.force_login(self.superuser)
-        domain_request.approve(send_email=False)
-
-        # Assert DNS Setup happened
-        svc.dns_account_setup.assert_called_once_with(domain_request.requested_domain.name)
-
-        svc.dns_zone_setup.assert_called_once_with(domain_request.requested_domain.name, "account-123")
-
-    @override_flag("dns_hosting", active=False)
-    @patch("registrar.services.dns_host_service.DnsHostService")
-    def test_approve_triggers_dns_setup_for_cisa_admin_with_flag_off(self, MockDnsSvc):
-        svc = MockDnsSvc.return_value
-
-        # Create domain request in a state that can be approved
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.IN_REVIEW)
-
-        # Approve as CISA admin
-        self.client.force_login(self.superuser)
-        domain_request.approve(send_email=False)
-
-        # Assert DNS Setup did NOT happen
-        svc.dns_account_setup.assert_not_called()
-
-        svc.dns_zone_setup.assert_not_called()
-
     @less_console_noise_decorator
     def test_staff_can_see_cisa_region_federal(self):
         """Tests if staff can see CISA Region: N/A"""

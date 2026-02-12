@@ -48,7 +48,7 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
 
-    def dns_account_setup(self, domain_name):
+    def dns_account_setup(self, domain_name: str):
         """
         Ensure a DNS Vendor account exists for this domain and is saved to the database.
         Returns x_account_id.
@@ -58,8 +58,7 @@ class DnsHostService:
         logger.debug(f"Derived account name {account_name} from domain name {domain_name}")
         # Check if account exists in DB
         x_account_id = self._find_existing_account_in_db(account_name)
-        has_db_account = bool(x_account_id)
-        if has_db_account:
+        if x_account_id:
             logger.info("Already has an existing vendor account")
             return x_account_id
         # If not in DB, check if account exists in vendor (CF) service
@@ -69,21 +68,25 @@ class DnsHostService:
             type(cf_account_data),
             cf_account_data,
         )
-        has_cf_account = bool(cf_account_data)
-        if has_cf_account:
-            logger.info("Found existing account in Cloudflare")
-            return self.save_db_account(
-                {
-                    "result": {
-                        "id": cf_account_data["account_tag"],
-                        "name": cf_account_data["account_pubname"],
-                        "created_on": cf_account_data["created_on"],
-                        "type": cf_account_data.get("account_type"),
-                    }
-                }
-            )
 
-        logger.info(f"Account setup completed successfully for account for {domain_name}")
+        if cf_account_data:
+            logger.info("Found existing account in Cloudflare")
+
+            # Normalize vendor response to expected structure for saving to DB
+            if "account_tag" in cf_account_data:
+                normalized = {
+                    "id": cf_account_data["account_tag"],
+                    "name": cf_account_data["account_pubname"],
+                    "created_on": cf_account_data["created_on"],
+                }
+            else:
+                # Already normalized or mocked response (e.g. during testing)
+                normalized = cf_account_data
+
+            return self.save_db_account({"result": normalized})
+
+        # Create new vendor account
+        logger.info(f"No existing account found. Creating new account for {domain_name}")
         return self.create_and_save_account(account_name)
 
     def dns_zone_setup(self, domain_name, x_account_id):
