@@ -34,6 +34,13 @@ th {
       pointer-events: none;
     }
   }
+
+  // Removes padding from td cell
+  .no-padding td {
+    padding: 0;
+  }
+
+  
 }
 
 // .dotgov-table allows us to customize .usa-table on the user-facing pages,
@@ -86,6 +93,11 @@ th {
   // Hack fix to the overly specific selector above that broke utility class usefulness
   .padding-right-105 {
     padding-right: .75rem;
+  }
+
+  // Removes padding from td cell
+  .no-padding td {
+    padding: 0;
   }
 
 
