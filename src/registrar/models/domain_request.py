@@ -6,25 +6,20 @@ from django.conf import settings
 from django.db import models
 from django_fsm import FSMField, transition  # type: ignore
 from django.utils import timezone
-from django.http import JsonResponse
 from registrar.models.domain import Domain
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices
 from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.constants import BranchChoices
-from registrar.utility.waffle import flag_is_active_for_user
 from auditlog.models import LogEntry
 from django.core.exceptions import ValidationError
 from datetime import date
-from httpx import Client
 
 from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
-from epplibwrapper.errors import RegistryError
-from registrar.utility.errors import RegistrySystemError
 
 logger = logging.getLogger(__name__)
 

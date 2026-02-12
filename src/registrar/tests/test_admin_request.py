@@ -45,7 +45,6 @@ from .common import (
     normalize_html,
 )
 from unittest.mock import ANY, patch
-from waffle.testutils import override_flag
 
 from django.conf import settings
 import boto3_mocking  # type: ignore

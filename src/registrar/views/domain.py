@@ -15,7 +15,7 @@ from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
 from waffle import flag_is_active
-from registrar.utility.errors import APIError, RegistrySystemError
+from registrar.utility.errors import APIError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
