@@ -148,7 +148,7 @@ class DnsHostService:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
         return vendor_record_data
-    
+
     def update_and_save_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
         """Calls update method of vendor service to update a DNS record"""
         # Update record in vendor service
@@ -332,10 +332,7 @@ class DnsHostService:
                 vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
                 vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
                 dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-                dns_record = DnsRecord.objects.get(
-                    vendor_dns_record=vendor_dns_record,
-                    dns_zone=dns_zone
-                )
+                dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
 
                 for record_field, record_value in record_data.items():
                     setattr(dns_record, record_field, record_value)

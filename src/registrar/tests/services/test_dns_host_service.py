@@ -683,7 +683,7 @@ class TestDnsHostServiceDB(TestCase):
         self.service.create_db_record(x_zone_id, self.vendor_record_data)
 
         # VendorDnsRecord row exists with matching record xid as cloudflare id
-        
+
         self.service.update_db_record(x_zone_id, x_record_id, self.updated_record_data)
 
         # DnsRecord row exists with the matching record data
@@ -738,7 +738,7 @@ class TestDnsHostServiceDB(TestCase):
         self.service.create_db_record(x_zone_id, self.vendor_record_data)
 
         x_record_id = self.vendor_record_data["result"].get("id")
-        vendor_dns_record = VendorDnsRecord.get(x_record_id=x_record_id)
+        vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
         dns_record = DnsRecord.objects.filter(vendor_dns_record=vendor_dns_record).first()
 
         for payload in invalid_result_payloads:
