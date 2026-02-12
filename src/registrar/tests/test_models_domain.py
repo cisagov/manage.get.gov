@@ -2644,6 +2644,29 @@ class TestCreationDate(MockEppLib):
         self.domain.statuses
         self.assertEquals(self.domain.created_at, self.creation_date)
 
+    def test_registry_created_at_and_created_at_reference(self):
+        """assert registry_created_at is set from EPP and created_at_reference is preserved"""
+        original_created_at = self.domain.created_at
+        # force fetch_cache to be called
+        self.domain.statuses
+        registry_created_at, created_at_reference = (
+            Domain.objects.filter(pk=self.domain.pk).values_list("registry_created_at", "created_at_reference").get()
+        )
+        self.assertEquals(registry_created_at, self.creation_date)
+        self.assertEquals(created_at_reference, original_created_at)
+
+
+class TestDomainCreatedAtReference(TestCase):
+    def test_created_at_reference_populated_on_create(self):
+        domain = Domain.objects.create(name="created-at-ref.gov")
+        created_at_reference, created_at, registry_created_at = (
+            Domain.objects.filter(pk=domain.pk)
+            .values_list("created_at_reference", "created_at", "registry_created_at")
+            .get()
+        )
+        self.assertEqual(created_at_reference, created_at)
+        self.assertIsNone(registry_created_at)
+
 
 class TestAnalystClientHold(MockEppLib):
     """Rule: Analysts may suspend or restore a domain by using client hold"""
