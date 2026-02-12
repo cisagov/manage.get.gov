@@ -717,7 +717,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
-    def test_create_db_record_with_bad_data_fails(self):
+    def test_update_db_record_with_bad_data_fails(self):
         """Do not update db record objects when passed invalid Cloudlfare data."""
         invalid_result_payloads = [
             {"test_name": "Empty payload test case"},
