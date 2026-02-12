@@ -66,19 +66,23 @@ class DnsHostService:
         # If not in DB, check if account exists in vendor (CF) service
         cf_account_data = self._find_existing_account_in_cf(account_name)
         logger.error(
-                "CF ACCOUNT RAW RESPONSE TYPE=%s VALUE=%s",
-                type(cf_account_data),
-                cf_account_data,
-            )
+            "CF ACCOUNT RAW RESPONSE TYPE=%s VALUE=%s",
+            type(cf_account_data),
+            cf_account_data,
+        )
         has_cf_account = bool(cf_account_data)
         if has_cf_account:
             logger.info("Found existing account in Cloudflare")
-            return self.save_db_account({"result": {
-                    "id": cf_account_data["account_tag"],
-                    "name": cf_account_data["account_pubname"],
-                    "created_on": cf_account_data["created_on"],
-                    "type": cf_account_data.get("account_type")
-                    }})
+            return self.save_db_account(
+                {
+                    "result": {
+                        "id": cf_account_data["account_tag"],
+                        "name": cf_account_data["account_pubname"],
+                        "created_on": cf_account_data["created_on"],
+                        "type": cf_account_data.get("account_type"),
+                    }
+                }
+            )
 
         logger.info(f"Account setup completed successfully for account for {domain_name}")
         return self.create_and_save_account(account_name)
@@ -362,7 +366,7 @@ class DnsHostService:
 
         domain_name = domain.name
         try:
-             with transaction.atomic():
+            with transaction.atomic():
                 # Save Account
                 x_account_id = self.dns_account_setup(domain_name)
 
@@ -377,7 +381,7 @@ class DnsHostService:
                 # Register nameservers with registry
                 if not settings.IS_LOCAL:
                     self.register_nameservers(domain_name, nameservers)
-                    
+
                 # Mark domain as enrolled
                 domain.is_enrolled_in_dns_hosting = True
                 domain.save(update_fields=["is_enrolled_in_dns_hosting"])
@@ -386,5 +390,5 @@ class DnsHostService:
             logger.exception("DNS enrollment failed for %s", domain_name)
             # Domain remains unenrolled because transaction rolls back
             raise
-        
+
         logger.info("Successfully enrolled %s in DNS hosting", domain_name)

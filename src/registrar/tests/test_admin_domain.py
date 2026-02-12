@@ -36,6 +36,8 @@ from unittest.mock import ANY, call, patch, PropertyMock
 
 import boto3_mocking  # type: ignore
 import logging
+from waffle.testutils import override_flag
+
 
 logger = logging.getLogger(__name__)
 
@@ -1325,3 +1327,56 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
             # Web test has issues grabbing up to date data from the db, so we can test
             # the returned view instead
             self.assertContains(response, '<div class="readonly">On hold</div>')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_enroll_dns_hosting_button_calls_service_and_sets_message(self):
+        # Create a portfolio-backed (non-legacy) domain
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Org",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            requester=self.superuser,
+        )
+
+        domain = Domain.objects.create(
+            name="enrolltest.gov",
+            state=Domain.State.READY,
+            is_enrolled_in_dns_hosting=False,
+        )
+
+        DomainInformation.objects.create(
+            domain=domain,
+            portfolio=portfolio,
+            requester=self.superuser,
+        )
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Button should be visible
+        self.assertContains(response, "Enroll domain in DNS hosting")
+
+        form = response.forms["domain_form"]
+
+        with patch("registrar.admin.DnsHostService") as MockService, patch(
+            "django.contrib.messages.add_message"
+        ) as mock_add_message:
+
+            svc = MockService.return_value
+            svc.enroll_domain.return_value = None
+
+            response = form.submit("_enroll_dns_hosting")
+            response = response.follow()
+
+        # Ensure service was called
+        svc.enroll_domain.assert_called_once()
+
+        # Ensure a success message was added (no error path triggered)
+        mock_add_message.assert_any_call(
+            ANY,
+            messages.SUCCESS,
+            "Domain successfully enrolled in DNS hosting.",
+            extra_tags="",
+            fail_silently=False,
+        )
+
+        self.assertEqual(response.status_code, 200)
