@@ -915,6 +915,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     try:
                         x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
                         record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
+                        # For testing purposes. Remove line before merging
+                        update_response = self.dns_host_service.update_and_save_record("<replace with x_zone_id>", "<replace with x_record_id>", form_record_data) 
+                        # For testing purposes. Remove line before merging
+                        logger.info(f"Updated DNS record: {update_response['result']}")
                         logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
