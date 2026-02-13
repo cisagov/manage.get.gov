@@ -34,12 +34,6 @@ th {
       pointer-events: none;
     }
   }
-
-  // Removes padding from td cell
-  .no-padding td {
-    padding: 0;
-  }
-
   
 }
 
@@ -94,13 +88,6 @@ th {
   .padding-right-105 {
     padding-right: .75rem;
   }
-
-  // Removes padding from td cell
-  .no-padding td {
-    padding: 0;
-  }
-
-
   // Sortable headers
   th[data-sortable][aria-sort=ascending],
   th[data-sortable][aria-sort=descending] {
@@ -185,3 +172,47 @@ th {
     white-space: normal;
   }
 }
+
+
+
+#dnsrecords-table {
+    table-layout: fixed;
+     .no-padding {
+       padding: 0;
+    }
+
+    // Allow word to break on name column if its long
+    td:nth-child(2){
+      word-wrap: break-word;
+      overflow: break-word;
+      white-space: normal;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1){
+      width:10%
+    }
+
+    th:nth-child(2),
+    td:nth-child(2){
+      width:25%
+    }
+
+
+    th:nth-child(3),
+    td:nth-child(3){
+      width:20%
+    }
+
+
+    th:nth-child(4),
+    td:nth-child(4){
+      width:10%
+    }
+    
+    th:nth-child(5),
+    td:nth-child(5){
+      width:10%
+    }
+  }
+ 
