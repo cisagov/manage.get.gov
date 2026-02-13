@@ -2,7 +2,12 @@
 
 import logging
 from django import forms
-from django.core.validators import RegexValidator, MaxLengthValidator, validate_ipv4_address
+from django.core.validators import (
+    RegexValidator,
+    MaxLengthValidator,
+    validate_ipv4_address,
+    validate_ipv6_address,
+)
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
@@ -838,14 +843,14 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     content = forms.CharField(
         label="Content",
-        required=True,
+        required=False,
         # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
         help_text="Example: 192.0.2.10",
-        error_messages={"required": "Enter a valid IPv4 address using numbers and periods."},
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
                 "hide_character_count": True,
+                "required": "required",
             }
         ),
     )
@@ -877,9 +882,22 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = cleaned_data.get("type")
         content = cleaned_data.get("content")
 
-        if record_type == "A" and content:
-            try:
-                validate_ipv4_address(content)
-            except ValidationError as e:
-                self.add_error("content", e)
+        if record_type == "A":
+            if content:
+                try:
+                    validate_ipv4_address(content)
+                except ValidationError:
+                    self.add_error("content", "Enter a valid IPv4 address using numbers and periods.")
+            else:
+                self.add_error("content", "Enter a valid IPv4 address using numbers and periods.")
+
+        elif record_type == "AAAA":
+            if content:
+                try:
+                    validate_ipv6_address(content)
+                except ValidationError:
+                    self.add_error("content", "Enter a valid IPv6 address using numbers and colons.")
+            else:
+                self.add_error("content", "Enter a valid IPv6 address using numbers and colons.")
+
         return cleaned_data

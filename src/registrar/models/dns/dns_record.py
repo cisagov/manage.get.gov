@@ -2,7 +2,7 @@ from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_ipv4_address
+from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from registrar.validations import validate_dns_name
 
 
@@ -49,6 +49,13 @@ class DnsRecord(TimeStampedModel):
         if self.type == self.RecordTypes.A and self.content:
             try:
                 validate_ipv4_address(self.content)
+            except ValidationError as e:
+                errors["content"] = e.messages
+
+        # AAAA record-specific validation
+        elif self.type == self.RecordTypes.AAAA and self.content:
+            try:
+                validate_ipv6_address(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
 

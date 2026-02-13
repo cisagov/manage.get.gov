@@ -1,5 +1,4 @@
-console.log('domain-dns-record-content.js loaded')
-
+// Establishes javascript for dynamic content label based on type
 export function initDynamicDNSRecordFormFields() {
     const typeField = document.getElementById('id_type');
     const contentField = document.getElementById('id_content');
@@ -8,22 +7,29 @@ export function initDynamicDNSRecordFormFields() {
 
     if (!typeField || !contentField) return;
 
+    // Getting and cloning the required field asterisk
+    const abbrElement = contentLabel?.querySelector('abbr');
+    const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
+
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
 
         if (selectedType === 'A') {
-            if (contentLabel) contentLabel.textContent = 'IPv4 Address';
+            if (contentLabel) contentLabel.textContent = ' IPv4 Address ';
             if (contentHelp) contentHelp.textContent = 'Example: 192.0.2.10';
         } else if (selectedType === 'AAAA') {
-            if (contentLabel) contentLabel.textContent = 'IPv6 Address';
+            if (contentLabel) contentLabel.textContent = ' IPv6 Address ';
             if (contentHelp) contentHelp.textContent = 'Example: 2008::db8:1';
         } 
         else {
-            if (contentLabel) contentLabel.textContent = 'Content Label';
+            if (contentLabel) contentLabel.textContent = ' Content Label ';
             if (contentHelp) contentHelp.textContent = 'Default help text';
         }
+        // Appending the asterisk to the label
+        contentLabel.appendChild(abbrClone);
     });
 
+    // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
