@@ -34,7 +34,6 @@ th {
       pointer-events: none;
     }
   }
-  
 }
 
 // .dotgov-table allows us to customize .usa-table on the user-facing pages,
@@ -88,6 +87,8 @@ th {
   .padding-right-105 {
     padding-right: .75rem;
   }
+
+
   // Sortable headers
   th[data-sortable][aria-sort=ascending],
   th[data-sortable][aria-sort=descending] {
@@ -173,8 +174,7 @@ th {
   }
 }
 
-
-
+// Styling for dns records table
 #dnsrecords-table {
     table-layout: fixed;
     
