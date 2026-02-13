@@ -38,7 +38,6 @@ import boto3_mocking  # type: ignore
 import logging
 from waffle.testutils import override_flag
 
-
 logger = logging.getLogger(__name__)
 
 

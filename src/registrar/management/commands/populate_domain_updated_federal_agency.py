@@ -73,16 +73,12 @@ class Command(BaseCommand):
                 federal_agency_row = self.find_federal_agency_row(domain_info)
                 domain_info.updated_federal_agency = federal_agency_row
                 domain_infos_to_update.append(domain_info)
-                logger.info(
-                    f"DomainInformation {domain_info} => updated_federal_agency set to: \
-                    {domain_info.updated_federal_agency}"
-                )
+                logger.info(f"DomainInformation {domain_info} => updated_federal_agency set to: \
+                    {domain_info.updated_federal_agency}")
             except Exception as err:
                 domain_infos_with_errors.append(domain_info)
-                logger.info(
-                    f"DomainInformation {domain_info} failed to update updated_federal_agency \
-                from federal_agency {domain_info.federal_agency}. Error: {err}"
-                )
+                logger.info(f"DomainInformation {domain_info} failed to update updated_federal_agency \
+                from federal_agency {domain_info.federal_agency}. Error: {err}")
 
         ScriptDataHelper.bulk_update_fields(DomainInformation, domain_infos_to_update, ["updated_federal_agency"])
 
@@ -94,16 +90,12 @@ class Command(BaseCommand):
                     federal_agency_row = self.find_federal_agency_row(domain_request)
                     domain_request.updated_federal_agency = federal_agency_row
                     domain_requests_to_update.append(domain_request)
-                    logger.info(
-                        f"DomainRequest {domain_request} => updated_federal_agency set to: \
-                        {domain_request.updated_federal_agency}"
-                    )
+                    logger.info(f"DomainRequest {domain_request} => updated_federal_agency set to: \
+                        {domain_request.updated_federal_agency}")
             except Exception as err:
                 domain_requests_with_errors.append(domain_request)
-                logger.info(
-                    f"DomainRequest {domain_request} failed to update updated_federal_agency \
-                from federal_agency {domain_request.federal_agency}. Error: {err}"
-                )
+                logger.info(f"DomainRequest {domain_request} failed to update updated_federal_agency \
+                from federal_agency {domain_request.federal_agency}. Error: {err}")
 
         ScriptDataHelper.bulk_update_fields(DomainRequest, domain_requests_to_update, ["updated_federal_agency"])
 

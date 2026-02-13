@@ -20,7 +20,6 @@ from .utility.time_stamped_model import TimeStampedModel
 from ..utility.email import send_templated_email, EmailSendingError
 from itertools import chain
 
-
 logger = logging.getLogger(__name__)
 
 
