@@ -3528,5 +3528,5 @@ class TestDomainDnsRecords(TestDomainOverview):
         domain, _, dns_zone = create_initial_dns_setup()
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
-        self.assertContains(page, "Edit Record")
+        self.assertContains(page, "Edit record")
         self.assertContains(page, "aria-expanded")
