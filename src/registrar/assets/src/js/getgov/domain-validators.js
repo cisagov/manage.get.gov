@@ -237,17 +237,19 @@ export function initDomainValidators() {
     for (const input of needsValidation) {
         input.addEventListener('input', handleInputValidation);
     }
-  
-    const alternativeDomainsAvailability = document.getElementById('validate-alt-domains-availability');
-    const activatesValidation = document.querySelectorAll('[validate-for]');
-  
-    for (const button of activatesValidation) {
-        if (button === alternativeDomainsAvailability) {
-            button.addEventListener('click', (e) => {
-            validateFormsetInputs(e, alternativeDomainsAvailability);
-            });
+    
+    // Listening for ALL clicks on buttons with validate-for
+    document.addEventListener('click', function(e) {
+        const button = e.target.closest('button[validate-for]');
+        if (!button) return;  // If not a validate button, ignore
+        
+        const targetInputId = button.getAttribute('validate-for');
+
+        // Alternative domain buttons always point at formset inputs
+        if (targetInputId && targetInputId.includes('alternative_domain')) {
+            validateFormsetInputs(e, button);
         } else {
-            button.addEventListener('click', validateFieldInput);
+            validateFieldInput(e);
         }
-    }
+    });
 }

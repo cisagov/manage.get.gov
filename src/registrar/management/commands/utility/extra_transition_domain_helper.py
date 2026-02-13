@@ -32,7 +32,6 @@ from .epp_data_containers import (
 from .transition_domain_arguments import TransitionDomainArguments
 from .terminal_helper import TerminalColors, TerminalHelper
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -225,28 +224,24 @@ class LoadExtraTransitionDomain:
             if self.debug:
                 for domain in updated_transition_domains:
                     logger.debug(domain.display_transition_domain())
-            logger.info(
-                f"""{TerminalColors.OKGREEN}
+            logger.info(f"""{TerminalColors.OKGREEN}
                 ============= FINISHED ===============
                 Updated {len(updated_transition_domains)} transition domain entries
                 {TerminalColors.ENDC}
-                """
-            )
+                """)
         else:
             # TODO - update
             TerminalHelper.print_conditional(
                 self.debug,
                 f"{TerminalHelper.array_as_string(updated_transition_domains)}",
             )
-            logger.error(
-                f"""{TerminalColors.FAIL}
+            logger.error(f"""{TerminalColors.FAIL}
                 ============= FINISHED WITH ERRORS ===============
                 Updated {len(updated_transition_domains)} transition domain entries,
                 Failed to update {failed_count} transition domain entries:
                 {[domain for domain in failed_transition_domains]}
                 {TerminalColors.ENDC}
-                """
-            )
+                """)
 
         # DATA INTEGRITY CHECK
         # Make sure every Transition Domain got updated
@@ -254,8 +249,7 @@ class LoadExtraTransitionDomain:
         total_updates_made = TransitionDomain.objects.filter(processed=False).count()
         if total_transition_domains != total_updates_made:
             # noqa here for line length
-            logger.error(
-                f"""{TerminalColors.FAIL}
+            logger.error(f"""{TerminalColors.FAIL}
                             WARNING: something went wrong processing domain information data.
                             
                             Total Transition Domains expecting a data update: {total_transition_domains}
@@ -266,8 +260,7 @@ class LoadExtraTransitionDomain:
                             corrupt data.  Please check logs to diagnose.
 
                             ----- TERMINATING ----
-                            """  # noqa
-            )
+                            """)  # noqa
             sys.exit()
 
     def parse_creation_expiration_data(self, domain_name, transition_domain):
@@ -829,21 +822,17 @@ class OrganizationDataLoader:
             updated = self.parse_org_data(item.domain_name, item)
             self.tds_to_update.append(updated)
             if self.debug:
-                logger.info(
-                    f"""{TerminalColors.OKCYAN}
+                logger.info(f"""{TerminalColors.OKCYAN}
                     Successfully updated:
                     {item.display_transition_domain()}
-                    {TerminalColors.ENDC}"""
-                )
+                    {TerminalColors.ENDC}""")
 
         if self.debug:
             logger.info(f"Updating the following: {[item for item in self.tds_to_update]}")
 
-        logger.info(
-            f"""{TerminalColors.MAGENTA}
+        logger.info(f"""{TerminalColors.MAGENTA}
             Ready to update {len(self.tds_to_update)} TransitionDomains.
-            {TerminalColors.ENDC}"""
-        )
+            {TerminalColors.ENDC}""")
 
     def bulk_update_transition_domains(self, update_list):
         changed_fields = [
