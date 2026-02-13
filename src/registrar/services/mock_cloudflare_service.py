@@ -18,7 +18,7 @@ class MockCloudflareService:
     _mock_context = None
     fake_zone_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
-    new_account_name = "5cb0f9d9ba8045359a68f96ea329c836"
+    new_account_name = f"account-{fake.domain_name()}"
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
 
