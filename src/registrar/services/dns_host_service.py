@@ -325,6 +325,7 @@ class DnsHostService:
 
     def update_db_record(self, x_zone_id, x_record_id, vendor_record_data):
         record_data = vendor_record_data["result"]
+        excluded_fields = ["id", "type", "created_on"]
 
         try:
             with transaction.atomic():
@@ -334,7 +335,10 @@ class DnsHostService:
                 dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
 
                 for record_field, record_value in record_data.items():
-                    setattr(dns_record, record_field, record_value)
+                    print("record field, : ", record_field)
+                    print("record val: ", record_value)
+                    if not record_field in excluded_fields:
+                        setattr(dns_record, record_field, record_value)
                 dns_record.save()
         except Exception as e:
             logger.error(f"Failed to update and save record to database: {str(e)}.")
