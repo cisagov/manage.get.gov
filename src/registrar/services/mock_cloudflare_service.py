@@ -359,66 +359,6 @@ class MockCloudflareService:
             },
         )
 
-    def _mock_update_dns_record_response(self, request) -> httpx.Response:
-        # Mocks updating a DNS A record.
-        # If we want to mock updating other DNS records, we may want to split
-        # this out and write a method to return a DNS record response by type.
-        logger.debug("🐟 mocking dns A record update")
-        request_as_json = json.loads(request.content.decode("utf-8"))
-        record_name = request_as_json["name"]
-        content = request_as_json["content"]
-        type = request_as_json["type"]
-        ttl = request_as_json.get("ttl") or 1
-        comment = request_as_json.get("comment") or ""
-        # Get record id from request url to return back in response
-        request_url = str(request.url)
-        # Split string between "/dns_records/ and extract second partition
-        record_id = request_url.split("/dns_records/")[1]
-
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
-        if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
-                )
-            return httpx.Response(500)
-
-        # Update response so it fits with whatever record we're returning
-        return httpx.Response(
-            200,
-            json={
-                "success": True,
-                "result": {
-                    "id": record_id,
-                    "name": record_name,
-                    "type": type,
-                    "content": content,
-                    "proxiable": True,
-                    "proxied": False,
-                    "ttl": ttl,
-                    "settings": {},
-                    "meta": {},
-                    "comment": comment,
-                    "tags": [],
-                    "created_on": datetime.now(timezone.utc).isoformat(),
-                    "modified_on": datetime.now(timezone.utc).isoformat(),
-                },
-                "success": True,
-                "errors": [],
-                "messages": [],
-            },
-        )
-
     def _mock_create_cf_id(self):
         """Create a 32 character UUID by removing the 4 -'s in a UUID4."""
         return fake.uuid4().replace("-", "")
