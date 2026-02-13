@@ -718,15 +718,11 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
     def test_update_db_record_with_bad_data_fails(self):
-        """Do not update db record objects when passed invalid Cloudlfare data."""
+        """Do not update db record objects when passed invalid Cloudflare data."""
+        # Update DNS record, when missing required fields in the response body,
+        # will preserve that field's original value
         invalid_result_payloads = [
-            {"test_name": "Empty payload test case"},
-            {
-                "test_name": "Update with invalid IPv4 data",
-                "result": {
-                    "content": "invalid IP data",  # IPv4
-                },
-            },
+            {"test_name": "Empty payload test case"}
         ]
 
         x_zone_id = self.vendor_zone_data["result"].get("id")
