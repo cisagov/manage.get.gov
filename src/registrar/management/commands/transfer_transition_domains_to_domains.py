@@ -69,10 +69,12 @@ class Command(BaseCommand):
 
     def parse_limit_reached(self, debug_max_entries_to_parse: bool, total_rows_parsed: int) -> bool:
         if debug_max_entries_to_parse > 0 and total_rows_parsed >= debug_max_entries_to_parse:
-            logger.info(f"""{TerminalColors.YELLOW}
+            logger.info(
+                f"""{TerminalColors.YELLOW}
                 ----PARSE LIMIT REACHED.  HALTING PARSER.----
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
             return True
         return False
 
@@ -96,7 +98,8 @@ class Command(BaseCommand):
         total_new_domain_information_entries = len(domain_information_to_create)
         total_updated_domain_information_entries = len(updated_domain_information)
 
-        logger.info(f"""{TerminalColors.OKGREEN}
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} domain entries,
             Updated {total_updated_domain_entries} domain entries
@@ -107,13 +110,16 @@ class Command(BaseCommand):
             Created {total_domain_invitation_entries} domain invitation entries
             (NOTE: no invitations are SENT in this script)
             {TerminalColors.ENDC}
-            """)  # noqa
+            """
+        )  # noqa
         if len(skipped_domain_entries) > 0:
-            logger.info(f"""{TerminalColors.FAIL}
+            logger.info(
+                f"""{TerminalColors.FAIL}
                 ============= SKIPPED DOMAINS (ERRORS) ===============
                 {skipped_domain_entries}
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
         # determine domainInvitations we SKIPPED
         skipped_domain_invitations = []
@@ -123,11 +129,13 @@ class Command(BaseCommand):
             if domain_invite.domain in skipped_domain_invitations:
                 skipped_domain_invitations.remove(domain_invite.domain)
         if len(skipped_domain_invitations) > 0:
-            logger.info(f"""{TerminalColors.FAIL}
+            logger.info(
+                f"""{TerminalColors.FAIL}
                 ============= SKIPPED DOMAIN INVITATIONS (ERRORS) ===============
                 {skipped_domain_invitations}
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
         # DEBUG:
         TerminalHelper.print_conditional(
@@ -203,7 +211,8 @@ class Command(BaseCommand):
                 # happening again is safe-guarded by a key constraint,
                 # better to keep an eye out for it since it would require
                 # immediate attention.
-                logger.warning(f"""
+                logger.warning(
+                    f"""
                     {TerminalColors.FAIL}
                     !!! ERROR: duplicate entries already exist in the
                     Domain table for the following domain:
@@ -214,10 +223,12 @@ class Command(BaseCommand):
                     check the Domain table data as there should be a key
                     constraint which prevents duplicate entries.
 
-                    ----------TERMINATING----------""")
+                    ----------TERMINATING----------"""
+                )
                 sys.exit()
             except TransitionNotAllowed as err:
-                logger.warning(f"""{TerminalColors.FAIL}
+                logger.warning(
+                    f"""{TerminalColors.FAIL}
                     Unable to change state for {transition_domain_name}
 
                     RECOMMENDATION:
@@ -230,7 +241,8 @@ class Command(BaseCommand):
                     INTERNAL ERROR MESSAGE:
                     'TRANSITION NOT ALLOWED' exception
                     {err}
-                    ----------SKIPPING----------""")
+                    ----------SKIPPING----------"""
+                )
                 return (None, False)
         else:
             # ----------------------- CREATE DOMAIN -----------------------
@@ -280,7 +292,8 @@ class Command(BaseCommand):
 
         # this should never happen, but adding it just in case
         if associated_domain is None:
-            logger.warning(f"""
+            logger.warning(
+                f"""
                         {TerminalColors.FAIL}
                         !!! ERROR: Domain cannot be null for a
                         Domain Invitation object!
@@ -291,7 +304,8 @@ class Command(BaseCommand):
                         of making domain invitations. Walk through
                         the code to see what is amiss.
 
-                        ----------TERMINATING----------""")
+                        ----------TERMINATING----------"""
+            )
             sys.exit()
 
         # check that the given e-mail is valid
@@ -504,7 +518,8 @@ class Command(BaseCommand):
                 # This should never happen (just like with the Domain Table).
                 # However, because such an error did occur in the past,
                 # we will watch for it in this script
-                logger.warning(f"""
+                logger.warning(
+                    f"""
                     {TerminalColors.FAIL}
                     !!! ERROR: duplicate entries already exist in the
                     Domain Information table for the following domain:
@@ -515,7 +530,8 @@ class Command(BaseCommand):
                     check the Domain Information table data as there should be a key
                     constraint which prevents duplicate entries.
 
-                    ----------TERMINATING----------""")
+                    ----------TERMINATING----------"""
+                )
                 sys.exit()
         else:
             # no matching entry, make one
@@ -754,15 +770,19 @@ class Command(BaseCommand):
         # track of total rows parsed)
         total_rows_parsed = 0
 
-        logger.info(f"""{TerminalColors.OKCYAN}
+        logger.info(
+            f"""{TerminalColors.OKCYAN}
             ==========================
             Beginning Data Transfer
             ==========================
-            {TerminalColors.ENDC}""")
+            {TerminalColors.ENDC}"""
+        )
 
-        logger.info(f"""{TerminalColors.OKCYAN}
+        logger.info(
+            f"""{TerminalColors.OKCYAN}
             ========= Adding Domains and Domain Invitations =========
-            {TerminalColors.ENDC}""")
+            {TerminalColors.ENDC}"""
+        )
         (
             skipped_domain_entries,
             domains_to_create,
@@ -804,9 +824,11 @@ class Command(BaseCommand):
         valid_agency_choices = FederalAgency.objects.all()
         # ======================================================
         # ================= DOMAIN INFORMATION =================
-        logger.info(f"""{TerminalColors.OKCYAN}
+        logger.info(
+            f"""{TerminalColors.OKCYAN}
             ========= Adding Domains Information Objects =========
-            {TerminalColors.ENDC}""")
+            {TerminalColors.ENDC}"""
+        )
 
         (
             skipped_domain_information_entries,

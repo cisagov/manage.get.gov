@@ -721,9 +721,7 @@ class TestDnsHostServiceDB(TestCase):
         """Do not update db record objects when passed invalid Cloudflare data."""
         # Update DNS record, when missing required fields in the response body,
         # will preserve that field's original value
-        invalid_result_payloads = [
-            {"test_name": "Empty payload test case"}
-        ]
+        invalid_result_payloads = [{"test_name": "Empty payload test case"}]
 
         x_zone_id = self.vendor_zone_data["result"].get("id")
         x_record_id = self.vendor_record_data["result"].get("id")

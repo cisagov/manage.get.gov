@@ -406,8 +406,10 @@ class SeniorOfficialContactForm(ContactForm):
         self.fields["last_name"].error_messages = {
             "required": "Enter the last name / family name of your senior official."
         }
-        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."}
+        self.fields["title"].error_messages = {
+            "required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer)."
+        }
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }

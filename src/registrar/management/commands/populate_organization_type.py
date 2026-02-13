@@ -154,10 +154,12 @@ class Command(BaseCommand):
 
         update_skipped_count = len(self.request_to_update)
         if update_skipped_count > 0:
-            logger.warning(f"""{TerminalColors.MAGENTA}
+            logger.warning(
+                f"""{TerminalColors.MAGENTA}
                 Note: Entries are skipped when generic_org_type is None
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
     def update_domain_informations(self, domain_informations):
         """
@@ -203,10 +205,12 @@ class Command(BaseCommand):
 
         update_skipped_count = len(self.di_skipped)
         if update_skipped_count > 0:
-            logger.warning(f"""{TerminalColors.MAGENTA}
+            logger.warning(
+                f"""{TerminalColors.MAGENTA}
                 Note: Entries are skipped when generic_org_type is None
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
     def sync_organization_type(self, sender, instance):
         """

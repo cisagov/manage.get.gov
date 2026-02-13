@@ -231,22 +231,27 @@ class Command(BaseCommand):
         )
 
         if update_failed_count == 0 and update_skipped_count == 0:
-            logger.info(f"""{TerminalColors.OKGREEN}
+            logger.info(
+                f"""{TerminalColors.OKGREEN}
                 ============= FINISHED ===============
                 Updated {update_success_count} DomainInformation entries
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
         elif update_failed_count == 0:
-            logger.warning(f"""{TerminalColors.YELLOW}
+            logger.warning(
+                f"""{TerminalColors.YELLOW}
                 ============= FINISHED ===============
                 Updated {update_success_count} DomainInformation entries
 
                 ----- SOME AGENCY DATA WAS NONE (WILL BE PATCHED AUTOMATICALLY) -----
                 Skipped updating {update_skipped_count} DomainInformation entries
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
         else:
-            logger.error(f"""{TerminalColors.FAIL}
+            logger.error(
+                f"""{TerminalColors.FAIL}
                 ============= FINISHED ===============
                 Updated {update_success_count} DomainInformation entries
 
@@ -254,4 +259,5 @@ class Command(BaseCommand):
                 Failed to update {update_failed_count} DomainInformation entries,
                 Skipped updating {update_skipped_count} DomainInformation entries
                 {TerminalColors.ENDC}
-                """)
+                """
+            )

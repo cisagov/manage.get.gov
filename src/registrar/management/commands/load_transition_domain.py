@@ -118,19 +118,23 @@ class Command(BaseCommand):
         """Prints additional terminal statements to indicate if --debug
         or --limitParse are in use"""
         if debug_on:
-            logger.info(f"""{TerminalColors.OKCYAN}
+            logger.info(
+                f"""{TerminalColors.OKCYAN}
                 ----------DEBUG MODE ON----------
                 Detailed print statements activated.
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
         if debug_max_entries_to_parse > 0:
-            logger.info(f"""{TerminalColors.OKCYAN}
+            logger.info(
+                f"""{TerminalColors.OKCYAN}
                 ----------LIMITER ON----------
                 Parsing of entries will be limited to
                 {debug_max_entries_to_parse} lines per file.")
                 Detailed print statements activated.
                 {TerminalColors.ENDC}
-                """)
+                """
+            )
 
     def get_domain_user_dict(self, domain_statuses_filename: str, sep: str) -> defaultdict[str, str]:
         """Creates a mapping of domain name -> status"""
@@ -201,7 +205,8 @@ class Command(BaseCommand):
         if total_duplicate_pairs > 0 or total_duplicate_domains > 0:
             duplicate_pairs_as_string = "{}".format(", ".join(map(str, duplicate_domain_user_combos)))
             duplicate_domains_as_string = "{}".format(", ".join(map(str, duplicate_domains)))
-            logger.warning(f"""{TerminalColors.YELLOW}
+            logger.warning(
+                f"""{TerminalColors.YELLOW}
 
                     ----DUPLICATES FOUND-----
 
@@ -214,7 +219,8 @@ class Command(BaseCommand):
                     the supplied data files;
 
                     {duplicate_domains_as_string}
-                    {TerminalColors.ENDC}""")
+                    {TerminalColors.ENDC}"""
+            )
 
     def print_summary_status_findings(self, domains_without_status: list[str], outlier_statuses: list[str]):
         """Called at the end of the script execution to print out a summary of
@@ -227,7 +233,8 @@ class Command(BaseCommand):
         total_outlier_statuses = len(outlier_statuses)
         if total_domains_without_status > 0:
             domains_without_status_as_string = "{}".format(", ".join(map(str, domains_without_status)))
-            logger.warning(f"""{TerminalColors.YELLOW}
+            logger.warning(
+                f"""{TerminalColors.YELLOW}
 
                 --------------------------------------------
                 Found {total_domains_without_status} domains
@@ -235,11 +242,13 @@ class Command(BaseCommand):
                 ---------------------------------------------
 
                 {domains_without_status_as_string}
-                {TerminalColors.ENDC}""")
+                {TerminalColors.ENDC}"""
+            )
 
         if total_outlier_statuses > 0:
             domains_without_status_as_string = "{}".format(", ".join(map(str, outlier_statuses)))  # noqa
-            logger.warning(f"""{TerminalColors.YELLOW}
+            logger.warning(
+                f"""{TerminalColors.YELLOW}
 
                 --------------------------------------------
                 Found {total_outlier_statuses} unaccounted
@@ -250,23 +259,28 @@ class Command(BaseCommand):
                 (defaulted to Ready):
 
                 {domains_without_status_as_string}
-                {TerminalColors.ENDC}""")
+                {TerminalColors.ENDC}"""
+            )
 
     def prompt_table_reset(self):
         """Brings up a prompt in the terminal asking
         if the user wishes to delete data in the
         TransitionDomain table.  If the user confirms,
         deletes all the data in the TransitionDomain table"""
-        confirm_reset = TerminalHelper.query_yes_no(f"""
+        confirm_reset = TerminalHelper.query_yes_no(
+            f"""
             {TerminalColors.FAIL}
             WARNING: Resetting the table will permanently delete all
             the data!
-            Are you sure you want to continue?{TerminalColors.ENDC}""")
+            Are you sure you want to continue?{TerminalColors.ENDC}"""
+        )
         if confirm_reset:
-            logger.info(f"""{TerminalColors.YELLOW}
+            logger.info(
+                f"""{TerminalColors.YELLOW}
             ----------Clearing Table Data----------
             (please wait)
-            {TerminalColors.ENDC}""")
+            {TerminalColors.ENDC}"""
+            )
             TransitionDomain.objects.all().delete()
 
     def parse_extra(self, options):
@@ -585,7 +599,8 @@ class Command(BaseCommand):
         self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
 
-        logger.info(f"""{TerminalColors.OKGREEN}
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} transition domain entries,
             Updated {total_updated_domain_entries} transition domain entries
@@ -602,14 +617,16 @@ class Command(BaseCommand):
             {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
 
             {TerminalColors.ENDC}
-            """)
+            """
+        )
 
         # Print a summary of findings (duplicate entries,
         # missing data..etc.)
         self.print_summary_duplications(duplicate_domain_user_combos, duplicate_domains, users_without_email)
         self.print_summary_status_findings(domains_without_status, outlier_statuses)
 
-        logger.info(f"""{TerminalColors.OKGREEN}
+        logger.info(
+            f"""{TerminalColors.OKGREEN}
             ============= FINISHED ===============
             Created {total_new_entries} transition domain entries,
             Updated {total_updated_domain_entries} transition domain entries
@@ -626,7 +643,8 @@ class Command(BaseCommand):
             {len(outlier_statuses)} Statuses were invalid (defaulted to READY).
 
             {TerminalColors.ENDC}
-            """)
+            """
+        )
 
         # Prompt the user if they want to load additional data on the domains
         title = "Do you wish to load additional data for TransitionDomains?"
