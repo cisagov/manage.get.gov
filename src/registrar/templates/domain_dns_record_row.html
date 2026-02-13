@@ -1,4 +1,4 @@
-<tr id="dnsrecord-row_{{counter}}">
+<tr id="dnsrecord-row_{{counter}}" :class="showFormId == {{ counter }} ? 'hide-td-borders' : ''">
     <td data-label="Type">
         {{dns_record.type}}
     </td>
@@ -13,11 +13,29 @@
     </td>
     <td class="padding-right-0" data-label="Action">
         <div class="tablet:display-flex tablet:flex-row">
-            <button type="button" class='usa-button usa-button--unstyled margin-right-2 margin-top-0'>
+            <button type="button" 
+            class='usa-button usa-button--unstyled margin-right-2 margin-top-0'
+            x-on:click="showFormId = (showFormId === {{ counter }} ? null : {{ counter }})" 
+            :aria-expanded="showFormId == {{ counter }} ? 'true' : 'false'"
+            aria-label="Edit {{ dns_record.name }}"
+            >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="/public/img/sprite.svg#edit"></use>
                 </svg>
-                Edit <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
+                Edit 
+                <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
+                    <svg
+                        hx-target="#edit-row-{{ counter }}"
+                        aria-label="Access edit form"
+                        class="usa-icon" 
+                        aria-hidden="true" 
+                        focusable="false" 
+                        role="img"
+                        width="8">
+                        <use x-show="showFormId != {{ counter }}" xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="showFormId == {{ counter }}" xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                    </svg>
+            
             </button>
             <a 
                 role="button"
@@ -58,3 +76,5 @@
         </div>
     </td>
 </tr>
+
+{% include "domain_dns_record_edit_form.html" %}
