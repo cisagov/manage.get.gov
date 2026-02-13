@@ -8,7 +8,6 @@ from django.core.management.base import BaseCommand
 
 from registrar.models import Domain
 
-
 logger = logging.getLogger(__name__)
 
 

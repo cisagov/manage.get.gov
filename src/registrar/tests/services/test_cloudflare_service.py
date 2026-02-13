@@ -30,6 +30,7 @@ class TestCloudflareService(SimpleTestCase):
         mock_client = Client()
         mock_client.post = Mock()
         mock_client.get = Mock()
+        mock_client.patch = Mock()
 
         # Set class variable 'headers' to avoid double mocking
         CloudflareService.headers = {
@@ -176,6 +177,97 @@ class TestCloudflareService(SimpleTestCase):
 
                 with self.assertRaises(error["exception"]) as context:
                     self.service.create_dns_record(zone_id, record_data_missing_content)
+                self.assertIn(
+                    error["message"],
+                    str(context.exception),
+                )
+
+    def test_update_dns_record_success(self):
+        """Test successful update_dns_record call"""
+        zone_id = "54321"
+        record_id = "6789"
+        created_record_data = {
+            "content": "198.51.100.4",
+            "name": "democracy.gov",
+            "proxied": False,
+            "type": "A",
+            "comment": "Test domain name",
+            "ttl": 3600,
+        }
+
+        created_return_value = {
+            "result": {
+                "content": "198.51.100.4",
+                "name": "democracy.gov",
+                "proxied": False,
+                "type": "A",
+                "comment": "Test domain name",
+                "ttl": 3600,
+            }
+        }
+        updated_record_data = {
+            "content": "198.62.211.5",
+            "name": "updated-record.gov",
+            "proxied": False,
+            "type": "A",
+            "comment": "Test record update",
+            "ttl": 3600,
+        }
+        updated_return_value = {
+            "result": {
+                "content": "198.62.211.5",
+                "name": "updated-record.gov",
+                "proxied": False,
+                "type": "A",
+                "comment": "Test record update",
+                "ttl": 1800,
+            }
+        }
+        mock_create_response = self._setUpSuccessMockResponse(created_return_value)
+        self.service.client.post.return_value = mock_create_response
+        self.service.create_dns_record(zone_id, created_record_data)
+
+        mock_update_response = self._setUpSuccessMockResponse(updated_return_value)
+        self.service.client.patch.return_value = mock_update_response
+        resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
+        self.assertEqual(resp["result"]["name"], "updated-record.gov")
+        self.assertEqual(resp["result"]["content"], "198.62.211.5")
+        self.assertEqual(resp["result"]["comment"], "Test record update")
+        self.assertEqual(resp["result"]["ttl"], 1800)
+        self.assertEqual(
+            resp["result"],
+            {
+                "content": "198.62.211.5",
+                "name": "updated-record.gov",
+                "proxied": False,
+                "type": "A",
+                "comment": "Test record update",
+                "ttl": 1800,
+            },
+        )
+
+    def test_update_dns_record_failure(self):
+        """Test update_cf_zone with API failure"""
+        zone_id = "54321"
+        record_id = "6789"
+        record_data_invalid_content = {
+            "name": "democracy.gov",
+            "content": "not an IP address",
+            "proxied": False,
+            "type": "A",
+            "comment": "Test domain name",
+            "ttl": 3600,
+        }
+
+        for case in self.failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error)
+
+                self.service.client.patch.return_value = mock_response
+
+                with self.assertRaises(error["exception"]) as context:
+                    self.service.update_dns_record(zone_id, record_id, record_data_invalid_content)
                 self.assertIn(
                     error["message"],
                     str(context.exception),

@@ -6,7 +6,6 @@ from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import TerminalHelper, TerminalColors
 from registrar.models import SeniorOfficial, FederalAgency
 
-
 logger = logging.getLogger(__name__)
 
 

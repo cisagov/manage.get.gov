@@ -96,3 +96,13 @@ legend.float-left-tablet + button.float-right-tablet {
 .usa-form .usa-button.margin-top-2 {
   margin-top: units(2) !important;
 }
+
+.alternative-domain-header {
+  gap: 0.5rem;
+  margin-bottom: 0;
+
+  .delete-record {
+    position: relative;
+    top: 2px;
+  }
+}
