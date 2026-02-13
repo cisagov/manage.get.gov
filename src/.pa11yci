@@ -33,6 +33,6 @@
         "http://localhost:8080/organization/senior-official",
         "http://localhost:8080/version",
         "http://localhost:8080/domain/1/dns",
-        "http://localhost:8080/domain/1/dns/records",
+        "http://localhost:8080/domain/1/dns/records"
     ]
 }
