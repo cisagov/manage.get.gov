@@ -30,7 +30,7 @@
         "http://localhost:8080/members/new-member",
         "http://localhost:8080/organization",
         "http://localhost:8080/organization/organization-info",
-        "http://localhost:8080/organization/senior-official"
+        "http://localhost:8080/organization/senior-official",
         "http://localhost:8080/version",
         "http://localhost:8080/domain/1/dns",
         "http://localhost:8080/domain/1/dns/records",
