@@ -429,3 +429,57 @@ To manually test locally (if not mocking cloudflare):
     `error-400` to trigger a bad request 400
     `error-403` to trigger an authentication error 403
     `error*` to trigger a 500 response
+
+### Adding a member to an existing account 
+
+  To add a member to an existing account to access the CF UI. You can do it one of two ways:
+
+  url: https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members
+
+  #### Postman
+
+  1. Enter `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members` in the post with the appropiate account id. 
+  2. Select the body tab: 
+    ```
+      {
+        "email": "test@email.com",
+        "auto_accept": true,
+        "roles": ["05784afa30c1afe1440e79d9351c7430"],
+        "status": "accepted"
+      }
+    ```
+  3. Add the X-Auth-Email to the header
+  4. Add X-Auth-Key with value  to the header 
+  5. Add 'Content-Type: application/json' to the header
+
+  #### Curl 
+
+  In order to add members via terminal, you can enter the following:
+
+  ``` curl https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members \
+    -H 'Content-Type: application/json' \
+    -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
+    -H "X-Auth-Key: $CLOUDFLARE_API_KEY" \
+    -d '{
+          "email": "user@example.com",
+          "roles": [
+            "3536bcfad5faccb999b47003c79917fb"
+          ]
+        }'
+  ```
+
+  **To get roles**
+
+  #### Postman
+
+  1. Enter `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/roles` in the post with the appropiate account id. 
+  3. Add the X-Auth-Email to the header
+  4. Add X-Auth-Key with value  to the header 
+
+
+  ### CURL 
+
+  ```
+  curl https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/roles \
+    -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
+    -H "X-Auth-Key: $CLOUDFLARE_API_KEY"```
