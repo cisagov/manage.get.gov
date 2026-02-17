@@ -434,9 +434,10 @@ To manually test locally (if not mocking cloudflare):
 
   To add a member to an existing account to access the CF UI. You can do it one of two ways:
 
+  *ADD_MEMBER_URL*: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
   #### Postman
 
-  1. Enter `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members` in the post with the appropiate account id. 
+  1. Enter *ADD_MEMBER_URL* in the post with the appropiate account id. 
   2. Select the body tab:  
      ```
        {
@@ -454,7 +455,7 @@ To manually test locally (if not mocking cloudflare):
 
   In order to add members via terminal, you can enter the following:
 
-  ``` curl https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members \
+  ``` curl *ADD_MEMBER_URL* \
     -H 'Content-Type: application/json' \
     -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
     -H "X-Auth-Key: $CLOUDFLARE_API_KEY" \
@@ -467,11 +468,13 @@ To manually test locally (if not mocking cloudflare):
   ```
   
 
-  **Use the following to get roles, descriptions, and permissions from the account**
+  ***Use the following to get roles, descriptions, and permissions from the account***
+
+  *ROLES_URL*: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/role`
 
   #### Postman
-
-  1. Enter `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/roles` in the post with the appropiate account id. 
+  
+  1. Enter the *ROLES_URL* above in the post with the appropiate account id. 
   3. Add the X-Auth-Email to the header
   4. Add X-Auth-Key with value  to the header 
 
@@ -479,6 +482,6 @@ To manually test locally (if not mocking cloudflare):
   ### CURL 
 
   ```
-  curl https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/roles \
+  curl *ROLES_URL* \
     -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
     -H "X-Auth-Key: $CLOUDFLARE_API_KEY"```
