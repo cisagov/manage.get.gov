@@ -831,13 +831,29 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def get_breadcrumb_current_label(self):
         return "DNS records"
 
+    def record_dict_for_initial_data(self, dns_record):
+        """Converting model values into a dict to fill in edit form"""
+        rec_dict = {}
+        for field in dns_record._meta.fields:
+            rec_dict[f"{field.name}"] = getattr(dns_record, field.name)
+        return rec_dict
+
+    def attach_edit_form(self, dns_records):
+        """adding a form instance to the dns_record objects
+        to display corresponding values in the table rows"""
+        for record in dns_records:
+            data_dict = self.record_dict_for_initial_data(record)
+            record.form = DomainDNSRecordForm(initial=data_dict)
+
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
-            context["dns_records"] = DnsRecord.objects.filter(dns_zone=dns_zone)
+            dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
+            self.attach_edit_form(dns_records)
+            context["dns_records"] = dns_records
             context["nameservers"] = dns_zone.nameservers
         return context
 
@@ -927,9 +943,14 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 self.client.close()
                 if errors:
                     messages.error(request, f"Request errors: {errors}")
-            new_form = DomainDNSRecordForm()
+
+            filled_form = DomainDNSRecordForm(initial=self.dns_record)
+            # Grabbed result data to pass into the form response
+            self.dns_record["form"] = filled_form
             hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
             row_index = len(self.get_context_data()["dns_records"])
+            new_form = DomainDNSRecordForm()
+
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
