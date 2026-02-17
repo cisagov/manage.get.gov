@@ -173,3 +173,47 @@ th {
     white-space: normal;
   }
 }
+
+// Styling for dns records table
+#dnsrecords-table {
+    table-layout: fixed;
+    
+    .no-padding{
+       padding: 0;
+    }
+
+    // Allow word to break on name column if its long
+    td:nth-child(2){
+      word-wrap: break-word;
+      overflow: break-word;
+      white-space: normal;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1){
+      width:8%;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2){
+      width:42%;
+    }
+
+
+    th:nth-child(3),
+    td:nth-child(3){
+      width:20%;
+    }
+
+
+    th:nth-child(4),
+    td:nth-child(4){
+      width:15%;
+    }
+    
+    th:nth-child(5),
+    td:nth-child(5){
+      width:15%;
+    }
+  }
+ 

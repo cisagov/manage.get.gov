@@ -12,9 +12,12 @@
 </div>
 {% endblock message_alerts%}
 
+
 {% block domain_content %}
+    <div x-data="{ showFormId: null }">
+    <!-- Wrapped div here to store showFormId here to track across all the forms on this page, so only one form appears at a time-->
     {% include "includes/form_errors.html" with form=form %}
-    <div id="dnsrecords-form-container" x-data="{ showForm: false, recordType: '' }">
+    <div id="dnsrecords-form-container" x-data="{recordType: '' }">
         <div class="display-flex flex-align-center">
             <div class="grid-col">
                 <h1>DNS records</h1>
@@ -25,7 +28,7 @@
                     class="usa-button"
                     id="add-dnsrecord-button"
                     type="button"
-                    x-on:click="showForm = true"
+                    x-on:click="showFormId = 0"
                 >
                     Add record
                 </button>
@@ -40,7 +43,7 @@
                     To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
 
-                <div x-cloak x-show="showForm">
+                <div x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
                 
                     <section class="section-outlined section-outlined--extra-padding">
@@ -51,8 +54,9 @@
                         method="post"
                         novalidate id="form-container"
                         x-cloak
-                        x-show="showForm"
-                        @record-submit-success.camel="showForm = false"
+                        x-ref="dnsForm"
+                        x-show="showFormId == 0"
+                        @record-submit-success.camel="showFormId = null"
                     >
                         {% include "domain_dns_record_form_content.html" with form=form %}
                     </form>
