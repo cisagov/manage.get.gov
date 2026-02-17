@@ -3520,3 +3520,13 @@ class TestDomainDnsRecords(TestDomainOverview):
         self.assertContains(page, "Name servers")
         self.assertContains(page, "rainbow.dns.gov")
         self.assertNotContains(page, "ex1.dns.gov")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_edit_form_is_available_for_new_dns_record(self):
+        """User should be able to leave edit form with clicking cancel"""
+        domain, _, dns_zone = create_initial_dns_setup()
+        create_dns_record(dns_zone)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Edit record")
+        self.assertContains(page, "aria-expanded")
