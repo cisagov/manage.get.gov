@@ -871,7 +871,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     raise Exception(f"create dns record was called for domain {self.name}")
 
                 form_record_data = {
-                    "type": "A",
+                    "type": form.cleaned_data["type"],
                     "name": form.cleaned_data["name"],  # record name
                     "content": form.cleaned_data["content"],  # IPv4
                     "ttl": int(form.cleaned_data["ttl"]),
@@ -918,7 +918,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
-                        messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+                        dns_type = record_response["result"]["type"]
+                        messages.success(request, f"DNS {dns_type} record '{dns_name}' created successfully.")
                     except APIError as e:
                         logger.error(f"API error in view: {str(e)}")
 

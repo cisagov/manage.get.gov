@@ -22,6 +22,15 @@ class BaseDomainDNSRecordFormTest(TestCase):
             "comment": "testing comment",
         }
 
+    def valid_form_data_for_aaaa_record(self):
+        return {
+            "type": "AAAA",
+            "name": "www",
+            "content": "2008::db:1",
+            "ttl": 300,
+            "comment": "testing comment",
+        }
+
     def make_form(self, data):
         record = DnsRecord(dns_zone=self.zone)
         return DomainDNSRecordForm(
@@ -48,19 +57,22 @@ class BaseDomainDNSRecordFormTest(TestCase):
 class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_valid_dns_record_form_success(self):
-        data = self.valid_form_data_for_a_record()
-        form = self.make_form(data)
-        self.assertTrue(form.is_valid())
+        forms_data = [self.valid_form_data_for_a_record(), self.valid_form_data_for_aaaa_record()]
+        for data in forms_data:
+            form = self.make_form(data)
+            self.assertTrue(form.is_valid())
 
     def test_blank_dns_name_throws_error(self):
-        data = self.valid_form_data_for_a_record()
-        data["name"] = ""
+        forms_data = [self.valid_form_data_for_a_record(), self.valid_form_data_for_aaaa_record()]
 
-        form = self.make_form(data)
+        for data in forms_data:
+            data["name"] = ""
 
-        self.assertFalse(form.is_valid())
-        self.assertIn("name", form.errors)
-        self.assertEqual(form.errors["name"], ["Enter a name for this record."])
+            form = self.make_form(data)
+
+            self.assertFalse(form.is_valid())
+            self.assertIn("name", form.errors)
+            self.assertEqual(form.errors["name"], ["Enter a name for this record."])
 
     def test_invalid_dns_name_throws_error(self):
         # Testing invalid first character
@@ -78,12 +90,21 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_a_record_with_invalid_ipv4_address_throws_error(self):
         data = self.valid_form_data_for_a_record()
-        data["content"] = "1000.1.1.1"
+        data["content"] = "2008::db8:1"
 
         form = self.make_form(data)
 
         self.assertFalse(form.is_valid())
-        self.assertIn("Enter a valid IPv4 address.", form.errors["content"])
+        self.assertIn("Enter a valid IPv4 address using numbers and periods.", form.errors["content"])
+    
+    def test_dns_aaaa_record_with_invalid_ipv6_address_throws_error(self):
+        data = self.valid_form_data_for_aaaa_record()
+        data["content"] = "100.1.1.1"
+
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("Enter a valid IPv6 address using numbers and colons.", form.errors["content"])
 
     def test_dns_a_record_with_blank_ipv4_address_throws_error(self):
         data = self.valid_form_data_for_a_record()
@@ -93,3 +114,12 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
         self.assertFalse(form.is_valid())
         self.assertIn("Enter a valid IPv4 address using numbers and periods.", form.errors["content"])
+
+    def test_dns_aaaa_record_with_blank_ipv6_address_throws_error(self):
+        data = self.valid_form_data_for_aaaa_record()
+        data["content"] = ""
+
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("Enter a valid IPv6 address using numbers and colons.", form.errors["content"])
