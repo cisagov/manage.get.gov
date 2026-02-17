@@ -437,14 +437,14 @@ To manually test locally (if not mocking cloudflare):
   #### Postman
 
   1. Enter `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members` in the post with the appropiate account id. 
-  2. Select the body tab:  ```
+  2. Select the body tab:  
+     ```
        {
         "email": "test@email.com",
         "auto_accept": true,
         "roles": ["05784afa30c1afe1440e79d9351c7430"],
         "status": "accepted"
        }
-       
       ```
   3. Add the X-Auth-Email with the email on the account to the header
   4. Add X-Auth-Key with the api key value  to the header 
