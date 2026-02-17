@@ -455,7 +455,8 @@ To manually test locally (if not mocking cloudflare):
 
   In order to add members via terminal, you can enter the following:
 
-  ``` curl ADD_MEMBER_URL \
+  ``` 
+     curl ADD_MEMBER_URL \
     -H 'Content-Type: application/json' \
     -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
     -H "X-Auth-Key: $CLOUDFLARE_API_KEY" \
