@@ -434,7 +434,7 @@ To manually test locally (if not mocking cloudflare):
 
 To add a member to an existing account to access the CF UI. You can do it one of two ways:
 
-**ADD MEMBER URL**: https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members
+**ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
   
 #### Postman
 
@@ -472,7 +472,7 @@ To add a member to an existing account to access the CF UI. You can do it one of
 
   ***Use the following to get roles, descriptions, and permissions from the account***
 
-  **ROLES URL** : https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/role
+  **ROLES URL** : `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/role`
 
   #### Postman
   
