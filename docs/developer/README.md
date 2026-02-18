@@ -446,7 +446,7 @@ To manually test locally (if not mocking cloudflare):
   4. Add X-Auth-Key with value  to the header 
 
 
-  ##### curL 
+  ##### curl
 
   ```
   curl ROLES_URL \
@@ -460,7 +460,7 @@ To manually test locally (if not mocking cloudflare):
 
   **ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
     
-    ##### Postman
+  ##### Postman
 
     1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
     2. Select the body tab, and the following with the appropiate info:  
@@ -477,7 +477,7 @@ To manually test locally (if not mocking cloudflare):
     5. Add X-Auth-Key with the api key value  to the header 
     6. Add 'Content-Type: application/json' to the header
 
-    ##### curl
+  ##### curl
 
     In order to add members via terminal, you can enter the following:
 
