@@ -459,7 +459,7 @@ To add a member to an existing account to access the CF UI. You can do it one of
 
 **ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
   
-##### Postman
+  ##### Postman
 
   1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
   2. Select the body tab, and the following with the appropiate info:  
@@ -476,7 +476,7 @@ To add a member to an existing account to access the CF UI. You can do it one of
   5. Add X-Auth-Key with the api key value  to the header 
   6. Add 'Content-Type: application/json' to the header
 
-##### curl
+  ##### curl
 
   In order to add members via terminal, you can enter the following:
 
