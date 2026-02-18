@@ -176,7 +176,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_invalid_dns_name_throws_error(self):
+    def test_post_invalid_dns_name_for_a_record_throws_error(self):
         with patch("registrar.views.domain.DnsHostService"):
             page = self.app.get(self._url(), status=200)
             record_form = page.forms[0]
@@ -189,6 +189,25 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
             response = record_form.submit()
 
-            # Field assertions for A Type records. Additional tests will be needed for different types of records.
+            # Field assertions for A Type records.
             self.assertIn("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text)
-            self.assertIn("IPv4 Address", response.text)
+            self.assertIn("IPv4 address", response.text)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_invalid_dns_name_for_aaaa_record_throws_error(self):
+        with patch("registrar.views.domain.DnsHostService"):
+            page = self.app.get(self._url(), status=200)
+            record_form = page.forms[0]
+
+            record_form["type"] = "AAAA"
+            record_form["name"] = "testing!"
+            record_form["content"] = "2008:db8::1234"
+
+            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+            response = record_form.submit()
+
+            # Field assertions for AAAA Type records.
+            self.assertIn("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text)
+            self.assertIn("IPv6 address", response.text)

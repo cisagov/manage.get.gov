@@ -794,11 +794,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = self.data.get("type") or self.initial.get("type")
 
         if record_type == "A":
-            self.fields["content"].label = "IPv4 Address"
+            self.fields["content"].label = "IPv4 address"
             self.fields["content"].help_text = "Example: 192.0.2.10"
 
         elif record_type == "AAAA":
-            self.fields["content"].label = "IPv6 Address"
+            self.fields["content"].label = "IPv6 address"
             self.fields["content"].help_text = "Example: 2001:db8::1"
 
     class Meta:

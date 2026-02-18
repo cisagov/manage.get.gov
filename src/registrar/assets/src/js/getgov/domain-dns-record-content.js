@@ -15,14 +15,14 @@ export function initDynamicDNSRecordFormFields() {
         const selectedType = this.value;
 
         if (selectedType === 'A') {
-            if (contentLabel) contentLabel.textContent = ' IPv4 Address ';
+            if (contentLabel) contentLabel.textContent = ' IPv4 address ';
             if (contentHelp) contentHelp.textContent = 'Example: 192.0.2.10';
         } else if (selectedType === 'AAAA') {
-            if (contentLabel) contentLabel.textContent = ' IPv6 Address ';
+            if (contentLabel) contentLabel.textContent = ' IPv6 address ';
             if (contentHelp) contentHelp.textContent = 'Example: 2001:db8::1234:5678';
         } 
         else {
-            if (contentLabel) contentLabel.textContent = ' Content Label ';
+            if (contentLabel) contentLabel.textContent = ' Content label ';
             if (contentHelp) contentHelp.textContent = 'Default help text';
         }
         // Appending the asterisk to the label
