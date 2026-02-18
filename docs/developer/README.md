@@ -464,6 +464,7 @@ To manually test locally (if not mocking cloudflare):
 
   1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
   2. Select the body tab, and the following with the appropiate info:  
+
       ```
         {
           "email": "test@email.com",
@@ -472,6 +473,7 @@ To manually test locally (if not mocking cloudflare):
           "status": "accepted"
         }
       ```
+  
   3. Go to the header tab
   4. Add the X-Auth-Email with the email on the account to the header
   5. Add X-Auth-Key with the api key value  to the header 
