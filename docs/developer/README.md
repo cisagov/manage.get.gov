@@ -439,7 +439,7 @@ To add a member to an existing account to access the CF UI. You can do it one of
 #### Postman
 
   1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
-  2. Select the body tab:  
+  2. Select the body tab, and the following with the appropiate info:  
      ```
        {
         "email": "test@email.com",
@@ -448,9 +448,10 @@ To add a member to an existing account to access the CF UI. You can do it one of
         "status": "accepted"
        }
       ```
-  3. Add the X-Auth-Email with the email on the account to the header
-  4. Add X-Auth-Key with the api key value  to the header 
-  5. Add 'Content-Type: application/json' to the header
+  3. Go to the header tab
+  4. Add the X-Auth-Email with the email on the account to the header
+  5. Add X-Auth-Key with the api key value  to the header 
+  6. Add 'Content-Type: application/json' to the header
 
   #### Curl 
 
@@ -477,6 +478,7 @@ To add a member to an existing account to access the CF UI. You can do it one of
   #### Postman
   
   1. Enter the **ROLES URL** above in the post with the appropiate account id. 
+  2. Go to the header tab
   3. Add the X-Auth-Email to the header
   4. Add X-Auth-Key with value  to the header 
 
