@@ -2072,9 +2072,10 @@ class MockEppLib(TestCase):
         self._refresh_mock_cr_dates()
 
     def _refresh_mock_cr_dates(self):
-                """Refresh per-test EPP mock cr_date values.
-                If a test needs a specific cr_date, it can set the object's attribute
-                _mock_cr_date_source = "custom" to prevent this method from overwriting i."""
+        """Refresh per-test EPP mock cr_date values.
+
+        If a test needs a specific cr_date, set _mock_cr_date_source = "custom" on the
+        object to prevent this method from overwriting it"""
 
         self.epp_cr_date = timezone.now() + timedelta(minutes=10)
 
