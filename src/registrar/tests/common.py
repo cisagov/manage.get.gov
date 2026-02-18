@@ -2096,6 +2096,7 @@ class MockEppLib(TestCase):
                 pass
 
     def _iter_safe_attrs(self):
+        """Ignore getters that raise."""
         for attr_name in dir(self):
             try:
                 yield getattr(self, attr_name)
