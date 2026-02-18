@@ -8,7 +8,6 @@ from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime, date, timedelta
-from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
 from registrar.models import Domain, Host, HostIP
 
@@ -2625,9 +2624,8 @@ class TestCreationDate(MockEppLib):
         super().setUp()
         # for the tests, need a domain with a creation date
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-        # creation_date returned from mockDataInfoDomain with creation date:
-        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = make_aware(datetime(2023, 5, 25, 19, 45, 35))
+        # creation_date returned from MockEppLib
+        self.creation_date = self.epp_cr_date
 
     def tearDown(self):
         Domain.objects.all().delete()
