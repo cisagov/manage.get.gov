@@ -451,45 +451,46 @@ To manually test locally (if not mocking cloudflare):
   ```
   curl ROLES_URL \
     -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
-    -H "X-Auth-Key: $CLOUDFLARE_API_KEY"```
+    -H "X-Auth-Key: $CLOUDFLARE_API_KEY"
+  ```
 
 #### Second, send a post request to add a new account:
 
-To add a member to an existing account to access the CF UI. You can do it one of two ways:
+  To add a member to an existing account to access the CF UI. You can do it one of two ways:
 
-**ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
-  
-  ##### Postman
+  **ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
+    
+    ##### Postman
 
-  1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
-  2. Select the body tab, and the following with the appropiate info:  
-     ```
-       {
-        "email": "test@email.com",
-        "auto_accept": true,
-        "roles": ["05784afa30c1afe1440e79d9351c7430"],
-        "status": "accepted"
-       }
+    1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
+    2. Select the body tab, and the following with the appropiate info:  
       ```
-  3. Go to the header tab
-  4. Add the X-Auth-Email with the email on the account to the header
-  5. Add X-Auth-Key with the api key value  to the header 
-  6. Add 'Content-Type: application/json' to the header
+        {
+          "email": "test@email.com",
+          "auto_accept": true,
+          "roles": ["05784afa30c1afe1440e79d9351c7430"],
+          "status": "accepted"
+        }
+        ```
+    3. Go to the header tab
+    4. Add the X-Auth-Email with the email on the account to the header
+    5. Add X-Auth-Key with the api key value  to the header 
+    6. Add 'Content-Type: application/json' to the header
 
-  ##### curl
+    ##### curl
 
-  In order to add members via terminal, you can enter the following:
+    In order to add members via terminal, you can enter the following:
 
-  ``` 
-     curl ADD_MEMBER_URL \
-    -H 'Content-Type: application/json' \
-    -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
-    -H "X-Auth-Key: $CLOUDFLARE_API_KEY" \
-    -d '{
-          "email": "user@example.com",
-          "roles": [
-            "3536bcfad5faccb999b47003c79917fb"
-          ]
-        }'
-  ```
+    ``` 
+      curl ADD_MEMBER_URL \
+      -H 'Content-Type: application/json' \
+      -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
+      -H "X-Auth-Key: $CLOUDFLARE_API_KEY" \
+      -d '{
+            "email": "user@example.com",
+            "roles": [
+              "3536bcfad5faccb999b47003c79917fb"
+            ]
+          }'
+    ```
 
