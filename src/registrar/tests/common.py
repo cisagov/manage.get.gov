@@ -10,7 +10,6 @@ from typing import List, Dict
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
-from django.utils.timezone import make_aware
 from datetime import date, datetime, timedelta
 from django.utils import timezone
 from django.utils.html import strip_spaces_between_tags
