@@ -96,7 +96,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
         self.assertFalse(form.is_valid())
         self.assertIn("Enter a valid IPv4 address using numbers and periods.", form.errors["content"])
-    
+
     def test_dns_aaaa_record_with_invalid_ipv6_address_throws_error(self):
         data = self.valid_form_data_for_aaaa_record()
         data["content"] = "100.1.1.1"

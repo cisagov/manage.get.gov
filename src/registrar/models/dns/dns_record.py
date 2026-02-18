@@ -10,6 +10,10 @@ class DnsRecord(TimeStampedModel):
     class RecordTypes(models.TextChoices):
         A = "A", "A"
         AAAA = "AAAA", "AAAA"
+        CNAME = "CNAME", "CNAME"
+        MX = "MX", "MX"
+        PTR = "PTR", "PTR"
+        TXT = "TXT", "TXT"
 
     dns_zone = models.ForeignKey("DnsZone", on_delete=models.CASCADE, related_name="records")
 

@@ -841,8 +841,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     content = forms.CharField(
         label="Content",
         required=False,
-        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
-        help_text="Example: 192.0.2.10",
+        help_text="Select a type for help text",
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",

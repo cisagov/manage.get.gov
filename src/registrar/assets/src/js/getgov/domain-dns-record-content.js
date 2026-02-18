@@ -19,7 +19,7 @@ export function initDynamicDNSRecordFormFields() {
             if (contentHelp) contentHelp.textContent = 'Example: 192.0.2.10';
         } else if (selectedType === 'AAAA') {
             if (contentLabel) contentLabel.textContent = ' IPv6 Address ';
-            if (contentHelp) contentHelp.textContent = 'Example: 2008::db8:1';
+            if (contentHelp) contentHelp.textContent = 'Example: 2001:db8::1234:5678';
         } 
         else {
             if (contentLabel) contentLabel.textContent = ' Content Label ';
