@@ -430,12 +430,13 @@ To manually test locally (if not mocking cloudflare):
     `error-403` to trigger an authentication error 403
     `error*` to trigger a 500 response
 
-### Adding a member to an existing account 
+### Adding a member to an existing account for the CF UI
 
-  To add a member to an existing account to access the CF UI. You can do it one of two ways:
+To add a member to an existing account to access the CF UI. You can do it one of two ways:
 
-  **ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
-  #### Postman
+**ADD MEMBER URL**: https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members
+  
+#### Postman
 
   1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
   2. Select the body tab:  
@@ -471,7 +472,7 @@ To manually test locally (if not mocking cloudflare):
 
   ***Use the following to get roles, descriptions, and permissions from the account***
 
-  **ROLES URL** : `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/role`
+  **ROLES URL** : https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/role
 
   #### Postman
   
