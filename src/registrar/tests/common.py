@@ -2072,7 +2072,9 @@ class MockEppLib(TestCase):
         self._refresh_mock_cr_dates()
 
     def _refresh_mock_cr_dates(self):
-        """Refresh per-test EPP mock cr_date values."""
+                """Refresh per-test EPP mock cr_date values.
+                If a test needs a specific cr_date, it can set the object's attribute
+                _mock_cr_date_source = "custom" to prevent this method from overwriting i."""
 
         self.epp_cr_date = timezone.now() + timedelta(minutes=10)
 
@@ -2080,8 +2082,10 @@ class MockEppLib(TestCase):
             # Update faked EPP domains that already define cr_date.
             if isinstance(value, self.fakedEppObject):
                 current = getattr(value, "cr_date", ...)
-                if current is DEFAULT_EPP_CR_DATE:
+                source = getattr(value, "_mock_cr_date_source", None)
+                if source != "custom" and (current is DEFAULT_EPP_CR_DATE or source == "auto"):
                     value.cr_date = self.epp_cr_date
+                    value._mock_cr_date_source = "auto"
                 continue
 
             # Update other objects that expose a writable cr_date (e.g., InfoContactResultData).
@@ -2089,10 +2093,19 @@ class MockEppLib(TestCase):
                 continue
 
             try:
-                if getattr(value, "cr_date") is DEFAULT_EPP_CR_DATE:
+                current = getattr(value, "cr_date")
+                source = getattr(value, "_mock_cr_date_source", None)
+                if source != "custom" and (current is DEFAULT_EPP_CR_DATE or source == "auto"):
                     value.cr_date = self.epp_cr_date
+                    value._mock_cr_date_source = "auto"
             except Exception:
                 pass
+
+    def _set_custom_mock_cr_date(self, obj, cr_date):
+        """Set a specific cr_date on a mock object and prevent auto refresh"""
+
+        obj.cr_date = cr_date
+        obj._mock_cr_date_source = "custom"
 
     def _iter_safe_attrs(self):
         """Ignore getters that raise."""
