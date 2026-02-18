@@ -1,0 +1,48 @@
+{% load static field_helpers url_helpers %}
+<tr x-show="showFormId == {{ counter }}" class="hide-td-borders">
+    <td colspan="5" class="no-padding">
+        <div class="border radius-lg border-base-lighter padding-3">
+        <form method="#" class="usa-form usa-form--extra-large">
+             <h2 class="margin-top-0"> Edit record </h2>
+            {% csrf_token %}
+               {% input_with_errors dns_record.form.name %}  
+             <div class="grid-row grid-gap flex-align-end">
+                    <div class="grid-col-9">
+                            {% input_with_errors dns_record.form.content %}
+                        </div>
+                        <div class="grid-col-3">
+                            {% input_with_errors dns_record.form.ttl %}        
+                        </div>
+             
+                </div>
+      {% input_with_errors dns_record.form.comment %}
+             <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="showFormId = null"
+    >
+        Cancel
+    </button>
+    <button
+            class="usa-button"
+            x-on:click="showFormId = null"
+        >
+        <!-- TODO: Hitting the save button also closes the form. When the update request is implemented. This might need to be updated -->
+            Save
+    </button>
+    
+     <a
+              
+         class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                    aria-label="Delete DNS record from Cloudflare"
+                >
+                  <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" >
+                          <use xlink:href="/public/img/sprite.svg#delete"></use>
+                </svg>
+            <span class="font-sans-sm"> Delete </span>
+            </a>
+        </form>
+        </div>
+    </td>
+</tr>
+
