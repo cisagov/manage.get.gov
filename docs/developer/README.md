@@ -436,23 +436,11 @@ To manually test locally (if not mocking cloudflare):
 
   ***Use the following to get roles, descriptions, and permissions from the account***
 
-  **ROLES URL** : `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/role`
+  - Go to this [doc with role info](https://docs.google.com/document/d/1piR2JbcbDelI_TyhtrFTU-jQ-o137Idq_7i_uPFE3u0/edit?tab=t.1sllv0lshd9y#heading=h.b8rtvpy8u0sm)
 
-  ##### Postman
+
+  **Note**:The 'Administrator' role id is `05784afa30c1afe1440e79d9351c7430`. For our purposes, we will primarily be adding members under that role. 
   
-  1. Enter the **ROLES URL** above in the post with the appropiate account id. 
-  2. Go to the header tab
-  3. Add the X-Auth-Email to the header
-  4. Add X-Auth-Key with value  to the header 
-
-
-  ##### curl
-
-  ```
-  curl ROLES_URL \
-    -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
-    -H "X-Auth-Key: $CLOUDFLARE_API_KEY"
-  ```
 
 #### Second, send a post request to add a new account:
 
@@ -469,7 +457,7 @@ To manually test locally (if not mocking cloudflare):
     {
           "email": "test@email.com",
           "auto_accept": true,
-          "roles": ["05784afa30c1afe1440e79d9351c7430"],
+          "roles": ["<role_id>"],
           "status": "accepted"
     }
   ```
@@ -491,8 +479,9 @@ To manually test locally (if not mocking cloudflare):
       -d '{
             "email": "user@example.com",
             "roles": [
-              "3536bcfad5faccb999b47003c79917fb"
-            ]
+              "<role_id>"
+            ],
+            "status": "accepted",
           }'
     ```
 
