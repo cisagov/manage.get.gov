@@ -1131,24 +1131,12 @@ class DomainDataFull(DomainExport):
     def get_sort_fields(cls):
         """
         Returns the sort fields.
-        Coalesce is used to replace federal_type of None with ZZZZZ
-        1. Sort by org type
-        2. Sort by federal type (executive, legislative, judicial)
-        3. Sort by specific federal agency
         """
+        # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
             "organization_type",
-            Coalesce(
-                Case(
-                    When(portfolio__isnull=False, then=F("portfolio__federal_agency__federal_type")),
-                    default=F("federal_agency__federal_type"),
-                ),
-                Value("ZZZZZ"),
-            ),
-            Case(
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
-                default=F("federal_agency__agency"),
-            ),
+            Coalesce("federal_type", Value("ZZZZZ")),
+            "federal_agency",
             "domain__name",
         ]
 
@@ -1258,25 +1246,12 @@ class DomainDataFederal(DomainExport):
     def get_sort_fields(cls):
         """
         Returns the sort fields.
-        Coalesce is used to replace federal_type of None with ZZZZZ
-        1. Sort by org type
-        2. Sort by federal type (executive, legislative, judicial)
-        3. Sort by specific federal agency
         """
-
+        # Coalesce is used to replace federal_type of None with ZZZZZ
         return [
             "organization_type",
-            Coalesce(
-                Case(
-                    When(portfolio__isnull=False, then=F("portfolio__federal_agency__federal_type")),
-                    default=F("federal_agency__federal_type"),
-                ),
-                Value("ZZZZZ"),
-            ),
-            Case(
-                When(portfolio__isnull=False, then=F("portfolio__federal_agency__agency")),
-                default=F("federal_agency__agency"),
-            ),
+            Coalesce("federal_type", Value("ZZZZZ")),
+            "federal_agency",
             "domain__name",
         ]
 
