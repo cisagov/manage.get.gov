@@ -434,9 +434,8 @@ To manually test locally (if not mocking cloudflare):
 
 #### First, retrieve the id of the desired role:
 
-  ***Use the following to get roles, descriptions, and permissions from the account***
-
   - Go to this [doc with role info](https://docs.google.com/document/d/1piR2JbcbDelI_TyhtrFTU-jQ-o137Idq_7i_uPFE3u0/edit?tab=t.1sllv0lshd9y#heading=h.b8rtvpy8u0sm)
+  - The doc will list roles with a description of permissions. Collect the id that you would like to use.
 
 
   **Note**:The 'Administrator' role id is `05784afa30c1afe1440e79d9351c7430`. For our purposes, we will primarily be adding members under that role. 
