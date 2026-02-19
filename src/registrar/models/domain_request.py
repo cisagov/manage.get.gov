@@ -735,6 +735,8 @@ class DomainRequest(TimeStampedModel):
         self._original_updated_at = self.__dict__.get("updated_at", None)
         # Store original values for caching purposes. Used to compare them on save.
         self._cache_status_and_status_reasons()
+        # Cache the original generic_org_type to detect changes on save
+        self._cached_generic_org_type = self.generic_org_type
 
     def clean(self):
         """
@@ -789,6 +791,44 @@ class DomainRequest(TimeStampedModel):
                         )
                 raise ValidationError(errors)
 
+    def clear_irrelevant_fields(self):
+        """Clears fields that are no longer relevant based on current data.
+        This helps ensure that stale data isn't kept around.
+
+        When generic_org_type changes, certain conditional fields become irrelevant:
+        - federal_agency, federal_type: Only relevant for Federal orgs
+        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
+        - is_election_board: Not applicable to Federal, Interstate, or School District
+        - about_your_organization: Only for Special District or Interstate orgs
+        """
+        old_org_type = getattr(self, "_cached_generic_org_type", None)
+        new_org_type = self.generic_org_type
+
+        if old_org_type and new_org_type != old_org_type:
+            if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
+                self.federal_type = None
+                self.federal_agency = None
+
+            if new_org_type != DomainRequest.OrganizationChoices.TRIBAL:
+                self.federally_recognized_tribe = None
+                self.state_recognized_tribe = None
+                self.tribe_name = None
+
+            excluded_from_election = [
+                DomainRequest.OrganizationChoices.FEDERAL,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
+            ]
+            if new_org_type in excluded_from_election:
+                self.is_election_board = None
+
+            about_org_types = [
+                DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+            ]
+            if new_org_type not in about_org_types:
+                self.about_your_organization = None
+
     def save(self, *args, optimistic_lock=False, **kwargs):
         """Save override for custom properties"""
         if optimistic_lock and self.pk is not None:
@@ -806,6 +846,7 @@ class DomainRequest(TimeStampedModel):
 
         self.sync_organization_type()
         self.sync_yes_no_form_fields()
+        self.clear_irrelevant_fields()
 
         if self._cached_status != self.status:
             self.last_status_update = timezone.now().date()

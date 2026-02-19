@@ -33,12 +33,14 @@ from registrar.views.utility.api_views import (
     get_federal_and_portfolio_types_from_federal_agency_json,
     get_action_needed_email_for_user_json,
     get_rejection_email_for_user_json,
+    get_alert_messages,
 )
 
 from registrar.views.domain_request import Step, PortfolioDomainRequestStep
 from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
+from django.conf import settings
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -300,7 +302,7 @@ urlpatterns = [
     path("domain/<int:domain_pk>", views.DomainView.as_view(), name="domain"),
     path(
         "domain/<int:domain_pk>/dns/records",
-        views.DomainDNSRecordView.as_view(),
+        views.DomainDNSRecordsView.as_view(),
         name="domain-dns-records",
     ),
     path("domain/<int:domain_pk>/users", views.DomainUsersView.as_view(), name="domain-users"),
@@ -399,6 +401,8 @@ urlpatterns = [
         views.PortfolioOrganizationSelectView.as_view(),
         name="set-session-portfolio",
     ),
+    path("version", views.version_info, name="version"),
+    path("messages/", get_alert_messages, name="get-messages"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error
@@ -415,13 +419,12 @@ handler500 = "registrar.views.utility.error_views.custom_500_error_view"
 handler403 = "registrar.views.utility.error_views.custom_403_error_view"
 handler404 = "registrar.views.utility.error_views.custom_404_error_view"
 
-# we normally would guard these with `if settings.DEBUG` but tests run with
-# DEBUG = False even when these apps have been loaded because settings.DEBUG
-# was actually True. Instead, let's add these URLs any time we are able to
-# import the debug toolbar package.
-try:
+# Only include debug toolbar URLs when the app is actually local
+# and we are not running tests.
+
+if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not settings.RUNNING_TESTS:
     import debug_toolbar  # type: ignore
 
-    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
-except ImportError:
-    pass
+    urlpatterns += [
+        path("__debug__/", include(debug_toolbar.urls)),
+    ]

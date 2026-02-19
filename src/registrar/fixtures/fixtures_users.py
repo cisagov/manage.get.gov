@@ -7,7 +7,6 @@ from registrar.models import (
 )
 from registrar.models.allowed_email import AllowedEmail
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 
@@ -41,6 +40,13 @@ class UserFixture:
             "last_name": "Osos",
             "email": "kosos@truss.works",
             "title": "Grove keeper",
+        },
+        {
+            "username": "47b9668b-6764-4818-a8cd-3505494093a6",
+            "first_name": "Natalie",
+            "last_name": "Wong",
+            "email": "Wai-wan.wong@ecstech.com",
+            "title": "Designer",
         },
         {
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",

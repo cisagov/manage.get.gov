@@ -389,7 +389,7 @@ The [.gov Domain Request & Domain Status Diagram](https://app.mural.co/t/cisaent
 
 ### Testing the DNS record feature (update as testing instructions change)
 We are currently testing using cloudflare to add DNS records. Specifically, an A record. To use this, you will need to enable the
-`dns_hosting` waffle flag and navigate to a domain you manage. Click manage, then click DNS. From there, click the `Prototype DNS record creator` button.
+`dns_hosting` waffle flag and navigate to a domain you manage. Click manage, then click DNS. From there, click the `DNS record creator` button.
 
 Before we can send data to cloudflare, you will need these values in your .env file:
 ```
@@ -404,9 +404,8 @@ To manually test locally (if not mocking cloudflare):
 
    - Add env't vars to your .env
    - From localhost:8080 in Enterprise view, go to domains and find one for which you are a domain manager (look for "Manage" under "Action"). Go to that domain's detail page
-   - Add (temporarily) that domain to the list of valid_domains in both the DomainDNSView and DomainDNSRecordView. This will allow you to follow a link to a DNS Record page
    - Click on "DNS" on the left nav menu
-   - Click the link below DNSEC: "Prototype DNS record creator"
+   - Click the link below DNSEC: "DNS record creator"
    - You should see a form for adding DNS records
 
 ### Mocking DNS vendor APIs in local development

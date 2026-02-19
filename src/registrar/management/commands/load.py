@@ -2,6 +2,7 @@ import logging
 
 from django.core.management.base import BaseCommand
 from auditlog.context import disable_auditlog
+from registrar.fixtures.fixtures_dnsrecord import DnsRecordFixture
 from registrar.fixtures.fixtures_domains import DomainFixture
 from registrar.fixtures.fixtures_portfolios import PortfolioFixture
 from registrar.fixtures.fixtures_requests import DomainRequestFixture
@@ -23,4 +24,5 @@ class Command(BaseCommand):
             DomainRequestFixture.load()
             DomainFixture.load()
             UserPortfolioPermissionFixture.load()
+            DnsRecordFixture.load()
             logger.info("All fixtures loaded.")
