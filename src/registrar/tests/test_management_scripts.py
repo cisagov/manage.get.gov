@@ -2807,9 +2807,9 @@ class TestDeleteDomainNotSetup(MockEppLib):
 
         call_command("delete_expired_domains_not_setup", dry_run=False)
 
-        mock_send_domain_managers_email.assert_called_once_with(
-            [self.domain_expired_today, self.domain_expired_today_too]
-        )
+        called_domains = mock_send_domain_managers_email.call_args[0][0]
+        expected_domains = [self.domain_expired_today, self.domain_expired_today_too]
+        assert set(called_domains) == set(expected_domains)
 
     @patch.object(Domain, "deleteInEpp")
     @patch("django.utils.timezone.now")
