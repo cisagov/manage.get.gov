@@ -480,7 +480,7 @@ class ViewsTest(TestCase):
         with less_console_noise():
             # SETUP
             session = self.client.session
-            session["state"] = "TEST"
+            session["state"] = "TEST"  # nosec B105
             session.save()
             # MOCK
             mock_client.callback.side_effect = self.user_info
