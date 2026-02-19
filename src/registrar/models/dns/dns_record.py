@@ -2,17 +2,11 @@ from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from registrar.validations import validate_dns_name, RECORD_TYPE_VALIDATORS
+from registrar.validations import validate_dns_name
+from registrar.utility.enums import RecordTypes
 
 
 class DnsRecord(TimeStampedModel):
-    class RecordTypes(models.TextChoices):
-        A = "A", "A"
-        AAAA = "AAAA", "AAAA"
-        CNAME = "CNAME", "CNAME"
-        MX = "MX", "MX"
-        PTR = "PTR", "PTR"
-        TXT = "TXT", "TXT"
 
     dns_zone = models.ForeignKey("DnsZone", on_delete=models.CASCADE, related_name="records")
 

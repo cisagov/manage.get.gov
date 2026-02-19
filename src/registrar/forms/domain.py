@@ -6,7 +6,6 @@ from django.core.validators import (
     RegexValidator,
     MaxLengthValidator,
 )
-from registrar.validations import RECORD_TYPE_VALIDATORS, RecordTypeValidator
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
@@ -30,6 +29,8 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 from dataclasses import dataclass
+from registrar.utility.enums import RecordTypes
+
 
 import re
 
@@ -788,32 +789,15 @@ class DomainDeleteForm(forms.Form):
 class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
-    @dataclass
-    class RecordTypeConfig:
-        label: str
-        help_text: str
-        validator_config: RecordTypeValidator | None = None
-
-    RECORD_TYPE_FIELDS = {
-        "A": RecordTypeConfig(
-            label="IPv4 address", help_text="Example: 192.0.2.10", validator_config=RECORD_TYPE_VALIDATORS["A"]
-        ),
-        "AAAA": RecordTypeConfig(
-            label="IPv6 address",
-            help_text="Example: 2001:db8::1234:5678",
-            validator_config=RECORD_TYPE_VALIDATORS["AAAA"],
-        ),
-    }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         record_type = self.data.get("type") or self.initial.get("type")
 
-        config = self.RECORD_TYPE_FIELDS.get(record_type)
-        if config:
-            self.fields["content"].label = config.label
-            self.fields["content"].help_text = config.help_text
+        if record_type:
+            rt = RecordTypes(record_type)
+            self.fields["content"].label = rt.field_label
+            self.fields["content"].help_text = rt.help_text
 
     class Meta:
         model = DnsRecord
@@ -841,7 +825,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     type = forms.ChoiceField(
         label="Type",
-        choices=[("", "- Select -")] + list(DnsRecord.RecordTypes.choices),
+        choices=[("", "- Select -")] + list(RecordTypes.choices),
         required=True,
         widget=forms.Select(
             attrs={
@@ -891,15 +875,14 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = cleaned_data.get("type")
         content = cleaned_data.get("content")
 
-        config = self.RECORD_TYPE_FIELDS.get(record_type)
-        if config:
-            validator_content = config.validator_config
-            if validator_content and validator_content.validator:
+        if record_type:
+            record = RecordTypes(record_type)
+            if record.validator:
                 try:
-                    validator_content.validator(content)
+                    record.validator(content)
                 except ValidationError:
-                    self.add_error("content", validator_content.error_message)
-            elif validator_content and not content:
-                self.add_error("content", validator_content.error_message)
+                    self.add_error("content", record.error_message)
+            elif not content:
+                self.add_error("content", record.error_message)
 
         return cleaned_data

@@ -2,6 +2,8 @@
 
 from enum import Enum
 from registrar.utility import StrEnum
+from django.core.validators import validate_ipv4_address, validate_ipv6_address
+from django.db.models import TextChoices
 
 
 class ValidationReturnType(Enum):
@@ -105,3 +107,45 @@ class PortfolioDomainRequestStep(StrEnum):
     ADDITIONAL_DETAILS = "portfolio_additional_details"
     REQUIREMENTS = "requirements"
     REVIEW = "review"
+
+
+class RecordTypes(TextChoices):
+    A = "A", "A"
+    AAAA = "AAAA", "AAAA"
+    # CNAME = "CNAME", "CNAME"
+    # MX = "MX", "MX"
+    # TXT = "TXT", "TXT"
+
+    @property
+    def field_label(self) -> str:
+        return {
+            RecordTypes.A: "IPv4 address",
+            RecordTypes.AAAA: "IPv6 address",
+            # RecordTypes.CNAME: "Target hostname",
+            # RecordTypes.MX: "Mail server",
+            # RecordTypes.TXT: "Text content",
+        }[self]
+
+    @property
+    def help_text(self) -> str:
+        return {
+            RecordTypes.A: "Example: 192.0.2.10",
+            RecordTypes.AAAA: "Example: 2001:db8::1",
+            # RecordTypes.CNAME: "Example: example.com",
+            # RecordTypes.MX: "Example: mail.example.com",
+            # RecordTypes.TXT: "Example: v=spf1 include:example.com ~all",
+        }[self]
+
+    @property
+    def validator(self):
+        return {
+            RecordTypes.A: validate_ipv4_address,
+            RecordTypes.AAAA: validate_ipv6_address,
+        }.get(self)
+
+    @property
+    def error_message(self) -> str:
+        return {
+            RecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
+            RecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
+        }.get(self, "Enter a valid value.")
