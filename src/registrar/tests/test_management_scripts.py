@@ -2619,13 +2619,6 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.assertEqual(self.default_registrant_old_email.pc, "22201")
         self.assertEqual(self.default_registrant_old_email.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
 
-        # Verify values match the default
-        default_reg = PublicContact.get_default_registrant()
-        self.assertEqual(self.default_registrant_old_email.name, default_reg.name)
-        self.assertEqual(self.default_registrant_old_email.street1, default_reg.street1)
-        self.assertEqual(self.default_registrant_old_email.pc, default_reg.pc)
-        self.assertEqual(self.default_registrant_old_email.email, default_reg.email)
-
         # Verify EPP create/update calls were made
         DF = common.DiscloseField
         expected_update = self._convertPublicContactToEpp(

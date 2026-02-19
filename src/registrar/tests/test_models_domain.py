@@ -1126,12 +1126,11 @@ class TestRegistrantContacts(MockEppLib):
                 on all fields except security
         """
         with less_console_noise():
-            # Generates a domain with four existing contacts
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
-            # Contact setup
             expected_admin = domain.get_default_administrative_contact()
             expected_admin.email = self.mockAdministrativeContact.email
-            expected_registrant = domain.get_default_registrant_contact()
+            expected_registrant = PublicContact.get_default_registrant()
+            expected_registrant.domain = domain
             expected_registrant.email = self.mockRegistrantContact.email
             expected_security = domain.get_default_security_contact()
             expected_security.email = self.mockSecurityContact.email
@@ -1147,10 +1146,7 @@ class TestRegistrantContacts(MockEppLib):
                 (expected_security, domain.security_contact),
                 (expected_tech, domain.technical_contact),
             ]
-            # Test for each contact
-            for contact in contacts:
-                expected_contact = contact[0]
-                actual_contact = contact[1]
+            for expected_contact, actual_contact in contacts:
                 if expected_contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
                     disclose_fields = self.all_disclose_fields - {"email"}
                     expectedCreateCommand = self._convertPublicContactToEpp(
@@ -1177,7 +1173,6 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact, disclose=False, disclose_fields=self.all_disclose_fields
                     )
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-                # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)
 
     def test_registrant_discloses_org_city_state_country_only(self):

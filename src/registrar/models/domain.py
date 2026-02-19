@@ -1546,38 +1546,6 @@ class Domain(TimeStampedModel, DomainHelper):
         contact.domain = self
         return contact
 
-    def get_default_registrant_contact(self):
-        """Gets the default registrant contact."""
-        logger.info("get_default_security_contact() -> Adding default registrant contact")
-        contact = PublicContact.get_default_registrant()
-
-        domain_info = getattr(self, "domain_info", None)
-        if not domain_info:
-            raise ValueError("domain_info is None: DomainInformation is required for default registrant contact")
-
-        # Prefer enterprise/portfolio-backed values.
-        is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
-
-        registrant_org = None
-        if is_federal:
-            federal_agency = domain_info.converted_federal_agency
-            registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
-        else:
-            registrant_org = domain_info.converted_organization_name
-
-        if registrant_org:
-            contact.org = registrant_org
-
-        if domain_info.converted_city:
-            contact.city = domain_info.converted_city
-
-        state_territory = getattr(domain_info, "state_territory", None)
-        if state_territory:
-            contact.sp = state_territory
-
-        contact.domain = self
-        return contact
-
     def get_contact_in_keys(self, contacts, contact_type):
         """Gets a contact object.
 
