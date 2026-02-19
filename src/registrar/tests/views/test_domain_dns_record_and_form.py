@@ -6,6 +6,8 @@ from waffle.testutils import override_flag
 from django.conf import settings
 
 from registrar.models import Domain, DomainInformation, UserDomainRole, DnsZone, DnsAccount
+from registrar.validations import RECORD_TYPE_VALIDATORS
+from registrar.forms.domain import DomainDNSRecordForm
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -134,80 +136,54 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_invalid_ipv4_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService"):
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
+    def test_post_invalid_content_throws_error(self):
+        invalid_content_by_type = {
+            "A": "not-an-ip",
+            "AAAA": "not-an-ip",
+        }
 
-            record_form["type"] = "A"
-            record_form["name"] = "@"
-            record_form["content"] = "not-an-ip"
+        for record_case in self.RECORD_TEST_CASES:
+            record_type = record_case["type"]
+            with self.subTest(record_type=record_type):
+                with patch("registrar.views.domain.DnsHostService"):
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
 
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
+                    record_form["type"] = record_type
+                    record_form["name"] = "@"
+                    record_form["content"] = invalid_content_by_type[record_type]
 
-            # Invalid form should re-render the page, not redirect
-            self.assertEqual(response.status_code, 200)
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
 
-            self.assertIn("Name", response.text)
-            self.assertIn("Enter a valid IPv4 address", response.text)
-
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_post_invalid_ipv6_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService"):
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
-
-            record_form["type"] = "AAAA"
-            record_form["name"] = "@"
-            record_form["content"] = "not-an-ip"
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
-
-            # Invalid form should re-render the page, not redirect
-            self.assertEqual(response.status_code, 200)
-
-            self.assertIn("Name", response.text)
-            self.assertIn("Enter a valid IPv6 address", response.text)
+                    # Invalid form should re-render the page, not redirect
+                    self.assertEqual(response.status_code, 200)
+                    self.assertIn("Name", response.text)
+                    self.assertIn(RECORD_TYPE_VALIDATORS[record_type].error_message, response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_invalid_dns_name_for_a_record_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService"):
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
+    def test_post_invalid_dns_name_for_dns_record_throws_error(self):
+        for record_case in self.RECORD_TEST_CASES:
+            record_type = record_case["type"]
+            with self.subTest(record_type=record_type):
+                with patch("registrar.views.domain.DnsHostService"):
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
 
-            record_form["type"] = "A"
-            record_form["name"] = "testing!"
-            record_form["content"] = "192.0.2.10"
+                    record_form["type"] = record_type
+                    record_form["name"] = "testing!"
+                    record_form["content"] = record_case["content"]
 
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
 
-            # Field assertions for A Type records.
-            self.assertIn("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text)
-            self.assertIn("IPv4 address", response.text)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertIn(
+                        "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text
+                    )
 
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_post_invalid_dns_name_for_aaaa_record_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService"):
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
-
-            record_form["type"] = "AAAA"
-            record_form["name"] = "testing!"
-            record_form["content"] = "2008:db8::1234"
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
-
-            # Field assertions for AAAA Type records.
-            self.assertIn("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text)
-            self.assertIn("IPv6 address", response.text)
+                    # Ensures appropriate label exists
+                    self.assertIn(DomainDNSRecordForm.RECORD_TYPE_FIELDS[record_type].label, response.text)

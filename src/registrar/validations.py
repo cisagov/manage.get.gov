@@ -1,5 +1,7 @@
 import re
-from django.core.validators import MaxLengthValidator
+from dataclasses import dataclass
+from typing import Callable
+from django.core.validators import MaxLengthValidator, validate_ipv4_address, validate_ipv6_address
 from django.core.exceptions import ValidationError
 
 """
@@ -75,3 +77,22 @@ def validate_dns_name(name: str) -> None:
 
     if not name[0].isalpha() or not name[-1].isalnum():
         raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
+
+
+# For use on DNS record types
+@dataclass
+class RecordTypeValidator:
+    validator: Callable | None
+    error_message: str
+
+
+RECORD_TYPE_VALIDATORS = {
+    "A": RecordTypeValidator(
+        validator=validate_ipv4_address,
+        error_message="Enter a valid IPv4 address using numbers and periods.",
+    ),
+    "AAAA": RecordTypeValidator(
+        validator=validate_ipv6_address,
+        error_message="Enter a valid IPv6 address using numbers and colons.",
+    ),
+}

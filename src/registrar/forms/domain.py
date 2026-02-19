@@ -5,9 +5,8 @@ from django import forms
 from django.core.validators import (
     RegexValidator,
     MaxLengthValidator,
-    validate_ipv4_address,
-    validate_ipv6_address,
 )
+from registrar.validations import RECORD_TYPE_VALIDATORS, RecordTypeValidator
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
@@ -30,6 +29,7 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
+from dataclasses import dataclass
 
 import re
 
@@ -788,18 +788,32 @@ class DomainDeleteForm(forms.Form):
 class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
+    @dataclass
+    class RecordTypeConfig:
+        label: str
+        help_text: str
+        validator_config: RecordTypeValidator | None = None
+
+    RECORD_TYPE_FIELDS = {
+        "A": RecordTypeConfig(
+            label="IPv4 address", help_text="Example: 192.0.2.10", validator_config=RECORD_TYPE_VALIDATORS["A"]
+        ),
+        "AAAA": RecordTypeConfig(
+            label="IPv6 address",
+            help_text="Example: 2001:db8::1234:5678",
+            validator_config=RECORD_TYPE_VALIDATORS["AAAA"],
+        ),
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         record_type = self.data.get("type") or self.initial.get("type")
 
-        if record_type == "A":
-            self.fields["content"].label = "IPv4 address"
-            self.fields["content"].help_text = "Example: 192.0.2.10"
-
-        elif record_type == "AAAA":
-            self.fields["content"].label = "IPv6 address"
-            self.fields["content"].help_text = "Example: 2001:db8::1"
+        config = self.RECORD_TYPE_FIELDS.get(record_type)
+        if config:
+            self.fields["content"].label = config.label
+            self.fields["content"].help_text = config.help_text
 
     class Meta:
         model = DnsRecord
@@ -827,7 +841,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     type = forms.ChoiceField(
         label="Type",
-        choices=[("", "- Select -"), ("A", "A"), ("AAAA", "AAAA")],
+        choices=[("", "- Select -")] + list(DnsRecord.RecordTypes.choices),
         required=True,
         widget=forms.Select(
             attrs={
@@ -874,26 +888,18 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-
         record_type = cleaned_data.get("type")
         content = cleaned_data.get("content")
 
-        if record_type == "A":
-            if content:
+        config = self.RECORD_TYPE_FIELDS.get(record_type)
+        if config:
+            validator_content = config.validator_config
+            if validator_content and validator_content.validator:
                 try:
-                    validate_ipv4_address(content)
+                    validator_content.validator(content)
                 except ValidationError:
-                    self.add_error("content", "Enter a valid IPv4 address using numbers and periods.")
-            else:
-                self.add_error("content", "Enter a valid IPv4 address using numbers and periods.")
-
-        elif record_type == "AAAA":
-            if content:
-                try:
-                    validate_ipv6_address(content)
-                except ValidationError:
-                    self.add_error("content", "Enter a valid IPv6 address using numbers and colons.")
-            else:
-                self.add_error("content", "Enter a valid IPv6 address using numbers and colons.")
+                    self.add_error("content", validator_content.error_message)
+            elif validator_content and not content:
+                self.add_error("content", validator_content.error_message)
 
         return cleaned_data
