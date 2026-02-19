@@ -2558,7 +2558,8 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.non_default_contact.save()
 
         # 4. Create a default contact but with an old email
-        self.default_registrant_old_email = self.domain.get_default_registrant_contact()
+        self.default_registrant_old_email = PublicContact.get_default_registrant()
+        self.default_registrant_old_email.domain = self.domain
         self.default_registrant_old_email.registry_id = "failReg123456789"
         self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT
         self.default_registrant_old_email.save()
