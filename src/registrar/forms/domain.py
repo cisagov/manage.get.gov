@@ -2,10 +2,12 @@
 
 import logging
 from django import forms
-from django.core.validators import RegexValidator, MaxLengthValidator
+from django.core.validators import RegexValidator, MaxLengthValidator, validate_ipv4_address
+from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
+from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
@@ -25,7 +27,6 @@ from .common import (
 )
 
 import re
-
 
 logger = logging.getLogger(__name__)
 
@@ -405,10 +406,8 @@ class SeniorOfficialContactForm(ContactForm):
         self.fields["last_name"].error_messages = {
             "required": "Enter the last name / family name of your senior official."
         }
-        self.fields["title"].error_messages = {
-            "required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."
-        }
+        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer)."}
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
@@ -779,3 +778,95 @@ class DomainDeleteForm(forms.Form):
 
         self.fields["is_policy_acknowledged"].label = label
         self.fields["is_policy_acknowledged"].error_messages = {"required": error}
+
+
+class DomainDNSRecordForm(forms.ModelForm):
+    """Form for adding DNS records"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = DnsRecord
+        fields = ["type", "name", "content", "ttl", "comment"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "usa-input",
+                    "hide_character_count": True,
+                }
+            ),
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "usa-textarea usa-textarea--medium",
+                    "rows": 2,
+                }
+            ),
+        }
+        help_texts = {
+            "comment": "The information you enter here will not impact DNS record resolution and \
+            is meant only for your reference.",
+            "name": "Use @ for root",
+        }
+        error_messages = {"name": {"required": "Enter a name for this record."}}
+
+    type = forms.ChoiceField(
+        label="Type",
+        choices=[("", "- Select -"), ("a", "A")],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
+
+    content = forms.CharField(
+        label="IPv4 Address",
+        required=True,
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
+        error_messages={"required": "Enter a valid IPv4 address using numbers and periods."},
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+            }
+        ),
+    )
+
+    ttl = forms.ChoiceField(
+        label="TTL",
+        choices=[
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (7200, "2 hours"),
+            (18000, "5 hours"),
+            (43200, "12 hours"),
+            (86400, "1 day"),
+        ],
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        record_type = cleaned_data.get("type")
+        content = cleaned_data.get("content")
+
+        if record_type == "a" and content:
+            try:
+                validate_ipv4_address(content)
+            except ValidationError as e:
+                self.add_error("content", e)
+        return cleaned_data

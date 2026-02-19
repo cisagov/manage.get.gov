@@ -5,7 +5,7 @@
 
 <div class="grid-row grid-gap">
     <div class="grid-col-3">
-        {% input_with_errors form.type_field %}        
+        {% input_with_errors form.type %}        
     </div>
 </div>
 
@@ -25,7 +25,7 @@
     <button
         type="reset"
         class="usa-button usa-button--outline"
-        x-on:click="show_form = false"
+        x-on:click="showFormId = null"
     >
         Cancel
     </button>

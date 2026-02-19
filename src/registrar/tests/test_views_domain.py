@@ -44,11 +44,13 @@ from registrar.models import (
     Suborganization,
     UserPortfolioPermission,
 )
+
 from datetime import date, datetime, timedelta
 from django.utils import timezone
 
 from .common import less_console_noise
 from .test_views import TestWithUser
+from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data, create_dns_record
 
 import logging
 
@@ -3479,11 +3481,15 @@ class TestDomainDnsRecords(TestDomainOverview):
         cls.mock_api_service.stop()
         super().tearDownClass()
 
+    def tearDown(self):
+        delete_all_dns_data()
+        User.objects.all().delete()
+        DomainInformation.objects.all().delete()
+
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
         self.service = CloudflareService(self.client)
-        # DNS Hosting requires staff user role
         self.user = create_user()
         self.client.force_login(self.user)
 
@@ -3493,3 +3499,34 @@ class TestDomainDnsRecords(TestDomainOverview):
         """Can load domain's DNS records page."""
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "Records")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records_with_name_servers_no_vanity_servers_table(self):
+        """Name Servers table appears when there are nameservers and shows DNS records"""
+        domain, _, dns_zone = create_initial_dns_setup()
+        create_dns_record(dns_zone)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Name servers")
+        self.assertContains(page, "192.168.1.1")
+        self.assertContains(page, "ex1.dns.gov")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_domain_dns_records_with_vanity_nameservers_table(self):
+        """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
+        domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]})
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Name servers")
+        self.assertContains(page, "rainbow.dns.gov")
+        self.assertNotContains(page, "ex1.dns.gov")
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_edit_form_is_available_for_new_dns_record(self):
+        """User should be able to leave edit form with clicking cancel"""
+        domain, _, dns_zone = create_initial_dns_setup()
+        create_dns_record(dns_zone)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertContains(page, "Edit record")
+        self.assertContains(page, "aria-expanded")

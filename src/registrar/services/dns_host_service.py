@@ -19,7 +19,6 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +32,7 @@ class DnsHostService:
         return next((item.get("account_tag") for item in items if item.get("account_pubname") == name), None)
 
     def _find_account_json_by_pubname(self, items, name):
-        return next((item for item in items if item.get("account_pubname" == name)), None)
+        return next((item for item in items if item.get("account_pubname") == name), None)
 
     def _find_zone_json_by_name(self, items, name):
         return next((item for item in items if item.get("name") == name), None)
@@ -55,14 +54,12 @@ class DnsHostService:
 
         x_account_id = self._find_existing_account_in_db(account_name)
         has_db_account = bool(x_account_id)
-
         if has_db_account:
             logger.info("Already has an existing vendor account")
             return x_account_id
 
         cf_account_data = self._find_existing_account_in_cf(account_name)
         has_cf_account = bool(cf_account_data)
-
         if has_cf_account:
             return self.save_db_account({"result": cf_account_data})
 
@@ -248,7 +245,7 @@ class DnsHostService:
         x_zone_id = zone_data["id"]
         zone_name = zone_data["name"]
         zone_account_name = zone_data["account"]["name"]
-        nameservers = zone_data["name_servers"]
+        nameservers = zone_data["vanity_name_servers"] or zone_data["name_servers"]
 
         # TODO: handle transaction failure
         try:
@@ -258,6 +255,7 @@ class DnsHostService:
                     x_created_at=zone_data["created_on"],
                     x_updated_at=zone_data["created_on"],
                 )
+
                 dns_account = DnsAccount.objects.get(name=zone_account_name)
                 dns_domain = Domain.objects.get(name=domain_name)
 
@@ -265,10 +263,7 @@ class DnsHostService:
                     dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
                 )
 
-                ZonesJoin.objects.create(
-                    dns_zone=dns_zone,
-                    vendor_dns_zone=vendor_dns_zone,
-                )
+                ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
         except Exception as e:
             logger.error(f"Failed to save zone to database: {str(e)}.")
             raise
