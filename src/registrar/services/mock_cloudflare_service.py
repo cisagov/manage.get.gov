@@ -145,9 +145,6 @@ class MockCloudflareService:
         zone_name = self.domain_name
         account_id = request.url.params.get("account.id")
         zone_exists = account_id == self.existing_account_id
-        print("ACCOUNT", zone_name)
-        print("ZONE", zone_exists)
-        print("ACCOUNT THING", account_id)
         # test with domain "exists.gov" to skip zone creation
         if zone_exists:
             return httpx.Response(
@@ -217,7 +214,8 @@ class MockCloudflareService:
         request_as_json = json.loads(request.content.decode("utf-8"))
         account_name = request_as_json["name"]
         account_id = self._mock_create_cf_id()
-
+        
+        print("account name", account_name, account_id)
         return httpx.Response(
             200,
             json={
