@@ -706,7 +706,7 @@ class TestDnsHostServiceDB(TestCase):
         x_record_id = self.vendor_record_data["result"].get("id")
         dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
 
-        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transcation
+        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transaction
         with patch("registrar.models.DnsRecord.objects.get", side_effect=IntegrityError("simulated failure")):
             with self.assertRaises(IntegrityError):
                 self.service.update_db_record(x_zone_id, x_record_id, self.updated_record_data)
