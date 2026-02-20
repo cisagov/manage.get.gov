@@ -585,7 +585,7 @@ class TestDnsHostServiceDB(TestCase):
         expected_dns_records = DnsRecord.objects.count()
         expected_record_joins = RecordsJoin.objects.count()
 
-        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transcation
+        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transaction
         with patch("registrar.models.VendorDnsRecord.objects.create", side_effect=IntegrityError("simulated failure")):
             with self.assertRaises(IntegrityError):
                 self.service.create_db_record(x_zone_id, self.vendor_record_data)
