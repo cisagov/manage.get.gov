@@ -222,11 +222,13 @@ class DnsHostService:
         # TODO: handle transaction failure
         try:
             with transaction.atomic():
-                vendor_acc = VendorDnsAccount.objects.create(
+                vendor_acc,_ = VendorDnsAccount.objects.get_or_create(
                     x_account_id=x_account_id,
                     dns_vendor=dns_vendor,
-                    x_created_at=result["created_on"],
-                    x_updated_at=result["created_on"],
+                    defaults={
+                        "x_created_at": result["created_on"],
+                        "x_updated_at": result["created_on"]
+                    }
                 )
 
                 dns_acc = DnsAccount.objects.create(name=result["name"])

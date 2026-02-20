@@ -65,18 +65,12 @@ class MockCloudflareService:
         self._mock_context.post("/accounts").mock(side_effect=self._mock_create_account_response)
 
     def _register_zone_mocks(self):
-   
         self._mock_context.get("/zones", params=f"account.id={self.existing_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.get("/zones", params=f"account.id={self.new_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
         )
-          
-        self._mock_context.get(url__regex=r"/zones\?account\.id=[\w-]+").mock(
-            side_effect=self._mock_get_account_zones_response
-        )
-
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
 
         # Mock the api with any zone id
@@ -145,6 +139,7 @@ class MockCloudflareService:
         zone_name = self.domain_name
         account_id = request.url.params.get("account.id")
         zone_exists = account_id == self.existing_account_id
+
         # test with domain "exists.gov" to skip zone creation
         if zone_exists:
             return httpx.Response(
@@ -213,15 +208,13 @@ class MockCloudflareService:
         logger.debug("😎 mocking account create")
         request_as_json = json.loads(request.content.decode("utf-8"))
         account_name = request_as_json["name"]
-        account_id = self._mock_create_cf_id()
-        
-        print("account name", account_name, account_id)
+
         return httpx.Response(
             200,
             json={
                 "success": True,
                 "result": {
-                    "id": account_id,
+                    "id": self.new_account_id,
                     "name": account_name,
                     "type": "standard",
                     "created_on": datetime.now(timezone.utc).isoformat(),  # format "2014-03-01T12:21:02.0000Z",
@@ -234,13 +227,14 @@ class MockCloudflareService:
         request_as_json = json.loads(request.content.decode("utf-8"))
         zone_name = request_as_json["name"]
         account_id = request_as_json["account"]["id"]
+        zone_id = self._mock_create_cf_id()
 
         return httpx.Response(
             200,
             json={
                 "success": True,
                 "result": {
-                    "id": self.fake_zone_id,
+                    "id": zone_id,
                     "account": {"id": account_id, "name": make_dns_account_name(zone_name)},
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
