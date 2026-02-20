@@ -6,8 +6,8 @@ from waffle.testutils import override_flag
 from django.conf import settings
 
 from registrar.models import Domain, DomainInformation, UserDomainRole, DnsZone, DnsAccount
-from registrar.validations import RECORD_TYPE_VALIDATORS
 from registrar.forms.domain import DomainDNSRecordForm
+from registrar.utility.enums import DNSRecordTypes
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -160,7 +160,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     # Invalid form should re-render the page, not redirect
                     self.assertEqual(response.status_code, 200)
                     self.assertIn("Name", response.text)
-                    self.assertIn(RECORD_TYPE_VALIDATORS[record_type].error_message, response.text)
+                    self.assertIn(DNSRecordTypes(record_type).error_message, response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -186,4 +186,4 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     # Ensures appropriate label exists
-                    self.assertIn(DomainDNSRecordForm.RECORD_TYPE_FIELDS[record_type].label, response.text)
+                    self.assertIn(DNSRecordTypes(record_type).field_label, response.text)

@@ -29,7 +29,7 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 from dataclasses import dataclass
-from registrar.utility.enums import RecordTypes
+from registrar.utility.enums import DNSRecordTypes
 
 
 import re
@@ -795,7 +795,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = self.data.get("type") or self.initial.get("type")
 
         if record_type:
-            rt = RecordTypes(record_type)
+            rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
 
@@ -824,8 +824,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         error_messages = {"name": {"required": "Enter a name for this record."}}
 
     type = forms.ChoiceField(
+        # TODO: choices has been temporarily hard-coded for user testing. This is to prevent the need for multiple migrations. 
+        # I have temporarily commented out what the appropriate line will eventually look like.
         label="Type",
-        choices=[("", "- Select -")] + list(RecordTypes.choices),
+        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
+        choices=[("", "- Select -"), ("A", "A"), ("AAAA", "AAAA"),],
         required=True,
         widget=forms.Select(
             attrs={
@@ -876,7 +879,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         content = cleaned_data.get("content")
 
         if record_type:
-            record = RecordTypes(record_type)
+            record = DNSRecordTypes(record_type)
             if record.validator:
                 try:
                     record.validator(content)

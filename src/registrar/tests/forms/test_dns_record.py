@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
-from registrar.validations import RECORD_TYPE_VALIDATORS
+from registrar.utility.enums import DNSRecordTypes
 
 
 class BaseDomainDNSRecordFormTest(TestCase):
@@ -103,7 +103,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 form = self.make_form(data)
 
                 self.assertFalse(form.is_valid())
-                self.assertIn(RECORD_TYPE_VALIDATORS[record_type].error_message, form.errors["content"])
+                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
 
     def test_dns_record_with_blank_content_throws_error(self):
         for record_type, content in self.VALID_CONTENT_BY_TYPE.items():
@@ -113,4 +113,4 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 form = self.make_form(data)
 
                 self.assertFalse(form.is_valid())
-                self.assertIn(RECORD_TYPE_VALIDATORS[record_type].error_message, form.errors["content"])
+                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
