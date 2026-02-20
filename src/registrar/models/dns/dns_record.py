@@ -50,6 +50,6 @@ class DnsRecord(TimeStampedModel):
                 validator(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
-        
+
         if errors:
             raise ValidationError(errors)

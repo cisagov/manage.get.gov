@@ -28,7 +28,6 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
-from dataclasses import dataclass
 from registrar.utility.enums import DNSRecordTypes
 
 
@@ -824,11 +823,16 @@ class DomainDNSRecordForm(forms.ModelForm):
         error_messages = {"name": {"required": "Enter a name for this record."}}
 
     type = forms.ChoiceField(
-        # TODO: choices has been temporarily hard-coded for user testing. This is to prevent the need for multiple migrations. 
-        # I have temporarily commented out what the appropriate line will eventually look like.
+        # TODO: choices has been temporarily hard-coded for user testing.
+        # This is to prevent the need for multiple migrations.
+        # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
         # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[("", "- Select -"), ("A", "A"), ("AAAA", "AAAA"),],
+        choices=[
+            ("", "- Select -"),
+            ("A", "A"),
+            ("AAAA", "AAAA"),
+        ],
         required=True,
         widget=forms.Select(
             attrs={

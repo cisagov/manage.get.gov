@@ -22,8 +22,8 @@ export function initDynamicDNSRecordFormFields() {
             if (contentHelp) contentHelp.textContent = 'Example: 2001:db8::1234:5678';
         } 
         else {
-            if (contentLabel) contentLabel.textContent = ' Content label ';
-            if (contentHelp) contentHelp.textContent = 'Default help text';
+            if (contentLabel) contentLabel.textContent = ' Content ';
+            if (contentHelp) contentHelp.textContent = '';
         }
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);

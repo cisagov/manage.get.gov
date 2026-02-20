@@ -5,9 +5,8 @@ from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 from django.conf import settings
 
-from registrar.models import Domain, DomainInformation, UserDomainRole, DnsZone, DnsAccount
-from registrar.forms.domain import DomainDNSRecordForm
 from registrar.utility.enums import DNSRecordTypes
+from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -22,24 +21,12 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        DomainInformation.objects.get_or_create(
-            requester=self.user,
-            domain=self.domain,
-        )
-
-        UserDomainRole.objects.get_or_create(
-            user=self.user,
-            domain=self.domain,
-            role=UserDomainRole.Roles.MANAGER,
-        )
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
 
         self.app.set_user(self.user.username)
 
     def tearDown(self):
-        UserDomainRole.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        Domain.objects.all().delete()
+        delete_all_dns_data()
         super().tearDown()
 
 
@@ -62,14 +49,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "comment": "Mocked record created",
         },
     ]
-
-    def setUp(self):
-        super().setUp()
-        self.dns_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.dns_account = DnsAccount.objects.create(name="acct-base")
-        self.dns_zone = DnsZone.objects.create(
-            dns_account=self.dns_account, domain=self.dns_domain, nameservers=["ns1.dns-test.gov", "ns2.dns-test.gov"]
-        )
 
     def _url(self):
         return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
@@ -126,13 +105,10 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_valid_a_form_creates_record_success(self):
-        self.valid_form_creates_record(self.RECORD_TEST_CASES[0])
-
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_post_valid_aaaa_form_creates_record_success(self):
-        self.valid_form_creates_record(self.RECORD_TEST_CASES[1])
+    def test_post_valid_forms_create_records_success(self):
+        for data in self.RECORD_TEST_CASES:
+            with self.subTest(record_type=data["type"]):
+                self.valid_form_creates_record(data)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
