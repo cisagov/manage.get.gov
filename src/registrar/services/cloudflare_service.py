@@ -24,7 +24,7 @@ class CloudflareService:
 
     def create_cf_account(self, account_name: str):
         appended_url = "/accounts"
-        data = {"name": account_name, "type": "standard", "unit": {"id": self.tenant_id}}
+        data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
         try:
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
