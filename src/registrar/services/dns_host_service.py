@@ -71,6 +71,10 @@ class DnsHostService:
 
         if cf_account_data:
             logger.info("Found existing account in Cloudflare")
+            
+            # Let's verify api_access_enabled before attempting zone creation
+            api_access_enabled = cf_account_data.get("settings", {}).get("api_access_enabled")
+            logger.info(f"Account api_access_enabled={api_access_enabled} for domain {domain_name}")
 
             # Normalize vendor response to expected structure for saving to DB
             if "account_tag" in cf_account_data:
@@ -121,6 +125,9 @@ class DnsHostService:
             account_data = self.dns_vendor_service.create_cf_account(account_name)
             logger.info("Successfully created account at vendor")
             x_account_id = account_data["result"]["id"]
+            # Verify api_access_enabled on newly created account
+            api_access_enabled = account_data.get("result", {}).get("settings", {}).get("api_access_enabled")
+            logger.info(f"Newly created account api_access_enabled={api_access_enabled} for {account_name}")
         except APIError as e:
             logger.error(f"Failed to create account: {str(e)}")
             raise
