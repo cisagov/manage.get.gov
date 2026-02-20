@@ -714,6 +714,11 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        "epplib.client": {
+            "handlers": django_handlers,
+            "level": "DEBUG",
+            "propogate": False,
+        },
     },
     # root logger catches anything, unless
     # defined by a more specific logger
