@@ -29,7 +29,7 @@ typing-extensions ='*'
 django-login-required-middleware = "*"
 greenlet = "*"
 gevent = "*"
-fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "5b6e9e534827be6cafe9a39c90547792e1e05fb6"}
+fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "4fb0ef451016b439da2b4a5aef9c09747d865533"}
 pyzipper="*"
 tblib = "*"
 django-admin-multiple-choice-list-filter = "*"
