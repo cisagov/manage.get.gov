@@ -745,11 +745,3 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
                     self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
                     self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
-
-    def _create_dns_record(self, x_zone_id, record_data):
-        x_zone_id = self.vendor_zone_data["result"].get("id")
-        create_initial_dns_setup(
-            x_zone_id=x_zone_id,
-            nameservers=self.vendor_zone_data["result"].get("name_servers"),
-        )
-        self.service.create_db_record(x_zone_id, record_data)
