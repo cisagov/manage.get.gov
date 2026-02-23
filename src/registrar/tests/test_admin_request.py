@@ -750,7 +750,7 @@ class TestDomainRequestAdmin(MockEppLib):
         completed_domain_request()
         response = self.client.get("/admin/registrar/domainrequest/")
         # The results are filtered by "status in [submitted,in review,action needed]"
-        self.assertContains(response, "status in [submitted,in review,action needed]", count=1)
+        self.assertContains(response, "status in [submitted,in review,in review - omb,action needed]", count=1)
 
     @less_console_noise_decorator
     def transition_state_and_send_email(

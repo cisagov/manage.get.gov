@@ -3493,7 +3493,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
             modified_get = copy.deepcopy(request.GET)
-            modified_get["status__in"] = "submitted,in review,action needed"
+            modified_get["status__in"] = "submitted,in review,in review - omb,action needed"
             request.GET = modified_get
 
         response = super().changelist_view(request, extra_context=extra_context)
