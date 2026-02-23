@@ -35,7 +35,7 @@ class TestDnsHostService(TestCase):
         mock_client = Mock()
         self.service = DnsHostService(client=mock_client)
 
-    @patch("registrar.services.dns_host_service.DnsHostService.save_db_account")
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_account")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
@@ -44,7 +44,7 @@ class TestDnsHostService(TestCase):
         mock_find_existing_account_in_cf,
         mock_create_and_save_account,
         mock_find_existing_account_in_db,
-        mock_save_db_account,
+        mock_create_db_account,
     ):
         create_domain(domain_name="test.gov")
         create_domain(domain_name="exists.gov")
@@ -81,7 +81,7 @@ class TestDnsHostService(TestCase):
                 mock_find_existing_account_in_db.return_value = case["db_account_id"]
 
                 mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
-                mock_save_db_account.return_value = case["expected_account_id"]
+                mock_create_db_account.return_value = case["expected_account_id"]
                 mock_create_and_save_account.return_value = case["expected_account_id"]
 
                 x_account_id = self.service.dns_account_setup(case["domain_name"])
@@ -92,20 +92,20 @@ class TestDnsHostService(TestCase):
                 if case["db_account_id"]:
                     mock_find_existing_account_in_cf.assert_not_called()
                     mock_create_and_save_account.assert_not_called()
-                    mock_save_db_account.assert_not_called()
+                    mock_create_db_account.assert_not_called()
                 elif case["cf_account_data"]:
-                    mock_save_db_account.assert_called_once()
+                    mock_create_db_account.assert_called_once()
                     mock_create_and_save_account.assert_not_called()
                 else:
                     mock_create_and_save_account.assert_called_once()
-                    mock_save_db_account.assert_called_once()
+                    mock_create_db_account.assert_called_once()
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
-    @patch("registrar.services.dns_host_service.DnsHostService.save_db_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_zone")
     def test_dns_zone_setup_success(
         self,
-        mock_save_db_zone,
+        mock_create_db_zone,
         mock_create_and_save_zone,
         mock_find_existing_zone_in_cf,
     ):
@@ -175,13 +175,13 @@ class TestDnsHostService(TestCase):
                 if case["db_zone"]:
                     mock_find_existing_zone_in_cf.assert_not_called()
                     mock_create_and_save_zone.assert_not_called()
-                    mock_save_db_zone.assert_not_called()
+                    mock_create_db_zone.assert_not_called()
                 elif case["cf_zone_data"]:
-                    mock_save_db_zone.assert_called_once()
+                    mock_create_db_zone.assert_called_once()
                     mock_create_and_save_zone.assert_not_called()
                 else:
                     mock_create_and_save_zone.assert_called_once()
-                    mock_save_db_zone.assert_called_once()
+                    mock_create_db_zone.assert_called_once()
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
@@ -230,9 +230,9 @@ class TestDnsHostService(TestCase):
         # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
-    @patch("registrar.services.dns_host_service.DnsHostService.save_db_record")
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_record")
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
-    def test_create_cf_record_success(self, mock_create_dns_record, mock_save_db_record):
+    def test_create_cf_record_success(self, mock_create_dns_record, mock_create_db_record):
         zone_id = "1234"
         record_data = {
             "type": "A",
@@ -299,6 +299,15 @@ class TestDnsHostServiceDB(TestCase):
             }
         }
 
+        self.updated_record_data = {
+            "result": {
+                "name": "new-record-name.gov",  # record name
+                "content": "2.2.2.2",  # IPv4
+                "ttl": 1800,
+                "comment": "Updated test record comment",
+            }
+        }
+
     def tearDown(self):
         delete_all_dns_data()
         User.objects.all().delete()
@@ -325,9 +334,9 @@ class TestDnsHostServiceDB(TestCase):
         result = self.service._find_existing_account_in_db(account_name)
         self.assertIsNone(result)
 
-    def test_save_db_account_success(self):
+    def test_create_db_account_success(self):
         # Dummy JSON data from API
-        self.service.save_db_account(self.vendor_account_data)
+        self.service.create_db_account(self.vendor_account_data)
 
         # Validate there's one VendorDnsAccount row with the external id and the CF Vendor
         expected_account_id = self.vendor_account_data["result"].get("id")
@@ -344,7 +353,7 @@ class TestDnsHostServiceDB(TestCase):
         join_exists = AccountsJoin.objects.filter(dns_account=dns_acc, vendor_dns_account=vendor_acc).exists()
         self.assertTrue(join_exists)
 
-    def test_save_db_account_with_error_fails(self):
+    def test_create_db_account_with_error_fails(self):
         account_data = {"result": {"id": "FAIL1", "name": "Failed Test Account", "created_on": "2024-01-02T03:04:05Z"}}
 
         expected_vendor_accts = VendorDnsAccount.objects.count()
@@ -355,14 +364,14 @@ class TestDnsHostServiceDB(TestCase):
         # an integrity error mid-transcation
         with patch("registrar.models.VendorDnsAccount.objects.create", side_effect=IntegrityError("simulated failure")):
             with self.assertRaises(IntegrityError):
-                self.service.save_db_account(account_data)
+                self.service.create_db_account(account_data)
 
         # Ensure that no database rows are created across our tables (since the transaction failed).
         self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_accts)
         self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
         self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
-    def test_save_db_account_with_bad_or_incomplete_data_fails(self):
+    def test_create_db_account_with_bad_or_incomplete_data_fails(self):
         invalid_result_payloads = [
             {"test_name": "Empty payload test case"},
             {"test_name": "Empty result dictionary test case", "result": {}},
@@ -377,14 +386,14 @@ class TestDnsHostServiceDB(TestCase):
         for payload in invalid_result_payloads:
             with self.subTest(msg=payload["test_name"], payload=payload):
                 with self.assertRaises(KeyError):
-                    self.service.save_db_account(payload)
+                    self.service.create_db_account(payload)
 
                     # Nothing should be written on any failure
                     self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_accts)
                     self.assertEqual(DnsAccount.objects.count(), expected_dns_accts)
                     self.assertEqual(AccountsJoin.objects.count(), expected_acct_joins)
 
-    def test_save_db_account_on_failed_join_creation_throws_error(self):
+    def test_create_db_account_on_failed_join_creation_throws_error(self):
         payload = {
             "result": {
                 "id": "JOIN1",
@@ -401,7 +410,7 @@ class TestDnsHostServiceDB(TestCase):
             side_effect=IntegrityError("simulated join failure"),
         ):
             with self.assertRaises(IntegrityError):
-                self.service.save_db_account(payload)
+                self.service.create_db_account(payload)
 
         # If the creation of the join fails, nothing should be saved in the database.
         self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_accts)
@@ -434,7 +443,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertIsNone(x_zone_id)
         self.assertIsNone(nameservers)
 
-    def test_save_db_zone_success(self):
+    def test_create_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
         # Create account object referenced in zone
 
@@ -445,7 +454,7 @@ class TestDnsHostServiceDB(TestCase):
             x_account_name=self.vendor_account_data["result"].get("name"),
         )
 
-        self.service.save_db_zone(self.vendor_zone_data, zone_domain)
+        self.service.create_db_zone(self.vendor_zone_data, zone_domain)
 
         # VendorDnsZone row exists with matching zone xid as cloudflare id
         x_zone_id = self.vendor_zone_data["result"].get("id")
@@ -464,9 +473,9 @@ class TestDnsHostServiceDB(TestCase):
         join_exists = ZonesJoin.objects.filter(dns_zone=dns_zone, vendor_dns_zone=vendor_zone).exists()
         self.assertTrue(join_exists)
 
-    def test_save_db_zone_with_error_fails(self):
+    def test_create_db_zone_with_error_fails(self):
         # Create account object referenced in zone
-        self.service.save_db_account(self.vendor_account_data)
+        self.service.create_db_account(self.vendor_account_data)
         zone_domain = Domain.objects.create(name="dns-test.gov")
 
         expected_vendor_zones = VendorDnsZone.objects.count()
@@ -477,14 +486,14 @@ class TestDnsHostServiceDB(TestCase):
         # an integrity error mid-transcation
         with patch("registrar.models.VendorDnsZone.objects.create", side_effect=IntegrityError("simulated failure")):
             with self.assertRaises(IntegrityError):
-                self.service.save_db_zone(self.vendor_zone_data, zone_domain)
+                self.service.create_db_zone(self.vendor_zone_data, zone_domain)
 
         # Ensure that no database rows are created across our tables (since the transaction failed).
         self.assertEqual(VendorDnsZone.objects.count(), expected_vendor_zones)
         self.assertEqual(DnsZone.objects.count(), expected_dns_zones)
         self.assertEqual(ZonesJoin.objects.count(), expected_zone_joins)
 
-    def test_save_db_zone_with_bad_or_incomplete_data_fails(self):
+    def test_create_db_zone_with_bad_or_incomplete_data_fails(self):
         """Do not create db zone objects when passed missing or incomplete Cloudlfare data."""
         invalid_result_payloads = [
             {"test_name": "Empty payload test case"},
@@ -508,16 +517,16 @@ class TestDnsHostServiceDB(TestCase):
         for payload in invalid_result_payloads:
             with self.subTest(msg=payload["test_name"], payload=payload):
                 with self.assertRaises(KeyError):
-                    self.service.save_db_zone(payload, zone_domain)
+                    self.service.create_db_zone(payload, zone_domain)
 
                     # Nothing should be written on any failure
                     self.assertEqual(VendorDnsZone.objects.count(), expected_vendor_zones)
                     self.assertEqual(DnsZone.objects.count(), expected_dns_zones)
                     self.assertEqual(ZonesJoin.objects.count(), expected_zone_joins)
 
-    def test_save_db_zone_on_failed_join_creation_throws_error(self):
+    def test_create_db_zone_on_failed_join_creation_throws_error(self):
         # Create account object referenced in zone
-        self.service.save_db_account(self.vendor_account_data)
+        self.service.create_db_account(self.vendor_account_data)
         zone_domain = Domain.objects.create(name="dns-test.gov")
 
         expected_vendor_zones = VendorDnsZone.objects.count()
@@ -529,14 +538,14 @@ class TestDnsHostServiceDB(TestCase):
             side_effect=IntegrityError("simulated join failure"),
         ):
             with self.assertRaises(IntegrityError):
-                self.service.save_db_zone(self.vendor_zone_data, zone_domain)
+                self.service.create_db_zone(self.vendor_zone_data, zone_domain)
 
         # If the creation of the join fails, nothing should be saved in the database.
         self.assertEqual(VendorDnsZone.objects.count(), expected_vendor_zones)
         self.assertEqual(DnsZone.objects.count(), expected_dns_zones)
         self.assertEqual(ZonesJoin.objects.count(), expected_zone_joins)
 
-    def test_save_db_record_success(self):
+    def test_create_db_record_success(self):
         """Successfully creates registrar db record objects."""
         x_zone_id = self.vendor_account_data["result"].get("id")
 
@@ -545,7 +554,7 @@ class TestDnsHostServiceDB(TestCase):
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
 
-        self.service.save_db_record(x_zone_id, self.vendor_record_data)
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
 
         # VendorDnsRecord row exists with matching record xid as cloudflare id
         x_record_id = self.vendor_record_data["result"].get("id")
@@ -563,7 +572,7 @@ class TestDnsHostServiceDB(TestCase):
         join_exists = RecordsJoin.objects.get(dns_record=dns_record, vendor_dns_record=vendor_dns_record)
         self.assertTrue(join_exists)
 
-    def test_save_db_record_with_error_fails(self):
+    def test_create_db_record_with_error_fails(self):
         x_zone_id = self.vendor_account_data["result"].get("id")
         nameservers = self.vendor_zone_data["result"].get("name_servers")
 
@@ -576,17 +585,17 @@ class TestDnsHostServiceDB(TestCase):
         expected_dns_records = DnsRecord.objects.count()
         expected_record_joins = RecordsJoin.objects.count()
 
-        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transcation
+        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transaction
         with patch("registrar.models.VendorDnsRecord.objects.create", side_effect=IntegrityError("simulated failure")):
             with self.assertRaises(IntegrityError):
-                self.service.save_db_record(x_zone_id, self.vendor_record_data)
+                self.service.create_db_record(x_zone_id, self.vendor_record_data)
 
         # No records are created in the db (since the transaction failed).
         self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
 
-    def test_save_db_record_with_bad_or_incomplete_data_fails(self):
+    def test_create_db_record_with_bad_or_incomplete_data_fails(self):
         """Do not create db zone objects when passed missing or incomplete Cloudlfare data."""
         # Test missing record data including incomplete registrar DNS record form data
         invalid_result_payloads = [
@@ -631,14 +640,14 @@ class TestDnsHostServiceDB(TestCase):
         for payload in invalid_result_payloads:
             with self.subTest(msg=payload["test_name"], payload=payload):
                 with self.assertRaises(KeyError):
-                    self.service.save_db_record(x_zone_id, payload)
+                    self.service.create_db_record(x_zone_id, payload)
 
                     # Nothing should be written on any failure
                     self.assertEqual(VendorDnsAccount.objects.count(), expected_vendor_records)
                     self.assertEqual(DnsAccount.objects.count(), expected_dns_records)
                     self.assertEqual(AccountsJoin.objects.count(), expected_record_joins)
 
-    def test_save_db_record_on_failed_join_creation_throws_error(self):
+    def test_create_db_record_on_failed_join_creation_throws_error(self):
         x_zone_id = self.vendor_account_data["result"].get("id")
 
         expected_vendor_records = VendorDnsRecord.objects.count()
@@ -656,9 +665,83 @@ class TestDnsHostServiceDB(TestCase):
             side_effect=IntegrityError("simulated join failure"),
         ):
             with self.assertRaises(IntegrityError):
-                self.service.save_db_record(x_zone_id, self.vendor_record_data)
+                self.service.create_db_record(x_zone_id, self.vendor_record_data)
 
         # If the creation of the join fails, nothing should be saved in the database.
         self.assertEqual(VendorDnsRecord.objects.count(), expected_vendor_records)
         self.assertEqual(DnsRecord.objects.count(), expected_dns_records)
         self.assertEqual(RecordsJoin.objects.count(), expected_record_joins)
+
+    def test_update_db_record_success(self):
+        """Successfully creates registrar db record objects."""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
+
+        # VendorDnsRecord row exists with matching record xid as cloudflare id
+
+        self.service.update_db_record(x_zone_id, x_record_id, self.updated_record_data)
+
+        # DnsRecord row exists with the matching record data
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+        self.assertEqual(dns_record.name, self.updated_record_data["result"].get("name"))
+        self.assertEqual(dns_record.content, self.updated_record_data["result"].get("content"))
+        self.assertEqual(dns_record.ttl, self.updated_record_data["result"].get("ttl"))
+        self.assertEqual(dns_record.comment, self.updated_record_data["result"].get("comment"))
+
+    def test_update_db_record_with_error_fails(self):
+        """Preserve original DNS record data when update fails."""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
+
+        x_record_id = self.vendor_record_data["result"].get("id")
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+
+        # patch() VendorDnsRecord.objects.create() to raise an integrity error mid-transaction
+        with patch("registrar.models.DnsRecord.objects.get", side_effect=IntegrityError("simulated failure")):
+            with self.assertRaises(IntegrityError):
+                self.service.update_db_record(x_zone_id, x_record_id, self.updated_record_data)
+
+        # Record data should still preserve original vendor record data on failed update
+        self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
+        self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
+        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
+
+    def test_update_db_record_with_bad_data_fails(self):
+        """Do not update db record objects when passed invalid Cloudflare data."""
+        # Update DNS record, when missing required fields in the response body,
+        # will preserve that field's original value
+        invalid_result_payloads = [{"test_name": "Empty payload test case"}]
+
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        self.service.create_db_record(x_zone_id, self.vendor_record_data)
+
+        x_record_id = self.vendor_record_data["result"].get("id")
+        vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+        dns_record = DnsRecord.objects.filter(vendor_dns_record=vendor_dns_record).first()
+
+        for payload in invalid_result_payloads:
+            with self.subTest(msg=payload["test_name"], payload=payload):
+                with self.assertRaises(KeyError):
+                    self.service.update_db_record(x_zone_id, x_record_id, payload)
+
+                    # Record data should still preserve original vendor record data on failed update
+                    self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
+                    self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
+                    self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+                    self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))

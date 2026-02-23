@@ -61,7 +61,7 @@ class DnsHostService:
         cf_account_data = self._find_existing_account_in_cf(account_name)
         has_cf_account = bool(cf_account_data)
         if has_cf_account:
-            return self.save_db_account({"result": cf_account_data})
+            return self.create_db_account({"result": cf_account_data})
 
         logger.info(f"Account setup completed successfully for account for {domain_name}")
         return self.create_and_save_account(account_name)
@@ -82,7 +82,7 @@ class DnsHostService:
             raise
 
         if zone_data:
-            self.save_db_zone({"result": zone_data}, domain_name)
+            self.create_db_zone({"result": zone_data}, domain_name)
         else:
             try:
                 self.create_and_save_zone(domain_name, x_account_id)
@@ -103,7 +103,7 @@ class DnsHostService:
             raise
 
         try:
-            self.save_db_account(account_data)
+            self.create_db_account(account_data)
             logger.info(f"Successfully saved account '{account_name}' to database")
         except Exception as e:
             logger.error(f"Failed to save {account_name} to database: {str(e)}")
@@ -124,7 +124,7 @@ class DnsHostService:
 
         # Create and save zone in registrar db
         try:
-            self.save_db_zone(zone_data, domain_name)
+            self.create_db_zone(zone_data, domain_name)
             logger.info(f"Successfully saved zone '{domain_name}' to database")
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
@@ -142,7 +142,27 @@ class DnsHostService:
 
         # Create and save dns record in registrar db
         try:
-            self.save_db_record(x_zone_id, vendor_record_data)
+            self.create_db_record(x_zone_id, vendor_record_data)
+        except Exception as e:
+            logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
+            raise
+        return vendor_record_data
+
+    def update_and_save_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
+        """Calls update method of vendor service to update a DNS record"""
+        # Update record in vendor service
+        try:
+            vendor_record_data = self.dns_vendor_service.update_dns_record(x_zone_id, x_record_id, form_record_data)
+            record_name = vendor_record_data["result"].get("name")
+            logger.info(f"Successfully updated record {record_name}.")
+
+        except APIError as e:
+            logger.error(f"DNS setup failed to update record {record_name}: {str(e)}")
+            raise
+
+        # Update and save dns record in registrar db
+        try:
+            self.update_db_record(x_zone_id, x_record_id, vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
@@ -214,7 +234,7 @@ class DnsHostService:
         except (RegistrySystemError, Exception):
             raise
 
-    def save_db_account(self, vendor_account_data):
+    def create_db_account(self, vendor_account_data):
         result = vendor_account_data["result"]
         x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
@@ -237,10 +257,10 @@ class DnsHostService:
                 )
 
         except Exception as e:
-            logger.error(f"Failed to save account to database: {str(e)}.")
+            logger.error(f"Failed to create and save account to database: {str(e)}.")
             raise
 
-    def save_db_zone(self, vendor_zone_data, domain_name):
+    def create_db_zone(self, vendor_zone_data, domain_name):
         zone_data = vendor_zone_data["result"]
         x_zone_id = zone_data["id"]
         zone_name = zone_data["name"]
@@ -265,10 +285,10 @@ class DnsHostService:
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
         except Exception as e:
-            logger.error(f"Failed to save zone to database: {str(e)}.")
+            logger.error(f"Failed to create and save zone to database: {str(e)}.")
             raise
 
-    def save_db_record(self, x_zone_id, vendor_record_data):
+    def create_db_record(self, x_zone_id, vendor_record_data):
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
 
@@ -300,5 +320,24 @@ class DnsHostService:
                 )
 
         except Exception as e:
-            logger.error(f"Failed to save record to database: {str(e)}.")
+            logger.error(f"Failed to create and save record to database: {str(e)}.")
+            raise
+
+    def update_db_record(self, x_zone_id, x_record_id, vendor_record_data):
+        record_data = vendor_record_data["result"]
+        excluded_fields = ["id", "type", "created_on"]
+
+        try:
+            with transaction.atomic():
+                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
+                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
+                dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
+
+                for record_field, record_value in record_data.items():
+                    if record_field not in excluded_fields:
+                        setattr(dns_record, record_field, record_value)
+                dns_record.save()
+        except Exception as e:
+            logger.error(f"Failed to update and save record to database: {str(e)}.")
             raise
