@@ -124,7 +124,7 @@ class CloudflareService:
         try:
             resp = self.client.patch(appended_url, headers=self.headers, json=record_data)
             resp.raise_for_status()
-            logger.info(f"Updated dns record for record {record_id} in zone {zone_id}.")
+            logger.info(f"Updated dns record {record_id} in zone {zone_id}.")
         except RequestError as e:
             logger.error(f"Failed to update dns record {record_id} for zone {zone_id}: {e}")
             raise
