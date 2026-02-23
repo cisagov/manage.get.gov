@@ -222,7 +222,7 @@ class DnsHostService:
         # TODO: handle transaction failure
         try:
             with transaction.atomic():
-                vendor_acc,_ = VendorDnsAccount.objects.get_or_create(
+                vendor_acc,_ = VendorDnsAccount.objects.get(
                     x_account_id=x_account_id,
                     dns_vendor=dns_vendor,
                     defaults={
