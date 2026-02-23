@@ -216,20 +216,11 @@ class DnsHostService:
 
     def save_db_account(self, vendor_account_data):
         result = vendor_account_data["result"]
-        x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
-
         # TODO: handle transaction failure
         try:
             with transaction.atomic():
-                vendor_acc,_ = VendorDnsAccount.objects.get(
-                    x_account_id=x_account_id,
-                    dns_vendor=dns_vendor,
-                    defaults={
-                        "x_created_at": result["created_on"],
-                        "x_updated_at": result["created_on"]
-                    }
-                )
+                vendor_acc = VendorDnsAccount.objects.get(dns_vendor=dns_vendor)
 
                 dns_acc = DnsAccount.objects.create(name=result["name"])
 
