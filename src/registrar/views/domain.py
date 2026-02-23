@@ -931,6 +931,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     try:
                         x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
                         record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
+                        logger.info(f"Created DNS record: {record_response['result']}")
                         self.dns_record = record_response["result"]
                         dns_name = record_response["result"]["name"]
                         messages.success(request, f"DNS A record '{dns_name}' created successfully.")
