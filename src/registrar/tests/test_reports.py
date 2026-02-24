@@ -77,10 +77,10 @@ class CsvReportsTest(MockDbForSharedTests):
                     "Domain name,Domain type,Organization name,Suborganization name,"
                     "City,State,Security contact email\r\n"
                 ),
+                call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
-                call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
             # we just want to verify what is being written.
@@ -102,10 +102,10 @@ class CsvReportsTest(MockDbForSharedTests):
                     "Domain name,Domain type,Organization name,Suborganization name,"
                     "City,State,Security contact email\r\n"
                 ),
+                call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("cdomain1.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\r\n"),
                 call("adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
                 call("ddomain3.gov,Federal,Armed Forces Retirement Home,,,,(blank)\r\n"),
-                call("cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\r\n"),
                 call("zdomain12.gov,Interstate,,,,,(blank)\r\n"),
             ]
             # We don't actually want to write anything for a test case,
@@ -485,12 +485,12 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
+            "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
-            "cdomain11.gov,Federal,World War I Centennial Commission,SubOrg 1,Nashville,TN,(blank)\n"
-            "adomain2.gov,Interstate,Portfolio 2,Somewhere,CO,,(blank)\n"
             "zdomain12.gov,Interstate,InterState Agency,Place,WA,,(blank)\n"
+            "adomain2.gov,Interstate,Portfolio 2,Somewhere,CO,,(blank)\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace
@@ -526,10 +526,10 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # sorted alphabetially by domain name
         expected_content = (
             "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
+            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
             "defaultsecurity.gov,Federal - Executive,Portfolio 1 Federal Agency,,,,,(blank)\n"
             "adomain10.gov,Federal,Armed Forces Retirement Home,,,,(blank)\n"
             "ddomain3.gov,Federal,Armed Forces Retirement Home,,,,security@mail.gov\n"
-            "cdomain11.gov,Federal,World War I Centennial Commission,,,,(blank)\n"
         )
         # Normalize line endings and remove commas,
         # spaces and leading/trailing whitespace

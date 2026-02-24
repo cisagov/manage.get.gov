@@ -251,7 +251,6 @@ class LoadExtraTransitionDomain:
             # noqa here for line length
             logger.error(f"""{TerminalColors.FAIL}
                             WARNING: something went wrong processing domain information data.
-                            
                             Total Transition Domains expecting a data update: {total_transition_domains}
                             Total updates made: {total_updates_made}
 
