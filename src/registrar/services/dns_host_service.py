@@ -2,7 +2,7 @@ import logging
 
 from registrar.config import settings
 from registrar.models.domain import Domain
-from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.utility.errors import APIError, RegistrySystemError
 from registrar.models import (
     DnsVendor,
@@ -29,6 +29,10 @@ class DnsHostService:
     def __init__(self, client=None):
         self.client = client or Client()
         self.dns_vendor_service = CloudflareService(self.client)
+
+    def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
+        """Ensure required Cloudflare DNS settings are applied for an account."""
+        return self.dns_vendor_service.update_account_dns_settings(x_account_id)
 
     def _find_account_tag_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -62,7 +66,7 @@ class DnsHostService:
         if x_account_id:
             logger.info("Already has an existing vendor account")
             return x_account_id
-
+        # If not in DB, check if account exists in vendor (CF) service
         cf_account_data = self._find_existing_account_in_cf(account_name)
         has_cf_account = bool(cf_account_data)
         if has_cf_account:
