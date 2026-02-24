@@ -56,38 +56,37 @@ class DnsHostService:
         logger.info(f"Setting up DNS hosting account for domain {domain_name} . . .")
         account_name = make_dns_account_name(domain_name)
         logger.debug(f"Derived account name {account_name} from domain name {domain_name}")
+
         # Check if account exists in DB
         x_account_id = self._find_existing_account_in_db(account_name)
         if x_account_id:
             logger.info("Already has an existing vendor account")
             return x_account_id
+
         # If not in DB, check if account exists in vendor (CF) service
-        cf_account_data = self._find_existing_account_in_cf(account_name)
-        logger.error(
-            "CF ACCOUNT RAW RESPONSE TYPE=%s VALUE=%s",
-            type(cf_account_data),
-            cf_account_data,
-        )
+        cf_account_response = self._find_existing_account_in_cf(account_name)
 
-        if cf_account_data:
+        if cf_account_response:
             logger.info("Found existing account in Cloudflare")
-
-            # Normalize vendor response to expected structure for saving to DB
-            if "account_tag" in cf_account_data:
-                normalized = {
-                    "id": cf_account_data["account_tag"],
-                    "name": cf_account_data["account_pubname"],
-                    "created_on": cf_account_data["created_on"],
-                }
-            else:
-                # Already normalized or mocked response (e.g. during testing)
-                normalized = cf_account_data
-
-            return self.save_db_account({"result": normalized})
+            normalized_account = self._normalize_cf_account_response(cf_account_response)
+            return self.save_db_account({"result": normalized_account})
 
         # Create new vendor account
         logger.info(f"No existing account found. Creating new account for {domain_name}")
         return self.create_and_save_account(account_name)
+
+    def _normalize_cf_account_response(self, cf_account_response: dict) -> dict:
+        """
+        Normalize a Cloudflare account response to the internal structure expected by save_db_account.
+        Handles both raw CF responses (with account_tag) and already-normalized data (e.g. mocks).
+        """
+        if "account_tag" in cf_account_response:
+            return {
+                "id": cf_account_response["account_tag"],
+                "name": cf_account_response["account_pubname"],
+                "created_on": cf_account_response["created_on"],
+            }
+        return cf_account_response
 
     def dns_zone_setup(self, domain_name, x_account_id):
         """
@@ -246,7 +245,7 @@ class DnsHostService:
             vendor_account_data: dict
                 {
                     "result": {
-                        "id": str,              # Vendor account identifier (Cloudflare: account_tag???)
+                        "id": str,              # Vendor account identifier (e.g Cloudflare: account_tag)
                         "name": str,            # Account name (Cloudflare: account_pubname)
                         "created_on": str,      # timestamp from vendor
                         # Optional / additional vendor fields may be present...
