@@ -66,7 +66,6 @@ class CloudflareService:
         nameservers_type: str = "custom.tenant",
     ) -> CloudflareDnsSettingsUpdateResponse:
         """PATCH /accounts/{account_id}/dns_settings
-        ref. https://developers.cloudflare.com/api/resources/dns/subresources/settings/subresources/account/methods/edit/
         Required settings:
         - zone_mode: "standard" | "cdn_only" | "dns_only"
         - type: "cloudflare.standard"

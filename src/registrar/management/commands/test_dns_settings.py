@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from httpx import Client
 from registrar.services.dns_host_service import DnsHostService
 
+
 class Command(BaseCommand):
     help = "Manually test update_account_dns_settings"
 
