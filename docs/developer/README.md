@@ -429,3 +429,58 @@ To manually test locally (if not mocking cloudflare):
     `error-400` to trigger a bad request 400
     `error-403` to trigger an authentication error 403
     `error*` to trigger a 500 response
+
+### Adding a member to an existing account for the CF UI
+
+#### First, retrieve the id of the desired role:
+
+  - Go to this [doc with role info](https://docs.google.com/document/d/1piR2JbcbDelI_TyhtrFTU-jQ-o137Idq_7i_uPFE3u0/edit?tab=t.1sllv0lshd9y#heading=h.b8rtvpy8u0sm)
+  - The doc will list roles with a description of permissions. Collect the id that you would like to use.
+
+
+  **Note**:The 'Administrator' role id is `05784afa30c1afe1440e79d9351c7430`. For our purposes, we will primarily be adding members under that role. 
+  
+
+#### Second, send a post request to add a new account:
+
+  To add a member to an existing account to access the CF UI. You can do it one of two ways:
+
+  **ADD MEMBER URL**: `https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/members`
+    
+  ##### Postman
+
+  1. Enter **ADD MEMBER URL** in the post with the appropiate account id. 
+  2. Select the body tab, and the following with the appropiate info:  
+
+  ``` 
+    {
+          "email": "test@email.com",
+          "auto_accept": true,
+          "roles": ["<role_id>"],
+          "status": "accepted"
+    }
+  ```
+  
+  3. Go to the header tab
+  4. Add the X-Auth-Email with the email on the account to the header
+  5. Add X-Auth-Key with the api key value  to the header 
+  6. Add 'Content-Type: application/json' to the header
+
+  ##### curl
+
+  In order to add members via terminal, you can enter the following:
+
+    ``` 
+      curl ADD_MEMBER_URL \
+      -H 'Content-Type: application/json' \
+      -H "X-Auth-Email: $CLOUDFLARE_EMAIL" \
+      -H "X-Auth-Key: $CLOUDFLARE_API_KEY" \
+      -d '{
+            "email": "user@example.com",
+            "roles": [
+              "<role_id>"
+            ],
+            "status": "accepted",
+          }'
+    ```
+
