@@ -648,6 +648,11 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "json",
         },
+        "epplib_console_debug": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
         # No file logger is configured,
         # because containerized apps
         # do not log to the file system.
@@ -713,6 +718,11 @@ LOGGING = {
             "handlers": django_handlers,
             "level": "WARNING",
             "propagate": False,
+        },
+        "epplib.client": {
+            "handlers": ["epplib_console_debug"],
+            "level": "DEBUG",
+            "propogate": False,
         },
     },
     # root logger catches anything, unless
