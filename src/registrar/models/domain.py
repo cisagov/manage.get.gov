@@ -1898,10 +1898,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # Registrant contacts should publish only org + city/state/country (not full street address).
         if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
+            disclose_fields = {DF("org"), DF("city"), DF("sp"), DF("cc")}
             return epp.Disclose(
                 flag=True,
-                fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
-                types={DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+                fields=disclose_fields,
+                types={field: "loc" for field in disclose_fields},
             )
 
         disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
