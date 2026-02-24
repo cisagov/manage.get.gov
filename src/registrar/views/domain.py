@@ -843,7 +843,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         to display corresponding values in the table rows"""
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
-            record.form = DomainDNSRecordForm(initial=data_dict)
+            record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""

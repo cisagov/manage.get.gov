@@ -70,45 +70,42 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         # Defaults check for A type records
         self.assertEqual(str(record_form["ttl"].value), "300")
 
-    def valid_form_creates_record(self, params):
-        mock_record = {
-            "id": params["id"],
-            "name": params["name"],
-            "type": params["type"],
-            "content": params["content"],
-            "ttl": params["ttl"],
-            "comment": params["comment"],
-        }
-
-        with patch("registrar.views.domain.DnsHostService") as MockSvc:
-            svc = MockSvc.return_value
-            svc.register_nameservers.return_value = None
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
-            svc.create_and_save_record.return_value = {"result": mock_record}
-
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
-
-            record_form["type"] = params["type"]
-            record_form["name"] = params["name"]
-            record_form["content"] = params["content"]
-            record_form["ttl"] = params["ttl"]
-            record_form["comment"] = params["comment"]
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
-            self.assertEqual(response.status_code, 200)
-
-            # User visible success message snippet
-            self.assertIn(f'{params["type"]} record for {params["name"]}', response.text)
-
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_valid_forms_create_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
-                self.valid_form_creates_record(data)
+                mock_record = {
+                    "id": data["id"],
+                    "name": data["name"],
+                    "type": data["type"],
+                    "content": data["content"],
+                    "ttl": data["ttl"],
+                    "comment": data["comment"],
+                }
+
+                with patch("registrar.views.domain.DnsHostService") as MockSvc:
+                    svc = MockSvc.return_value
+                    svc.register_nameservers.return_value = None
+                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
+                    svc.create_and_save_record.return_value = {"result": mock_record}
+
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
+
+                    record_form["type"] = data["type"]
+                    record_form["name"] = data["name"]
+                    record_form["content"] = data["content"]
+                    record_form["ttl"] = data["ttl"]
+                    record_form["comment"] = data["comment"]
+
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
+                    self.assertEqual(response.status_code, 200)
+
+                    # User visible success message snippet
+                    self.assertIn(f'{data["type"]} record for {data["name"]}', response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator

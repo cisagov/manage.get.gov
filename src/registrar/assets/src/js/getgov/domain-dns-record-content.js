@@ -15,13 +15,16 @@ export function initDynamicDNSRecordFormFields() {
         const selectedType = this.value;
 
         if (selectedType === 'A') {
+            typeField.setAttribute('aria-label', 'Record type: A');
             if (contentLabel) contentLabel.textContent = ' IPv4 address ';
             if (contentHelp) contentHelp.textContent = 'Example: 192.0.2.10';
         } else if (selectedType === 'AAAA') {
+            typeField.setAttribute('aria-label', 'Record type: Quad A');
             if (contentLabel) contentLabel.textContent = ' IPv6 address ';
             if (contentHelp) contentHelp.textContent = 'Example: 2001:db8::1234:5678';
         } 
         else {
+            typeField.removeAttribute('aria-label');
             if (contentLabel) contentLabel.textContent = ' Content ';
             if (contentHelp) contentHelp.textContent = '';
         }
