@@ -17,7 +17,6 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
-from registrar.services.dns_host_service import DnsHostService
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -4395,7 +4394,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             extra_context["curr_exp_date"] = (
                 domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
             )
-            extra_context["dns_hosting_enabled"] = flag_is_active(request, "dns_hosting")
 
         return super().changeform_view(request, object_id, form_url, extra_context)
 
@@ -4408,7 +4406,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "_delete_domain": self.do_delete_domain,
             "_get_status": self.do_get_status,
             "_extend_expiration_date": self.do_extend_expiration_date,
-            "_enroll_dns_hosting": self.do_enroll_dns_hosting,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -4674,26 +4671,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         form.is_omb_analyst = is_omb_analyst
 
         return form
-
-    def do_enroll_dns_hosting(self, request, obj):
-        try:
-            service = DnsHostService()
-            service.enroll_domain(obj)
-        except Exception as e:
-            logger.exception(e)
-            self.message_user(
-                request,
-                "Failed to enroll domain in DNS hosting.",
-                messages.ERROR,
-            )
-        else:
-            self.message_user(
-                request,
-                "Domain successfully enrolled in DNS hosting.",
-                messages.SUCCESS,
-            )
-
-        return HttpResponseRedirect(".")
 
 
 @admin.register(DnsRecord)
