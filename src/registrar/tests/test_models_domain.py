@@ -1162,8 +1162,7 @@ class TestRegistrantContacts(MockEppLib):
                     registrant_field_values = ("org", "city", "sp", "cc")
                     if all(value in disclose_fields_by_value for value in registrant_field_values):
                         registrant_disclose_fields = {
-                            disclose_fields_by_value[value]
-                            for value in registrant_field_values
+                            disclose_fields_by_value[value] for value in registrant_field_values
                         }
                     else:
                         registrant_disclose_fields = {
