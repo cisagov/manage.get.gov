@@ -97,7 +97,6 @@ class MockCloudflareService:
 
     def _mock_get_account_zones_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking zones GET")
-        zone_name = self.domain_name
         account_id = request.url.params.get("account.id")
         zone_exists = account_id == self.existing_account_id
 
@@ -127,8 +126,8 @@ class MockCloudflareService:
         account_name = request_as_json["name"]
         self.new_account_id = self._mock_create_cf_id()
         created = datetime.now(timezone.utc).isoformat()  # format "2014-03-01T12:21:02.0000Z"
-       
-       # add to page account response
+
+        # add to page account response
         self.accounts.append(
             {
                 "account_tag": self.new_account_id,
