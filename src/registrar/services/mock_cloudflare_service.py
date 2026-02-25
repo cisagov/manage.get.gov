@@ -13,6 +13,7 @@ from registrar.services.utility.mock_cf_service_data import (
     CF_ACCOUNT_ZONES_RESULT_INFO,
     CF_ACCOUNTS_RESULT_INFO,
 )
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,15 @@ class MockCloudflareService:
         if not hasattr(self, "initialized"):
             self.initialized = True
             self.is_active = False
+        self.__initial_state()
+
+    def __initial_state(self):
         self.domain_name = fake.domain_name()
-        self.accounts = CF_ACCOUNTS
-        self.accounts_results_info = CF_ACCOUNTS_RESULT_INFO
-        self.account_zones = CF_ACCOUNT_ZONES
-        self.account_zones_result_info = CF_ACCOUNT_ZONES_RESULT_INFO
+        # using deepcopy to create copy of initial values
+        self.accounts = copy.deepcopy(CF_ACCOUNTS)
+        self.accounts_results_info = copy.deepcopy(CF_ACCOUNTS_RESULT_INFO)
+        self.account_zones = copy.deepcopy(CF_ACCOUNT_ZONES)
+        self.account_zones_result_info = copy.deepcopy(CF_ACCOUNT_ZONES_RESULT_INFO)
 
     def start(self):
         """Start mocking external APIs"""
@@ -63,6 +68,10 @@ class MockCloudflareService:
             self._mock_context.stop()
             self.is_active = False
             logger.debug("🛑 Mock API Service: STOPPED")
+
+    def reset(self):
+        self.__initial_state()
+        print(self.account_zones)
 
     def _register_account_mocks(self):
         tenant_id = CloudflareService.tenant_id

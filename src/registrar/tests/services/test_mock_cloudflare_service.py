@@ -72,6 +72,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         super().tearDownClass()
 
     def setUp(self):
+        self.mock_api_service.reset()
         client = Client()
         self.service = CloudflareService(client)
 
@@ -88,7 +89,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(len(result), 1)
         self.assertEquals(result[0].get("name"), "exists.gov")
 
-    def test_mock_post_create_cf_account_response(self):
+    def test_mock_create_cf_account_response(self):
         account_name = make_dns_account_name("equity.gov")
 
         resp = self.service.create_cf_account(account_name)
@@ -102,7 +103,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(len(result), 4)
         self.assertEqual(result[3]["account_pubname"], account_name)
 
-    def test_mock_post_create_cf_zone_response(self):
+    def test_mock_create_cf_zone_response(self):
         zone_name = "peace.gov"
         account_id = "1359"
 
