@@ -40,7 +40,6 @@ class MockCloudflareService:
         self.__initial_state()
 
     def __initial_state(self):
-        self.domain_name = fake.domain_name()
         # using deepcopy to create copy of initial values
         self.accounts = copy.deepcopy(CF_ACCOUNTS)
         self.accounts_results_info = copy.deepcopy(CF_ACCOUNTS_RESULT_INFO)
@@ -71,7 +70,6 @@ class MockCloudflareService:
 
     def reset(self):
         self.__initial_state()
-        print(self.account_zones)
 
     def _register_account_mocks(self):
         tenant_id = CloudflareService.tenant_id
