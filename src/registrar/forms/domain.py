@@ -797,7 +797,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
-        
+
         config = {
             rt.value: {
                 "label": getattr(rt, "field_label", "Content"),
