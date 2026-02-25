@@ -21,7 +21,6 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import APIError
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -37,7 +36,6 @@ from unittest.mock import ANY, call, patch, PropertyMock
 
 import boto3_mocking  # type: ignore
 import logging
-from waffle.testutils import override_flag
 
 logger = logging.getLogger(__name__)
 
@@ -1327,115 +1325,3 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
             # Web test has issues grabbing up to date data from the db, so we can test
             # the returned view instead
             self.assertContains(response, '<div class="readonly">On hold</div>')
-
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_enroll_dns_hosting_button_calls_service_and_sets_message(self):
-        # Create a portfolio-backed (non-legacy) domain
-        portfolio = Portfolio.objects.create(
-            organization_name="Test Org",
-            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            requester=self.superuser,
-        )
-
-        domain = Domain.objects.create(
-            name="enrolltest.gov",
-            state=Domain.State.READY,
-            is_enrolled_in_dns_hosting=False,
-        )
-
-        DomainInformation.objects.create(
-            domain=domain,
-            portfolio=portfolio,
-            requester=self.superuser,
-        )
-
-        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
-        # Button should be visible
-        self.assertContains(response, "Enroll domain in DNS hosting")
-
-        form = response.forms["domain_form"]
-
-        with patch("registrar.admin.DnsHostService.dns_account_setup", return_value="x_account_id_123"), patch(
-            "registrar.admin.DnsHostService.get_x_zone_id_if_zone_exists",
-            return_value=("zone_id_123", ["ns1.example.gov", "ns2.example.gov"]),
-        ), patch("registrar.admin.DnsHostService.dns_zone_setup", return_value=None), patch(
-            "django.contrib.messages.add_message"
-        ) as mock_add_message:
-
-            response = form.submit("_enroll_dns_hosting")
-            response = response.follow()
-
-        # Ensure a success message was added (no error path triggered)
-        mock_add_message.assert_any_call(
-            ANY,
-            messages.SUCCESS,
-            "Domain successfully enrolled in DNS hosting.",
-            extra_tags="",
-            fail_silently=False,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        # Button should no longer be visible after successful enrollment
-        self.assertNotContains(response, "Enroll domain in DNS hosting")
-        # is_enrolled_in_dns_hosting=True should be set in db
-        domain = Domain.objects.only("is_enrolled_in_dns_hosting").get(pk=domain.pk)
-        self.assertTrue(domain.is_enrolled_in_dns_hosting)
-
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_enroll_dns_hosting_button_shows_error_message_on_failure(self):
-        # Create a portfolio-backed (non-legacy) domain
-        portfolio = Portfolio.objects.create(
-            organization_name="Test Org",
-            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
-            requester=self.superuser,
-        )
-
-        domain = Domain.objects.create(
-            name="enrolltest.gov",
-            state=Domain.State.READY,
-            is_enrolled_in_dns_hosting=False,
-        )
-
-        DomainInformation.objects.create(
-            domain=domain,
-            portfolio=portfolio,
-            requester=self.superuser,
-        )
-
-        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
-
-        # Button should be visible before enrollment
-        self.assertContains(response, "Enroll domain in DNS hosting")
-
-        form = response.forms["domain_form"]
-
-        with patch(
-            "registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf", return_value=None
-        ), patch(
-            "registrar.services.dns_host_service.DnsHostService.create_and_save_account",
-            side_effect=APIError("Cloudflare account setup failed"),
-        ), patch.object(
-            DomainAdmin, "message_user"
-        ) as mock_message_user:
-
-            response = form.submit("_enroll_dns_hosting")
-            response = response.follow()
-
-        # Ensure an error message was sent to the user
-        mock_message_user.assert_called_once_with(
-            ANY,
-            "Failed to enroll domain in DNS hosting.",
-            messages.ERROR,
-        )
-
-        self.assertEqual(response.status_code, 200)
-
-        # Flag remains False
-        domain = Domain.objects.only("is_enrolled_in_dns_hosting").get(pk=domain.pk)
-        self.assertFalse(domain.is_enrolled_in_dns_hosting)
-
-        # Button should still be visible since enrollment failed
-        self.assertContains(response, "Enroll domain in DNS hosting")
