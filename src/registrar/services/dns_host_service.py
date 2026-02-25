@@ -1,5 +1,6 @@
 import logging
 
+from registrar.config import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import APIError, RegistrySystemError
@@ -18,14 +19,16 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
+from httpx import Client
 
 logger = logging.getLogger(__name__)
 
 
 class DnsHostService:
 
-    def __init__(self, client):
-        self.dns_vendor_service = CloudflareService(client)
+    def __init__(self, client=None):
+        self.client = client or Client()
+        self.dns_vendor_service = CloudflareService(self.client)
 
     def _find_account_tag_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -45,16 +48,18 @@ class DnsHostService:
         """Find an item by name in a list of dictionaries."""
         return next((item.get("name_servers") for item in items if item.get("id") == x_zone_id), None)
 
-    def dns_account_setup(self, domain_name):
+    def dns_account_setup(self, domain_name: str):
         """
         Ensure a DNS Vendor account exists for this domain and is saved to the database.
         Returns x_account_id.
         """
+        logger.info(f"Setting up DNS hosting account for domain {domain_name} . . .")
         account_name = make_dns_account_name(domain_name)
+        logger.debug(f"Derived account name {account_name} from domain name {domain_name}")
 
+        # Check if account exists in DB
         x_account_id = self._find_existing_account_in_db(account_name)
-        has_db_account = bool(x_account_id)
-        if has_db_account:
+        if x_account_id:
             logger.info("Already has an existing vendor account")
             return x_account_id
 
@@ -62,9 +67,30 @@ class DnsHostService:
         has_cf_account = bool(cf_account_data)
         if has_cf_account:
             return self.create_db_account({"result": cf_account_data})
+        # If not in DB, check if account exists in vendor (CF) service
+        cf_account_response = self._find_existing_account_in_cf(account_name)
 
-        logger.info(f"Account setup completed successfully for account for {domain_name}")
+        if cf_account_response:
+            logger.info("Found existing account in Cloudflare")
+            normalized_account = self._normalize_cf_account_response(cf_account_response)
+            return self.create_db_account({"result": normalized_account})
+
+        # Create new vendor account
+        logger.info(f"No existing account found. Creating new account for {domain_name}")
         return self.create_and_save_account(account_name)
+
+    def _normalize_cf_account_response(self, cf_account_response: dict) -> dict:
+        """
+        Normalize a Cloudflare account response to the internal structure expected by create_db_account.
+        Handles both raw CF responses (with account_tag) and already-normalized data (e.g. mocks).
+        """
+        if "account_tag" in cf_account_response:
+            return {
+                "id": cf_account_response["account_tag"],
+                "name": cf_account_response["account_pubname"],
+                "created_on": cf_account_response["created_on"],
+            }
+        return cf_account_response
 
     def dns_zone_setup(self, domain_name, x_account_id):
         """
@@ -235,6 +261,28 @@ class DnsHostService:
             raise
 
     def create_db_account(self, vendor_account_data):
+        """
+        Create a DNS vendor account in the database.
+
+        Expected input structure:
+
+            vendor_account_data: dict
+                {
+                    "result": {
+                        "id": str,              # Vendor account identifier (e.g Cloudflare: account_tag)
+                        "name": str,            # Account name (Cloudflare: account_pubname)
+                        "created_on": str,      # timestamp from vendor
+                        # Optional / additional vendor fields may be present...
+                    }
+                }
+
+        Notes:
+        - The structure must match the normalized internal format used by DnsHostService.
+        - This function assumes the vendor response has already been normalized
+        (e.g. account_tag = id, account_pubname = name).
+        - Raises if required keys are missing.
+        """
+
         result = vendor_account_data["result"]
         x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
@@ -255,6 +303,7 @@ class DnsHostService:
                     dns_account=dns_acc,
                     vendor_dns_account=vendor_acc,
                 )
+                return x_account_id
 
         except Exception as e:
             logger.error(f"Failed to create and save account to database: {str(e)}.")
@@ -341,3 +390,48 @@ class DnsHostService:
         except Exception as e:
             logger.error(f"Failed to update and save record to database: {str(e)}.")
             raise
+
+    def enroll_domain(self, domain: Domain):
+        """
+        Enroll a domain in DNS hosting.
+
+        This will:
+        1. Ensure a vendor account exists
+        2. Ensure a zone exists
+        3. Register nameservers with the registry
+        4. Mark the domain as enrolled (only if all above succeed)
+
+        The enrollment flag is only set if the entire operation succeeds.
+        """
+
+        if domain.is_enrolled_in_dns_hosting:
+            logger.info("Domain already enrolled in DNS hosting")
+            return
+
+        domain_name = domain.name
+        try:
+            with transaction.atomic():
+                # Save Account
+                x_account_id = self.dns_account_setup(domain_name)
+
+                # Save Zone
+                self.dns_zone_setup(domain_name, x_account_id)
+
+                # Fetch nameservers from DB zone
+                _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
+                if not nameservers:
+                    raise RuntimeError("Zone exists but nameservers not found")
+
+                # Register nameservers with registry
+                if not settings.IS_LOCAL:
+                    self.register_nameservers(domain_name, nameservers)
+
+                # Mark domain as enrolled
+                domain.is_enrolled_in_dns_hosting = True
+                domain.save(update_fields=["is_enrolled_in_dns_hosting"])
+
+        except Exception:
+            logger.exception("DNS enrollment failed for %s", domain_name)
+            # Domain remains unenrolled because transaction rolls back
+            raise
+        logger.info("Successfully enrolled %s in DNS hosting", domain_name)
