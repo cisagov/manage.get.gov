@@ -7,6 +7,7 @@ from faker import Faker
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.services.utility.mock_cf_service_data import CF_ACCOUNTS, CF_ACCOUNT_ZONES, CF_ACCOUNT_ZONES_RESULT_INFO
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,6 @@ class MockCloudflareService:
     _mock_context = None
     fake_zone_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
-    new_account_name = f"account-{fake.domain_name()}"
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
 
@@ -32,63 +32,9 @@ class MockCloudflareService:
             self.initialized = True
             self.is_active = False
         self.domain_name = fake.domain_name()
-        self.new_account_name = make_dns_account_name(self.domain_name)
-        self.new_account_id = self._mock_create_cf_id()
-        self.accounts = [
-                    {
-                        "account_tag": "234asdf",
-                        "account_pubname": "Account for hello.gov",
-                        "account_type": "standard",
-                        "created_on": "2025-10-08T21:07:18.651092Z",
-                        "settings": {
-                            "enforce_two_factor": False,
-                            "api_access_enabled": False,
-                            "access_approval_expiry": None,
-                            "use_account_custom_ns_by_default": False,
-                        },
-                    },
-                    {
-                        "account_tag": self._mock_create_cf_id(),
-                        "account_pubname": "Fake account name",
-                        "account_type": "enterprise",
-                        "created_on": "2025-10-08T21:21:38.401706Z",
-                        "settings": {
-                            "enforce_two_factor": False,
-                            "api_access_enabled": False,
-                            "access_approval_expiry": None,
-                            "use_account_custom_ns_by_default": False,
-                        },
-                    },
-                    {
-                        "account_tag": self.existing_account_id,
-                        "account_pubname": "Account for exists.gov",
-                        "account_type": "enterprise",
-                        "created_on": "2025-10-08T21:21:38.401706Z",
-                        "settings": {
-                            "enforce_two_factor": False,
-                            "api_access_enabled": False,
-                            "access_approval_expiry": None,
-                            "use_account_custom_ns_by_default": False,
-                        },
-                    },
-                ]
-        self.account_zones = [
-                         {  # This record referenced for existing account with existing zone
-                            "id": "z54321",
-                            "account": {"id": self.existing_account_id, "name": "Account for exists.gov"},
-                            "created_on": "2014-01-01T05:20:00.12345Z",
-                            "modified_on": "2014-01-01T05:20:00.12345Z",
-                            "name": "exists.gov",
-                            "name_servers": [
-                                "rainbow.dns.gov",
-                                "rainbow2.dns.gov",
-                            ],
-                            "vanity_name_servers": [],
-                            "status": "pending",
-                            "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
-                        }
-            ]
-        self.account_zones_result_info = {"count": 1, "page": 1, "per_page": 20, "total_count": 1, "total_pages": 1}
+        self.accounts = CF_ACCOUNTS
+        self.account_zones = CF_ACCOUNT_ZONES
+        self.account_zones_result_info = CF_ACCOUNT_ZONES_RESULT_INFO
 
     def start(self):
         """Start mocking external APIs"""
@@ -171,13 +117,8 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": [],
-                "result_info": {
-                    "count":0,
-                    "page":1,
-                    "per_page":20,
-                    "total_count": 0
-                }
-            }
+                "result_info": {"count": 0, "page": 1, "per_page": 20, "total_count": 0},
+            },
         )
 
     def _mock_create_account_response(self, request) -> httpx.Response:
@@ -185,35 +126,32 @@ class MockCloudflareService:
         request_as_json = json.loads(request.content.decode("utf-8"))
         account_name = request_as_json["name"]
         self.new_account_id = self._mock_create_cf_id()
-        created = datetime.now(timezone.utc).isoformat() # format "2014-03-01T12:21:02.0000Z"
-        # add to page account response
-
-        self.accounts.append({
-            "account_tag": self.new_account_id,
-            "account_pubname": account_name, 
-            "account_type": "standard",
-            "created_on": created,
-            "settings": {
-                            "enforce_two_factor": False,
-                            "api_access_enabled": False,
-                            "access_approval_expiry": None,
-                            "use_account_custom_ns_by_default": False,
+        created = datetime.now(timezone.utc).isoformat()  # format "2014-03-01T12:21:02.0000Z"
+       
+       # add to page account response
+        self.accounts.append(
+            {
+                "account_tag": self.new_account_id,
+                "account_pubname": account_name,
+                "account_type": "standard",
+                "created_on": created,
+                "settings": {
+                    "enforce_two_factor": False,
+                    "api_access_enabled": False,
+                    "access_approval_expiry": None,
+                    "use_account_custom_ns_by_default": False,
+                },
             }
-        })    
+        )
 
-        # register new account 
+        # register new account to mocks
         self._register_account_mocks()
 
         return httpx.Response(
             200,
             json={
                 "success": True,
-                "result": {
-                    "id": self.new_account_id,
-                    "name": account_name,
-                    "type": "standard",
-                    "created_on": created
-                },
+                "result": {"id": self.new_account_id, "name": account_name, "type": "standard", "created_on": created},
             },
         )
 
@@ -222,25 +160,29 @@ class MockCloudflareService:
         request_as_json = json.loads(request.content.decode("utf-8"))
         zone_name = request_as_json["name"]
         account_id = request_as_json["account"]["id"]
-        zone_id = fake.uuid4().replace("-", "") 
-        result_dict ={
-                    "id": zone_id,
-                    "account": {"id": account_id, "name": make_dns_account_name(zone_name)},
-                    "created_on": datetime.now(timezone.utc).isoformat(),
-                    "modified_on": datetime.now(timezone.utc).isoformat(),
-                    "name": zone_name,
-                    "name_servers": [
-                        "rainbow.dns.gov",
-                        "rainbow2.dns.gov",
-                    ],
-                    "vanity_name_servers": [],
-                    "status": "pending",
-                    "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
-                }
-        
+        zone_id = fake.uuid4().replace("-", "")
+
+        # Create response dict
+        result_dict = {
+            "id": zone_id,
+            "account": {"id": account_id, "name": make_dns_account_name(zone_name)},
+            "created_on": datetime.now(timezone.utc).isoformat(),
+            "modified_on": datetime.now(timezone.utc).isoformat(),
+            "name": zone_name,
+            "name_servers": [
+                "rainbow.dns.gov",
+                "rainbow2.dns.gov",
+            ],
+            "vanity_name_servers": [],
+            "status": "pending",
+            "tenant": {"id": CloudflareService.tenant_id, "name": "Fake dotgov"},
+        }
+
+        #  Add to account zones
         self.account_zones.append(result_dict)
-         
         self.account_zones_result_info["count"] += 1
+
+        # register to mocks
         self._register_zone_mocks()
         return httpx.Response(
             200,
@@ -249,7 +191,7 @@ class MockCloudflareService:
                 "result": result_dict,
             },
         )
-    
+
     def _mock_create_dns_record_response(self, request) -> httpx.Response:
         logger.debug("😃 mocking dns record creation")
         request_as_json = json.loads(request.content.decode("utf-8"))
