@@ -948,6 +948,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         row_index = len(self.get_context_data()["dns_records"])
 
+        filled_form = DomainDNSRecordForm(initial=self.dns_record)
+        # Grabbed result data to pass into the form response
+        self.dns_record["form"] = filled_form
+        
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
