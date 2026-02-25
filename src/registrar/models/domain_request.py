@@ -1329,6 +1329,7 @@ class DomainRequest(TimeStampedModel):
         return self.status in [
             self.DomainRequestStatus.SUBMITTED,
             self.DomainRequestStatus.IN_REVIEW,
+            self.DomainRequestStatus.IN_REVIEW_OMB,
             self.DomainRequestStatus.ACTION_NEEDED,
         ]
 
