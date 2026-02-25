@@ -2621,11 +2621,21 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
 
         # Verify EPP create/update calls were made
         DF = common.DiscloseField
+        disclose_fields_by_value = {field.value: field for field in DF}
+        registrant_field_values = ("org", "city", "sp", "cc")
+        if all(value in disclose_fields_by_value for value in registrant_field_values):
+            registrant_disclose_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
+        else:
+            registrant_disclose_fields = {
+                field
+                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                if field is not None
+            }
         expected_update = self._convertPublicContactToEpp(
             self.default_registrant_old_email,
             disclose=True,
-            disclose_fields={DF.ORG, DF.CITY, DF.SP, DF.CC},
-            disclose_types={DF.ORG: "loc", DF.CITY: "loc", DF.SP: "loc", DF.CC: "loc"},
+            disclose_fields=registrant_disclose_fields,
+            disclose_types={field: "loc" for field in registrant_disclose_fields},
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 

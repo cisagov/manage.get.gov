@@ -1895,14 +1895,35 @@ class Domain(TimeStampedModel, DomainHelper):
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
         all_disclose_fields = {field for field in DF}
+        disclose_fields_by_value = {field.value: field for field in DF}
 
         # Registrant contacts should publish only org + city/state/country (not full street address).
         if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
-            disclose_fields = {DF("org"), DF("city"), DF("sp"), DF("cc")}
+            registrant_field_values = ("org", "city", "sp", "cc")
+            if all(value in disclose_fields_by_value for value in registrant_field_values):
+                disclose_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
+                return epp.Disclose(
+                    flag=True,
+                    fields=disclose_fields,
+                    types={field: "loc" for field in disclose_fields},
+                )
+
+            # Older epplib versions may not expose granular city/state/country disclose fields.
+            # Fall back to the closest supported disclosure format.
+            disclose_fields = {
+                field
+                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                if field is not None
+            }
+            disclose_types = {
+                field: "loc"
+                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                if field is not None
+            }
             return epp.Disclose(
                 flag=True,
                 fields=disclose_fields,
-                types={field: "loc" for field in disclose_fields},
+                types=disclose_types,
             )
 
         disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
