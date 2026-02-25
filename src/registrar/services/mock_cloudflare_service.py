@@ -7,7 +7,12 @@ from faker import Faker
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.services.utility.mock_cf_service_data import CF_ACCOUNTS, CF_ACCOUNT_ZONES, CF_ACCOUNT_ZONES_RESULT_INFO
+from registrar.services.utility.mock_cf_service_data import (
+    CF_ACCOUNTS,
+    CF_ACCOUNT_ZONES,
+    CF_ACCOUNT_ZONES_RESULT_INFO,
+    CF_ACCOUNTS_RESULT_INFO,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +38,7 @@ class MockCloudflareService:
             self.is_active = False
         self.domain_name = fake.domain_name()
         self.accounts = CF_ACCOUNTS
+        self.accounts_results_info = CF_ACCOUNTS_RESULT_INFO
         self.account_zones = CF_ACCOUNT_ZONES
         self.account_zones_result_info = CF_ACCOUNT_ZONES_RESULT_INFO
 
@@ -91,32 +97,19 @@ class MockCloudflareService:
                 "messages": [],
                 "success": True,
                 "result": self.accounts,
-                "result_info": {"count": 3, "page": 1, "per_page": 50, "total_count": 3},
+                "result_info": self.accounts_results_info,
             },
         )
 
     def _mock_get_account_zones_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking zones GET")
-        account_id = request.url.params.get("account.id")
-        zone_exists = account_id == self.existing_account_id
-
-        # test with domain "exists.gov" to skip zone creation
-        if zone_exists:
-            return httpx.Response(
-                200,
-                json={
-                    "success": True,
-                    "result": self.account_zones,
-                    "result_info": self.account_zones_result_info,
-                },
-            )
 
         return httpx.Response(
             200,
             json={
                 "success": True,
-                "result": [],
-                "result_info": {"count": 0, "page": 1, "per_page": 20, "total_count": 0},
+                "result": self.account_zones,
+                "result_info": self.account_zones_result_info,
             },
         )
 
@@ -142,6 +135,8 @@ class MockCloudflareService:
                 },
             }
         )
+
+        self.accounts_results_info["count"] += 1
 
         # register new account to mocks
         self._register_account_mocks()

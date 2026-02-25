@@ -39,6 +39,8 @@ CF_ACCOUNTS = [
     },
 ]
 
+CF_ACCOUNTS_RESULT_INFO = {"count": 3, "page": 1, "per_page": 20, "total_count": 0}
+
 CF_ACCOUNT_ZONES = [
     {  # This record referenced for existing account with existing zone
         "id": "z54321",
