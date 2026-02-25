@@ -2,7 +2,7 @@ name: Clear expired session data
 run-name: Clear expired session data
 on:
   schedule:
-    # Runs every day at 6:18 AM UTC.
+    # Runs every day at 6:18 AM UTC/1:18 AM EST
     - cron: "18 6 * * *"
   workflow_dispatch: {}
 
