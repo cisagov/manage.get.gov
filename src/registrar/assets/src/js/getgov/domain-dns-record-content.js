@@ -34,40 +34,4 @@ export function initDynamicDNSRecordFormFields() {
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
-    
-/*
-    const typeField = document.getElementById('id_type');
-    const contentField = document.getElementById('id_content');
-    const contentLabel = document.querySelector('label[for=id_content]');
-    const contentHelp = document.getElementById('id_content_helptext');
-
-    if (!typeField) return;
-
-    const config = JSON.parse(
-        typeField.dataset.typeConfig || "{}"
-    );
-
-    // Getting and cloning the required field asterisk
-    const abbrElement = contentLabel?.querySelector('abbr');
-    const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
-
-    typeField.addEventListener('change', function (){
-        const selectedType = this.value;
-        const info = config[selectedType];
-        
-        if (info) {
-            contentLabel.textContent = info.label;
-            contentHelp.textContent = info.help_text;
-        }
-
-        // Appending the asterisk to the label
-        contentLabel.appendChild(abbrClone);
-    });
-
-    // Defensive edge case, if type is pre-selected (ex: submitting with errors)
-    if (typeField.value) {
-        typeField.dispatchEvent(new Event('change'));
-    }
-*/
-
 }
