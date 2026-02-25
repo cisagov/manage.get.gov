@@ -30,7 +30,7 @@ from .common import (
 )
 from registrar.utility.enums import DNSRecordTypes
 
-
+import json
 import re
 
 logger = logging.getLogger(__name__)
@@ -797,6 +797,16 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
+        
+        config = {
+            rt.value: {
+                "label": getattr(rt, "field_label", "Content"),
+                "help_text": getattr(rt, "help_text"),
+            }
+            for rt in DNSRecordTypes
+        }
+
+        self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
 
     class Meta:
         model = DnsRecord

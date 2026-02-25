@@ -1,11 +1,51 @@
 // Establishes javascript for dynamic content label based on type
-export function initDynamicDNSRecordFormFields() {
+export function initDynamicDNSRecordFormFields() { 
+    
+    const typeField = document.getElementById('id_type');
+
+    if (!typeField) return;
+
+    const config = JSON.parse(
+        typeField.dataset.typeConfig || "{}"
+    );
+
+    // Getting and cloning the required field asterisk
+    const contentLabel = document.querySelector('label[for=id_content]');
+    const abbrElement = contentLabel?.querySelector('abbr');
+    const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
+
+    typeField.addEventListener('change', function (){
+        const selectedType = this.value;
+        const info = config[selectedType];
+        const currentContentLabel = document.querySelector('label[for=id_content]');
+        const currentContentHelp = document.getElementById('id_content_helptext');
+        
+        
+        if (info) {
+            currentContentLabel.textContent = info.label;
+            currentContentHelp.textContent = info.help_text;
+        }
+
+        // Appending the asterisk to the label
+        currentContentLabel.appendChild(abbrClone);
+    });
+
+    // Defensive edge case, if type is pre-selected (ex: submitting with errors)
+    if (typeField.value) {
+        typeField.dispatchEvent(new Event('change'));
+    }
+    
+/*
     const typeField = document.getElementById('id_type');
     const contentField = document.getElementById('id_content');
     const contentLabel = document.querySelector('label[for=id_content]');
     const contentHelp = document.getElementById('id_content_helptext');
 
-    if (!typeField || !contentField) return;
+    if (!typeField) return;
+
+    const config = JSON.parse(
+        typeField.dataset.typeConfig || "{}"
+    );
 
     // Getting and cloning the required field asterisk
     const abbrElement = contentLabel?.querySelector('abbr');
@@ -13,21 +53,13 @@ export function initDynamicDNSRecordFormFields() {
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
-
-        if (selectedType === 'A') {
-            typeField.setAttribute('aria-label', 'Record type: A');
-            if (contentLabel) contentLabel.textContent = ' IPv4 address ';
-            if (contentHelp) contentHelp.textContent = 'Example: 192.0.2.10';
-        } else if (selectedType === 'AAAA') {
-            typeField.setAttribute('aria-label', 'Record type: Quad A');
-            if (contentLabel) contentLabel.textContent = ' IPv6 address ';
-            if (contentHelp) contentHelp.textContent = 'Example: 2001:db8::1234:5678';
-        } 
-        else {
-            typeField.removeAttribute('aria-label');
-            if (contentLabel) contentLabel.textContent = ' Content ';
-            if (contentHelp) contentHelp.textContent = '';
+        const info = config[selectedType];
+        
+        if (info) {
+            contentLabel.textContent = info.label;
+            contentHelp.textContent = info.help_text;
         }
+
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
     });
@@ -36,4 +68,6 @@ export function initDynamicDNSRecordFormFields() {
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
+*/
+
 }

@@ -71,4 +71,9 @@ domainDeletionEventListener();
 // Init the portfolios nav dropdown
 initOrganizationsNavDropdown();
 
+// Init the dynamic DNS content labels and ensure HTMX re-runs after POST
 initDynamicDNSRecordFormFields();
+
+document.addEventListener('htmx:afterSettle', (evt) => {
+    initDynamicDNSRecordFormFields();
+});

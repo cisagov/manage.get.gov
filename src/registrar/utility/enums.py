@@ -120,22 +120,22 @@ class DNSRecordTypes(TextChoices):
     @property
     def field_label(self) -> str:
         return {
-            DNSRecordTypes.A: "IPv4 address",
-            DNSRecordTypes.AAAA: "IPv6 address",
-            # DNSRecordTypes.CNAME: "Target hostname",
-            # DNSNRecordTypes.MX: "Mail server",
-            # DNSRecordTypes.TXT: "Text content",
-        }[self]
+            DNSRecordTypes.A: " IPv4 address ",
+            DNSRecordTypes.AAAA: " IPv6 address ",
+            # DNSRecordTypes.CNAME: " Target hostname ",
+            # DNSNRecordTypes.MX: " Mail server ",
+            # DNSRecordTypes.TXT: " Text content ",
+        }.get(self, "Content")
 
     @property
     def help_text(self) -> str:
         return {
             DNSRecordTypes.A: "Example: 192.0.2.10",
-            DNSRecordTypes.AAAA: "Example: 2001:db8::1",
+            DNSRecordTypes.AAAA: "Example: 2001:db8::1234:5678",
             # DNSRecordTypes.CNAME: "Example: example.com",
             # DNSRecordTypes.MX: "Example: mail.example.com",
             # DNSRecordTypes.TXT: "Example: v=spf1 include:example.com ~all",
-        }[self]
+        }.get(self, "")
 
     @property
     def validator(self):
