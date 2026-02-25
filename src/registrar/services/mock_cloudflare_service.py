@@ -23,6 +23,10 @@ fake = Faker()
 class MockCloudflareService:
     _instance = None
     _mock_context = None
+    fake_zone_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
+    fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
+    existing_account_id = "a1234"
+    existing_domain_name = "exists.gov"
 
     def __new__(cls):
         if cls._instance is None:
