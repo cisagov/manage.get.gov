@@ -843,7 +843,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         to display corresponding values in the table rows"""
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
-            record.form = DomainDNSRecordForm(initial=data_dict)
+            record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -898,7 +898,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 raise Exception(f"create dns record called for domain {self.object.name}")
 
             form_record_data = {
-                "type": "A",
+                "type": form.cleaned_data["type"],
                 "name": form.cleaned_data["name"],  # record name
                 "content": form.cleaned_data["content"],  # IPv4
                 "ttl": int(form.cleaned_data["ttl"]),
@@ -922,6 +922,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     {"status": "error", "message": "DNS zone does not exist."},
                     status=400,
                 )
+            if not nameservers:
+                logger.error(f"No nameservers found in DB for domain {domain_name}")
+                return JsonResponse(
+                    {"status": "error", "message": "DNS nameservers not available"},
+                    status=400,
+                )
 
             # post a new record to the DNS hosting provider and save it in our database
             record_response = self.dns_host_service.create_and_save_record(
@@ -931,8 +937,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
             self.dns_record = record_response["result"]
             dns_name = self.dns_record["name"]
+            dns_type = record_response["result"]["type"]
 
-            messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+            messages.success(request, f"DNS {dns_type} record '{dns_name}' created successfully.")
             context_dns_record.set(self.dns_record)
 
         except APIError as e:
