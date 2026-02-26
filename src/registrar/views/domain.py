@@ -897,13 +897,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
             if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
                 raise Exception(f"create dns record called for domain {self.object.name}")
 
-                form_record_data = {
-                    "type": form.cleaned_data["type"],
-                    "name": form.cleaned_data["name"],  # record name
-                    "content": form.cleaned_data["content"],  # IPv4
-                    "ttl": int(form.cleaned_data["ttl"]),
-                    "comment": form.cleaned_data.get("comment", ""),
-                }
+            form_record_data = {
+                "type": form.cleaned_data["type"],
+                "name": form.cleaned_data["name"],  # record name
+                "content": form.cleaned_data["content"],  # IPv4
+                "ttl": int(form.cleaned_data["ttl"]),
+                "comment": form.cleaned_data.get("comment", ""),
+            }
 
             domain_name = self.object.name
 
@@ -917,29 +917,35 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     status=400,
                 )
 
-                    if not nameservers:
-                        logger.error(f"No nameservers found in DB for domain {domain_name}")
-                        return JsonResponse(
-                            {"status": "error", "message": "DNS nameservers not available"},
-                            status=400,
-                        )
-                    try:
-                        self.dns_host_service.register_nameservers(zone.name, nameservers)
-                    except (RegistryError, RegistrySystemError, Exception) as e:
-                        logger.error(f"Error updating registry: {e}")
-                        # Don't raise an error here in order to bypass blocking error in local dev
+            if not x_zone_id:
+                return JsonResponse(
+                    {"status": "error", "message": "DNS zone does not exist."},
+                    status=400,
+                )
+            if not nameservers:
+                logger.error(f"No nameservers found in DB for domain {domain_name}")
+                return JsonResponse(
+                    {"status": "error", "message": "DNS nameservers not available"},
+                    status=400,
+                )
 
-                    # post a new record
-                    try:
-                        x_zone_id, _ = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
-                        record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
-                        logger.info(f"Created DNS record: {record_response['result']}")
-                        self.dns_record = record_response["result"]
-                        dns_name = record_response["result"]["name"]
-                        dns_type = record_response["result"]["type"]
-                        messages.success(request, f"DNS {dns_type} record '{dns_name}' created successfully.")
-                    except APIError as e:
-                        logger.error(f"API error in view: {str(e)}")
+            # post a new record to the DNS hosting provider and save it in our database
+            record_response = self.dns_host_service.create_and_save_record(
+                x_zone_id,
+                form_record_data,
+            )
+
+            self.dns_record = record_response["result"]
+            dns_name = self.dns_record["name"]
+            dns_type = record_response["result"]["type"]
+
+            messages.success(request, f"DNS {dns_type} record '{dns_name}' created successfully.")
+            context_dns_record.set(self.dns_record)
+
+        except APIError as e:
+            logger.error(f"DNS record creation failed, API error in view {e}")
+            messages.error(request, "Failed to create DNS record.")
+            self.dns_record = None
 
         finally:
             self.client.close()
