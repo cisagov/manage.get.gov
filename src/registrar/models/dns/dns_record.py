@@ -2,11 +2,13 @@ from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_ipv4_address
 from registrar.validations import validate_dns_name
-from registrar.utility.enums import DNSRecordTypes
 
 
 class DnsRecord(TimeStampedModel):
+    class RecordTypes(models.TextChoices):
+        A = "a", "A"
 
     dns_zone = models.ForeignKey("DnsZone", on_delete=models.CASCADE, related_name="records")
 
@@ -14,7 +16,7 @@ class DnsRecord(TimeStampedModel):
         "registrar.VendorDnsRecord", through="DnsRecord_VendorDnsRecord", related_name="records"
     )  # type: ignore
 
-    type = models.CharField(choices=DNSRecordTypes.choices)
+    type = models.CharField(choices=RecordTypes.choices)
 
     name = models.CharField(
         max_length=255,
@@ -42,12 +44,10 @@ class DnsRecord(TimeStampedModel):
         if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
 
-        record_type = DNSRecordTypes(self.type)
-        validator = record_type.validator
-
-        if validator and self.content:
+        # A record-specific validation
+        if self.type == self.RecordTypes.A and self.content:
             try:
-                validator(self.content)
+                validate_ipv4_address(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
 

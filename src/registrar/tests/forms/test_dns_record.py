@@ -2,7 +2,6 @@ from django.test import TestCase
 
 from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
-from registrar.utility.enums import DNSRecordTypes
 
 
 class BaseDomainDNSRecordFormTest(TestCase):
@@ -13,16 +12,12 @@ class BaseDomainDNSRecordFormTest(TestCase):
             dns_account=self.account,
             domain=self.domain,
         )
-        self.VALID_CONTENT_BY_TYPE = {
-            "A": "192.0.2.10",
-            "AAAA": "2001:db8::1234:5678",
-        }
 
-    def valid_form_data_for_record_type(self, record_type, content):
+    def valid_form_data_for_a_record(self):
         return {
-            "type": record_type,
+            "type": "A",
             "name": "www",
-            "content": content,
+            "content": "1.1.1.1",
             "ttl": 300,
             "comment": "testing comment",
         }
@@ -37,11 +32,8 @@ class BaseDomainDNSRecordFormTest(TestCase):
     def assert_dns_name_errors(self, name_value, expected_messages):
         """
         Helper to assert DNS name errors are raised from validate_dns_name in validations.py
-
-        This method uses only A type records rather than iterating over multiple record types,
-        since the name validations are shared between each record type.
         """
-        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data = self.valid_form_data_for_a_record()
         data["name"] = name_value
 
         form = self.make_form(data)
@@ -55,27 +47,20 @@ class BaseDomainDNSRecordFormTest(TestCase):
 
 class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
-    def setUp(self):
-        super().setUp()
-        self.forms_data = [
-            self.valid_form_data_for_record_type(record_type, content)
-            for record_type, content in self.VALID_CONTENT_BY_TYPE.items()
-        ]
-
     def test_valid_dns_record_form_success(self):
-        for data in self.forms_data:
-            form = self.make_form(data)
-            self.assertTrue(form.is_valid())
+        data = self.valid_form_data_for_a_record()
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
 
     def test_blank_dns_name_throws_error(self):
-        for data in self.forms_data:
-            data["name"] = ""
+        data = self.valid_form_data_for_a_record()
+        data["name"] = ""
 
-            form = self.make_form(data)
+        form = self.make_form(data)
 
-            self.assertFalse(form.is_valid())
-            self.assertIn("name", form.errors)
-            self.assertEqual(form.errors["name"], ["Enter a name for this record."])
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"], ["Enter a name for this record."])
 
     def test_invalid_dns_name_throws_error(self):
         # Testing invalid first character
@@ -91,26 +76,20 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
         self.assert_dns_name_errors("a" * 64, ["Name must be no more than 63 characters."])
 
-    def test_dns_record_with_invalid_content_throws_error(self):
-        invalid_content_by_type = {
-            "A": "2008:db8:1234:5678",
-            "AAAA": "192.0.2.10",
-        }
+    def test_dns_a_record_with_invalid_ipv4_address_throws_error(self):
+        data = self.valid_form_data_for_a_record()
+        data["content"] = "1000.1.1.1"
 
-        for record_type, bad_content in invalid_content_by_type.items():
-            with self.subTest(record_type=record_type):
-                data = self.valid_form_data_for_record_type(record_type, bad_content)
-                form = self.make_form(data)
+        form = self.make_form(data)
 
-                self.assertFalse(form.is_valid())
-                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
+        self.assertFalse(form.is_valid())
+        self.assertIn("Enter a valid IPv4 address.", form.errors["content"])
 
-    def test_dns_record_with_blank_content_throws_error(self):
-        for record_type, content in self.VALID_CONTENT_BY_TYPE.items():
-            with self.subTest(record_type=record_type):
-                data = self.valid_form_data_for_record_type(record_type, content)
-                data["content"] = ""
-                form = self.make_form(data)
+    def test_dns_a_record_with_blank_ipv4_address_throws_error(self):
+        data = self.valid_form_data_for_a_record()
+        data["content"] = ""
 
-                self.assertFalse(form.is_valid())
-                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("Enter a valid IPv4 address using numbers and periods.", form.errors["content"])
