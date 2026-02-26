@@ -7,7 +7,6 @@ from registrar.models.dns.dns_record import DnsRecord
 from registrar.models.dns.dns_zone import DnsZone
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.enums import DNSRecordTypes
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
+                        type=DnsRecord.RecordTypes.A,
                         name="@",
                         ttl=3600,
                         content=fake.ipv4(),
@@ -74,7 +73,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
+                        type=DnsRecord.RecordTypes.A,
                         name="www",
                         ttl=3600,
                         content=fake.ipv4(),
@@ -87,7 +86,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
+                        type=DnsRecord.RecordTypes.A,
                         name="mail",
                         ttl=7200,
                         content=fake.ipv4(),
@@ -100,7 +99,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
+                        type=DnsRecord.RecordTypes.A,
                         name="api",
                         ttl=1800,
                         content=fake.ipv4(),
@@ -113,7 +112,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
+                        type=DnsRecord.RecordTypes.A,
                         name="dev",
                         ttl=300,
                         content=fake.ipv4(),

@@ -184,7 +184,8 @@ th {
 
     // Allow word to break on name column if its long
     td:nth-child(2){
-      overflow-wrap: break-word;
+      word-wrap: break-word;
+      overflow: break-word;
       white-space: normal;
     }
 
@@ -202,8 +203,6 @@ th {
     th:nth-child(3),
     td:nth-child(3){
       width:20%;
-      overflow-wrap: break-word;
-      white-space: normal;
     }
 
 

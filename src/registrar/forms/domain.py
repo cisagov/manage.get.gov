@@ -2,10 +2,7 @@
 
 import logging
 from django import forms
-from django.core.validators import (
-    RegexValidator,
-    MaxLengthValidator,
-)
+from django.core.validators import RegexValidator, MaxLengthValidator, validate_ipv4_address
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
@@ -28,9 +25,7 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
-from registrar.utility.enums import DNSRecordTypes
 
-import json
 import re
 
 logger = logging.getLogger(__name__)
@@ -791,23 +786,6 @@ class DomainDNSRecordForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        record_type = self.data.get("type") or self.initial.get("type")
-
-        if record_type:
-            rt = DNSRecordTypes(record_type)
-            self.fields["content"].label = rt.field_label
-            self.fields["content"].help_text = rt.help_text
-
-        config = {
-            rt.value: {
-                "label": getattr(rt, "field_label", "Content"),
-                "help_text": getattr(rt, "help_text"),
-            }
-            for rt in DNSRecordTypes
-        }
-
-        self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
-
     class Meta:
         model = DnsRecord
         fields = ["type", "name", "content", "ttl", "comment"]
@@ -833,16 +811,8 @@ class DomainDNSRecordForm(forms.ModelForm):
         error_messages = {"name": {"required": "Enter a name for this record."}}
 
     type = forms.ChoiceField(
-        # TODO: choices has been temporarily hard-coded for user testing.
-        # This is to prevent the need for multiple migrations.
-        # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
-        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[
-            ("", "- Select -"),
-            ("A", "A"),
-            ("AAAA", "AAAA"),
-        ],
+        choices=[("", "- Select -"), ("a", "A")],
         required=True,
         widget=forms.Select(
             attrs={
@@ -854,14 +824,15 @@ class DomainDNSRecordForm(forms.ModelForm):
     )
 
     content = forms.CharField(
-        label="Content",
-        required=False,
-        help_text="Select a type for help text",
+        label="IPv4 Address",
+        required=True,
+        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
+        help_text="Example: 192.0.2.10",
+        error_messages={"required": "Enter a valid IPv4 address using numbers and periods."},
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
                 "hide_character_count": True,
-                "required": "required",
             }
         ),
     )
@@ -889,17 +860,13 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+
         record_type = cleaned_data.get("type")
         content = cleaned_data.get("content")
 
-        if record_type:
-            record = DNSRecordTypes(record_type)
-            if record.validator:
-                try:
-                    record.validator(content)
-                except ValidationError:
-                    self.add_error("content", record.error_message)
-            elif not content:
-                self.add_error("content", record.error_message)
-
+        if record_type == "a" and content:
+            try:
+                validate_ipv4_address(content)
+            except ValidationError as e:
+                self.add_error("content", e)
         return cleaned_data

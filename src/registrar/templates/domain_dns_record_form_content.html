@@ -5,19 +5,15 @@
 
 <div class="grid-row grid-gap">
     <div class="grid-col-3">
-        {% input_with_errors form.type %}
+        {% input_with_errors form.type %}        
     </div>
 </div>
 
 <div x-cloak x-show="recordType">
-    {% with add_group_class="usa-form-group--unstyled-error" %}
-        {% input_with_errors form.name %}    
-    {% endwith %}
+    {% input_with_errors form.name %}    
     <div class="grid-row grid-gap flex-align-end">
         <div class="grid-col-9">
-            {% with add_group_class="usa-form-group--unstyled-error" %}
-                {% input_with_errors form.content %}    
-            {% endwith %}
+            {% input_with_errors form.content %}
         </div>
         <div class="grid-col-3">
             {% input_with_errors form.ttl %}        
