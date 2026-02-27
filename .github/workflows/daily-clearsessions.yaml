@@ -1,0 +1,20 @@
+name: Clear expired session data
+run-name: Clear expired session data
+on:
+  schedule:
+    # Runs every day at 6:18 AM UTC/1:18 AM EST
+    - cron: "18 6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  clear-sessions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run clearsessions
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets.CF_STABLE_USERNAME }}
+          cf_password: ${{ secrets.CF_STABLE_PASSWORD }}
+          cf_org: cisa-dotgov
+          cf_space: stable
+          cf_command: "run-task getgov-stable --command 'python manage.py clearsessions' --name clearsessions"
