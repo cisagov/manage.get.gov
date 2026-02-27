@@ -110,7 +110,9 @@ class CloudflareService:
             logger.error(f"Failed to create zone {zone_name} for account {x_account_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while creating zone: {e}")
+            logger.error(
+                f"Error {e.response.status_code} while creating zone {zone_name}: {e}\nResponse body: {e.response.text}"
+            )
             raise
         return resp.json()
 
