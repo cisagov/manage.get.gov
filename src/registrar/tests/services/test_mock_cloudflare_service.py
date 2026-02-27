@@ -172,3 +172,14 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         with self.assertRaises(HTTPStatusError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+
+    def test_mock_update_account_dns_settings_response(self):
+        account_id = self.mock_api_service.new_account_id
+
+        resp = self.service.update_account_dns_settings(account_id)
+
+        self.assertTrue(resp.success)
+        self.assertEqual(resp.result["zone_defaults"]["zone_mode"], "dns_only")
+        self.assertEqual(resp.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(resp.errors, [])
+        self.assertEqual(resp.messages, [])

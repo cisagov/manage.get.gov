@@ -64,6 +64,27 @@ class MockCloudflareService:
         )
         self._mock_context.post("/accounts").mock(side_effect=self._mock_create_account_response)
 
+        # PATCH account dns_settings
+        self._mock_context.patch(url__regex=r"/accounts/[\w-]+/dns_settings").mock(
+            side_effect=self._mock_update_account_dns_settings_response
+        )
+
+    def _mock_update_account_dns_settings_response(self, request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "result": {
+                    "zone_defaults": {
+                        "zone_mode": "dns_only",
+                        "nameservers": {"type": "custom.tenant"},
+                    }
+                },
+                "success": True,
+                "errors": [],
+                "messages": [],
+            },
+        )
+
     def _register_zone_mocks(self):
         self._mock_context.get("/zones", params=f"account.id={self.existing_account_id}").mock(
             side_effect=self._mock_get_account_zones_response
