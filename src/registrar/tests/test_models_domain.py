@@ -868,10 +868,18 @@ class TestRegistrantContacts(MockEppLib):
             And the registrant is the admin on a domain
         """
         super().setUp()
+        self.requester, _ = User.objects.get_or_create(
+            username="requester",
+            defaults={"email": "requester@example.com"},
+        )
         # Creates a domain with no contact associated to it
         self.domain, _ = Domain.objects.get_or_create(name="security.gov")
         # Creates a domain with an associated contact
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        # DomainInformation is required
+        DomainInformation.objects.get_or_create(domain=self.domain, defaults={"requester": self.requester})
+        DomainInformation.objects.get_or_create(domain=self.domain_contact, defaults={"requester": self.requester})
         DF = common.DiscloseField
         excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
@@ -1122,12 +1130,11 @@ class TestRegistrantContacts(MockEppLib):
                 on all fields except security
         """
         with less_console_noise():
-            # Generates a domain with four existing contacts
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
-            # Contact setup
             expected_admin = domain.get_default_administrative_contact()
             expected_admin.email = self.mockAdministrativeContact.email
-            expected_registrant = domain.get_default_registrant_contact()
+            expected_registrant = PublicContact.get_default_registrant()
+            expected_registrant.domain = domain
             expected_registrant.email = self.mockRegistrantContact.email
             expected_security = domain.get_default_security_contact()
             expected_security.email = self.mockSecurityContact.email
@@ -1143,14 +1150,31 @@ class TestRegistrantContacts(MockEppLib):
                 (expected_security, domain.security_contact),
                 (expected_tech, domain.technical_contact),
             ]
-            # Test for each contact
-            for contact in contacts:
-                expected_contact = contact[0]
-                actual_contact = contact[1]
+            for expected_contact, actual_contact in contacts:
                 if expected_contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
                     disclose_fields = self.all_disclose_fields - {"email"}
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact, disclose=False, disclose_fields=disclose_fields
+                    )
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
+                    DF = common.DiscloseField
+                    disclose_fields_by_value = {field.value: field for field in DF}
+                    registrant_field_values = ("org", "city", "sp", "cc")
+                    if all(value in disclose_fields_by_value for value in registrant_field_values):
+                        registrant_disclose_fields = {
+                            disclose_fields_by_value[value] for value in registrant_field_values
+                        }
+                    else:
+                        registrant_disclose_fields = {
+                            field
+                            for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                            if field is not None
+                        }
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact,
+                        disclose=True,
+                        disclose_fields=registrant_disclose_fields,
+                        disclose_types={field: "loc" for field in registrant_disclose_fields},
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
@@ -1165,8 +1189,31 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact, disclose=False, disclose_fields=self.all_disclose_fields
                     )
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-                # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)
+
+    def test_registrant_discloses_org_city_state_country_only(self):
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="example.gov")
+            DomainInformation.objects.get_or_create(domain=domain, defaults={"requester": self.requester})
+            registrant = PublicContact.get_default_registrant()
+            registrant.domain = domain
+
+            disclose = domain._disclose_fields(registrant)
+            DF = common.DiscloseField
+            disclose_fields_by_value = {field.value: field for field in DF}
+            registrant_field_values = ("org", "city", "sp", "cc")
+            if all(value in disclose_fields_by_value for value in registrant_field_values):
+                expected_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
+            else:
+                expected_fields = {
+                    field
+                    for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                    if field is not None
+                }
+
+            self.assertTrue(disclose.flag)
+            self.assertEqual(disclose.fields, expected_fields)
+            self.assertEqual(disclose.types, {field: "loc" for field in expected_fields})
 
     def test_convert_public_contact_to_epp(self):
         with less_console_noise():

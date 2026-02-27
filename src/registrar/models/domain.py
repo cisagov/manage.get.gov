@@ -1575,13 +1575,6 @@ class Domain(TimeStampedModel, DomainHelper):
         contact.domain = self
         return contact
 
-    def get_default_registrant_contact(self):
-        """Gets the default registrant contact."""
-        logger.info("get_default_security_contact() -> Adding default registrant contact")
-        contact = PublicContact.get_default_registrant()
-        contact.domain = self
-        return contact
-
     def get_contact_in_keys(self, contacts, contact_type):
         """Gets a contact object.
 
@@ -1667,6 +1660,30 @@ class Domain(TimeStampedModel, DomainHelper):
     def addRegistrant(self):
         """Adds a default registrant contact"""
         registrant = PublicContact.get_default_registrant()
+
+        domain_info = getattr(self, "domain_info", None)
+        if not domain_info:
+            raise ValueError("domain_info is None: DomainInformation is required for default registrant contact")
+
+        is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
+
+        registrant_org = None
+        if is_federal:
+            federal_agency = domain_info.converted_federal_agency
+            registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
+        else:
+            registrant_org = domain_info.converted_organization_name
+
+        if registrant_org:
+            registrant.org = registrant_org
+
+        if domain_info.converted_city:
+            registrant.city = domain_info.converted_city
+
+        state_territory = getattr(domain_info, "state_territory", None)
+        if state_territory:
+            registrant.sp = state_territory
+
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
@@ -1878,6 +1895,37 @@ class Domain(TimeStampedModel, DomainHelper):
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
         all_disclose_fields = {field for field in DF}
+        disclose_fields_by_value = {field.value: field for field in DF}
+
+        # Registrant contacts should publish only org + city/state/country (not full street address).
+        if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
+            registrant_field_values = ("org", "city", "sp", "cc")
+            if all(value in disclose_fields_by_value for value in registrant_field_values):
+                disclose_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
+                return epp.Disclose(
+                    flag=True,
+                    fields=disclose_fields,
+                    types={field: "loc" for field in disclose_fields},
+                )
+
+            # Older epplib versions may not expose granular city/state/country disclose fields.
+            # Fall back to the closest supported disclosure format.
+            disclose_fields = {
+                field
+                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                if field is not None
+            }
+            disclose_types = {
+                field: "loc"
+                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                if field is not None
+            }
+            return epp.Disclose(
+                flag=True,
+                fields=disclose_fields,
+                types=disclose_types,
+            )
+
         disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
 
         fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
