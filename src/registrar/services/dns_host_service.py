@@ -63,13 +63,8 @@ class DnsHostService:
             logger.info("Already has an existing vendor account")
             return x_account_id
 
-        cf_account_data = self._find_existing_account_in_cf(account_name)
-        has_cf_account = bool(cf_account_data)
-        if has_cf_account:
-            return self.create_db_account({"result": cf_account_data})
         # If not in DB, check if account exists in vendor (CF) service
         cf_account_response = self._find_existing_account_in_cf(account_name)
-
         if cf_account_response:
             logger.info("Found existing account in Cloudflare")
             normalized_account = self._normalize_cf_account_response(cf_account_response)
