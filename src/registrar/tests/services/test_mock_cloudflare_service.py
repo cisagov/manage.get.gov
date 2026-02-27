@@ -72,6 +72,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         super().tearDownClass()
 
     def setUp(self):
+        self.mock_api_service.reset()
         client = Client()
         self.service = CloudflareService(client)
 
@@ -82,18 +83,11 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(result[2]["account_pubname"], make_dns_account_name("exists.gov"))
 
     def test_mock_get_account_zones_response(self):
-        account_id = self.mock_api_service.new_account_id
-        resp = self.service.get_account_zones(account_id)
-        result = resp["result"]
-        self.assertEqual(len(result), 2)
-        for zone in result:
-            self.assertNotEquals(zone.get("name"), "exists.gov")
-
         existing_account_id = self.mock_api_service.existing_account_id
-        resp2 = self.service.get_account_zones(existing_account_id)
-        result2 = resp2["result"]
-        self.assertEqual(len(result2), 1)
-        self.assertEquals(result2[0].get("name"), "exists.gov")
+        resp = self.service.get_account_zones(existing_account_id)
+        result = resp["result"]
+        self.assertEqual(len(result), 1)
+        self.assertEquals(result[0].get("name"), "exists.gov")
 
     def test_mock_create_cf_account_response(self):
         account_name = make_dns_account_name("equity.gov")
@@ -103,6 +97,12 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         self.assertEquals(result["name"], account_name)
 
+        # check if new account was added to the get accounts mock
+        resp = self.service.get_page_accounts(1, 50)
+        result = resp["result"]
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result[3]["account_pubname"], account_name)
+
     def test_mock_create_cf_zone_response(self):
         zone_name = "peace.gov"
         account_id = "1359"
@@ -111,6 +111,12 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         result = resp["result"]
         self.assertEquals(result["account"]["id"], account_id)
         self.assertEquals(result["name"], zone_name)
+
+        # check if new zone was added to the get zones mock
+        resp = self.service.get_account_zones(account_id)
+        result = resp["result"]
+        self.assertEqual(len(result), 2)
+        self.assertEquals(result[1].get("name"), zone_name)
 
     def test_mock_create_dns_record_response(self):
         zone_id = self.mock_api_service.fake_zone_id
