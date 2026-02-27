@@ -76,7 +76,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         client = Client()
         self.service = CloudflareService(client)
 
-    def test_mock_get_accounts_page_response(self):
+    def test_mock_get_page_accounts_response(self):
         resp = self.service.get_page_accounts(1, 50)
         result = resp["result"]
         self.assertEqual(len(result), 3)
