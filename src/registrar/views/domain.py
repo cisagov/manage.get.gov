@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
+from django.http import Http404
 from waffle import flag_is_active
 from registrar.utility.errors import APIError
 from registrar.decorators import (
@@ -35,6 +36,7 @@ from registrar.models import (
     UserDomainRole,
     PublicContact,
     DnsRecord,
+    domain,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -823,6 +825,14 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
 
+    def dispatch(self, request, *args, **kwargs):
+        domain = get_object_or_404(Domain, pk=kwargs['domain_pk'])  # TODO: figure out why _get_domain isn't working here and if we can use it instead of get_object_or_404
+        self.object = domain  # Set the domain object for use in other methods
+        if not domain.is_enrolled_in_dns_hosting:
+            raise Http404("Domain is not enrolled in DNS hosting")
+
+        return super().dispatch(request, *args, **kwargs)
+
     def get_breadcrumb_items(self):
         return [
             {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
@@ -877,9 +887,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission."""
-        self.object = self.get_object()
         form = self.get_form()
-        self._get_domain(request)
 
         if not form.is_valid():
             errors = self.get_form_errors(form)
