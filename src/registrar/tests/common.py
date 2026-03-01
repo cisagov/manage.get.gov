@@ -10,7 +10,6 @@ from typing import List, Dict
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
-from django.utils.timezone import make_aware
 from datetime import date, datetime, timedelta
 from django.utils import timezone
 from django.utils.html import strip_spaces_between_tags
@@ -51,6 +50,11 @@ from registrar.models.utility.contact_error import ContactError, ContactErrorCod
 from api.tests.common import less_console_noise_decorator
 
 logger = logging.getLogger(__name__)
+
+# Default mocked EPP "creation date" (cr_date). This is intentionally set in the
+# future relative to import time so that domains created during tests ("now") will
+# still satisfy DB ordering constraints when registry dates are synced onto them.
+DEFAULT_EPP_CR_DATE = timezone.now() + timedelta(minutes=10)
 
 
 def get_ap_style_month(month):
@@ -1323,7 +1327,7 @@ class MockEppLib(TestCase):
             self,
             id,
             email,
-            cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+            cr_date=DEFAULT_EPP_CR_DATE,
             pw="thisisnotapassword",
         ):
             fake = info.InfoContactResultData(
@@ -1361,7 +1365,7 @@ class MockEppLib(TestCase):
 
     mockDataInfoDomain = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -1387,7 +1391,7 @@ class MockEppLib(TestCase):
 
     mockDataInfoDomainSubdomain = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.meoward.gov"],
         statuses=[
@@ -1399,7 +1403,7 @@ class MockEppLib(TestCase):
 
     mockDataInfoDomainSubdomainAndIPAddress = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.meow.gov"],
         statuses=[
@@ -1412,7 +1416,7 @@ class MockEppLib(TestCase):
 
     mockDataInfoDomainNotSubdomainNoIP = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.meow.com"],
         statuses=[
@@ -1424,7 +1428,7 @@ class MockEppLib(TestCase):
 
     mockDataInfoDomainSubdomainNoIP = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.subdomainwoip.gov"],
         statuses=[
@@ -1436,7 +1440,7 @@ class MockEppLib(TestCase):
 
     mockDataExtensionDomain = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[common.DomainContact(contact="123", type=PublicContact.ContactTypeChoices.SECURITY)],
         hosts=["fake.host.com"],
         statuses=[
@@ -1446,14 +1450,14 @@ class MockEppLib(TestCase):
         ex_date=date(2023, 11, 15),
     )
     mockDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-        id="123", email="123@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
+        id="123", email="123@mail.gov", cr_date=DEFAULT_EPP_CR_DATE, pw="lastPw"
     )
     mockDataSecurityContact = mockDataInfoDomain.dummyInfoContactResultData(
-        id="securityContact", email="security@mail.gov", cr_date=datetime(2023, 5, 25, 19, 45, 35), pw="lastPw"
+        id="securityContact", email="security@mail.gov", cr_date=DEFAULT_EPP_CR_DATE, pw="lastPw"
     )
     InfoDomainWithContacts = fakedEppObject(
         "fakePw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -1479,7 +1483,7 @@ class MockEppLib(TestCase):
 
     InfoDomainWithDefaultSecurityContact = fakedEppObject(
         "fakepw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="defaultSec",
@@ -1494,11 +1498,11 @@ class MockEppLib(TestCase):
     )
 
     mockVerisignDataInfoContact = mockDataInfoDomain.dummyInfoContactResultData(
-        "defaultVeri", "registrar@dotgov.gov", datetime(2023, 5, 25, 19, 45, 35), "lastPw"
+        "defaultVeri", "registrar@dotgov.gov", DEFAULT_EPP_CR_DATE, "lastPw"
     )
     InfoDomainWithVerisignSecurityContact = fakedEppObject(
         "fakepw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="defaultVeri",
@@ -1514,7 +1518,7 @@ class MockEppLib(TestCase):
 
     InfoDomainWithDefaultTechnicalContact = fakedEppObject(
         "fakepw",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="defaultTech",
@@ -1537,14 +1541,14 @@ class MockEppLib(TestCase):
 
     infoDomainNoContact = fakedEppObject(
         "security",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=["fake.host.com"],
     )
 
     infoDomainSharedHost = fakedEppObject(
         "sharedHost.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[
             "ns1.sharedhost.com",
@@ -1553,7 +1557,7 @@ class MockEppLib(TestCase):
 
     infoDomainThreeHosts = fakedEppObject(
         "threenameserversdomain.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[
             "ns1.my-nameserver-1.com",
@@ -1564,7 +1568,7 @@ class MockEppLib(TestCase):
 
     infoDomainFourHosts = fakedEppObject(
         "fournameserversdomain.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[
             "ns1.my-nameserver-1.com",
@@ -1576,7 +1580,7 @@ class MockEppLib(TestCase):
 
     infoDomainTwelveHosts = fakedEppObject(
         "twelvenameserversdomain.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[
             "ns1.my-nameserver-1.com",
@@ -1596,7 +1600,7 @@ class MockEppLib(TestCase):
 
     infoDomainThirteenHosts = fakedEppObject(
         "thirteennameserversdomain.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[
             "ns1.my-nameserver-1.com",
@@ -1617,43 +1621,43 @@ class MockEppLib(TestCase):
 
     infoDomainNoHost = fakedEppObject(
         "my-nameserver.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[],
     )
 
     infoDomainTwoHosts = fakedEppObject(
         "my-nameserver.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=["ns1.my-nameserver-1.com", "ns1.my-nameserver-2.com"],
     )
 
     mockDataInfoHosts = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime(2023, 8, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         addrs=[common.Ip(addr="1.2.3.4"), common.Ip(addr="2.3.4.5")],
     )
 
     mockDataInfoHosts1IP = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime(2023, 8, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         addrs=[common.Ip(addr="2.0.0.8")],
     )
 
     mockDataInfoHostsNotSubdomainNoIP = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime(2023, 8, 26, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         addrs=[],
     )
 
     mockDataInfoHostsSubdomainNoIP = fakedEppObject(
         "lastPw",
-        cr_date=make_aware(datetime(2023, 8, 27, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         addrs=[],
     )
 
-    mockDataHostChange = fakedEppObject("lastPw", cr_date=make_aware(datetime(2023, 8, 25, 19, 45, 35)))
+    mockDataHostChange = fakedEppObject("lastPw", cr_date=DEFAULT_EPP_CR_DATE)
     addDsData1 = {
         "keyTag": 1234,
         "alg": 3,
@@ -1685,7 +1689,7 @@ class MockEppLib(TestCase):
 
     infoDomainHasIP = fakedEppObject(
         "nameserverwithip.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -1710,7 +1714,7 @@ class MockEppLib(TestCase):
 
     justNameserver = fakedEppObject(
         "justnameserver.com",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -1733,7 +1737,7 @@ class MockEppLib(TestCase):
 
     noNameserver = fakedEppObject(
         "nonameserver.com",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[
             common.DomainContact(
                 contact="securityContact",
@@ -1753,7 +1757,7 @@ class MockEppLib(TestCase):
 
     infoDomainCheckHostIPCombo = fakedEppObject(
         "nameserversubdomain.gov",
-        cr_date=make_aware(datetime(2023, 5, 25, 19, 45, 35)),
+        cr_date=DEFAULT_EPP_CR_DATE,
         contacts=[],
         hosts=[
             "ns1.nameserversubdomain.gov",
@@ -2060,6 +2064,57 @@ class MockEppLib(TestCase):
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
+
+        # Many tests create Domain rows "now" and then trigger an EPP InfoDomain
+        # fetch which writes registry creation date (cr_date) into the model.
+        # Keep the mocked cr_date safely after the registrar-side record creation
+        # time so DB constraints on ordering remain valid.
+        self._refresh_mock_cr_dates()
+
+    def _refresh_mock_cr_dates(self):
+        """Refresh per-test EPP mock cr_date values.
+
+        If a test needs a specific cr_date, set _mock_cr_date_source = "custom" on the
+        object to prevent this method from overwriting it"""
+
+        self.epp_cr_date = timezone.now() + timedelta(minutes=10)
+
+        for value in self._iter_safe_attrs():
+            # Update faked EPP domains that already define cr_date.
+            if isinstance(value, self.fakedEppObject):
+                current = getattr(value, "cr_date", ...)
+                source = getattr(value, "_mock_cr_date_source", None)
+                if source != "custom" and (current is DEFAULT_EPP_CR_DATE or source == "auto"):
+                    value.cr_date = self.epp_cr_date
+                    value._mock_cr_date_source = "auto"
+                continue
+
+            # Update other objects that expose a writable cr_date (e.g., InfoContactResultData).
+            if not hasattr(value, "cr_date"):
+                continue
+
+            try:
+                current = getattr(value, "cr_date")
+                source = getattr(value, "_mock_cr_date_source", None)
+                if source != "custom" and (current is DEFAULT_EPP_CR_DATE or source == "auto"):
+                    value.cr_date = self.epp_cr_date
+                    value._mock_cr_date_source = "auto"
+            except Exception:
+                pass
+
+    def _set_custom_mock_cr_date(self, obj, cr_date):
+        """Set a specific cr_date on a mock object and prevent auto refresh"""
+
+        obj.cr_date = cr_date
+        obj._mock_cr_date_source = "custom"
+
+    def _iter_safe_attrs(self):
+        """Ignore getters that raise."""
+        for attr_name in dir(self):
+            try:
+                yield getattr(self, attr_name)
+            except Exception:
+                continue
 
     def _convertPublicContactToEpp(
         self,
