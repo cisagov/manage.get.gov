@@ -405,7 +405,7 @@ To manually test locally (if not mocking cloudflare):
    - Add env't vars to your .env
    - From localhost:8080 in Enterprise view, go to domains and find one for which you are a domain manager (look for "Manage" under "Action"). Go to that domain's detail page
    - Click on "DNS" on the left nav menu
-   - Click the link below DNSEC: "DNS record creator"
+   - Click "DNS records" on the left nav menu
    - You should see a form for adding DNS records
 
 ### Mocking DNS vendor APIs in local development
