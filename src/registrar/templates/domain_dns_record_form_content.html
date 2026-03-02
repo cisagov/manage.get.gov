@@ -3,7 +3,11 @@
 {% csrf_token %}
 <h2>Add record</h2>
 
-<div class="grid-row grid-gap">
+<div
+    class="grid-row grid-gap"
+    x-init="recordType = $el.querySelector('#id_type')?.value || recordType"
+    x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }"
+>
     <div class="grid-col-3">
         {% input_with_errors form.type %}
     </div>
@@ -32,9 +36,7 @@
     >
         Cancel
     </button>
-    <button
-            class="usa-button"
-        >
+    <button type="submit" class="usa-button">
             Save
     </button>
 </div>

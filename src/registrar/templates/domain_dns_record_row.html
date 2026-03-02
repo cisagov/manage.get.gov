@@ -1,4 +1,4 @@
-<tr id="dnsrecord-row_{{counter}}" :class="showFormId == {{ counter }} ? 'hide-td-borders' : ''">
+<tr id="dnsrecord-row-{{counter}}" :class="showFormId == {{ counter }} ? 'hide-td-borders' : ''">
     <td data-label="Type">
         {{dns_record.type}}
     </td>
@@ -25,7 +25,6 @@
                 Edit 
                 <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
                     <svg
-                        hx-target="#edit-row-{{ counter }}"
                         aria-label="Access edit form"
                         class="usa-icon" 
                         aria-hidden="true" 
@@ -39,7 +38,7 @@
             </button>
             <a 
                 role="button"
-                id="button-trigger-delete-dnsrecord-{{ forloop.counter }}"
+                id="button-trigger-delete-dnsrecord-{{ counter }}"
                 class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
                 >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -76,5 +75,3 @@
         </div>
     </td>
 </tr>
-
-{% include "domain_dns_record_edit_form.html" %}
