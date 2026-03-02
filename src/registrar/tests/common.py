@@ -63,7 +63,7 @@ def get_ap_style_month(month):
         "November": "Nov.",
         "December": "Dec.",
     }
-    return AP_STYLE_MONTH[month]
+    return AP_STYLE_MONTH.get(month)
 
 
 def get_handlers():
