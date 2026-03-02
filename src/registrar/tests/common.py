@@ -52,11 +52,18 @@ from api.tests.common import less_console_noise_decorator
 
 logger = logging.getLogger(__name__)
 
-
+#  https://digital.va.gov/oit-brand-system/ap-styles/#:~:text=of%20the%20above.-,Dates%2C%20Months%2C%20Years%2C%20Days%20of%20the%20Week,-For%20dates%20and
+# Spell out the month unless it is used with a date. When used with a date,
+# abbreviate only the following months: Jan., Feb., Aug., Sept., Oct., Nov., and Dec.
 def get_ap_style_month(month):
     AP_STYLE_MONTH = {
         "January": "Jan.",
         "February": "Feb.",
+        "March": "March",
+        "April": "April",
+        "May": "May",
+        "June": "June",
+        "July": "July",
         "August": "Aug.",
         "September": "Sept.",
         "October": "Oct.",
