@@ -518,7 +518,7 @@
         },
         "fred-epplib": {
             "git": "https://github.com/cisagov/epplib.git",
-            "ref": "4fb0ef451016b439da2b4a5aef9c09747d865533"
+            "ref": "933e5fd6a30bd0362e52d1709a200d636c58f2b6"
         },
         "furl": {
             "hashes": [
