@@ -439,3 +439,42 @@ class DnsHostService:
             # Domain remains unenrolled because transaction rolls back
             raise
         logger.info("Successfully enrolled %s in DNS hosting", domain_name)
+
+    def get_dns_record(self, domain, record_pk: int) -> DnsRecord | None:
+        """Return the DnsRecord for a given pk scoped to the domain's zone."""
+        dns_zone = DnsZone.objects.filter(domain=domain).first()
+        if not dns_zone:
+            return None
+        return DnsRecord.objects.filter(pk=record_pk, dns_zone=dns_zone).first()
+
+    def get_active_vendor_record_id(self, record_obj: DnsRecord) -> str | None:
+        """Return the active vendor record id for a DnsRecord via the join table."""
+        try:
+            link = (
+                RecordsJoin.objects.filter(dns_record=record_obj, is_active=True)
+                .select_related("vendor_dns_record")
+                .first()
+            )
+            if link and link.vendor_dns_record:
+                return link.vendor_dns_record.x_record_id
+        except Exception:
+            logger.exception("Failed to resolve active vendor record id via RecordsJoin")
+        return None
+
+    def has_existing_records(self, domain) -> bool:
+        """Return whether a domain's DNS zone has any existing records."""
+        dns_zone = DnsZone.objects.filter(domain=domain).first()
+        if not dns_zone:
+            return False
+        return DnsRecord.objects.filter(dns_zone=dns_zone).exists()
+
+    def get_dns_record_by_vendor_id(self, x_record_id: str) -> DnsRecord | None:
+        """Return the DnsRecord associated with a vendor record id."""
+        try:
+            vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+            record_link = vendor_dns_record.record_link.filter(is_active=True).select_related("dns_record").first()
+            if record_link and record_link.dns_record:
+                return record_link.dns_record
+        except Exception:
+            logger.exception("Failed to resolve DnsRecord for vendor id %s", x_record_id)
+        return None

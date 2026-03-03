@@ -14,7 +14,6 @@ from django.urls import reverse
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
-from django.db import transaction
 from waffle import flag_is_active
 from registrar.utility.errors import APIError
 from registrar.decorators import (
@@ -36,8 +35,6 @@ from registrar.models import (
     UserDomainRole,
     PublicContact,
     DnsRecord,
-    VendorDnsRecord,
-    DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -905,28 +902,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             "comment": form.cleaned_data.get("comment", ""),
         }
 
-    def _get_dns_record(self, record_pk: int) -> DnsRecord | None:
-        dns_zone = DnsZone.objects.filter(domain=self.object).first()
-        if not dns_zone:
-            return None
-        return DnsRecord.objects.filter(pk=record_pk, dns_zone=dns_zone).first()
-
-    def _get_active_vendor_record_id(self, record_obj: DnsRecord) -> str | None:
-        """Return the active vendor record id for a registrar DnsRecord.
-        """
-        try:
-            link = (
-                RecordsJoin.objects.filter(dns_record=record_obj, is_active=True)
-                .select_related("vendor_dns_record")
-                .first()
-            )
-            if link and link.vendor_dns_record:
-                return link.vendor_dns_record.x_record_id
-        except Exception:
-            logger.exception("Failed to resolve active vendor record id via RecordsJoin")
-
-        return None
-
     def _attach_form(self, record_obj: DnsRecord, *, bound_form=None) -> None:
         """Attach a form to the record for template rendering.
 
@@ -952,7 +927,37 @@ class DomainDNSRecordsView(DomainFormBaseView):
             headers={"HX-TRIGGER": json.dumps({"messagesRefresh": ""})},
             status=status,
         )
-    
+
+    def _handle_edit(self, request, record_pk: int, x_zone_id: str, form_record_data: dict) -> int:
+        """Update an existing DNS record and prepare the DB-backed row for rendering."""
+        record_obj = self.dns_host_service.get_dns_record(self.object, record_pk)
+        if not record_obj:
+            messages.error(request, "Could not find the DNS record to update.")
+            raise GenericError(GenericErrorCodes.GENERIC_ERROR)
+
+        vendor_record_id = self.dns_host_service.get_active_vendor_record_id(record_obj)
+        if not vendor_record_id:
+            messages.error(request, "This DNS record is missing a vendor id and cannot be updated.")
+            raise GenericError(GenericErrorCodes.GENERIC_ERROR)
+
+        record_response = self.dns_host_service.update_and_save_record(
+            x_zone_id,
+            vendor_record_id,
+            form_record_data,
+        )
+
+        vendor_result = record_response["result"]
+        dns_name = vendor_result.get("name") or form_record_data["name"]
+        record_type = form_record_data["type"]
+        messages.success(request, f"DNS {record_type} record '{dns_name}' updated successfully.")
+        context_dns_record.set(vendor_result)
+
+        # Refresh with db instance for templating (edit form requires BoundFields)
+        record_obj.refresh_from_db()
+        self._attach_form(record_obj)
+        self.dns_record = record_obj
+        return record_obj.pk
+
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update) for DNS records via htmx."""
         self.object = self.get_object()
@@ -968,7 +973,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
             # Edit: re-render the edit row with validation errors via OOB swap.
             if record_pk:
-                record_obj = self._get_dns_record(record_pk)
+                record_obj = self.dns_host_service.get_dns_record(self.object, record_pk)
                 if record_obj:
                     self._attach_form(record_obj, bound_form=form)
                     hx_trigger_events = json.dumps({"messagesRefresh": ""})
@@ -1018,60 +1023,21 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
             # EDIT
             if record_pk:
-                record_obj = self._get_dns_record(record_pk)
-                if not record_obj:
-                    messages.error(request, "Could not find the DNS record to update.")
-                    return self._error_response(request, status=400)
-
-                vendor_record_id = self._get_active_vendor_record_id(record_obj)
-                if not vendor_record_id:
-                    messages.error(request, "This DNS record is missing a vendor id and cannot be updated.")
-                    return self._error_response(request, status=400)
-
-                record_response = self.dns_host_service.update_and_save_record(
-                    x_zone_id,
-                    vendor_record_id,
-                    form_record_data,
-                )
-
-                vendor_result = record_response["result"]
-                dns_name = vendor_result.get("name") or form_record_data["name"]
-                messages.success(request, f"DNS A record '{dns_name}' updated successfully.")
-                context_dns_record.set(vendor_result)
-
-                # Refresh DB-backed instance for templating (edit form requires BoundFields)
-                record_obj.refresh_from_db()
-                self._attach_form(record_obj)
-
-                self.dns_record = record_obj
-                counter = record_obj.pk
+                counter = self._handle_edit(request, record_pk, x_zone_id, form_record_data)
                 is_edit = True
 
             # CREATE
             else:
                 # If there are no existing records yet, the response template should build the table
-                dns_zone = DnsZone.objects.filter(domain=self.object).first()
-                is_first_record = (not DnsRecord.objects.filter(dns_zone=dns_zone).exists()) if dns_zone else True
-
-                record_response = self.dns_host_service.create_and_save_record(
-                    x_zone_id,
-                    form_record_data,
-                )
-
+                is_first_record = not self.dns_host_service.has_existing_records(self.object)
+                record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
                 vendor_result = record_response["result"]
                 dns_name = vendor_result.get("name") or form_record_data["name"]
+                record_type = form_record_data["type"]
+                messages.success(request, f"DNS {record_type} record '{dns_name}' updated successfully.")
                 context_dns_record.set(vendor_result)
-
-                record_obj = None
                 x_record_id = vendor_result.get("id")
-                if x_record_id:
-                    try:
-                        vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-                        record_link = vendor_dns_record.record_link.filter(is_active=True).select_related("dns_record").first()
-                        if record_link and record_link.dns_record:
-                            record_obj = record_link.dns_record
-                    except Exception:
-                        record_obj = None
+                record_obj = self.dns_host_service.get_dns_record_by_vendor_id(x_record_id) if x_record_id else None
 
                 if record_obj:
                     self._attach_form(record_obj)
@@ -1086,6 +1052,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             messages.error(request, "Failed to save DNS record.")
             self.dns_record = None
             counter = None
+        except GenericError:
+            return self._error_response(request, status=400)
 
         finally:
             self.client.close()
