@@ -197,7 +197,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         self.assertTrue(resp.success)
         self.assertEqual(resp.result["zone_mode"], "dns_only")
-        self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
         self.assertEqual(resp.result["nameservers"]["ns_set"], 2)
+        self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])

@@ -122,7 +122,7 @@ class CloudflareService:
         *,
         zone_mode: str = "dns_only",
         nameservers_type: str = "custom.tenant",
-        num_nameservers: int = 2
+        ns_set: int = 1
     ) -> CloudflareDnsSettingsUpdateResponse:
         """PATCH /zones/{zone_id}/dns_settings
         Required settings:
@@ -131,12 +131,12 @@ class CloudflareService:
                 "cloudflare.standard.random"
                 "custom.account"
                 "custom.tenant"
-        - num_nameservers: min 1, max 5
+        - num_nameservers: Min 1, max 5. Default 1 when not passed as argument. 
         """
         appended_url = f"/zones/{zone_id}/dns_settings"
         data = {
             "zone_mode": zone_mode,
-            "nameservers": {"ns_set": num_nameservers, "type": nameservers_type},
+            "nameservers": {"ns_set": ns_set, "type": nameservers_type},
         }
 
         try:
