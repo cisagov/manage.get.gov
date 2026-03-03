@@ -842,6 +842,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("", "- Select -"),
             ("A", "A"),
             ("AAAA", "AAAA"),
+            ("TXT", "TXT"),
         ],
         required=True,
         widget=forms.Select(
@@ -856,12 +857,13 @@ class DomainDNSRecordForm(forms.ModelForm):
     content = forms.CharField(
         label="Content",
         required=False,
-        help_text="Select a type for help text",
-        widget=forms.TextInput(
+        help_text=" ",
+        widget=forms.Textarea(
             attrs={
-                "class": "usa-input",
                 "hide_character_count": True,
                 "required": "required",
+                "class": "usa-textarea usa-textarea--small",
+                "row": 1
             }
         ),
     )
@@ -894,10 +896,13 @@ class DomainDNSRecordForm(forms.ModelForm):
 
         if record_type:
             record = DNSRecordTypes(record_type)
+            print("record", record)
+            print("validator", record.validator)
             if record.validator:
                 try:
                     record.validator(content)
-                except ValidationError:
+                except ValidationError as e:
+                    self.add_error("content", e)
                     self.add_error("content", record.error_message)
             elif not content:
                 self.add_error("content", record.error_message)

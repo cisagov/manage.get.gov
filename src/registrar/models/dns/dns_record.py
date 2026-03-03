@@ -44,12 +44,12 @@ class DnsRecord(TimeStampedModel):
 
         record_type = DNSRecordTypes(self.type)
         validator = record_type.validator
-
+    
         if validator and self.content:
             try:
                 validator(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
-
+        
         if errors:
             raise ValidationError(errors)

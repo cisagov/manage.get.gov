@@ -35,6 +35,13 @@
   }
 }
 
+.usa-textarea--small {
+  height: auto;
+  min-height: 1.2rem;
+  resize: vertical;
+  padding: 0.4rem 0rem;
+}
+
 .usa-textarea--medium {
   height: auto;
   min-height: 3rem;
