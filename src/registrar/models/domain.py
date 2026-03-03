@@ -1658,12 +1658,15 @@ class Domain(TimeStampedModel, DomainHelper):
                     raise e
 
     def addRegistrant(self):
-        """Adds a default registrant contact"""
+        """Adds a registrant contact"""
         registrant = PublicContact.get_default_registrant()
 
         domain_info = getattr(self, "domain_info", None)
         if not domain_info:
-            raise ValueError("domain_info is None: DomainInformation is required for default registrant contact")
+            raise ValueError(
+                f"Cannot create registrant for domain '{self.name}': "
+                "DomainInformation is required"
+            )
 
         is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
 
@@ -1674,15 +1677,43 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             registrant_org = domain_info.converted_organization_name
 
-        if registrant_org:
-            registrant.org = registrant_org
+        registrant_street1 = domain_info.converted_address_line1
+        registrant_street2 = domain_info.address_line2
+        registrant_city = domain_info.converted_city
+        registrant_zipcode = domain_info.converted_zipcode
 
-        if domain_info.converted_city:
-            registrant.city = domain_info.converted_city
+        state_territory = None
+        if domain_info.portfolio:
+            state_territory = domain_info.portfolio.state_territory
+        else:
+            state_territory = domain_info.state_territory
 
-        state_territory = getattr(domain_info, "state_territory", None)
-        if state_territory:
-            registrant.sp = state_territory
+        missing_fields = []
+        if not registrant_org:
+            missing_fields.append("organization")
+        if not registrant_street1:
+            missing_fields.append("address_line1")
+        if not registrant_city:
+            missing_fields.append("city")
+        if not state_territory:
+            missing_fields.append("state_territory")
+        if not registrant_zipcode:
+            missing_fields.append("zipcode")
+
+        if missing_fields:
+            raise ValueError(
+                "Cannot create registrant for domain "
+                f"'{self.name}': "
+                "missing required DomainInformation values: "
+                f"{', '.join(missing_fields)}"
+            )
+
+        registrant.org = registrant_org
+        registrant.street1 = registrant_street1
+        registrant.street2 = registrant_street2
+        registrant.city = registrant_city
+        registrant.sp = state_territory
+        registrant.pc = registrant_zipcode
 
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter

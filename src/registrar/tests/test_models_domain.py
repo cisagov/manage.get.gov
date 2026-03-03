@@ -878,8 +878,28 @@ class TestRegistrantContacts(MockEppLib):
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
 
         # DomainInformation is required
-        DomainInformation.objects.get_or_create(domain=self.domain, defaults={"requester": self.requester})
-        DomainInformation.objects.get_or_create(domain=self.domain_contact, defaults={"requester": self.requester})
+        DomainInformation.objects.get_or_create(
+            domain=self.domain,
+            defaults={
+                "requester": self.requester,
+                "organization_name": "Example Org",
+                "address_line1": "123 Main St",
+                "city": "Arlington",
+                "state_territory": "VA",
+                "zipcode": "22201",
+            },
+        )
+        DomainInformation.objects.get_or_create(
+            domain=self.domain_contact,
+            defaults={
+                "requester": self.requester,
+                "organization_name": "Example Org",
+                "address_line1": "123 Main St",
+                "city": "Arlington",
+                "state_territory": "VA",
+                "zipcode": "22201",
+            },
+        )
         DF = common.DiscloseField
         excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
@@ -891,6 +911,28 @@ class TestRegistrantContacts(MockEppLib):
         PublicContact.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
+
+    def test_add_registrant_raises_when_required_domain_info_values_missing(self):
+        with less_console_noise():
+            domain_info = self.domain.domain_info
+            domain_info.organization_name = None
+            domain_info.address_line1 = None
+            domain_info.city = None
+            domain_info.state_territory = None
+            domain_info.zipcode = None
+            domain_info.save()
+
+            with self.assertRaises(ValueError) as error:
+                self.domain.addRegistrant()
+
+            message = str(error.exception)
+            self.assertIn(self.domain.name, message)
+            self.assertIn("domain_info_id", message)
+            self.assertIn("organization", message)
+            self.assertIn("address_line1", message)
+            self.assertIn("city", message)
+            self.assertIn("state_territory", message)
+            self.assertIn("zipcode", message)
 
     def test_no_security_email(self):
         """

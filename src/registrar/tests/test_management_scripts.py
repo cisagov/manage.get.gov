@@ -2764,7 +2764,14 @@ class TestDeleteDomainNotSetup(MockEppLib):
         # DomainInformation is required
         DomainInformation.objects.get_or_create(
             domain=self.domain_expired_today_too,
-            defaults={"requester": self.user2},
+            defaults={
+                "requester": self.user2,
+                "organization_name": "Example Org",
+                "address_line1": "123 Main St",
+                "city": "Arlington",
+                "state_territory": "VA",
+                "zipcode": "22201",
+            },
         )
 
         self.domain_expired_today_too.dns_needed_from_unknown()
