@@ -11,11 +11,13 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
+from waffle.decorators import waffle_flag
 from registrar.utility.errors import APIError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
@@ -814,7 +816,16 @@ class DomainDNSView(DomainBaseView):
     def get_breadcrumb_current_label(self):
         return "DNS"
 
+    def _get_domain(self, request):
+        """
+        override get_domain for this view so that domain overview
+        always resets the cache for the domain object
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
 
+@method_decorator(waffle_flag("dns_hosting"), name="dispatch")
 @grant_access(IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
@@ -825,10 +836,19 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
 
+    def _get_domain(self, request):
+        """
+        override get_domain for this view so that domain overview
+        always resets the cache for the domain object
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
     def dispatch(self, request, *args, **kwargs):
-        domain = get_object_or_404(Domain, pk=kwargs['domain_pk'])  # TODO: figure out why _get_domain isn't working here and if we can use it instead of get_object_or_404
-        self.object = domain  # Set the domain object for use in other methods
-        if not domain.is_enrolled_in_dns_hosting:
+        self._get_domain(request)  # Ensure the domain is set in the session cache. Sets self.object to the domain object.
+
+        if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
         return super().dispatch(request, *args, **kwargs)
@@ -972,7 +992,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
-
+@method_decorator(waffle_flag("!dns_hosting"), name="dispatch")
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
@@ -980,6 +1000,23 @@ class DomainNameserversView(DomainFormBaseView):
     template_name = "domain_nameservers.html"
     form_class = NameserverFormset
     model = Domain
+
+    def _get_domain(self, request):
+        """
+        override get_domain for this view so that domain overview
+        always resets the cache for the domain object
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain(request)  # Ensure the domain is set in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            raise Http404("Domain is enrolled in DNS hosting. Nameservers cannot be edited in this case.")
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]

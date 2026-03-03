@@ -19,7 +19,7 @@
     >
       <div class="usa-summary-box__body">
         <div class="usa-summary-box__text padding-top-0"
-        > 
+        >
           <p class="font-sans-md margin-top-0 margin-bottom-05 text-primary-darker">
             <strong>Status:</strong>
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
@@ -41,11 +41,11 @@
               {% if domain_deletion_flag and domain.days_on_hold >= 0 %}
                 This domain is administratively paused, so it can’t be edited and won’t resolve in DNS. Contact help@get.gov for details.
               {% elif domain.is_expired and is_domain_manager %}
-                This domain has expired, but it is still online. 
+                This domain has expired, but it is still online.
                 {% url 'domain-renewal' domain_pk=domain.id as url %}
                 <a href="{{ url }}" class="usa-link">Renew to maintain access.</a>
               {% elif domain.is_expiring and is_domain_manager %}
-                This domain will expire soon. 
+                This domain will expire soon.
                 {% url 'domain-renewal' domain_pk=domain.id as url %}
                 <a href="{{ url }}" class="usa-link">Renew to maintain access.</a>
               {% elif domain.is_expiring and is_portfolio_user %}
@@ -59,7 +59,7 @@
           {% endif %}
           </div>
       </div>
-    </div>    
+    </div>
 
     {% include "includes/domain_dates.html" %}
 
@@ -87,22 +87,24 @@
     {% if domain.nameservers|length > 0 %}
       {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
     {% else %}
-      {% if is_editable %}
-      <h3 class="margin-top-3"> DNS name servers </h3>
-      <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
-      <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
-      {% else %}
-        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
+      {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
+        {% if is_editable %}
+        <h3 class="margin-top-3"> DNS name servers </h3>
+        <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
+        <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
+        {% else %}
+          {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
+        {% endif %}
       {% endif %}
     {% endif %}
-    
+
     {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
     {% if domain.dnssecdata is not None %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
     {% else %}
       {% include "includes/summary_item.html" with title='DNSSEC' value='Not enabled' edit_link=url editable=is_editable %}
     {% endif %}
-    
+
     {% if portfolio %}
       {% if has_any_domains_portfolio_permission and has_edit_portfolio_permission %}
         {% url 'domain-suborganization' domain_pk=domain.id as url %}
