@@ -9,6 +9,7 @@ on:
 jobs:
   clear-sessions:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Run clearsessions
         uses: cloud-gov/cg-cli-tools@main
