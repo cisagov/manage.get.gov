@@ -862,7 +862,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             attrs={
                 "hide_character_count": True,
                 "required": "required",
-                "class": "usa-textarea usa-textarea--small",
+                "class": "usa-textarea usa-textarea--medium",
                 "row": 1
             }
         ),
@@ -896,14 +896,14 @@ class DomainDNSRecordForm(forms.ModelForm):
 
         if record_type:
             record = DNSRecordTypes(record_type)
-            print("record", record)
-            print("validator", record.validator)
             if record.validator:
                 try:
                     record.validator(content)
                 except ValidationError as e:
-                    self.add_error("content", e)
-                    self.add_error("content", record.error_message)
+                    if record_type == "TXT":
+                        self.add_error("content", e)
+                    else:
+                        self.add_error("content", record.error_message)
             elif not content:
                 self.add_error("content", record.error_message)
 
