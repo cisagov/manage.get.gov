@@ -29,12 +29,15 @@ export function initDynamicDNSRecordFormFields() {
         contentLabel.appendChild(abbrClone);
 
         if(selectedType == "A" || selectedType === "AAAA"){
-           document.getElementById('id_content').classList.remove('usa-textarea--medium')
-           document.getElementById('id_content').classList.add('usa-textarea--small')
+            document.getElementById('id_content').classList.add('usa-textarea--small')
+            document.getElementById('id_content').classList.remove('usa-textarea--medium')
+            document.getElementById('id_content').rows = 1
         }
-        else if(selectedType == "TXT"){
+        
+        if(selectedType == "TXT"){
             document.getElementById('id_content').classList.remove('usa-textarea--small')
             document.getElementById('id_content').classList.add('usa-textarea--medium')
+            document.getElementById('id_content').rows = 2
 
         }
     });
