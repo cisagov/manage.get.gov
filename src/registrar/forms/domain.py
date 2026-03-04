@@ -861,9 +861,9 @@ class DomainDNSRecordForm(forms.ModelForm):
         widget=forms.Textarea(
             attrs={
                 "hide_character_count": True,
+                "class": "usa-textarea",
                 "required": "required",
-                "class": "usa-textarea usa-textarea--medium",
-                "row": 1
+                "rows": 1
             }
         ),
     )

@@ -27,10 +27,29 @@ export function initDynamicDNSRecordFormFields() {
 
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
+    
+        if(selectedType == "A" || selectedType === "AAAA"){
+            console.log("this is the a record")
+            console.log(document.getElementById('id_content'))
+            document.getElementById('id_content').classList.add('usa-textarea--small')
+        }
+        else if(selectedType == "TXT"){
+            console.log("WE ARE IN HERE")
+            console.log(document.getElementById('id_content').classList)
+            console.log("BEFORE", document.getElementById('id_content').classList)
+            document.getElementById('id_content').classList.remove('usa-textarea--small')
+            console.log("AFter", document.getElementById('id_content').classList)
+            document.getElementById('id_content').setAttribute('rows', '2')
+            document.getElementById('id_content').classList.add('usa-textarea--medium')
+            console.log("AFter", document.getElementById('id_content').classList)
+             console.log("AFter", document.getElementById('id_content').rows)
+        }
     });
 
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
+
+
 }

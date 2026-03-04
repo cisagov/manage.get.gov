@@ -35,18 +35,6 @@
   }
 }
 
-.usa-textarea--small {
-  height: auto;
-  min-height: 1.2rem;
-  resize: vertical;
-  padding: 0.4rem 0rem;
-}
-
-.usa-textarea--medium {
-  height: auto;
-  min-height: 3rem;
-  resize: vertical;
-}
 
 .usa-form-editable {
   border-top: 2px #{$dhs-dark-gray-15} solid;
@@ -112,4 +100,16 @@ legend.float-left-tablet + button.float-right-tablet {
     position: relative;
     top: 2px;
   }
+}
+
+.usa-textarea--small {
+  height: auto;
+  min-height: 1.375rem;
+  resize: vertical;
+}
+
+.usa-textarea--medium {
+  height: auto;
+  min-height: 3rem;
+  resize: vertical;
 }
