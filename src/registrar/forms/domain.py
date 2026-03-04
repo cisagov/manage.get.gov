@@ -861,7 +861,6 @@ class DomainDNSRecordForm(forms.ModelForm):
         widget=forms.Textarea(
             attrs={
                 "hide_character_count": True,
-                "class": "usa-textarea",
                 "required": "required",
                 "rows": 1
             }
@@ -900,6 +899,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 try:
                     record.validator(content)
                 except ValidationError as e:
+                    print("WHY IS THIS")
                     if record_type == "TXT":
                         self.add_error("content", e)
                     else:
