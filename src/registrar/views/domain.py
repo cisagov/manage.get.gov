@@ -928,7 +928,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         vendor_record_id = self.dns_host_service.get_active_vendor_record_id(record_obj)
         if not vendor_record_id:
-            messages.error(request, "This DNS record is missing a vendor id and cannot be updated.")
+            messages.error(request, "This DNS record is missing a vendor record id and cannot be updated.")
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
 
         record_response = self.dns_host_service.update_and_save_record(
