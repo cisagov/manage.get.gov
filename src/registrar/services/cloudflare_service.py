@@ -115,14 +115,9 @@ class CloudflareService:
             )
             raise
         return resp.json()
-    
+
     def update_zone_dns_settings(
-        self,
-        zone_id: str,
-        *,
-        zone_mode: str = "dns_only",
-        nameservers_type: str = "custom.tenant",
-        ns_set: int = 1
+        self, zone_id: str, *, zone_mode: str = "dns_only", nameservers_type: str = "custom.tenant", ns_set: int = 1
     ) -> CloudflareDnsSettingsUpdateResponse:
         """PATCH /zones/{zone_id}/dns_settings
         Required settings:
@@ -131,7 +126,7 @@ class CloudflareService:
                 "cloudflare.standard.random"
                 "custom.account"
                 "custom.tenant"
-        - num_nameservers: Min 1, max 5. Default 1 when not passed as argument. 
+        - ns_set: Min 1, max 5. Default 1 when not passed as argument.
         """
         appended_url = f"/zones/{zone_id}/dns_settings"
         data = {
@@ -147,7 +142,7 @@ class CloudflareService:
                 zone_id,
                 zone_mode,
                 nameservers_type,
-                num_nameservers
+                ns_set,
             )
         except RequestError as e:
             logger.error(f"Failed to update dns settings for zone {zone_id}: {e}")

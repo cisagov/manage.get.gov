@@ -33,7 +33,7 @@ class DnsHostService:
     def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for an account."""
         return self.dns_vendor_service.update_account_dns_settings(x_account_id)
-    
+
     def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for a zone."""
         return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)

@@ -426,7 +426,7 @@ class TestCloudflareService(SimpleTestCase):
 
     def test_update_zone_dns_settings_success(self):
         """Test successful update_zone_dns_settings call"""
-        zone_id="54321"
+        zone_id = "54321"
         return_value = {
             "success": True,
             "result": {
@@ -440,7 +440,7 @@ class TestCloudflareService(SimpleTestCase):
         self.service.client.patch.return_value = mock_response
 
         resp = self.service.update_zone_dns_settings(zone_id)
-        
+
         self.assertTrue(resp.success)
         self.assertEqual(resp.result["zone_mode"], "dns_only")
         self.assertEqual(resp.result["nameservers"]["ns_set"], 2)
@@ -449,7 +449,7 @@ class TestCloudflareService(SimpleTestCase):
 
     def test_update_zone_dns_settings_failure(self):
         """Test update_zone_dns_settings when error results during call"""
-        zone_id="54321"
+        zone_id = "54321"
 
         for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):

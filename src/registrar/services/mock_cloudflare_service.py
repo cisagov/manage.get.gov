@@ -119,7 +119,7 @@ class MockCloudflareService:
         self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_settings").mock(
             side_effect=self._mock_update_zone_dns_settings_response
         )
-    
+
     def _mock_update_zone_dns_settings_response(self, request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
