@@ -455,7 +455,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
-# USE_L10N = True 
+# USE_L10N = True
 # COMMENT: Can be removed becuase it's enabled by default now
 
 # make datetimes timezone-aware by default
