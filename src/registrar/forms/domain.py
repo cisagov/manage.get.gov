@@ -785,6 +785,155 @@ class DomainDeleteForm(forms.Form):
         self.fields["is_policy_acknowledged"].error_messages = {"required": error}
 
 
+class DnsRecordBaseForm(forms.ModelForm):
+
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        record_type = self.data.get("type") or self.initial.get("type")
+
+        if record_type:
+            rt = DNSRecordTypes(record_type)
+            self.fields["content"].label = rt.field_label
+            self.fields["content"].help_text = rt.help_text
+
+        config = {
+            rt.value: {
+                "label": getattr(rt, "field_label", "Content"),
+                "help_text": getattr(rt, "help_text"),
+            }
+            for rt in DNSRecordTypes
+        }
+
+        self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
+
+    class Meta:
+        model = DnsRecord
+        fields = ["type", "name", "content", "ttl", "comment"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "usa-input",
+                    "hide_character_count": True,
+                }
+            ),
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "usa-textarea usa-textarea--medium",
+                    "rows": 2,
+                }
+            ),
+        }
+        help_texts = {
+            "comment": "The information you enter here will not impact DNS record resolution and \
+            is meant only for your reference.",
+            "name": "Use @ for root",
+        }
+        error_messages = {"name": {"required": "Enter a name for this record."}}
+
+    type = forms.ChoiceField(
+        # TODO: choices has been temporarily hard-coded for user testing.
+        # This is to prevent the need for multiple migrations.
+        # I have temporarily commented out what the appropriate statement will eventually look like.
+        label="Type",
+        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
+        choices=[
+            ("", "- Select -"),
+            ("A", "A"),
+            ("AAAA", "AAAA"),
+            ("TXT", "TXT"),
+        ],
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
+    )
+
+    content = forms.CharField(
+        label="Content",
+        required=False,
+        help_text=" ",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+                "required": "required",
+            }
+        ),
+    )
+
+
+
+    ttl = forms.ChoiceField(
+        label="TTL",
+        choices=[
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (7200, "2 hours"),
+            (18000, "5 hours"),
+            (43200, "12 hours"),
+            (86400, "1 day"),
+        ],
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+class ARecordForm(DnsRecordBaseForm):
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        record_type = cleaned_data.get("type")
+        content = cleaned_data.get("content")
+
+        if record_type:
+            record = DNSRecordTypes(record_type)
+            if record.validator:
+                try:
+                    record.validator(content)
+                except ValidationError:
+                    self.add_error("content", record.error_message)
+            elif not content:
+                self.add_error("content", record.error_message)
+
+        return cleaned_data
+
+class TXTRecordForm(DnsRecordBaseForm):
+ 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["content"].widget = forms.Textarea(
+                attrs={
+                    "class": "usa-textarea usa-textarea--medium",
+                    "rows": 2,
+                    "hide_character_count": True,
+                }
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        record_type = cleaned_data.get("type")
+        content = cleaned_data.get("content")
+
+        if record_type:
+            record = DNSRecordTypes(record_type)
+            if record.validator:
+                try:
+                    record.validator(content)
+                except ValidationError as e:
+                    self.add_error("content", e)
+
+        return cleaned_data
 class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
@@ -865,6 +1014,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             }
         ),
     )
+
+
 
     ttl = forms.ChoiceField(
         label="TTL",

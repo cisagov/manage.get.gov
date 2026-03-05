@@ -25,7 +25,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
-from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, DomainDNSRecordForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, DomainDNSRecordForm, ARecordForm, TXTRecordForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -38,7 +38,7 @@ from registrar.models import (
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from registrar.utility.enums import DefaultEmail
+from registrar.utility.enums import DefaultEmail, DNSRecordTypes
 from registrar.utility.errors import (
     GenericError,
     GenericErrorCodes,
@@ -86,7 +86,6 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
-
 logger = logging.getLogger(__name__)
 
 context_dns_record = ContextVar("context_dns_record", default=None)
@@ -816,13 +815,23 @@ class DomainDNSView(DomainBaseView):
 @grant_access(IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
-    form_class = DomainDNSRecordForm
 
+    FORM_MAP = {
+        DNSRecordTypes.A: ARecordForm,
+        DNSRecordTypes.AAAA: ARecordForm,
+        DNSRecordTypes.TXT: TXTRecordForm
+    }
+    def get_form_class(self):
+        record_type = self.request.POST.get("type") or self.request.GET.get("type", "A")
+        print("record type",  self.FORM_MAP.get(record_type))
+        return self.FORM_MAP.get(record_type)
+ 
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
-
+   
+    
     def get_breadcrumb_items(self):
         return [
             {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
@@ -850,6 +859,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
+        context["form_a"] = ARecordForm(prefix="a")
+        context["form_aaaa"] = ARecordForm(prefix="aaaa")
+        context["form_txt"] = TXTRecordForm(prefix="txt")
+
         if dns_zone:
             dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
             self.attach_edit_form(dns_records)
@@ -880,9 +893,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.object = self.get_object()
         form = self.get_form()
         self._get_domain(request)
-
+        print(dict(request.POST))
         if not form.is_valid():
+            print("ARE WE GETTING ERORRS")
             errors = self.get_form_errors(form)
+            print(errors)
             for error in errors:
                 messages.error(request, error)
 
