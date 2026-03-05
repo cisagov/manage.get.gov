@@ -1,7 +1,9 @@
 from unittest.mock import patch, Mock
 from django.test import TestCase
 from django.db import IntegrityError
+from httpx import HTTPStatusError
 
+from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models import (
     Domain,
@@ -745,3 +747,35 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
                     self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
                     self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
+
+    def test_update_account_dns_settings_success(self):
+        x_account_id = "12345"
+        expected_response = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_defaults": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"type": "custom.tenant"},
+                }
+            },
+            errors=[],
+            messages=[],
+        )
+        self.service.dns_vendor_service.update_account_dns_settings = Mock(return_value=expected_response)
+
+        response = self.service.update_account_dns_settings(x_account_id)
+
+        self.service.dns_vendor_service.update_account_dns_settings.assert_called_once_with(x_account_id)
+        self.assertTrue(response.success)
+        self.assertEqual(response.result["zone_defaults"]["zone_mode"], "dns_only")
+        self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(response.errors, [])
+
+    def test_update_account_dns_settings_failure(self):
+        x_account_id = "12345"
+        self.service.dns_vendor_service.update_account_dns_settings = Mock(
+            side_effect=HTTPStatusError(message="Error updating DNS settings", request=Mock(), response=Mock())
+        )
+
+        with self.assertRaises(HTTPStatusError):
+            self.service.update_account_dns_settings(x_account_id)
