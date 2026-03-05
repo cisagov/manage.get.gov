@@ -59,7 +59,7 @@ class Domain(TimeStampedModel, DomainHelper):
            DNS entries in the registry
 
     ~~~ HOW TO USE THIS CLASS ~~~
-    # TODO: REMOVE - Just changing something here to trigger tests
+    # TODO: REMOVE - Just changing something here to trigger tests ~~~
     A) You can create a Domain object with just a name. `Domain(name="something.gov")`.
     B) Saving the Domain object will not contact the registry, as it may be useful
        to have Domain objects in an `UNKNOWN` pre-created state.
