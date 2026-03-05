@@ -17,6 +17,15 @@
                 {# Dja has margin styles defined on inputs as is. Lets work with it, rather than fight it. #}
                 <span class="mini-spacer"></span>
                 <input type="submit" value="Get registry status" name="_get_status">
+                {% if dns_hosting_enabled and not original.is_enrolled_in_dns_hosting %}
+                <span class="mini-spacer"></span>
+                <input
+                    type="submit"
+                    value="Enroll domain in DNS hosting"
+                    name="_enroll_dns_hosting"
+                    class="usa-button usa-button--secondary"
+                >
+                {% endif %}
             </div>
 
             <div class="desktop:flex-align-self-end">

@@ -1,7 +1,7 @@
 # Manually deploy a branch of choice to an environment of choice.
 
 name: Manual Build and Deploy
-run-name: Manually build and deploy branch to sandbox of choice
+run-name: Manually build and deploy ${{ github.ref_name }} to ${{ github.event.inputs.environment }}
 
 on:
   workflow_dispatch:
@@ -34,14 +34,6 @@ on:
           - rh
           - yellowstone
           - zion
-
-      # GitHub Actions has no "good" way yet to dynamically input branches
-      branch:
-        description: 'Branch to deploy'
-        required: true
-        default: 'main'
-        type: string
-      
 
 jobs:
   variables:
@@ -85,4 +77,3 @@ jobs:
             --var GIT_BRANCH="$GIT_BRANCH"
             --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
             --strategy rolling
-

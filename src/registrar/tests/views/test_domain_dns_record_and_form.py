@@ -5,7 +5,8 @@ from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 from django.conf import settings
 
-from registrar.models import Domain, DomainInformation, UserDomainRole
+from registrar.utility.enums import DNSRecordTypes
+from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -20,28 +21,35 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        DomainInformation.objects.get_or_create(
-            requester=self.user,
-            domain=self.domain,
-        )
-
-        UserDomainRole.objects.get_or_create(
-            user=self.user,
-            domain=self.domain,
-            role=UserDomainRole.Roles.MANAGER,
-        )
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
 
         self.app.set_user(self.user.username)
 
     def tearDown(self):
-        UserDomainRole.objects.all().delete()
-        DomainInformation.objects.all().delete()
-        Domain.objects.all().delete()
+        delete_all_dns_data()
         super().tearDown()
 
 
 class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
+    RECORD_TEST_CASES = [
+        {
+            "id": "test1",
+            "name": "www",
+            "type": "A",
+            "content": "192.0.2.10",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test1",
+            "name": "www",
+            "type": "AAAA",
+            "content": "2001:db8::1",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+    ]
+
     def _url(self):
         return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
 
@@ -64,76 +72,91 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_valid_form_creates_record_success(self):
-        mock_record = {
-            "id": "test1",
-            "name": "www",
-            "type": "A",
-            "content": "192.0.2.10",
-            "ttl": 300,
-            "comment": "Mocked record created",
+    def test_post_valid_forms_create_records_success(self):
+        for data in self.RECORD_TEST_CASES:
+            with self.subTest(record_type=data["type"]):
+                mock_record = {
+                    "id": data["id"],
+                    "name": data["name"],
+                    "type": data["type"],
+                    "content": data["content"],
+                    "ttl": data["ttl"],
+                    "comment": data["comment"],
+                }
+
+                with patch("registrar.views.domain.DnsHostService") as MockSvc:
+                    svc = MockSvc.return_value
+                    svc.register_nameservers.return_value = None
+                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
+                    svc.create_and_save_record.return_value = {"result": mock_record}
+
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
+
+                    record_form["type"] = data["type"]
+                    record_form["name"] = data["name"]
+                    record_form["content"] = data["content"]
+                    record_form["ttl"] = data["ttl"]
+                    record_form["comment"] = data["comment"]
+
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
+                    self.assertEqual(response.status_code, 200)
+
+                    # User visible success message snippet
+                    self.assertIn(f'{data["type"]} record for {data["name"]}', response.text)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_invalid_content_throws_error(self):
+        invalid_content_by_type = {
+            "A": "not-an-ip",
+            "AAAA": "not-an-ip",
         }
 
-        with patch("registrar.views.domain.DnsHostService") as MockSvc:
-            svc = MockSvc.return_value
-            svc.register_nameservers.return_value = None
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
-            svc.create_and_save_record.return_value = {"result": mock_record}
+        for record_case in self.RECORD_TEST_CASES:
+            record_type = record_case["type"]
+            with self.subTest(record_type=record_type):
+                with patch("registrar.views.domain.DnsHostService"):
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
 
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
+                    record_form["type"] = record_type
+                    record_form["name"] = "@"
+                    record_form["content"] = invalid_content_by_type[record_type]
 
-            record_form["type"] = "A"
-            record_form["name"] = "www"
-            record_form["content"] = "192.0.2.10"
-            record_form["ttl"] = "300"
-            record_form["comment"] = "hello"
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
 
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit().follow()
-            self.assertEqual(response.status_code, 200)
-
-            # User visible result
-            self.assertIn("www", response.text)
+                    # Invalid form should re-render the page, not redirect
+                    self.assertEqual(response.status_code, 200)
+                    self.assertIn("Name", response.text)
+                    self.assertIn(DNSRecordTypes(record_type).error_message, response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_invalid_ip_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService"):
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
+    def test_post_invalid_dns_name_for_dns_record_throws_error(self):
+        for record_case in self.RECORD_TEST_CASES:
+            record_type = record_case["type"]
+            with self.subTest(record_type=record_type):
+                with patch("registrar.views.domain.DnsHostService"):
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
 
-            record_form["type"] = "A"
-            record_form["name"] = "@"
-            record_form["content"] = "not-an-ip"
+                    record_form["type"] = record_type
+                    record_form["name"] = "testing!"
+                    record_form["content"] = record_case["content"]
 
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
 
-            # Invalid form should re-render the page, not redirect
-            self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertIn(
+                        "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text
+                    )
 
-            # Field assertions for A Type records. Additional tests will be needed for different types of records.
-            self.assertIn("Name", response.text)
-            self.assertIn("Enter a valid IPv4 Address", response.text)
-
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_post_invalid_dns_name_throws_error(self):
-        with patch("registrar.views.domain.DnsHostService"):
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
-
-            record_form["type"] = "A"
-            record_form["name"] = "testing!"
-            record_form["content"] = "192.0.2.10"
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
-
-            # Field assertions for A Type records. Additional tests will be needed for different types of records.
-            self.assertIn("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text)
-            self.assertIn("IPv4 Address", response.text)
+                    # Ensures appropriate label exists
+                    self.assertIn(DNSRecordTypes(record_type).field_label, response.text)
