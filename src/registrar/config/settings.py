@@ -281,7 +281,8 @@ TEMPLATES = [
 ]
 
 # Stop using table-based default form renderer which is deprecated
-FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# Default is already DjangoTemplates
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
@@ -977,7 +978,10 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
+# SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"
+# JSONSerializer is also default
+# FYI everyone will get logged out and will have to re login again
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
