@@ -787,7 +787,7 @@ class DomainDeleteForm(forms.Form):
 
 class DnsRecordBaseForm(forms.ModelForm):
     """Base DNS Record, this holds shared fields:
-     - ttl, content, type 
+     - ttl, content, type, name
        Cleaned are handled by inherited record form classes """
     
     def __init__(self, *args, **kwargs):
