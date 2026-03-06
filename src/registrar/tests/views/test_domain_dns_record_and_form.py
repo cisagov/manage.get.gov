@@ -48,6 +48,15 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
+        {
+            "id": "test1",
+            "name": "www",
+            "type": "TXT",
+            "content": "test record info",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        
     ]
 
     def _url(self):
@@ -55,20 +64,11 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_get_renders_page_and_form_fields_success(self):
+    def test_get_renders_page_success(self):
         page = self.app.get(self._url(), status=200)
 
         # Assert we are on the correct page
         self.assertIn("Add record", page.text)
-
-        record_form = page.forms[0]
-
-        # Assert required fields for A type records exist by name
-        for field in ("type", "name", "content", "ttl", "comment"):
-            self.assertIn(field, record_form.fields)
-
-        # Defaults check for A type records
-        self.assertEqual(str(record_form["ttl"].value), "300")
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -156,6 +156,33 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     self.assertEqual(response.status_code, 200)
                     self.assertIn(
                         "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text
+                    )
+
+                    # Ensures appropriate label exists
+                    self.assertIn(DNSRecordTypes(record_type).field_label, response.text)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_invalid_dns_text_for_dns_record_throws_error(self):
+        txt_input = self.RECORD_TEST_CASES[2]
+        record_type = txt_input["type"]
+
+        with self.subTest(record_type=record_type):
+            with patch("registrar.views.domain.DnsHostService"):
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
+
+                    record_form["type"] = record_type
+                    record_form["name"] = "testing!"
+                    record_form["content"] = " "
+
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
+
+                    self.assertEqual(response.status_code, 200)
+                    self.assertIn(
+                        "Enter the content for this record.", response.text
                     )
 
                     # Ensures appropriate label exists

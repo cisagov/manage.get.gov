@@ -851,7 +851,6 @@ class DnsRecordBaseForm(forms.ModelForm):
             attrs={
                 "class": "usa-select",
                 "required": "required",
-                "x-model": "recordType",
                 "hx-get": "/dns-form-partial",
                 "hx-trigger": "change changed",
                 "hx-target": "#dns-record-form-container",
