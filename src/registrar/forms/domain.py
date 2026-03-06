@@ -545,7 +545,13 @@ class DomainOrgNameAddressForm(forms.ModelForm):
     # the database fields have blank=True so ModelForm doesn't create
     # required fields by default. Use this list in __init__ to mark each
     # of these fields as required
-    required = ["organization_name", "address_line1", "city", "state_territory", "zipcode"]
+    required = [
+        "organization_name",
+        "address_line1",
+        "city",
+        "state_territory",
+        "zipcode",
+    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -735,7 +741,10 @@ class BaseDsdataFormset(forms.BaseFormSet):
                 )
 
                 if ds_tuple in seen_ds_records:
-                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    form.add_error(
+                        "key_tag",
+                        "You already entered this DS record. DS records must be unique.",
+                    )
                     duplicate_found = True  # Track that we found at least one duplicate
 
                 seen_ds_records.add(ds_tuple)
