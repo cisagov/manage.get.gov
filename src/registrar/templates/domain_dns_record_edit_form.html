@@ -7,22 +7,6 @@
             {% csrf_token %}
               {% include dns_record.partial with form=dns_record.form %}
              
-             {% input_with_errors dns_record.form.comment %}
-        <button
-        type="reset"
-        class="usa-button usa-button--outline"
-        x-on:click="showFormId = null"
-    >
-        Cancel
-    </button>
-    <button
-            class="usa-button"
-            x-on:click="showFormId = null"
-        >
-        <!-- TODO: Hitting the save button also closes the form. When the update request is implemented. This might need to be updated -->
-            Save
-    </button>
-    
      <a
               
          class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"

@@ -1,0 +1,16 @@
+{% load static field_helpers url_helpers %}
+
+{% input_with_errors form.comment %}
+
+    <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="showFormId = null"
+    >
+        Cancel
+    </button>
+    <button
+            class="usa-button"
+        >
+            Save
+    </button>

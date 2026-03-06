@@ -13,23 +13,8 @@
     <div id="dns-record-form-container">
         <!-- this is to load the partial back in the view if the validation fails -->
         {% if partial %}
-             {% include partial%}
+             {% include partial %}
         {% endif %}
     </div>
 
-    
-    {% input_with_errors form.comment %}
-
-    <button
-        type="reset"
-        class="usa-button usa-button--outline"
-        x-on:click="showFormId = null"
-    >
-        Cancel
-    </button>
-    <button
-            class="usa-button"
-        >
-            Save
-    </button>
 </div>
