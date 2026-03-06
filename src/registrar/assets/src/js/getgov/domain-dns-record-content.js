@@ -29,6 +29,12 @@ export function initDynamicDNSRecordFormFields() {
         contentLabel.appendChild(abbrClone);
     });
 
+    // Clear select change after form submit
+    document.body.addEventListener('recordSubmitSuccess', ()=>{
+        console.log("IT LISTENED")
+        document.getElementById('id_type').value = ''
+    })
+
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));

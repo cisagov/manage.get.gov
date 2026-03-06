@@ -10,8 +10,11 @@
 </div>
 
 <div x-cloak x-show="recordType">
-    <div id="record-form-partial">
-
+    <div id="dns-record-form-container">
+        <!-- this is to load the partial back in the view if the validation fails -->
+        {% if partial %}
+             {% include partial%}
+        {% endif %}
     </div>
 
     

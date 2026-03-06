@@ -5,18 +5,10 @@
         <form method="#" class="usa-form usa-form--extra-large">
              <h2 class="margin-top-0"> Edit record </h2>
             {% csrf_token %}
-               {% input_with_errors dns_record.form.name %}  
-             <div class="grid-row grid-gap flex-align-end">
-                    <div class="grid-col-9">
-                            {% input_with_errors dns_record.form.content %}
-                        </div>
-                        <div class="grid-col-3">
-                            {% input_with_errors dns_record.form.ttl %}        
-                        </div>
+              {% include dns_record.partial with form=dns_record.form %}
              
-                </div>
-      {% input_with_errors dns_record.form.comment %}
-             <button
+             {% input_with_errors dns_record.form.comment %}
+        <button
         type="reset"
         class="usa-button usa-button--outline"
         x-on:click="showFormId = null"

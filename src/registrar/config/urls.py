@@ -41,6 +41,7 @@ from registrar.views.transfer_user import TransferUserView
 from registrar.views.utility import always_404
 from api.views import available, rdap, get_current_federal, get_current_full
 from django.conf import settings
+from registrar.views.utility.dns_record_helper import get_dns_form_partial
 
 DOMAIN_REQUEST_NAMESPACE = views.DomainRequestWizard.URL_NAMESPACE
 
@@ -403,6 +404,7 @@ urlpatterns = [
     ),
     path("version", views.version_info, name="version"),
     path("messages/", get_alert_messages, name="get-messages"),
+    path("dns-form-partial/", get_dns_form_partial, name="dns-form-partial")
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

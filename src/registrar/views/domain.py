@@ -25,7 +25,7 @@ from registrar.decorators import (
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
-from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, DomainDNSRecordForm, ARecordForm, TXTRecordForm
+from registrar.forms.domain import DomainSuborganizationForm, DomainRenewalForm, ARecordForm
 from registrar.models import (
     Domain,
     DomainRequest,
@@ -86,10 +86,11 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
+
 logger = logging.getLogger(__name__)
 
 context_dns_record = ContextVar("context_dns_record", default=None)
-
+from registrar.views.utility.dns_record_helper import get_partial_string_path, FORM_MAP
 
 class DomainBaseView(PermissionRequiredMixin, DetailView):
     """
@@ -815,22 +816,18 @@ class DomainDNSView(DomainBaseView):
 @grant_access(IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
-
-    FORM_MAP = {
-        DNSRecordTypes.A: ARecordForm,
-        DNSRecordTypes.AAAA: ARecordForm,
-        DNSRecordTypes.TXT: TXTRecordForm
-    }
-    def get_form_class(self):
-        record_type = self.request.POST.get("type") or self.request.GET.get("type", "A")
-        print("record type",  self.FORM_MAP.get(record_type))
-        return self.FORM_MAP.get(record_type)
+    form_class = ARecordForm
  
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
    
+    def get_form_class(self):
+        if not hasattr(self, 'request'):
+            return ARecordForm
+        record_type = self.request.POST.get("type") or self.request.GET.get("type", DNSRecordTypes.A)
+        return FORM_MAP.get(record_type, ARecordForm)
     
     def get_breadcrumb_items(self):
         return [
@@ -852,17 +849,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
         to display corresponding values in the table rows"""
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
-            record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
+            form_class = FORM_MAP.get(record.type)
+            record.form = form_class(initial=data_dict, prefix=f"edit_{record.id}")
+            record.partial = get_partial_string_path(record.type)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
         context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
-        context["form_a"] = ARecordForm(prefix="a")
-        context["form_aaaa"] = ARecordForm(prefix="aaaa")
-        context["form_txt"] = TXTRecordForm(prefix="txt")
-
         if dns_zone:
             dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
             self.attach_edit_form(dns_records)
@@ -893,18 +888,18 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.object = self.get_object()
         form = self.get_form()
         self._get_domain(request)
-        print(dict(request.POST))
+        record_type = request.POST.get("type")
+        partial = get_partial_string_path(record_type)
+
         if not form.is_valid():
-            print("ARE WE GETTING ERORRS")
             errors = self.get_form_errors(form)
-            print(errors)
             for error in errors:
                 messages.error(request, error)
 
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": None, "domain": self.object, "form": form},
+                {"dns_record": None, "domain": self.object, "form": form, "partial": partial},
                 headers={"HX-TRIGGER": "messagesRefresh"},
             )
 
@@ -947,7 +942,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_record = record_response["result"]
             dns_name = self.dns_record["name"]
 
-            messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+            messages.success(request, f"DNS {record_type} record '{dns_name}' created successfully.")
             context_dns_record.set(self.dns_record)
 
         except APIError as e:
@@ -957,14 +952,14 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         finally:
             self.client.close()
-
-        filled_form = DomainDNSRecordForm(initial=self.dns_record)
+        form_class = FORM_MAP.get(record_type)
+        filled_form = form_class(initial=self.dns_record)
         # Grabbed result data to pass into the form response
         self.dns_record["form"] = filled_form
+        self.dns_record["partial"] = partial
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
-        new_form = DomainDNSRecordForm()
-
+        new_form = ARecordForm()
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
