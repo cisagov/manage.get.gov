@@ -249,6 +249,20 @@ class UserFixture:
             "email": "charles.wells.analyst@ecstech.com",
             "title": "ANALYST",
         },
+        {
+            "username": "9db645e5-6db1-457a-9a93-abecfb98c5a5",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON",
+            "email": "feedback+9@get.gov",
+            "title": "ANALYST",
+        },
+        {
+            "username": "1ddd1444-937e-4a0a-9202-e68f2851edde",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON",
+            "email": "feedback+10@get.gov",
+            "title": "ANALYST",
+        },
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
