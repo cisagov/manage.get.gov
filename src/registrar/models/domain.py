@@ -84,7 +84,9 @@ class Domain(TimeStampedModel, DomainHelper):
         # If domain is in deleted state, its name can be reused - submitted/approved
         constraints = [
             models.UniqueConstraint(
-                fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
+                fields=["name"],
+                condition=~models.Q(state="deleted"),
+                name="unique_name_except_deleted",
             )
         ]
 
@@ -245,7 +247,14 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
+    def save(
+        self,
+        force_insert=False,
+        force_update=False,
+        using=None,
+        update_fields=None,
+        optimistic_lock=False,
+    ):
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -396,7 +405,11 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     def renew_domain(
-        self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR, persist: bool = True, optimistic_lock: bool = False
+        self,
+        length: int = 1,
+        unit: epp.Unit = epp.Unit.YEAR,
+        persist: bool = True,
+        optimistic_lock: bool = False,
     ) -> bool:
         """
         Renew the domain to a length and unit of time relative to the current
@@ -1077,7 +1090,12 @@ class Domain(TimeStampedModel, DomainHelper):
         """Prints registry data for this domains security, registrant, technical, and administrative contacts."""
         logger.info(f"Contact info for {self}:")
         logger.info("=====================")
-        contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
+        contacts = [
+            self.security_contact,
+            self.registrant_contact,
+            self.technical_contact,
+            self.administrative_contact,
+        ]
         for contact in contacts:
             if contact:
                 self.print_contact_info_epp(contact)
@@ -1156,7 +1174,11 @@ class Domain(TimeStampedModel, DomainHelper):
         hosts = Host.objects.filter(name__regex=r".+\.{}".format(self.name))
         for host in hosts:
             if host.domain != self:
-                logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
+                logger.error(
+                    "Unable to delete host: %s is in use by another domain: %s",
+                    host.name,
+                    host.domain,
+                )
                 raise RegistryError(
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
@@ -1182,7 +1204,10 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error deleting domain %s: %s", self.name, e)
             raise e
 
-        logger.info("Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s", self.name)
+        logger.info(
+            "Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s",
+            self.name,
+        )
         self._delete_related_objects_from_db()
 
     def _delete_nameservers_and_hosts(self):
@@ -1220,7 +1245,10 @@ class Domain(TimeStampedModel, DomainHelper):
                     try:
                         self._update_domain_with_contact(contact, rem=True)
                     except Exception as e:
-                        logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
+                        logger.error(
+                            f"Error while updating domain with contact: {contact}, e: {e}",
+                            exc_info=True,
+                        )
                     request = commands.DeleteContact(contact.registry_id)
                     registry.send(request, cleaned=True)
                     logger.info(f"sent DeleteContact for {contact}")
@@ -1257,7 +1285,11 @@ class Domain(TimeStampedModel, DomainHelper):
             Host.objects.filter(domain=self).delete()
             logger.info("Deleted: Host and HostIP objects for domain %s", self.name)
         except Exception as e:
-            logger.error("Error deleting Host or HostIP objects for domain %s: %s", self.name, str(e))
+            logger.error(
+                "Error deleting Host or HostIP objects for domain %s: %s",
+                self.name,
+                str(e),
+            )
 
         logger.info("Deleting CONTACTS")
         try:
@@ -1285,14 +1317,25 @@ class Domain(TimeStampedModel, DomainHelper):
                 domain_info = info_response.res_data[0]
                 hosts_associated = getattr(domain_info, "hosts", None)
                 if hosts_associated is None or len(hosts_associated) == 0:
-                    logger.info("InfoDomain reports no associated hosts for %s. Proceeding with deletion.", self.name)
+                    logger.info(
+                        "InfoDomain reports no associated hosts for %s. Proceeding with deletion.",
+                        self.name,
+                    )
                     return True
                 else:
-                    logger.info("Attempt %d: Domain %s still has hosts: %s", attempt + 1, self.name, hosts_associated)
+                    logger.info(
+                        "Attempt %d: Domain %s still has hosts: %s",
+                        attempt + 1,
+                        self.name,
+                        hosts_associated,
+                    )
             except RegistryError as info_e:
                 # If the domain is already gone, we can assume deletion already occurred.
                 if info_e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
-                    logger.info("InfoDomain check indicates domain %s no longer exists.", self.name)
+                    logger.info(
+                        "InfoDomain check indicates domain %s no longer exists.",
+                        self.name,
+                    )
                     raise info_e
                 logger.warning("Attempt %d: Error during InfoDomain check: %s", attempt + 1, info_e)
             time.sleep(wait_interval)
@@ -1501,7 +1544,8 @@ class Domain(TimeStampedModel, DomainHelper):
     def _request_contact_info(self, contact: PublicContact, get_result_as_dict=False):
         """Grabs the resultant contact information in epp for this public contact
         by using the InfoContact command.
-        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
+        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True.
+        """
         try:
             req = commands.InfoContact(id=contact.registry_id)
             result = registry.send(req, cleaned=True).res_data[0]
@@ -1663,10 +1707,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         domain_info = getattr(self, "domain_info", None)
         if not domain_info:
-            raise ValueError(
-                f"Cannot create registrant for domain '{self.name}': "
-                "DomainInformation is required"
-            )
+            raise ValueError(f"Cannot create registrant for domain '{self.name}': " "DomainInformation is required")
 
         is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
 
@@ -1818,7 +1859,11 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO -on the client hold ticket any additional error handling here
         self.save(update_fields=["state"])
 
-    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN], target=State.DELETED)
+    @transition(
+        field="state",
+        source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN],
+        target=State.DELETED,
+    )
     def deleteInEpp(self):
         """Domain is deleted in epp but is saved in our database.
         Subdomains will be deleted first if not in use by another domain.
@@ -1943,12 +1988,18 @@ class Domain(TimeStampedModel, DomainHelper):
             # Fall back to the closest supported disclosure format.
             disclose_fields = {
                 field
-                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                for field in (
+                    disclose_fields_by_value.get("org"),
+                    disclose_fields_by_value.get("addr"),
+                )
                 if field is not None
             }
             disclose_types = {
                 field: "loc"
-                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                for field in (
+                    disclose_fields_by_value.get("org"),
+                    disclose_fields_by_value.get("addr"),
+                )
                 if field is not None
             }
             return epp.Disclose(
@@ -1957,7 +2008,11 @@ class Domain(TimeStampedModel, DomainHelper):
                 types=disclose_types,
             )
 
-        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
+        disclose_args = {
+            "fields": all_disclose_fields,
+            "flag": False,
+            "types": {DF.ADDR: "loc", DF.NAME: "loc"},
+        }
 
         fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         if contact.contact_type == contact.ContactTypeChoices.SECURITY:
@@ -1968,7 +2023,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
         disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
 
-        logger.debug("Updated domain contact %s to disclose: %s", contact.email, disclose_args.get("flag"))
+        logger.debug(
+            "Updated domain contact %s to disclose: %s",
+            contact.email,
+            disclose_args.get("flag"),
+        )
         return epp.Disclose(**disclose_args)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
