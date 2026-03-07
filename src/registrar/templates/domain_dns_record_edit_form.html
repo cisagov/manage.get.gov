@@ -1,6 +1,6 @@
 {% load static field_helpers url_helpers %}
 
-{# Inline edit form row for a DNS record. `counter` is pk-based. #}
+{# Inline edit form row for a DNS record. `counter` is a sequential index, not the DB pk. #}
 <tr id="dnsrecord-edit-row-{{ counter }}" x-show="showFormId == {{ counter }}" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
     <td colspan="5" class="no-padding">
         <div class="border radius-lg border-base-lighter padding-3">
@@ -14,25 +14,25 @@
                 <h2 class="margin-top-0">Edit record</h2>
                 {% csrf_token %}
 
-                {# Identify the DB record being edited (used by the view to take the edit path). #}
-                <input type="hidden" name="id" value="{{ dns_record.pk }}" />
-
-                {# If `type` is required by the form, include it even though we don't render the select for edits. #}
+                {# The counter identifies the row for both DOM targeting and DB lookup (positional index). #}
+                <input type="hidden" name="counter" value="{{ counter }}" />
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
-                {% input_with_errors dns_record.form.name %}
+                {% with add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors dns_record.form.name %}
+                {% endwith %}
 
                 <div class="grid-row grid-gap flex-align-end">
                     <div class="grid-col-9">
-                        {% input_with_errors dns_record.form.content %}
+                        {% with add_group_class="usa-form-group--unstyled-error" %}
+                            {% input_with_errors dns_record.form.content %}
+                        {% endwith %}
                     </div>
                     <div class="grid-col-3">
                         {% input_with_errors dns_record.form.ttl %}
                     </div>
                 </div>
-
                 {% input_with_errors dns_record.form.comment %}
-
                 <button
                     type="reset"
                     class="usa-button usa-button--outline"
