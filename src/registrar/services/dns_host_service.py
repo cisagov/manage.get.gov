@@ -23,6 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 class DnsHostService:
+    """Orchestrates DNS hosting operations for domains by coordinating between
+    the registrar database and the external DNS vendor (Cloudflare).
+
+    Handles account and zone provisioning, DNS record creation/updates, and
+    keeps vendor data in sync with the local DB models (DnsAccount, DnsZone, DnsRecord).
+    """
 
     def __init__(self, client=None):
         self.client = client or Client()

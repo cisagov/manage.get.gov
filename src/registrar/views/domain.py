@@ -906,7 +906,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             bound_form.auto_id = auto_id
             record_obj.form = bound_form  # type: ignore[attr-defined]
             return
-        record_obj.form = DomainDNSRecordForm(initial=self.record_dict_for_initial_data(record_obj), auto_id=auto_id)  # type: ignore[attr-defined]
+        initial_data = self.record_dict_for_initial_data(record_obj)
+        record_obj.form = DomainDNSRecordForm(initial=initial_data, auto_id=auto_id)  # type: ignore[attr-defined]
 
     def _error_response(self, request, form=None, status=200):
         return TemplateResponse(
@@ -930,17 +931,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
-
-        vendor_record_id = self.dns_host_service.get_active_vendor_record_id(record_obj)
-        if not vendor_record_id:
-            messages.error(request, "This DNS record is missing a vendor record id and cannot be updated.")
-            raise GenericError(GenericErrorCodes.GENERIC_ERROR)
-
-        record_response = self.dns_host_service.update_and_save_record(
-            x_zone_id,
-            vendor_record_id,
-            form_record_data,
-        )
 
         vendor_result = record_response["result"]
         context_dns_record.set(vendor_result)
