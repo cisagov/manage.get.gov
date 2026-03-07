@@ -841,9 +841,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def attach_edit_form(self, dns_records):
         """adding a form instance to the dns_record objects
         to display corresponding values in the table rows"""
-        for record in dns_records:
+        for i, record in enumerate(dns_records, start=1):
             data_dict = self.record_dict_for_initial_data(record)
-            record.form = DomainDNSRecordForm(initial=data_dict)
+            record.form = DomainDNSRecordForm(initial=data_dict, auto_id=f"id_edit_{i}_%s")
+            record.counter = i
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -851,7 +852,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
-            dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
+            dns_records = DnsRecord.get_ordered_for_zone(dns_zone)
             self.attach_edit_form(dns_records)
             context["dns_records"] = dns_records
             context["nameservers"] = dns_zone.nameservers
@@ -875,9 +876,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def _parse_dns_record_id(self, request) -> int | None:
-        """Parse of the edited record PK from POST."""
-        raw = request.POST.get("id")
+    def _parse_counter(self, request) -> int | None:
+        """Parse the sequential row counter from POST data."""
+        raw = request.POST.get("counter")
         try:
             return int(raw) if raw not in (None, "") else None
         except (TypeError, ValueError):
@@ -893,16 +894,19 @@ class DomainDNSRecordsView(DomainFormBaseView):
             "comment": form.cleaned_data.get("comment", ""),
         }
 
-    def _attach_form(self, record_obj: DnsRecord, *, bound_form=None) -> None:
+    def _attach_form(self, record_obj: DnsRecord, *, bound_form=None, counter=None) -> None:
         """Attach a form to the record for template rendering.
 
         - If `bound_form` is provided, attach that (used for validation errors).
-        - Otherwise attach an blank/initial form from the DB model.
+        - Otherwise attach a blank/initial form from the DB model.
+        - `counter` generates unique field IDs to avoid duplicate IDs on the page.
         """
+        auto_id = f"id_edit_{counter}_%s" if counter is not None else "id_edit_%s"
         if bound_form is not None:
-            record_obj.form = bound_form
+            bound_form.auto_id = auto_id
+            record_obj.form = bound_form  # type: ignore[attr-defined]
             return
-        record_obj.form = DomainDNSRecordForm(initial=self.record_dict_for_initial_data(record_obj))
+        record_obj.form = DomainDNSRecordForm(initial=self.record_dict_for_initial_data(record_obj), auto_id=auto_id)  # type: ignore[attr-defined]
 
     def _error_response(self, request, form=None, status=200):
         return TemplateResponse(
@@ -919,11 +923,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=status,
         )
 
-    def _handle_edit(self, request, record_pk: int, x_zone_id: str, form_record_data: dict) -> int:
+    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict, counter: int | None) -> int | None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
-        record_obj = self.dns_host_service.get_dns_record(self.object, record_pk)
-        if not record_obj:
-            messages.error(request, "Could not find the DNS record to update.")
+        try:
+            record_response = self.dns_host_service.edit_record(self.object, x_zone_id, counter, form_record_data)
+        except ValueError as e:
+            messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
 
         vendor_record_id = self.dns_host_service.get_active_vendor_record_id(record_obj)
@@ -938,22 +943,23 @@ class DomainDNSRecordsView(DomainFormBaseView):
         )
 
         vendor_result = record_response["result"]
+        context_dns_record.set(vendor_result)
         dns_name = vendor_result.get("name") or form_record_data["name"]
         record_type = form_record_data["type"]
         messages.success(request, f"DNS {record_type} record '{dns_name}' updated successfully.")
-        context_dns_record.set(vendor_result)
 
         # Refresh with db instance for templating (edit form requires BoundFields)
-        record_obj.refresh_from_db()
-        self._attach_form(record_obj)
-        self.dns_record = record_obj
-        return record_obj.pk
+        dns_record = record_response["dns_record"]
+        dns_record.refresh_from_db()
+        self._attach_form(dns_record, counter=counter)
+        self.dns_record = dns_record
+        return counter
 
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update) for DNS records via htmx."""
         self.object = self.get_object()
         form = self.get_form()
-        record_pk = self._parse_dns_record_id(request)
+        counter_from_post = self._parse_counter(request)
         self._get_domain(request)
 
         if not form.is_valid():
@@ -962,20 +968,20 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 messages.error(request, error)
 
             # Edit: re-render the edit row with validation errors via OOB swap.
-            if record_pk:
-                record_obj = self.dns_host_service.get_dns_record(self.object, record_pk)
-                if record_obj:
-                    self._attach_form(record_obj, bound_form=form)
+            if counter_from_post:
+                dns_record = DnsRecord.get_for_domain_by_counter(self.object, counter_from_post)
+                if dns_record:
+                    self._attach_form(dns_record, bound_form=form, counter=counter_from_post)
                     hx_trigger_events = json.dumps({"messagesRefresh": ""})
                     return TemplateResponse(
                         request,
                         "domain_dns_record_form_response.html",
                         {
-                            "dns_record": record_obj,
+                            "dns_record": dns_record,
                             "domain": self.object,
                             "form": DomainDNSRecordForm(),
                             "nameservers": None,
-                            "counter": record_obj.pk,
+                            "counter": counter_from_post,
                             "is_edit": True,
                             "is_first_record": False,
                         },
@@ -1012,27 +1018,27 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 )
 
             # EDIT
-            if record_pk:
-                counter = self._handle_edit(request, record_pk, x_zone_id, form_record_data)
+            if counter_from_post:
+                counter = self._handle_edit(request, x_zone_id, form_record_data, counter_from_post)
                 is_edit = True
 
             # CREATE
             else:
                 # If there are no existing records yet, the response template should build the table
-                is_first_record = not self.dns_host_service.has_existing_records(self.object)
+                is_first_record = not DnsRecord.zone_has_records(self.object)
                 record_response = self.dns_host_service.create_and_save_record(x_zone_id, form_record_data)
                 vendor_result = record_response["result"]
                 dns_name = vendor_result.get("name") or form_record_data["name"]
                 record_type = form_record_data["type"]
                 messages.success(request, f"DNS {record_type} record '{dns_name}' updated successfully.")
                 context_dns_record.set(vendor_result)
-                x_record_id = vendor_result.get("id")
-                record_obj = self.dns_host_service.get_dns_record_by_vendor_id(x_record_id) if x_record_id else None
+                dns_record = record_response.get("dns_record")
 
-                if record_obj:
-                    self._attach_form(record_obj)
-                    self.dns_record = record_obj
-                    counter = record_obj.pk
+                if dns_record:
+                    dns_zone = DnsZone.objects.filter(domain=self.object).first()
+                    counter = DnsRecord.objects.filter(dns_zone=dns_zone).count() if dns_zone else 1
+                    self._attach_form(dns_record, counter=counter)
+                    self.dns_record = dns_record
                 else:
                     self.dns_record = record_response["result"]
                     counter = None
