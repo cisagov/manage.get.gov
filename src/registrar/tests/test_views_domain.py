@@ -3541,7 +3541,7 @@ class TestDomainDnsRecords(TestDomainOverview):
         response = self.client.post(
             reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
             data={
-                "id": dns_record.pk,
+                "counter": 1,
                 "type": dns_record.type,
                 "name": "api",
                 "content": "203.0.113.15",
@@ -3574,7 +3574,7 @@ class TestDomainDnsRecords(TestDomainOverview):
         response = self.client.post(
             reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
             data={
-                "id": dns_record.pk,
+                "counter": 1,
                 "type": dns_record.type,
                 "name": "api",
                 "content": "203.0.113.25",

@@ -4,8 +4,6 @@ import logging
 from dataclasses import dataclass
 from django.conf import settings
 
-from registrar.utility.errors import APIError
-
 logger = logging.getLogger(__name__)
 
 
@@ -128,9 +126,10 @@ class CloudflareService:
             logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            error_body = e.response.text
-            logger.error(f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {error_body}")
-            raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}")
+            logger.error(
+                f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {e.response.text}"
+            )
+            raise
         return resp.json()
 
     def get_page_accounts(self, page: int, per_page: int):
@@ -195,5 +194,5 @@ class CloudflareService:
             logger.error(
                 f"Error {e.response.status_code} while updating dns record: {e}\nResponse body: {e.response.text}"
             )
-            raise APIError(f"Cloudflare update_dns_record failed: {e.response.status_code} {e.response.text}")
+            raise
         return resp.json()

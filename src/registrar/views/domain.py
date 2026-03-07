@@ -1030,7 +1030,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     self._attach_form(dns_record, counter=counter)
                     self.dns_record = dns_record
                 else:
-                    self.dns_record = record_response["result"]
+                    self.dns_record = None
                     counter = None
 
         except APIError as e:
