@@ -1071,7 +1071,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             request,
             "domain_dns_record_form_response.html",
             response_context,
-            headers={"HX-TRIGGER": hx_trigger_events},
+            headers={"HX-Trigger-After-Settle": hx_trigger_events},
             status=200,
         )
 
