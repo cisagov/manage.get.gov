@@ -3574,9 +3574,46 @@ class TestDomainDnsRecords(TestDomainOverview):
         self.assertContains(response, "203.0.113.15")
         self.assertContains(response, "3600")
         self.assertJSONEqual(
-            response.headers["HX-TRIGGER"],
+            response.headers["HX-Trigger-After-Settle"],
             {"messagesRefresh": "", "recordSubmitSuccess": ""},
         )
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_edit_dns_record_save_closes_edit_form(self):
+        """After a successful edit, the response signals form close and returns a clean edit form row.
+
+        The form close is driven by two response characteristics:
+        1. HX-Trigger-After-Settle contains `recordSubmitSuccess`, which Alpine.js uses to
+           reset showFormId to null, hiding the edit form row.
+        2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
+           form with a clean one, so reopening the form shows no leftover errors.
+        """
+        _, _, dns_zone = create_initial_dns_setup(domain=self.domain, x_zone_id="zone-close-123")
+        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
+            data={
+                "counter": 1,
+                "type": dns_record.type,
+                "name": "api",
+                "content": "203.0.113.20",
+                "ttl": 3600,
+                "comment": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        # recordSubmitSuccess in HX-Trigger-After-Settle tells Alpine to set showFormId = null
+        trigger = response.headers.get("HX-Trigger-After-Settle", "")
+        self.assertIn("recordSubmitSuccess", trigger)
+
+        # The response must include an OOB swap of the edit form row with no validation errors,
+        # so the form is clean if the user reopens it
+        self.assertContains(response, 'hx-swap-oob="outerHTML"')
+        self.assertNotContains(response, "usa-form-group--error")
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
