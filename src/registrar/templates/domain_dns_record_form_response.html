@@ -1,12 +1,10 @@
 {% if dns_record %}
     {% if is_edit %}
         {% include "domain_dns_record_row.html" with counter=counter dns_record=dns_record %}
-        {# Only OOB swap the edit form row when there are errors, so the form stays open #}
-        {% if dns_record.form.errors %}
-            <template>
-            {% include "domain_dns_record_edit_form.html" with counter=counter dns_record=dns_record oob_swap=True %}
-            </template>
-        {% endif %}
+        {# Always OOB swap the edit form row so errors are cleared on success #}
+        <template>
+        {% include "domain_dns_record_edit_form.html" with counter=counter dns_record=dns_record oob_swap=True %}
+        </template>
     {% else %}
         <template>
             {% if is_first_record %}
