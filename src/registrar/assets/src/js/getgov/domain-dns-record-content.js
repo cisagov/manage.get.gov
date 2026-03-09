@@ -1,5 +1,8 @@
 // Establishes javascript for dynamic content label based on type
 export function initDynamicDNSRecordFormFields() { 
+    console.log('Init started');
+    console.log('config: ', config)
+    
     const typeField = document.getElementById('id_type');
 
     if (!typeField) return;
@@ -23,8 +26,29 @@ export function initDynamicDNSRecordFormFields() {
         if (info) {
             contentLabel.textContent = info.label;
             contentHelp.textContent = info.help_text;
-        }
+        
+            const current = document.getElementById('id_content');
+            if (info.use_textarea && current.tagName === 'INPUT') {
+                const ta = document.createElement('textarea');
 
+                ta.id = current.id;
+                ta.name = current.name;
+                ta.className = 'usa-textarea';
+                current.replaceWith(ta);
+            } else if (!info.use_textarea && current.tagName === 'TEXTAREA') {
+                const inp = document.createElement('input');
+                
+                inp.type = 'text';
+                inp.id = current.id;
+                inp.name = current.name;
+                inp.className = 'usa-input';
+                current.replaceWith(inp);
+            }
+
+            console.log(typeField.dataset.typeConfig);
+        
+        }
+        
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
     });

@@ -802,6 +802,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt.value: {
                 "label": getattr(rt, "field_label", "Content"),
                 "help_text": getattr(rt, "help_text"),
+                "use_textarea": getattr(rt, "use_textarea", False),
             }
             for rt in DNSRecordTypes
         }
@@ -842,6 +843,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("", "- Select -"),
             ("A", "A"),
             ("AAAA", "AAAA"),
+            ("TXT", "TXT"),
         ],
         required=True,
         widget=forms.Select(
