@@ -1,7 +1,7 @@
 from registrar.forms.domain import ARecordForm, TXTRecordForm
 from registrar.utility.enums import DNSRecordTypes
 from registrar.decorators import (IS_STAFF, grant_access)
-from django.shortcuts import render
+from django.template.response import TemplateResponse
 
 FORM_MAP = {
         DNSRecordTypes.A: ARecordForm,
@@ -24,5 +24,4 @@ def get_dns_form_partial(request):
     form = FORM_MAP.get(record_type)
     partial_url = get_partial_string_path(record_type)
     template = f"../templates/{partial_url}"
-    print(form, template)
-    return render(request, template, {"form" : form})
+    return TemplateResponse(request, template, {"form" : form})
