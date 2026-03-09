@@ -29,9 +29,9 @@ DOMAIN_API_MESSAGES = {
     # message below is considered safe; no user input can be inserted into the message
     # body; public_site_url() function reads from local app settings and therefore safe
     "unavailable": mark_safe(  # nosec
-        "That domain isn’t available."
+        "That domain isn’t available. You can learn more about this domain by performing a "
         "<a class='usa-link' href='{}' target='_blank'>"
-        "You can learn more about this domain by performing a WHOIS search</a>.".format(public_site_url("domains/whois/?domain="))
+        "WHOIS search</a>.".format(public_site_url("domains/whois/?domain="))
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "invalid_spaces": "Enter a domain using only letters, numbers, or hyphens "
