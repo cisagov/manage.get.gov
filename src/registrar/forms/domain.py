@@ -854,7 +854,7 @@ class DnsRecordBaseForm(forms.ModelForm):
                 "hx-get": "/dns-form",
                 "hx-trigger": "change changed",
                 "hx-target": "#dns-record-form-container",
-                "hx-swap": "innerHTML",
+                "hx-swap": "innerHTML settle:0s show:no-scroll",
             }
         ),
     )
