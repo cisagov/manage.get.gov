@@ -27,26 +27,6 @@ export function initDynamicDNSRecordFormFields() {
 
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
-
-
-        const current = document.getElementById('id_content');
-        if (info.use_textarea && current.tagName === 'INPUT') {
-                const ta = document.createElement('textarea');
-
-                ta.id = current.id;
-                ta.name = current.name;
-                ta.className = 'usa-textarea';
-                console.log("HELLO")
-                current.replaceWith(ta);
-        } else if (!info.use_textarea && current.tagName === 'TEXTAREA') {
-                const inp = document.createElement('input');
-
-                inp.type = 'text';
-                inp.id = current.id;
-                inp.name = current.name;
-                inp.className = 'usa-input';
-                current.replaceWith(inp);
-        }
     });
 
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)

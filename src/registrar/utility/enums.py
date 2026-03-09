@@ -150,9 +150,3 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
         }.get(self, "Enter a valid value.")
-
-    @property
-    def use_textarea(self) -> bool:
-        return {
-            DNSRecordTypes.TXT: True,
-        }.get(self, False)
