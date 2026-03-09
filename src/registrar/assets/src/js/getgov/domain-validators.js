@@ -116,7 +116,7 @@ function checkDomainAvailability(el) {
             inlineToast(el.parentElement, el.id, ERROR, response.message);
         }
     }
-    fetchJSON(`available/?domain=${el.value}`, callback);
+    fetchJSON(`available/?domain=${encodeURIComponent(el.value)}`, callback);
 }
   
 /** Hides the toast message and clears the aira live region. */

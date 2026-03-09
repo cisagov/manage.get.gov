@@ -27,6 +27,9 @@ class InvalidDomainError(ValueError):
     pass
 
 
+class InvalidSpacesError(ValueError):
+    pass
+
 class InvitationError(Exception):
     """Base exception for invitation-related errors."""
 

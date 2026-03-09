@@ -24,17 +24,20 @@ DOMAIN_API_MESSAGES = {
     "required": "Enter the .gov domain you want. Don’t include “www” or “.gov.”"
     " For example, if you want www.city.gov, you would enter “city”"
     " (without the quotes).",
-    "extra_dots": "Enter the .gov domain you want without any periods.",
+    "extra_dots": "Enter a domain using only letters, numbers, or hyphens. "
+    "We don’t register subdomains, like blog.example.gov.",
     # message below is considered safe; no user input can be inserted into the message
     # body; public_site_url() function reads from local app settings and therefore safe
     "unavailable": mark_safe(  # nosec
-        "That domain isn’t available. "
+        "That domain isn’t available."
         "<a class='usa-link' href='{}' target='_blank'>"
-        "Read more about choosing your .gov domain</a>.".format(public_site_url("domains/choosing"))
+        "You can learn more about this domain by performing a WHOIS search</a>.".format(public_site_url("domains/whois/?domain="))
     ),
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
-    "success": "That domain is available! We’ll try to give you the domain you want, \
-               but it's not guaranteed. After you complete this form, we’ll \
+    "invalid_spaces": "Enter a domain using only letters, numbers, or hyphens "
+    "(though we don't recommend using hyphens).",
+    "success": "That domain is available!<strong> We’ll try to give you the domain you want, \
+               but it's not guaranteed.</strong> After you complete this form, we’ll \
                evaluate whether your request meets our requirements.",
     "error": GenericError.get_error_message(GenericErrorCodes.CANNOT_CONTACT_REGISTRY),
 }
