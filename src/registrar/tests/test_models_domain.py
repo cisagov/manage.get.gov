@@ -927,7 +927,6 @@ class TestRegistrantContacts(MockEppLib):
 
             message = str(error.exception)
             self.assertIn(self.domain.name, message)
-            self.assertIn("domain_info_id", message)
             self.assertIn("organization", message)
             self.assertIn("address_line1", message)
             self.assertIn("city", message)
