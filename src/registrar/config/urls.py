@@ -404,7 +404,7 @@ urlpatterns = [
     ),
     path("version", views.version_info, name="version"),
     path("messages/", get_alert_messages, name="get-messages"),
-    path("dns-form-partial/", get_dns_form_partial, name="dns-form-partial")
+    path("dns-form/", get_dns_form_partial, name="get-dns-form"),
 ]
 
 # Djangooidc strips out context data from that context, so we define a custom error

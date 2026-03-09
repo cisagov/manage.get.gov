@@ -92,6 +92,7 @@ logger = logging.getLogger(__name__)
 context_dns_record = ContextVar("context_dns_record", default=None)
 from registrar.views.utility.dns_record_helper import get_partial_string_path, FORM_MAP
 
+
 class DomainBaseView(PermissionRequiredMixin, DetailView):
     """
     Base View for the Domain. Handles getting and setting the domain
@@ -817,18 +818,18 @@ class DomainDNSView(DomainBaseView):
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = ARecordForm
- 
+
     def __init__(self):
         self.dns_record = None
         self.client = Client()
         self.dns_host_service = DnsHostService(client=self.client)
-   
+
     def get_form_class(self):
-        if not hasattr(self, 'request'):
+        if not hasattr(self, "request"):
             return ARecordForm
         record_type = self.request.POST.get("type") or self.request.GET.get("type", DNSRecordTypes.A)
         return FORM_MAP.get(record_type, ARecordForm)
-    
+
     def get_breadcrumb_items(self):
         return [
             {"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})},
@@ -959,7 +960,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.dns_record["partial"] = partial
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
-        new_form = ARecordForm()
+        new_form = ARecordForm(initial={"type": ""})
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",

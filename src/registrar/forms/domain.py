@@ -787,9 +787,9 @@ class DomainDeleteForm(forms.Form):
 
 class DnsRecordBaseForm(forms.ModelForm):
     """Base DNS Record, this holds shared fields:
-     - ttl, content, type, name
-       Cleaned are handled by inherited record form classes """
-    
+    - ttl, content, type, name
+      Cleaned are handled by inherited record form classes"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -851,10 +851,10 @@ class DnsRecordBaseForm(forms.ModelForm):
             attrs={
                 "class": "usa-select",
                 "required": "required",
-                "hx-get": "/dns-form-partial",
+                "hx-get": "/dns-form",
                 "hx-trigger": "change changed",
                 "hx-target": "#dns-record-form-container",
-                "hx-swap":"innerHTML",
+                "hx-swap": "innerHTML",
             }
         ),
     )
@@ -871,8 +871,6 @@ class DnsRecordBaseForm(forms.ModelForm):
             }
         ),
     )
-
-
 
     ttl = forms.ChoiceField(
         label="TTL",
@@ -894,8 +892,10 @@ class DnsRecordBaseForm(forms.ModelForm):
             }
         ),
     )
+
+
 class ARecordForm(DnsRecordBaseForm):
-    
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
@@ -913,18 +913,19 @@ class ARecordForm(DnsRecordBaseForm):
 
         return cleaned_data
 
+
 class TXTRecordForm(DnsRecordBaseForm):
- 
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["content"].widget = forms.Textarea(
-                attrs={
-                    "class": "usa-textarea usa-textarea--medium",
-                    "rows": 2,
-                    "hide_character_count": True,
-                    "required": "required"
-                }
-            )
+            attrs={
+                "class": "usa-textarea usa-textarea--medium",
+                "rows": 2,
+                "hide_character_count": True,
+                "required": "required",
+            }
+        )
 
     def clean(self):
         cleaned_data = super().clean()
