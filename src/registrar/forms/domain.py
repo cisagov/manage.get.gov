@@ -29,6 +29,7 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 from registrar.utility.enums import DNSRecordTypes
+from registrar.validations import validate_mx_name
 
 import json
 import re
@@ -798,6 +799,9 @@ class DomainDNSRecordForm(forms.ModelForm):
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
 
+            if rt == DNSRecordTypes.MX:
+                self.fields["name"].validators = [validate_mx_name]
+
         config = {
             rt.value: {
                 "label": getattr(rt, "field_label", "Content"),
@@ -810,7 +814,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     class Meta:
         model = DnsRecord
-        fields = ["type", "name", "content", "ttl", "comment"]
+        fields = ["type", "name", "content", "priority", "ttl", "comment"]
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -830,7 +834,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {"name": {"required": "Enter the name of this record."}}
 
     type = forms.ChoiceField(
         # TODO: choices has been temporarily hard-coded for user testing.
@@ -842,6 +846,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("", "- Select -"),
             ("A", "A"),
             ("AAAA", "AAAA"),
+            ("MX", "MX"),
         ],
         required=True,
         widget=forms.Select(
@@ -849,6 +854,25 @@ class DomainDNSRecordForm(forms.ModelForm):
                 "class": "usa-select",
                 "required": "required",
                 "x-model": "recordType",
+            }
+        ),
+    )
+
+    priority = forms.IntegerField(
+        label="Priority",
+        required=False,
+        min_value=0,
+        max_value=65535,
+        error_messages={
+            "invalid": "Enter a priority number between 0-65535.",
+            "min_value": "Enter a priority number between 0-65535.",
+            "max_value": "Enter a priority number between 0-65535.",
+        },
+        widget=forms.NumberInput(
+            attrs={
+                "class": "usa-input",
+                "min": "0",
+                "max": "65535",
             }
         ),
     )
@@ -895,11 +919,21 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type:
             record = DNSRecordTypes(record_type)
             if record.validator:
-                try:
-                    record.validator(content)
-                except ValidationError:
+                if not content:
                     self.add_error("content", record.error_message)
+                else:
+                    try:
+                        record.validator(content)
+                    except ValidationError as e:
+                        if record == DNSRecordTypes.MX:
+                            for msg in e.messages:
+                                self.add_error("content", msg)
+                        else:
+                            self.add_error("content", record.error_message)
             elif not content:
                 self.add_error("content", record.error_message)
+
+            if record == DNSRecordTypes.MX and cleaned_data.get("priority") is None:
+                self.add_error("priority", "Enter a priority for this record.")
 
         return cleaned_data
