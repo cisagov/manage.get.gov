@@ -1744,6 +1744,10 @@ class Domain(TimeStampedModel, DomainHelper):
             else:
                 state_territory = domain_info.state_territory
 
+        self._check_missing_fields(
+            registrant_org, registrant_street1, registrant_city, registrant_zipcode, state_territory
+        )
+
         registrant.org = registrant_org
         registrant.street1 = registrant_street1
         registrant.street2 = registrant_street2
@@ -1760,6 +1764,29 @@ class Domain(TimeStampedModel, DomainHelper):
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
+
+    def _check_missing_fields(
+        self, registrant_org, registrant_street1, registrant_city, registrant_zipcode, state_territory
+    ):
+        missing_fields = []
+        if not registrant_org:
+            missing_fields.append("organization")
+        if not registrant_street1:
+            missing_fields.append("address_line1")
+        if not registrant_city:
+            missing_fields.append("city")
+        if not state_territory:
+            missing_fields.append("state_territory")
+        if not registrant_zipcode:
+            missing_fields.append("zipcode")
+
+        if missing_fields:
+            raise ValueError(
+                "Cannot create registrant for domain "
+                f"'{self.name}': "
+                "missing required DomainInformation values: "
+                f"{', '.join(missing_fields)}"
+            )
 
     @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
     def dns_needed_from_unknown(self):
