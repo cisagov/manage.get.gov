@@ -15,7 +15,7 @@
         {% include partial with form=form %}
     {% else %}
     <div id="record-type-container">
-    
+        {% include "dns_record_forms/base_record_form.html" with form=form %}
     </div>
     {% endif %}
     {% input_with_errors form.comment %}

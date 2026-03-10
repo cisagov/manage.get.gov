@@ -60,7 +60,8 @@
                     >
                         {% include "domain_dns_record_form_content.html" with form=form %}
                     </form>
-                    <!-- Hidden form templates for js to render form via js -->
+                    <!-- Hidden form templates to render partial form via js -->
+                     <!-- It has to be placed outside of the form because all of the fields will submit -->
                     <div id="base-form-template" class="display-none">
                         {% include "dns_record_forms/base_record_form.html" with form=form %}
                     </div>
@@ -68,6 +69,7 @@
                     <div id="txt-form-template" class="display-none">
                             {% include "dns_record_forms/txt_record_form.html" with form=form %}
                      </div>
+                     <!-- End of pre rendered templates -->
                     </section>
                 </div>
              </div>

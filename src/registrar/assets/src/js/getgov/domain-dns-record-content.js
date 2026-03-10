@@ -2,7 +2,6 @@
 
 function switchFromInputToTextArea (element) {
         const ta = document.createElement('textarea');
-        console.log(element)
         ta.name = element.name;
         ta.className = 'usa-textarea usa-textarea--medium';
         element.replaceWith(ta)

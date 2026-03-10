@@ -853,7 +853,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             }
         ),
     )
-    
+
     content = forms.CharField(
         label="Content",
         required=False,

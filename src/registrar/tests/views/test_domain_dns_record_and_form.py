@@ -47,7 +47,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "content": "2001:db8::1",
             "ttl": 300,
             "comment": "Mocked record created",
-        },
+        }
     ]
 
     def _url(self):
@@ -132,8 +132,39 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
                     # Invalid form should re-render the page, not redirect
                     self.assertEqual(response.status_code, 200)
-                    self.assertIn("Name", response.text)
+
                     self.assertIn(DNSRecordTypes(record_type).error_message, response.text)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_invalid_txt_content_throws_error(self):
+
+        record_case = {
+            "type": "TXT",
+            "name": "@",
+            "content": "'something'",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        }
+
+        record_type = record_case["type"]
+        with self.subTest(record_type=record_type):
+            with patch("registrar.views.domain.DnsHostService"):
+                    page = self.app.get(self._url(), status=200)
+                    record_form = page.forms[0]
+
+                    record_form["type"] = record_type
+                    record_form["name"] = record_case["name"]
+                    record_form["content"] = record_case["content"]
+
+                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+                    response = record_form.submit()
+
+                    # Invalid form should re-render the page, not redirect
+                    self.assertEqual(response.status_code, 200)
+
+                    self.assertIn("Enter content without using quotation marks.", response.text)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator

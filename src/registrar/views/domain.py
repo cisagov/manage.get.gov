@@ -86,11 +86,11 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
+from registrar.utility.enums import DNSRecordTypes
 
 logger = logging.getLogger(__name__)
 
 context_dns_record = ContextVar("context_dns_record", default=None)
-from registrar.utility.enums import DNSRecordTypes
 
 
 class DomainBaseView(PermissionRequiredMixin, DetailView):
@@ -887,7 +887,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         type = form.data.get("type")
         record_type = DNSRecordTypes[type]
         partial = record_type.get_partial
-    
+
         if not form.is_valid():
             errors = self.get_form_errors(form)
             for error in errors:
