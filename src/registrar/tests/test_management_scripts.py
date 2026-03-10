@@ -5,6 +5,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from registrar.models.domain_group import DomainGroup
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.public_contact import get_id
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -2558,7 +2559,20 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.non_default_contact.save()
 
         # 4. Create a default contact but with an old email
-        self.default_registrant_old_email = PublicContact.get_default_registrant()
+        self.default_registrant_old_email = PublicContact.objects.get_or_create(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            registry_id=get_id(),
+            name="CSD/CB – Attn: .gov TLD",
+            org="Cybersecurity and Infrastructure Security Agency",
+            street1="1110 N. Glebe Rd",
+            city="Arlington",
+            sp="VA",
+            pc="22201",
+            cc="US",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+            voice="+1.8882820870",
+            pw="thisisnotapassword",
+        )
         self.default_registrant_old_email.domain = self.domain
         self.default_registrant_old_email.registry_id = "failReg123456789"
         self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT

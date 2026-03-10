@@ -44,6 +44,7 @@ from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
+from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
 
@@ -1703,7 +1704,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def addRegistrant(self):
         """Adds a registrant contact"""
-        registrant = PublicContact.get_default_registrant()
+        registrant = PublicContact.objects.create(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT, registry_id=get_id()
+        )
 
         domain_info = getattr(self, "domain_info", None)
         if not domain_info:
@@ -1719,35 +1722,27 @@ class Domain(TimeStampedModel, DomainHelper):
             registrant_org = domain_info.converted_organization_name
 
         registrant_street1 = domain_info.converted_address_line1
-        registrant_street2 = domain_info.address_line2
-        registrant_city = domain_info.converted_city
+        registrant_street2 = domain_info.converted_address_line2
+
+        registrant_city = None
+        # Check for suborg first, and use that if it exists for city
+        if domain_info.sub_organization:
+            registrant_city = domain_info.sub_organization.city
+        else:
+            if domain_info.portfolio.city:
+                registrant_city = domain_info.portfolio.city
+            else:
+                registrant_city = domain_info.converted_city
         registrant_zipcode = domain_info.converted_zipcode
 
         state_territory = None
-        if domain_info.portfolio:
-            state_territory = domain_info.portfolio.state_territory
+        if domain_info.sub_organization:
+            state_territory = domain_info.sub_organization.state_territory
         else:
-            state_territory = domain_info.state_territory
-
-        missing_fields = []
-        if not registrant_org:
-            missing_fields.append("organization")
-        if not registrant_street1:
-            missing_fields.append("address_line1")
-        if not registrant_city:
-            missing_fields.append("city")
-        if not state_territory:
-            missing_fields.append("state_territory")
-        if not registrant_zipcode:
-            missing_fields.append("zipcode")
-
-        if missing_fields:
-            raise ValueError(
-                "Cannot create registrant for domain "
-                f"'{self.name}': "
-                "missing required DomainInformation values: "
-                f"{', '.join(missing_fields)}"
-            )
+            if domain_info.portfolio:
+                state_territory = domain_info.portfolio.state_territory
+            else:
+                state_territory = domain_info.state_territory
 
         registrant.org = registrant_org
         registrant.street1 = registrant_street1
@@ -1755,6 +1750,12 @@ class Domain(TimeStampedModel, DomainHelper):
         registrant.city = registrant_city
         registrant.sp = state_territory
         registrant.pc = registrant_zipcode
+
+        # Set defaults for fields we don't have
+        registrant.name = "CSD/CB – Attn: .gov TLD"
+        registrant.cc = "US"
+        registrant.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
+        registrant.voice = "+1.8882820870"
 
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter

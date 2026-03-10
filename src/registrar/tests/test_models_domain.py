@@ -16,8 +16,9 @@ from unittest import skip
 from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
-from registrar.models.public_contact import PublicContact
+from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
+from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
@@ -1174,7 +1175,20 @@ class TestRegistrantContacts(MockEppLib):
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
             expected_admin = domain.get_default_administrative_contact()
             expected_admin.email = self.mockAdministrativeContact.email
-            expected_registrant = PublicContact.get_default_registrant()
+            expected_registrant = PublicContact.objects.get_or_create(
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                registry_id=get_id(),
+                name="CSD/CB – Attn: .gov TLD",
+                org="Cybersecurity and Infrastructure Security Agency",
+                street1="1110 N. Glebe Rd",
+                city="Arlington",
+                sp="VA",
+                pc="22201",
+                cc="US",
+                email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+                voice="+1.8882820870",
+                pw="thisisnotapassword",
+            )
             expected_registrant.domain = domain
             expected_registrant.email = self.mockRegistrantContact.email
             expected_security = domain.get_default_security_contact()
@@ -1236,7 +1250,20 @@ class TestRegistrantContacts(MockEppLib):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="example.gov")
             DomainInformation.objects.get_or_create(domain=domain, defaults={"requester": self.requester})
-            registrant = PublicContact.get_default_registrant()
+            registrant = PublicContact.objects.get_or_create(
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                registry_id=get_id(),
+                name="CSD/CB – Attn: .gov TLD",
+                org="Cybersecurity and Infrastructure Security Agency",
+                street1="1110 N. Glebe Rd",
+                city="Arlington",
+                sp="VA",
+                pc="22201",
+                cc="US",
+                email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+                voice="+1.8882820870",
+                pw="thisisnotapassword",
+            )
             registrant.domain = domain
 
             disclose = domain._disclose_fields(registrant)
