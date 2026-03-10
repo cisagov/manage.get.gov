@@ -10,12 +10,19 @@ function switchFromInputToTextArea (element) {
 
 function disableHiddenInputs(){
     document.querySelectorAll('[x-show]').forEach(el =>{
-        if(el.style.display === "none"){
-            el.querySelectorAll('input', 'textarea', 'select').forEach(
+        if(el.style.display == 'none'){
+            el.querySelectorAll('input, textarea, select').forEach(
                 f => f.disabled = true
             )
         }
+        else{
+            el.querySelectorAll('input, textarea, select').forEach(
+                f => f.disabled = false
+            )
+        }
+    console.log(el, el.style.display, el.hidden)
     })
+    
 }
 
 export function initDynamicDNSRecordFormFields() { 

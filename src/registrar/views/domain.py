@@ -951,7 +951,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # Grabbed result data to pass into the form response
         record_type = DNSRecordTypes[self.dns_record["type"]]
         self.dns_record["form"] = filled_form
-        self.dns_record["partial"] = record_type.partial
+        self.dns_record["partial"] = record_type.get_partial
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
         new_form = DomainDNSRecordForm()
