@@ -56,6 +56,9 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
 # For use on DNS record names
 DNS_NAME_FIELD_REGEX = re.compile(r"^[a-zA-Z0-9.-]+$")
 
+# Full FQDN max length per RFC 1035
+MX_CONTENT_MAX_LENGTH = 253
+
 
 def validate_dns_name(name: str) -> None:
     """
@@ -74,7 +77,39 @@ def validate_dns_name(name: str) -> None:
         raise ValidationError("Name must be no more than 63 characters.")
 
     if not name[0].isalpha() or not name[-1].isalnum():
-        raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
+        raise ValidationError("Enter a name that begins with a letter and ends with a letter or number.")
+
+
+def validate_mx_name(name: str) -> None:
+    """
+    Validates a DNS record name for MX records. Same rules as validate_dns_name
+    but with an MX-specific space error message.
+    """
+    if name == "@":
+        return
+
+    if " " in name:
+        raise ValidationError("Enter the name you want without any spaces.")
+
+    if not DNS_NAME_FIELD_REGEX.fullmatch(name):
+        raise ValidationError("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.")
+
+    if len(name) > DOMAIN_LABEL:
+        raise ValidationError("Name must be no more than 63 characters.")
+
+    if not name[0].isalpha() or not name[-1].isalnum():
+        raise ValidationError("Enter a name that begins with a letter and ends with a letter or number.")
+
+
+def validate_mx_content(content: str) -> None:
+    """
+    Validates an MX record's mail server hostname.
+    """
+    if " " in content:
+        raise ValidationError("Enter the mail server without any spaces.")
+
+    if len(content) > MX_CONTENT_MAX_LENGTH:
+        raise ValidationError("Name must be no more than 253 characters.")
 
 
 def check_has_valid_quotes(content: str) -> bool:
