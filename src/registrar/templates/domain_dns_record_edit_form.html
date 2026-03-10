@@ -6,7 +6,7 @@
              <h2 class="margin-top-0"> Edit record </h2>
             {% csrf_token %}
                
-              {% include dns_record.partial %}
+              {% include dns_record.partial with form=dns_record.form %}
             {% input_with_errors dns_record.form.comment %}
              <button
         type="reset"

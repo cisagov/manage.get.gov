@@ -10,13 +10,14 @@
 </div>
 
 <div x-cloak x-show="recordType">
-   <div x-show="recordType === 'A' || recordType === 'AAAA' ">
-       {% include "dns_record_forms/base_record_form.html" with form=form %}
+  
+    {% if partial %}
+        {% include partial with form=form %}
+    {% else %}
+    <div id="record-type-container">
+    
     </div>
-
-    <div x-show="recordType === 'TXT' ">
-         {% include "dns_record_forms/txt_record_form.html" with form=form %}
-    </div>
+    {% endif %}
     {% input_with_errors form.comment %}
 
     <button

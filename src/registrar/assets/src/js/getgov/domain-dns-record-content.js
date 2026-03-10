@@ -2,28 +2,12 @@
 
 function switchFromInputToTextArea (element) {
         const ta = document.createElement('textarea');
+        console.log(element)
         ta.name = element.name;
         ta.className = 'usa-textarea usa-textarea--medium';
         element.replaceWith(ta)
 }
 
-
-function disableHiddenInputs(){
-    document.querySelectorAll('[x-show]').forEach(el =>{
-        if(el.style.display == 'none'){
-            el.querySelectorAll('input, textarea, select').forEach(
-                f => f.disabled = true
-            )
-        }
-        else{
-            el.querySelectorAll('input, textarea, select').forEach(
-                f => f.disabled = false
-            )
-        }
-    console.log(el, el.style.display, el.hidden)
-    })
-    
-}
 
 export function initDynamicDNSRecordFormFields() { 
     console.log('Init started');
@@ -45,10 +29,13 @@ export function initDynamicDNSRecordFormFields() {
     const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
 
     const textAreaContent = document.querySelectorAll('.content-field-wrapper-txt');
+
     if(textAreaContent){
         textAreaContent.forEach( input => {
             let currentInput = input.querySelector('input');
-            switchFromInputToTextArea(currentInput)
+            if(currentInput){
+                   switchFromInputToTextArea(currentInput)
+            }
         })
     }
   
@@ -56,12 +43,20 @@ export function initDynamicDNSRecordFormFields() {
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
         const info = config[selectedType];
-        disableHiddenInputs()
-        
-
+     
         if (info) {
             contentLabel.textContent = info.label;
             contentHelp.textContent = info.help_text;
+        }
+
+        let container = document.getElementById("record-type-container")
+        if(selectedType === "TXT" && container) {
+             const txtForm = document.getElementById("txt-form-template")
+             container.innerHTML = txtForm.innerHTML
+        }
+        else{
+            const baseForm = document.getElementById("base-form-template")
+            container.innerHTML = baseForm.innerHTML
         }
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
