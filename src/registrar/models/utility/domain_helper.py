@@ -54,7 +54,7 @@ class DomainHelper:
 
         if domain.strip() == "" and domain != "":
             raise errors.InvalidSpacesError()
-        
+
         domain = domain.lower().strip()
 
         if domain == "" and not blank_ok:
