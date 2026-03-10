@@ -90,6 +90,7 @@ from ..utility.email_invitations import (
 logger = logging.getLogger(__name__)
 
 context_dns_record = ContextVar("context_dns_record", default=None)
+from registrar.utility.enums import DNSRecordTypes
 
 
 class DomainBaseView(PermissionRequiredMixin, DetailView):
@@ -844,6 +845,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
             record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
+            record_type = DNSRecordTypes(data_dict["type"])
+            record.partial = record_type.get_partial
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -880,7 +883,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.object = self.get_object()
         form = self.get_form()
         self._get_domain(request)
-
+        print("HELLOO")
+        print(dict(request.POST))
         if not form.is_valid():
             errors = self.get_form_errors(form)
             for error in errors:
@@ -945,7 +949,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         filled_form = DomainDNSRecordForm(initial=self.dns_record)
         # Grabbed result data to pass into the form response
+        record_type = DNSRecordTypes[self.dns_record["type"]]
         self.dns_record["form"] = filled_form
+        self.dns_record["partial"] = record_type.partial
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
         new_form = DomainDNSRecordForm()

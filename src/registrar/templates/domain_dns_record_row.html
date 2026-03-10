@@ -5,10 +5,10 @@
     <td data-label="Name">
         {{dns_record.name}}
     </td>
-    <td data-label="TTL">
-        {{dns_record.content}}
+    <td data-label="Content">
+        {{dns_record.content|truncatechars:60}}
     </td>
-    <td data-label="Type">
+    <td data-label="TTL">
         {{dns_record.ttl}}
     </td>
     <td class="padding-right-0" data-label="Action">

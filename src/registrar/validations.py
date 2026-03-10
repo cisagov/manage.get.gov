@@ -75,3 +75,13 @@ def validate_dns_name(name: str) -> None:
 
     if not name[0].isalpha() or not name[-1].isalnum():
         raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
+
+def validate_content_name(content: str) -> None:
+    if len(content) > 2048:
+        raise ValidationError("Content must be no more than 2048 characters.")
+
+    if not content or not content.strip():
+        raise ValidationError("Enter the content for this record.")
+
+    if '"' in content or "'" in content:
+        raise ValidationError("Enter content without using quotation marks.")

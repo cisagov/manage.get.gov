@@ -842,6 +842,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("", "- Select -"),
             ("A", "A"),
             ("AAAA", "AAAA"),
+            ("TXT", "TXT"),
         ],
         required=True,
         widget=forms.Select(
@@ -852,7 +853,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             }
         ),
     )
-
+    
     content = forms.CharField(
         label="Content",
         required=False,
@@ -897,8 +898,11 @@ class DomainDNSRecordForm(forms.ModelForm):
             if record.validator:
                 try:
                     record.validator(content)
-                except ValidationError:
-                    self.add_error("content", record.error_message)
+                except ValidationError as e:
+                    if record.error_message:
+                        self.add_error("content", record.error_message)
+                    else:
+                        self.add_error("content", e)
             elif not content:
                 self.add_error("content", record.error_message)
 
