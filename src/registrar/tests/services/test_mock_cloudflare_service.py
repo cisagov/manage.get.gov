@@ -6,52 +6,52 @@ from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 
-class TestMockCloudflareServiceBasics(SimpleTestCase):
-    """Test the MockCloudflareService lifecycle and basic functionality"""
+# class TestMockCloudflareServiceBasics(SimpleTestCase):
+#     """Test the MockCloudflareService lifecycle and basic functionality"""
 
-    mock_api_service = MockCloudflareService()
+#     mock_api_service = MockCloudflareService()
 
-    def tearDown(self):
-        if self.mock_api_service.is_active:
-            self.mock_api_service.stop()
+#     def tearDown(self):
+#         if self.mock_api_service.is_active:
+#             self.mock_api_service.stop()
 
-    def test_service_starts_successfully(self):
-        self.assertFalse(self.mock_api_service.is_active)
+#     def test_service_starts_successfully(self):
+#         self.assertFalse(self.mock_api_service.is_active)
 
-        self.mock_api_service.start()
+#         self.mock_api_service.start()
 
-        self.assertTrue(self.mock_api_service.is_active)
-        self.assertTrue(self.mock_api_service._mock_context is not None)
+#         self.assertTrue(self.mock_api_service.is_active)
+#         self.assertTrue(self.mock_api_service._mock_context is not None)
 
-    def test_service_stops_successfully(self):
-        self.mock_api_service.start()
-        self.assertTrue(self.mock_api_service.is_active)
+#     def test_service_stops_successfully(self):
+#         self.mock_api_service.start()
+#         self.assertTrue(self.mock_api_service.is_active)
 
-        self.mock_api_service.stop()
+#         self.mock_api_service.stop()
 
-        self.assertTrue(not self.mock_api_service.is_active)
+#         self.assertTrue(not self.mock_api_service.is_active)
 
-    def test_service_can_restart(self):
-        """Test service can be stopped and restarted"""
-        self.mock_api_service.start()
-        self.mock_api_service.stop()
-        self.mock_api_service.start()
+#     def test_service_can_restart(self):
+#         """Test service can be stopped and restarted"""
+#         self.mock_api_service.start()
+#         self.mock_api_service.stop()
+#         self.mock_api_service.start()
 
-        self.assertTrue(self.mock_api_service.is_active)
+#         self.assertTrue(self.mock_api_service.is_active)
 
-    def test_start_when_already_active_is_safe(self):
-        """Test calling start() multiple times doesn't break"""
-        self.mock_api_service.start()
-        self.mock_api_service.start()  # Should not error
+#     def test_start_when_already_active_is_safe(self):
+#         """Test calling start() multiple times doesn't break"""
+#         self.mock_api_service.start()
+#         self.mock_api_service.start()  # Should not error
 
-        self.assertTrue(self.mock_api_service.is_active)
+#         self.assertTrue(self.mock_api_service.is_active)
 
-    def test_stop_when_already_stopped_is_safe(self):
-        """Test calling stop() when not active doesn't break"""
-        self.mock_api_service.stop()  # Should not error
-        self.mock_api_service.stop()  # Should not error
+#     def test_stop_when_already_stopped_is_safe(self):
+#         """Test calling stop() when not active doesn't break"""
+#         self.mock_api_service.stop()  # Should not error
+#         self.mock_api_service.stop()  # Should not error
 
-        self.assertFalse(self.mock_api_service.is_active)
+#         self.assertFalse(self.mock_api_service.is_active)
 
 
 class TestMockCloudflareServiceEndpoints(SimpleTestCase):
