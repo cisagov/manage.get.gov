@@ -2465,4 +2465,4 @@ class Domain(TimeStampedModel, DomainHelper):
         # Delete domain
         self.deleteInEpp()
         self.save()
-        # self.save(optimistic_lock=True)
+

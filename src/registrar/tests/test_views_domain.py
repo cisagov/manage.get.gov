@@ -3461,6 +3461,9 @@ class TestDomainDeletion(TestWithUser):
         * Posting to the endpoint with a state of DNS Needed
         * Should delete the Domain
         """
+
+        self.mockDataInfoDomain.hosts = []
+
         self.client.force_login(self.user)
         domain_id = self.dns_needed_tobedeleted.id
         self.client.post(
@@ -3470,9 +3473,11 @@ class TestDomainDeletion(TestWithUser):
         )
 
         json_response = self.client.get("/get-domains-json/")
-        print("*****JSON RESPONSE HERE", json_response.content.decode("utf-8"))
         self.assertContains(json_response, self.dns_needed_tobedeleted.name)
         self.assertContains(json_response, "Deleted")
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
 
 
 class TestDomainDnsRecords(TestDomainOverview):
