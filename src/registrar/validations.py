@@ -84,6 +84,6 @@ def validate_content_name(content: str) -> None:
 
     if '"' in content or "'" in content:
         raise ValidationError("Enter content without using quotation marks.")
-    
+
     if len(content) > 2048:
         raise ValidationError("Content must be no more than 2048 characters.")

@@ -884,6 +884,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form = self.get_form()
         self._get_domain(request)
         type = form.data.get("type")
+        record_type = DNSRecordTypes[type]
 
         if not form.is_valid():
             errors = self.get_form_errors(form)
@@ -893,7 +894,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": None, "domain": self.object, "form": form, "selected_type": type},
+                {"dns_record": None, "domain": self.object, "form": form, "selected_type": record_type},
                 headers={"HX-TRIGGER": "messagesRefresh"},
             )
 
@@ -949,7 +950,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         filled_form = DomainDNSRecordForm(initial=self.dns_record)
         # Grabbed result data to pass into the form response
-        record_type = DNSRecordTypes[self.dns_record["type"]]
         self.dns_record["form"] = filled_form
         self.dns_record["partial"] = record_type.get_partial
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
