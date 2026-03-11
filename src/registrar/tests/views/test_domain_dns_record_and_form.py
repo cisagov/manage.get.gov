@@ -3,7 +3,6 @@ from unittest.mock import patch
 from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
-from django.conf import settings
 
 from registrar.utility.enums import DNSRecordTypes
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data
