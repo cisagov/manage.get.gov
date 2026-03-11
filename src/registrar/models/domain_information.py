@@ -530,20 +530,20 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_senior_official(self):
         if self.portfolio:
-            return self.portfolio.display_senior_official
-        return self.display_senior_official
+            return self.portfolio.senior_official
+        return self.senior_official
 
     @property
     def converted_address_line1(self):
         if self.portfolio:
-            return self.portfolio.display_address_line1
-        return self.display_address_line1
+            return self.portfolio.address_line1
+        return self.address_line1
 
     @property
     def converted_address_line2(self):
         if self.portfolio:
-            return self.portfolio.display_address_line2
-        return self.display_address_line2
+            return self.portfolio.address_line2
+        return self.address_line2
 
     @property
     def converted_city(self):
@@ -560,14 +560,14 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_zipcode(self):
         if self.portfolio:
-            return self.portfolio.display_zipcode
-        return self.display_zipcode
+            return self.portfolio.zipcode
+        return self.zipcode
 
     @property
     def converted_urbanization(self):
         if self.portfolio:
-            return self.portfolio.display_urbanization
-        return self.display_urbanization
+            return self.portfolio.urbanization
+        return self.urbanization
 
     # ----- Portfolio Properties (display values)-----
     @property

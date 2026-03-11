@@ -5,6 +5,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from registrar.models.domain_group import DomainGroup
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.public_contact import get_id
 from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
@@ -2558,7 +2559,21 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.non_default_contact.save()
 
         # 4. Create a default contact but with an old email
-        self.default_registrant_old_email = self.domain.get_default_registrant_contact()
+        self.default_registrant_old_email, _ = PublicContact.objects.get_or_create(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            registry_id=get_id(),
+            domain=self.domain,
+            name="CSD/CB – Attn: .gov TLD",
+            org="Cybersecurity and Infrastructure Security Agency",
+            street1="1110 N. Glebe Rd",
+            city="Arlington",
+            sp="VA",
+            pc="22201",
+            cc="US",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+            voice="+1.8882820870",
+            pw="thisisnotapassword",
+        )
         self.default_registrant_old_email.registry_id = "failReg123456789"
         self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT
         self.default_registrant_old_email.save()
@@ -2618,16 +2633,23 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.assertEqual(self.default_registrant_old_email.pc, "22201")
         self.assertEqual(self.default_registrant_old_email.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
 
-        # Verify values match the default
-        default_reg = PublicContact.get_default_registrant()
-        self.assertEqual(self.default_registrant_old_email.name, default_reg.name)
-        self.assertEqual(self.default_registrant_old_email.street1, default_reg.street1)
-        self.assertEqual(self.default_registrant_old_email.pc, default_reg.pc)
-        self.assertEqual(self.default_registrant_old_email.email, default_reg.email)
-
         # Verify EPP create/update calls were made
+        DF = common.DiscloseField
+        disclose_fields_by_value = {field.value: field for field in DF}
+        registrant_field_values = ("org", "city", "sp", "cc")
+        if all(value in disclose_fields_by_value for value in registrant_field_values):
+            registrant_disclose_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
+        else:
+            registrant_disclose_fields = {
+                field
+                for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
+                if field is not None
+            }
         expected_update = self._convertPublicContactToEpp(
-            self.default_registrant_old_email, disclose=False, disclose_fields=self.all_disclose_fields
+            self.default_registrant_old_email,
+            disclose=True,
+            disclose_fields=registrant_disclose_fields,
+            disclose_types={field: "loc" for field in registrant_disclose_fields},
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
@@ -2753,6 +2775,19 @@ class TestDeleteDomainNotSetup(MockEppLib):
             name="test2.gov", expiration_date=self.expiration_date_today
         )
 
+        # DomainInformation is required
+        DomainInformation.objects.get_or_create(
+            domain=self.domain_expired_today_too,
+            defaults={
+                "requester": self.user2,
+                "organization_name": "Example Org",
+                "address_line1": "123 Main St",
+                "city": "Arlington",
+                "state_territory": "VA",
+                "zipcode": "22201",
+            },
+        )
+
         self.domain_expired_today_too.dns_needed_from_unknown()
         self.domain_expired_today_too.save()
 
@@ -2803,9 +2838,9 @@ class TestDeleteDomainNotSetup(MockEppLib):
 
         call_command("delete_expired_domains_not_setup", dry_run=False)
 
-        mock_send_domain_managers_email.assert_called_once_with(
-            [self.domain_expired_today, self.domain_expired_today_too]
-        )
+        called_domains = mock_send_domain_managers_email.call_args[0][0]
+        expected_domains = [self.domain_expired_today, self.domain_expired_today_too]
+        self.assertCountEqual(called_domains, expected_domains)
 
     @patch.object(Domain, "deleteInEpp")
     @patch("django.utils.timezone.now")
