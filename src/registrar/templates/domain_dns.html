@@ -32,7 +32,6 @@
       <p class="margin-top-0 margin-bottom-0">Review, add, and edit DNS records.</p>
     </li>
     {% endif %}
-
     {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
     <li>
       {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
@@ -40,7 +39,7 @@
         <a href="{{ url }}"
         class="heading-link display-inline-flex flex-align-center"
         >
-          Nameservers
+          Name servers
           <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
             <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
           </svg>
