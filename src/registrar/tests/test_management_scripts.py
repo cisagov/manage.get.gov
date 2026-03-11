@@ -2559,9 +2559,10 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.non_default_contact.save()
 
         # 4. Create a default contact but with an old email
-        self.default_registrant_old_email = PublicContact.objects.get_or_create(
+        self.default_registrant_old_email, _ = PublicContact.objects.get_or_create(
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             registry_id=get_id(),
+            domain=self.domain,
             name="CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
             street1="1110 N. Glebe Rd",
@@ -2573,7 +2574,6 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
-        self.default_registrant_old_email.domain = self.domain
         self.default_registrant_old_email.registry_id = "failReg123456789"
         self.default_registrant_old_email.email = DefaultEmail.LEGACY_DEFAULT
         self.default_registrant_old_email.save()

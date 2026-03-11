@@ -1727,7 +1727,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if domain_info.sub_organization:
             registrant_city = domain_info.sub_organization.city
         else:
-            if domain_info.portfolio.city:
+            if domain_info.portfolio and domain_info.portfolio.city:
                 registrant_city = domain_info.portfolio.city
             else:
                 registrant_city = domain_info.converted_city

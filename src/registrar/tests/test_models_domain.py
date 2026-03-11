@@ -1175,9 +1175,10 @@ class TestRegistrantContacts(MockEppLib):
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
             expected_admin = domain.get_default_administrative_contact()
             expected_admin.email = self.mockAdministrativeContact.email
-            expected_registrant = PublicContact.objects.get_or_create(
+            expected_registrant, _ = PublicContact.objects.get_or_create(
                 contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
                 registry_id=get_id(),
+                domain=domain,
                 name="CSD/CB – Attn: .gov TLD",
                 org="Cybersecurity and Infrastructure Security Agency",
                 street1="1110 N. Glebe Rd",
@@ -1189,7 +1190,6 @@ class TestRegistrantContacts(MockEppLib):
                 voice="+1.8882820870",
                 pw="thisisnotapassword",
             )
-            expected_registrant.domain = domain
             expected_registrant.email = self.mockRegistrantContact.email
             expected_security = domain.get_default_security_contact()
             expected_security.email = self.mockSecurityContact.email
@@ -1250,9 +1250,10 @@ class TestRegistrantContacts(MockEppLib):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="example.gov")
             DomainInformation.objects.get_or_create(domain=domain, defaults={"requester": self.requester})
-            registrant = PublicContact.objects.get_or_create(
+            registrant, _ = PublicContact.objects.get_or_create(
                 contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
                 registry_id=get_id(),
+                domain=domain,
                 name="CSD/CB – Attn: .gov TLD",
                 org="Cybersecurity and Infrastructure Security Agency",
                 street1="1110 N. Glebe Rd",
@@ -1264,7 +1265,6 @@ class TestRegistrantContacts(MockEppLib):
                 voice="+1.8882820870",
                 pw="thisisnotapassword",
             )
-            registrant.domain = domain
 
             disclose = domain._disclose_fields(registrant)
             DF = common.DiscloseField
