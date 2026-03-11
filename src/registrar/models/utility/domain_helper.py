@@ -52,6 +52,9 @@ class DomainHelper:
         if not isinstance(domain, str):
             raise errors.InvalidDomainError()
 
+        if domain != domain.strip():
+            raise errors.InvalidSpacesError()
+
         domain = domain.lower().strip()
 
         if domain == "" and not blank_ok:
@@ -98,6 +101,7 @@ class DomainHelper:
             errors.DomainUnavailableError: "unavailable",
             errors.RegistrySystemError: "error",
             errors.InvalidDomainError: "invalid",
+            errors.InvalidSpacesError: "invalid_spaces",
         }
 
         validated = None
