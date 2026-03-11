@@ -884,7 +884,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form = self.get_form()
         self._get_domain(request)
         type = form.data.get("type")
-        record_type = DNSRecordTypes[type]
 
         if not form.is_valid():
             errors = self.get_form_errors(form)

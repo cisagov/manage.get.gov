@@ -9,8 +9,6 @@ function switchFromInputToTextArea (element) {
 }
 
 export function initDynamicDNSRecordFormFields() { 
-    console.log('Init started');
-    console.log('config: ', config)
     
     const typeField = document.getElementById('id_type');
 
