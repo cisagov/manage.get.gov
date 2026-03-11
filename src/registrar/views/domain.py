@@ -846,7 +846,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             data_dict = self.record_dict_for_initial_data(record)
             record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
             record_type = DNSRecordTypes(data_dict["type"])
-            #  have to import the form class here
             record.partial = record_type.get_partial
 
     def get_context_data(self, **kwargs):
@@ -886,7 +885,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self._get_domain(request)
         type = form.data.get("type")
         record_type = DNSRecordTypes[type]
-        partial = record_type.get_partial
 
         if not form.is_valid():
             errors = self.get_form_errors(form)
@@ -896,7 +894,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return TemplateResponse(
                 request,
                 "domain_dns_record_form_response.html",
-                {"dns_record": None, "domain": self.object, "form": form, "partial": partial},
+                {"dns_record": None, "domain": self.object, "form": form, "selected_type": type},
                 headers={"HX-TRIGGER": "messagesRefresh"},
             )
 

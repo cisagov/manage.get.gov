@@ -857,7 +857,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     content = forms.CharField(
         label="Content",
         required=False,
-        help_text="Select a type for help text",
+        help_text=" ",
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
