@@ -5,6 +5,7 @@ function switchFromInputToTextArea (element) {
         ta.name = element.name;
         ta.className = 'usa-textarea usa-textarea--medium';
         ta.setAttribute('aria-label', 'Content')
+        ta.value = element.value
         element.replaceWith(ta)
 }
 
@@ -18,19 +19,21 @@ export function initDynamicDNSRecordFormFields() {
         typeField.dataset.typeConfig || "{}"
     );
 
-
     const textAreaContent = document.querySelectorAll('.content-field-wrapper-txt');
 
     if(textAreaContent){
-        // For the edit rows to update from input to text area
-        textAreaContent.forEach( input => {
-            let currentInput = input.querySelector('input');
-            if(currentInput){
-                   switchFromInputToTextArea(currentInput)
-            }
-        })
-    }
+            // For the edit rows to update from input to text area
+            textAreaContent.forEach( input => {
+                console.log("we ran")
+                let currentInput = input.querySelector('input');
+                if(currentInput){
+                    console.log("input", currentInput.name)
+                    switchFromInputToTextArea(currentInput)
+                }
+            })
+     }
   
+
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
@@ -44,21 +47,20 @@ export function initDynamicDNSRecordFormFields() {
      
         if (info) { 
             contentLabel.textContent = info.label;
-            contentHelp.textContent = info.help_text;
+            contentHelp && (contentHelp.textContent = info.help_text)
         }
        
         if(selectedType == "TXT"){
-            // set delay for alpine to render the form to grab the input to change it
-            setTimeout(()=> {
-                let input = document.querySelector(".content-field-wrapper-txt input")
-                switchFromInputToTextArea(input)
-            }, 10)
-               
+            // Swap input type to text area
+            let input = document.querySelector(".content-field-wrapper-txt input")
+            input && switchFromInputToTextArea(input)
         }
         
 
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
+
+
       
     });
     
