@@ -1,7 +1,7 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import Client
+from httpx import Client, RequestError
 import logging
 from contextvars import ContextVar
 from django.contrib import messages
@@ -940,12 +940,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
+        except RequestError as e:
+            logger.error(f"DNS record edit failed, network error: {e}")
+            raise APIError(str(e))
 
         vendor_result = record_response["result"]
         context_dns_record.set(vendor_result)
-        dns_name = vendor_result.get("name") or form_record_data["name"]
-        record_type = form_record_data["type"]
-        messages.success(request, f"DNS {record_type} record '{dns_name}' updated successfully.")
+        messages.success(request, "The DNS record for this domain has been updated.")
 
         # Refresh with db instance for templating (edit form requires BoundFields)
         dns_record = record_response["dns_record"]
@@ -984,6 +985,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                             "counter": counter_from_post,
                             "is_edit": True,
                             "is_first_record": False,
+                            "update_cells": False,
                         },
                         headers={"HX-TRIGGER": hx_trigger_events},
                         status=200,
@@ -1043,7 +1045,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     self.dns_record = record_response["result"]
                     counter = None
 
-        except APIError as e:
+        except (APIError, RequestError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")
             messages.error(request, "Failed to save DNS record.")
             self.dns_record = None
@@ -1065,6 +1067,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             "nameservers": nameservers,
             "is_edit": is_edit,
             "is_first_record": is_first_record,
+            "update_cells": is_edit and self.dns_record is not None,
         }
 
         return TemplateResponse(

@@ -1,22 +1,24 @@
 <tr id="dnsrecord-row-{{counter}}" :class="showFormId == {{ counter }} ? 'hide-td-borders' : ''">
-    <td data-label="Type">
+    <td id="dns-type-{{ counter }}" data-label="Type">
         {{dns_record.type}}
     </td>
-    <td data-label="Name">
+    <td id="dns-name-{{ counter }}" data-label="Name">
         {{dns_record.name}}
     </td>
-    <td data-label="Content">
-        {{dns_record.content|truncatechars:37}}
+    <td id="dns-content-{{ counter }}" data-label="TTL">
+        {{dns_record.content}}
     </td>
-    <td data-label="TTL">
+    <td id="dns-ttl-{{ counter }}" data-label="Type">
         {{dns_record.ttl}}
     </td>
     <td class="padding-right-0" data-label="Action">
         <div class="tablet:display-flex tablet:flex-row">
-            <button type="button" 
-            class='usa-button usa-button--unstyled margin-right-2 margin-top-0'
-            x-on:click="showFormId = (showFormId === {{ counter }} ? null : {{ counter }})" 
+            <button type="button"
+            class="usa-button usa-button--unstyled margin-right-2 margin-top-0"
+            x-on:click="showFormId = (showFormId === {{ counter }} ? null : {{ counter }})"
+            aria-expanded="false"
             :aria-expanded="showFormId == {{ counter }} ? 'true' : 'false'"
+            aria-controls="dnsrecord-edit-row-{{ counter }}"
             aria-label="Edit {{ dns_record.name }}"
             >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -36,7 +38,7 @@
                     </svg>
             
             </button>
-            <a 
+            <a
                 role="button"
                 id="button-trigger-delete-dnsrecord-{{ counter }}"
                 class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
