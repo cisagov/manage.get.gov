@@ -27,7 +27,6 @@ export function initDynamicDNSRecordFormFields() {
                 console.log("we ran")
                 let currentInput = input.querySelector('input');
                 if(currentInput){
-                    console.log("input", currentInput.name)
                     switchFromInputToTextArea(currentInput)
                 }
             })
