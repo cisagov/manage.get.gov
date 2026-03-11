@@ -84,14 +84,14 @@
 
 
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
-    {% if domain.nameservers|length > 0 %}
-      {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
-    {% else %}
-      {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
+    {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
+      {% if domain.nameservers|length > 0 %}
+        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
+      {% else %}
         {% if is_editable %}
-        <h3 class="margin-top-3"> DNS name servers </h3>
-        <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
-        <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
+          <h3 class="margin-top-3"> DNS name servers </h3>
+          <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
+          <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
         {% else %}
           {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
         {% endif %}
