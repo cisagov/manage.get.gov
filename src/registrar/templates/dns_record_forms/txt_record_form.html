@@ -10,10 +10,9 @@
                     {% input_with_errors form.ttl %}        
                 </div>
             </div>
+            {% with add_group_class="usa-form-group--unstyled-error" %}
             <div class="content-field-wrapper-txt">
-
-                {% with add_group_class="usa-form-group--unstyled-error" %}
                     {% input_with_errors form.content %}
-                {% endwith %}
             </div>
+            {% endwith %}
 

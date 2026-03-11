@@ -1,11 +1,13 @@
 // Establishes javascript for dynamic content label based on type
 
 function switchFromInputToTextArea (element) {
+        if(!element) return;
         const ta = document.createElement('textarea');
         ta.name = element.name;
         ta.className = 'usa-textarea usa-textarea--medium';
         ta.setAttribute('aria-label', 'Content')
         ta.value = element.value
+        element.classList.forEach(cls => ta.classList.add(cls))
         element.replaceWith(ta)
 }
 
@@ -21,16 +23,13 @@ export function initDynamicDNSRecordFormFields() {
 
     const textAreaContent = document.querySelectorAll('.content-field-wrapper-txt');
 
-    if(textAreaContent){
-            // For the edit rows to update from input to text area
-            textAreaContent.forEach( input => {
-                console.log("we ran")
+    // For the edit rows to update from input to text area
+    textAreaContent.forEach( input => {
                 let currentInput = input.querySelector('input');
                 if(currentInput){
                     switchFromInputToTextArea(currentInput)
                 }
-            })
-     }
+    })
   
 
 
