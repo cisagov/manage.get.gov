@@ -157,7 +157,7 @@ class DNSRecordTypes(TextChoices):
     def use_textarea(self) -> bool:
         return {
             DNSRecordTypes.TXT: True,
-        }.get(self, False)
+        }.get(self, "")
 
     @property
     def get_partial(self) -> str:
