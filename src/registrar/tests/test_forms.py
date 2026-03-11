@@ -1,6 +1,7 @@
 """Test form validation requirements."""
 
 import json
+from urllib.parse import urlencode
 from django.test import TestCase, RequestFactory, override_settings
 from api.views import available
 from api.tests.common import less_console_noise_decorator
@@ -138,6 +139,16 @@ class TestFormValidation(MockEppLib):
                 "That domain isn’t available. You can learn more about this domain by performing a <a class='usa-link' "
                 "href='https://get.gov/domains/whois/?domain=' target='_blank'>WHOIS search</a>.",
             ),
+            # spaces
+            (
+                "    ",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
+            ),
+            # spaces with text
+            (
+                "    test",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
+            ),
         ]
 
         for domain, expected_error in test_cases:
@@ -192,6 +203,16 @@ class TestFormValidation(MockEppLib):
                 "whitehouse.gov",
                 "That domain isn’t available. You can learn more about this domain by performing a <a class='usa-link' "
                 "href='https://get.gov/domains/whois/?domain=' target='_blank'>WHOIS search</a>.",
+            ), 
+            # spaces
+            (
+                "     ",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
+            ),
+            # spaces with text
+            (
+                "    test",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
             ),
         ]
 

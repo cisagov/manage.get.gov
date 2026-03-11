@@ -52,7 +52,7 @@ class DomainHelper:
         if not isinstance(domain, str):
             raise errors.InvalidDomainError()
 
-        if domain.strip() == "" and domain != "":
+        if domain != domain.strip():
             raise errors.InvalidSpacesError()
 
         domain = domain.lower().strip()
