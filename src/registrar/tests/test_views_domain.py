@@ -3462,9 +3462,11 @@ class TestDomainDeletion(TestWithUser):
             follow=True,
         )
 
-        self.assertEqual(self.dns_needed_not_expiring.state, Domain.State.DELETED)
-        # json_response = self.client.get("/get-domains-json/")
+        # self.assertEqual(self.dns_needed_not_expiring.state, Domain.State.DELETED)
+        json_response = self.client.get("/get-domains-json/")
         # self.assertNotContains(json_response, self.dns_needed_not_expiring.name)
+        self.assertContains(json_response, self.dns_needed_not_expiring.name)
+        self.assertContains(json_response, Domain.State.DELETED)
 
 
 class TestDomainDnsRecords(TestDomainOverview):
