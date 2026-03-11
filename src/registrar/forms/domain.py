@@ -899,7 +899,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 try:
                     record.validator(content)
                 except ValidationError as e:
-                    self.add_error("content", e or record.error_message)
+                    self.add_error("content", record.error_message or e)
             elif not content:
                 self.add_error("content", record.error_message)
 
