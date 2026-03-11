@@ -1704,9 +1704,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def addRegistrant(self):
         """Adds a registrant contact"""
-        registrant = PublicContact.objects.create(
-            contact_type=PublicContact.ContactTypeChoices.REGISTRANT, registry_id=get_id()
-        )
+        registrant = PublicContact(contact_type=PublicContact.ContactTypeChoices.REGISTRANT, registry_id=get_id())
 
         domain_info = getattr(self, "domain_info", None)
         if not domain_info:
