@@ -8,8 +8,7 @@
                 method="post"
                 class="usa-form usa-form--extra-large"
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
-                hx-target="#dnsrecord-row-{{ counter }}"
-                hx-swap="outerHTML"
+                hx-swap="none"
             >
                 <h2 class="margin-top-0">Edit record</h2>
                 {% csrf_token %}
