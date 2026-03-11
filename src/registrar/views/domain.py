@@ -936,7 +936,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_record = record_response["result"]
             dns_name = self.dns_record["name"]
 
-            messages.success(request, f"DNS A record '{dns_name}' created successfully.")
+            messages.success(request, f"DNS {record_type} record '{dns_name}' created successfully.")
             context_dns_record.set(self.dns_record)
 
         except APIError as e:
