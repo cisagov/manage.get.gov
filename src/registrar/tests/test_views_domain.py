@@ -3172,12 +3172,18 @@ class TestDomainDeletion(TestWithUser):
             state=Domain.State.DNS_NEEDED,
             expiration_date=expiring_date,
         )
+        self.dns_needed_tobedeleted, _ = Domain.objects.get_or_create(
+            name="dnsneeded-tobedeleted.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=timezone.now().date() + timedelta(days=65),
+        )
 
         for domain in [
             self.domain_with_expiring_soon_date,
             self.domain_not_expiring,
             self.dns_needed_not_expiring,
             self.dns_needed_expiring,
+            self.dns_needed_tobedeleted,
         ]:
             DomainInformation.objects.update_or_create(requester=self.user, domain=domain)
 
@@ -3186,6 +3192,7 @@ class TestDomainDeletion(TestWithUser):
             self.domain_not_expiring,
             self.dns_needed_not_expiring,
             self.dns_needed_expiring,
+            self.dns_needed_tobedeleted,
         ]:
             UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
 
@@ -3455,20 +3462,17 @@ class TestDomainDeletion(TestWithUser):
         * Should delete the Domain
         """
         self.client.force_login(self.user)
-        domain_id = self.dns_needed_not_expiring.id
+        domain_id = self.dns_needed_tobedeleted.id
         self.client.post(
             reverse("domain-delete", kwargs={"domain_pk": domain_id}),
             data={"is_policy_acknowledged": "True"},
             follow=True,
         )
 
-        # self.assertEqual(self.dns_needed_not_expiring.state, Domain.State.DELETED)
         json_response = self.client.get("/get-domains-json/")
         print("*****JSON RESPONSE HERE", json_response.content.decode("utf-8"))
-
-        # self.assertNotContains(json_response, self.dns_needed_not_expiring.name)
-        self.assertContains(json_response, self.dns_needed_not_expiring.name)
-        self.assertContains(json_response, Domain.State.DELETED)
+        self.assertContains(json_response, self.dns_needed_tobedeleted.name)
+        self.assertContains(json_response, "Deleted")
 
 
 class TestDomainDnsRecords(TestDomainOverview):
