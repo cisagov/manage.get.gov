@@ -6,7 +6,7 @@ from waffle.testutils import override_flag
 from django.conf import settings
 
 from registrar.utility.enums import DNSRecordTypes
-from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data
+from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -88,7 +88,14 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     svc = MockSvc.return_value
                     svc.register_nameservers.return_value = None
                     svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
-                    svc.create_and_save_record.return_value = {"result": mock_record}
+                    dns_record = create_dns_record(
+                        self.dns_zone,
+                        record_name=data["name"],
+                        record_type=data["type"],
+                        record_content=data["content"],
+                        ttl=data["ttl"],
+                    )
+                    svc.create_and_save_record.return_value = {"result": mock_record, "dns_record": dns_record}
 
                     page = self.app.get(self._url(), status=200)
                     record_form = page.forms[0]

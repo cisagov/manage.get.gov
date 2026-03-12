@@ -11,20 +11,24 @@ from registrar.models import (
     DnsRecord,
     VendorDnsAccount,
     VendorDnsZone,
-    VendorDnsRecord,
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
-    DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
-from httpx import Client
+from httpx import Client, HTTPStatusError
 
 logger = logging.getLogger(__name__)
 
 
 class DnsHostService:
+    """Orchestrates DNS hosting operations for domains by coordinating between
+    the registrar database and the external DNS vendor (Cloudflare).
+
+    Handles account and zone provisioning, DNS record creation/updates, and
+    keeps vendor data in sync with the local DB models (DnsAccount, DnsZone, DnsRecord).
+    """
 
     def __init__(self, client=None):
         self.client = client or Client()
@@ -160,22 +164,46 @@ class DnsHostService:
             raise
 
     def create_and_save_record(self, x_zone_id, form_record_data) -> dict:
-        """Calls create method of vendor service to create a DNS record"""
+        """Calls create method of vendor service to create a DNS record.
+
+        Returns the vendor response dict with an added `dns_record` key containing
+        the newly created DnsRecord instance (or None if the lookup fails).
+        """
         # Create record in vendor service
         try:
             vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
             logger.info(f"Created DNS record of type {vendor_record_data['result'].get('type')}")
-        except APIError as e:
+        except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
-            raise
+            raise APIError(str(e)) from e
 
         # Create and save dns record in registrar db
         try:
-            self.create_db_record(x_zone_id, vendor_record_data)
+            DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
-        return vendor_record_data
+
+        x_record_id = vendor_record_data["result"].get("id")
+        dns_record = DnsRecord.get_by_x_record_id(x_record_id) if x_record_id else None
+        return {**vendor_record_data, "dns_record": dns_record}
+
+    def edit_record(self, domain: Domain, x_zone_id: str, counter: int, form_record_data: dict) -> dict:
+        """Look up the record by counter and update it via the vendor service.
+
+        Returns the vendor response dict with an added `dns_record` key.
+        Raises ValueError if the record or its vendor id cannot be resolved.
+        """
+        dns_record = DnsRecord.get_for_domain_by_counter(domain, counter)
+        if not dns_record:
+            raise ValueError("Could not find the DNS record to update.")
+
+        x_record_id = dns_record.get_active_x_record_id()
+        if not x_record_id:
+            raise ValueError("This DNS record is missing a vendor id and cannot be updated.")
+
+        vendor_record_data = self.update_and_save_record(x_zone_id, x_record_id, form_record_data)
+        return {**vendor_record_data, "dns_record": dns_record}
 
     def update_and_save_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
         """Calls update method of vendor service to update a DNS record"""
@@ -185,13 +213,13 @@ class DnsHostService:
             record_name = vendor_record_data["result"].get("name")
             logger.info(f"Successfully updated record {record_name}.")
 
-        except APIError as e:
+        except (APIError, HTTPStatusError) as e:
             logger.error(f"DNS setup failed to update record {record_name}: {str(e)}")
-            raise
+            raise APIError(str(e)) from e
 
         # Update and save dns record in registrar db
         try:
-            self.update_db_record(x_zone_id, x_record_id, vendor_record_data)
+            DnsRecord.update_from_vendor_data(x_zone_id, x_record_id, vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
@@ -338,60 +366,6 @@ class DnsHostService:
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
         except Exception as e:
             logger.error(f"Failed to create and save zone to database: {str(e)}.")
-            raise
-
-    def create_db_record(self, x_zone_id, vendor_record_data):
-        record_data = vendor_record_data["result"]
-        x_record_id = record_data["id"]
-
-        try:
-            with transaction.atomic():
-                vendor_dns_record = VendorDnsRecord.objects.create(
-                    x_record_id=x_record_id,
-                    x_created_at=record_data["created_on"],
-                    x_updated_at=record_data["created_on"],
-                )
-
-                # Find record's zone
-                vendor_dns_zone = VendorDnsZone.objects.filter(x_zone_id=x_zone_id).first()
-                dns_zone = vendor_dns_zone.zone_link.get(is_active=True).dns_zone
-
-                dns_record = DnsRecord.objects.create(
-                    dns_zone=dns_zone,
-                    type=record_data["type"],
-                    name=record_data["name"],
-                    ttl=record_data["ttl"],
-                    content=record_data["content"],
-                    comment=record_data["comment"],
-                    tags=record_data["tags"],
-                )
-
-                RecordsJoin.objects.create(
-                    dns_record=dns_record,
-                    vendor_dns_record=vendor_dns_record,
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to create and save record to database: {str(e)}.")
-            raise
-
-    def update_db_record(self, x_zone_id, x_record_id, vendor_record_data):
-        record_data = vendor_record_data["result"]
-        excluded_fields = ["id", "type", "created_on"]
-
-        try:
-            with transaction.atomic():
-                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
-                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-                dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
-
-                for record_field, record_value in record_data.items():
-                    if record_field not in excluded_fields:
-                        setattr(dns_record, record_field, record_value)
-                dns_record.save()
-        except Exception as e:
-            logger.error(f"Failed to update and save record to database: {str(e)}.")
             raise
 
     def enroll_domain(self, domain: Domain):

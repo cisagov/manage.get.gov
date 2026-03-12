@@ -163,7 +163,9 @@ class CloudflareService:
             logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while creating dns record: {e}")
+            logger.error(
+                f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {e.response.text}"
+            )
             raise
         return resp.json()
 
@@ -226,6 +228,8 @@ class CloudflareService:
             logger.error(f"Failed to update dns record {record_id} for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while updating dns record: {e}")
+            logger.error(
+                f"Error {e.response.status_code} while updating dns record: {e}\nResponse body: {e.response.text}"
+            )
             raise
         return resp.json()
