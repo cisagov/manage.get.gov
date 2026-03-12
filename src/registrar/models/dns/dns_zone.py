@@ -29,7 +29,7 @@ class DnsZone(TimeStampedModel):
         "registrar.DnsSoa", on_delete=models.SET_DEFAULT, related_name="+", default=DnsSoa.get_default_pk
     )
 
-    name = models.CharField(null=True, blank=True, unique=True)
+    name = models.CharField(null=True, blank=True, unique=True, max_length=253)
 
     nameservers = ArrayField(models.CharField(), null=False, blank=True, default=list)
 
