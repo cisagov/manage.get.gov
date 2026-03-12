@@ -8,7 +8,22 @@ function switchFromInputToTextArea (element) {
         ta.setAttribute('aria-label', 'Content')
         ta.value = element.value
         element.classList.forEach(cls => ta.classList.add(cls))
+       
+        
+        // Character count
+        let countText = function () {
+           return `${2048 - ta.value.length} characters allowed`
+        }
+        const charCount = document.createElement('div')
+        charCount.className = "usa-character-count__status usa-hint"
+        charCount.textContent = countText()
+        ta.addEventListener('input', function(){
+             charCount.textContent = countText()
+        })
+
+
         element.replaceWith(ta)
+        ta.insertAdjacentElement('afterend', charCount)
 }
 
 export function initDynamicDNSRecordFormFields() { 
