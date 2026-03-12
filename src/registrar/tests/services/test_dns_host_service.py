@@ -263,6 +263,69 @@ class TestDnsHostService(TestCase):
             self.service.create_and_save_record(zone_id, record_data)
         self.assertIn("Bad request: missing name", str(context.exception))
 
+    def test_update_account_dns_settings_success(self):
+        x_account_id = "12345"
+        expected_response = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_defaults": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"type": "custom.tenant"},
+                }
+            },
+            errors=[],
+            messages=[],
+        )
+        self.service.dns_vendor_service.update_account_dns_settings = Mock(return_value=expected_response)
+
+        response = self.service.update_account_dns_settings(x_account_id)
+
+        self.service.dns_vendor_service.update_account_dns_settings.assert_called_once_with(x_account_id)
+        self.assertTrue(response.success)
+        self.assertEqual(response.result["zone_defaults"]["zone_mode"], "dns_only")
+        self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(response.errors, [])
+
+    def test_update_account_dns_settings_failure(self):
+        x_account_id = "12345"
+        self.service.dns_vendor_service.update_account_dns_settings = Mock(
+            side_effect=HTTPStatusError(message="Error updating DNS settings", request=Mock(), response=Mock())
+        )
+
+        with self.assertRaises(HTTPStatusError):
+            self.service.update_account_dns_settings(x_account_id)
+
+    def test_update_zone_dns_settings_success(self):
+        x_zone_id = "54321"
+        expected_response = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_mode": "dns_only",
+                "nameservers": {"ns_set": 2, "type": "custom.tenant"},
+            },
+            errors=[],
+            messages=[],
+        )
+        self.service.dns_vendor_service.update_zone_dns_settings = Mock(return_value=expected_response)
+
+        response = self.service.update_zone_dns_settings(x_zone_id)
+
+        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id)
+        self.assertTrue(response.success)
+        self.assertEqual(response.result["zone_mode"], "dns_only")
+        self.assertEqual(response.result["nameservers"]["ns_set"], 2)
+        self.assertEqual(response.result["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(response.errors, [])
+
+    def test_update_zone_dns_settings_failure(self):
+        x_zone_id = "54321"
+        self.service.dns_vendor_service.update_zone_dns_settings = Mock(
+            side_effect=HTTPStatusError(message="Error updating DNS settings", request=Mock(), response=Mock())
+        )
+
+        with self.assertRaises(HTTPStatusError):
+            self.service.update_zone_dns_settings(x_zone_id)
+
 
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
@@ -747,35 +810,3 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
                     self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
                     self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
-
-    def test_update_account_dns_settings_success(self):
-        x_account_id = "12345"
-        expected_response = CloudflareDnsSettingsUpdateResponse(
-            success=True,
-            result={
-                "zone_defaults": {
-                    "zone_mode": "dns_only",
-                    "nameservers": {"type": "custom.tenant"},
-                }
-            },
-            errors=[],
-            messages=[],
-        )
-        self.service.dns_vendor_service.update_account_dns_settings = Mock(return_value=expected_response)
-
-        response = self.service.update_account_dns_settings(x_account_id)
-
-        self.service.dns_vendor_service.update_account_dns_settings.assert_called_once_with(x_account_id)
-        self.assertTrue(response.success)
-        self.assertEqual(response.result["zone_defaults"]["zone_mode"], "dns_only")
-        self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
-        self.assertEqual(response.errors, [])
-
-    def test_update_account_dns_settings_failure(self):
-        x_account_id = "12345"
-        self.service.dns_vendor_service.update_account_dns_settings = Mock(
-            side_effect=HTTPStatusError(message="Error updating DNS settings", request=Mock(), response=Mock())
-        )
-
-        with self.assertRaises(HTTPStatusError):
-            self.service.update_account_dns_settings(x_account_id)

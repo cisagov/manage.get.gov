@@ -115,6 +115,25 @@ class MockCloudflareService:
             side_effect=self._mock_update_dns_record_response
         )
 
+        # PATCH account dns_settings
+        self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_settings").mock(
+            side_effect=self._mock_update_zone_dns_settings_response
+        )
+
+    def _mock_update_zone_dns_settings_response(self, request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "result": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"ns_set": 2, "type": "custom.tenant"},
+                },
+                "success": True,
+                "errors": [],
+                "messages": [],
+            },
+        )
+
     def _mock_get_page_accounts_response(self, request) -> httpx.Response:
         logger.debug("😎 Mocking accounts GET")
         # use exists.gov domain to simulate an account that already exists
