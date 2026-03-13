@@ -921,13 +921,17 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""
-        return {
+        data = {
             "type": form.cleaned_data["type"],
             "name": form.cleaned_data["name"],
             "content": form.cleaned_data["content"],
             "ttl": int(form.cleaned_data["ttl"]),
             "comment": form.cleaned_data.get("comment", ""),
         }
+        priority = form.cleaned_data.get("priority")
+        if priority is not None:
+            data["priority"] = priority
+        return data
 
     def _attach_form(self, dns_record: DnsRecord, *, form=None) -> None:
         """Prepare a DNS record for template rendering by attaching a form and template path.

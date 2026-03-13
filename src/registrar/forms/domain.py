@@ -937,7 +937,4 @@ class DomainDNSRecordForm(forms.ModelForm):
             elif not content:
                 self.add_error("content", record.error_message)
 
-            if record == DNSRecordTypes.MX and cleaned_data.get("priority") is None:
-                self.add_error("priority", "Enter a priority for this record.")
-
         return cleaned_data

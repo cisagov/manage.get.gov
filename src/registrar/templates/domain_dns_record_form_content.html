@@ -28,7 +28,9 @@
         </div>
     </template>
 
-    {% input_with_errors form.comment %}
+    {% with add_group_class="usa-form-group--unstyled-error" %}
+        {% input_with_errors form.comment %}
+    {% endwith %}
 
     <button
         type="reset"
