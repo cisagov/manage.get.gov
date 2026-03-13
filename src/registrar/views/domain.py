@@ -838,7 +838,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             rec_dict[f"{field.name}"] = getattr(dns_record, field.name)
         return rec_dict
 
-    def get_partial(self, record_type):
+    def get_form_template(self, record_type):
         form_dir = "./dns_record_forms/"
         base_template = f"{form_dir}base_record_form.html"
         txt_template = f"{form_dir}txt_record_form.html"
@@ -854,7 +854,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             data_dict = self.record_dict_for_initial_data(record)
             record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
             record_type = record.form.data.get("type")
-            record.partial = self.get_partial(record_type)
+            record.partial = self.get_form_template(record_type)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -958,7 +958,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         filled_form = DomainDNSRecordForm(initial=self.dns_record)
         # Grabbed result data to pass into the form response
         self.dns_record["form"] = filled_form
-        self.dns_record["partial"] = self.get_partial(record_type)
+        self.dns_record["partial"] = self.get_form_template(record_type)
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
         new_form = DomainDNSRecordForm()

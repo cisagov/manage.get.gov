@@ -150,10 +150,4 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
-        }.get(self, "")
-
-    @property
-    def get_partial(self) -> str:
-        form_dir = "./dns_record_forms/"
-        base_template = f"{form_dir}base_record_form.html"
-        return {DNSRecordTypes.TXT: f"{form_dir}txt_record_form.html"}.get(self, base_template)
+        }.get(self, " ")
