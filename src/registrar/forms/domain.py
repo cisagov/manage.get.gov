@@ -863,6 +863,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         required=False,
         min_value=0,
         max_value=65535,
+        help_text="0 - 65535",
         error_messages={
             "invalid": "Enter a priority number between 0-65535.",
             "min_value": "Enter a priority number between 0-65535.",
@@ -873,6 +874,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 "class": "usa-input",
                 "min": "0",
                 "max": "65535",
+                "required": True,
             }
         ),
     )
