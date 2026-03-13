@@ -2,6 +2,7 @@ from django.db import models
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from registrar.validations import validate_dns_name
 from registrar.utility.enums import DNSRecordTypes
 
@@ -27,6 +28,12 @@ class DnsRecord(TimeStampedModel):
 
     content = models.CharField(blank=True, null=True)
 
+    priority = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0), MaxValueValidator(65535)],
+    )
+
     comment = models.CharField(blank=True, null=True, max_length=500)
 
     tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
@@ -50,6 +57,21 @@ class DnsRecord(TimeStampedModel):
                 validator(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
+
+        if record_type == DNSRecordTypes.MX and self.priority is None:
+            errors["priority"] = ["Enter a priority for this record."]
+
+        exclusive_types = [DNSRecordTypes.A, DNSRecordTypes.AAAA, DNSRecordTypes.CNAME]
+        if record_type in exclusive_types and self.name and self.dns_zone_id:
+            conflict = DnsRecord.objects.filter(
+                dns_zone_id=self.dns_zone_id,
+                name=self.name,
+                type__in=exclusive_types,
+            )
+            if self.pk:
+                conflict = conflict.exclude(pk=self.pk)
+            if conflict.exists():
+                errors["name"] = ["A record with that name already exists. Names must be unique."]
 
         if errors:
             raise ValidationError(errors)
