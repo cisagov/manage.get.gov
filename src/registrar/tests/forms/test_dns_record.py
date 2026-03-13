@@ -3,6 +3,9 @@ from django.test import TestCase
 from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.utility.enums import DNSRecordTypes
+from faker import Faker
+
+fake = Faker()
 
 
 class BaseDomainDNSRecordFormTest(TestCase):
@@ -114,3 +117,29 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
                 self.assertFalse(form.is_valid())
                 self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
+
+    def test_dns_record_txt_throws_error(self):
+        in_valid_content = {"content": "'"}
+
+        data = self.valid_form_data_for_record_type("TXT", in_valid_content)
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("Enter content without using quotation marks.", form.errors["content"])
+
+    def test_dns_record_empty_txt_throws_error(self):
+        in_valid_content = ""
+
+        data = self.valid_form_data_for_record_type("TXT", in_valid_content)
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("Enter the content for this record.", form.errors["content"])
+
+    def test_dns_record_success(self):
+        valid_content = "some text"
+
+        data = self.valid_form_data_for_record_type("TXT", valid_content)
+        form = self.make_form(data)
+
+        self.assertTrue(form.is_valid())
