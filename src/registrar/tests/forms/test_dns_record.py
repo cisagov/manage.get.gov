@@ -136,7 +136,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assertFalse(form.is_valid())
         self.assertIn("Enter the content for this record.", form.errors["content"])
 
-    def test_dns_record_sucess(self):
+    def test_dns_record_success(self):
         valid_content = "some text"
 
         data = self.valid_form_data_for_record_type("TXT", valid_content)

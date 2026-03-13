@@ -77,7 +77,7 @@ def validate_dns_name(name: str) -> None:
         raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
 
 
-def validate_content_name(content: str) -> None:
+def validate_txt_content_name(content: str) -> None:
 
     if not content or not content.strip():
         raise ValidationError("Enter the content for this record.")

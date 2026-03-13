@@ -86,7 +86,6 @@ from ..utility.email_invitations import (
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
-from registrar.utility.enums import DNSRecordTypes
 
 logger = logging.getLogger(__name__)
 
@@ -839,14 +838,23 @@ class DomainDNSRecordsView(DomainFormBaseView):
             rec_dict[f"{field.name}"] = getattr(dns_record, field.name)
         return rec_dict
 
+    def get_partial(self, record_type):
+        form_dir = "./dns_record_forms/"
+        base_template = f"{form_dir}base_record_form.html"
+        txt_template = f"{form_dir}txt_record_form.html"
+        if record_type != "TXT":
+            return base_template
+        else:
+            return txt_template
+
     def attach_edit_form(self, dns_records):
         """adding a form instance to the dns_record objects
         to display corresponding values in the table rows"""
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
             record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
-            record_type = DNSRecordTypes(data_dict["type"])
-            record.partial = record_type.get_partial
+            record_type = record.form.data.get("type")
+            record.partial = self.get_partial(record_type)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -883,8 +891,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.object = self.get_object()
         form = self.get_form()
         self._get_domain(request)
-        type = form.data.get("type")
-        record_type = DNSRecordTypes[type]
+        record_type = form.data.get("type")
 
         if not form.is_valid():
             errors = self.get_form_errors(form)
@@ -951,7 +958,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         filled_form = DomainDNSRecordForm(initial=self.dns_record)
         # Grabbed result data to pass into the form response
         self.dns_record["form"] = filled_form
-        self.dns_record["partial"] = record_type.get_partial
+        self.dns_record["partial"] = self.get_partial(record_type)
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
         new_form = DomainDNSRecordForm()

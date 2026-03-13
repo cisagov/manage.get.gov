@@ -4,7 +4,7 @@ from enum import Enum
 from registrar.utility import StrEnum
 from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from django.db.models import TextChoices
-from registrar.validations import validate_content_name
+from registrar.validations import validate_txt_content_name
 
 
 class ValidationReturnType(Enum):
@@ -142,7 +142,7 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: validate_ipv4_address,
             DNSRecordTypes.AAAA: validate_ipv6_address,
-            DNSRecordTypes.TXT: validate_content_name,
+            DNSRecordTypes.TXT: validate_txt_content_name,
         }.get(self)
 
     @property
