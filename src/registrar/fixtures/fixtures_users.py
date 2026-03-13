@@ -184,9 +184,16 @@ class UserFixture:
             "email": "gaby+1@truss.works",
         },
         {
-            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+            "username": "02f96e16-fff9-4eb1-bb7e-e61a17c63f3f",
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
+            "email": "nicolle.leclair.gov@ecstech.com",
+        },
+        {
+            "username": "106632de-8681-43db-85dd-83857c55660f",
+            "first_name": "Natalie-Analyst",
+            "last_name": "Wong-Analyst",
+            "email": "wai-wan.wong@associates.cisa.dhs.gov",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
