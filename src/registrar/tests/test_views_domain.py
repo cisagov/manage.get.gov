@@ -383,13 +383,13 @@ class TestDomainDetail(TestDomainOverview):
     @override_flag("dns_hosting", active=True)
     def test_domain_detail_no_nameserver_info_when_enrolled_in_dns_hosting(self):
         with less_console_noise():
-            # Does not view nameserver on Domain Overview page
+            # Views DNS record and does not view nameserver on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
             self.assertNotContains(detail_page, "DNS name servers")
 
     def test_domain_detail_show_nameserver_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
         with less_console_noise()and override_flag("dns_hosting", active=False):
-            # Does not view nameserver on Domain Overview page
+            # Does not view dns record and not nameserver on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
 
             self.assertContains(detail_page, "DNS name servers")
@@ -1568,9 +1568,18 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         self.assertContains(page, "DNS name servers")
 
     def test_domain_nameservers_not_found_when_enrolled_in_dns_hosting(self):
-        """Can load domain's nameservers page."""
-        self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
-        self.assertRaises(Http404)
+        """Cannot load domain's nameservers page."""
+        with override_flag("dns_hosting", active=True):
+            self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+            self.assertRaises(Http404)
+
+    @override_flag("dns_hosting", active=False)
+    def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
+        """Can load domain's nameservers page when dns hosting flag is disabled and domain is enrolled in dns hosting."""
+        with override_flag("dns_hosting", active=False):
+            page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+            self.assertContains(page, "DNS name servers")
+
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_submit_one_nameserver(self):
@@ -3526,14 +3535,15 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         self.client.force_login(self.user)
 
     def test_domain_dns(self):
-        """Can load domain's DNS page."""
+        """Can load domain's DNS page (not enrolled in DNS hosting)."""
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "The Domain Name System (DNS)")
         self.assertContains(page, "Name servers")
+        self.assertNotContains(page, "DNS Records")
         self.assertContains(page, "DNSSEC")
 
     @override_flag("dns_hosting", active=True)
-    def test_domain_dns_enrolled_in_dns_hosting(self):
+    def test_domain_dns_when_enrolled_in_dns_hosting(self):
         # Set up a domain enrolled in dns hosting
         self.domain_enrolled_in_dns_hosting, _, _ = create_initial_dns_setup(**{"domain_name": "enrolledindnshosting.gov"})
         UserDomainRole.objects.get_or_create(
@@ -3544,6 +3554,18 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertNotContains(page, "Name servers")
         self.assertContains(page, "DNS Records")
+
+    @override_flag("dns_hosting", active=False)
+    def test_domain_dns_when_dns_hosting_flag_is_disabled_and_enrolled_in_dns_hosting(self):
+        # Set up a domain enrolled in dns hosting with feature flag off
+        self.domain_enrolled_in_dns_hosting, _, _ = create_initial_dns_setup(**{"domain_name": "enrolledindnshosting.gov"})
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_enrolled_in_dns_hosting, role=UserDomainRole.Roles.MANAGER
+        )
+
+        page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+        self.assertContains(page, "Name servers")
+        self.assertNotContains(page, "DNS Records")
 
 class TestDomainDnsRecords(TestWithUser, WebTest):
     mock_api_service = MockCloudflareService()
@@ -3579,20 +3601,28 @@ class TestDomainDnsRecords(TestWithUser, WebTest):
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
-        """Can load domain's DNS records page."""
-        domain, _, _ = create_initial_dns_setup()
+        """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
+        domain, _, _ = create_initial_dns_setup()  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Records")
 
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_not_viewable_when_not_enrolled(self):
-        """Can load domain's DNS records page."""
+        """Cannot load domain's DNS records page when not enrolled."""
         domain, _, _ = create_initial_dns_setup()
         domain.is_enrolled_in_dns_hosting = False
         domain.save()
         unenrolled_domain = domain
         self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": unenrolled_domain.id}))
         self.assertRaises(Http404)
+
+    def test_domain_dns_records_not_viewable_when_dns_hosting_flag_disabled_and_enrolled(self):
+        """Cannot load domain's DNS records page when dns hosting flag is disabled and domain is enrolled."""
+        domain, _, _ = create_initial_dns_setup()  # creates enrolled domain
+
+        with override_flag("dns_hosting", active=False):
+            self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+            self.assertRaises(Http404)
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
