@@ -1158,6 +1158,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+        Portfolio.objects.all().delete()
 
     @classmethod
     def tearDownClass(self):
@@ -1446,7 +1447,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         # Create a legacy domain (no portfolio)
         domain = Domain.objects.create(
             name="legacytest.gov",
-            state=Domain.State.READY,
+            state=Domain.State.UNKNOWN,
             is_enrolled_in_dns_hosting=False,
         )
 
