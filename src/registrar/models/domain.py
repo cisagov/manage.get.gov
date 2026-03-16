@@ -1710,37 +1710,22 @@ class Domain(TimeStampedModel, DomainHelper):
         if not domain_info:
             raise ValueError(f"Cannot create registrant for domain '{self.name}': " "DomainInformation is required")
 
-        is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
-
-        if is_federal:
-            federal_agency = domain_info.converted_federal_agency
-            registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
-        else:
-            registrant_org = domain_info.converted_organization_name
-
-        # We are using these address lines because the suborganization doesn't have address lines
-        registrant_street1 = domain_info.converted_address_line1
-        registrant_street2 = domain_info.converted_address_line2
-
-        # Check for suborg first, and use that if it exists for city
-        if domain_info.sub_organization:
-            registrant_city = domain_info.sub_organization.city
-            registrant_state_territory = domain_info.sub_organization.state_territory
-        else:
-           registrant_city = domain_info.converted_city
-           registrant_state_territory = domain_info.converted_state_territory
-        registrant_zipcode = domain_info.converted_zipcode
+        registrant_data = domain_info.get_registrant_contact_data()
 
         self._check_missing_fields(
-            registrant_org, registrant_street1, registrant_city, registrant_zipcode, state_territory
+            registrant_data["org"],
+            registrant_data["street1"],
+            registrant_data["city"],
+            registrant_data["zipcode"],
+            registrant_data["state_territory"],
         )
 
-        registrant.org = registrant_org
-        registrant.street1 = registrant_street1
-        registrant.street2 = registrant_street2
-        registrant.city = registrant_city
-        registrant.sp = state_territory
-        registrant.pc = registrant_zipcode
+        registrant.org = registrant_data["org"]
+        registrant.street1 = registrant_data["street1"]
+        registrant.street2 = registrant_data["street2"]
+        registrant.city = registrant_data["city"]
+        registrant.sp = registrant_data["state_territory"]
+        registrant.pc = registrant_data["zipcode"]
 
         # Set defaults for fields we don't have
         registrant.name = "CSD/CB – Attn: .gov TLD"

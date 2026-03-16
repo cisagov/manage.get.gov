@@ -283,6 +283,34 @@ class DomainInformation(TimeStampedModel):
         except Exception:
             return ""
 
+    def get_registrant_contact_data(self):
+        """Return registrant contact values for EPP contact creation."""
+        is_federal = self.converted_generic_org_type == self.OrganizationChoices.FEDERAL
+        if is_federal:
+            federal_agency = self.converted_federal_agency
+            registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
+        else:
+            registrant_org = self.converted_organization_name
+
+        if self.sub_organization:
+            registrant_city = self.sub_organization.city
+            registrant_state_territory = self.sub_organization.state_territory
+        elif self.portfolio:
+            registrant_city = self.portfolio.city
+            registrant_state_territory = self.portfolio.state_territory
+        else:
+            registrant_city = self.city
+            registrant_state_territory = self.state_territory
+
+        return {
+            "org": registrant_org,
+            "street1": self.converted_address_line1,
+            "street2": self.converted_address_line2,
+            "city": registrant_city,
+            "state_territory": registrant_state_territory,
+            "zipcode": self.converted_zipcode,
+        }
+
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
