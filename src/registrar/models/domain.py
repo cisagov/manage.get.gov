@@ -1726,21 +1726,11 @@ class Domain(TimeStampedModel, DomainHelper):
         # Check for suborg first, and use that if it exists for city
         if domain_info.sub_organization:
             registrant_city = domain_info.sub_organization.city
+            registrant_state_territory = domain_info.sub_organization.state_territory
         else:
-            if domain_info.portfolio and domain_info.portfolio.city:
-                registrant_city = domain_info.portfolio.city
-            else:
-                registrant_city = domain_info.converted_city
+           registrant_city = domain_info.converted_city
+           registrant_state_territory = domain_info.converted_state_territory
         registrant_zipcode = domain_info.converted_zipcode
-
-        state_territory = None
-        if domain_info.sub_organization:
-            state_territory = domain_info.sub_organization.state_territory
-        else:
-            if domain_info.portfolio:
-                state_territory = domain_info.portfolio.state_territory
-            else:
-                state_territory = domain_info.state_territory
 
         self._check_missing_fields(
             registrant_org, registrant_street1, registrant_city, registrant_zipcode, state_territory
