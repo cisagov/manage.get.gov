@@ -81,7 +81,7 @@ def helper_validation_for_quotes(content: str) -> bool:
     double_quote = '"'
     quote_count = content.count(double_quote)
 
-    return quote_count%2 != 0
+    return quote_count % 2 != 0
 
 
 def validate_txt_content(content: str) -> None:
