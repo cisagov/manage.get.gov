@@ -1996,17 +1996,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
             disclose_fields.difference_update(fields_to_remove)
 
-            # Any disclosed postal/location-based fields must include type="loc".
-            loc_type_by_field = {
+            disclose_types = {
                 DF.ADDR: "loc",
                 DF.NAME: "loc",
-                DF.ORG: "loc",
-                DF.CITY: "loc",
-                DF.SP: "loc",
-                DF.CC: "loc",
-            }
-            disclose_types = {
-                field: loc_type_by_field[field] for field in disclose_fields if field in loc_type_by_field
             }
 
             disclose_args = {
