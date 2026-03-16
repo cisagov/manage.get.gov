@@ -3305,12 +3305,12 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
     @less_console_noise_decorator
     def test_is_legacy_helper_method(self):
         """
-        Scenario: The _is_legacy() helper correctly ids legacy domains
+        Scenario: The is_legacy helper correctly ids legacy domains
             Given various domain configurations
-            When _is_legacy() is called
+            When is_legacy is called
             Then it correctly ids portfolio vs legacy domains
 
-        CONTEXT: The _is_legacy() method is used internally to determine
+        CONTEXT: The is_legacy property is used internally to determine
         if a domain can enroll in DNS hosting.
         """
         from registrar.models import Portfolio
@@ -3318,10 +3318,10 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         # Legacy domain (no portfolio)
         legacy_domain = Domain.objects.create(name="legacy.gov")
         DomainInformation.objects.create(domain=legacy_domain, requester=self.user, portfolio=None)
-        self.assertTrue(legacy_domain._is_legacy())
+        self.assertTrue(legacy_domain.is_legacy)
 
         # Portfolio domain
         portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")  # Added required field
         portfolio_domain = Domain.objects.create(name="portfolio.gov")
         DomainInformation.objects.create(domain=portfolio_domain, requester=self.user, portfolio=portfolio)
-        self.assertFalse(portfolio_domain._is_legacy())
+        self.assertFalse(portfolio_domain.is_legacy)
