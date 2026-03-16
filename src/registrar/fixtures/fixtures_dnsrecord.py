@@ -122,6 +122,20 @@ class DnsRecordFixture(DomainFixture):
                     )
                 )
 
+                # MX record for mail routing
+                dns_records_to_create.append(
+                    DnsRecord(
+                        dns_zone=dns_zone,
+                        type=DNSRecordTypes.MX,
+                        name="@",
+                        ttl=3600,
+                        content=f"mail.{dns_zone.name}",
+                        priority=10,
+                        comment="Primary mail server",
+                        tags=["email", "production"],
+                    )
+                )
+
             # Bulk create DNS records
             created_records = DnsRecord.objects.bulk_create(dns_records_to_create)
             logger.info(f"Successfully created {len(created_records)} DNS records.")

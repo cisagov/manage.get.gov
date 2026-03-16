@@ -13,19 +13,28 @@
     {% with add_group_class="usa-form-group--unstyled-error" %}
         {% input_with_errors form.name %}    
     {% endwith %}
-    <div class="grid-row grid-gap flex-align-end">
-        <div class="grid-col-9">
+    <div x-bind:class="recordType !== 'MX' ? 'grid-row grid-gap flex-align-end' : ''">
+        <div x-bind:class="recordType !== 'MX' ? 'grid-col-9' : ''">
             {% with add_group_class="usa-form-group--unstyled-error" %}
-                {% input_with_errors form.content %}    
+                {% input_with_errors form.content %}
             {% endwith %}
         </div>
-        <div class="grid-col-3">
-            {% input_with_errors form.ttl %}        
+        <div x-bind:class="recordType === 'MX' ? 'grid-row grid-gap flex-align-end' : 'grid-col-3'">
+            <div x-cloak x-show="recordType === 'MX'" class="grid-col-9">
+                {% with add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors form.priority %}
+                 {% endwith %}
+            </div>
+            <div x-bind:class="recordType === 'MX' ? 'grid-col-3' : ''">
+                {% with add_group_class="usa-form-group--unstyled-error" %}
+                    {% input_with_errors form.ttl %}
+                {% endwith %}
+            </div>
         </div>
     </div>
-
-    {% input_with_errors form.comment %}
-
+    {% with add_group_class="usa-form-group--unstyled-error" %}
+        {% input_with_errors form.comment %}
+    {% endwith %}
     <button
         type="reset"
         class="usa-button usa-button--outline"

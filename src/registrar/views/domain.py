@@ -905,6 +905,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "comment": form.cleaned_data.get("comment", ""),
             }
 
+            priority = form.cleaned_data.get("priority")
+            if priority is not None:
+                form_record_data["priority"] = priority
+
             domain_name = self.object.name
 
             # Verify zone already exists
