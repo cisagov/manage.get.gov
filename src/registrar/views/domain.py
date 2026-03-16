@@ -825,6 +825,7 @@ class DomainDNSView(DomainBaseView):
         self.object = self.get_object()
         self._update_session_with_domain()
 
+
 @method_decorator(waffle_flag("dns_hosting"), name="dispatch")
 @grant_access(IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
@@ -846,7 +847,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self._update_session_with_domain()
 
     def dispatch(self, request, *args, **kwargs):
-        self._get_domain(request)  # Ensure the domain is set in the session cache. Sets self.object to the domain object.
+        self._get_domain(
+            request
+        )  # Ensure the domain is set in the session cache. Sets self.object to the domain object.
 
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
@@ -992,6 +995,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
+
 @method_decorator(waffle_flag("!dns_hosting"), name="dispatch")
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
@@ -1011,7 +1015,9 @@ class DomainNameserversView(DomainFormBaseView):
         self._update_session_with_domain()
 
     def dispatch(self, request, *args, **kwargs):
-        self._get_domain(request)  # Ensure the domain is set in the session cache. Sets self.object to the domain object.
+        self._get_domain(
+            request
+        )  # Ensure the domain is set in the session cache. Sets self.object to the domain object.
 
         if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is enrolled in DNS hosting. Nameservers cannot be edited in this case.")

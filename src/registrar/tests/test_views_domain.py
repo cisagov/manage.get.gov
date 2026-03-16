@@ -59,8 +59,9 @@ logger = logging.getLogger(__name__)
 
 
 class TestWithSharedDomainPermissions(TestWithUser):
-    """ This is a partial refactor in an attempt to create an inherited class that creates only data that is used
-      in all the test classes.  TestWithDomainPermissions creates excess unused data for each class when inherited """
+    """This is a partial refactor in an attempt to create an inherited class that creates only data that is used
+    in all the test classes.  TestWithDomainPermissions creates excess unused data for each class when inherited"""
+
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
@@ -69,6 +70,8 @@ class TestWithSharedDomainPermissions(TestWithUser):
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
+
+
 class TestWithDomainPermissions(TestWithUser):
     @less_console_noise_decorator
     def setUp(self):
@@ -99,7 +102,9 @@ class TestWithDomainPermissions(TestWithUser):
         # Set up a domain enrolled in DNS hosting
         self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(name="enrolledindnshosting.gov")
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="New org", requester=self.user)
-        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_enrolled_in_dns_hosting, portfolio=portfolio)
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=self.domain_enrolled_in_dns_hosting, portfolio=portfolio
+        )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_enrolled_in_dns_hosting, role=UserDomainRole.Roles.MANAGER
         )
@@ -256,7 +261,9 @@ class TestDomainPermissions(TestWithDomainPermissions):
             with self.subTest(view_name=view_name):
                 if view_name == "domain-dns-records":
                     with override_flag("dns_hosting", active=True):
-                        response = self.client.get(reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+                        response = self.client.get(
+                            reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                        )
                         self.assertEqual(response.status_code, 403)
                 else:
                     response = self.client.get(reverse(view_name, kwargs={"domain_pk": self.domain.id}))
@@ -277,7 +284,6 @@ class TestDomainPermissions(TestWithDomainPermissions):
             "domain-org-name-address",
             "domain-senior-official",
             "domain-security-email",
-
         ]:
             for domain in [
                 self.domain_on_hold,
@@ -292,7 +298,9 @@ class TestDomainPermissions(TestWithDomainPermissions):
         """Test that the domain pages are blocked for on hold and deleted domains for DNS Records page"""
         self.client.force_login(self.user)
         with override_flag("dns_hosting", active=True):
-            response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+            response = self.client.get(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+            )
             self.assertEqual(response.status_code, 403)
 
 
@@ -388,7 +396,7 @@ class TestDomainDetail(TestDomainOverview):
             self.assertNotContains(detail_page, "DNS name servers")
 
     def test_domain_detail_show_nameserver_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
-        with less_console_noise()and override_flag("dns_hosting", active=False):
+        with less_console_noise() and override_flag("dns_hosting", active=False):
             # Does not view dns record and not nameserver on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
 
@@ -1570,16 +1578,19 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
     def test_domain_nameservers_not_found_when_enrolled_in_dns_hosting(self):
         """Cannot load domain's nameservers page."""
         with override_flag("dns_hosting", active=True):
-            self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+            self.client.get(
+                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+            )
             self.assertRaises(Http404)
 
     @override_flag("dns_hosting", active=False)
     def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
         """Can load domain's nameservers page when dns hosting flag is disabled and domain is enrolled in dns hosting."""
         with override_flag("dns_hosting", active=False):
-            page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+            page = self.client.get(
+                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+            )
             self.assertContains(page, "DNS name servers")
-
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_submit_one_nameserver(self):
@@ -3528,6 +3539,7 @@ class TestDomainDeletion(TestWithUser):
         json_response = self.client.get("/get-domains-json/")
         self.assertNotContains(json_response, self.dns_needed_not_expiring.name)
 
+
 class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
     def setUp(self):
         super().setUp()
@@ -3545,7 +3557,9 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_when_enrolled_in_dns_hosting(self):
         # Set up a domain enrolled in dns hosting
-        self.domain_enrolled_in_dns_hosting, _, _ = create_initial_dns_setup(**{"domain_name": "enrolledindnshosting.gov"})
+        self.domain_enrolled_in_dns_hosting, _, _ = create_initial_dns_setup(
+            **{"domain_name": "enrolledindnshosting.gov"}
+        )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_enrolled_in_dns_hosting, role=UserDomainRole.Roles.MANAGER
         )
@@ -3558,7 +3572,9 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=False)
     def test_domain_dns_when_dns_hosting_flag_is_disabled_and_enrolled_in_dns_hosting(self):
         # Set up a domain enrolled in dns hosting with feature flag off
-        self.domain_enrolled_in_dns_hosting, _, _ = create_initial_dns_setup(**{"domain_name": "enrolledindnshosting.gov"})
+        self.domain_enrolled_in_dns_hosting, _, _ = create_initial_dns_setup(
+            **{"domain_name": "enrolledindnshosting.gov"}
+        )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_enrolled_in_dns_hosting, role=UserDomainRole.Roles.MANAGER
         )
@@ -3566,6 +3582,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertContains(page, "Name servers")
         self.assertNotContains(page, "DNS Records")
+
 
 class TestDomainDnsRecords(TestWithUser, WebTest):
     mock_api_service = MockCloudflareService()
