@@ -842,10 +842,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form_dir = "./dns_record_forms/"
         base_template = f"{form_dir}base_record_form.html"
         txt_template = f"{form_dir}txt_record_form.html"
-        if record_type != "TXT":
-            return base_template
-        else:
+        if record_type == "TXT":
             return txt_template
+        else:
+            return base_template
 
     def attach_edit_form(self, dns_records):
         """adding a form instance to the dns_record objects

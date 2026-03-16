@@ -16,10 +16,7 @@ class BaseDomainDNSRecordFormTest(TestCase):
             dns_account=self.account,
             domain=self.domain,
         )
-        self.VALID_CONTENT_BY_TYPE = {
-            "A": "192.0.2.10",
-            "AAAA": "2001:db8::1234:5678",
-        }
+        self.VALID_CONTENT_BY_TYPE = {"A": "192.0.2.10", "AAAA": "2001:db8::1234:5678", "TXT": "Some valid text"}
 
     def valid_form_data_for_record_type(self, record_type, content):
         return {
@@ -99,16 +96,21 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             "A": "2008:db8:1234:5678",
             "AAAA": "192.0.2.10",
         }
-
+        invalid_quotes_txt_error = (
+            'Record content is not quoted correctly; ensure it begins and ends with double quote(")'
+        )
         for record_type, bad_content in invalid_content_by_type.items():
             with self.subTest(record_type=record_type):
                 data = self.valid_form_data_for_record_type(record_type, bad_content)
                 form = self.make_form(data)
 
                 self.assertFalse(form.is_valid())
-                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
+                self.assertIn(
+                    DNSRecordTypes(record_type).error_message or invalid_quotes_txt_error, form.errors["content"]
+                )
 
     def test_dns_record_with_blank_content_throws_error(self):
+        empty_txt_message = "Enter the content for this record."
         for record_type, content in self.VALID_CONTENT_BY_TYPE.items():
             with self.subTest(record_type=record_type):
                 data = self.valid_form_data_for_record_type(record_type, content)
@@ -116,30 +118,4 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 form = self.make_form(data)
 
                 self.assertFalse(form.is_valid())
-                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
-
-    def test_dns_record_txt_throws_error(self):
-        in_valid_content = {"content": "'"}
-
-        data = self.valid_form_data_for_record_type("TXT", in_valid_content)
-        form = self.make_form(data)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn("Enter content without using quotation marks.", form.errors["content"])
-
-    def test_dns_record_empty_txt_throws_error(self):
-        in_valid_content = ""
-
-        data = self.valid_form_data_for_record_type("TXT", in_valid_content)
-        form = self.make_form(data)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn("Enter the content for this record.", form.errors["content"])
-
-    def test_dns_record_success(self):
-        valid_content = "some text"
-
-        data = self.valid_form_data_for_record_type("TXT", valid_content)
-        form = self.make_form(data)
-
-        self.assertTrue(form.is_valid())
+                self.assertIn(DNSRecordTypes(record_type).error_message or empty_txt_message, form.errors["content"])

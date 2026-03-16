@@ -2,30 +2,30 @@
 
 function switchFromInputToTextArea (element) {
         if(!element) return;
-        const ta = document.createElement('textarea');
-        ta.name = element.name;
-        ta.className = 'usa-textarea usa-textarea--medium';
-        ta.setAttribute('aria-label', 'Content')
-        ta.value = element.value
-        element.classList.forEach(cls => ta.classList.add(cls))
+        const textArea = document.createElement('textarea');
+        textArea.name = element.name;
+        textArea.className = 'usa-textarea usa-textarea--medium';
+        textArea.setAttribute('aria-label', 'Content')
+        textArea.value = element.value
+        element.classList.forEach(cls => textArea.classList.add(cls))
        
         
         // Character count
         const charLimit = 2048
         let countText = function () {
-           return `${charLimit - ta.value.length} characters allowed`
+           return `${charLimit - textArea.value.length} characters allowed`
         }
-        const charCount = document.createElement('div')
-        charCount.className = "usa-character-count__status usa-hint"
-        charCount.textContent = countText()
-        ta.addEventListener('input', function(){
-             charCount.textContent = countText()
-             charCount.classList.toggle('usa-character-count__status--invalid', ta.value.length > charLimit)
+        const displayCharCount = document.createElement('div')
+        displayCharCount.className = "usa-character-count__status usa-hint"
+        displayCharCount.textContent = countText()
+        textArea.addEventListener('input', function(){
+             displayCharCount.textContent = countText()
+             displayCharCount.classList.toggle('usa-character-count__status--invalid', textArea.value.length > charLimit)
         })
 
 
-        element.replaceWith(ta)
-        ta.insertAdjacentElement('afterend', charCount)
+        element.replaceWith(textArea)
+        textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
 export function initDynamicDNSRecordFormFields() { 
