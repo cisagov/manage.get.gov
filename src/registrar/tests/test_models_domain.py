@@ -1213,23 +1213,18 @@ class TestRegistrantContacts(MockEppLib):
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
                     DF = common.DiscloseField
-                    disclose_fields_by_value = {field.value: field for field in DF}
-                    registrant_field_values = ("org", "city", "sp", "cc")
-                    if all(value in disclose_fields_by_value for value in registrant_field_values):
-                        registrant_disclose_fields = {
-                            disclose_fields_by_value[value] for value in registrant_field_values
-                        }
-                    else:
-                        registrant_disclose_fields = {
-                            field
-                            for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
-                            if field is not None
-                        }
+                    registrant_disclose_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
+                    registrant_disclose_types = {
+                        DF.ORG: "loc",
+                        DF.CITY: "loc",
+                        DF.SP: "loc",
+                        DF.CC: "loc",
+                    }
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact,
                         disclose=True,
                         disclose_fields=registrant_disclose_fields,
-                        disclose_types={field: "loc" for field in registrant_disclose_fields},
+                        disclose_types=registrant_disclose_types,
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
                     disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
@@ -1268,20 +1263,17 @@ class TestRegistrantContacts(MockEppLib):
 
             disclose = domain._disclose_fields(registrant)
             DF = common.DiscloseField
-            disclose_fields_by_value = {field.value: field for field in DF}
-            registrant_field_values = ("org", "city", "sp", "cc")
-            if all(value in disclose_fields_by_value for value in registrant_field_values):
-                expected_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
-            else:
-                expected_fields = {
-                    field
-                    for field in (disclose_fields_by_value.get("org"), disclose_fields_by_value.get("addr"))
-                    if field is not None
-                }
+            expected_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
+            expected_types = {
+                DF.ORG: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.CC: "loc",
+            }
 
             self.assertTrue(disclose.flag)
             self.assertEqual(disclose.fields, expected_fields)
-            self.assertEqual(disclose.types, {field: "loc" for field in expected_fields})
+            self.assertEqual(disclose.types, expected_types)
 
     def test_convert_public_contact_to_epp(self):
         with less_console_noise():

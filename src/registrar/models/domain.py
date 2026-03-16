@@ -1712,17 +1712,16 @@ class Domain(TimeStampedModel, DomainHelper):
 
         is_federal = domain_info.converted_generic_org_type == domain_info.OrganizationChoices.FEDERAL
 
-        registrant_org = None
         if is_federal:
             federal_agency = domain_info.converted_federal_agency
             registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
         else:
             registrant_org = domain_info.converted_organization_name
 
+        # We are using these address lines because the suborganization doesn't have address lines
         registrant_street1 = domain_info.converted_address_line1
         registrant_street2 = domain_info.converted_address_line2
 
-        registrant_city = None
         # Check for suborg first, and use that if it exists for city
         if domain_info.sub_organization:
             registrant_city = domain_info.sub_organization.city
@@ -1733,7 +1732,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 registrant_city = domain_info.converted_city
         registrant_zipcode = domain_info.converted_zipcode
 
-        state_territory = None
         if domain_info.sub_organization:
             state_territory = domain_info.sub_organization.state_territory
         else:
@@ -1997,57 +1995,49 @@ class Domain(TimeStampedModel, DomainHelper):
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
         all_disclose_fields = {field for field in DF}
-        disclose_fields_by_value = {field.value: field for field in DF}
 
         # Registrant contacts should publish only org + city/state/country (not full street address).
         if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
-            registrant_field_values = ("org", "city", "sp", "cc")
-            if all(value in disclose_fields_by_value for value in registrant_field_values):
-                disclose_fields = {disclose_fields_by_value[value] for value in registrant_field_values}
-                return epp.Disclose(
-                    flag=True,
-                    fields=disclose_fields,
-                    types={field: "loc" for field in disclose_fields},
-                )
+            disclose_args = {
+                "flag": True,
+                "fields": {DF.ORG, DF.CITY, DF.SP, DF.CC},
+                "types": {
+                    DF.ORG: "loc",
+                    DF.CITY: "loc",
+                    DF.SP: "loc",
+                    DF.CC: "loc",
+                },
+            }
+        else:
+            disclose_fields = set(all_disclose_fields)
 
-            # Older epplib versions may not expose granular city/state/country disclose fields.
-            # Fall back to the closest supported disclosure format.
-            disclose_fields = {
-                field
-                for field in (
-                    disclose_fields_by_value.get("org"),
-                    disclose_fields_by_value.get("addr"),
-                )
-                if field is not None
+            fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+            if contact.contact_type == contact.ContactTypeChoices.SECURITY:
+                if contact.email not in DefaultEmail.get_all_emails():
+                    fields_to_remove.add(DF.EMAIL)
+            elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
+                fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
+
+            disclose_fields.difference_update(fields_to_remove)
+
+            # Any disclosed postal/location-based fields must include type="loc".
+            loc_type_by_field = {
+                DF.ADDR: "loc",
+                DF.NAME: "loc",
+                DF.ORG: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.CC: "loc",
             }
             disclose_types = {
-                field: "loc"
-                for field in (
-                    disclose_fields_by_value.get("org"),
-                    disclose_fields_by_value.get("addr"),
-                )
-                if field is not None
+                field: loc_type_by_field[field] for field in disclose_fields if field in loc_type_by_field
             }
-            return epp.Disclose(
-                flag=True,
-                fields=disclose_fields,
-                types=disclose_types,
-            )
 
-        disclose_args = {
-            "fields": all_disclose_fields,
-            "flag": False,
-            "types": {DF.ADDR: "loc", DF.NAME: "loc"},
-        }
-
-        fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
-        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
-            if contact.email not in DefaultEmail.get_all_emails():
-                fields_to_remove.add(DF.EMAIL)
-        elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
-
-        disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
+            disclose_args = {
+                "fields": disclose_fields,
+                "flag": False,
+                "types": disclose_types,
+            }
 
         logger.debug(
             "Updated domain contact %s to disclose: %s",
