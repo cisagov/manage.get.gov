@@ -1205,6 +1205,7 @@ class TestRegistrantContacts(MockEppLib):
                 (expected_security, domain.security_contact),
                 (expected_tech, domain.technical_contact),
             ]
+            DF = common.DiscloseField
             for expected_contact, actual_contact in contacts:
                 if expected_contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
                     disclose_fields = self.all_disclose_fields - {"email"}
@@ -1212,7 +1213,6 @@ class TestRegistrantContacts(MockEppLib):
                         expected_contact, disclose=False, disclose_fields=disclose_fields
                     )
                 elif expected_contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
-                    DF = common.DiscloseField
                     registrant_disclose_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
                     registrant_disclose_types = {
                         DF.ORG: "loc",
@@ -1294,7 +1294,18 @@ class TestRegistrantContacts(MockEppLib):
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
                 "disclose": common.Disclose(
-                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                    flag=False,
+                    fields=disclose_email_field,
+                    types={
+                        DF.ORG: "loc",
+                        DF.STREET: "loc",
+                        DF.CITY: "loc",
+                        DF.SP: "loc",
+                        DF.PC: "loc",
+                        DF.CC: "loc",
+                        DF.ADDR: "loc",
+                        DF.NAME: "loc",
+                    },
                 ),
                 "email": "help@get.gov",
                 "extensions": [],
@@ -1321,7 +1332,18 @@ class TestRegistrantContacts(MockEppLib):
             expected_not_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
                 "disclose": common.Disclose(
-                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                    flag=False,
+                    fields=disclose_email_field,
+                    types={
+                        DF.ORG: "loc",
+                        DF.STREET: "loc",
+                        DF.CITY: "loc",
+                        DF.SP: "loc",
+                        DF.PC: "loc",
+                        DF.CC: "loc",
+                        DF.ADDR: "loc",
+                        DF.NAME: "loc",
+                    },
                 ),
                 "email": "help@get.gov",
                 "extensions": [],
@@ -1381,7 +1403,19 @@ class TestRegistrantContacts(MockEppLib):
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, {DF.EMAIL})
-        self.assertEqual(result.disclose.types, {DF.ADDR: "loc", DF.NAME: "loc"})
+        self.assertEqual(
+            result.disclose.types,
+            {
+                DF.ORG: "loc",
+                DF.STREET: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.PC: "loc",
+                DF.CC: "loc",
+                DF.NAME: "loc",
+                DF.ADDR: "loc",
+            },
+        )
 
     def test_not_disclosed_on_default_security_contact(self):
         """
