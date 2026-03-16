@@ -3593,11 +3593,6 @@ class TestDomainDnsRecords(TestWithUser, WebTest):
         super().setUpClass()
         cls.mock_api_service.start()
 
-    def setUp(self):
-        super().setUp()
-        self.app.set_user(self.user.username)
-        self.client.force_login(self.user)
-
     @classmethod
     def tearDownClass(cls):
         """Stop mock service after all tests"""
