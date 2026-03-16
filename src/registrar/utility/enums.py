@@ -138,7 +138,7 @@ class DNSRecordTypes(TextChoices):
         }.get(self, "")
 
     @property
-    def validator(self) -> str:
+    def validator(self):
         return {
             DNSRecordTypes.A: validate_ipv4_address,
             DNSRecordTypes.AAAA: validate_ipv6_address,
@@ -150,4 +150,4 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
-        }.get(self)
+        }.get(self,"")
