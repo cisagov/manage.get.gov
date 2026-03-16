@@ -97,7 +97,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             "AAAA": "192.0.2.10",
         }
         invalid_quotes_txt_error = (
-            'Record content is not quoted correctly; ensure it begins and ends with double quote(")'
+            'Record content is not quoted correctly; ensure it begins and ends with double quotes(")'
         )
         for record_type, bad_content in invalid_content_by_type.items():
             with self.subTest(record_type=record_type):

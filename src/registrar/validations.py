@@ -90,7 +90,7 @@ def validate_txt_content(content: str) -> None:
         raise ValidationError("Enter the content for this record.")
 
     if helper_validation_for_quotes(content):
-        raise ValidationError('Record content is not quoted correctly; ensure it begins and ends with double quote(")')
+        raise ValidationError('Record content is not quoted correctly; ensure it begins and ends with double quotes(")')
 
     if len(content) > 2048:
         raise ValidationError("Content must be no more than 2048 characters.")
