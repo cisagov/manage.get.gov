@@ -78,16 +78,10 @@ def validate_dns_name(name: str) -> None:
 
 
 def helper_validation_for_quotes(content: str) -> bool:
-    quote_stack = []
+    double_quote = '"'
+    quote_count = content.count(double_quote)
 
-    for i, char in enumerate(content):
-        if len(quote_stack) > 0 and char == quote_stack[i - 1]:
-            quote_stack.pop()
-
-        if char == '"':
-            quote_stack.append(char)
-
-    return len(quote_stack) > 0
+    return quote_count%2 != 0
 
 
 def validate_txt_content(content: str) -> None:
