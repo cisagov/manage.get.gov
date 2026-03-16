@@ -842,6 +842,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("", "- Select -"),
             ("A", "A"),
             ("AAAA", "AAAA"),
+            ("CNAME", "CNAME")
         ],
         required=True,
         widget=forms.Select(
