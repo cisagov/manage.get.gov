@@ -1996,10 +1996,18 @@ class Domain(TimeStampedModel, DomainHelper):
 
             disclose_fields.difference_update(fields_to_remove)
 
+            # After removing, set disclose based on registrant type
             disclose_types = {
-                DF.ADDR: "loc",
-                DF.NAME: "loc",
+                DF.ORG: "loc",
+                DF.STREET: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.PC: "loc",
+                DF.CC: "loc",
             }
+            if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
+                disclose_types[DF.NAME] = "loc"
+                disclose_types[DF.ADDR] = "loc"
 
             disclose_args = {
                 "fields": disclose_fields,

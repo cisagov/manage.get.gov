@@ -2083,7 +2083,17 @@ class MockEppLib(TestCase):
             disclose_fields = {field for field in DF} - fields
 
         if disclose_types is None:
-            disclose_types = {DF.ADDR: "loc", DF.NAME: "loc"}
+            disclose_types = {
+                DF.ORG: "loc",
+                DF.STREET: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.PC: "loc",
+                DF.CC: "loc",
+            }
+            if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
+                disclose_types[DF.NAME] = "loc"
+                disclose_types[DF.ADDR] = "loc"
 
         di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
