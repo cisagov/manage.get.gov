@@ -85,7 +85,6 @@ def helper_validation_for_quotes(content: str) -> bool:
     first_item = content[0] == double_quote
     last_item = content[len(content) - 1] == double_quote
 
-
     return quote_count % 2 != 0 or first_item != last_item
 
 
