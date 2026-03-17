@@ -59,7 +59,6 @@ export function initDynamicDNSRecordFormFields() {
         // Getting and cloning the required field asterisk
         const abbrElement = contentLabel?.querySelector('abbr');
         const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
-        abbrClone.classList.add("padding-left-05")
      
         if (info) { 
             contentLabel.textContent = info.label;

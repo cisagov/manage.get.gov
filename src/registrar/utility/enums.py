@@ -121,11 +121,11 @@ class DNSRecordTypes(TextChoices):
     @property
     def field_label(self) -> str:
         return {
-            DNSRecordTypes.A: "IPv4 address",
-            DNSRecordTypes.AAAA: "IPv6 address",
+            DNSRecordTypes.A: " IPv4 address ",
+            DNSRecordTypes.AAAA: " IPv6 address ",
             # DNSRecordTypes.CNAME: " Target hostname ",
             # DNSNRecordTypes.MX: " Mail server ",
-            DNSRecordTypes.TXT: "Content",
+            DNSRecordTypes.TXT: " Content ",
         }.get(self, "Content")
 
     @property
