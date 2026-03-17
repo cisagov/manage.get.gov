@@ -866,8 +866,9 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    ttl = forms.ChoiceField(
+    ttl = forms.TypedChoiceField(
         label="TTL",
+        coerce=int,
         choices=[
             (60, "1 minute"),
             (300, "5 minutes"),
