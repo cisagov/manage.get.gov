@@ -81,7 +81,12 @@ def helper_validation_for_quotes(content: str) -> bool:
     double_quote = '"'
     quote_count = content.count(double_quote)
 
-    return quote_count % 2 != 0
+    # check if string begins and ends with a quote or no quote at all
+    first_item = content[0] == double_quote
+    last_item = content[len(content) - 1] == double_quote
+
+
+    return quote_count % 2 != 0 or first_item != last_item
 
 
 def validate_txt_content(content: str) -> None:

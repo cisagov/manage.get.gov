@@ -12,14 +12,14 @@ function switchFromInputToTextArea (element) {
         
         // Character count
         const charLimit = 2048
-        let countText = function () {
+        let getCharCountText = function () {
            return `${charLimit - textArea.value.length} characters allowed`
         }
         const displayCharCount = document.createElement('div')
         displayCharCount.className = "usa-character-count__status usa-hint"
-        displayCharCount.textContent = countText()
+        displayCharCount.textContent = getCharCountText()
         textArea.addEventListener('input', function(){
-             displayCharCount.textContent = countText()
+             displayCharCount.textContent = getCharCountText()
              displayCharCount.classList.toggle('usa-character-count__status--invalid', textArea.value.length > charLimit)
         })
 
