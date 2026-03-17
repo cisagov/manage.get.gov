@@ -830,7 +830,9 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {
+            "name": {"required": "Enter a name for this record."}
+        }
 
     type = forms.ChoiceField(
         # TODO: choices has been temporarily hard-coded for user testing.

@@ -48,6 +48,14 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
+        {
+            "id": "test-cname",
+            "name": "www",
+            "type": "CNAME",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
     ]
 
     def _url(self):
