@@ -1,9 +1,29 @@
 from httpx import RequestError, HTTPStatusError
 from typing import Any
 import logging
+from dataclasses import dataclass
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class CloudflareDnsSettingsUpdateResponse:
+    """Typed response wrapper for Cloudflare account DNS settings updates."""
+
+    success: bool
+    result: dict[str, Any] | None = None
+    errors: list[dict[str, Any]] | None = None
+    messages: list[dict[str, Any]] | None = None
+
+    @classmethod
+    def from_json(cls, data: dict[str, Any]) -> "CloudflareDnsSettingsUpdateResponse":
+        return cls(
+            success=bool(data.get("success")),
+            result=data.get("result"),
+            errors=data.get("errors") or [],
+            messages=data.get("messages") or [],
+        )
 
 
 class CloudflareService:
@@ -38,6 +58,47 @@ class CloudflareService:
 
         return resp.json()
 
+    def update_account_dns_settings(
+        self,
+        account_id: str,
+        *,
+        zone_mode: str = "dns_only",
+        nameservers_type: str = "custom.tenant",
+    ) -> CloudflareDnsSettingsUpdateResponse:
+        """PATCH /accounts/{account_id}/dns_settings
+        Required settings:
+        - zone_mode: "standard" | "cdn_only" | "dns_only"
+        - type: "cloudflare.standard"
+                "cloudflare.standard.random"
+                "custom.account"
+                "custom.tenant"
+        """
+        appended_url = f"/accounts/{account_id}/dns_settings"
+        data = {
+            "zone_defaults": {
+                "zone_mode": zone_mode,
+                "nameservers": {"type": nameservers_type},
+            }
+        }
+
+        try:
+            resp = self.client.patch(appended_url, json=data)
+            resp.raise_for_status()
+            logger.info(
+                "Updated account DNS settings for account_id=%s (zone_mode=%s, nameservers.type=%s)",
+                account_id,
+                zone_mode,
+                nameservers_type,
+            )
+        except RequestError as e:
+            logger.error(f"Failed to update dns settings for account {account_id}: {e}")
+            raise
+        except HTTPStatusError as e:
+            logger.error(f"Error {e.response.status_code} while updating dns settings: {e}")
+            raise
+
+        return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
+
     def create_cf_zone(self, zone_name: str, x_account_id: str):
         appended_url = "/zones"
         data = {"name": zone_name, "account": {"id": x_account_id}}
@@ -54,6 +115,43 @@ class CloudflareService:
             )
             raise
         return resp.json()
+
+    def update_zone_dns_settings(
+        self, zone_id: str, *, zone_mode: str = "dns_only", nameservers_type: str = "custom.tenant", ns_set: int = 1
+    ) -> CloudflareDnsSettingsUpdateResponse:
+        """PATCH /zones/{zone_id}/dns_settings
+        Required settings:
+        - zone_mode: "standard" | "cdn_only" | "dns_only"
+        - nameservers_type: "cloudflare.standard"
+                "cloudflare.standard.random"
+                "custom.account"
+                "custom.tenant"
+        - ns_set: Min 1, max 5. Default 1 when not passed as argument.
+        """
+        appended_url = f"/zones/{zone_id}/dns_settings"
+        data = {
+            "zone_mode": zone_mode,
+            "nameservers": {"ns_set": ns_set, "type": nameservers_type},
+        }
+
+        try:
+            resp = self.client.patch(appended_url, json=data)
+            resp.raise_for_status()
+            logger.info(
+                "Updated zone DNS settings for zone_id=%s (zone_mode=%s, nameservers.type=%s, namservers.ns_set=%s)",
+                zone_id,
+                zone_mode,
+                nameservers_type,
+                ns_set,
+            )
+        except RequestError as e:
+            logger.error(f"Failed to update dns settings for zone {zone_id}: {e}")
+            raise
+        except HTTPStatusError as e:
+            logger.error(f"Error {e.response.status_code} while updating dns settings: {e}")
+            raise
+
+        return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
     def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
