@@ -143,7 +143,7 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: validate_ipv4_address,
             DNSRecordTypes.AAAA: validate_ipv6_address,
-            DNSRecordTypes.CNAME: validate_dns_name
+            DNSRecordTypes.CNAME: validate_dns_name,
         }.get(self)
 
     @property
