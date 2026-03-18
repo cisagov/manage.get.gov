@@ -2081,12 +2081,7 @@ class MockEppLib(TestCase):
         if disclose_fields is None:
             # Registrant discloses org, city, sp, cc
             if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
-                disclose_fields = {
-                    DF.ORG,
-                    DF.CITY,
-                    DF.SP,
-                    DF.CC
-                }
+                disclose_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
             # Admin discloses all fields
             elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
                 disclose_fields = {
@@ -2104,9 +2099,7 @@ class MockEppLib(TestCase):
                 }
             # Tech and Security only disclose org
             else:
-                disclose_fields = {
-                    DF.ORG
-                }
+                disclose_fields = {DF.ORG}
 
         if disclose_types is None:
             disclose_types = {
