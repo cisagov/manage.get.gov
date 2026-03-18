@@ -3,9 +3,7 @@
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
-from django.utils.safestring import mark_safe
 
-from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
 
@@ -26,8 +24,6 @@ DOMAIN_API_MESSAGES = {
     " (without the quotes).",
     "extra_dots": "Enter a domain using only letters, numbers, or hyphens. "
     "We don’t register subdomains, like blog.example.gov.",
-    # message below is considered safe; no user input can be inserted into the message
-    # body; public_site_url() function reads from local app settings and therefore safe
     "invalid": "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
     "invalid_spaces": "Enter a domain using only letters, numbers, or hyphens "
     "(though we don't recommend using hyphens).",

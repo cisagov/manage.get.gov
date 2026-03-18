@@ -120,18 +120,14 @@ class DomainHelper:
 
             # Generate the response based on the error code and return type
             response = DomainHelper._return_form_error_or_json_response(
-                return_type, 
-                code=error_map.get(error_type), 
-                domain=domain
+                return_type, code=error_map.get(error_type), domain=domain
             )
         else:
             # For form validation, we do not need to display the success message
             if return_type != ValidationReturnType.FORM_VALIDATION_ERROR:
                 response = DomainHelper._return_form_error_or_json_response(
-                    return_type, 
-                    code="success", 
-                    available=True,
-                    domain=domain)
+                    return_type, code="success", available=True, domain=domain
+                )
 
         # Return the validated domain and the response (either error or success)
         return (validated, response)
@@ -157,14 +153,16 @@ class DomainHelper:
             ValueError: If `return_type` is neither `FORM_VALIDATION_ERROR` nor `JSON_RESPONSE`.
         """  # noqa
         if code == "unavailable" and domain:
-            message = mark_safe(
+            # message below is considered safe; no user input can be inserted into the message
+            # body; public_site_url() function reads from local app settings and therefore safe
+            message = mark_safe(  # nosec
                 "That domain isn't available. You can learn more about this domain by performing a "
                 "<a class='usa-link' href='{}' "
                 "target='_blank'>WHOIS search</a>.".format(public_site_url("domains/whois/?domain=" + domain))
             )
         else:
             message = DOMAIN_API_MESSAGES[code]
-        
+
         match return_type:
             case ValidationReturnType.FORM_VALIDATION_ERROR:
                 raise forms.ValidationError(message, code=code)
