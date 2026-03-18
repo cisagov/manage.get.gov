@@ -121,6 +121,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         invalid_content_by_type = {
             "A": "not-an-ip",
             "AAAA": "not-an-ip",
+            # "CNAME": "..."
         }
 
         for record_case in self.RECORD_TEST_CASES:

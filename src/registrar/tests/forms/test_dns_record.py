@@ -97,9 +97,9 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": "2008:db8:1234:5678",
             "AAAA": "192.0.2.10",
-            # Comment out below CNAME test case when CNAME validation is implemented
+            # Comment out and complete CNAME test case when CNAME validation is implemented
             # Currently CNAME content uses the validate_dns_name validator which allows spaces
-            # "CNAME": "invalid spaces"
+            # "CNAME": "..."
         }
 
         for record_type, bad_content in invalid_content_by_type.items():

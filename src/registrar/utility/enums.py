@@ -133,7 +133,7 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Example: 192.0.2.10",
             DNSRecordTypes.AAAA: "Example: 2001:db8::1234:5678",
-            DNSRecordTypes.CNAME: "Example: example.com",
+            DNSRecordTypes.CNAME: "Examples: example.gov, www.example.gov",
             # DNSRecordTypes.MX: "Example: mail.example.com",
             # DNSRecordTypes.TXT: "Example: v=spf1 include:example.com ~all",
         }.get(self, "")
@@ -151,4 +151,5 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
+            # DNSRecordTypes.CNAME: "TODO: Write invalid CNAME error message",
         }.get(self, "Enter a valid value.")
