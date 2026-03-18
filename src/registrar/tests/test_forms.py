@@ -136,7 +136,7 @@ class TestFormValidation(MockEppLib):
             (
                 "whitehouse.gov",
                 "That domain isn’t available. You can learn more about this domain by performing a <a class='usa-link' "
-                "href='https://get.gov/domains/whois/?domain=' target='_blank'>WHOIS search</a>.",
+                "href='https://get.gov/domains/whois/?domain=whitehouse.gov' target='_blank'>WHOIS search</a>."
             ),
             # spaces
             (
@@ -195,13 +195,14 @@ class TestFormValidation(MockEppLib):
             # invalid
             (
                 "underscores_forever",
-                "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
             ),
             # unavailable
             (
                 "whitehouse.gov",
-                "That domain isn’t available. You can learn more about this domain by performing a <a class='usa-link' "
-                "href='https://get.gov/domains/whois/?domain=' target='_blank'>WHOIS search</a>.",
+                "That domain isn't available. You can learn more about this domain by performing a "
+                "<a class='usa-link' href='https://get.gov/domains/whois/?domain=whitehouse.gov' "
+                "target='_blank'>WHOIS search</a>.",
             ),
             # spaces
             (
