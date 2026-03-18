@@ -1575,7 +1575,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
-    def test_domain_nameservers_not_found_when_enrolled_in_dns_hosting(self):
+    def test_domain_nameservers_not_found_when_dns_hosting_flag_enabled_and_enrolled(self):
         """Cannot load domain's nameservers page."""
         with override_flag("dns_hosting", active=True):
             self.client.get(
@@ -1583,9 +1583,19 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             )
             self.assertRaises(Http404)
 
+    def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
+        """Cannot load domain's nameservers page."""
+        with override_flag("dns_hosting", active=True):
+            page = self.client.get(
+                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id})
+            )
+            self.assertContains(page, "DNS name servers")
+
     @override_flag("dns_hosting", active=False)
     def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
-        """Can load domain's nameservers page when dns hosting flag is disabled and domain is enrolled in dns hosting."""
+        """Can load domain's nameservers page when dns hosting flag is disabled
+        and domain is enrolled in dns hosting.
+        """
         with override_flag("dns_hosting", active=False):
             page = self.client.get(
                 reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
