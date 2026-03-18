@@ -1975,7 +1975,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # False fields are specifically called out here for clarity, but effectively
         # ignored.  The code below only adds fields to the disclose object if they are True
         # and never builds a disclose object for false fields even though that is supported.
-        contact_type_disclose_settings = {
+        contact_type_disclose_settings: dict[Any, dict[str, dict[Any, dict[str, Any]]]] = {
             contact.ContactTypeChoices.REGISTRANT: {
                 "disclose_settings": {
                     DF.NAME: {"disclose": False, "type": "loc"},
@@ -2051,11 +2051,9 @@ class Domain(TimeStampedModel, DomainHelper):
         }
 
         # Find the settings for the given contact type
-        selected_contact_policy = contact_type_disclose_settings.get(contact.contact_type)
-        if selected_contact_policy is None:
-            raise ValueError(f"Unsupported contact_type for disclose policy: {contact.contact_type}")
+        selected_contact_policy = contact_type_disclose_settings[contact.contact_type]
 
-        disclose_settings = selected_contact_policy["disclose_settings"]
+        disclose_settings: dict[Any, dict[str, Any]] = selected_contact_policy["disclose_settings"]
         # Each field can only appear once
         disclose_fields = set()
         # Each field requires a type="loc | int" attribute if it is disclosed
