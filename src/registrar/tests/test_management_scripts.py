@@ -2612,11 +2612,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.assertEqual(self.old_default_contact.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
 
         # Verify EPP create/update calls were made
-        expected_update = self._convertPublicContactToEpp(
-            self.old_default_contact,
-            disclose=False,
-            disclose_fields=self.all_disclose_fields - {"name", "email", "voice", "addr"},
-        )
+        expected_update = self._convertPublicContactToEpp(self.old_default_contact)
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
     @less_console_noise_decorator
@@ -2636,17 +2632,9 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         # Verify EPP create/update calls were made
         DF = common.DiscloseField
         registrant_disclose_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
-        registrant_disclose_types = {
-            DF.ORG: "loc",
-            DF.CITY: "loc",
-            DF.SP: "loc",
-            DF.CC: "loc",
-        }
         expected_update = self._convertPublicContactToEpp(
             self.default_registrant_old_email,
-            disclose=True,
             disclose_fields=registrant_disclose_fields,
-            disclose_types=registrant_disclose_types,
         )
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
@@ -2712,9 +2700,7 @@ class TestUpdateDefaultPublicContacts(MockEppLib):
         self.assertEqual(self.mixed_default_contact.email, DefaultEmail.PUBLIC_CONTACT_DEFAULT)
 
         # Verify EPP create/update calls were made
-        expected_update = self._convertPublicContactToEpp(
-            self.mixed_default_contact, disclose=False, disclose_fields=self.all_disclose_fields
-        )
+        expected_update = self._convertPublicContactToEpp(self.mixed_default_contact)
         self.mockedSendFunction.assert_any_call(expected_update, cleaned=True)
 
 
