@@ -1288,7 +1288,7 @@ class TestRegistrantContacts(MockEppLib):
             test_disclose = self._convertPublicContactToEpp(dummy_contact).__dict__
             test_not_disclose = self._convertPublicContactToEpp(dummy_contact).__dict__
             # Separated for linter
-            disclose_email_field = {common.DiscloseField.ORG}
+            disclose_email_field = set()
             DF = common.DiscloseField
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),

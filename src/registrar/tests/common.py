@@ -2099,7 +2099,7 @@ class MockEppLib(TestCase):
                 }
             # Tech and Security only disclose org
             else:
-                disclose_fields = {DF.ORG}
+                disclose_fields = set()
 
         if disclose_types is None:
             disclose_types = {
