@@ -5,6 +5,8 @@ from django import forms
 from django.http import JsonResponse
 
 from api.views import DOMAIN_API_MESSAGES, check_domain_available
+from registrar.templatetags.url_helpers import public_site_url
+from django.utils.safestring import mark_safe
 from registrar.utility import errors
 from epplibwrapper.errors import RegistryError
 from registrar.utility.enums import ValidationReturnType
@@ -117,17 +119,25 @@ class DomainHelper:
             error_type = type(error)
 
             # Generate the response based on the error code and return type
-            response = DomainHelper._return_form_error_or_json_response(return_type, code=error_map.get(error_type))
+            response = DomainHelper._return_form_error_or_json_response(
+                return_type, 
+                code=error_map.get(error_type), 
+                domain=domain
+            )
         else:
             # For form validation, we do not need to display the success message
             if return_type != ValidationReturnType.FORM_VALIDATION_ERROR:
-                response = DomainHelper._return_form_error_or_json_response(return_type, code="success", available=True)
+                response = DomainHelper._return_form_error_or_json_response(
+                    return_type, 
+                    code="success", 
+                    available=True,
+                    domain=domain)
 
         # Return the validated domain and the response (either error or success)
         return (validated, response)
 
     @staticmethod
-    def _return_form_error_or_json_response(return_type: ValidationReturnType, code, available=False):
+    def _return_form_error_or_json_response(return_type: ValidationReturnType, code, available=False, domain=None):
         """
         Returns an error response based on the `return_type`.
 
@@ -146,11 +156,20 @@ class DomainHelper:
         Raises:
             ValueError: If `return_type` is neither `FORM_VALIDATION_ERROR` nor `JSON_RESPONSE`.
         """  # noqa
+        if code == "unavailable" and domain:
+            message = mark_safe(
+                "That domain isn't available. You can learn more about this domain by performing a "
+                "<a class='usa-link' href='{}' "
+                "target='_blank'>WHOIS search</a>.".format(public_site_url("domains/whois/?domain=" + domain))
+            )
+        else:
+            message = DOMAIN_API_MESSAGES[code]
+        
         match return_type:
             case ValidationReturnType.FORM_VALIDATION_ERROR:
-                raise forms.ValidationError(DOMAIN_API_MESSAGES[code], code=code)
+                raise forms.ValidationError(message, code=code)
             case ValidationReturnType.JSON_RESPONSE:
-                return JsonResponse({"available": available, "code": code, "message": DOMAIN_API_MESSAGES[code]})
+                return JsonResponse({"available": available, "code": code, "message": message})
             case _:
                 raise ValueError("Invalid return type specified")
 
