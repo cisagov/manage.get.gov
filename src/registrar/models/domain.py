@@ -1970,50 +1970,116 @@ class Domain(TimeStampedModel, DomainHelper):
         # You can find each enum here:
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        all_disclose_fields = {field for field in DF}
 
-        # Registrant contacts should publish only org + city/state/country (not full street address).
-        if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
-            disclose_args = {
-                "flag": True,
-                "fields": {DF.ORG, DF.CITY, DF.SP, DF.CC},
-                "types": {
-                    DF.ORG: "loc",
-                    DF.CITY: "loc",
-                    DF.SP: "loc",
-                    DF.CC: "loc",
+        # The complete disclose settings for each contact type
+        # False fields are specifically called out here for clarity, but effectively
+        # ignored.  The code below only adds fields to the disclose object if they are True
+        # and never builds a disclose object for false fields even though that is supported.
+        contact_type_disclose_settings = {
+            contact.ContactTypeChoices.REGISTRANT: {
+                "disclose_settings": {
+                    DF.NAME: {"disclose": False, "type": "loc"},
+                    DF.ORG: {"disclose": True, "type": "loc"},
+                    DF.ADDR: {"disclose": False, "type": "loc"},
+                    DF.STREET: {"disclose": False, "type": "loc"},
+                    DF.CITY: {"disclose": True, "type": "loc"},
+                    DF.SP: {"disclose": True, "type": "loc"},
+                    DF.PC: {"disclose": False, "type": "loc"},
+                    DF.CC: {"disclose": True, "type": "loc"},
+                    DF.VOICE: {"disclose": False, "type": None},
+                    DF.FAX: {"disclose": False, "type": None},
+                    DF.EMAIL: {"disclose": False, "type": None},
+                    DF.VAT: {"disclose": False, "type": None},
+                    DF.IDENT: {"disclose": False, "type": None},
+                    DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
                 },
-            }
-        else:
-            disclose_fields = set(all_disclose_fields)
+            },
+            contact.ContactTypeChoices.ADMINISTRATIVE: {
+                "disclose_settings": {
+                    DF.NAME: {"disclose": True, "type": "loc"},
+                    DF.ORG: {"disclose": True, "type": "loc"},
+                    DF.ADDR: {"disclose": True, "type": "loc"},
+                    DF.STREET: {"disclose": True, "type": "loc"},
+                    DF.CITY: {"disclose": True, "type": "loc"},
+                    DF.SP: {"disclose": True, "type": "loc"},
+                    DF.PC: {"disclose": True, "type": "loc"},
+                    DF.CC: {"disclose": True, "type": "loc"},
+                    DF.VOICE: {"disclose": True, "type": None},
+                    DF.FAX: {"disclose": True, "type": None},
+                    DF.EMAIL: {"disclose": True, "type": None},
+                    DF.VAT: {"disclose": False, "type": None},
+                    DF.IDENT: {"disclose": False, "type": None},
+                    DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+                },
+            },
+            contact.ContactTypeChoices.TECHNICAL: {
+                "disclose_settings": {
+                    DF.NAME: {"disclose": False, "type": "loc"},
+                    DF.ORG: {"disclose": True, "type": "loc"},
+                    DF.ADDR: {"disclose": False, "type": "loc"},
+                    DF.STREET: {"disclose": False, "type": "loc"},
+                    DF.CITY: {"disclose": False, "type": "loc"},
+                    DF.SP: {"disclose": False, "type": "loc"},
+                    DF.PC: {"disclose": False, "type": "loc"},
+                    DF.CC: {"disclose": False, "type": "loc"},
+                    DF.VOICE: {"disclose": False, "type": None},
+                    DF.FAX: {"disclose": False, "type": None},
+                    DF.EMAIL: {"disclose": False, "type": None},
+                    DF.VAT: {"disclose": False, "type": None},
+                    DF.IDENT: {"disclose": False, "type": None},
+                    DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+                },
+            },
+            contact.ContactTypeChoices.SECURITY: {
+                "disclose_settings": {
+                    DF.NAME: {"disclose": False, "type": "loc"},
+                    DF.ORG: {"disclose": True, "type": "loc"},
+                    DF.ADDR: {"disclose": False, "type": "loc"},
+                    DF.STREET: {"disclose": False, "type": "loc"},
+                    DF.CITY: {"disclose": False, "type": "loc"},
+                    DF.SP: {"disclose": False, "type": "loc"},
+                    DF.PC: {"disclose": False, "type": "loc"},
+                    DF.CC: {"disclose": False, "type": "loc"},
+                    DF.VOICE: {"disclose": False, "type": None},
+                    DF.FAX: {"disclose": False, "type": None},
+                    DF.EMAIL: {"disclose": False, "type": None},
+                    DF.VAT: {"disclose": False, "type": None},
+                    DF.IDENT: {"disclose": False, "type": None},
+                    DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+                },
+            },
+        }
 
-            fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
-            if contact.contact_type == contact.ContactTypeChoices.SECURITY:
-                if contact.email not in DefaultEmail.get_all_emails():
-                    fields_to_remove.add(DF.EMAIL)
-            elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-                fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
+        # Find the settings for the given contact type
+        selected_contact_policy = contact_type_disclose_settings.get(contact.contact_type)
+        if selected_contact_policy is None:
+            raise ValueError(f"Unsupported contact_type for disclose policy: {contact.contact_type}")
 
-            disclose_fields.difference_update(fields_to_remove)
+        disclose_settings = selected_contact_policy["disclose_settings"]
+        # Each field can only appear once
+        disclose_fields = set()
+        # Each field requires a type="loc | int" attribute if it is disclosed
+        disclose_type_attrs = {}
 
-            # After removing, set disclose based on registrant type
-            disclose_types = {
-                DF.ORG: "loc",
-                DF.STREET: "loc",
-                DF.CITY: "loc",
-                DF.SP: "loc",
-                DF.PC: "loc",
-                DF.CC: "loc",
-            }
-            if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
-                disclose_types[DF.NAME] = "loc"
-                disclose_types[DF.ADDR] = "loc"
+        # For each field enumerated in disclose_settings for the contact type
+        for field, setting in disclose_settings.items():
+            is_disclose = setting["disclose"]
+            type_attr = setting["type"]
 
-            disclose_args = {
-                "fields": disclose_fields,
-                "flag": False,
-                "types": disclose_types,
-            }
+            if is_disclose:
+                disclose_fields.add(field)
+
+            if type_attr is not None:
+                disclose_type_attrs[field] = type_attr
+
+        # Regardless of contact type, always default to redacting everything, and only pass the fields
+        # we want to disclose. This means we are always sending, "Only disclose the following fields"
+        # which is less efficient but it is easier to think about and remember.
+        disclose_args = {
+            "flag": True,
+            "fields": disclose_fields,
+            "types": disclose_type_attrs,
+        }
 
         logger.debug(
             "Updated domain contact %s to disclose: %s",

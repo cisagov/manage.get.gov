@@ -2072,28 +2072,53 @@ class MockEppLib(TestCase):
     def _convertPublicContactToEpp(
         self,
         contact: PublicContact,
-        disclose=False,
+        disclose=True,
         createContact=True,
         disclose_fields=None,
         disclose_types=None,
     ):
         DF = common.DiscloseField
         if disclose_fields is None:
-            fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT, DF.EMAIL}
-            disclose_fields = {field for field in DF} - fields
+            # Registrant discloses org, city, sp, cc
+            if contact.contact_type == contact.ContactTypeChoices.REGISTRANT:
+                disclose_fields = {
+                    DF.ORG,
+                    DF.CITY,
+                    DF.SP,
+                    DF.CC
+                }
+            # Admin discloses all fields
+            elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
+                disclose_fields = {
+                    DF.NAME,
+                    DF.ORG,
+                    DF.ADDR,
+                    DF.STREET,
+                    DF.CITY,
+                    DF.SP,
+                    DF.PC,
+                    DF.CC,
+                    DF.VOICE,
+                    DF.FAX,
+                    DF.EMAIL,
+                }
+            # Tech and Security only disclose org
+            else:
+                disclose_fields = {
+                    DF.ORG
+                }
 
         if disclose_types is None:
             disclose_types = {
+                DF.NAME: "loc",
                 DF.ORG: "loc",
+                DF.ADDR: "loc",
                 DF.STREET: "loc",
                 DF.CITY: "loc",
                 DF.SP: "loc",
                 DF.PC: "loc",
                 DF.CC: "loc",
             }
-            if contact.contact_type != contact.ContactTypeChoices.ADMINISTRATIVE:
-                disclose_types[DF.NAME] = "loc"
-                disclose_types[DF.ADDR] = "loc"
 
         di = common.Disclose(flag=disclose, fields=disclose_fields, types=disclose_types)
 
