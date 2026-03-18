@@ -929,8 +929,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data,
             )
 
-            self.dns_record = record_response["result"]
-            dns_name = self.dns_record["name"]
+            self.dns_record = record_response.get("dns_record")
+            dns_name = self.dns_record.name if self.dns_record else ""
 
             messages.success(request, f"DNS A record '{dns_name}' created successfully.")
             context_dns_record.set(self.dns_record)
@@ -938,14 +938,19 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except APIError as e:
             logger.error(f"DNS record creation failed, API error in view {e}")
             messages.error(request, "Failed to create DNS record.")
-            self.dns_record = None
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {"dns_record": None, "domain": self.object, "form": self.get_form()},
+                headers={"HX-TRIGGER": "messagesRefresh"},
+            )
 
         finally:
             self.client.close()
 
-        filled_form = DomainDNSRecordForm(initial=self.dns_record)
+        filled_form = DomainDNSRecordForm(initial=self.record_dict_for_initial_data(self.dns_record))
         # Grabbed result data to pass into the form response
-        self.dns_record["form"] = filled_form
+        self.dns_record.form = filled_form
         hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
         row_index = len(self.get_context_data()["dns_records"])
         new_form = DomainDNSRecordForm()
