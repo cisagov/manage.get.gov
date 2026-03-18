@@ -2464,4 +2464,5 @@ class Domain(TimeStampedModel, DomainHelper):
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()
         # Delete domain
-        self.delete()
+        self.deleteInEpp()
+        self.save()

@@ -19,7 +19,7 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
-from httpx import Client
+from httpx import Client, HTTPStatusError
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,10 @@ class DnsHostService:
     def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for an account."""
         return self.dns_vendor_service.update_account_dns_settings(x_account_id)
+
+    def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
+        """Ensure required Cloudflare DNS settings are applied for a zone."""
+        return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)
 
     def _find_account_tag_by_pubname(self, items, name):
         """Find an item by name in a list of dictionaries."""
@@ -161,17 +165,17 @@ class DnsHostService:
         try:
             vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
             logger.info(f"Created DNS record of type {vendor_record_data['result'].get('type')}")
-        except APIError as e:
+        except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
-            raise
+            raise APIError(str(e)) from e
 
         # Create and save dns record in registrar db
         try:
-            self.create_db_record(x_zone_id, vendor_record_data)
+            dns_record = self.create_db_record(x_zone_id, vendor_record_data)
         except Exception as e:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
-        return vendor_record_data
+        return {**vendor_record_data, "dns_record": dns_record}
 
     def update_and_save_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
         """Calls update method of vendor service to update a DNS record"""
@@ -181,9 +185,9 @@ class DnsHostService:
             record_name = vendor_record_data["result"].get("name")
             logger.info(f"Successfully updated record {record_name}.")
 
-        except APIError as e:
+        except (APIError, HTTPStatusError) as e:
             logger.error(f"DNS setup failed to update record {record_name}: {str(e)}")
-            raise
+            raise APIError(str(e)) from e
 
         # Update and save dns record in registrar db
         try:
@@ -370,6 +374,7 @@ class DnsHostService:
         except Exception as e:
             logger.error(f"Failed to create and save record to database: {str(e)}.")
             raise
+        return dns_record
 
     def update_db_record(self, x_zone_id, x_record_id, vendor_record_data):
         record_data = vendor_record_data["result"]

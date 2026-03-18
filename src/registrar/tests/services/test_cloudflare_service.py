@@ -423,3 +423,41 @@ class TestCloudflareService(SimpleTestCase):
                     self.service.update_account_dns_settings(account_id)
 
                 self.assertIn(error["message"], str(context.exception))
+
+    def test_update_zone_dns_settings_success(self):
+        """Test successful update_zone_dns_settings call"""
+        zone_id = "54321"
+        return_value = {
+            "success": True,
+            "result": {
+                "zone_mode": "dns_only",
+                "nameservers": {"ns_set": 2, "type": "custom.tenant"},
+            },
+            "errors": [],
+            "messages": [],
+        }
+        mock_response = self._setUpSuccessMockResponse(return_value)
+        self.service.client.patch.return_value = mock_response
+
+        resp = self.service.update_zone_dns_settings(zone_id)
+
+        self.assertTrue(resp.success)
+        self.assertEqual(resp.result["zone_mode"], "dns_only")
+        self.assertEqual(resp.result["nameservers"]["ns_set"], 2)
+        self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(resp.errors, [])
+
+    def test_update_zone_dns_settings_failure(self):
+        """Test update_zone_dns_settings when error results during call"""
+        zone_id = "54321"
+
+        for case in self.failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error)
+                self.service.client.patch.return_value = mock_response
+
+                with self.assertRaises(error["exception"]) as context:
+                    self.service.update_zone_dns_settings(zone_id)
+
+                self.assertIn(error["message"], str(context.exception))

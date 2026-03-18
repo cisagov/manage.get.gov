@@ -45,7 +45,9 @@ class Command(BaseCommand):
         """Get domains with DNS status DNS needed or Unknown"""
         domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
         time_to_compare = timezone.now().date()
-        domains_in_expired_state = Domain.objects.filter(state__in=(domain_state), expiration_date=time_to_compare)
+        domains_in_expired_state = Domain.objects.filter(
+            state__in=(domain_state), expiration_date=time_to_compare
+        ).order_by("id")
 
         return domains_in_expired_state
 
