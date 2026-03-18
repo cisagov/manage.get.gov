@@ -2011,7 +2011,7 @@ class Domain(TimeStampedModel, DomainHelper):
             },
             contact.ContactTypeChoices.TECHNICAL: {
                 DF.NAME: {"disclose": False, "type": "loc"},
-                DF.ORG: {"disclose": True, "type": "loc"},
+                DF.ORG: {"disclose": False, "type": "loc"},
                 DF.ADDR: {"disclose": False, "type": "loc"},
                 DF.STREET: {"disclose": False, "type": "loc"},
                 DF.CITY: {"disclose": False, "type": "loc"},
@@ -2027,7 +2027,7 @@ class Domain(TimeStampedModel, DomainHelper):
             },
             contact.ContactTypeChoices.SECURITY: {
                 DF.NAME: {"disclose": False, "type": "loc"},
-                DF.ORG: {"disclose": True, "type": "loc"},
+                DF.ORG: {"disclose": False, "type": "loc"},
                 DF.ADDR: {"disclose": False, "type": "loc"},
                 DF.STREET: {"disclose": False, "type": "loc"},
                 DF.CITY: {"disclose": False, "type": "loc"},
