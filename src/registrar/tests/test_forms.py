@@ -136,7 +136,7 @@ class TestFormValidation(MockEppLib):
             (
                 "whitehouse.gov",
                 "That domain isn’t available. You can learn more about this domain by performing a <a class='usa-link' "
-                "href='https://get.gov/domains/whois/?domain=whitehouse.gov' target='_blank'>WHOIS search</a>."
+                "href='https://get.gov/domains/whois/?domain=whitehouse.gov' target='_blank'>WHOIS search</a>.",
             ),
             # spaces
             (
@@ -200,7 +200,7 @@ class TestFormValidation(MockEppLib):
             # unavailable
             (
                 "whitehouse.gov",
-                "That domain isn't available. You can learn more about this domain by performing a "
+                "That domain isn’t available. You can learn more about this domain by performing a "
                 "<a class='usa-link' href='https://get.gov/domains/whois/?domain=whitehouse.gov' "
                 "target='_blank'>WHOIS search</a>.",
             ),

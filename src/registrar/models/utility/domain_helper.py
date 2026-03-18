@@ -156,7 +156,7 @@ class DomainHelper:
             # message below is considered safe; no user input can be inserted into the message
             # body; public_site_url() function reads from local app settings and therefore safe
             message = mark_safe(  # nosec
-                "That domain isn't available. You can learn more about this domain by performing a "
+                "That domain isn’t available. You can learn more about this domain by performing a "
                 "<a class='usa-link' href='{}' "
                 "target='_blank'>WHOIS search</a>.".format(public_site_url("domains/whois/?domain=" + domain))
             )

@@ -1,5 +1,6 @@
 from __future__ import annotations  # allows forward references in annotations
 import logging
+from api.views import DOMAIN_API_MESSAGES
 from phonenumber_field.formfields import PhoneNumberField  # type: ignore
 from registrar.models.portfolio import Portfolio
 from django import forms
@@ -634,6 +635,9 @@ class DotGovDomainForm(RegistrarForm):
 
     requested_domain = forms.CharField(
         label="What .gov domain do you want?",
+        error_messages={
+            "required": DOMAIN_API_MESSAGES["required"],
+        },
         validators=[get_max_length_validator(DOMAIN_LABEL)],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
         strip=False,
