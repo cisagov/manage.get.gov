@@ -5,7 +5,8 @@ function switchFromInputToTextArea (element) {
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
         textArea.className = 'usa-textarea usa-textarea--medium';
-        textArea.setAttribute('aria-label', 'Content')
+        textArea.required = true
+        textArea.id = element.id
         textArea.value = element.value
         element.classList.forEach(cls => textArea.classList.add(cls))
        

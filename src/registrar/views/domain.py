@@ -853,8 +853,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         for record in dns_records:
             data_dict = self.record_dict_for_initial_data(record)
             record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
-            record_type = record.form.data.get("type")
-            record.partial = self.get_form_template(record_type)
+            record.partial = self.get_form_template(record.type)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
