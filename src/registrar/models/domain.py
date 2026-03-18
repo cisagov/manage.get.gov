@@ -2048,7 +2048,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         # Each field can only appear once
         disclose_fields = set()
-        # Each field requires a type="loc | int" attribute if it is disclosed
+        # Each address field requires a type="loc | int" attribute if it is disclosed
         disclose_type_attrs = {}
 
         # For each field enumerated in disclose_settings for the contact type
