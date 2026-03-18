@@ -189,3 +189,15 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(resp.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])
+
+    def test_mock_update_zone_dns_settings_response(self):
+        zone_id = self.mock_api_service.fake_zone_id
+
+        resp = self.service.update_zone_dns_settings(zone_id)
+
+        self.assertTrue(resp.success)
+        self.assertEqual(resp.result["zone_mode"], "dns_only")
+        self.assertEqual(resp.result["nameservers"]["ns_set"], 2)
+        self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(resp.errors, [])
+        self.assertEqual(resp.messages, [])
