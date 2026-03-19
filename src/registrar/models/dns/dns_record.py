@@ -51,5 +51,13 @@ class DnsRecord(TimeStampedModel):
             except ValidationError as e:
                 errors["content"] = e.messages
 
+        # Run validations involving multiple fields
+        match record_type:
+            case DNSRecordTypes.CNAME:
+                if self.name == self.content:
+                    raise ValidationError("CNAME record hostname must not match record name.")
+            case _:
+                return
+
         if errors:
             raise ValidationError(errors)

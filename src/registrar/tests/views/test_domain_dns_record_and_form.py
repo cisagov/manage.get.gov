@@ -160,7 +160,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "A": "not-an-ip",
             "AAAA": "not-an-ip",
             # "CNAME": "...",
-            "TXT": 'not"valid text'
+            "TXT": 'not"valid text',
         }
 
         for record_case in self.RECORD_TEST_CASES:
