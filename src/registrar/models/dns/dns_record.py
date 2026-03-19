@@ -17,7 +17,7 @@ class DnsRecord(TimeStampedModel):
     type = models.CharField(choices=DNSRecordTypes.choices)
 
     name = models.CharField(
-        max_length=255,
+        max_length=253,
         blank=False,
         null=False,
         validators=[validate_dns_name],
@@ -25,7 +25,7 @@ class DnsRecord(TimeStampedModel):
 
     ttl = models.PositiveIntegerField(default=1)
 
-    content = models.CharField(blank=True, null=True)
+    content = models.CharField(blank=True, null=True, max_length=2048)
 
     comment = models.CharField(blank=True, null=True, max_length=500)
 

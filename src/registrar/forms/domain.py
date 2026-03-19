@@ -838,7 +838,13 @@ class DomainDNSRecordForm(forms.ModelForm):
         # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
         # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[("", "- Select -"), ("A", "A"), ("AAAA", "AAAA"), ("CNAME", "CNAME")],
+        choices=[
+            ("", "- Select -"),
+            ("A", "A"),
+            ("AAAA", "AAAA"),
+            ("CNAME", "CNAME")
+            ("TXT", "TXT"),
+        ],
         required=True,
         widget=forms.Select(
             attrs={
@@ -852,7 +858,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     content = forms.CharField(
         label="Content",
         required=False,
-        help_text="Select a type for help text",
+        help_text=" ",
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
@@ -862,8 +868,9 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    ttl = forms.ChoiceField(
+    ttl = forms.TypedChoiceField(
         label="TTL",
+        coerce=int,
         choices=[
             (60, "1 minute"),
             (300, "5 minutes"),
@@ -893,8 +900,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             if record.validator:
                 try:
                     record.validator(content)
-                except ValidationError:
-                    self.add_error("content", record.error_message)
+                except ValidationError as e:
+                    self.add_error("content", record.error_message or e)
             elif not content:
                 self.add_error("content", record.error_message)
 

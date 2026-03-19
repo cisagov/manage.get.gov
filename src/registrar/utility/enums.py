@@ -5,6 +5,7 @@ from registrar.utility import StrEnum
 from registrar.validations import validate_dns_name
 from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from django.db.models import TextChoices
+from registrar.validations import validate_txt_content
 
 
 class ValidationReturnType(Enum):
@@ -125,7 +126,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.AAAA: " IPv6 address ",
             DNSRecordTypes.CNAME: " Target hostname ",
             # DNSNRecordTypes.MX: " Mail server ",
-            # DNSRecordTypes.TXT: " Text content ",
+            DNSRecordTypes.TXT: " Content ",
         }.get(self, "Content")
 
     @property
@@ -135,7 +136,6 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.AAAA: "Example: 2001:db8::1234:5678",
             DNSRecordTypes.CNAME: "Examples: example.gov, www.example.gov",
             # DNSRecordTypes.MX: "Example: mail.example.com",
-            # DNSRecordTypes.TXT: "Example: v=spf1 include:example.com ~all",
         }.get(self, "")
 
     @property
@@ -144,6 +144,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.A: validate_ipv4_address,
             DNSRecordTypes.AAAA: validate_ipv6_address,
             DNSRecordTypes.CNAME: validate_dns_name,
+            DNSRecordTypes.TXT: validate_txt_content,
         }.get(self)
 
     @property
@@ -151,5 +152,4 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
-            # DNSRecordTypes.CNAME: "TODO: Write invalid CNAME error message",
-        }.get(self, "Enter a valid value.")
+        }.get(self, "")
