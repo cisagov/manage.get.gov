@@ -75,3 +75,28 @@ def validate_dns_name(name: str) -> None:
 
     if not name[0].isalpha() or not name[-1].isalnum():
         raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
+
+
+def check_has_valid_quotes(content: str) -> bool:
+    double_quote = '"'
+    quote_count = content.count(double_quote)
+
+    # check if string begins and ends with a quote or no quote at all
+    first_item_char_is_double_quote = content[0] == double_quote
+    last_item_is_double_quote = content[len(content) - 1] == double_quote
+
+    return quote_count % 2 != 0 or first_item_char_is_double_quote != last_item_is_double_quote
+
+
+def validate_txt_content(content: str) -> None:
+
+    if not content or not content.strip():
+        raise ValidationError("Enter the content for this record.")
+
+    if check_has_valid_quotes(content):
+        raise ValidationError(
+            'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'
+        )
+
+    if len(content) > 2048:
+        raise ValidationError("Content must be no more than 2048 characters.")
