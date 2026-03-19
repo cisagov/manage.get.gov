@@ -155,10 +155,10 @@ class DomainHelper:
         if code == "unavailable" and domain:
             # message below is considered safe; no user input can be inserted into the message
             # body; public_site_url() function reads from local app settings and therefore safe
+            whois_url = public_site_url(f"domains/whois/?domain={domain}")
             message = mark_safe(  # nosec
                 "That domain isn’t available. You can learn more about this domain by performing a "
-                "<a class='usa-link' href='{}' "
-                "target='_blank'>WHOIS search</a>.".format(public_site_url("domains/whois/?domain=" + domain))
+                "<a class='usa-link' href='{}' target='_blank'>WHOIS search</a>.".format(whois_url)
             )
         else:
             message = DOMAIN_API_MESSAGES[code]
