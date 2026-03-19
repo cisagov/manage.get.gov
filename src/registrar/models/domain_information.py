@@ -1,6 +1,7 @@
 from __future__ import annotations
 from django.db import transaction
 
+from registrar.models import federal_agency
 from registrar.models.utility.domain_helper import DomainHelper
 from registrar.models.utility.generic_helper import CreateOrUpdateOrganizationTypeHelper
 from registrar.utility.constants import BranchChoices
@@ -285,10 +286,12 @@ class DomainInformation(TimeStampedModel):
 
     def get_registrant_contact_data(self):
         """Return registrant contact values for EPP contact creation."""
-        is_federal = self.converted_generic_org_type == self.OrganizationChoices.FEDERAL
-        if is_federal:
-            federal_agency = self.converted_federal_agency
-            registrant_org = getattr(federal_agency, "agency", None) if federal_agency else None
+        if self.portfolio and self.portfolio.organization_name:
+            registrant_org = self.portfolio.organization_name
+        elif self.federal_agency and self.federal_agency.agency == "Non-Federal Agency":
+            registrant_org = self.organization_name
+        elif self.federal_agency:
+            registrant_org = self.federal_agency.agency
         else:
             registrant_org = self.converted_organization_name
 
