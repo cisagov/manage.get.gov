@@ -294,15 +294,23 @@ class DomainInformation(TimeStampedModel):
         else:
             registrant_org = self.converted_organization_name
 
+        registrant_city = None
+        registrant_state_territory = None
+        # First try and use the sub_organization city / state if present
         if self.sub_organization:
             registrant_city = self.sub_organization.city
             registrant_state_territory = self.sub_organization.state_territory
-        elif self.portfolio:
+        # if the sub_organization city or state is null, fallback to the portfolio values
+        if self.portfolio and registrant_city is None:
             registrant_city = self.portfolio.city
+        if self.portfolio and registrant_state_territory is None:
             registrant_state_territory = self.portfolio.state_territory
-        else:
+        # if the city or state are still null, use the default value
+        if registrant_city is None:
             registrant_city = self.city
+        if registrant_state_territory is None:
             registrant_state_territory = self.state_territory
+        # If they are still null, check_missing_fields will raise a user facing error message
 
         return {
             "org": registrant_org,
