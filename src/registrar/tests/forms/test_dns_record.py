@@ -102,7 +102,6 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             "A": "2008:db8:1234:5678",
             "AAAA": "192.0.2.10",
             # Comment out and complete CNAME test case when CNAME validation is implemented
-            # Currently CNAME content uses the validate_dns_name validator which allows spaces
             # "CNAME": "..."
         }
         invalid_quotes_txt_error = (
