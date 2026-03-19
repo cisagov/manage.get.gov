@@ -5,7 +5,6 @@ from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
 
-
 # class TestMockCloudflareServiceBasics(SimpleTestCase):
 #     """Test the MockCloudflareService lifecycle and basic functionality"""
 

@@ -125,10 +125,10 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         # domain:private_key is the session key to use for
         # caching the domain in the session
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        cached_domain = self.session.get(domain_pk)
+        cached_domain_id = self.session.get(domain_pk)
 
-        if cached_domain:
-            self.object = cached_domain
+        if cached_domain_id:
+            self.object = Domain.objects.get(id=cached_domain_id)
         else:
             self.object = self.get_object()
         self._update_session_with_domain()
@@ -138,7 +138,8 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         update domain in the session cache
         """
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        self.session[domain_pk] = self.object
+        # self.session[domain_pk] = self.object
+        self.session[domain_pk] = self.object.id
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1041,7 +1042,7 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
-        self.request.session["nameservers_form_domain"] = self.object
+        self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
         # Set the nameservers from the formset
