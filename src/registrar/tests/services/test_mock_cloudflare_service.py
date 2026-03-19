@@ -1,5 +1,5 @@
 from django.test import SimpleTestCase
-from httpx import Client, HTTPStatusError
+from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
