@@ -1,20 +1,21 @@
 {% load static field_helpers url_helpers %}
 
-{# Inline edit form row for a DNS record. `counter` is a sequential index, not the DB pk. #}
-<tr id="dnsrecord-edit-row-{{ counter }}" x-show="showFormId == {{ counter }}" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
+{# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
+<tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == {{ record_id }}" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
     <td colspan="5" class="no-padding">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
+                id="dnsrecord-edit-form-{{ record_id }}"
                 method="post"
                 class="usa-form usa-form--extra-large"
+                novalidate
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
                 hx-swap="none"
             >
                 <h2 class="margin-top-0">Edit record</h2>
                 {% csrf_token %}
 
-                {# The counter identifies the row for both DOM targeting and DB lookup (positional index). #}
-                <input type="hidden" name="counter" value="{{ counter }}" />
+                <input type="hidden" name="id" value="{{ record_id }}" />
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
                 {% with add_group_class="usa-form-group--unstyled-error" %}
@@ -33,8 +34,12 @@
                 </div>
                 {% input_with_errors dns_record.form.comment %}
                 <button
-                    type="reset"
+                    type="button"
                     class="usa-button usa-button--outline"
+                    hx-get="{% url 'domain-dns-records' domain.pk %}"
+                    hx-select="#dnsrecord-edit-form-{{ record_id }}"
+                    hx-target="#dnsrecord-edit-form-{{ record_id }}"
+                    hx-swap="outerHTML"
                     x-on:click="showFormId = null"
                 >
                     Cancel

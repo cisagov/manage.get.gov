@@ -5,7 +5,7 @@
 
 <div
     class="grid-row grid-gap"
-    x-init="recordType = $el.querySelector('#id_type')?.value || recordType"
+    x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
     x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }"
 >
     <div class="grid-col-3">

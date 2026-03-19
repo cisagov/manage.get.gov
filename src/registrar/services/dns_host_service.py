@@ -199,13 +199,13 @@ class DnsHostService:
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
-            raise ValueError("This DNS record is missing a vendor id and cannot be updated.")
+            raise ValueError("This DNS record is missing an external record id and cannot be updated.")
 
-        self.update_and_save_record(x_zone_id, x_record_id, form_record_data)
+        self.update_and_save_dns_record(x_zone_id, x_record_id, form_record_data)
         return dns_record
 
-    def update_and_save_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
-        """Calls update method of vendor service to update a DNS record"""
+    def update_and_save_dns_record(self, x_zone_id, x_record_id, form_record_data) -> dict:
+        """Push updated record data to the vendor and persist the changes in the local database."""
         # Update record in vendor service
         try:
             vendor_record_data = self.dns_vendor_service.update_dns_record(x_zone_id, x_record_id, form_record_data)

@@ -232,9 +232,10 @@ class TestDnsHostService(TestCase):
         # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
+    @patch("registrar.models.dns.dns_record.DnsRecord.get_by_x_record_id")
     @patch("registrar.models.dns.dns_record.DnsRecord.create_from_vendor_data")
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
-    def test_create_cf_record_success(self, mock_create_dns_record, _):
+    def test_create_cf_record_success(self, mock_create_dns_record, _, mock_get_by_x_record_id):
         zone_id = "1234"
         record_data = {
             "type": "A",
@@ -245,11 +246,14 @@ class TestDnsHostService(TestCase):
             "created_on": "2024-01-02T03:04:05Z",
         }
 
+        mock_dns_record = Mock()
+        mock_dns_record.name = "test.gov"
         mock_create_dns_record.return_value = {"result": {"id": zone_id, **record_data}}
+        mock_get_by_x_record_id.return_value = mock_dns_record
 
-        response = self.service.create_and_save_record(zone_id, record_data)
-        self.assertEqual(response["result"]["id"], zone_id)
-        self.assertEqual(response["result"]["name"], "test.gov")
+        response = self.service.create_dns_record(zone_id, record_data)
+        self.assertEqual(response.name, "test.gov")
+        mock_get_by_x_record_id.assert_called_once_with(zone_id)
 
     @patch("registrar.services.dns_host_service.CloudflareService.create_dns_record")
     def test_create_cf_record_failure(self, mock_create_dns_record):
@@ -260,7 +264,7 @@ class TestDnsHostService(TestCase):
         mock_create_dns_record.side_effect = APIError("Bad request: missing name")
 
         with self.assertRaises(APIError) as context:
-            self.service.create_and_save_record(zone_id, record_data)
+            self.service.create_dns_record(zone_id, record_data)
         self.assertIn("Bad request: missing name", str(context.exception))
 
     def test_update_account_dns_settings_success(self):

@@ -89,21 +89,6 @@ class DnsRecord(TimeStampedModel):
         return cls.objects.filter(dns_zone=dns_zone).order_by("pk")
 
     @classmethod
-    def get_for_domain_by_counter(cls, domain: Domain, counter: int) -> "DnsRecord | None":
-        """Return the DnsRecord at the given 1st position for the domain's zone.
-
-        Uses the same ordering as the DNS records table so the counter matches
-        what was rendered on the GET request.
-        """
-        dns_zone = DnsZone.objects.filter(domain=domain).first()
-        if not dns_zone:
-            return None
-        try:
-            return cls.get_ordered_for_zone(dns_zone)[counter - 1]
-        except (IndexError, AssertionError):
-            return None
-
-    @classmethod
     def zone_has_records(cls, domain: Domain) -> bool:
         """Return whether a domain's DNS zone has any existing records."""
         dns_zone = DnsZone.objects.filter(domain=domain).first()

@@ -70,7 +70,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_valid_forms_create_records_success(self):
+    def test_post_valid_forms_create_dns_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
                 mock_record = {

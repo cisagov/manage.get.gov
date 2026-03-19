@@ -17,11 +17,9 @@
     </thead>
 
     <tbody id="dnsrecords-table-body">
-        {% if dns_records %}
-            {% for dns_record in dns_records %}
-                {% include "domain_dns_record_row.html" with counter=dns_record.counter dns_record=dns_record %}
-                {% include "domain_dns_record_edit_form.html" with counter=dns_record.counter dns_record=dns_record %}
-            {% endfor %}
-        {% endif %}
+        {% for dns_record in dns_records %}
+            {% include "domain_dns_record_row.html" with record_id=dns_record.id dns_record=dns_record %}
+            {% include "domain_dns_record_edit_form.html" with record_id=dns_record.id dns_record=dns_record %}
+        {% endfor %}
     </tbody>
 </table>
