@@ -14,10 +14,14 @@
 
 
 {% block domain_content %}
-    <div x-data="{ showFormId: null }">
+    <div x-data="{ 
+        showFormId: null,
+        recordType: '{{ selected_type|default:''}}'
+    }"
+    >
     <!-- Wrapped div here to store showFormId here to track across all the forms on this page, so only one form appears at a time-->
     {% include "includes/form_errors.html" with form=form %}
-    <div id="dnsrecords-form-container" x-data="{recordType: '' }">
+    <div id="dnsrecords-form-container">
         <div class="display-flex flex-align-center">
             <div class="grid-col">
                 <h1>DNS records</h1>
