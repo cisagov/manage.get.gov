@@ -88,11 +88,11 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     response = self.client.post(
                         self._url(),
                         {
-                            "type": mock_record["type"],
-                            "name": mock_record["name"],
-                            "ttl": mock_record["ttl"],
-                            "comment": mock_record["comment"],
-                            "content": mock_record["content"],
+                            "type": data["type"],
+                            "name": data["name"],
+                            "ttl": data["ttl"],
+                            "comment": data["comment"],
+                            "content": data["content"],
                         },
                     )
 

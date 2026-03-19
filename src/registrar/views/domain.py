@@ -1008,8 +1008,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form = self.get_form()
         is_edit = self._parse_dns_record_id(request)
         self._get_domain(request)
-        record_type = form.data.get("type")
-
         if not form.is_valid():
             return self._handle_invalid_form(request, form, is_edit)
 
