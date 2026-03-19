@@ -123,17 +123,16 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
             svc.create_and_save_record.side_effect = APIError("Vendor rejected the record")
 
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
-
-            record_form["type"] = data["type"]
-            record_form["name"] = data["name"]
-            record_form["content"] = data["content"]
-            record_form["ttl"] = data["ttl"]
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": data["type"],
+                    "name": data["name"],
+                    "ttl": data["ttl"],
+                    "comment": data["comment"],
+                    "content": data["content"],
+                },
+            )
 
             # Must not crash — previously raised TypeError: 'NoneType' object does not support item assignment
             self.assertEqual(response.status_code, 200)
@@ -144,7 +143,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.assertNotIn("recordSubmitSuccess", hx_trigger)
 
             # No new record row rendered because dns_record=None was passed to the template
-            self.assertNotIn(f'{data["type"]} record for {data["name"]}', response.text)
+            self.assertNotIn(f'{data["type"]} record for {data["name"]}', response)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
