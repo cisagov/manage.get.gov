@@ -3595,7 +3595,7 @@ class TestDomainDnsRecords(TestDomainOverview):
         response = self.client.post(
             reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
             data={
-                "counter": 1,
+                "id": dns_record.id,
                 "type": dns_record.type,
                 "name": "api",
                 "content": "203.0.113.20",

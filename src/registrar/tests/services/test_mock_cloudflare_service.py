@@ -4,6 +4,7 @@ from httpx import Client, HTTPStatusError
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.utility.errors import APIError
 
 
 class TestMockCloudflareServiceBasics(SimpleTestCase):
@@ -130,19 +131,19 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(HTTPStatusError) as context:
+        with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_403_record_data)
         self.assertTrue("403" in str(context.exception))
 
         error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(HTTPStatusError) as context:
+        with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_400_record_data)
         self.assertTrue("400" in str(context.exception))
 
         error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
 
-        with self.assertRaises(HTTPStatusError) as context:
+        with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
 
@@ -163,19 +164,19 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "55.66.77.88"}
 
-        with self.assertRaises(HTTPStatusError) as context:
+        with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_403_record_data)
         self.assertTrue("403" in str(context.exception))
 
         error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(HTTPStatusError) as context:
+        with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_400_record_data)
         self.assertTrue("400" in str(context.exception))
 
         error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
 
-        with self.assertRaises(HTTPStatusError) as context:
+        with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
 
