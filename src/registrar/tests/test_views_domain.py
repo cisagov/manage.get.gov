@@ -3567,7 +3567,7 @@ class TestDomainDnsRecords(TestDomainOverview):
         dns_record.refresh_from_db()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(dns_record.name, "api")
+        self.assertEqual(dns_record.name, "api.igorville.gov")
         self.assertEqual(dns_record.content, "203.0.113.15")
         self.assertEqual(dns_record.ttl, 3600)
         # Names submitted without zone name append zone name to end
