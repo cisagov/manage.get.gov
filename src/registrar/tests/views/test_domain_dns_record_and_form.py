@@ -70,22 +70,12 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_valid_forms_create_records_success(self):
+    def test_post_valid_forms_create_dns_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
-                mock_record = {
-                    "id": data["id"],
-                    "name": data["name"],
-                    "type": data["type"],
-                    "content": data["content"],
-                    "ttl": data["ttl"],
-                    "comment": data["comment"],
-                }
-
                 with patch("registrar.views.domain.DnsHostService") as MockSvc:
                     svc = MockSvc.return_value
-                    svc.register_nameservers.return_value = None
-                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
+                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
                     dns_record = create_dns_record(
                         self.dns_zone,
                         record_name=data["name"],
@@ -93,16 +83,16 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                         record_content=data["content"],
                         ttl=data["ttl"],
                     )
-                    svc.create_and_save_record.return_value = {"result": mock_record, "dns_record": dns_record}
+                    svc.create_dns_record.return_value = dns_record
 
                     response = self.client.post(
                         self._url(),
                         {
-                            "type": mock_record["type"],
-                            "name": mock_record["name"],
-                            "ttl": mock_record["ttl"],
-                            "comment": mock_record["comment"],
-                            "content": mock_record["content"],
+                            "type": data["type"],
+                            "name": data["name"],
+                            "ttl": data["ttl"],
+                            "comment": data["comment"],
+                            "content": data["content"],
                         },
                     )
 
@@ -120,8 +110,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
-            svc.create_and_save_record.side_effect = APIError("Vendor rejected the record")
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.create_dns_record.side_effect = APIError("Vendor rejected the record")
 
             response = self.client.post(
                 self._url(),

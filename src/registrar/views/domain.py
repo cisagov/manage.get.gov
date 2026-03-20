@@ -1,9 +1,8 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import Client
+from httpx import Client, RequestError
 import logging
-from contextvars import ContextVar
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -88,8 +87,6 @@ from ..utility.email_invitations import (
 )
 
 logger = logging.getLogger(__name__)
-
-context_dns_record = ContextVar("context_dns_record", default=None)
 
 
 class DomainBaseView(PermissionRequiredMixin, DetailView):
@@ -850,18 +847,17 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def attach_edit_form(self, dns_records):
         """adding a form instance to the dns_record objects
         to display corresponding values in the table rows"""
-        for record in dns_records:
-            data_dict = self.record_dict_for_initial_data(record)
-            record.form = DomainDNSRecordForm(initial=data_dict, prefix=f"edit_{record.id}")
-            record.partial = self.get_form_template(record.type)
+        for dns_record in dns_records:
+            data_dict = self.record_dict_for_initial_data(dns_record)
+            auto_id = f"id_edit_{dns_record.id}_%s"
+            dns_record.form = DomainDNSRecordForm(initial=data_dict, auto_id=auto_id)  # type: ignore[attr-defined]
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
         context = super().get_context_data(**kwargs)
-        context["dns_record"] = context_dns_record.get()
         dns_zone = DnsZone.objects.filter(domain=self.object).first()
         if dns_zone:
-            dns_records = DnsRecord.objects.filter(dns_zone=dns_zone)
+            dns_records = DnsRecord.get_ordered_for_zone(dns_zone)
             self.attach_edit_form(dns_records)
             context["dns_records"] = dns_records
             context["nameservers"] = dns_zone.nameservers
@@ -885,88 +881,166 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def post(self, request, *args, **kwargs):  # noqa: C901
-        """Handle form submission."""
+    def _parse_dns_record_id(self, request) -> int | None:
+        """Parse the DNS record id from POST data."""
+        raw = request.POST.get("id")
+        try:
+            return int(raw) if raw not in (None, "") else None
+        except (TypeError, ValueError):
+            return None
+
+    def _build_dns_record_form_data(self, form) -> dict:
+        """Build the vendor request body from a validated form."""
+        return {
+            "type": form.cleaned_data["type"],
+            "name": form.cleaned_data["name"],
+            "content": form.cleaned_data["content"],
+            "ttl": int(form.cleaned_data["ttl"]),
+            "comment": form.cleaned_data.get("comment", ""),
+        }
+
+    def _attach_form(self, record_obj: DnsRecord, *, bound_form=None) -> None:
+        """Attach a form to the record for template rendering.
+
+        - If `bound_form` is provided, attach that (used for validation errors).
+        - Otherwise attach a blank/initial form from the DB model.
+        - Uses the record id to generate unique field IDs across multiple forms on the page.
+        """
+        auto_id = f"id_edit_{record_obj.pk}_%s"
+        if bound_form is not None:
+            bound_form.auto_id = auto_id
+            record_obj.form = bound_form  # type: ignore[attr-defined]
+            return
+        initial_data = self.record_dict_for_initial_data(record_obj)
+        record_obj.form = DomainDNSRecordForm(initial=initial_data, auto_id=auto_id)  # type: ignore[attr-defined]
+
+    def _error_response(self, request, form=None, status=200):
+        return TemplateResponse(
+            request,
+            "domain_dns_record_form_response.html",
+            {
+                "dns_record": None,
+                "domain": self.object,
+                "form": form or DomainDNSRecordForm(),
+                "is_edit": False,
+                "is_first_record": False,
+            },
+            headers={"HX-TRIGGER": json.dumps({"messagesRefresh": ""})},
+            status=status,
+        )
+
+    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict, record_id: int | None) -> int | None:
+        """Update an existing DNS record and prepare the DB-backed row for rendering."""
+        try:
+            dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
+        except ValueError as e:
+            messages.error(request, str(e))
+            raise GenericError(GenericErrorCodes.GENERIC_ERROR)
+        except RequestError as e:
+            logger.error(f"DNS record edit failed, network error: {e}")
+            raise APIError(str(e))
+
+        messages.success(request, "The DNS record for this domain has been updated.")
+
+        # Refresh with db instance for templating (edit form requires BoundFields)
+        dns_record.refresh_from_db()
+        self._attach_form(dns_record)
+        self.dns_record = dns_record
+        return record_id
+
+    def _handle_invalid_form(self, request, form, is_edit):
+        """Return the appropriate error response for an invalid form submission."""
+        errors = self.get_form_errors(form)
+        for error in errors:
+            messages.error(request, error)
+
+        if is_edit:
+            try:
+                dns_record = DnsRecord.objects.get(pk=is_edit)
+            except DnsRecord.DoesNotExist:
+                dns_record = None
+            if dns_record:
+                self._attach_form(dns_record, bound_form=form)
+                hx_trigger_events = json.dumps({"messagesRefresh": ""})
+                return TemplateResponse(
+                    request,
+                    "domain_dns_record_form_response.html",
+                    {
+                        "dns_record": dns_record,
+                        "domain": self.object,
+                        "form": DomainDNSRecordForm(),
+                        "nameservers": None,
+                        "record_id": is_edit,
+                        "is_edit": True,
+                        "is_first_record": False,
+                        "update_cells": False,
+                    },
+                    headers={"HX-TRIGGER": hx_trigger_events},
+                    status=200,
+                )
+
+        return TemplateResponse(
+            request,
+            "domain_dns_record_form_response.html",
+            {"dns_record": None, "domain": self.object, "form": form, "is_edit": False, "is_first_record": False},
+            headers={"HX-TRIGGER": "messagesRefresh"},
+            status=200,
+        )
+
+    def _handle_create(self, request, x_zone_id, form_record_data):
+        """Create a new DNS record and prepare the DB-backed row for rendering."""
+        is_first_record = not DnsRecord.zone_has_records(self.object)
+        dns_record = self.dns_host_service.create_dns_record(x_zone_id, form_record_data)
+        dns_name = (dns_record.name if dns_record else None) or form_record_data["name"]
+        messages.success(request, f"DNS {form_record_data['type']} record '{dns_name}' updated successfully.")
+
+        if dns_record:
+            self._attach_form(dns_record)
+            self.dns_record = dns_record
+            return is_first_record, dns_record.id
+
+        self.dns_record = None
+        return is_first_record, None
+
+    def post(self, request, *args, **kwargs):
+        """Handle form submission (create + update) for DNS records via htmx."""
         self.object = self.get_object()
         form = self.get_form()
+        is_edit = self._parse_dns_record_id(request)
         self._get_domain(request)
-        record_type = form.data.get("type")
-
         if not form.is_valid():
-            errors = self.get_form_errors(form)
-            for error in errors:
-                messages.error(request, error)
+            return self._handle_invalid_form(request, form, is_edit)
 
-            return TemplateResponse(
-                request,
-                "domain_dns_record_form_response.html",
-                {"dns_record": None, "domain": self.object, "form": form, "selected_type": record_type},
-                headers={"HX-TRIGGER": "messagesRefresh"},
-            )
+        nameservers = None
+        is_first_record = False
+        record_id = None
 
         try:
             if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
-                raise Exception(f"create dns record called for domain {self.object.name}")
+                raise Exception(f"create/update dns record called for domain {self.object.name}")
 
-            form_record_data = {
-                "type": form.cleaned_data["type"],
-                "name": form.cleaned_data["name"],  # record name
-                "content": form.cleaned_data["content"],  # IPv4
-                "ttl": int(form.cleaned_data["ttl"]),
-                "comment": form.cleaned_data.get("comment", ""),
-            }
-
-            domain_name = self.object.name
-
-            # Verify zone already exists
-            try:
-                x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(domain_name)
-            except Exception as e:
-                logger.error(f"Zone lookup failed for {domain_name}: {e}")
+            form_record_data = self._build_dns_record_form_data(form)
+            x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
+            if not x_zone_id:
                 return JsonResponse(
                     {"status": "error", "message": "DNS zone not found. Domain may not be enrolled."},
                     status=400,
                 )
 
-            if not x_zone_id:
-                return JsonResponse(
-                    {"status": "error", "message": "DNS zone does not exist."},
-                    status=400,
-                )
+            if is_edit:
+                record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+            else:
+                is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
-            # post a new record to the DNS hosting provider and save it in our database
-            record_response = self.dns_host_service.create_and_save_record(
-                x_zone_id,
-                form_record_data,
-            )
-
-            self.dns_record = record_response.get("dns_record")
-            dns_name = self.dns_record.name if self.dns_record else ""
-
-            messages.success(request, f"DNS {record_type} record '{dns_name}' created successfully.")
-            context_dns_record.set(self.dns_record)
-
-        except APIError as e:
-            logger.error(f"DNS record creation failed, API error in view {e}")
-            messages.error(request, "Failed to create DNS record.")
-            return TemplateResponse(
-                request,
-                "domain_dns_record_form_response.html",
-                {"dns_record": None, "domain": self.object, "form": self.get_form()},
-                headers={"HX-TRIGGER": "messagesRefresh"},
-            )
-
+        except (APIError, RequestError) as e:
+            logger.error(f"DNS record create/update failed, API error in view {e}")
+            messages.error(request, "Failed to save DNS record.")
+            self.dns_record = None
+            record_id = None
+        except GenericError:
+            return self._error_response(request, status=400)
         finally:
             self.client.close()
-
-        filled_form = DomainDNSRecordForm(initial=self.record_dict_for_initial_data(self.dns_record))
-        # Grabbed result data to pass into the form response
-        # self.dns_record["form"] = filled_form
-        self.dns_record.partial = self.get_form_template(record_type)
-        self.dns_record.form = filled_form
-        hx_trigger_events = json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
-        row_index = len(self.get_context_data()["dns_records"])
-        new_form = DomainDNSRecordForm()
 
         return TemplateResponse(
             request,
@@ -974,11 +1048,14 @@ class DomainDNSRecordsView(DomainFormBaseView):
             {
                 "dns_record": self.dns_record,
                 "domain": self.object,
-                "form": new_form,
-                "counter": row_index,
+                "form": DomainDNSRecordForm(),
+                "record_id": record_id,
                 "nameservers": nameservers,
+                "is_edit": is_edit,
+                "is_first_record": is_first_record,
+                "update_cells": is_edit and self.dns_record is not None,
             },
-            headers={"HX-TRIGGER": hx_trigger_events},
+            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
             status=200,
         )
 
