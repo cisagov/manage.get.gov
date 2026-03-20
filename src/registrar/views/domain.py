@@ -1120,7 +1120,6 @@ class DomainNameserversView(DomainFormBaseView):
             redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
             return redirect(redirect_url)
 
-
         return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):

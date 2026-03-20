@@ -65,10 +65,13 @@ class TestWithSharedDomainPermissions(TestWithUser):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
-        self.domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain)
+        self.portfolio_domain, _ = Domain.objects.get_or_create(name="igorville.gov")
+        portfolio = Portfolio.objects.create(organization_name="I am no legacy org", requester=self.user)
+        self.domain_information, _ = DomainInformation.objects.get_or_create(
+            requester=self.user, domain=self.portfolio_domain, portfolio=portfolio
+        )
         self.role, _ = UserDomainRole.objects.get_or_create(
-            user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+            user=self.user, domain=self.portfolio_domain, role=UserDomainRole.Roles.MANAGER
         )
 
 
@@ -1575,15 +1578,14 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
-    def test_domain_nameservers_not_found_when_dns_hosting_flag_enabled_and_enrolled(self):
-        """Cannot load domain's nameservers page."""
+    def test_domain_nameservers_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
+        """Cannot load domain's nameservers page. Redirects to dns records page instead."""
         with override_flag("dns_hosting", active=True):
-            response = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
+            enrolled_domain, _, _ = create_initial_dns_setup()
+            response = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": enrolled_domain.id}))
             self.assertRedirects(
                 response,
-                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
+                reverse("domain-dns-records", kwargs={"domain_pk": enrolled_domain.id}),
             )
 
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
@@ -3573,7 +3575,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
 
     def test_domain_dns(self):
         """Can load domain's DNS page (not enrolled in DNS hosting)."""
-        page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain.id}))
+        page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.portfolio_domain.id}))
         self.assertContains(page, "The Domain Name System (DNS)")
         self.assertContains(page, "Name servers")
         self.assertNotContains(page, "DNS Records")
@@ -3609,7 +3611,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         self.assertNotContains(page, "DNS Records")
 
 
-class TestDomainDnsRecords(TestWithUser, WebTest):
+class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     mock_api_service = MockCloudflareService()
 
     @classmethod
@@ -3641,7 +3643,7 @@ class TestDomainDnsRecords(TestWithUser, WebTest):
         """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
         domain, _, _ = create_initial_dns_setup()  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
-        self.assertContains(page, "Records")
+        self.assertContains(page, "DNS records")
 
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_not_viewable_when_not_enrolled(self):
@@ -3696,11 +3698,11 @@ class TestDomainDnsRecords(TestWithUser, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_updates_record(self):
         """Editing an existing DNS record saves changes and returns the updated row."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.domain, x_zone_id="zone-edit-123")
+        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-edit-123")
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
 
         response = self.client.post(
-            reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
             data={
                 "id": dns_record.id,
                 "type": dns_record.type,
@@ -3736,11 +3738,11 @@ class TestDomainDnsRecords(TestWithUser, WebTest):
         2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
            form with a clean one, so reopening the form shows no leftover errors.
         """
-        _, _, dns_zone = create_initial_dns_setup(domain=self.domain, x_zone_id="zone-close-123")
+        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-close-123")
         dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
 
         response = self.client.post(
-            reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
             data={
                 "id": dns_record.id,
                 "type": dns_record.type,
@@ -3766,11 +3768,11 @@ class TestDomainDnsRecords(TestWithUser, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_returns_400_without_active_vendor_id(self):
         """Editing fails when the DNS record has no active vendor record link."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.domain, x_zone_id="zone-edit-124")
+        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-edit-124")
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124", dns_record_is_active=False)
 
         response = self.client.post(
-            reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id}),
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
             data={
                 "id": dns_record.id,
                 "type": dns_record.type,
