@@ -48,6 +48,15 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
+        # Uncomment test case after CNAME content validations finalized
+        # {
+        #     "id": "test-cname",
+        #     "name": "www",
+        #     "type": "CNAME",
+        #     "content": "www.example.com",
+        #     "ttl": 300,
+        #     "comment": "Mocked record created",
+        # },
         {
             "id": "test1",
             "name": "www",
@@ -138,7 +147,11 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_content_throws_error(self):
-        invalid_content_by_type = {"A": "not-an-ip", "AAAA": "not-an-ip", "TXT": 'not"valid text'}
+        invalid_content_by_type = {
+            "A": "not-an-ip",
+            "AAAA": "not-an-ip",
+            "TXT": 'not"valid text',
+        }
 
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
