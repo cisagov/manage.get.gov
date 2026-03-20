@@ -3570,7 +3570,8 @@ class TestDomainDnsRecords(TestDomainOverview):
         self.assertEqual(dns_record.name, "api")
         self.assertEqual(dns_record.content, "203.0.113.15")
         self.assertEqual(dns_record.ttl, 3600)
-        self.assertContains(response, "api")
+        # Names submitted without zone name append zone name to end
+        self.assertContains(response, "api.igorville.gov")
         self.assertContains(response, "203.0.113.15")
         self.assertContains(response, "3600")
         self.assertJSONEqual(

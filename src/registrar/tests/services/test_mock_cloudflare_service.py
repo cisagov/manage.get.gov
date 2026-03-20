@@ -1,5 +1,6 @@
 from django.test import SimpleTestCase
 from httpx import Client
+from unittest.mock import patch
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
@@ -122,10 +123,12 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
     def test_mock_create_dns_record_response(self):
         zone_id = self.mock_api_service.fake_zone_id
         record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
-        resp = self.service.create_dns_record(zone_id, record_data)
+        expected_cf_record_name = "blog.domain.gov"
+        with patch("registrar.services.mock_cloudflare_service.MockCloudflareService._convert_record_name_to_cf_record_name", return_value="blog.domain.gov"):
+            resp = self.service.create_dns_record(zone_id, record_data)
         result = resp["result"]
 
-        self.assertEquals(result["name"], record_data["name"])
+        self.assertEquals(result["name"], expected_cf_record_name)
         self.assertEquals(result["type"], record_data["type"])
         self.assertEquals(result["content"], record_data["content"])
 
@@ -152,13 +155,15 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         zone_id = self.mock_api_service.fake_zone_id
         record_id = self.mock_api_service.fake_record_id
         initial_record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
+        expected_cf_record_name = "blog.domain.gov"
         self.service.create_dns_record(zone_id, initial_record_data)
 
         updated_record_data = {"type": "A", "name": "newblog", "content": "55.66.77.88"}
-        resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
+        with patch("registrar.services.mock_cloudflare_service.MockCloudflareService._convert_record_name_to_cf_record_name", return_value="blog.domain.gov"):
+            resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         result = resp["result"]
 
-        self.assertEquals(result["name"], updated_record_data["name"])
+        self.assertEquals(result["name"], expected_cf_record_name)
         self.assertEquals(result["content"], updated_record_data["content"])
         self.assertEquals(result["type"], updated_record_data["type"])
 
