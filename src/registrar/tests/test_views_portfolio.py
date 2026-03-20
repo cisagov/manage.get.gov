@@ -680,7 +680,7 @@ class TestPortfolio(WebTest):
         # Check if the 'portfolio' session variable exists
         self.assertIn("portfolio", session, "Portfolio session variable should exist.")
         # Check the value of the 'portfolio' session variable
-        self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+        self.assertEqual(session["portfolio"], self.portfolio.id, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_for_single_portfolio_users_with_multiple_portfolios_flag(self):
@@ -703,7 +703,7 @@ class TestPortfolio(WebTest):
             self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
             self.assertIsNotNone(session["portfolio"])
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+            self.assertEqual(session["portfolio"], self.portfolio.id, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_and_no_portfolio(self):

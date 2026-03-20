@@ -3,7 +3,7 @@ import functools
 from django.apps import apps
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
-from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, UserDomainRole
+from registrar.models import Domain, DomainInformation, DomainInvitation, DomainRequest, Portfolio, UserDomainRole
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from functools import wraps
@@ -112,7 +112,8 @@ def _user_has_permission(user, request, rules, **kwargs):
         return False
 
     portfolio = _resolve_portfolio(request, **kwargs)
-    session_portfolio = request.session.get("portfolio")
+    portfolio_id = request.session.get("portfolio")
+    session_portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
     is_org = bool(portfolio and user.is_org_user_for_portfolio(portfolio))
 
     # Define permission checks
@@ -510,7 +511,8 @@ def _resolve_portfolio(request, **kwargs):
         pid = DI.objects.filter(domain_id=domain_pk).values_list("portfolio_id", flat=True).first()
         return Portfolio.objects.filter(pk=pid).first() if pid else None
 
-    sess_obj = request.session.get("portfolio")
+    portfolio_id = request.session.get("portfolio")
+    sess_obj = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
     return sess_obj if getattr(sess_obj, "pk", None) else None
 
 
