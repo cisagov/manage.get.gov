@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.urls import resolve
 from django.db import connections
-from registrar.models import User
+from registrar.models import User, Portfolio
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
@@ -191,13 +191,14 @@ class CheckPortfolioMiddleware:
 
         # Set if feature off and user has any portfolio OR user has exactly one portfolio
         if (not multiple and first_portfolio) or (user.get_num_portfolios() == 1 and not user.has_legacy_domain()):
-            request.session["portfolio"] = first_portfolio
+            request.session["portfolio"] = first_portfolio.id if first_portfolio else None
             return
 
         # Clear if session portfolio is not valid anymore
         # IMPORTANT: only do this on get requests to avoid disrupting POST/PUT/DELETE operations
         if request.method in ("GET", "HEAD"):
-            if request.session.get("portfolio") and not user.is_org_user(request):
+            portfolio_id = request.session.get("portfolio")
+            if portfolio_id and not user.is_org_user(request):
                 request.session.pop("portfolio", None)
 
     def _maybe_redirect_to_org_select(self, request):
@@ -252,7 +253,8 @@ class CheckPortfolioMiddleware:
 
         # Portfolio domain redirects when multi-portfolio flag is off
         # (single org users / legacy should still get redirected to their portfolio pages)
-        portfolio = request.session.get("portfolio")
+        portfolio_id = request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
             request
         )
