@@ -124,7 +124,10 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         zone_id = self.mock_api_service.fake_zone_id
         record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
         expected_cf_record_name = "blog.domain.gov"
-        with patch("registrar.services.mock_cloudflare_service.MockCloudflareService._convert_record_name_to_cf_record_name", return_value="blog.domain.gov"):
+        with patch(
+            "registrar.services.mock_cloudflare_service.MockCloudflareService._convert_record_name_to_cf_record_name",
+            return_value="blog.domain.gov",
+        ):
             resp = self.service.create_dns_record(zone_id, record_data)
         result = resp["result"]
 
@@ -159,7 +162,10 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.service.create_dns_record(zone_id, initial_record_data)
 
         updated_record_data = {"type": "A", "name": "newblog", "content": "55.66.77.88"}
-        with patch("registrar.services.mock_cloudflare_service.MockCloudflareService._convert_record_name_to_cf_record_name", return_value="blog.domain.gov"):
+        with patch(
+            "registrar.services.mock_cloudflare_service.MockCloudflareService._convert_record_name_to_cf_record_name",
+            return_value="blog.domain.gov",
+        ):
             resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         result = resp["result"]
 

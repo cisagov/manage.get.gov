@@ -6,10 +6,7 @@ from datetime import datetime, timezone
 from faker import Faker
 import re
 
-from registrar.models import (
-    DnsZone,
-    VendorDnsZone
-)
+from registrar.models import DnsZone, VendorDnsZone
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.services.utility.mock_cf_service_data import (
@@ -362,7 +359,7 @@ class MockCloudflareService:
         Record names not ending in the zone name get the zone name appended to them.
         """
         try:
-            zone_id = re.search('/zones/(.*)/dns_records', request_url).group(1)
+            zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
             vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
             dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
             zone_name = dns_zone.name
