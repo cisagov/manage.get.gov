@@ -1581,11 +1581,10 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
     def test_domain_nameservers_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
         """Cannot load domain's nameservers page. Redirects to dns records page instead."""
         with override_flag("dns_hosting", active=True):
-            enrolled_domain, _, _ = create_initial_dns_setup()
-            response = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": enrolled_domain.id}))
+            response = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
             self.assertRedirects(
                 response,
-                reverse("domain-dns-records", kwargs={"domain_pk": enrolled_domain.id}),
+                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
             )
 
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
