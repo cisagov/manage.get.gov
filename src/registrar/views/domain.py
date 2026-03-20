@@ -1036,7 +1036,10 @@ class DomainNameserversView(DomainFormBaseView):
         )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
 
         if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
-            raise Http404("Domain is enrolled in DNS hosting. Nameservers cannot be edited in this case.")
+            logger.info("Domain is enrolled in DNS hosting. Nameservers cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
 
         return super().dispatch(request, *args, **kwargs)
 

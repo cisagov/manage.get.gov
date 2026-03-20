@@ -1578,10 +1578,13 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
     def test_domain_nameservers_not_found_when_dns_hosting_flag_enabled_and_enrolled(self):
         """Cannot load domain's nameservers page."""
         with override_flag("dns_hosting", active=True):
-            self.client.get(
+            response = self.client.get(
                 reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
             )
-            self.assertRaises(Http404)
+            self.assertRedirects(
+                response,
+                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
+            )
 
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
         """Cannot load domain's nameservers page."""
