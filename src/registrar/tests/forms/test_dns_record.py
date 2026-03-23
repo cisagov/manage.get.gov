@@ -90,7 +90,9 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assert_dns_name_errors("1bc", ["Enter a name that begins with a letter and ends with a letter or number."])
 
         # Testing invalid last character
-        self.assert_dns_name_errors("abc-", ["Enter a name that begins with a letter and ends with a letter or number."])
+        self.assert_dns_name_errors(
+            "abc-", ["Enter a name that begins with a letter and ends with a letter or number."]
+        )
 
         # Testing invalid character and invalid last character
         self.assert_dns_name_errors(
@@ -121,7 +123,6 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 )
 
     def test_dns_record_with_blank_content_throws_error(self):
-        empty_txt_message = "Enter the content for this record."
         for record_type, content in self.VALID_CONTENT_BY_TYPE.items():
             with self.subTest(record_type=record_type):
                 priority = 10 if record_type == "MX" else None
