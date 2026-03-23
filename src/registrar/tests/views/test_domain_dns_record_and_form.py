@@ -199,3 +199,15 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
                     # Ensures appropriate label exists
                     self.assertContains(response, DNSRecordTypes(record_type).field_label)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_txt_edit_form_uses_txt_partial(self):
+        """TXT records in the edit form should render via txt_record_form.html,
+        which contains the content-field-wrapper-txt marker."""
+        create_dns_record(self.dns_zone, record_type="TXT", record_content="some text")
+
+        response = self.client.get(self._url())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "content-field-wrapper-txt")
