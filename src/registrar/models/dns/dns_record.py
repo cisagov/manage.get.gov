@@ -63,13 +63,24 @@ class DnsRecord(TimeStampedModel):
         # Run validations involving multiple fields
         match record_type:
             case DNSRecordTypes.CNAME:
-                if self.name == self.content:
+                if self._cname_record_name_matches_hostname(self.name, self.content):
                     raise ValidationError("CNAME record hostname must not match record name.")
             case _:
                 return
 
         if errors:
             raise ValidationError(errors)
+
+    def _cname_record_name_matches_hostname(self, record_name, hostname):
+        """Validate that CNAME record name does not match hostname."""
+        cf_record_name = record_name
+        # Uncomment after later ticket to derive zone name from DNS record form (not model) 
+        # zone_name = self.dns_zone.name
+        # if record_name == "@":
+        #     cf_record_name = zone_name
+        # if not record_name.endswith(zone_name):
+        #     cf_record_name = f"{record_name}.{zone_name}" 
+        return cf_record_name == hostname
 
     def get_active_x_record_id(self) -> str | None:
         """Return the active external record id (x_record_id) for this DnsRecord via the join table."""
