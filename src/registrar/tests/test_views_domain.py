@@ -2381,7 +2381,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
     def test_domain_security_email_existing_security_contact(self):
         """Can load domain's security email page."""
         with less_console_noise():
-            self.mockSendPatch = patch("registrar.models.domain.registry.send")
+            self.mockSendPatch = patch("registrar.services.epp_registry_service.registry.send")
             self.mockedSendFunction = self.mockSendPatch.start()
             self.mockedSendFunction.side_effect = self.mockSend
 
@@ -2402,7 +2402,7 @@ class TestDomainSecurityEmail(TestDomainOverview):
         """Loads a domain with no defined security email.
         We should not show the default."""
         with less_console_noise():
-            self.mockSendPatch = patch("registrar.models.domain.registry.send")
+            self.mockSendPatch = patch("registrar.services.epp_registry_service.registry.send")
             self.mockedSendFunction = self.mockSendPatch.start()
             self.mockedSendFunction.side_effect = self.mockSend
 
