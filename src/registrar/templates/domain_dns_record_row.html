@@ -1,22 +1,24 @@
-<tr id="dnsrecord-row_{{counter}}" :class="showFormId == {{ counter }} ? 'hide-td-borders' : ''">
-    <td data-label="Type">
+<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == {{ record_id }} ? 'hide-td-borders' : ''">
+    <td id="dns-type-{{ record_id }}" data-label="Type">
         {{dns_record.type}}
     </td>
-    <td data-label="Name">
+    <td id="dns-name-{{ record_id }}" data-label="Name">
         {{dns_record.name}}
     </td>
-    <td data-label="TTL">
+    <td id="dns-content-{{ record_id }}" data-label="TTL">
         {{dns_record.content}}
     </td>
-    <td data-label="Type">
+    <td id="dns-ttl-{{ record_id }}" data-label="Type">
         {{dns_record.ttl}}
     </td>
     <td class="padding-right-0" data-label="Action">
         <div class="tablet:display-flex tablet:flex-row">
-            <button type="button" 
-            class='usa-button usa-button--unstyled margin-right-2 margin-top-0'
-            x-on:click="showFormId = (showFormId === {{ counter }} ? null : {{ counter }})" 
-            :aria-expanded="showFormId == {{ counter }} ? 'true' : 'false'"
+            <button type="button"
+            class="usa-button usa-button--unstyled margin-right-2 margin-top-0"
+            x-on:click="showFormId = (showFormId === {{ record_id }} ? null : {{ record_id }})"
+            aria-expanded="false"
+            :aria-expanded="showFormId == {{ record_id }} ? 'true' : 'false'"
+            aria-controls="dnsrecord-edit-row-{{ record_id }}"
             aria-label="Edit {{ dns_record.name }}"
             >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -25,21 +27,20 @@
                 Edit 
                 <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
                     <svg
-                        hx-target="#edit-row-{{ counter }}"
                         aria-label="Access edit form"
                         class="usa-icon" 
                         aria-hidden="true" 
                         focusable="false" 
                         role="img"
                         width="8">
-                        <use x-show="showFormId != {{ counter }}" xlink:href="/public/img/sprite.svg#expand_more" ></use>
-                        <use x-show="showFormId == {{ counter }}" xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                        <use x-show="showFormId != {{ record_id }}" xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="showFormId == {{ record_id }}" xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
             
             </button>
-            <a 
+            <a
                 role="button"
-                id="button-trigger-delete-dnsrecord-{{ forloop.counter }}"
+                id="button-trigger-delete-dnsrecord-{{ record_id }}"
                 class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
                 >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -54,7 +55,7 @@
                     type="button"
                     class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
                     aria-expanded="false"
-                    aria-controls="more-actions-dnsrecord-{{ counter }}"
+                    aria-controls="more-actions-dnsrecord-{{ record_id }}"
                     aria-label="More Actions for DNS record"
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -62,7 +63,7 @@
                     </svg>
                 </button>
                 </div>
-                <div id="more-actions-dnsrecord-{{ counter }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
+                <div id="more-actions-dnsrecord-{{ record_id }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
                 <h2>More options</h2>
                 <button
                     type="button"
@@ -76,5 +77,3 @@
         </div>
     </td>
 </tr>
-
-{% include "domain_dns_record_edit_form.html" %}

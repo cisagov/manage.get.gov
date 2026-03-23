@@ -5,6 +5,7 @@ from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 
 from registrar.services.cloudflare_service import CloudflareService
+from registrar.utility.errors import APIError
 
 
 class TestCloudflareService(SimpleTestCase):
@@ -14,6 +15,16 @@ class TestCloudflareService(SimpleTestCase):
         {
             "test_name": "HTTPStatusError",
             "error": {"exception": HTTPStatusError, "response": "400 Server Error", "message": "Error doing the thing"},
+        },
+        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}},
+    ]
+
+    # create_dns_record and update_dns_record wrap HTTPStatusError in APIError,
+    # so their failure cases expect APIError instead of HTTPStatusError.
+    dns_record_failure_cases = [
+        {
+            "test_name": "HTTPStatusError",
+            "error": {"exception": APIError, "response": "400 Server Error", "message": "Error doing the thing"},
         },
         {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}},
     ]
@@ -50,8 +61,9 @@ class TestCloudflareService(SimpleTestCase):
     def _setUpFailureMockResponse(self, error, status_code=400):
         mock_response = Mock()
         mock_response.status_code = status_code
+        mock_response.text = error.get("message", "error response")
         http_error = None
-        if error["exception"] == HTTPStatusError:
+        if error["exception"] in (APIError, HTTPStatusError):
             http_error = HTTPStatusError(request="something", response=error["response"], message=error["message"])
         if error["exception"] == RequestError:
             http_error = RequestError(request="something", message=error["message"])
@@ -168,7 +180,7 @@ class TestCloudflareService(SimpleTestCase):
             "ttl": 3600,
         }
 
-        for case in self.failure_cases:
+        for case in self.dns_record_failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
                 mock_response = self._setUpFailureMockResponse(error)
@@ -259,7 +271,7 @@ class TestCloudflareService(SimpleTestCase):
             "ttl": 3600,
         }
 
-        for case in self.failure_cases:
+        for case in self.dns_record_failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
                 mock_response = self._setUpFailureMockResponse(error)

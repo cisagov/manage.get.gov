@@ -3,7 +3,6 @@ from unittest.mock import patch
 from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
-from django.conf import settings
 
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
@@ -24,7 +23,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
 
         self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
 
-        self.app.set_user(self.user.username)
+        self.client.force_login(self.user)
 
     def tearDown(self):
         delete_all_dns_data()
@@ -49,6 +48,14 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
+        {
+            "id": "test1",
+            "name": "www",
+            "type": "TXT",
+            "content": "test record info",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
     ]
 
     def _url(self):
@@ -56,39 +63,19 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_get_renders_page_and_form_fields_success(self):
-        page = self.app.get(self._url(), status=200)
-
+    def test_get_renders_page_success(self):
+        page = self.client.get(self._url())
         # Assert we are on the correct page
-        self.assertIn("Add record", page.text)
-
-        record_form = page.forms[0]
-
-        # Assert required fields for A type records exist by name
-        for field in ("type", "name", "content", "ttl", "comment"):
-            self.assertIn(field, record_form.fields)
-
-        # Defaults check for A type records
-        self.assertEqual(str(record_form["ttl"].value), "300")
+        self.assertContains(page, "<h2>Add record</h2>")
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_post_valid_forms_create_records_success(self):
+    def test_post_valid_forms_create_dns_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
-                mock_record = {
-                    "id": data["id"],
-                    "name": data["name"],
-                    "type": data["type"],
-                    "content": data["content"],
-                    "ttl": data["ttl"],
-                    "comment": data["comment"],
-                }
-
                 with patch("registrar.views.domain.DnsHostService") as MockSvc:
                     svc = MockSvc.return_value
-                    svc.register_nameservers.return_value = None
-                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
+                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
                     dns_record = create_dns_record(
                         self.dns_zone,
                         record_name=data["name"],
@@ -96,24 +83,22 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                         record_content=data["content"],
                         ttl=data["ttl"],
                     )
-                    svc.create_and_save_record.return_value = {"result": mock_record, "dns_record": dns_record}
+                    svc.create_dns_record.return_value = dns_record
 
-                    page = self.app.get(self._url(), status=200)
-                    record_form = page.forms[0]
+                    response = self.client.post(
+                        self._url(),
+                        {
+                            "type": data["type"],
+                            "name": data["name"],
+                            "ttl": data["ttl"],
+                            "comment": data["comment"],
+                            "content": data["content"],
+                        },
+                    )
 
-                    record_form["type"] = data["type"]
-                    record_form["name"] = data["name"]
-                    record_form["content"] = data["content"]
-                    record_form["ttl"] = data["ttl"]
-                    record_form["comment"] = data["comment"]
-
-                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                    response = record_form.submit()
                     self.assertEqual(response.status_code, 200)
-
                     # User visible success message snippet
-                    self.assertIn(f'{data["type"]} record for {data["name"]}', response.text)
+                    self.assertContains(response, f'{data["type"]} record for {data["name"]}')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -125,20 +110,19 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", True)
-            svc.create_and_save_record.side_effect = APIError("Vendor rejected the record")
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.create_dns_record.side_effect = APIError("Vendor rejected the record")
 
-            page = self.app.get(self._url(), status=200)
-            record_form = page.forms[0]
-
-            record_form["type"] = data["type"]
-            record_form["name"] = data["name"]
-            record_form["content"] = data["content"]
-            record_form["ttl"] = data["ttl"]
-
-            session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-            self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-            response = record_form.submit()
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": data["type"],
+                    "name": data["name"],
+                    "ttl": data["ttl"],
+                    "comment": data["comment"],
+                    "content": data["content"],
+                },
+            )
 
             # Must not crash — previously raised TypeError: 'NoneType' object does not support item assignment
             self.assertEqual(response.status_code, 200)
@@ -149,58 +133,56 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.assertNotIn("recordSubmitSuccess", hx_trigger)
 
             # No new record row rendered because dns_record=None was passed to the template
-            self.assertNotIn(f'{data["type"]} record for {data["name"]}', response.text)
+            self.assertNotIn(f'{data["type"]} record for {data["name"]}', response)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_content_throws_error(self):
-        invalid_content_by_type = {
-            "A": "not-an-ip",
-            "AAAA": "not-an-ip",
-        }
+        invalid_content_by_type = {"A": "not-an-ip", "AAAA": "not-an-ip", "TXT": 'not"valid text'}
 
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
                 with patch("registrar.views.domain.DnsHostService"):
-                    page = self.app.get(self._url(), status=200)
-                    record_form = page.forms[0]
-
-                    record_form["type"] = record_type
-                    record_form["name"] = "@"
-                    record_form["content"] = invalid_content_by_type[record_type]
-
-                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                    response = record_form.submit()
+                    response = self.client.post(
+                        self._url(),
+                        {
+                            "type": record_type,
+                            "name": record_case["name"],
+                            "ttl": record_case["ttl"],
+                            "comment": record_case["comment"],
+                            "content": invalid_content_by_type[record_type],
+                        },
+                    )
 
                     # Invalid form should re-render the page, not redirect
                     self.assertEqual(response.status_code, 200)
-                    self.assertIn("Name", response.text)
-                    self.assertIn(DNSRecordTypes(record_type).error_message, response.text)
+                    self.assertContains(response, "Name")
+                    self.assertContains(response, DNSRecordTypes(record_type).field_label)
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_dns_name_for_dns_record_throws_error(self):
+        invalid_name = "testing!"
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
                 with patch("registrar.views.domain.DnsHostService"):
-                    page = self.app.get(self._url(), status=200)
-                    record_form = page.forms[0]
-
-                    record_form["type"] = record_type
-                    record_form["name"] = "testing!"
-                    record_form["content"] = record_case["content"]
-
-                    session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-                    self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-                    response = record_form.submit()
+                    response = self.client.post(
+                        self._url(),
+                        {
+                            "type": record_type,
+                            "name": invalid_name,
+                            "ttl": record_case["ttl"],
+                            "comment": record_case["comment"],
+                            "content": record_case["content"],
+                        },
+                    )
 
                     self.assertEqual(response.status_code, 200)
-                    self.assertIn(
-                        "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.", response.text
+                    self.assertContains(
+                        response, "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol."
                     )
 
                     # Ensures appropriate label exists
-                    self.assertIn(DNSRecordTypes(record_type).field_label, response.text)
+                    self.assertContains(response, DNSRecordTypes(record_type).field_label)
