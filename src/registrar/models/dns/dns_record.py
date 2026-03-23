@@ -37,7 +37,7 @@ class DnsRecord(TimeStampedModel):
 
     content = models.CharField(blank=True, null=True, max_length=2048)
 
-    priority = models.PositiveSmallIntegerField(
+    priority = models.PositiveIntegerField(
         blank=True,
         null=True,
         validators=[MinValueValidator(0), MaxValueValidator(65535)],

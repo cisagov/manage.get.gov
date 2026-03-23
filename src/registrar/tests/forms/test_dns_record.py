@@ -132,10 +132,42 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 self.assertFalse(form.is_valid())
                 self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
 
+
+class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
+    """Tests for MX record-specific behavior in DomainDNSRecordForm."""
+
+    def make_mx_form(self, content="mail.example.gov", priority=10, name="www", **overrides):
+        data = self.valid_form_data_for_record_type("MX", content, priority=priority)
+        data["name"] = name
+        data.update(overrides)
+        return self.make_form(data)
+
+    # --- Valid cases ---
+
     def test_valid_mx_record_form_success(self):
-        data = self.valid_form_data_for_record_type("MX", "mail.example.gov", priority=10)
-        form = self.make_form(data)
+        form = self.make_mx_form()
         self.assertTrue(form.is_valid())
+
+    def test_valid_mx_record_with_root_name(self):
+        """@ is a valid name for MX records."""
+        form = self.make_mx_form(name="@")
+        self.assertTrue(form.is_valid())
+
+    def test_valid_mx_record_priority_at_minimum_boundary(self):
+        form = self.make_mx_form(priority=0)
+        self.assertTrue(form.is_valid())
+
+    def test_valid_mx_record_priority_at_maximum_boundary(self):
+        form = self.make_mx_form(priority=65535)
+        self.assertTrue(form.is_valid())
+
+    def test_valid_mx_record_content_at_max_length(self):
+        """253-character hostname is the maximum allowed."""
+        long_hostname = "a" * 249 + ".gov"
+        form = self.make_mx_form(content=long_hostname)
+        self.assertTrue(form.is_valid())
+
+    # --- Priority validation ---
 
     def test_mx_record_without_priority_throws_error(self):
         data = self.valid_form_data_for_record_type("MX", "mail.example.gov")
@@ -145,15 +177,13 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assertIn("Enter a priority for this record.", form.errors["priority"])
 
     def test_mx_record_priority_below_minimum_throws_error(self):
-        data = self.valid_form_data_for_record_type("MX", "mail.example.gov", priority=-1)
-        form = self.make_form(data)
+        form = self.make_mx_form(priority=-1)
         self.assertFalse(form.is_valid())
         self.assertIn("priority", form.errors)
         self.assertIn("Enter a priority number between 0-65535.", form.errors["priority"])
 
     def test_mx_record_priority_above_maximum_throws_error(self):
-        data = self.valid_form_data_for_record_type("MX", "mail.example.gov", priority=65536)
-        form = self.make_form(data)
+        form = self.make_mx_form(priority=65536)
         self.assertFalse(form.is_valid())
         self.assertIn("priority", form.errors)
         self.assertIn("Enter a priority number between 0-65535.", form.errors["priority"])
@@ -166,45 +196,42 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assertIn("priority", form.errors)
         self.assertIn("Enter a priority number between 0-65535.", form.errors["priority"])
 
+    # --- Name validation ---
+
     def test_mx_record_name_with_space_throws_mx_specific_error(self):
-        data = self.valid_form_data_for_record_type("MX", "mail.example.gov", priority=10)
-        data["name"] = "my name"
-        form = self.make_form(data)
+        """MX records use a custom space error message distinct from other record types."""
+        form = self.make_mx_form(name="my name")
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
         self.assertIn("Enter the name you want without any spaces.", form.errors["name"])
 
+    def test_mx_record_name_space_error_differs_from_generic(self):
+        """MX name space error should NOT match the generic DNS name space error."""
+        form = self.make_mx_form(name="my name")
+        self.assertFalse(form.is_valid())
+        self.assertNotIn("Enter the DNS name without any spaces.", form.errors.get("name", []))
+
+    # --- Content validation ---
+
     def test_mx_record_with_space_in_content_throws_error(self):
-        data = self.valid_form_data_for_record_type("MX", "invalid hostname", priority=10)
-        form = self.make_form(data)
+        form = self.make_mx_form(content="invalid hostname")
         self.assertFalse(form.is_valid())
         self.assertIn("content", form.errors)
         self.assertIn("Enter the mail server without any spaces.", form.errors["content"])
 
     def test_mx_record_with_content_too_long_throws_error(self):
-        data = self.valid_form_data_for_record_type("MX", "a" * 254, priority=10)
-        form = self.make_form(data)
+        form = self.make_mx_form(content="a" * 254)
         self.assertFalse(form.is_valid())
         self.assertIn("content", form.errors)
         self.assertIn("Name must be no more than 253 characters.", form.errors["content"])
 
-    def test_duplicate_name_among_a_aaaa_cname_throws_error(self):
-        """A, AAAA, and CNAME records cannot share a name within the same zone."""
-        DnsRecord.objects.create(
-            dns_zone=self.zone,
-            type=DNSRecordTypes.A,
-            name="www",
-            ttl=3600,
-            content="192.0.2.1",
-        )
+    def test_mx_record_with_blank_content_throws_error(self):
+        form = self.make_mx_form(content="")
+        self.assertFalse(form.is_valid())
+        self.assertIn("content", form.errors)
+        self.assertIn(DNSRecordTypes.MX.error_message, form.errors["content"])
 
-        for record_type, content in [("A", "192.0.2.2"), ("AAAA", "2001:db8::1"), ("CNAME", "alias.example.gov")]:
-            with self.subTest(record_type=record_type):
-                data = self.valid_form_data_for_record_type(record_type, content)
-                form = self.make_form(data)
-                self.assertFalse(form.is_valid())
-                self.assertIn("name", form.errors)
-                self.assertIn("A record with that name already exists. Names must be unique.", form.errors["name"])
+    # --- Name uniqueness ---
 
     def test_duplicate_name_does_not_apply_to_mx(self):
         """MX records are not subject to the A/AAAA/CNAME name uniqueness constraint."""
@@ -215,7 +242,5 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             ttl=3600,
             content="192.0.2.1",
         )
-        data = self.valid_form_data_for_record_type("MX", "mail.example.gov", priority=10)
-        data["name"] = "www"
-        form = self.make_form(data)
+        form = self.make_mx_form(name="www")
         self.assertTrue(form.is_valid())

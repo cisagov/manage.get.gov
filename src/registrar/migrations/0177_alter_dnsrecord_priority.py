@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="dnsrecord",
             name="priority",
-            field=models.PositiveSmallIntegerField(
+            field=models.PositiveIntegerField(
                 blank=True,
                 null=True,
                 validators=[
