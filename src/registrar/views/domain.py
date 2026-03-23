@@ -848,9 +848,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """adding a form instance to the dns_record objects
         to display corresponding values in the table rows"""
         for dns_record in dns_records:
-            data_dict = self.record_dict_for_initial_data(dns_record)
-            auto_id = f"id_edit_{dns_record.id}_%s"
-            dns_record.form = DomainDNSRecordForm(initial=data_dict, auto_id=auto_id)  # type: ignore[attr-defined]
+            self._attach_form(dns_record)
 
     def get_context_data(self, **kwargs):
         """Adds custom context."""
@@ -899,20 +897,21 @@ class DomainDNSRecordsView(DomainFormBaseView):
             "comment": form.cleaned_data.get("comment", ""),
         }
 
-    def _attach_form(self, record_obj: DnsRecord, *, bound_form=None) -> None:
-        """Attach a form to the record for template rendering.
+    def _attach_form(self, dns_record: DnsRecord, *, form=None) -> None:
+        """Prepare a DNS record for template rendering by attaching a form and template path.
 
-        - If `bound_form` is provided, attach that (used for validation errors).
+        - If `form` is provided, attach that (used for validation errors).
         - Otherwise attach a blank/initial form from the DB model.
         - Uses the record id to generate unique field IDs across multiple forms on the page.
         """
-        auto_id = f"id_edit_{record_obj.pk}_%s"
-        if bound_form is not None:
-            bound_form.auto_id = auto_id
-            record_obj.form = bound_form  # type: ignore[attr-defined]
-            return
-        initial_data = self.record_dict_for_initial_data(record_obj)
-        record_obj.form = DomainDNSRecordForm(initial=initial_data, auto_id=auto_id)  # type: ignore[attr-defined]
+        auto_id = f"id_edit_{dns_record.id}_%s"
+        if form is not None:
+            form.auto_id = auto_id
+            dns_record.form = form  # type: ignore[attr-defined]
+        else:
+            initial_data = self.record_dict_for_initial_data(dns_record)
+            dns_record.form = DomainDNSRecordForm(initial=initial_data, auto_id=auto_id)  # type: ignore[attr-defined]
+        dns_record.form_template = self.get_form_template(dns_record.type)  # type: ignore[attr-defined]
 
     def _error_response(self, request, form=None, status=200):
         return TemplateResponse(
@@ -956,11 +955,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         if is_edit:
             try:
-                dns_record = DnsRecord.objects.get(pk=is_edit)
+                dns_record = DnsRecord.objects.get(id=is_edit)
             except DnsRecord.DoesNotExist:
                 dns_record = None
             if dns_record:
-                self._attach_form(dns_record, bound_form=form)
+                self._attach_form(dns_record, form=form)
                 hx_trigger_events = json.dumps({"messagesRefresh": ""})
                 return TemplateResponse(
                     request,

@@ -18,20 +18,7 @@
                 <input type="hidden" name="id" value="{{ record_id }}" />
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
-                {% with add_group_class="usa-form-group--unstyled-error" %}
-                    {% input_with_errors dns_record.form.name %}
-                {% endwith %}
-
-                <div class="grid-row grid-gap flex-align-end">
-                    <div class="grid-col-9">
-                        {% with add_group_class="usa-form-group--unstyled-error" %}
-                            {% input_with_errors dns_record.form.content %}
-                        {% endwith %}
-                    </div>
-                    <div class="grid-col-3">
-                        {% input_with_errors dns_record.form.ttl %}
-                    </div>
-                </div>
+                {% include dns_record.form_template with form=dns_record.form %}
                 {% input_with_errors dns_record.form.comment %}
                 <button
                     type="button"
