@@ -49,6 +49,7 @@ from registrar.models.user_domain_role import UserDomainRole
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 
 from api.tests.common import less_console_noise_decorator
+from registrar.utility.enums import DefaultEmail
 
 logger = logging.getLogger(__name__)
 
@@ -2100,6 +2101,10 @@ class MockEppLib(TestCase):
             # Tech and Security only disclose org
             else:
                 disclose_fields = set()
+                # If the Security contact email is not the default value, we should disclose it
+                if contact.contact_type == contact.ContactTypeChoices.SECURITY:
+                    if contact.email not in DefaultEmail.get_all_emails():
+                        disclose_fields.add(DF.EMAIL)
 
         if disclose_types is None:
             disclose_types = {

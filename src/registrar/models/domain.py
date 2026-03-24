@@ -2062,6 +2062,13 @@ class Domain(TimeStampedModel, DomainHelper):
             if type_attr is not None:
                 disclose_type_attrs[field] = type_attr
 
+        # Check if the security email has changed from default.
+        # If security email is our default value, we redact.  If it is not our default, we publish it.
+        # Since this method assumes redact, we only need to encode the negative case here.
+        if contact.contact_type == contact.ContactTypeChoices.SECURITY:
+            if contact.email not in DefaultEmail.get_all_emails():
+                disclose_fields.add(DF.EMAIL)
+
         # Regardless of contact type, always default to redacting everything, and only pass the fields
         # we want to disclose. This means we are always sending, "Only disclose the following fields"
         # which is less efficient but it is easier to think about and remember.
