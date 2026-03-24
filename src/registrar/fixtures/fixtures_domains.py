@@ -129,7 +129,7 @@ class DomainFixture(DomainRequestFixture):
                 domain.expiration_date = cls._generate_fake_expiration_date()
 
             # Only enroll non-legacy domains in DNS hosting
-            if not domain._is_legacy():
+            if not domain.is_legacy:
                 domain.is_enrolled_in_dns_hosting = random.choice([True, False])  # nosec
 
         # Perform bulk update for the domains

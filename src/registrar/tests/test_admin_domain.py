@@ -1158,6 +1158,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
+        Portfolio.objects.all().delete()
 
     @classmethod
     def tearDownClass(self):
@@ -1439,3 +1440,50 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         # Button should still be visible since enrollment failed
         self.assertContains(response, "Enroll domain in DNS hosting")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_enroll_dns_hosting_button_not_visible_for_legacy_domains(self):
+        # Create a legacy domain (no portfolio)
+        domain = Domain.objects.create(
+            name="legacytest.gov",
+            state=Domain.State.UNKNOWN,
+            is_enrolled_in_dns_hosting=False,
+        )
+
+        DomainInformation.objects.create(
+            domain=domain,
+            requester=self.superuser,
+        )
+
+        response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+        # Button should not be visible for legacy domains
+        self.assertNotContains(response, "Enroll domain in DNS hosting")
+
+    @less_console_noise_decorator
+    def test_enroll_dns_hosting_button_not_visible_if_flag_disabled(self):
+        # Create a domain within a portfolio
+        portfolio = Portfolio.objects.create(
+            organization_name="Test Org",
+            organization_type=DomainRequest.OrganizationChoices.FEDERAL,
+            requester=self.superuser,
+        )
+
+        domain = Domain.objects.create(
+            name="flagtest.gov",
+            state=Domain.State.READY,
+            is_enrolled_in_dns_hosting=False,
+        )
+
+        DomainInformation.objects.create(
+            domain=domain,
+            portfolio=portfolio,
+            requester=self.superuser,
+        )
+
+        with override_flag("dns_hosting", active=False):
+            response = self.app.get(reverse("admin:registrar_domain_change", args=[domain.pk]))
+
+            # Button should not be visible if flag is disabled
+            self.assertNotContains(response, "Enroll domain in DNS hosting")

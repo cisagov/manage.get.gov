@@ -14,7 +14,7 @@
         {% with url_name="domain-org-name-address" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Organization" %}
         {% endwith %}
-      {% endif %}    
+      {% endif %}
 
       <li class="usa-sidenav__item">
         {% url 'domain-dns' domain_pk=domain.id as url %}
@@ -23,9 +23,9 @@
         </a>
         {% if request.path|startswith:url %}
         <ul class="usa-sidenav__sublist">
-          {% if dns_hosting %}
+          {% if dns_hosting and domain.is_enrolled_in_dns_hosting %}
           <li class="usa-sidenav__item">
-            {% url 'domain-dns-records' domain_pk=domain.id as url %} 
+            {% url 'domain-dns-records' domain_pk=domain.id as url %}
             <a href="{{ url }}"
               {% if request.path == url %}class="usa-current"{% endif %}
             >
@@ -34,9 +34,9 @@
           </li>
           {% endif %}
 
-          {% if not dns_hosting %}
+          {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
           <li class="usa-sidenav__item">
-            {% url 'domain-dns-nameservers' domain_pk=domain.id as url %} 
+            {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
             <a href="{{ url }}"
               {% if request.path == url %}class="usa-current"{% endif %}
             >
@@ -44,7 +44,7 @@
             </a>
           </li>
           {% endif %}
-          
+
 
           <li class="usa-sidenav__item">
             {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
@@ -72,7 +72,7 @@
         {% endif %}
       </li>
 
-      
+
       {% if portfolio %}
           {% comment %} Only show this menu option if the user has the perms to do so {% endcomment %}
           {% if has_any_domains_portfolio_permission and has_view_portfolio_permission %}
@@ -99,13 +99,13 @@
           {% include "includes/domain_lifecycle_nav.html" %}
         {% endif %}
       {% endif %}
-    
+
       {% if is_domain_manager and domain_is_expiring_or_expired and not domain_deletion_flag %}
         {% with url_name="domain-renewal" %}
           {% include "includes/domain_sidenav_item.html" with item_text="Renewal form" %}
         {% endwith %}
       {% endif %}
-      
+
       {% endif %}
     </ul>
   </nav>
