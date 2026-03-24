@@ -264,7 +264,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
             with self.subTest(view_name=view_name):
                 if view_name == "domain-dns-records":
                     with override_flag("dns_hosting", active=True):
-                        self.domain_enrolled_in_dns_hosting.permissions.get().delete()  # user no longer has a role on this domain
+                        self.domain_enrolled_in_dns_hosting.permissions.get().delete()  # remove role
                         response = self.client.get(
                             reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
                         )
