@@ -191,9 +191,15 @@ th {
     th:nth-child(1),
     td:nth-child(1){
       width:20%;
-      button{
+      padding-right:0.5em;
+      .usa-button{
         float:right;
+        column-gap: 0;
+        .usa-icon{
+          top:5px;
+        }
       }
+  
     }
 
     th:nth-child(2),
