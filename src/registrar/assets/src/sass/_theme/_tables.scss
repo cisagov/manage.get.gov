@@ -190,12 +190,15 @@ th {
 
     th:nth-child(1),
     td:nth-child(1){
-      width:8%;
+      width:20%;
+      button{
+        float:right;
+      }
     }
 
     th:nth-child(2),
     td:nth-child(2){
-      width:42%;
+      width:30%;
     }
 
 

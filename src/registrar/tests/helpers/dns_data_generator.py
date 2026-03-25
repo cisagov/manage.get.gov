@@ -137,6 +137,7 @@ def create_dns_record(zone, **kwargs):
     record_name = kwargs.get("record_name", "www")
     record_type = kwargs.get("record_type", "A")
     record_content = kwargs.get("record_content", "192.168.1.1")
+    record_comment = kwargs.get("record_comment", "")
     x_record_id = kwargs.get("x_record_id", "example_x_record_id")
     default_datetime = datetime(2026, 1, 19, 12, 0, 0)
     x_created_at = kwargs.get("record_x_created_at", default_datetime)
@@ -147,6 +148,7 @@ def create_dns_record(zone, **kwargs):
         name=record_name,
         type=record_type,
         content=record_content,
+        comment=record_comment,
         ttl=ttl,
     )
     vendor_dns_record = VendorDnsRecord.objects.create(

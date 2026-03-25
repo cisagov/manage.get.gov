@@ -1,6 +1,11 @@
-<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == {{ record_id }} ? 'hide-td-borders' : ''">
+<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ record_id }}-0' || showFormId ==  '{{ record_id }}-1' ? 'hide-td-borders' : ''">
     <td id="dns-type-{{ record_id }}" data-label="Type">
         {{dns_record.type}}
+
+
+        {% if dns_record.comment %}
+            {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
+        {% endif %}
     </td>
     <td id="dns-name-{{ record_id }}" data-label="Name">
         {{dns_record.name}}
@@ -15,9 +20,9 @@
         <div class="tablet:display-flex tablet:flex-row">
             <button type="button"
             class="usa-button usa-button--unstyled margin-right-2 margin-top-0"
-            x-on:click="showFormId = (showFormId === {{ record_id }} ? null : {{ record_id }})"
+            x-on:click="showFormId = (showFormId === '{{ record_id }}-1' ? null : '{{ record_id }}-1') "
             aria-expanded="false"
-            :aria-expanded="showFormId == {{ record_id }} ? 'true' : 'false'"
+            :aria-expanded="showFormId == '{{ record_id }}-1' ? 'true' : 'false'"
             aria-controls="dnsrecord-edit-row-{{ record_id }}"
             aria-label="Edit {{ dns_record.name }}"
             >
@@ -33,8 +38,8 @@
                         focusable="false" 
                         role="img"
                         width="8">
-                        <use x-show="showFormId != {{ record_id }}" xlink:href="/public/img/sprite.svg#expand_more" ></use>
-                        <use x-show="showFormId == {{ record_id }}" xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                        <use x-show="showFormId !='{{ record_id }}-1' " xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="showFormId == '{{ record_id }}-1' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
             
             </button>

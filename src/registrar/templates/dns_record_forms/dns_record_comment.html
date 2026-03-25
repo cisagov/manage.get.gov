@@ -1,0 +1,28 @@
+<button type="button"
+            class="usa-button usa-button--unstyled  margin-top-0"
+            x-on:click="showFormId = (showFormId === '{{ record_id }}-0' ? null : '{{ record_id }}-0' )"
+            aria-expanded="false"
+         >
+
+        <span class="usa-sr-only">{{ dns_record.type }} comment for {{ dns_record.name }}</span>
+        
+         <svg   
+             class="usa-icon" 
+             aria-hidden="true" 
+             focusable="false" 
+             role="img"
+             width="8">
+                    <use href="/public/img/sprite.svg#comment"></use>
+                </svg>
+
+                    <svg
+                        class="usa-icon" 
+                        aria-hidden="true" 
+                        focusable="false" 
+                        role="img"
+                        width="8">
+                        <use x-show="showFormId != '{{ record_id }}-0'" xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="showFormId == '{{ record_id }}-0'" xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                    </svg>
+            
+</button>
