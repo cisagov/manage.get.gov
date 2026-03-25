@@ -69,35 +69,8 @@ class Command(BaseCommand):
             f"db_pk={contact.pk} "
             f"registry_id={contact.registry_id} "
             f"domain={domain_name} "
-            f"type={contact.contact_type}"
+            f"type={contact.contact_type} "
         )
-
-    def _format_disclose(self, disclose: Any) -> str:
-        flag_value = getattr(disclose, "flag", None)
-        if flag_value is True:
-            flag = "T"
-        elif flag_value is False:
-            flag = "F"
-        else:
-            flag = "?"
-
-        fields_value = getattr(disclose, "fields", None)
-        if fields_value is None:
-            fields = "?"
-        else:
-            fields = ",".join(sorted(getattr(field, "value", str(field)) for field in fields_value))
-
-        types_value = getattr(disclose, "types", None)
-        if types_value is None:
-            types = "?"
-        else:
-            types = ",".join(
-                sorted(
-                    f"{getattr(field, 'value', str(field))}:{type_value}" for field, type_value in types_value.items()
-                )
-            )
-
-        return f"flag={flag} fields=[{fields}] types=[{types}]"
 
     def handle(self, *args: object, **options: Any) -> None:
         contact_types = options.get("contact_type")
@@ -150,15 +123,18 @@ class Command(BaseCommand):
         for contact in contacts_to_update.iterator():
             processed += 1
             try:
+                existing_contact = contact.domain._request_contact_info(contact)
+                existing_disclose = existing_contact.disclose
+                logger.info("Existing disclose for %s:", self._contact_ref(contact))
+                logger.info(existing_disclose)
                 disclose = contact.domain._disclose_fields(contact=contact)
-                logger.info(
-                    "%s disclose settings for %s -> %s",
-                    "Would update" if dry_run else "Updating",
-                    self._contact_ref(contact),
-                    self._format_disclose(disclose),
-                )
+                logger.info("Proposed new disclose:")
+                logger.info(disclose)
 
-                if not dry_run:
+                if dry_run:
+                    logger.info("Would update")
+                else:
+                    logger.info("Updating")
                     # Computes disclose via Domain._disclose_fields and sends UpdateContact.
                     contact.domain._update_epp_contact(contact=contact)
             except Exception:

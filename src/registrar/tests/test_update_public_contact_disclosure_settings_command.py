@@ -1,21 +1,20 @@
 from unittest.mock import patch
 
 from django.core.management import call_command
-from django.test import TestCase
 from epplib.models import common
 
-from registrar.management.commands.update_public_contact_disclosure_settings import (
-    Command as UpdatePublicContactDisclosureSettingsCommand,
-)
 from registrar.models import Domain
 from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 
-from .common import less_console_noise
+from .common import MockEppLib, less_console_noise
+
+from epplibwrapper import common as epp
 
 
-class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
+class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
     def setUp(self):
+        super().setUp()
         self.domain = Domain.objects.create(name="example.gov")
 
         self.contact = PublicContact(
@@ -31,9 +30,13 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
-        self.contact.registry_id = "regContact123456"
+        self.contact.registry_id = "regContact"
         self.contact.domain = self.domain
         self.contact.save(skip_epp_save=True)
+
+        self.mockRegistrantContact = self.InfoDomainWithContacts.dummyInfoContactResultData(
+            id="regContact", email="help@get.gov"
+        )
 
     def test_dry_run_does_not_update_registry(self):
         with less_console_noise(), patch("registrar.models.domain.Domain._update_epp_contact") as update_mock:
@@ -65,52 +68,79 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
         update_mock.assert_called_once()
 
     def test_format_disclose_includes_flag_and_overrides(self):
-        cmd = UpdatePublicContactDisclosureSettingsCommand()
         DF = common.DiscloseField
 
         with self.subTest(contact_type="registrant"):
             disclose = self.domain._disclose_fields(contact=self.contact)
-            self.assertEqual(
-                cmd._format_disclose(disclose),
-                "flag=T "
-                f"fields=[{DF.CC},{DF.CITY},{DF.ORG},{DF.SP}] "
-                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,"
-                f"{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]",
+            expected_disclose = epp.Disclose(
+                flag=True,
+                fields={DF.CC, DF.CITY, DF.ORG, DF.SP},
+                types={
+                    DF.ADDR: "loc",
+                    DF.CC: "loc",
+                    DF.CITY: "loc",
+                    DF.NAME: "loc",
+                    DF.ORG: "loc",
+                    DF.PC: "loc",
+                    DF.SP: "loc",
+                    DF.STREET: "loc",
+                },
             )
+
+            self.assertEqual(disclose, expected_disclose)
 
         with self.subTest(contact_type="security_non_default_email"):
             security = self.domain.get_default_security_contact()
             # PublicContact.registry_id is constrained to max_length=16.
-            security.registry_id = "regContact123456"
+            security.registry_id = "regContact"
             security.email = "security@example.gov"
 
             security.save(skip_epp_save=True)
 
             disclose = self.domain._disclose_fields(contact=security)
 
-            expected = (
-                "flag=T "
-                f"fields=[{DF.EMAIL}] "
-                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,"
-                f"{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]"
+            expected_disclose = epp.Disclose(
+                flag=True,
+                fields={DF.EMAIL},
+                types={
+                    DF.ADDR: "loc",
+                    DF.CC: "loc",
+                    DF.CITY: "loc",
+                    DF.NAME: "loc",
+                    DF.ORG: "loc",
+                    DF.PC: "loc",
+                    DF.SP: "loc",
+                    DF.STREET: "loc",
+                },
             )
 
-            self.assertEqual(cmd._format_disclose(disclose), expected)
+            self.assertEqual(disclose, expected_disclose)
+
+    def test_format_disclose_security_default_email(self):
+        DF = common.DiscloseField
 
         with self.subTest(contact_type="security_default_email"):
             security = self.domain.get_default_security_contact()
             # PublicContact.registry_id is constrained to max_length=16.
-            security.registry_id = "regContact789012"
+            security.registry_id = "regContact"
 
             security.save(skip_epp_save=True)
 
             disclose = self.domain._disclose_fields(contact=security)
 
-            expected = (
-                "flag=T "
-                f"fields=[] "
-                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,"
-                f"{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]"
+            expected_disclose = epp.Disclose(
+                flag=True,
+                fields=set(),
+                types={
+                    DF.ADDR: "loc",
+                    DF.CC: "loc",
+                    DF.CITY: "loc",
+                    DF.NAME: "loc",
+                    DF.ORG: "loc",
+                    DF.PC: "loc",
+                    DF.SP: "loc",
+                    DF.STREET: "loc",
+                },
             )
 
-            self.assertEqual(cmd._format_disclose(disclose), expected)
+            self.assertEqual(disclose, expected_disclose)
