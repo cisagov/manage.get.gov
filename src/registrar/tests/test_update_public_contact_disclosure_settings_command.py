@@ -74,7 +74,8 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
                 cmd._format_disclose(disclose),
                 "flag=T "
                 f"fields=[{DF.CC},{DF.CITY},{DF.ORG},{DF.SP}] "
-                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]",
+                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,"
+                f"{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]",
             )
 
         with self.subTest(contact_type="security_non_default_email"):
@@ -90,7 +91,8 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
             expected = (
                 "flag=T "
                 f"fields=[{DF.EMAIL}] "
-                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]"
+                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,"
+                f"{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]"
             )
 
             self.assertEqual(cmd._format_disclose(disclose), expected)
@@ -107,7 +109,8 @@ class TestUpdatePublicContactDisclosureSettingsCommand(TestCase):
             expected = (
                 "flag=T "
                 f"fields=[] "
-                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]"
+                f"types=[{DF.ADDR}:loc,{DF.CC}:loc,{DF.CITY}:loc,{DF.NAME}:loc,"
+                f"{DF.ORG}:loc,{DF.PC}:loc,{DF.SP}:loc,{DF.STREET}:loc]"
             )
 
             self.assertEqual(cmd._format_disclose(disclose), expected)
