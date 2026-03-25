@@ -937,7 +937,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         - Uses the record id to generate unique field IDs across multiple forms on the page.
         """
         auto_id = f"id_edit_{dns_record.id}_%s"
-        domain_name = self.object.name
         if form is not None:
             form.auto_id = auto_id
             dns_record.form = form  # type: ignore[attr-defined]
