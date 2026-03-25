@@ -34,11 +34,14 @@ class Command(BaseCommand):
             "--contact-type",
             "--contact_type",
             action="append",
-            choices=[choice.value for choice in PublicContact.ContactTypeChoices],
-            help=(
-                "Restrict to one or more contact types. (e.g. --contact-type registrant --contact-type security)."
-                "If omitted, all contact types are included.  The website currently updates registrant only."
-            ),
+            required=True,
+            choices=[
+                PublicContact.ContactTypeChoices.REGISTRANT,
+                PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+                PublicContact.ContactTypeChoices.SECURITY,
+                PublicContact.ContactTypeChoices.TECHNICAL,
+            ],
+            help=("Choose one or more contact types. (e.g. --contact-type registrant --contact-type security)."),
         )
 
         parser.add_argument(
@@ -55,8 +58,9 @@ class Command(BaseCommand):
     def _build_queryset(self, *, target_domain: str, contact_types: list[str] | None):
         qs = PublicContact.objects.select_related("domain").all().order_by("id")
         qs = qs.filter(domain__name__iexact=target_domain)
-        if contact_types:
-            qs = qs.filter(contact_type__in=contact_types)
+        logger.debug("Query set after domain filter: %s", qs.values)
+        qs = qs.filter(contact_type__in=contact_types)
+        logger.debug("Query set after contact_type filter: %s", qs.values)
         return qs
 
     def _contact_ref(self, contact: PublicContact) -> str:
@@ -97,23 +101,30 @@ class Command(BaseCommand):
 
     def handle(self, *args: object, **options: Any) -> None:
         contact_types = options.get("contact_type")
+        if not contact_types:
+            raise ValueError("--contact-types is required")
+        # if one contact type was passed in, convert to a list
+        elif isinstance(contact_types, str):
+            contact_types = [contact_types]
+
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain")
 
         if not target_domain:
             raise ValueError("--target-domain is required")
 
-        qs = self._build_queryset(
+        logger.info("Building queryset for: %s, %s", contact_types, target_domain)
+        contacts_to_update = self._build_queryset(
             target_domain=target_domain,
             contact_types=contact_types,
         )
-        total_count = qs.count()
+        total_count = contacts_to_update.count()
         logger.info("Found %s PublicContact record(s) in scope.", total_count)
 
         proposed = (
             "==Proposed Changes==\n"
             f"Target domain: {target_domain}\n"
-            f"Contact types: {contact_types or 'ALL'}\n"
+            f"Contact types: {contact_types}\n"
             f"Dry run: {dry_run}\n\n"
             "Action: compute disclose via Domain._disclose_fields and "
             "update the registry via Domain._update_epp_contact (when not dry-run)."
@@ -136,7 +147,7 @@ class Command(BaseCommand):
         processed = 0
         failed = 0
 
-        for contact in qs.iterator():
+        for contact in contacts_to_update.iterator():
             processed += 1
             try:
                 disclose = contact.domain._disclose_fields(contact=contact)
