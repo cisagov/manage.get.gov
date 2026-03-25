@@ -267,8 +267,8 @@ class Domain(TimeStampedModel, DomainHelper):
             self.expiration_date = None
 
         # Prevent enrolling legacy domains into DNS hosting
-        if self.is_enrolled_in_dns_hosting and self._is_legacy():
-            if self._is_legacy():
+        if self.is_enrolled_in_dns_hosting and self.is_legacy:
+            if self.is_legacy:
                 raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
 
         super().save(force_insert, force_update, using, update_fields)
@@ -1051,7 +1051,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 security_contact = self.get_default_security_contact()
                 security_contact.save()
 
-    def _is_legacy(self):
+    @property
+    def is_legacy(self):
         """Check if domain is a legacy domain."""
         if not hasattr(self, "domain_info") or self.domain_info is None:
             return False
@@ -2656,4 +2657,5 @@ class Domain(TimeStampedModel, DomainHelper):
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()
         # Delete domain
-        self.delete()
+        self.deleteInEpp()
+        self.save()

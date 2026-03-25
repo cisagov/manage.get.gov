@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass
 from django.conf import settings
 
+from registrar.utility.errors import APIError
+
 logger = logging.getLogger(__name__)
 
 
@@ -116,6 +118,43 @@ class CloudflareService:
             raise
         return resp.json()
 
+    def update_zone_dns_settings(
+        self, zone_id: str, *, zone_mode: str = "dns_only", nameservers_type: str = "custom.tenant", ns_set: int = 1
+    ) -> CloudflareDnsSettingsUpdateResponse:
+        """PATCH /zones/{zone_id}/dns_settings
+        Required settings:
+        - zone_mode: "standard" | "cdn_only" | "dns_only"
+        - nameservers_type: "cloudflare.standard"
+                "cloudflare.standard.random"
+                "custom.account"
+                "custom.tenant"
+        - ns_set: Min 1, max 5. Default 1 when not passed as argument.
+        """
+        appended_url = f"/zones/{zone_id}/dns_settings"
+        data = {
+            "zone_mode": zone_mode,
+            "nameservers": {"ns_set": ns_set, "type": nameservers_type},
+        }
+
+        try:
+            resp = self.client.patch(appended_url, json=data)
+            resp.raise_for_status()
+            logger.info(
+                "Updated zone DNS settings for zone_id=%s (zone_mode=%s, nameservers.type=%s, namservers.ns_set=%s)",
+                zone_id,
+                zone_mode,
+                nameservers_type,
+                ns_set,
+            )
+        except RequestError as e:
+            logger.error(f"Failed to update dns settings for zone {zone_id}: {e}")
+            raise
+        except HTTPStatusError as e:
+            logger.error(f"Error {e.response.status_code} while updating dns settings: {e}")
+            raise
+
+        return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
+
     def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
         try:
@@ -126,8 +165,9 @@ class CloudflareService:
             logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while creating dns record: {e}")
-            raise
+            error_body = e.response.text
+            logger.error(f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {error_body}")
+            raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}")
         return resp.json()
 
     def get_page_accounts(self, page: int, per_page: int):
@@ -189,6 +229,8 @@ class CloudflareService:
             logger.error(f"Failed to update dns record {record_id} for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while updating dns record: {e}")
-            raise
+            logger.error(
+                f"Error {e.response.status_code} while updating dns record: {e}\nResponse body: {e.response.text}"
+            )
+            raise APIError(f"Cloudflare update_dns_record failed: {e.response.status_code} {e.response.text}")
         return resp.json()
