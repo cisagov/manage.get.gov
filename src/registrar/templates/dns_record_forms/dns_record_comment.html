@@ -3,6 +3,7 @@
             x-on:click="showFormId = (showFormId === '{{ record_id }}-0' ? null : '{{ record_id }}-0' )"
             aria-expanded="false"
             :aria-expanded="showFormId == '{{ record_id }}-0' ? 'true' : 'false'"
+            id="comment-button"
          >
 
         <span class="usa-sr-only">{{ dns_record.type }} comment for {{ dns_record.name }}</span>
