@@ -17,7 +17,7 @@
                 {# Dja has margin styles defined on inputs as is. Lets work with it, rather than fight it. #}
                 <span class="mini-spacer"></span>
                 <input type="submit" value="Get registry status" name="_get_status">
-                {% if dns_hosting_enabled and not original.is_enrolled_in_dns_hosting %}
+                {% if dns_hosting_enabled and not original.is_enrolled_in_dns_hosting and not original.is_legacy %}
                 <span class="mini-spacer"></span>
                 <input
                     type="submit"
@@ -106,8 +106,8 @@
                     <ul class="usa-button-group">
                         <li class="usa-button-group__item">
                             <button
-                            type="submit" 
-                            class="usa-button dja-form-placeholder" 
+                            type="submit"
+                            class="usa-button dja-form-placeholder"
                             name="_extend_expiration_date"
                             >
                                 Yes, extend date
@@ -178,8 +178,8 @@
                     <ul class="usa-button-group">
                         <li class="usa-button-group__item">
                             <button
-                            type="submit" 
-                            class="usa-button dja-form-placeholder" 
+                            type="submit"
+                            class="usa-button dja-form-placeholder"
                             name="_place_client_hold"
                             >
                                 Yes, place hold
@@ -249,8 +249,8 @@
                     <ul class="usa-button-group">
                         <li class="usa-button-group__item">
                             <button
-                            type="submit" 
-                            class="usa-button dja-form-placeholder" 
+                            type="submit"
+                            class="usa-button dja-form-placeholder"
                             name="_delete_domain"
                             >
                                 Yes, remove from registry
