@@ -16,6 +16,7 @@ from registrar.models import (
     DnsRecord_VendorDnsRecord as RecordsJoin,
     User,
 )
+from registrar.models.portfolio import Portfolio
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,9 @@ def create_domain(**kwargs):
 
     try:
         domain = Domain.objects.create(name=domain_name)
-        DomainInformation.objects.get_or_create(requester=test_user, domain=domain)
+        default_portfolio, _ = Portfolio.objects.get_or_create(organization_name="Example Org", requester=test_user)
+        portfolio = kwargs.get("portfolio", default_portfolio)
+        DomainInformation.objects.get_or_create(requester=test_user, domain=domain, portfolio=portfolio)
         return domain
     except IntegrityError as e:
         logger.error(
@@ -128,7 +131,8 @@ def create_initial_dns_setup(domain=None, **kwargs):
     domain = domain or create_domain()
     dns_account = kwargs.get("dns_account", create_dns_account(domain))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
-
+    domain.is_enrolled_in_dns_hosting = True
+    domain.save()
     return domain, dns_account, dns_zone
 
 
@@ -178,4 +182,6 @@ def delete_all_dns_data():
     VendorDnsAccount.objects.all().delete()
     DnsAccount.objects.all().delete()
     AccountsJoin.objects.all().delete()
+    DomainInformation.objects.all().delete()
+    Portfolio.objects.all().delete()
     Domain.objects.all().delete()
