@@ -48,7 +48,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
-        # Uncomment test case after CNAME content validations finalized
+        # TODO: Uncomment test case after CNAME content validations finalized
         # {
         #     "id": "test-cname",
         #     "name": "www",

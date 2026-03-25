@@ -74,7 +74,7 @@ class DnsRecord(TimeStampedModel):
     def _cname_record_name_matches_hostname(self, record_name, hostname):
         """Validate that CNAME record name does not match hostname."""
         cf_record_name = record_name
-        # Uncomment after later ticket to derive zone name from DNS record form (not model)
+        # TODO: Uncomment after later ticket to derive zone name from DNS record form (not model)
         # zone_name = self.dns_zone.name
         # if record_name == "@":
         #     cf_record_name = zone_name

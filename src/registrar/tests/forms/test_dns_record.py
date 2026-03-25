@@ -19,7 +19,7 @@ class BaseDomainDNSRecordFormTest(TestCase):
         self.VALID_CONTENT_BY_TYPE = {
             "A": "192.0.2.10",
             "AAAA": "2001:db8::1234:5678",
-            # Comment out CNAME test case after implementing CNAME host name validation
+            # TODO: Comment out CNAME test case after implementing CNAME host name validation
             # "CNAME": "www.example.com",
             "TXT": "Some valid text",
         }
@@ -101,7 +101,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": "2008:db8:1234:5678",
             "AAAA": "192.0.2.10",
-            # Comment out and complete CNAME test case when CNAME validation is implemented
+            # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
             # "CNAME": "..."
         }
         invalid_quotes_txt_error = (
