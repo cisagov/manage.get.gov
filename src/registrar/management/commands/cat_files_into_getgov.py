@@ -10,7 +10,6 @@ from django.core.management import BaseCommand
 
 from registrar.management.commands.utility.terminal_helper import TerminalHelper
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -7,7 +7,6 @@ from registrar.models import (
 )
 from registrar.models.allowed_email import AllowedEmail
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 
@@ -41,6 +40,13 @@ class UserFixture:
             "last_name": "Osos",
             "email": "kosos@truss.works",
             "title": "Grove keeper",
+        },
+        {
+            "username": "47b9668b-6764-4818-a8cd-3505494093a6",
+            "first_name": "Natalie",
+            "last_name": "Wong",
+            "email": "Wai-wan.wong@ecstech.com",
+            "title": "Designer",
         },
         {
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",
@@ -178,9 +184,16 @@ class UserFixture:
             "email": "gaby+1@truss.works",
         },
         {
-            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+            "username": "02f96e16-fff9-4eb1-bb7e-e61a17c63f3f",
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
+            "email": "nicolle.leclair.gov@ecstech.com",
+        },
+        {
+            "username": "106632de-8681-43db-85dd-83857c55660f",
+            "first_name": "Natalie-Analyst",
+            "last_name": "Wong-Analyst",
+            "email": "wai-wan.wong@associates.cisa.dhs.gov",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
@@ -241,6 +254,20 @@ class UserFixture:
             "first_name": "Charlie",
             "last_name": "Wells",
             "email": "charles.wells.analyst@ecstech.com",
+            "title": "ANALYST",
+        },
+        {
+            "username": "9db645e5-6db1-457a-9a93-abecfb98c5a5",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON",
+            "email": "feedback+9@get.gov",
+            "title": "ANALYST",
+        },
+        {
+            "username": "1ddd1444-937e-4a0a-9202-e68f2851edde",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON",
+            "email": "feedback+10@get.gov",
             "title": "ANALYST",
         },
     ]

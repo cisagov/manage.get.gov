@@ -20,6 +20,7 @@ import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 import { initButtonLinks } from '../getgov-admin/button-utils.js';
 import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
+import { initDynamicDNSRecordFormFields } from './domain-dns-record-content.js';
 
 initDomainValidators();
 
@@ -69,3 +70,10 @@ domainDeletionEventListener();
 
 // Init the portfolios nav dropdown
 initOrganizationsNavDropdown();
+
+// Init the dynamic DNS content labels and ensure HTMX re-runs after POST
+initDynamicDNSRecordFormFields();
+
+document.addEventListener('htmx:afterSettle', (evt) => {
+    initDynamicDNSRecordFormFields();
+});

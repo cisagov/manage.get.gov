@@ -111,13 +111,14 @@ URL_PERMISSIONS = {
     "get_domain_requests_json": [ALL],
     "get_portfolio_members_json": [HAS_PORTFOLIO_MEMBERS_ANY_PERM],
     "get_member_domains_json": [HAS_PORTFOLIO_MEMBERS_ANY_PERM],
+    "get-messages": [IS_DOMAIN_MANAGER, IS_STAFF],
     # User profile
     "finish-user-profile-setup": [ALL],
     "user-profile": [ALL],
     # Invitation
     "invitation-cancel": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     # DNS Hosting
-    "domain-dns-records": [IS_STAFF],
+    "domain-dns-records": [IS_DOMAIN_MANAGER, IS_STAFF],
     # Domain request wizard
     "start": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "finished": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
@@ -139,6 +140,7 @@ URL_PERMISSIONS = {
     "portfolio_additional_details": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "domain-delete": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-lifecycle": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
+    "version": [ALL],
 }
 
 UNCHECKED_URLS = [
@@ -150,6 +152,7 @@ UNCHECKED_URLS = [
     "rdap",
     "todo",
     "logout",
+    "version",
 ]
 
 

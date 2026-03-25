@@ -21,6 +21,8 @@ class DnsAccountTest(TestCase):
 
     def tearDown(self):
         DnsAccount.objects.all().delete()
+        AccountsJoin.objects.all().delete()
+        VendorDnsAccount.objects.all().delete()
 
     def test_dns_account_creation_success(self):
         try:

@@ -553,6 +553,7 @@ class AlternativeDomainForm(RegistrarForm):
         label="Alternative domain",
         validators=[get_max_length_validator(DOMAIN_LABEL)],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
+        strip=False,
     )
 
 
@@ -639,6 +640,7 @@ class DotGovDomainForm(RegistrarForm):
         },
         validators=[get_max_length_validator(DOMAIN_LABEL)],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
+        strip=False,
     )
 
 

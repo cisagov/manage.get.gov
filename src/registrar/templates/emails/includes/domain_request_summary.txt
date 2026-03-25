@@ -16,7 +16,8 @@ Election office:
 {{ domain_request.is_election_board|yesno:"Yes,No,Incomplete" }}
 {% endif %}
 Organization:
-{% spaceless %}{{ domain_request.federal_agency }}
+{% spaceless %}
+{% if domain_request.show_organization_federal %}{{ domain_request.federal_agency }}{% endif %}
 {{ domain_request.organization_name }}
 {{ domain_request.address_line1 }}{% if  domain_request.address_line2  %}
 {{ domain_request.address_line2 }}{% endif %}

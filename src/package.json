@@ -20,7 +20,7 @@
     "@uswds/compile": "1.2.1",
     "babel-loader": "^9.2.1",
     "sass-loader": "^12.6.0",
-    "webpack": "^5.96.1",
+    "webpack": "^5.105.0",
     "webpack-stream": "^7.0.0"
   },
   "overrides": {

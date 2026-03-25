@@ -122,6 +122,7 @@ class TestURLAuth(TestCase):
         "/api/v1/get-report/current-full",
         "/api/v1/rdap/",
         "/health",
+        "/version",
     ]
 
     # We will test that the following URLs are not protected by auth

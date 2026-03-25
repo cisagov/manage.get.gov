@@ -12,7 +12,6 @@ import logging
 
 from django.db import models
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +22,11 @@ class DomainInformation(TimeStampedModel):
     management's user information are based on domain_request, but we cannot change
     the domain request once approved, so copying them that way we can make changes
     after its approved. Most fields here are copied from DomainRequest."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Cache the original generic_org_type to detect changes on save
+        self._original_generic_org_type = self.generic_org_type
 
     class Meta:
         """Contains meta information about this class"""
@@ -279,6 +283,44 @@ class DomainInformation(TimeStampedModel):
         except Exception:
             return ""
 
+    def get_registrant_contact_data(self):
+        """Return registrant contact values for EPP contact creation."""
+        if self.portfolio and self.portfolio.organization_name:
+            registrant_org = self.portfolio.organization_name
+        elif self.federal_agency and self.federal_agency.agency == "Non-Federal Agency":
+            registrant_org = self.organization_name
+        elif self.federal_agency:
+            registrant_org = self.federal_agency.agency
+        else:
+            registrant_org = self.converted_organization_name
+
+        registrant_city = None
+        registrant_state_territory = None
+        # First try and use the sub_organization city / state if present
+        if self.sub_organization:
+            registrant_city = self.sub_organization.city
+            registrant_state_territory = self.sub_organization.state_territory
+        # if the sub_organization city or state is null, fallback to the portfolio values
+        if self.portfolio and registrant_city is None:
+            registrant_city = self.portfolio.city
+        if self.portfolio and registrant_state_territory is None:
+            registrant_state_territory = self.portfolio.state_territory
+        # if the city or state are still null, use the default value
+        if registrant_city is None:
+            registrant_city = self.city
+        if registrant_state_territory is None:
+            registrant_state_territory = self.state_territory
+        # If they are still null, check_missing_fields will raise a user facing error message
+
+        return {
+            "org": registrant_org,
+            "street1": self.converted_address_line1,
+            "street2": self.converted_address_line2,
+            "city": registrant_city,
+            "state_territory": registrant_state_territory,
+            "zipcode": self.converted_zipcode,
+        }
+
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
@@ -341,10 +383,55 @@ class DomainInformation(TimeStampedModel):
 
         return self
 
+    def clear_irrelevant_fields(self):
+        """Clears fields that are no longer relevant when the organization type changes.
+
+        When generic_org_type changes, certain conditional fields become irrelevant:
+        - federal_agency, federal_type: Only relevant for Federal orgs
+        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
+        - is_election_board: Not applicable to Federal, Interstate, or School District
+        - about_your_organization: Only for Special District or Interstate orgs
+        """
+
+        old_org_type = getattr(self, "_original_generic_org_type", None)
+        new_org_type = self.generic_org_type
+
+        # Only clear fields if the org type actually changed
+        if old_org_type and new_org_type != old_org_type:
+            # Clear federal-specific fields if not federal
+            if new_org_type != DomainRequest.OrganizationChoices.FEDERAL:
+                self.federal_agency = None
+                self.federal_type = None
+
+            # Clear tribal-specific fields if not tribal
+            if new_org_type != DomainRequest.OrganizationChoices.TRIBAL:
+                self.federally_recognized_tribe = None
+                self.state_recognized_tribe = None
+                self.tribe_name = None
+
+            # Clear election board field if org type doesn't show election question
+            # Election question shows for all types except Federal, Interstate, and School District
+            excluded_from_election = [
+                DomainRequest.OrganizationChoices.FEDERAL,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
+            ]
+            if new_org_type in excluded_from_election:
+                self.is_election_board = None
+
+            # Clear "about your organization" field if not special district or interstate
+            about_org_types = [
+                DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
+                DomainRequest.OrganizationChoices.INTERSTATE,
+            ]
+            if new_org_type not in about_org_types:
+                self.about_your_organization = None
+
     def save(self, *args, **kwargs):
         """Save override for custom properties"""
         self.sync_yes_no_form_fields()
         self.sync_organization_type()
+        self.clear_irrelevant_fields()
         super().save(*args, **kwargs)
 
     @classmethod
@@ -481,20 +568,20 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_senior_official(self):
         if self.portfolio:
-            return self.portfolio.display_senior_official
-        return self.display_senior_official
+            return self.portfolio.senior_official
+        return self.senior_official
 
     @property
     def converted_address_line1(self):
         if self.portfolio:
-            return self.portfolio.display_address_line1
-        return self.display_address_line1
+            return self.portfolio.address_line1
+        return self.address_line1
 
     @property
     def converted_address_line2(self):
         if self.portfolio:
-            return self.portfolio.display_address_line2
-        return self.display_address_line2
+            return self.portfolio.address_line2
+        return self.address_line2
 
     @property
     def converted_city(self):
@@ -511,14 +598,14 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_zipcode(self):
         if self.portfolio:
-            return self.portfolio.display_zipcode
-        return self.display_zipcode
+            return self.portfolio.zipcode
+        return self.zipcode
 
     @property
     def converted_urbanization(self):
         if self.portfolio:
-            return self.portfolio.display_urbanization
-        return self.display_urbanization
+            return self.portfolio.urbanization
+        return self.urbanization
 
     # ----- Portfolio Properties (display values)-----
     @property

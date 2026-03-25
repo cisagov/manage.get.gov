@@ -15,7 +15,6 @@ from django.db.models import F, Q
 
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices, UserPortfolioPermissionChoices
 
-
 logger = logging.getLogger(__name__)
 
 

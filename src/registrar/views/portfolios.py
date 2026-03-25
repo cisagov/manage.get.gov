@@ -48,7 +48,6 @@ from django.db import IntegrityError
 
 from registrar.views.utility.invitation_helper import get_org_membership
 
-
 logger = logging.getLogger(__name__)
 
 

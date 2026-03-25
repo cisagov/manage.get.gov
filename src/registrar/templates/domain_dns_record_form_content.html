@@ -1,0 +1,42 @@
+{% load static field_helpers url_helpers %}
+
+{% csrf_token %}
+<h2>Add record</h2>
+
+<div
+    class="grid-row grid-gap"
+    x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
+    x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }"
+>
+    <div class="grid-col-3">
+        {% input_with_errors form.type %}
+    </div>
+</div>
+
+<div x-cloak x-show="recordType" x-cloak>
+  
+    <template x-if="recordType !== 'TXT' " >
+        <!-- Only show this for forms that are not txt -->
+        <div>
+              {% include "dns_record_forms/base_record_form.html" with form=form %}
+        </div>
+    
+    </template>
+    <template x-if="recordType === 'TXT' ">
+        <div>
+              {% include "dns_record_forms/txt_record_form.html" with form=form %}
+        </div> 
+    </template>
+    {% input_with_errors form.comment %}
+
+    <button
+        type="reset"
+        class="usa-button usa-button--outline"
+        x-on:click="showFormId = null"
+    >
+        Cancel
+    </button>
+    <button type="submit" class="usa-button">
+            Save
+    </button>
+</div>

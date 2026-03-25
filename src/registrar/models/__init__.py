@@ -38,7 +38,6 @@ from .suborganization import Suborganization
 from .senior_official import SeniorOfficial
 from .allowed_email import AllowedEmail
 
-
 __all__ = [
     "Contact",
     "DomainRequest",

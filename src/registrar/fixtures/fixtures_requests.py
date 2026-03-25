@@ -12,7 +12,6 @@ from registrar.models.domain import Domain
 from registrar.models.portfolio import Portfolio
 from registrar.models.suborganization import Suborganization
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 

@@ -11,6 +11,7 @@ pycryptodomex = "*"
 django-allow-cidr = "*"
 django-auditlog = "*"
 django-csp = "*"
+django-htmx = "*"
 environs = {extras=["django"]}
 Faker = "*"
 gunicorn = "*"
@@ -28,7 +29,7 @@ typing-extensions ='*'
 django-login-required-middleware = "*"
 greenlet = "*"
 gevent = "*"
-fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "master"}
+fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "308e625b794a9a8e50551e8f9caa837470e24630"}
 pyzipper="*"
 tblib = "*"
 django-admin-multiple-choice-list-filter = "*"

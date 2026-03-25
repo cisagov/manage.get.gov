@@ -44,6 +44,7 @@ from .utility.domain_helper import DomainHelper
 from .utility.time_stamped_model import TimeStampedModel
 
 from .public_contact import PublicContact
+from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
 
@@ -84,7 +85,9 @@ class Domain(TimeStampedModel, DomainHelper):
         # If domain is in deleted state, its name can be reused - submitted/approved
         constraints = [
             models.UniqueConstraint(
-                fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
+                fields=["name"],
+                condition=~models.Q(state="deleted"),
+                name="unique_name_except_deleted",
             )
         ]
 
@@ -245,7 +248,14 @@ class Domain(TimeStampedModel, DomainHelper):
             """Called during delete. Example: `del domain.registrant`."""
             super().__delete__(obj)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
+    def save(
+        self,
+        force_insert=False,
+        force_update=False,
+        using=None,
+        update_fields=None,
+        optimistic_lock=False,
+    ):
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -255,6 +265,11 @@ class Domain(TimeStampedModel, DomainHelper):
         # If the domain is deleted we don't want the expiration date to be set
         if self.state == self.State.DELETED and self.expiration_date:
             self.expiration_date = None
+
+        # Prevent enrolling legacy domains into DNS hosting
+        if self.is_enrolled_in_dns_hosting and self.is_legacy:
+            if self.is_legacy:
+                raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
 
         super().save(force_insert, force_update, using, update_fields)
         self._original_updated_at = self.updated_at
@@ -391,7 +406,11 @@ class Domain(TimeStampedModel, DomainHelper):
         raise NotImplementedError()
 
     def renew_domain(
-        self, length: int = 1, unit: epp.Unit = epp.Unit.YEAR, persist: bool = True, optimistic_lock: bool = False
+        self,
+        length: int = 1,
+        unit: epp.Unit = epp.Unit.YEAR,
+        persist: bool = True,
+        optimistic_lock: bool = False,
     ) -> bool:
         """
         Renew the domain to a length and unit of time relative to the current
@@ -1032,6 +1051,14 @@ class Domain(TimeStampedModel, DomainHelper):
                 security_contact = self.get_default_security_contact()
                 security_contact.save()
 
+    @property
+    def is_legacy(self):
+        """Check if domain is a legacy domain."""
+        if not hasattr(self, "domain_info") or self.domain_info is None:
+            return False
+
+        return self.domain_info.portfolio_id is None
+
     @security_contact.setter  # type: ignore
     def security_contact(self, contact: PublicContact):
         """makes the contact in the registry,
@@ -1065,7 +1092,12 @@ class Domain(TimeStampedModel, DomainHelper):
         """Prints registry data for this domains security, registrant, technical, and administrative contacts."""
         logger.info(f"Contact info for {self}:")
         logger.info("=====================")
-        contacts = [self.security_contact, self.registrant_contact, self.technical_contact, self.administrative_contact]
+        contacts = [
+            self.security_contact,
+            self.registrant_contact,
+            self.technical_contact,
+            self.administrative_contact,
+        ]
         for contact in contacts:
             if contact:
                 self.print_contact_info_epp(contact)
@@ -1144,7 +1176,11 @@ class Domain(TimeStampedModel, DomainHelper):
         hosts = Host.objects.filter(name__regex=r".+\.{}".format(self.name))
         for host in hosts:
             if host.domain != self:
-                logger.error("Unable to delete host: %s is in use by another domain: %s", host.name, host.domain)
+                logger.error(
+                    "Unable to delete host: %s is in use by another domain: %s",
+                    host.name,
+                    host.domain,
+                )
                 raise RegistryError(
                     code=ErrorCode.OBJECT_ASSOCIATION_PROHIBITS_OPERATION,
                     note=f"Host {host.name} is in use by {host.domain}",
@@ -1170,7 +1206,10 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.error("Error deleting domain %s: %s", self.name, e)
             raise e
 
-        logger.info("Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s", self.name)
+        logger.info(
+            "Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s",
+            self.name,
+        )
         self._delete_related_objects_from_db()
 
     def _delete_nameservers_and_hosts(self):
@@ -1208,7 +1247,10 @@ class Domain(TimeStampedModel, DomainHelper):
                     try:
                         self._update_domain_with_contact(contact, rem=True)
                     except Exception as e:
-                        logger.error(f"Error while updating domain with contact: {contact}, e: {e}", exc_info=True)
+                        logger.error(
+                            f"Error while updating domain with contact: {contact}, e: {e}",
+                            exc_info=True,
+                        )
                     request = commands.DeleteContact(contact.registry_id)
                     registry.send(request, cleaned=True)
                     logger.info(f"sent DeleteContact for {contact}")
@@ -1245,7 +1287,11 @@ class Domain(TimeStampedModel, DomainHelper):
             Host.objects.filter(domain=self).delete()
             logger.info("Deleted: Host and HostIP objects for domain %s", self.name)
         except Exception as e:
-            logger.error("Error deleting Host or HostIP objects for domain %s: %s", self.name, str(e))
+            logger.error(
+                "Error deleting Host or HostIP objects for domain %s: %s",
+                self.name,
+                str(e),
+            )
 
         logger.info("Deleting CONTACTS")
         try:
@@ -1273,14 +1319,25 @@ class Domain(TimeStampedModel, DomainHelper):
                 domain_info = info_response.res_data[0]
                 hosts_associated = getattr(domain_info, "hosts", None)
                 if hosts_associated is None or len(hosts_associated) == 0:
-                    logger.info("InfoDomain reports no associated hosts for %s. Proceeding with deletion.", self.name)
+                    logger.info(
+                        "InfoDomain reports no associated hosts for %s. Proceeding with deletion.",
+                        self.name,
+                    )
                     return True
                 else:
-                    logger.info("Attempt %d: Domain %s still has hosts: %s", attempt + 1, self.name, hosts_associated)
+                    logger.info(
+                        "Attempt %d: Domain %s still has hosts: %s",
+                        attempt + 1,
+                        self.name,
+                        hosts_associated,
+                    )
             except RegistryError as info_e:
                 # If the domain is already gone, we can assume deletion already occurred.
                 if info_e.code == ErrorCode.OBJECT_DOES_NOT_EXIST:
-                    logger.info("InfoDomain check indicates domain %s no longer exists.", self.name)
+                    logger.info(
+                        "InfoDomain check indicates domain %s no longer exists.",
+                        self.name,
+                    )
                     raise info_e
                 logger.warning("Attempt %d: Error during InfoDomain check: %s", attempt + 1, info_e)
             time.sleep(wait_interval)
@@ -1345,6 +1402,11 @@ class Domain(TimeStampedModel, DomainHelper):
         null=True,
         blank=True,
         help_text="Record of the last change event for ds data",
+    )
+
+    is_enrolled_in_dns_hosting = models.BooleanField(
+        default=False,
+        help_text=("Indicates whether this domain is enrolled in internal DNS hosting."),
     )
 
     def isActive(self):
@@ -1484,7 +1546,8 @@ class Domain(TimeStampedModel, DomainHelper):
     def _request_contact_info(self, contact: PublicContact, get_result_as_dict=False):
         """Grabs the resultant contact information in epp for this public contact
         by using the InfoContact command.
-        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True."""
+        Returns a commands.InfoContactResultData object, or a dict if get_result_as_dict is True.
+        """
         try:
             req = commands.InfoContact(id=contact.registry_id)
             result = registry.send(req, cleaned=True).res_data[0]
@@ -1555,13 +1618,6 @@ class Domain(TimeStampedModel, DomainHelper):
         """Gets the default technical contact."""
         logger.info("get_default_security_contact() -> Adding default technical contact")
         contact = PublicContact.get_default_technical()
-        contact.domain = self
-        return contact
-
-    def get_default_registrant_contact(self):
-        """Gets the default registrant contact."""
-        logger.info("get_default_security_contact() -> Adding default registrant contact")
-        contact = PublicContact.get_default_registrant()
         contact.domain = self
         return contact
 
@@ -1648,11 +1704,62 @@ class Domain(TimeStampedModel, DomainHelper):
                     raise e
 
     def addRegistrant(self):
-        """Adds a default registrant contact"""
-        registrant = PublicContact.get_default_registrant()
+        """Adds a registrant contact"""
+        registrant = PublicContact(contact_type=PublicContact.ContactTypeChoices.REGISTRANT, registry_id=get_id())
+
+        domain_info = getattr(self, "domain_info", None)
+        if not domain_info:
+            raise ValueError(f"Cannot create registrant for domain '{self.name}': " "DomainInformation is required")
+
+        registrant_data = domain_info.get_registrant_contact_data()
+
+        self._check_missing_fields(
+            registrant_data["org"],
+            registrant_data["street1"],
+            registrant_data["city"],
+            registrant_data["zipcode"],
+            registrant_data["state_territory"],
+        )
+
+        registrant.org = registrant_data["org"]
+        registrant.street1 = registrant_data["street1"]
+        registrant.street2 = registrant_data["street2"]
+        registrant.city = registrant_data["city"]
+        registrant.sp = registrant_data["state_territory"]
+        registrant.pc = registrant_data["zipcode"]
+
+        # Set defaults for fields we don't have
+        registrant.name = "CSD/CB – Attn: .gov TLD"
+        registrant.cc = "US"
+        registrant.email = DefaultEmail.PUBLIC_CONTACT_DEFAULT
+        registrant.voice = "+1.8882820870"
+
         registrant.domain = self
         registrant.save()  # calls the registrant_contact.setter
         return registrant.registry_id
+
+    def _check_missing_fields(
+        self, registrant_org, registrant_street1, registrant_city, registrant_zipcode, state_territory
+    ):
+        missing_fields = []
+        if not registrant_org:
+            missing_fields.append("organization")
+        if not registrant_street1:
+            missing_fields.append("address_line1")
+        if not registrant_city:
+            missing_fields.append("city")
+        if not state_territory:
+            missing_fields.append("state_territory")
+        if not registrant_zipcode:
+            missing_fields.append("zipcode")
+
+        if missing_fields:
+            raise ValueError(
+                "Cannot create registrant for domain "
+                f"'{self.name}': "
+                "missing required DomainInformation values: "
+                f"{', '.join(missing_fields)}"
+            )
 
     @transition(field="state", source=State.UNKNOWN, target=State.DNS_NEEDED)
     def dns_needed_from_unknown(self):
@@ -1753,7 +1860,11 @@ class Domain(TimeStampedModel, DomainHelper):
         # TODO -on the client hold ticket any additional error handling here
         self.save(update_fields=["state"])
 
-    @transition(field="state", source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN], target=State.DELETED)
+    @transition(
+        field="state",
+        source=[State.ON_HOLD, State.DNS_NEEDED, State.UNKNOWN],
+        target=State.DELETED,
+    )
     def deleteInEpp(self):
         """Domain is deleted in epp but is saved in our database.
         Subdomains will be deleted first if not in use by another domain.
@@ -1860,19 +1971,119 @@ class Domain(TimeStampedModel, DomainHelper):
         # You can find each enum here:
         # https://github.com/cisagov/epplib/blob/master/epplib/models/common.py#L32
         DF = epp.DiscloseField
-        all_disclose_fields = {field for field in DF}
-        disclose_args = {"fields": all_disclose_fields, "flag": False, "types": {DF.ADDR: "loc", DF.NAME: "loc"}}
 
-        fields_to_remove = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
+        # The complete disclose settings for each contact type
+        # False fields are specifically called out here for clarity, but effectively
+        # ignored.  The code below only adds fields to the disclose object if they are True
+        # and never builds a disclose object for false fields even though that is supported.
+        # TODO: Move to new EPP service when possible
+        CONTACT_TYPE_DISCLOSE_SETTINGS: dict[Any, dict[Any, dict[str, Any]]] = {
+            contact.ContactTypeChoices.REGISTRANT: {
+                DF.NAME: {"disclose": False, "type": "loc"},
+                DF.ORG: {"disclose": True, "type": "loc"},
+                DF.ADDR: {"disclose": False, "type": "loc"},
+                DF.STREET: {"disclose": False, "type": "loc"},
+                DF.CITY: {"disclose": True, "type": "loc"},
+                DF.SP: {"disclose": True, "type": "loc"},
+                DF.PC: {"disclose": False, "type": "loc"},
+                DF.CC: {"disclose": True, "type": "loc"},
+                DF.VOICE: {"disclose": False, "type": None},
+                DF.FAX: {"disclose": False, "type": None},
+                DF.EMAIL: {"disclose": False, "type": None},
+                DF.VAT: {"disclose": False, "type": None},
+                DF.IDENT: {"disclose": False, "type": None},
+                DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+            },
+            contact.ContactTypeChoices.ADMINISTRATIVE: {
+                DF.NAME: {"disclose": True, "type": "loc"},
+                DF.ORG: {"disclose": True, "type": "loc"},
+                DF.ADDR: {"disclose": True, "type": "loc"},
+                DF.STREET: {"disclose": True, "type": "loc"},
+                DF.CITY: {"disclose": True, "type": "loc"},
+                DF.SP: {"disclose": True, "type": "loc"},
+                DF.PC: {"disclose": True, "type": "loc"},
+                DF.CC: {"disclose": True, "type": "loc"},
+                DF.VOICE: {"disclose": True, "type": None},
+                DF.FAX: {"disclose": True, "type": None},
+                DF.EMAIL: {"disclose": True, "type": None},
+                DF.VAT: {"disclose": False, "type": None},
+                DF.IDENT: {"disclose": False, "type": None},
+                DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+            },
+            contact.ContactTypeChoices.TECHNICAL: {
+                DF.NAME: {"disclose": False, "type": "loc"},
+                DF.ORG: {"disclose": False, "type": "loc"},
+                DF.ADDR: {"disclose": False, "type": "loc"},
+                DF.STREET: {"disclose": False, "type": "loc"},
+                DF.CITY: {"disclose": False, "type": "loc"},
+                DF.SP: {"disclose": False, "type": "loc"},
+                DF.PC: {"disclose": False, "type": "loc"},
+                DF.CC: {"disclose": False, "type": "loc"},
+                DF.VOICE: {"disclose": False, "type": None},
+                DF.FAX: {"disclose": False, "type": None},
+                DF.EMAIL: {"disclose": False, "type": None},
+                DF.VAT: {"disclose": False, "type": None},
+                DF.IDENT: {"disclose": False, "type": None},
+                DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+            },
+            contact.ContactTypeChoices.SECURITY: {
+                DF.NAME: {"disclose": False, "type": "loc"},
+                DF.ORG: {"disclose": False, "type": "loc"},
+                DF.ADDR: {"disclose": False, "type": "loc"},
+                DF.STREET: {"disclose": False, "type": "loc"},
+                DF.CITY: {"disclose": False, "type": "loc"},
+                DF.SP: {"disclose": False, "type": "loc"},
+                DF.PC: {"disclose": False, "type": "loc"},
+                DF.CC: {"disclose": False, "type": "loc"},
+                DF.VOICE: {"disclose": False, "type": None},
+                DF.FAX: {"disclose": False, "type": None},
+                DF.EMAIL: {"disclose": False, "type": None},
+                DF.VAT: {"disclose": False, "type": None},
+                DF.IDENT: {"disclose": False, "type": None},
+                DF.NOTIFY_EMAIL: {"disclose": False, "type": None},
+            },
+        }
+
+        # Find the settings for the given contact type
+        disclose_settings = CONTACT_TYPE_DISCLOSE_SETTINGS[contact.contact_type]
+
+        # Each field can only appear once
+        disclose_fields = set()
+        # Each address field requires a type="loc | int" attribute if it is disclosed
+        disclose_type_attrs = {}
+
+        # For each field enumerated in disclose_settings for the contact type
+        for field, setting in disclose_settings.items():
+            is_disclose = setting["disclose"]
+            type_attr = setting["type"]
+
+            if is_disclose:
+                disclose_fields.add(field)
+
+            if type_attr is not None:
+                disclose_type_attrs[field] = type_attr
+
+        # Check if the security email has changed from default.
+        # If security email is our default value, we redact.  If it is not our default, we publish it.
+        # Since this method assumes redact, we only need to encode the negative case here.
         if contact.contact_type == contact.ContactTypeChoices.SECURITY:
             if contact.email not in DefaultEmail.get_all_emails():
-                fields_to_remove.add(DF.EMAIL)
-        elif contact.contact_type == contact.ContactTypeChoices.ADMINISTRATIVE:
-            fields_to_remove.update({DF.NAME, DF.EMAIL, DF.VOICE, DF.ADDR})
+                disclose_fields.add(DF.EMAIL)
 
-        disclose_args["fields"].difference_update(fields_to_remove)  # type: ignore
+        # Regardless of contact type, always default to redacting everything, and only pass the fields
+        # we want to disclose. This means we are always sending, "Only disclose the following fields"
+        # which is less efficient but it is easier to think about and remember.
+        disclose_args = {
+            "flag": True,
+            "fields": disclose_fields,
+            "types": disclose_type_attrs,
+        }
 
-        logger.debug("Updated domain contact %s to disclose: %s", contact.email, disclose_args.get("flag"))
+        logger.debug(
+            "Updated domain contact %s to disclose: %s",
+            contact.email,
+            disclose_args.get("flag"),
+        )
         return epp.Disclose(**disclose_args)  # type: ignore
 
     def _make_epp_contact_postal_info(self, contact: PublicContact):  # type: ignore
@@ -2441,3 +2652,10 @@ class Domain(TimeStampedModel, DomainHelper):
             return self._cache[property]
         else:
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
+
+    def delete_with_no_dns(self, *args, **kwargs):
+        # Delete a domain with associated PublicContacts
+        PublicContact.objects.filter(domain=self).delete()
+        # Delete domain
+        self.deleteInEpp()
+        self.save()

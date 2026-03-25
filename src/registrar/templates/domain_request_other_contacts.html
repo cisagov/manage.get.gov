@@ -32,7 +32,7 @@
             <fieldset class="usa-fieldset repeatable-form padding-y-1">
             
               <legend class="float-left-tablet">
-                  <h3 class="margin-top-05" id="org-contact-{{ forloop.counter }}">Organization contact {{ forloop.counter }}</h2>
+                  <h3 class="margin-top-05" id="org-contact-{{ forloop.counter }}">Organization contact {{ forloop.counter }}</h3>
               </legend>
               {% if form.first_name or form.last_name %}
                 <span class="usa-sr-only delete-button-description" id="org-contact-{{ forloop.counter }}__name">Delete {{form.first_name.value }} {{ form.last_name.value }}</span>

@@ -2,10 +2,15 @@
 
 import logging
 from django import forms
-from django.core.validators import RegexValidator, MaxLengthValidator
+from django.core.validators import (
+    RegexValidator,
+    MaxLengthValidator,
+)
+from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
+from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
@@ -23,9 +28,10 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
+from registrar.utility.enums import DNSRecordTypes
 
+import json
 import re
-
 
 logger = logging.getLogger(__name__)
 
@@ -405,10 +411,8 @@ class SeniorOfficialContactForm(ContactForm):
         self.fields["last_name"].error_messages = {
             "required": "Enter the last name / family name of your senior official."
         }
-        self.fields["title"].error_messages = {
-            "required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."
-        }
+        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer)."}
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
@@ -763,12 +767,141 @@ class DomainRenewalForm(forms.Form):
 class DomainDeleteForm(forms.Form):
     """Form making sure domain deletion ack is checked"""
 
-    is_policy_acknowledged = forms.BooleanField(
+    is_policy_acknowledged = forms.BooleanField(required=True)
+
+    def __init__(self, *args, domain_state=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if domain_state == Domain.State.DNS_NEEDED:
+            label = "I understand the domain will be deleted seven days after I submit this request."
+            error = "Check the box if you understand that your domain will be deleted."
+        else:
+            label = "I understand that my domain will be deleted within 7 days of my request."
+            "After that, it cannot be recovered."
+            error = (
+                "Check the box if you understand that your domain will be deleted within 7 days of making this request."
+            )
+
+        self.fields["is_policy_acknowledged"].label = label
+        self.fields["is_policy_acknowledged"].error_messages = {"required": error}
+
+
+class DomainDNSRecordForm(forms.ModelForm):
+    """Form for adding DNS records"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        record_type = self.data.get("type") or self.initial.get("type")
+
+        if record_type:
+            rt = DNSRecordTypes(record_type)
+            self.fields["content"].label = rt.field_label
+            self.fields["content"].help_text = rt.help_text
+
+        config = {
+            rt.value: {
+                "label": getattr(rt, "field_label", "Content"),
+                "help_text": getattr(rt, "help_text"),
+            }
+            for rt in DNSRecordTypes
+        }
+
+        self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
+
+    class Meta:
+        model = DnsRecord
+        fields = ["type", "name", "content", "ttl", "comment"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "usa-input",
+                    "hide_character_count": True,
+                }
+            ),
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "usa-textarea usa-textarea--medium",
+                    "rows": 2,
+                }
+            ),
+        }
+        help_texts = {
+            "comment": "The information you enter here will not impact DNS record resolution and \
+            is meant only for your reference.",
+            "name": "Use @ for root",
+        }
+        error_messages = {"name": {"required": "Enter a name for this record."}}
+
+    type = forms.ChoiceField(
+        # TODO: choices has been temporarily hard-coded for user testing.
+        # This is to prevent the need for multiple migrations.
+        # I have temporarily commented out what the appropriate statement will eventually look like.
+        label="Type",
+        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
+        choices=[
+            ("", "- Select -"),
+            ("A", "A"),
+            ("AAAA", "AAAA"),
+            ("TXT", "TXT"),
+        ],
         required=True,
-        label="I understand that my domain will be deleted within 7 days of my request. "
-        "After that, it cannot be recovered.",
-        error_messages={
-            "required": "Check the box if you understand that your domain will be deleted within 7 days of "
-            "making this request."
-        },
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+                "required": "required",
+                "x-model": "recordType",
+            }
+        ),
     )
+
+    content = forms.CharField(
+        label="Content",
+        required=False,
+        help_text=" ",
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "hide_character_count": True,
+                "required": "required",
+            }
+        ),
+    )
+
+    ttl = forms.TypedChoiceField(
+        label="TTL",
+        coerce=int,
+        choices=[
+            (60, "1 minute"),
+            (300, "5 minutes"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (7200, "2 hours"),
+            (18000, "5 hours"),
+            (43200, "12 hours"),
+            (86400, "1 day"),
+        ],
+        initial=300,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "usa-select",
+            }
+        ),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        record_type = cleaned_data.get("type")
+        content = cleaned_data.get("content")
+
+        if record_type:
+            record = DNSRecordTypes(record_type)
+            if record.validator:
+                try:
+                    record.validator(content)
+                except ValidationError as e:
+                    self.add_error("content", record.error_message or e)
+            elif not content:
+                self.add_error("content", record.error_message)
+
+        return cleaned_data

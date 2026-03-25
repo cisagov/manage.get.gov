@@ -1,7 +1,7 @@
 # Manually deploy a branch of choice to an environment of choice.
 
 name: Manual Build and Deploy
-run-name: Manually build and deploy branch to sandbox of choice
+run-name: Manually build and deploy ${{ github.ref_name }} to ${{ github.event.inputs.environment }}
 
 on:
   workflow_dispatch:
@@ -35,14 +35,6 @@ on:
           - yellowstone
           - zion
 
-      # GitHub Actions has no "good" way yet to dynamically input branches
-      branch:
-        description: 'Branch to deploy'
-        required: true
-        default: 'main'
-        type: string
-      
-
 jobs:
   variables:
     runs-on: ubuntu-latest
@@ -67,16 +59,21 @@ jobs:
       - name: Collect static assets 
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
-      - name: Deploy to cloud.gov sandbox
+      - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
         uses: cloud-gov/cg-cli-tools@main
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
           CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
           CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ env.ENVIRONMENT }}
-          cf_manifest: ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
-
+          cf_command: >-
+            push -f ops/manifests/manifest-${{ env.ENVIRONMENT }}.yaml
+            --var GIT_BRANCH="$GIT_BRANCH"
+            --var GIT_COMMIT_SHA="$GIT_COMMIT_SHA"
+            --strategy rolling

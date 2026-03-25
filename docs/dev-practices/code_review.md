@@ -28,3 +28,34 @@ Add new pages to the .pa11yci file so they are included in our automated accessi
 
 ### Plain language
 All functions and methods should use plain language.
+
+### Accessibility Checklist
+All UI changes should test the accessibility of the following elements when relevant:
+
+#### Page Structure
+- Page has a single, descriptive `<h1>`.
+- Headings follow a logical hierarchy (no skipped levels).
+- Landmarks (header, nav, main, footer, etc.) are present and correctly labeled.
+- Reading order in ANDI matches the visual layout.
+
+#### Links and Buttons
+- Link text is descriptive out of context (no “click here”).
+- Buttons and links expose correct accessible names.
+- Icon-only buttons have accessible text.
+- No empty, duplicate, or unlabeled links/buttons flagged by ANDI or WAVE.
+- Link purpose is clear when read by a screen reader.
+
+#### Keyboard Focus
+- All interactive elements are reachable via keyboard.
+- Focus order is logical and predictable.
+- Focus indicator is clearly visible.
+- No keyboard traps.
+- Modals:
+    - Trap focus correctly.
+    - Return focus on close.
+- [Keyboard shortcuts](https://webaim.org/techniques/keyboard/) work on page.
+
+
+
+
+

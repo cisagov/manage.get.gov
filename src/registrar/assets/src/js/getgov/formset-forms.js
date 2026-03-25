@@ -4,12 +4,12 @@
  * 
  */
 function removeForm(e, formLabel, addButton, formIdentifier){
-  let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
+  // Select TOTAL_FORMS as suffix so can be reused
+  let totalForms = document.querySelector('input[id$="-TOTAL_FORMS"]');
   let formToRemove = e.target.closest(".repeatable-form");
   formToRemove.remove();
   let forms = document.querySelectorAll(".repeatable-form");
   totalForms.setAttribute('value', `${forms.length}`);
-
   let formNumberRegex = RegExp(`form-(\\d){1}-`, 'g');
   let formLabelRegex = RegExp(`${formLabel} (\\d+){1}`, 'g');
   // For the example on Nameservers
@@ -181,6 +181,7 @@ export function initFormsetsForms() {
     container = document.querySelector("#other-employees");
     formIdentifier = "other_contacts"
   } else if (isDotgovDomain) {
+    formLabel = "Alternative domain";
     formIdentifier = "dotgov_domain"
   }
   let totalForms = document.querySelector(`#id_${formIdentifier}-TOTAL_FORMS`);
@@ -198,12 +199,23 @@ export function initFormsetsForms() {
       let forms = document.querySelectorAll(".repeatable-form");
       let formNum = forms.length;
       let newForm = repeatableForm[cloneIndex].cloneNode(true);
+
+      newForm.removeAttribute('style');
+      newForm.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
+    
       let formNumberRegex = RegExp(`${formIdentifier}-(\\d){1}-`,'g');
       let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
       // For the eample on Nameservers
       let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
 
-      formNum++;
+      // Make sure it's counting visible forms and remove display-none to make new form visible
+      if (isDotgovDomain) {
+        let visibleForms = document.querySelectorAll(`.repeatable-form:not(.display-none):not([style*="display: none"])`).length;
+        formNum = visibleForms + 1;
+        newForm.classList.remove('display-none'); 
+      } else {
+        formNum++;
+      }
 
       newForm.innerHTML = newForm.innerHTML.replace(formNumberRegex, `${formIdentifier}-${formNum-1}-`);
       if (isOtherContactsForm) {
@@ -213,8 +225,12 @@ export function initFormsetsForms() {
         let newFormCount = totalShownForms + 1;
         // update the header
         let header = newForm.querySelector('legend h3');
-        header.textContent = `${formLabel} ${newFormCount}`;
-        header.id = `org-contact-${newFormCount}`;
+        if (header) {
+          header.textContent = `${formLabel} ${newFormCount}`;
+          if (isOtherContactsForm) {
+            header.id = `org-contact-${newFormCount}`;
+          }
+        }
         // update accessibility elements on the delete buttons
         let deleteDescription = newForm.querySelector('.delete-button-description');
         deleteDescription.textContent = 'Delete new contact';
@@ -222,6 +238,11 @@ export function initFormsetsForms() {
         let deleteButton = newForm.querySelector('button');
         deleteButton.setAttribute("aria-labelledby", header.id);
         deleteButton.setAttribute("aria-describedby", deleteDescription.id);
+      } else if (isDotgovDomain) {
+        // Update title text for visible forms
+        let visibleForms = document.querySelectorAll(`.repeatable-form:not(.display-none):not([style*="display: none"])`).length;
+        let newFormCount = visibleForms + 1;
+        newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `Alternative domain ${newFormCount}`);
       } else {
         newForm.innerHTML = newForm.innerHTML.replace(formLabelRegex, `${formLabel} ${formNum}`);
       }
@@ -231,7 +252,7 @@ export function initFormsetsForms() {
       container.insertBefore(newForm, addButton);
 
       newForm.style.display = 'block';
-
+      
       let inputs = newForm.querySelectorAll("input");
       // Reset the values of each input to blank
       inputs.forEach((input) => {
