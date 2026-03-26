@@ -115,7 +115,10 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                 any_order=True,
             )
 
-    def test_format_disclose_security_default_email(self):
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
+    )
+    def test_format_disclose_security_default_email(self, _mockprompt):
         with self.subTest(contact_type="security_default_email"):
             security = self.domain.get_default_security_contact()
             # PublicContact.registry_id is constrained to max_length=16.

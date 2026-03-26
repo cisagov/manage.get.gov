@@ -125,22 +125,20 @@ class Command(BaseCommand):
             try:
                 existing_contact = contact.domain._request_contact_info(contact)
                 existing_disclose = existing_contact.disclose
-                logger.info("Existing disclose for %s:", self._contact_ref(contact))
-                logger.info(existing_disclose)
+                logger.info("Existing disclose for %s: %s", self._contact_ref(contact), existing_disclose)
                 disclose = contact.domain._disclose_fields(contact=contact)
-                logger.info("Proposed new disclose:")
-                logger.info(disclose)
+                logger.info("Proposed new disclose for %s: %s", self._contact_ref(contact), disclose)
 
                 if dry_run:
-                    logger.info("Would update")
+                    logger.info("Would update, but skipping because dry_run = True")
                 else:
-                    logger.info("Updating")
+                    logger.info("Updating %s on registry", self._contact_ref(contact))
                     # Computes disclose via Domain._disclose_fields and sends UpdateContact.
                     contact.domain._update_epp_contact(contact=contact)
             except Exception:
                 failed += 1
                 logger.exception(
-                    "Failed to update disclose settings for %s",
+                    "Failed to update disclose settings for %s on registry",
                     self._contact_ref(contact),
                 )
 
