@@ -1,4 +1,5 @@
 import logging
+import random
 
 from registrar.config import settings
 from registrar.models.domain import Domain
@@ -40,6 +41,9 @@ class DnsHostService:
 
     def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for a zone."""
+        if settings.DNS_NS_SET_RANGE:
+            ns_set = random.randint(1, settings.DNS_NS_SET_RANGE)
+            return self.dns_vendor_service.update_zone_dns_settings(x_zone_id, ns_set=ns_set)
         return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)
 
     def _find_account_tag_by_pubname(self, items, name):
@@ -119,6 +123,8 @@ class DnsHostService:
         else:
             try:
                 self.create_and_save_zone(domain_name, x_account_id)
+                # Update zone to use and assign custom nameservers
+                self.update_zone_dns_settings()
             except Exception as e:
                 logger.error(f"dnsSetup for zone failed {e}")
                 raise
