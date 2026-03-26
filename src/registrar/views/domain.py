@@ -821,7 +821,7 @@ class DomainDNSView(DomainBaseView):
         self.object = self.get_object()
         self._update_session_with_domain()
 
-
+# type: ignore[arg-type]
 @method_decorator(waffle_flag("dns_hosting"), name="dispatch")
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
