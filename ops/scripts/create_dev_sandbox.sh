@@ -76,18 +76,6 @@ then
     exit 1
 fi
 
-echo "Now we should add the OT&E registry credentials. The credentials can be found in other sandboxes."
-echo "To edit credentials, log into cloud.gov and navigate to the space created."
-echo "On the left sidebar, click on User Services. "
-echo "Click on the 3 dots at the end of the getgov-credentials line and select edit"
-echo "Add the appropriate credentials and click Finish."
-read -p "Please confirm when this is done (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    exit 1
-fi
-
 echo "Database create succeeded and credentials created. Deploying the get.gov application to the new space $1..."
 echo "Building assets..."
 open -a Docker
@@ -159,6 +147,18 @@ while read -r username password; do
     gh secret --repo cisagov/getgov set CF_${upcase_name}_USERNAME --body $username
     gh secret --repo cisagov/getgov set CF_${upcase_name}_PASSWORD --body $password
 done
+
+echo "Now we should add the OT&E registry credentials. The credentials can be found in other sandboxes."
+echo "To edit credentials, log into cloud.gov and navigate to the space created."
+echo "On the left sidebar, click on User Services. "
+echo "Click on the 3 dots at the end of the getgov-credentials line and select edit"
+echo "Add the appropriate credentials and click Finish."
+read -p "Please confirm when this is done (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    exit 1
+fi
 
 read -p "All done! Should we open a PR with these changes? (y/n) " -n 1 -r
 echo
