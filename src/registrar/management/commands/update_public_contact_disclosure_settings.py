@@ -58,9 +58,9 @@ class Command(BaseCommand):
     def _build_queryset(self, *, target_domain: str, contact_types: list[str] | None):
         qs = PublicContact.objects.select_related("domain").all().order_by("id")
         qs = qs.filter(domain__name__iexact=target_domain)
-        logger.debug("Query set after domain filter: %s", qs.values)
+        logger.debug("Query set after domain filter: %s", list(qs.values("registry_id")))
         qs = qs.filter(contact_type__in=contact_types)
-        logger.debug("Query set after contact_type filter: %s", qs.values)
+        logger.debug("Query set after contact_type filter: %s", list(qs.values("registry_id")))
         return qs
 
     def _contact_ref(self, contact: PublicContact) -> str:

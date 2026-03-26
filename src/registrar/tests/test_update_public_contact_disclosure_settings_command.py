@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 from django.core.management import call_command
 from epplib.models import common
@@ -34,8 +34,13 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
         self.contact.domain = self.domain
         self.contact.save(skip_epp_save=True)
 
+        DF = common.DiscloseField
         self.mockRegistrantContact = self.InfoDomainWithContacts.dummyInfoContactResultData(
-            id="regContact", email="help@get.gov"
+            id="regContact",
+            email="help@get.gov",
+        )
+        self.mockRegistrantContact.disclose = epp.Disclose(
+            flag=False, fields=set(), types={DF.CC: "loc", DF.CITY: "loc", DF.PC: "loc", DF.SP: "loc"}
         )
 
     def test_dry_run_does_not_update_registry(self):
@@ -67,27 +72,25 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
 
         update_mock.assert_called_once()
 
-    def test_format_disclose_includes_flag_and_overrides(self):
-        DF = common.DiscloseField
-
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
+    )
+    def test_command_sends_expected_registrant_update(self, _mock_prompt):
         with self.subTest(contact_type="registrant"):
-            disclose = self.domain._disclose_fields(contact=self.contact)
-            expected_disclose = epp.Disclose(
-                flag=True,
-                fields={DF.CC, DF.CITY, DF.ORG, DF.SP},
-                types={
-                    DF.ADDR: "loc",
-                    DF.CC: "loc",
-                    DF.CITY: "loc",
-                    DF.NAME: "loc",
-                    DF.ORG: "loc",
-                    DF.PC: "loc",
-                    DF.SP: "loc",
-                    DF.STREET: "loc",
-                },
-            )
+            with less_console_noise() and self.subTest(contact_type="registrant"):
+                call_command(
+                    "update_public_contact_disclosure_settings",
+                    target_domain=self.domain.name,
+                    dry_run=False,
+                    contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                )
 
-            self.assertEqual(disclose, expected_disclose)
+            expected_update = self._convertPublicContactToEpp(self.contact, createContact=False)
+
+            self.mockedSendFunction.assert_has_calls(
+                [call(expected_update, cleaned=True)],
+                any_order=True,
+            )
 
         with self.subTest(contact_type="security_non_default_email"):
             security = self.domain.get_default_security_contact()
@@ -97,28 +100,22 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
 
             security.save(skip_epp_save=True)
 
-            disclose = self.domain._disclose_fields(contact=security)
+            with less_console_noise():
+                call_command(
+                    "update_public_contact_disclosure_settings",
+                    target_domain=self.domain.name,
+                    dry_run=False,
+                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                )
 
-            expected_disclose = epp.Disclose(
-                flag=True,
-                fields={DF.EMAIL},
-                types={
-                    DF.ADDR: "loc",
-                    DF.CC: "loc",
-                    DF.CITY: "loc",
-                    DF.NAME: "loc",
-                    DF.ORG: "loc",
-                    DF.PC: "loc",
-                    DF.SP: "loc",
-                    DF.STREET: "loc",
-                },
+            expected_update = self._convertPublicContactToEpp(security, createContact=False)
+
+            self.mockedSendFunction.assert_has_calls(
+                [call(expected_update, cleaned=True)],
+                any_order=True,
             )
 
-            self.assertEqual(disclose, expected_disclose)
-
     def test_format_disclose_security_default_email(self):
-        DF = common.DiscloseField
-
         with self.subTest(contact_type="security_default_email"):
             security = self.domain.get_default_security_contact()
             # PublicContact.registry_id is constrained to max_length=16.
@@ -126,21 +123,17 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
 
             security.save(skip_epp_save=True)
 
-            disclose = self.domain._disclose_fields(contact=security)
+            with less_console_noise():
+                call_command(
+                    "update_public_contact_disclosure_settings",
+                    target_domain=self.domain.name,
+                    dry_run=False,
+                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
+                )
 
-            expected_disclose = epp.Disclose(
-                flag=True,
-                fields=set(),
-                types={
-                    DF.ADDR: "loc",
-                    DF.CC: "loc",
-                    DF.CITY: "loc",
-                    DF.NAME: "loc",
-                    DF.ORG: "loc",
-                    DF.PC: "loc",
-                    DF.SP: "loc",
-                    DF.STREET: "loc",
-                },
+            expected_update = self._convertPublicContactToEpp(security, createContact=False)
+
+            self.mockedSendFunction.assert_has_calls(
+                [call(expected_update, cleaned=True)],
+                any_order=True,
             )
-
-            self.assertEqual(disclose, expected_disclose)
