@@ -91,23 +91,6 @@ class PublicContact(TimeStampedModel):
     pw = models.CharField(null=False, help_text="Contact's authorization code. 16 characters minimum.")
 
     @classmethod
-    def get_default_registrant(cls):
-        return cls(
-            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-            registry_id=get_id(),
-            name="CSD/CB – Attn: .gov TLD",
-            org="Cybersecurity and Infrastructure Security Agency",
-            street1="1110 N. Glebe Rd",
-            city="Arlington",
-            sp="VA",
-            pc="22201",
-            cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
-            voice="+1.8882820870",
-            pw="thisisnotapassword",
-        )
-
-    @classmethod
     def get_default_administrative(cls):
         return cls(
             contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
