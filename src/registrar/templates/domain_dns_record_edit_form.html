@@ -1,7 +1,7 @@
 {% load static field_helpers url_helpers %}
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
-<tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}-1'" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
+<tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}-edit-form'" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
     <td colspan="5" class="no-padding">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
@@ -51,10 +51,10 @@
 </tr>
 
 <!-- Comment row -->
-<tr x-show="showFormId == '{{ record_id }}-0'" class="hide-td-borders">
+<tr x-show="showFormId == '{{ record_id }}-comment'" class="hide-td-borders">
     <td colspan="5" class="padding-right-0">
           <div class="border radius-lg border-base-lighter padding-3">
-             <span id="comment-{{record_id}}-0-text">
+             <span id="comment-{{record_id}}-comment-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
                 {{ dns_record.comment }}
              </span>   

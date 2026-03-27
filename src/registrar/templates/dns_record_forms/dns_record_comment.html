@@ -1,8 +1,8 @@
 <button type="button"
             class="usa-button usa-button--unstyled  margin-top-0"
-            x-on:click="showFormId = (showFormId === '{{ record_id }}-0' ? null : '{{ record_id }}-0' )"
+            x-on:click="showFormId = (showFormId === '{{ record_id }}-comment' ? null : '{{ record_id }}-comment' )"
             aria-expanded="false"
-            :aria-expanded="showFormId == '{{ record_id }}-0' ? 'true' : 'false'"
+            :aria-expanded="showFormId == '{{ record_id }}-comment' ? 'true' : 'false'"
             id="comment-button"
          >
 
@@ -24,8 +24,8 @@
                         focusable="false" 
                         role="img"
                         width="8">
-                        <use x-show="showFormId != '{{ record_id }}-0'" xlink:href="/public/img/sprite.svg#expand_more" ></use>
-                        <use x-show="showFormId == '{{ record_id }}-0'" xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                        <use x-show="showFormId != '{{ record_id }}-comment'" xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="showFormId == '{{ record_id }}-comment'" xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
             
 </button>
