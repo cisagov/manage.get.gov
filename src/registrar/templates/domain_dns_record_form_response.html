@@ -11,9 +11,11 @@
             <td id="dns-name-{{ record_id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
             <td id="dns-content-{{ record_id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content }}</td>
             <td id="dns-ttl-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl }}</td>
+            <span id="comment-{{record_id}}-0-text" hx-swap-oob="textContent">{{ dns_record.comment }}</span>
         {% endif %}
         {# Always OOB swap the edit form row so errors are shown/cleared #}
         {% include "domain_dns_record_edit_form.html" with record_id=record_id dns_record=dns_record oob_swap=True %}
+        
         </template>
     {% else %}
         <template>

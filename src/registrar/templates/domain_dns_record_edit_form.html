@@ -54,7 +54,10 @@
 <tr x-show="showFormId == '{{ record_id }}-0'" class="hide-td-borders">
     <td colspan="5" class="padding-right-0">
           <div class="border radius-lg border-base-lighter padding-3">
-                {{ dns_record.form.comment.value }}
+             <span id="comment-{{record_id}}-0-text">
+                <!-- added this span to swap the text when the form is updated with a new comment-->
+                {{ dns_record.comment }}
+             </span>   
           </div>
     </td>
 </tr>
