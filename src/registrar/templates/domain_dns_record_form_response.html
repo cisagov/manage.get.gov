@@ -3,7 +3,11 @@
         {# OOB-swap individual cells to preserve the action column (Edit button) DOM for ANDI #}
         <template>
         {% if update_cells %}
-            <td id="dns-type-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.type }}</td>
+            <td id="dns-type-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.type }}
+            {% if dns_record.comment %}
+                    {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
+             {% endif %}
+            </td>
             <td id="dns-name-{{ record_id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
             <td id="dns-content-{{ record_id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content }}</td>
             <td id="dns-ttl-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl }}</td>
