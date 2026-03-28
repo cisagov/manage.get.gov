@@ -73,20 +73,25 @@ class Command(BaseCommand):
         )
 
     def _check_and_update_contact_values(self, contact: PublicContact) -> PublicContact:
-        updated_contact = contact
-        # TODO: May be legacy and not have this object
-        domain_info = getattr(contact.domain, "domain_info")
-        # Computes new values for Public Contact (may not be any delta, depends on if and
-        # how the data relationships have changed between portfolio, domain, suborganization)
-        # Returns dict of org, street1, street2, city, state_territory, zipcode
-        new_values = domain_info.get_registrant_contact_data()
-        updated_contact.org = new_values["org"]
-        updated_contact.street1 = new_values["street1"]
-        updated_contact.street2 = new_values["street2"]
-        updated_contact.city = new_values["city"]
-        updated_contact.sp = new_values["state_territory"]
-        updated_contact.pc = new_values["zipcode"]
-        return updated_contact
+        if contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
+            logger.info("Existing contact values: %s", contact)
+            updated_contact = contact
+            # TODO: May be legacy and not have this object
+            domain_info = getattr(contact.domain, "domain_info")
+            # Computes new values for Public Contact (may not be any delta, depends on if and
+            # how the data relationships have changed between portfolio, domain, suborganization)
+            # Returns dict of org, street1, street2, city, state_territory, zipcode
+            new_values = domain_info.get_registrant_contact_data()
+            updated_contact.org = new_values["org"]
+            updated_contact.street1 = new_values["street1"]
+            updated_contact.street2 = new_values["street2"]
+            updated_contact.city = new_values["city"]
+            updated_contact.sp = new_values["state_territory"]
+            updated_contact.pc = new_values["zipcode"]
+            logger.info("Proposed new contact values: %s", updated_contact)
+            return updated_contact
+        else:
+            return contact
 
     def handle(self, *args: object, **options: Any) -> None:
         contact_types = options.get("contact_type")
@@ -139,11 +144,7 @@ class Command(BaseCommand):
         for contact in contacts_to_update.iterator():
             processed += 1
             try:
-                if contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
-                    new_contact = self._check_and_update_contact_values(contact)
-                    logger.info("Existing contact values: %s", contact)
-                    logger.info("Proposed new contact values: %s", new_contact)
-                    contact = new_contact
+                contact = self._check_and_update_contact_values(contact)
 
                 existing_contact = contact.domain._request_contact_info(contact)
                 existing_disclose = existing_contact.disclose
