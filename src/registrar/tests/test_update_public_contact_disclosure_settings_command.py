@@ -3,11 +3,11 @@ from unittest.mock import patch, call
 from django.core.management import call_command
 from epplib.models import common
 
-from registrar.models import Domain
+from registrar.models import Domain, DomainInformation
 from registrar.models.public_contact import PublicContact
 from registrar.utility.enums import DefaultEmail
 
-from .common import MockEppLib, less_console_noise
+from .common import MockEppLib, less_console_noise, create_user
 
 from epplibwrapper import common as epp
 
@@ -16,6 +16,16 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
     def setUp(self):
         super().setUp()
         self.domain = Domain.objects.create(name="example.gov")
+        self.user = create_user(username="testuser", email="testuser@example.gov")
+        self.domain_info = DomainInformation.objects.create(
+            requester=self.user,
+            domain=self.domain,
+            organization_name="Cybersecurity and Infrastructure Security Agency",
+            address_line1="1110 N. Glebe Rd",
+            city="Arlington",
+            state_territory="VA",
+            zipcode="22201",
+        )
 
         self.contact = PublicContact(
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
