@@ -893,6 +893,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
+        name = cleaned_data.get("name")
         content = cleaned_data.get("content")
 
         if record_type:
@@ -904,5 +905,11 @@ class DomainDNSRecordForm(forms.ModelForm):
                     self.add_error("content", record.error_message or e)
             elif not content:
                 self.add_error("content", record.error_message)
+
+            if record_type == DNSRecordTypes.CNAME:
+                try:
+                    DnsRecord._validate_cname_record_name_dne_hostname(name, content)
+                except ValidationError as e:
+                    self.add_error("content", record.error_message or e)
 
         return cleaned_data
