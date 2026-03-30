@@ -241,6 +241,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        priority = request_as_json.get("priority")
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -260,28 +261,26 @@ class MockCloudflareService:
                 )
             return httpx.Response(500)
 
+        result = {
+            "id": self._mock_create_cf_id(),
+            "name": record_name,
+            "type": type,
+            "content": content,
+            "proxiable": True,
+            "proxied": False,
+            "ttl": ttl,
+            "settings": {},
+            "meta": {},
+            "comment": comment,
+            "tags": [],
+            "created_on": datetime.now(timezone.utc).isoformat(),
+            "modified_on": datetime.now(timezone.utc).isoformat(),
+        }
+        if priority is not None:
+            result["priority"] = priority
         return httpx.Response(
             200,
-            json={
-                "success": True,
-                "result": {
-                    "id": self._mock_create_cf_id(),
-                    "name": record_name,
-                    "type": type,
-                    "content": content,
-                    "proxiable": True,
-                    "proxied": False,
-                    "ttl": ttl,
-                    "settings": {},
-                    "meta": {},
-                    "comment": comment,
-                    "tags": [],
-                    "created_on": datetime.now(timezone.utc).isoformat(),
-                    "modified_on": datetime.now(timezone.utc).isoformat(),
-                },
-                "errors": [],
-                "messages": [],
-            },
+            json={"success": True, "result": result, "errors": [], "messages": []},
         )
 
     def _mock_update_dns_record_response(self, request) -> httpx.Response:
@@ -295,6 +294,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        priority = request_as_json.get("priority")
         # Get record id from request url to return back in response
         request_url = str(request.url)
         # Split string between "/dns_records/ and extract second partition
@@ -319,28 +319,26 @@ class MockCloudflareService:
             return httpx.Response(500)
 
         # Update response so it fits with whatever record we're returning
+        result = {
+            "id": record_id,
+            "name": record_name,
+            "type": type,
+            "content": content,
+            "proxiable": True,
+            "proxied": False,
+            "ttl": ttl,
+            "settings": {},
+            "meta": {},
+            "comment": comment,
+            "tags": [],
+            "created_on": datetime.now(timezone.utc).isoformat(),
+            "modified_on": datetime.now(timezone.utc).isoformat(),
+        }
+        if priority is not None:
+            result["priority"] = priority
         return httpx.Response(
             200,
-            json={
-                "success": True,
-                "result": {
-                    "id": record_id,
-                    "name": record_name,
-                    "type": type,
-                    "content": content,
-                    "proxiable": True,
-                    "proxied": False,
-                    "ttl": ttl,
-                    "settings": {},
-                    "meta": {},
-                    "comment": comment,
-                    "tags": [],
-                    "created_on": datetime.now(timezone.utc).isoformat(),
-                    "modified_on": datetime.now(timezone.utc).isoformat(),
-                },
-                "errors": [],
-                "messages": [],
-            },
+            json={"success": True, "result": result, "errors": [], "messages": []},
         )
 
     def _mock_create_cf_id(self):

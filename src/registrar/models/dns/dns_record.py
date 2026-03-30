@@ -153,6 +153,7 @@ class DnsRecord(TimeStampedModel):
                     name=record_data["name"],
                     ttl=record_data["ttl"],
                     content=record_data["content"],
+                    priority=record_data.get("priority"),
                     comment=record_data["comment"],
                     tags=record_data["tags"],
                 )
