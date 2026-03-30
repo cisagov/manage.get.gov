@@ -135,7 +135,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.A: "Example: 192.0.2.10",
             DNSRecordTypes.AAAA: "Example: 2001:db8::1234:5678",
             # DNSRecordTypes.CNAME: "Example: example.com",
-            DNSRecordTypes.MX: "Example: mail.example.com",
+            DNSRecordTypes.MX: "Example: mail.example.gov",
             # DNSRecordTypes.TXT: "Example: v=spf1 include:example.com ~all",
         }.get(self, "")
 
