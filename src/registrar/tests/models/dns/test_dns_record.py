@@ -1,5 +1,7 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
+from registrar.utility.enums import DNSRecordTypes
 
 
 class DnsRecordTest(TestCase):
@@ -26,3 +28,51 @@ class DnsRecordTest(TestCase):
         """Delete DNS record."""
         outdated_record = DnsRecord.objects.create(dns_zone=self.dns_zone)
         DnsRecord.objects.filter(id=outdated_record.id).delete()
+
+    # --- clean() validation tests ---
+
+    def test_clean_a_records_same_name_allowed(self):
+        """Two A records with the same name in the same zone should not conflict."""
+        DnsRecord.objects.create(dns_zone=self.dns_zone, type=DNSRecordTypes.A, name="test.dns-test.gov", ttl=3600)
+        record = DnsRecord(dns_zone=self.dns_zone, type=DNSRecordTypes.A, name="test.dns-test.gov", ttl=3600)
+        record.clean()  # should not raise
+
+    def test_clean_a_and_aaaa_same_name_allowed(self):
+        """An A record and AAAA record with the same name should not conflict."""
+        DnsRecord.objects.create(dns_zone=self.dns_zone, type=DNSRecordTypes.A, name="test.dns-test.gov", ttl=3600)
+        record = DnsRecord(dns_zone=self.dns_zone, type=DNSRecordTypes.AAAA, name="test.dns-test.gov", ttl=3600)
+        record.clean()  # should not raise
+
+    def test_clean_a_and_cname_same_name_raises(self):
+        """An A record cannot share a name with an existing CNAME record."""
+        DnsRecord.objects.create(dns_zone=self.dns_zone, type=DNSRecordTypes.CNAME, name="test.dns-test.gov", ttl=3600)
+        record = DnsRecord(dns_zone=self.dns_zone, type=DNSRecordTypes.A, name="test.dns-test.gov", ttl=3600)
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_mx_without_priority_raises(self):
+        """An MX record with no priority should fail validation."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="dns-test.gov",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=None,
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("priority", ctx.exception.message_dict)
+
+    def test_clean_mx_with_priority_valid(self):
+        """An MX record with a valid priority should pass validation."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="dns-test.gov",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=10,
+        )
+        record.clean()  # should not raise

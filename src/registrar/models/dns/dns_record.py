@@ -72,10 +72,12 @@ class DnsRecord(TimeStampedModel):
 
         exclusive_types = [DNSRecordTypes.A, DNSRecordTypes.AAAA, DNSRecordTypes.CNAME]
         if record_type in exclusive_types and self.name and self.dns_zone_id:
+            # CNAME is exclusive with everything; A/AAAA can share names with each other but not with CNAME
+            conflict_types = exclusive_types if record_type == DNSRecordTypes.CNAME else [DNSRecordTypes.CNAME]
             conflict = DnsRecord.objects.filter(
                 dns_zone_id=self.dns_zone_id,
                 name=self.name,
-                type__in=exclusive_types,
+                type__in=conflict_types,
             )
             if self.pk:
                 conflict = conflict.exclude(pk=self.pk)
