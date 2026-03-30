@@ -1,6 +1,5 @@
 from django.test import SimpleTestCase, TestCase
 from httpx import Client
-from unittest.mock import patch
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
@@ -144,12 +143,14 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])
 
+
 class TestMockCloudflareServiceEndpointsWithDB(TestCase):
     """
     Test that mocked endpoints that query DB return correct data.
-    Record creation involves adding root name (queried from db) to record name 
+    Record creation involves adding root name (queried from db) to record name
     when not included in input.
     """
+
     mock_api_service = MockCloudflareService()
 
     @classmethod
@@ -174,7 +175,7 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
             dns_account=self.db_account,
             domain=self.db_domain,
         )
-    
+
     def test_mock_create_dns_record_response(self):
         zone_id = self.mock_api_service.fake_zone_id
         record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
@@ -183,7 +184,7 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         self.vendor_dns_zone = VendorDnsZone.objects.create(
             x_zone_id=zone_id,
             x_created_at="2025-10-17 19:57:53.157055+00",
-            x_updated_at="2025-10-17 19:57:53.157055+00"
+            x_updated_at="2025-10-17 19:57:53.157055+00",
         )
         DnsZone_VendorDnsZone.objects.create(
             dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
@@ -213,7 +214,7 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
-    
+
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
         zone_id = self.mock_api_service.fake_zone_id
@@ -222,7 +223,7 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         self.vendor_dns_zone = VendorDnsZone.objects.create(
             x_zone_id=zone_id,
             x_created_at="2025-10-17 19:57:53.157055+00",
-            x_updated_at="2025-10-17 19:57:53.157055+00"
+            x_updated_at="2025-10-17 19:57:53.157055+00",
         )
         DnsZone_VendorDnsZone.objects.create(
             dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
