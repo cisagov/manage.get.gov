@@ -870,11 +870,11 @@ class DomainDNSRecordForm(forms.ModelForm):
             "min_value": "Enter a priority number between 0-65535.",
             "max_value": "Enter a priority number between 0-65535.",
         },
-        widget=forms.NumberInput(
+        widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
-                "min": "0",
-                "max": "65535",
+                "inputmode": "numeric",
+                "pattern": "[0-9]*",
                 "required": True,
             }
         ),

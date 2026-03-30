@@ -871,8 +871,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form_dir = "./dns_record_forms/"
         base_template = f"{form_dir}base_record_form.html"
         txt_template = f"{form_dir}txt_record_form.html"
+        mx_template = f"{form_dir}mx_record_form.html"
         if record_type == "TXT":
             return txt_template
+        elif record_type == "MX":
+            return mx_template
         else:
             return base_template
 
