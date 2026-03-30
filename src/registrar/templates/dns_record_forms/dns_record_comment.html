@@ -1,13 +1,17 @@
 <button type="button"
             class="usa-button usa-button--unstyled  margin-top-0"
-            x-on:click="showFormId = (showFormId === '{{ record_id }}-comment' ? null : '{{ record_id }}-comment' )"
+            x-on:click="openComments.includes('{{ record_id }}') ? 
+            openComments.splice(
+                openComments.indexOf('{{ record_id }}'), 1) : 
+                openComments.push('{{ record_id }}')"
             aria-expanded="false"
-            :aria-expanded="showFormId == '{{ record_id }}-comment' ? 'true' : 'false'"
+            :aria-expanded="openComments.indexOf('{{ record_id }}') ? 'true' : 'false'"
+            aria-label="Button to show and hide comment"
             id="comment-button"
          >
 
-        <span class="usa-sr-only">{{ dns_record.type }} comment for {{ dns_record.name }}</span>
-        
+         <span class="usa-sr-only">{{ dns_record.type }} comment for {{ dns_record.name }}</span>
+         
          <svg   
              class="usa-icon" 
              aria-hidden="true" 
@@ -24,8 +28,8 @@
                         focusable="false" 
                         role="img"
                         width="8">
-                        <use x-show="showFormId != '{{ record_id }}-comment'" xlink:href="/public/img/sprite.svg#expand_more" ></use>
-                        <use x-show="showFormId == '{{ record_id }}-comment'" xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                        <use x-show="!openComments.includes('{{ record_id }}') && showFormId != '{{ record_id }}'" xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="openComments.includes('{{ record_id }}') && showFormId != '{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
             
 </button>
