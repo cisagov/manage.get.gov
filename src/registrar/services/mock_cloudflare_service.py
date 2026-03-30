@@ -357,6 +357,8 @@ class MockCloudflareService:
         Get record name in matching format to how Cloudflare stores record names.
         Root records (@) are converted to the record's zone name.
         Record names not ending in the zone name get the zone name appended to them.
+
+        Returns None if used outside scope of DNS records page / record name not given.
         """
         try:
             zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
