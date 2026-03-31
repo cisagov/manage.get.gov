@@ -29,6 +29,37 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
+export function editAndCommentButtonListener (){
+        const table = document.querySelector("#dnsrecords-table");
+        if(!table) return;
+
+        table.addEventListener('click', function(e) {
+            const editBtn = e.target.closest('[id^="edit-button-"]')
+            const commenttBtn = e.target.closest('[id^="comment-button-"]')
+            console.log("did we pick the buttons", editBtn, commenttBtn)
+            if(!editBtn && !commenttBtn) return;
+            
+            const recordId = (editBtn || commenttBtn).dataset.recordId
+            const alpineData = Alpine.$data(table)
+            
+            if(editBtn){
+                const idx = alpineData.openComments.indexOf(recordId)
+                console.log("IS THERE AN INEX", idx)
+                if(idx > -1) alpineData.openComments.splice(idx,1);
+                alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
+            }
+
+            if(commenttBtn){
+                if(alpineData.showFormId === recordId) alpineData.showFormId = null;
+                const idx = alpineData.openComments.indexOf(recordId);
+                idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
+
+            }
+        
+        })
+}
+
+
 export function initDynamicDNSRecordFormFields() { 
     
     const typeField = document.getElementById('id_type');
@@ -49,7 +80,6 @@ export function initDynamicDNSRecordFormFields() {
                 }
     })
   
-
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
