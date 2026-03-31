@@ -948,8 +948,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         else:
             initial_data = self.record_dict_for_initial_data(dns_record)
             dns_record.form = DomainDNSRecordForm(
-                initial=initial_data, auto_id=auto_id, domain_name=self.object.name
-            )  # type: ignore[attr-defined]
+                initial=initial_data, auto_id=auto_id, domain_name=self.object.name # type: ignore[attr-defined]
+            )  
         dns_record.form_template = self.get_form_template(dns_record.type)  # type: ignore[attr-defined]
 
     def _error_response(self, request, form=None, status=200):
