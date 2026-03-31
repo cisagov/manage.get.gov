@@ -3,9 +3,8 @@
             data-record-id="{{ record_id }}"
             data-action="comment"
             id="comment-button"
+            aria-label="Toggle to view comment for {{ dns_record.name }}"
          >
-
-         <span class="usa-sr-only">{{ dns_record.type }} comment for {{ dns_record.name }}</span>
          
          <svg   
              class="usa-icon" 
