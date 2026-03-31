@@ -333,11 +333,12 @@ class DomainRequestWizard(TemplateView):
 
         # Redirect federal users away from steps they shouldn't access
         if (
-            self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+            not self.is_portfolio
+            and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
             and current_url not in ["generic_org_type", "organization_federal"]
         ):
             return self.goto("organization_federal")
-        
+
         context = self.get_context_data()
         self.steps.current = current_url
         context["forms"] = self.get_forms()
@@ -479,7 +480,10 @@ class DomainRequestWizard(TemplateView):
                 "review_form_is_complete": True,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
-                "is_federal_blocked": self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL,
+                "is_federal_blocked": (
+                    not self.is_portfolio
+                    and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                ),
             }
         else:  # form is not complete
             context = {
@@ -490,7 +494,10 @@ class DomainRequestWizard(TemplateView):
                 "review_form_is_complete": False,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
-                "is_federal_blocked": self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL,
+                "is_federal_blocked": (
+                    not self.is_portfolio
+                    and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                ),
             }
         context["domain_request_id"] = self.domain_request.id
         context["version_token"] = self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else ""
@@ -712,8 +719,8 @@ class TribalGovernment(DomainRequestWizard):
 
 class OrganizationFederal(DomainRequestWizard):
     template_name = "domain_request_org_federal.html"
-    # forms = [forms.OrganizationFederalForm]
-    forms = []
+    forms: list = []  # need this for linter
+
 
 class OrganizationElection(DomainRequestWizard):
     template_name = "domain_request_org_election.html"
