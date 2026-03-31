@@ -1390,7 +1390,8 @@ class TestPortfolio(WebTest):
         # Initial request to set the portfolio in session
         response = self.client.get(reverse("home"), follow=True)
 
-        portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
         self.assertEqual(portfolio.organization_name, "Hotel California")
         self.assertContains(response, "Hotel California")
 
@@ -1405,7 +1406,8 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Updated Hotel California")
 
         # Verify that the session contains the updated portfolio
-        portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
         self.assertEqual(portfolio.organization_name, "Updated Hotel California")
 
     @less_console_noise_decorator
@@ -4987,7 +4989,9 @@ class TestPortfolioSelectOrganizationView(WebTest):
             self.client.post(reverse("set-session-portfolio"))
 
         # Access the session via the request
-        active_portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        active_portfolio = Portfolio.objects.get(pk=portfolio_id)
+        
         self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")
 
 
@@ -5032,7 +5036,7 @@ class TestMultiplePortfolios(WebTest):
 
     def set_session_portfolio(self, portfolio=None):
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @override_flag("multiple_portfolios", active=True)

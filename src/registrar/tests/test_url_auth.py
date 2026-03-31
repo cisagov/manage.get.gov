@@ -123,14 +123,14 @@ class TestURLAuth(TestCase):
         "/api/v1/rdap/",
         "/health",
         "/version",
-        "/admin/login",
+        "/admin/login/",
     ]
 
     # We will test that the following URLs are not protected by auth
     # and that the url returns a 200 response
     NO_AUTH_URLS = [
         "/health",
-        "/admin/login",
+        "/admin/login/",
     ]
 
     def assertURLIsProtectedByAuth(self, url):

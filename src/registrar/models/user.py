@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import Q, Exists, OuterRef
 from django.apps import apps
 
+
 from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -475,6 +476,7 @@ class User(AbstractUser):
     def get_user_domain_request_ids(self, request):
         """Returns either the domain request ids associated with this user on UserDomainRole or Portfolio"""
         portfolio_id = request.session.get("portfolio")
+        Portfolio = apps.get_model("registrar", "Portfolio")
         portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
 
         if self.is_org_user(request) and self.has_view_all_domain_requests_portfolio_permission(portfolio):

@@ -2257,6 +2257,7 @@ class DomainRequestDataFull(DomainRequestExport):
                         "other_contacts__last_name",
                         Value(" "),
                         "other_contacts__email",
+                        output_field=CharField(),
                     ),
                     delimiter=delimiter,
                     distinct=True,

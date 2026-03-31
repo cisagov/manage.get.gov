@@ -22,7 +22,9 @@ whitenoise = "*"
 django-widget-tweaks = "*"
 cachetools = "*"
 requests = "*"
-django-fsm = "2.8.1"
+
+# TBD if we keep this
+django-fsm-2 = "*"
 django-phonenumber-field = {extras = ["phonenumberslite"], version = "*"}
 boto3 = "*"
 typing-extensions ='*'
