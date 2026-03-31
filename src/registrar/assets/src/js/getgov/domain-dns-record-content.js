@@ -34,9 +34,8 @@ export function editAndCommentButtonListener (){
         if(!table) return;
 
         table.addEventListener('click', function(e) {
-            const editBtn = e.target.closest('[id^="edit-button-"]')
-            const commenttBtn = e.target.closest('[id^="comment-button-"]')
-            console.log("did we pick the buttons", editBtn, commenttBtn)
+            const editBtn =  e.target.closest('[data-action="edit"')
+            const commenttBtn = e.target.closest('[data-action="comment"')
             if(!editBtn && !commenttBtn) return;
             
             const recordId = (editBtn || commenttBtn).dataset.recordId
@@ -44,7 +43,6 @@ export function editAndCommentButtonListener (){
             
             if(editBtn){
                 const idx = alpineData.openComments.indexOf(recordId)
-                console.log("IS THERE AN INEX", idx)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
                 alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
             }

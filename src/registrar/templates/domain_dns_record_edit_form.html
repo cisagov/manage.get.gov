@@ -2,7 +2,7 @@
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
 <tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
-    <td colspan="5" class="no-padding">
+    <td colspan="5" class="no-padding-right">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
                 id="dnsrecord-edit-form-{{ record_id }}"
@@ -51,8 +51,8 @@
 </tr>
 
 <!-- Comment row -->
-<tr x-show="openComments.includes('{{ record_id }}') && showFormId != '{{ record_id }}' " class="hide-td-borders">
-    <td colspan="5" class="padding-right-0">
+<tr x-show="openComments.includes('{{ record_id }}')" class="hide-td-borders">
+    <td colspan="5" class="no-padding-right">
           <div class="border radius-lg border-base-lighter padding-3">
              <span id="comment-{{record_id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->

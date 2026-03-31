@@ -199,9 +199,13 @@ th {
           top:5px;
         }
       }
-  
+    }
+    
+    td:nth-child(1).no-padding-right{
+      padding-right: 0;
     }
 
+    
     th:nth-child(2),
     td:nth-child(2){
       width:29%;

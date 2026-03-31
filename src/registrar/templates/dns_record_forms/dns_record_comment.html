@@ -1,7 +1,8 @@
 <button type="button"
             class="usa-button usa-button--unstyled  margin-top-0"
             data-record-id="{{ record_id }}"
-            id="comment-button-{{ record_id }}"
+            data-action="comment"
+            id="comment-button"
          >
 
          <span class="usa-sr-only">{{ dns_record.type }} comment for {{ dns_record.name }}</span>

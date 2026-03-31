@@ -1,4 +1,4 @@
-<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ record_id }}' || showFormId ==  '{{ record_id }}' ? 'hide-td-borders' : ''">
+<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ record_id }}' || openComments.includes('{{record_id}}')? 'hide-td-borders' : ''">
     <td id="dns-type-{{ record_id }}" data-label="Type">
         {{dns_record.type}}
 
@@ -25,8 +25,9 @@
             :aria-expanded="showFormId == '{{ record_id }}' ? 'true' : 'false'"
             aria-controls="dnsrecord-edit-row-{{ record_id }}"
             aria-label="Edit {{ dns_record.name }}"
-            id="edit-button-{{ record_id }}"
+            id="edit-button"
             data-record-id="{{ record_id }}"
+            data-action="edit"
             >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="/public/img/sprite.svg#edit"></use>
