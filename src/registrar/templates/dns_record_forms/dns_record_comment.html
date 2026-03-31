@@ -4,6 +4,8 @@
             data-action="comment"
             id="comment-button"
             aria-label="Toggle to view comment for {{ dns_record.name }}"
+            aria-expanded="false"
+            :aria-expanded="openComments.includes('{{ record_id }}') ? 'true' : 'false' "
          >
          
          <svg   
