@@ -192,13 +192,15 @@ th {
     td:nth-child(1){
       width:15%;
       padding-right:1em;
+
       #comment-button{
         float:right;
         column-gap: 0;
         .usa-icon{
-          top:5px;
+          top:4px;
         }
       }
+      
     }
     
     td:nth-child(1).no-padding-right{

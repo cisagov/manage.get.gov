@@ -24,8 +24,8 @@
                         focusable="false" 
                         role="img"
                         width="8">
-                        <use x-show="!openComments.includes('{{ record_id }}') && showFormId != '{{ record_id }}'" xlink:href="/public/img/sprite.svg#expand_more" ></use>
-                        <use x-show="openComments.includes('{{ record_id }}') || showFormId == '{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                        <use x-show="!openComments.includes('{{ record_id }}')" xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="openComments.includes('{{ record_id }}')" xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
             
 </button>
