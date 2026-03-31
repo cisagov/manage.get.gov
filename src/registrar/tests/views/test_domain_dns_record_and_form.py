@@ -216,4 +216,4 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         response = self.client.get(self._url())
 
         for record_case in self.RECORD_TEST_CASES:
-            self.assertContains(response, f'{record_case["type"]} comment for {record_case["name"]}')
+            self.assertContains(response, f'Toggle to view comment for {record_case["name"]}')
