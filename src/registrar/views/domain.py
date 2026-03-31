@@ -822,7 +822,7 @@ class DomainDNSView(DomainBaseView):
         self._update_session_with_domain()
 
 
-@method_decorator(waffle_flag("dns_hosting"), name="dispatch")
+@method_decorator(waffle_flag("dns_hosting"), name="dispatch")  # type: ignore[arg-type]
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
