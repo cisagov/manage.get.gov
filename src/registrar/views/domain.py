@@ -875,9 +875,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return txt_template
         else:
             return base_template
-        
+
     def get_form_kwargs(self):
-        kwargs= super(DomainDNSRecordsView, self).get_form_kwargs()
+        kwargs = super(DomainDNSRecordsView, self).get_form_kwargs()
         kwargs["domain_name"] = self.object.name
         return kwargs
 

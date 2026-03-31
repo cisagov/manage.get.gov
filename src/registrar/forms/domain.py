@@ -896,7 +896,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = cleaned_data.get("type")
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
-        
+
         if record_type:
             record = DNSRecordTypes(record_type)
             if record.validator:
