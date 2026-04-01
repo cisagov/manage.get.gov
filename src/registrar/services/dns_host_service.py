@@ -42,7 +42,7 @@ class DnsHostService:
     def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for a zone."""
         if settings.DNS_NS_SET_RANGE:
-            ns_set = random.randint(1, settings.DNS_NS_SET_RANGE) # nosec
+            ns_set = random.randint(1, settings.DNS_NS_SET_RANGE)  # nosec
             return self.dns_vendor_service.update_zone_dns_settings(x_zone_id, ns_set=ns_set)
         return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)
 
