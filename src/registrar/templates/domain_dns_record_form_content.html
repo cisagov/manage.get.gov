@@ -14,20 +14,27 @@
 </div>
 
 <div x-cloak x-show="recordType" x-cloak>
-  
-    <template x-if="recordType !== 'TXT' " >
-        <!-- Only show this for forms that are not txt -->
+
+    <template x-if="recordType !== 'TXT' && recordType !== 'MX'">
+        <!-- Only show this for forms that are not txt or mx -->
         <div>
               {% include "dns_record_forms/base_record_form.html" with form=form %}
         </div>
-    
+    </template>
+    <template x-if="recordType === 'MX'">
+        <div>
+              {% include "dns_record_forms/mx_record_form.html" with form=form %}
+        </div>
     </template>
     <template x-if="recordType === 'TXT' ">
         <div>
               {% include "dns_record_forms/txt_record_form.html" with form=form %}
-        </div> 
+        </div>
     </template>
-    {% input_with_errors form.comment %}
+
+    {% with add_group_class="usa-form-group--unstyled-error" %}
+        {% input_with_errors form.comment %}
+    {% endwith %}
 
     <button
         type="reset"

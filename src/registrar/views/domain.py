@@ -871,8 +871,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form_dir = "./dns_record_forms/"
         base_template = f"{form_dir}base_record_form.html"
         txt_template = f"{form_dir}txt_record_form.html"
+        mx_template = f"{form_dir}mx_record_form.html"
         if record_type == "TXT":
             return txt_template
+        elif record_type == "MX":
+            return mx_template
         else:
             return base_template
 
@@ -921,13 +924,17 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""
-        return {
+        data = {
             "type": form.cleaned_data["type"],
             "name": form.cleaned_data["name"],
             "content": form.cleaned_data["content"],
             "ttl": int(form.cleaned_data["ttl"]),
             "comment": form.cleaned_data.get("comment", ""),
         }
+        priority = form.cleaned_data.get("priority")
+        if priority is not None:
+            data["priority"] = priority
+        return data
 
     def _attach_form(self, dns_record: DnsRecord, *, form=None) -> None:
         """Prepare a DNS record for template rendering by attaching a form and template path.
