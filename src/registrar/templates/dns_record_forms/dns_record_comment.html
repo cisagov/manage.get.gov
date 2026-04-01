@@ -1,29 +1,26 @@
 <button type="button"
-            class="usa-button usa-button--unstyled  margin-top-0"
+            class="usa-button usa-button--unstyled comment-button"
             data-record-id="{{ record_id }}"
             data-action="comment"
-            id="comment-button"
             aria-label="Toggle to view comment for {{ dns_record.name }}"
             aria-expanded="false"
             :aria-expanded="openComments.includes('{{ record_id }}') ? 'true' : 'false' "
          >
          
          <svg   
-             class="usa-icon" 
+             class="usa-icon margin-top-05" 
              aria-hidden="true" 
              focusable="false" 
              role="img"
-             width="8"
              >
                     <use href="/public/img/sprite.svg#comment"></use>
                 </svg>
 
                     <svg
-                        class="usa-icon" 
+                        class="usa-icon margin-top-05" 
                         aria-hidden="true" 
                         focusable="false" 
-                        role="img"
-                        width="8">
+                        role="img">
                         <use x-show="!openComments.includes('{{ record_id }}')" xlink:href="/public/img/sprite.svg#expand_more" ></use>
                         <use x-show="openComments.includes('{{ record_id }}')" xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>

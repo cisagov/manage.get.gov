@@ -1,11 +1,21 @@
 <tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ record_id }}' || openComments.includes('{{record_id}}')? 'hide-td-borders' : ''">
     <td id="dns-type-{{ record_id }}" data-label="Type">
-        {{dns_record.type}}
+        <div class="tablet:display-flex tablet:flex-align-baseline">
 
+                   {{dns_record.type}}
 
-        {% if dns_record.comment %}
+           
+         {% if dns_record.comment %}
+            <span class="margin-left-auto">
             {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
+                </span>
         {% endif %}
+
+     
+
+       
+        </div>
+      
     </td>
     <td id="dns-name-{{ record_id }}" data-label="Name">
         {{dns_record.name}}
@@ -20,12 +30,11 @@
         <div class="tablet:display-flex tablet:flex-row">
             <button 
             type="button"
-            class="usa-button usa-button--unstyled margin-right-2 margin-top-0"
+            class="usa-button usa-button--unstyled margin-right-2"
             aria-expanded="false"
             :aria-expanded="showFormId == '{{ record_id }}' ? 'true' : 'false'"
             aria-controls="dnsrecord-edit-row-{{ record_id }}"
             aria-label="Edit {{ dns_record.name }}"
-            id="edit-button"
             data-record-id="{{ record_id }}"
             data-action="edit"
             >
@@ -35,12 +44,11 @@
                 Edit 
                 <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
                     <svg
-                        aria-label="Access edit form"
-                        class="usa-icon" 
+                        class="usa-icon margin-top-05" 
                         aria-hidden="true" 
                         focusable="false" 
                         role="img"
-                        width="8">
+                       >
                         <use x-show="showFormId !='{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_more" ></use>
                         <use x-show="showFormId == '{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
