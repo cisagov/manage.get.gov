@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, ANY
 from django.test import TestCase
 from django.db import IntegrityError
 from httpx import HTTPStatusError
@@ -314,7 +314,7 @@ class TestDnsHostService(TestCase):
 
         response = self.service.update_zone_dns_settings(x_zone_id)
 
-        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id)
+        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id, ns_set=ANY)
         self.assertTrue(response.success)
         self.assertEqual(response.result["zone_mode"], "dns_only")
         self.assertEqual(response.result["nameservers"]["ns_set"], 2)

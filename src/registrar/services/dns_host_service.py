@@ -122,9 +122,10 @@ class DnsHostService:
             self.create_db_zone({"result": zone_data}, domain_name)
         else:
             try:
-                self.create_and_save_zone(domain_name, x_account_id)
+                zone_data = self.create_and_save_zone(domain_name, x_account_id)
                 # Update zone to use and assign custom nameservers
-                self.update_zone_dns_settings()
+                print("zone data: ", zone_data)
+                self.update_zone_dns_settings(zone_data["id"])
             except Exception as e:
                 logger.error(f"dnsSetup for zone failed {e}")
                 raise
@@ -165,6 +166,7 @@ class DnsHostService:
         try:
             self.create_db_zone(zone_data, domain_name)
             logger.info(f"Successfully saved zone '{domain_name}' to database")
+            return zone_data
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
             raise
