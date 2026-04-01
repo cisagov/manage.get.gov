@@ -150,6 +150,13 @@ class UserFixture:
             "email": "charles.wells@ecstech.com",
             "title": "ADMIN",
         },
+        {
+            "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
+            "first_name": "Alysia",
+            "last_name": "Broddrick",
+            "email": "abroddrick@truss.works",
+            "title": "I drink coffee and know things",
+        },
     ]
 
     STAFF = [
@@ -269,6 +276,12 @@ class UserFixture:
             "last_name": "MCFAKERSON",
             "email": "feedback+10@get.gov",
             "title": "ANALYST",
+        },
+        {
+            "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
+            "first_name": "Alysia-Analyst",
+            "last_name": "Alysia-Analyst",
+            "email": "abroddrick+1@truss.works",
         },
     ]
 
