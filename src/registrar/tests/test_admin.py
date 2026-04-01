@@ -274,7 +274,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.client.force_login(self.omb_analyst)
         response = self.client.get(
             reverse("admin:registrar_domaininvitation_changelist"),
-            {"status__exact": DomainInvitation.DomainInvitationStatus.INVITED},
+            {"status": DomainInvitation.DomainInvitationStatus.INVITED},
         )
         self.assertNotContains(response, invitation.email)
         # update domain
