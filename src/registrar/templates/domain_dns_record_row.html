@@ -1,9 +1,9 @@
 <tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ record_id }}' || openComments.includes('{{record_id}}')? 'hide-td-borders' : ''">
     <td id="dns-type-{{ record_id }}" data-label="Type">
         <div class="tablet:display-flex tablet:flex-align-baseline">
-
-                   {{dns_record.type}}
-
+            <span>
+                {{dns_record.type}}
+            </span>
            
          {% if dns_record.comment %}
             <span class="margin-left-auto">
