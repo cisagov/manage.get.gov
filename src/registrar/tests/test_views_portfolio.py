@@ -4991,7 +4991,7 @@ class TestPortfolioSelectOrganizationView(WebTest):
         # Access the session via the request
         portfolio_id = self.client.session.get("portfolio")
         active_portfolio = Portfolio.objects.get(pk=portfolio_id)
-        
+
         self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")
 
 
