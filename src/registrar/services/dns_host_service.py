@@ -165,10 +165,11 @@ class DnsHostService:
         try:
             self.create_db_zone(zone_data, domain_name)
             logger.info(f"Successfully saved zone '{domain_name}' to database")
-            return zone_data
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
             raise
+
+        return zone_data
 
     def create_dns_record(self, x_zone_id, form_record_data) -> "DnsRecord | None":
         """Calls create method of vendor service to create a DNS record.
