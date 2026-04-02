@@ -9,6 +9,8 @@ from registrar.models.dns.dns_account import DnsAccount
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.enums import DNSRecordTypes
 
+from bao_client import BaoClient
+
 fake = Faker()
 logger = logging.getLogger(__name__)
 
@@ -35,12 +37,24 @@ class DnsRecordFixture(DomainFixture):
             dns_zones_to_create = []
             dns_records_to_create = []
 
+            bao = BaoClient()
+            bao.store_global_api_key("test_global-api-key")
+
             for domain in domains:
                 # Create or get a DNS account for this domain
                 account_name = make_dns_account_name(domain.name)
                 dns_account, created = DnsAccount.objects.get_or_create(name=account_name)
                 if created:
                     logger.info(f"Created DNS account: {account_name}")
+
+                    bao.store_account_tokens(dns_account.name, {
+                        "create_token": f"test-create-token-{dns_account.name}",
+                        "settings_write": f"test-settings-write-{dns_account.name}",
+                        "settings_read": f"test-settings-read-{dns_account.name}",
+                        "dns_write": f"test-dns_write-{dns_account.name}",
+                        "dns_read": f"test-dns-read-{dns_account.name}",
+                    })
+                    logger.info(f"Stored OpenBao tokens for account: {account_name}")
 
                 # Create a DNS zone for each domain with the DNS account
                 dns_zone = DnsZone(
