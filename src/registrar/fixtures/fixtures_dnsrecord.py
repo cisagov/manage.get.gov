@@ -47,14 +47,18 @@ class DnsRecordFixture(DomainFixture):
                 if created:
                     logger.info(f"Created DNS account: {account_name}")
 
-                    bao.store_account_tokens(dns_account.name, {
-                        "create_token": f"test-create-token-{dns_account.name}",
-                        "settings_write": f"test-settings-write-{dns_account.name}",
-                        "settings_read": f"test-settings-read-{dns_account.name}",
-                        "dns_write": f"test-dns_write-{dns_account.name}",
-                        "dns_read": f"test-dns-read-{dns_account.name}",
+                    account_key = dns_account.name.replace(" ", "-")
+
+                    bao.store_account_tokens(account_key, {
+                        "create_token": f"test-create-token-{dns_account.id}",
+                        "settings_write": f"test-settings-write-{dns_account.id}",
+                        "settings_read": f"test-settings-read-{dns_account.id}",
+                        "dns_write": f"test-dns_write-{dns_account.id}",
+                        "dns_read": f"test-dns-read-{dns_account.id}",
                     })
-                    logger.info(f"Stored OpenBao tokens for account: {account_name}")
+                    logger.info(f"Stored OpenBao tokens for account: {dns_account.name}")
+                else:
+                    logger.warning(f"No active vendor account for {dns_account.name}, skipping token storage")
 
                 # Create a DNS zone for each domain with the DNS account
                 dns_zone = DnsZone(
