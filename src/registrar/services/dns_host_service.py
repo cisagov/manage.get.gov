@@ -124,7 +124,7 @@ class DnsHostService:
             try:
                 zone_data = self.create_and_save_zone(domain_name, x_account_id)
                 # Update zone to use and assign custom nameservers
-                logger.info("zone data: ", zone_data.__dict__)
+                logger.info("zone data: ", zone_data)
                 self.update_zone_dns_settings(zone_data["result"].get("id"))
             except Exception as e:
                 logger.error(f"dnsSetup for zone failed {e}")
