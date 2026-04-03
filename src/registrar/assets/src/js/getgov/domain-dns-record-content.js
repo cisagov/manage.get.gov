@@ -14,23 +14,18 @@ function createCharacterCountText (charLimit, textArea){
         return displayCharCount
 }
 
-function switchCommentStatusText(){
+export function switchCommentStatusText(){
 
     const textAreasWithComemnt = document.querySelectorAll('textarea[name="comment"]')
     
     textAreasWithComemnt.forEach( ta => {
-        const span = ta.nextElementSibling;
-        if(span?.tagName = "SPAN"){
-            const div = span.nextElementSibling;
-            if(div?.classList.contains('usa-character-count__status')){
-                div.remove()
-            }
-            span.remove
+        const span = ta.nextElementSibling
+        console.log("span", span?.classList.contains('usa-character-count__status'))
+        if(!span?.classList.contains('usa-character-count__status')){
+            const commentLimit = 500
+            const countText = createCharacterCountText(commentLimit, ta)
+            ta.insertAdjacentElement('afterend', countText)
         }
-
-        const commentLimit = 500
-        const countText = createCharacterCountText(commentLimit, ta)
-        ta.insertAdjacentElement('afterend', countText)
 
     })
 
@@ -56,6 +51,8 @@ function switchFromInputToTextArea (element) {
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
+
+
 
 export function editAndCommentButtonListener (){
         const table = document.querySelector("#dnsrecords-table");
@@ -105,8 +102,6 @@ export function initDynamicDNSRecordFormFields() {
                     switchFromInputToTextArea(currentInput)
                 }
     })
-    
-
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
@@ -137,9 +132,8 @@ export function initDynamicDNSRecordFormFields() {
       
     });
 
-    
-    switchCommentStatusText()
-    
+    switchCommentStatusText();
+
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
