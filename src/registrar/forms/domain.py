@@ -824,7 +824,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
                     "hide_character_count": True,
-                    'maxLength': None
+                    "maxLength": None,
                 }
             ),
         }
