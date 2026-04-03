@@ -2,7 +2,13 @@
 
 function createCharacterCountText (charLimit, textArea){     
         let getCharCountText = function () {
-           return `${charLimit - textArea.value.length} characters allowed`
+           const charactersLeft = charLimit - textArea.value.length
+           if(charactersLeft >= 0){
+             return `${charactersLeft} characters allowed`
+           }
+           else{
+             return `${Math.abs(charactersLeft)} characters over limit`
+           }
         }
         const displayCharCount = document.createElement('div')
         displayCharCount.className = "usa-character-count__status usa-hint"
@@ -20,7 +26,6 @@ function switchCommentStatusText(){
     
     textAreasWithComemnt.forEach( ta => {
         const span = ta.nextElementSibling
-        console.log("span", span?.classList.contains('usa-character-count__status'))
         if(!span?.classList.contains('usa-character-count__status')){
             const commentLimit = 500
             const countText = createCharacterCountText(commentLimit, ta)
@@ -46,7 +51,6 @@ function switchFromInputToTextArea (element) {
         // Character count
         const charLimit = 2048
         const displayCharCount = createCharacterCountText(charLimit, textArea)
-        displayCharCount.classList.add('txt-char-count')
 
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
