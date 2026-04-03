@@ -680,7 +680,7 @@ class TestPortfolio(WebTest):
         # Check if the 'portfolio' session variable exists
         self.assertIn("portfolio", session, "Portfolio session variable should exist.")
         # Check the value of the 'portfolio' session variable
-        self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+        self.assertEqual(session["portfolio"], self.portfolio.id, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_for_single_portfolio_users_with_multiple_portfolios_flag(self):
@@ -703,7 +703,7 @@ class TestPortfolio(WebTest):
             self.assertIn("portfolio", session, "Portfolio session variable should exist.")
             # Check the value of the 'portfolio' session variable
             self.assertIsNotNone(session["portfolio"])
-            self.assertEqual(session["portfolio"], self.portfolio, "Portfolio session variable has the wrong value.")
+            self.assertEqual(session["portfolio"], self.portfolio.id, "Portfolio session variable has the wrong value.")
 
     @less_console_noise_decorator
     def test_portfolio_in_session_is_none_and_no_portfolio(self):
@@ -1390,7 +1390,8 @@ class TestPortfolio(WebTest):
         # Initial request to set the portfolio in session
         response = self.client.get(reverse("home"), follow=True)
 
-        portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
         self.assertEqual(portfolio.organization_name, "Hotel California")
         self.assertContains(response, "Hotel California")
 
@@ -1405,7 +1406,8 @@ class TestPortfolio(WebTest):
         self.assertContains(response, "Updated Hotel California")
 
         # Verify that the session contains the updated portfolio
-        portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        portfolio = Portfolio.objects.get(pk=portfolio_id)
         self.assertEqual(portfolio.organization_name, "Updated Hotel California")
 
     @less_console_noise_decorator
@@ -4987,7 +4989,9 @@ class TestPortfolioSelectOrganizationView(WebTest):
             self.client.post(reverse("set-session-portfolio"))
 
         # Access the session via the request
-        active_portfolio = self.client.session.get("portfolio")
+        portfolio_id = self.client.session.get("portfolio")
+        active_portfolio = Portfolio.objects.get(pk=portfolio_id)
+
         self.assertEqual(active_portfolio.organization_name, "Test Portfolio 2")
 
 
@@ -5032,7 +5036,7 @@ class TestMultiplePortfolios(WebTest):
 
     def set_session_portfolio(self, portfolio=None):
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @override_flag("multiple_portfolios", active=True)

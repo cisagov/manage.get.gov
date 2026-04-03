@@ -956,7 +956,7 @@ class DomainRequest(TimeStampedModel):
         except Exception:
             return ""
 
-    def domain_is_not_active(self):
+    def domain_is_not_active(self) -> bool:
         if self.approved_domain:
             return not self.approved_domain.is_active()
         return True
@@ -1100,7 +1100,7 @@ class DomainRequest(TimeStampedModel):
                 exc_info=True,
             )
 
-    def investigator_exists_and_is_staff(self):
+    def investigator_exists_and_is_staff(self) -> bool:
         """Checks if the current investigator is in a valid state for a state transition"""
         is_valid = True
         # Check if an investigator is assigned. No approval is possible without one.
@@ -1108,7 +1108,7 @@ class DomainRequest(TimeStampedModel):
             is_valid = False
         return is_valid
 
-    def allow_in_review_omb_transition(self):
+    def allow_in_review_omb_transition(self) -> bool:
         """Checks if domain request is in enterprise mode for state transition without investigator"""
         """If it is not in enterprise mode check the investigator exists"""
         if self.is_feb():
@@ -1177,7 +1177,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.INELIGIBLE,
         ],
         target=DomainRequestStatus.IN_REVIEW,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def in_review(self):
         """Investigate an domain request that has been submitted.
@@ -1211,7 +1211,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.INELIGIBLE,
         ],
         target=DomainRequestStatus.ACTION_NEEDED,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def action_needed(self):
         """Send back an domain request that is under investigation or rejected.
@@ -1248,7 +1248,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.REJECTED,
         ],
         target=DomainRequestStatus.APPROVED,
-        conditions=[investigator_exists_and_is_staff],
+        conditions=[investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def approve(self, send_email=True):
         """Approve an domain request that has been submitted.
@@ -1381,7 +1381,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.IN_REVIEW_OMB,
         ],
         target=DomainRequestStatus.REJECTED,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def reject(self):
         """Reject an domain request that has been submitted.
@@ -1411,7 +1411,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.REJECTED,
         ],
         target=DomainRequestStatus.INELIGIBLE,
-        conditions=[domain_is_not_active, investigator_exists_and_is_staff],
+        conditions=[domain_is_not_active, investigator_exists_and_is_staff],  # type: ignore[list-item]
     )
     def reject_with_prejudice(self):
         """The applicant is a bad actor, reject with prejudice.
@@ -1433,7 +1433,7 @@ class DomainRequest(TimeStampedModel):
             DomainRequestStatus.SUBMITTED,
         ],
         target=DomainRequestStatus.IN_REVIEW_OMB,
-        conditions=[domain_is_not_active, allow_in_review_omb_transition],
+        conditions=[domain_is_not_active, allow_in_review_omb_transition],  # type: ignore[list-item]
     )
     def in_review_omb(self):
         """Transitions Domain Request Status from submitted to In review - OMB"""
