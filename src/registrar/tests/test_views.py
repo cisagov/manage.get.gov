@@ -899,7 +899,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.client.force_login(user)
         # simulate buggy state: portfolio present in session during setup
         session = self.client.session
-        session["portfolio"] = portfolio
+        session["portfolio"] = portfolio.id
         session.save()
 
         with override_flag("multiple_portfolios", active=True):
@@ -930,7 +930,7 @@ class FinishUserProfileTests(TestWithUser, WebTest):
         self.client.force_login(unfinished_user)
 
         session = self.client.session
-        session["portfolio"] = portfolio
+        session["portfolio"] = portfolio.id
         session.save()
 
         with override_flag("multiple_portfolios", active=True):

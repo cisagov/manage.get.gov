@@ -737,7 +737,11 @@ class TestDomainRequestAdmin(MockEppLib):
         # of the request
         self.assertContains(response, "Federal", count=6)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
+        self.assertContains(
+            response,
+            '<a id="genericorganization-filter-federal" href="?converted_generic_orgs=federal&amp;generic_org_type__exact=federal">Federal</a>',
+            count=1,
+        )
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 
