@@ -1134,7 +1134,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """On the Other Contacts page, the yes/no form gets initialized with YES selected if the
         domain request has other contacts"""
         # Domain Request has other contacts by default
-        domain_request = completed_domain_request(user=self.user)
+        domain_request = completed_domain_request(user=self.user, generic_org_type="city")
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -1158,7 +1158,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         for both yes/no radios if the domain request has a values for cisa_representative_first_name and
         anything_else"""
 
-        domain_request = completed_domain_request(user=self.user, has_anything_else=True, has_cisa_representative=True)
+        domain_request = completed_domain_request(
+            user=self.user, has_anything_else=True, has_cisa_representative=True, generic_org_type="city"
+        )
         domain_request.anything_else = "1234"
         domain_request.save()
 
@@ -1191,7 +1193,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         """On the Other Contacts page, the yes/no form gets initialized with NO selected if the
         domain request has no other contacts"""
         # Domain request has other contacts by default
-        domain_request = completed_domain_request(user=self.user, has_other_contacts=False)
+        domain_request = completed_domain_request(user=self.user, has_other_contacts=False, generic_org_type="city")
         domain_request.no_other_contacts_rationale = "Hello!"
         domain_request.save()
         # prime the form by visiting /edit
@@ -1217,7 +1219,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         and anything_else is no"""
 
         domain_request = completed_domain_request(
-            user=self.user, has_anything_else=False, has_cisa_representative=False
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            generic_org_type="city",
         )
 
         # Unlike the other contacts form, the no button is tracked with these boolean fields.
@@ -1253,7 +1258,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_submitting_additional_details_deletes_cisa_representative_and_anything_else(self):
         """When a user submits the Additional Details form with no selected for all fields,
         the domain request's data gets wiped when submitted"""
-        domain_request = completed_domain_request(name="nocisareps.gov", user=self.user)
+        domain_request = completed_domain_request(name="nocisareps.gov", user=self.user, generic_org_type="city")
         domain_request.cisa_representative_first_name = "cisa-firstname1"
         domain_request.cisa_representative_last_name = "cisa-lastname1"
         domain_request.cisa_representative_email = "fake@faketown.gov"
@@ -1318,7 +1323,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When a user submits the Additional Details form,
         the domain request's data gets submitted"""
         domain_request = completed_domain_request(
-            name="cisareps.gov", user=self.user, has_anything_else=False, has_cisa_representative=False
+            name="cisareps.gov",
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            generic_org_type="city",
         )
 
         # Make sure we have the data we need for the test
@@ -1373,7 +1382,11 @@ class DomainRequestTests(TestWithUser, WebTest):
     def test_if_cisa_representative_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a cisa representative must provide a value"""
         domain_request = completed_domain_request(
-            name="cisareps.gov", user=self.user, has_anything_else=False, has_cisa_representative=False
+            name="cisareps.gov",
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            generic_org_type="city",
         )
 
         # prime the form by visiting /edit
@@ -1407,7 +1420,9 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_if_anything_else_yes_no_form_is_yes_then_field_is_required(self):
         """Applicants with a anything else must provide a value"""
-        domain_request = completed_domain_request(name="cisareps.gov", user=self.user, has_anything_else=False)
+        domain_request = completed_domain_request(
+            name="cisareps.gov", user=self.user, has_anything_else=False, generic_org_type="city"
+        )
 
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
@@ -1442,7 +1457,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When a user submits the Additional Details form without checking the
         has_cisa_representative and has_anything_else_text fields, the form should deny this action"""
         domain_request = completed_domain_request(
-            name="cisareps.gov", user=self.user, has_anything_else=False, has_cisa_representative=False
+            name="cisareps.gov",
+            user=self.user,
+            has_anything_else=False,
+            has_cisa_representative=False,
+            generic_org_type="city",
         )
 
         self.assertEqual(domain_request.has_anything_else_text, None)
@@ -1478,7 +1497,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         """When a user submits the Other Contacts form with other contacts selected, the domain request's
         no other contacts rationale gets deleted"""
         # Domain request has other contacts by default
-        domain_request = completed_domain_request(user=self.user, has_other_contacts=False)
+        domain_request = completed_domain_request(
+            user=self.user,
+            has_other_contacts=False,
+            generic_org_type="city",
+        )
         domain_request.no_other_contacts_rationale = "Hello!"
         domain_request.save()
         # prime the form by visiting /edit
@@ -1530,7 +1553,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         other contacts get deleted for other contacts that exist and are not joined to other objects
         """
         # Domain request has other contacts by default
-        domain_request = completed_domain_request(user=self.user)
+        domain_request = completed_domain_request(user=self.user, generic_org_type="city")
         # prime the form by visiting /edit
         self.app.get(reverse("edit-domain-request", kwargs={"domain_request_pk": domain_request.pk}))
         # django-webtest does not handle cookie-based sessions well because it keeps
@@ -1598,8 +1621,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(555) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1736,8 +1758,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1812,8 +1833,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1891,8 +1911,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -1969,8 +1988,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2046,8 +2064,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5556",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2120,8 +2137,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5555",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2189,8 +2205,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(201) 555 5555",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2254,8 +2269,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Populate the database with a domain request
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -2379,7 +2393,7 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # ---- TYPE PAGE  ----
         type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "federal"
+        type_form["generic_org_type-generic_org_type"] = "city"
 
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
@@ -2812,8 +2826,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             phone="(555) 555 5557",
         )
         domain_request, _ = DomainRequest.objects.get_or_create(
-            generic_org_type="federal",
-            federal_type="executive",
+            generic_org_type="city",
             purpose="Purpose of the site",
             anything_else="No",
             is_policy_acknowledged=True,
@@ -3261,7 +3274,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
     def test_unlocked_steps_full_domain_request(self):
         """Test when all fields in the domain request are filled."""
 
-        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
+        domain_request = completed_domain_request(
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, generic_org_type="city"
+        )
         domain_request.anything_else = False
         domain_request.has_anything_else_text = False
         domain_request.save()

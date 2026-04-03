@@ -67,7 +67,7 @@ class DomainRequestWizard(TemplateView):
     REGULAR_TITLES = {
         Step.ORGANIZATION_TYPE: _("Type of organization"),
         Step.TRIBAL_GOVERNMENT: _("Tribal government"),
-        Step.ORGANIZATION_FEDERAL: _("Federal government branch"),
+        Step.ORGANIZATION_FEDERAL: _("Federal government"),
         Step.ORGANIZATION_ELECTION: _("Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
@@ -330,6 +330,15 @@ class DomainRequestWizard(TemplateView):
         # refresh step_history to ensure we don't erroneously unlock unfinished
         # steps just because we visited it
         self.storage["step_history"] = self.db_check_for_unlocking_steps()
+
+        # Redirect federal users away from steps they shouldn't access
+        if (
+            not self.is_portfolio
+            and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+            and current_url not in ["generic_org_type", "organization_federal"]
+        ):
+            return self.goto("organization_federal")
+
         context = self.get_context_data()
         self.steps.current = current_url
         context["forms"] = self.get_forms()
@@ -471,6 +480,10 @@ class DomainRequestWizard(TemplateView):
                 "review_form_is_complete": True,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
+                "is_federal_blocked": (
+                    not self.is_portfolio
+                    and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                ),
             }
         else:  # form is not complete
             context = {
@@ -481,6 +494,10 @@ class DomainRequestWizard(TemplateView):
                 "review_form_is_complete": False,
                 "user": self.request.user,
                 "requested_domain__name": requested_domain_name,
+                "is_federal_blocked": (
+                    not self.is_portfolio
+                    and self.domain_request.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+                ),
             }
         context["domain_request_id"] = self.domain_request.id
         context["version_token"] = self.domain_request.updated_at.isoformat() if self.domain_request.updated_at else ""
@@ -702,7 +719,7 @@ class TribalGovernment(DomainRequestWizard):
 
 class OrganizationFederal(DomainRequestWizard):
     template_name = "domain_request_org_federal.html"
-    forms = [forms.OrganizationFederalForm]
+    forms: list = []  # need this for linter
 
 
 class OrganizationElection(DomainRequestWizard):
