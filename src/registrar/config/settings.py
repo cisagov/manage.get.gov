@@ -835,6 +835,7 @@ SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
 # Configuration
 DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
+DNS_NS_SET_RANGE = 5 if IS_PRODUCTION else 3
 
 # endregion
 
