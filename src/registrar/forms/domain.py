@@ -789,6 +789,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
     def __init__(self, *args, **kwargs):
+        self.domain_name = kwargs.pop("domain_name", None)
         super().__init__(*args, **kwargs)
 
         record_type = self.data.get("type") or self.initial.get("type")
@@ -842,6 +843,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("", "- Select -"),
             ("A", "A"),
             ("AAAA", "AAAA"),
+            ("CNAME", "CNAME"),
             ("TXT", "TXT"),
         ],
         required=True,
@@ -892,6 +894,7 @@ class DomainDNSRecordForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
+        name = cleaned_data.get("name")
         content = cleaned_data.get("content")
 
         if record_type:
@@ -903,5 +906,11 @@ class DomainDNSRecordForm(forms.ModelForm):
                     self.add_error("content", record.error_message or e)
             elif not content:
                 self.add_error("content", record.error_message)
+
+            if record_type == DNSRecordTypes.CNAME:
+                try:
+                    DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
+                except ValidationError as e:
+                    self.add_error("content", record.error_message or e)
 
         return cleaned_data
