@@ -14,7 +14,7 @@ function createCharacterCountText (charLimit, textArea){
         return displayCharCount
 }
 
-export function switchCommentStatusText(){
+function switchCommentStatusText(){
 
     const textAreasWithComemnt = document.querySelectorAll('textarea[name="comment"]')
     
