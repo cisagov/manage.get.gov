@@ -739,7 +739,9 @@ class TestDomainRequestAdmin(MockEppLib):
         # This may be a bit more robust
         self.assertContains(
             response,
-            '<a id="genericorganization-filter-federal" href="?converted_generic_orgs=federal&amp;generic_org_type__exact=federal">Federal</a>',
+            '<a id="genericorganization-filter-federal"'
+            ' href="?converted_generic_orgs=federal&amp;generic_org_type__exact=federal">'
+            "Federal</a>",
             count=1,
         )
         # Now let's make sure the long description does not exist
