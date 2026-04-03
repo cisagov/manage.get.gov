@@ -798,6 +798,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
+        
+        self.fields['comment'].error_messages['max_length'] = "Response must be no more than 500 characters"
 
         config = {
             rt.value: {
@@ -823,6 +825,8 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
+                    "hide_character_count": True,
+                    "maxLength": None,
                 }
             ),
         }
