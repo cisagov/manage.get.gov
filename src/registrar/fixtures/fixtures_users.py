@@ -157,6 +157,13 @@ class UserFixture:
             "email": "abroddrick@truss.works",
             "title": "I drink coffee and know things",
         },
+        {
+            "username": "41407964-a570-4c5c-9179-ddbf45326eeb",
+            "first_name": "Samir",
+            "last_name": "Mishra",
+            "email": "samir.mishra@ecstech.com",
+            "title": "Code Mage",
+        },
     ]
 
     STAFF = [
