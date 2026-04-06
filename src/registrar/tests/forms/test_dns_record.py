@@ -24,7 +24,6 @@ class BaseDomainDNSRecordFormTest(TestCase):
             # TODO: Comment out PTR test case after implementing PTR host name validation
             # "PTR": "www.example.com",
             "TXT": "Some valid text",
-
         }
 
     def valid_form_data_for_record_type(self, record_type, content):
