@@ -21,7 +21,10 @@ class BaseDomainDNSRecordFormTest(TestCase):
             "AAAA": "2001:db8::1234:5678",
             # TODO: Comment out CNAME test case after implementing CNAME host name validation
             # "CNAME": "www.example.com",
+            # TODO: Comment out PTR test case after implementing PTR host name validation
+            # "PTR": "www.example.com",
             "TXT": "Some valid text",
+
         }
 
     def valid_form_data_for_record_type(self, record_type, content):
@@ -103,6 +106,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             "AAAA": "192.0.2.10",
             # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
             # "CNAME": "..."
+            # TODO: Comment out and complete PTR test case when PTR validation is implemented
+            # "PTR": "..."
         }
         invalid_quotes_txt_error = (
             'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'
