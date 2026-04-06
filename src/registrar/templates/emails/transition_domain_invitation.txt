@@ -47,18 +47,11 @@ SOMETHING WRONG?
 
 If you think you received this message in error or have a question, let us know in a reply to this email. 
 
-
-THANK YOU
-
-.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
-
 ----------------------------------------------------------------
 
 The .gov team
-
-.Gov blog <https://get.gov/updates/> 
-Domain management <{{ manage_url }}>
-Get.gov <https://get.gov>
+Contact us <https://get.gov/contact/>
+Learn how .gov helps the public identify official, trusted information <https://get.gov>
 
 The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
 {% endautoescape %}
