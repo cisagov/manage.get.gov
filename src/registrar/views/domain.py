@@ -33,6 +33,7 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
     DomainInvitation,
+    Portfolio,
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
@@ -109,7 +110,8 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         return self.render_to_response(context)
 
     def get_portfolio(self):
-        return self.request.session.get("portfolio")
+        portfolio_id = self.request.session.get("portfolio")
+        return Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
 
     def in_portfolio_context(self) -> bool:
         return bool(self.get_portfolio())
@@ -125,10 +127,10 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         # domain:private_key is the session key to use for
         # caching the domain in the session
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        cached_domain = self.session.get(domain_pk)
+        cached_domain_id = self.session.get(domain_pk)
 
-        if cached_domain:
-            self.object = cached_domain
+        if cached_domain_id:
+            self.object = Domain.objects.get(id=cached_domain_id)
         else:
             self.object = self.get_object()
         self._update_session_with_domain()
@@ -138,7 +140,8 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         update domain in the session cache
         """
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        self.session[domain_pk] = self.object
+        # self.session[domain_pk] = self.object
+        self.session[domain_pk] = self.object.id
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -466,8 +469,9 @@ class DomainView(DomainBaseView):
         context["breadcrumb_domain_is_current"] = True
         context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
+        portfolio_id = self.request.session.get("portfolio")
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
-            user=self.request.user, portfolio=self.request.session.get("portfolio")
+            user=self.request.user, portfolio=Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         ).first()
 
         if self.object.state != self.object.State.DELETED:
@@ -482,7 +486,8 @@ class DomainView(DomainBaseView):
         """Most views should not allow permission to portfolio users.
         If particular views allow permissions, they will need to override
         this function."""
-        portfolio = self.request.session.get("portfolio")
+        portfolio_id = self.request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         if self.request.user.has_any_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
@@ -685,7 +690,8 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session.get("portfolio")
+        portfolio_id = self.request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         if portfolio and is_org_user:
             return False
         else:
@@ -709,7 +715,8 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # non-org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session.get("portfolio")
+        portfolio_id = self.request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         if portfolio and is_org_user:
             return super().has_permission()
         else:
@@ -796,7 +803,8 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session.get("portfolio")
+        portfolio_id = self.request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         if portfolio and is_org_user:
             return False
         else:
@@ -1191,7 +1199,7 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
-        self.request.session["nameservers_form_domain"] = self.object
+        self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
         # Set the nameservers from the formset
@@ -1483,7 +1491,8 @@ class DomainUsersView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         # Get portfolio from session (if set)
-        portfolio = self.request.session.get("portfolio")
+        portfolio_id = self.request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
 
         # Add domain manager roles separately in order to also pass admin status
         context = self._add_domain_manager_roles_to_context(context, portfolio)

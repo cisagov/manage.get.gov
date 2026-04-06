@@ -8,6 +8,7 @@ from registrar.models import (
     DomainInvitation,
     DomainRequest,
     DomainInformation,
+    Portfolio,
     PublicContact,
     UserDomainRole,
     PortfolioInvitation,
@@ -325,7 +326,8 @@ class MemberExport(BaseExport):
         - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
         - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
         """
-        portfolio = request.session.get("portfolio")
+        portfolio_id = request.session.get("portfolio")
+        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
         if not portfolio:
             return {}
 
@@ -2255,6 +2257,7 @@ class DomainRequestDataFull(DomainRequestExport):
                         "other_contacts__last_name",
                         Value(" "),
                         "other_contacts__email",
+                        output_field=CharField(),
                     ),
                     delimiter=delimiter,
                     distinct=True,

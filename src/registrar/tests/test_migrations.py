@@ -22,10 +22,12 @@ class TestGroups(TestCase):
         full_access_group = UserGroup.objects.get(name="full_access_group")
 
         # Assert that the cisa_analysts_group exists in the database
-        self.assertQuerysetEqual(UserGroup.objects.filter(name="cisa_analysts_group"), [cisa_analysts_group])
+        # note as of django 5.2 assertEqual is reccomended over assertQuerySetEqual
+        # as the latter is prone to errors with ordering/transformations
+        self.assertQuerySetEqual(UserGroup.objects.filter(name="cisa_analysts_group"), [cisa_analysts_group])
 
         # Assert that the full_access_group exists in the database
-        self.assertQuerysetEqual(UserGroup.objects.filter(name="full_access_group"), [full_access_group])
+        self.assertQuerySetEqual(UserGroup.objects.filter(name="full_access_group"), [full_access_group])
 
         # Test permissions for cisa_analysts_group
         # Verifies permission data migrations ran as expected.
