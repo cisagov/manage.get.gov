@@ -160,7 +160,7 @@ class DnsHostService:
         except APIError as e:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
             raise
-        
+
         # Create and save zone in registrar db
         try:
             self.create_db_zone(zone_data, domain_name)
@@ -170,7 +170,7 @@ class DnsHostService:
             raise
 
         return zone_data
-    
+
     def _configure_new_zone_dns_settings(self, x_zone_id: str, zone_name: str):
         """Apply required DNS settings to a newly created zone.
 
