@@ -214,22 +214,29 @@ class TestDnsHostService(TestCase):
             x_account_id = self.service.dns_account_setup(domain_name)
             self.service.dns_zone_setup(domain_name, x_account_id)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_dns_setup_failure_from_create_cf_zone(self, mock_create_cf_account, mock_get_page_accounts):
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
+    def test_dns_setup_failure_from_create_cf_zone(
+        self,
+        mock_find_existing_account_in_db,
+        mock_find_existing_zone_in_cf,
+        mock_create_cf_zone,
+    ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
         account_id = "12345"
-        mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
-        mock_create_cf_account.return_value = {"result": {"id": account_id}}
-        mock_create_cf_account.side_effect = APIError("DNS setup failed to create zone")
+        mock_find_existing_account_in_db.return_value = account_id
+        mock_find_existing_zone_in_cf.return_value = None
+        mock_create_cf_zone.side_effect = APIError("DNS setup failed to create zone")
 
         with self.assertRaises(APIError) as context:
             x_account_id = self.service.dns_account_setup(domain_name)
             self.service.dns_zone_setup(domain_name, x_account_id)
 
-        mock_create_cf_account.assert_called_once_with(account_name)
-        # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
+        mock_find_existing_account_in_db.assert_called_once_with(account_name)
+        mock_find_existing_zone_in_cf.assert_called_once_with(domain_name, account_id)
+        mock_create_cf_zone.assert_called_once_with(domain_name, account_id)
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
     @patch("registrar.models.dns.dns_record.DnsRecord.get_by_x_record_id")
