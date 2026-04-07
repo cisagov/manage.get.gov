@@ -16,7 +16,13 @@ class BaseDomainDNSRecordFormTest(TestCase):
             dns_account=self.account,
             domain=self.domain,
         )
-        self.VALID_CONTENT_BY_TYPE = {"A": "192.0.2.10", "AAAA": "2001:db8::1234:5678", "TXT": "Some valid text"}
+        self.VALID_CONTENT_BY_TYPE = {
+            "A": "192.0.2.10",
+            "AAAA": "2001:db8::1234:5678",
+            # TODO: Comment out CNAME test case after implementing CNAME host name validation
+            # "CNAME": "www.example.com",
+            "TXT": "Some valid text",
+        }
 
     def valid_form_data_for_record_type(self, record_type, content):
         return {
@@ -95,6 +101,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": "2008:db8:1234:5678",
             "AAAA": "192.0.2.10",
+            # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
+            # "CNAME": "..."
         }
         invalid_quotes_txt_error = (
             'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'

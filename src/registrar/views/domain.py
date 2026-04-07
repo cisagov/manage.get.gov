@@ -822,7 +822,7 @@ class DomainDNSView(DomainBaseView):
         self._update_session_with_domain()
 
 
-@method_decorator(waffle_flag("dns_hosting"), name="dispatch")
+@method_decorator(waffle_flag("dns_hosting"), name="dispatch")  # type: ignore[arg-type]
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
@@ -875,6 +875,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return txt_template
         else:
             return base_template
+
+    def get_form_kwargs(self):
+        kwargs = super(DomainDNSRecordsView, self).get_form_kwargs()
+        kwargs["domain_name"] = self.object.name
+        return kwargs
 
     def attach_edit_form(self, dns_records):
         """adding a form instance to the dns_record objects
@@ -942,7 +947,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             dns_record.form = form  # type: ignore[attr-defined]
         else:
             initial_data = self.record_dict_for_initial_data(dns_record)
-            dns_record.form = DomainDNSRecordForm(initial=initial_data, auto_id=auto_id)  # type: ignore[attr-defined]
+            dns_record.form = DomainDNSRecordForm(  # type: ignore[attr-defined]
+                initial=initial_data, auto_id=auto_id, domain_name=self.object.name  # type: ignore[attr-defined]
+            )  # type: ignore[attr-defined]
         dns_record.form_template = self.get_form_template(dns_record.type)  # type: ignore[attr-defined]
 
     def _error_response(self, request, form=None, status=200):
