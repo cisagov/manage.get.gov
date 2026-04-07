@@ -47,31 +47,35 @@ class DnsRecord(TimeStampedModel):
 
     tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
 
-    def clean(self):
-        super().clean()
-
-        errors = {}
-
+    def _validate_ttl(self, errors):
+        """Validate TTL is within allowed range."""
         # TTL must be between 60 and 86400.
         # If we add proxy field to records in the future, we can also allow TTL=1 as below:
         # if self.ttl == 1: return self.proxy
         if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
 
-        record_type = DNSRecordTypes(self.type)
+    def _validate_content(self, record_type, errors):
+        """Validate content based on record type."""
         validator = record_type.validator
-
         if validator and self.content:
             try:
                 validator(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
 
+    def _validate_mx_priority(self, record_type, errors):
+        """Validate MX record has priority."""
         if record_type == DNSRecordTypes.MX and self.priority is None:
             errors["priority"] = ["Enter a priority for this record."]
 
+    def _validate_exclusive_names(self, record_type, errors):
+        """Validate CNAME/A/AAAA records don't share names."""
+        if not (self.name and self.dns_zone_id):
+            return
+
         # CNAME records cannot share a name with A or AAAA records
-        if record_type == DNSRecordTypes.CNAME and self.name and self.dns_zone_id:
+        if record_type == DNSRecordTypes.CNAME:
             conflict = DnsRecord.objects.filter(
                 dns_zone_id=self.dns_zone_id,
                 name=self.name,
@@ -82,7 +86,7 @@ class DnsRecord(TimeStampedModel):
             if conflict.exists():
                 errors["name"] = ["A record with that name already exists. Names must be unique."]
         # A or AAAA records cannot share a name with CNAME records
-        elif record_type in [DNSRecordTypes.A, DNSRecordTypes.AAAA] and self.name and self.dns_zone_id:
+        elif record_type in [DNSRecordTypes.A, DNSRecordTypes.AAAA]:
             conflict = DnsRecord.objects.filter(
                 dns_zone_id=self.dns_zone_id,
                 name=self.name,
@@ -92,6 +96,16 @@ class DnsRecord(TimeStampedModel):
                 conflict = conflict.exclude(pk=self.pk)
             if conflict.exists():
                 errors["name"] = ["A record with that name already exists. Names must be unique."]
+
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        self._validate_ttl(errors)
+        record_type = DNSRecordTypes(self.type)
+        self._validate_content(record_type, errors)
+        self._validate_mx_priority(record_type, errors)
+        self._validate_exclusive_names(record_type, errors)
 
         if errors:
             raise ValidationError(errors)
