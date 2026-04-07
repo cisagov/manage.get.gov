@@ -42,6 +42,9 @@ EMAIL_MAX = 320
 # DNS single label max length per standards, like requested_domain, alternative_domain, etc.
 DOMAIN_LABEL = 63
 
+# Full FQDN max length per RFC 1035
+MX_CONTENT_MAX_LENGTH = 253
+
 
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
@@ -74,7 +77,7 @@ def validate_dns_name(name: str) -> None:
         raise ValidationError("Name must be no more than 63 characters.")
 
     if not name[0].isalpha() or not name[-1].isalnum():
-        raise ValidationError("Enter a name that begins with a letter and ends with a letter or digit.")
+        raise ValidationError("Enter a name that begins with a letter and ends with a letter or number.")
 
 
 def check_has_valid_quotes(content: str) -> bool:
@@ -100,3 +103,14 @@ def validate_txt_content(content: str) -> None:
 
     if len(content) > 2048:
         raise ValidationError("Content must be no more than 2048 characters.")
+
+
+def validate_mx_content(content: str) -> None:
+    """
+    Validates an MX record's mail server hostname.
+    """
+    if " " in content:
+        raise ValidationError("Enter the mail server without any spaces.")
+
+    if len(content) > MX_CONTENT_MAX_LENGTH:
+        raise ValidationError("Name must be no more than 253 characters.")

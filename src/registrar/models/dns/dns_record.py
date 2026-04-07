@@ -1,6 +1,7 @@
 import logging
 
 from django.db import models, transaction
+from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -36,6 +37,12 @@ class DnsRecord(TimeStampedModel):
 
     content = models.CharField(blank=True, null=True, max_length=2048)
 
+    priority = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(0), MaxValueValidator(65535)],
+    )
+
     comment = models.CharField(blank=True, null=True, max_length=500)
 
     tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
@@ -59,6 +66,32 @@ class DnsRecord(TimeStampedModel):
                 validator(self.content)
             except ValidationError as e:
                 errors["content"] = e.messages
+
+        if record_type == DNSRecordTypes.MX and self.priority is None:
+            errors["priority"] = ["Enter a priority for this record."]
+
+        # CNAME records cannot share a name with A or AAAA records
+        if record_type == DNSRecordTypes.CNAME and self.name and self.dns_zone_id:
+            conflict = DnsRecord.objects.filter(
+                dns_zone_id=self.dns_zone_id,
+                name=self.name,
+                type__in=[DNSRecordTypes.A, DNSRecordTypes.AAAA],
+            )
+            if self.pk:
+                conflict = conflict.exclude(pk=self.pk)
+            if conflict.exists():
+                errors["name"] = ["A record with that name already exists. Names must be unique."]
+        # A or AAAA records cannot share a name with CNAME records
+        elif record_type in [DNSRecordTypes.A, DNSRecordTypes.AAAA] and self.name and self.dns_zone_id:
+            conflict = DnsRecord.objects.filter(
+                dns_zone_id=self.dns_zone_id,
+                name=self.name,
+                type=DNSRecordTypes.CNAME,
+            )
+            if self.pk:
+                conflict = conflict.exclude(pk=self.pk)
+            if conflict.exists():
+                errors["name"] = ["A record with that name already exists. Names must be unique."]
 
         if errors:
             raise ValidationError(errors)
@@ -143,6 +176,7 @@ class DnsRecord(TimeStampedModel):
                     name=record_data["name"],
                     ttl=record_data["ttl"],
                     content=record_data["content"],
+                    priority=record_data.get("priority"),
                     comment=record_data["comment"],
                     tags=record_data["tags"],
                 )

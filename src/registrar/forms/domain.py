@@ -811,7 +811,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     class Meta:
         model = DnsRecord
-        fields = ["type", "name", "content", "ttl", "comment"]
+        fields = ["type", "name", "content", "priority", "ttl", "comment"]
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -844,6 +844,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("A", "A"),
             ("AAAA", "AAAA"),
             ("CNAME", "CNAME"),
+            ("MX", "MX"),
             ("TXT", "TXT"),
         ],
         required=True,
@@ -865,6 +866,26 @@ class DomainDNSRecordForm(forms.ModelForm):
                 "class": "usa-input",
                 "hide_character_count": True,
                 "required": "required",
+            }
+        ),
+    )
+
+    priority = forms.IntegerField(
+        label="Priority",
+        required=False,
+        min_value=0,
+        max_value=65535,
+        help_text="0 - 65535",
+        error_messages={
+            "invalid": "Enter a priority number between 0-65535.",
+            "min_value": "Enter a priority number between 0-65535.",
+            "max_value": "Enter a priority number between 0-65535.",
+        },
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "inputmode": "numeric",
+                "pattern": "[0-9]*",
             }
         ),
     )
@@ -891,26 +912,41 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def _validate_content(self, record_type, content):
+        """Validate content field based on record type."""
+        record = DNSRecordTypes(record_type)
+        if record.validator:
+            try:
+                record.validator(content)
+            except ValidationError as e:
+                self.add_error("content", record.error_message or e)
+        elif not content:
+            self.add_error("content", record.error_message)
+
+    def _validate_cname_record(self, record_type, name, content):
+        """Validate CNAME record constraints."""
+        if record_type == DNSRecordTypes.CNAME:
+            try:
+                DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
+            except ValidationError as e:
+                record = DNSRecordTypes(record_type)
+                self.add_error("content", record.error_message or e)
+
+    def _validate_mx_priority(self, record_type, priority):
+        """Validate MX record priority."""
+        if record_type == DNSRecordTypes.MX and priority is None:
+            self.add_error("priority", "Enter a priority for this record.")
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
+        priority = cleaned_data.get("priority")
 
         if record_type:
-            record = DNSRecordTypes(record_type)
-            if record.validator:
-                try:
-                    record.validator(content)
-                except ValidationError as e:
-                    self.add_error("content", record.error_message or e)
-            elif not content:
-                self.add_error("content", record.error_message)
-
-            if record_type == DNSRecordTypes.CNAME:
-                try:
-                    DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
-                except ValidationError as e:
-                    self.add_error("content", record.error_message or e)
+            self._validate_content(record_type, content)
+            self._validate_cname_record(record_type, name, content)
+            self._validate_mx_priority(record_type, priority)
 
         return cleaned_data
