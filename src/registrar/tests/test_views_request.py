@@ -244,15 +244,15 @@ class DomainRequestTests(TestWithUser, WebTest):
         about_your_org_page = org_contact_result.follow()
         about_your_org_form = about_your_org_page.forms[0]
         about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
-        
+
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         about_your_org_result = about_your_org_form.submit()
-        
+
         # validate the data from this step is being saved
         domain_request.refresh_from_db()
         self.assertEqual(domain_request.about_your_organization, "We have a cool org")
-        
+
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(about_your_org_result.status_code, 302)
@@ -568,15 +568,15 @@ class DomainRequestTests(TestWithUser, WebTest):
         about_your_org_page = org_contact_result.follow()
         about_your_org_form = about_your_org_page.forms[0]
         about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
-        
+
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         about_your_org_result = about_your_org_form.submit()
-        
+
         # validate the data from this step is being saved
         domain_request.refresh_from_db()
         self.assertEqual(domain_request.about_your_organization, "We have a cool org")
-        
+
         # the post request should return a redirect to the next form in
         # the domain request page
         self.assertEqual(about_your_org_result.status_code, 302)
@@ -2458,7 +2458,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         about_your_org_page = org_contact_result.follow()
         about_your_org_form = about_your_org_page.forms[0]
         about_your_org_form["about_your_organization-about_your_organization"] = "We have a cool org"
-        
+
         # test next button
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
         about_your_org_result = about_your_org_form.submit()
