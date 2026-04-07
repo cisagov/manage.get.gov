@@ -37,6 +37,7 @@ on:
           - es
           - nl
           - rh
+          - sm
           - kma
           - dg
 
