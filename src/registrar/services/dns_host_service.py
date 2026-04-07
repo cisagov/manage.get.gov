@@ -123,8 +123,6 @@ class DnsHostService:
         else:
             try:
                 zone_data = self.create_and_save_zone(domain_name, x_account_id)
-                # Update zone to use and assign custom nameservers
-                self.update_zone_dns_settings(zone_data["result"].get("id"))
             except Exception as e:
                 logger.error(f"dnsSetup for zone failed {e}")
                 raise
@@ -156,11 +154,13 @@ class DnsHostService:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
             logger.info(f"Successfully created zone {domain_name}.")
-
+            x_zone_id = zone_data["result"]["id"]
+            # Update zone to use and assign custom nameservers
+            self._configure_new_zone_dns_settings(x_zone_id, zone_name)
         except APIError as e:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
             raise
-
+        
         # Create and save zone in registrar db
         try:
             self.create_db_zone(zone_data, domain_name)
@@ -170,6 +170,18 @@ class DnsHostService:
             raise
 
         return zone_data
+    
+    def _configure_new_zone_dns_settings(self, x_zone_id: str, zone_name: str):
+        """Apply required DNS settings to a newly created zone.
+
+        Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        """
+        try:
+            self.update_zone_dns_settings(x_zone_id)
+            logger.info(f"Successfully updated DNS settings for zone '{zone_name}'")
+        except Exception as e:
+            logger.error(f"Failed to update DNS settings for zone {zone_name}: {str(e)}")
+            raise
 
     def create_dns_record(self, x_zone_id, form_record_data) -> "DnsRecord | None":
         """Calls create method of vendor service to create a DNS record.
@@ -183,6 +195,7 @@ class DnsHostService:
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise APIError(str(e)) from e
+
         # Create and save dns record in registrar db
         try:
             DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
