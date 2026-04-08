@@ -1008,7 +1008,7 @@ class Requirements(DomainRequestWizard):
 
 class Review(DomainRequestWizard):
     template_name = "domain_request_review.html"
-    forms = []  # type: ignore
+    forms: list = []  # need this for linter
 
     def get_context_data(self):
         form_complete = self.form_is_complete()
