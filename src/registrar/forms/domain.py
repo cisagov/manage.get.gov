@@ -956,6 +956,8 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type:
             self._validate_content(record_type, content)
             self._validate_cname_record(record_type, name, content)
-            self._validate_mx_priority(record_type, priority)
+            # Only validate MX priority if priority field didn't already have a validation error
+            if "priority" not in self.errors:
+                self._validate_mx_priority(record_type, priority)
 
         return cleaned_data
