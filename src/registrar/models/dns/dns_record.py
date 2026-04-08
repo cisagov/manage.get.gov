@@ -63,6 +63,18 @@ class DnsRecord(TimeStampedModel):
         if errors:
             raise ValidationError(errors)
 
+    @classmethod
+    def _validate_cname_record_name_dne_hostname(self, record_name, hostname, domain_name=None):
+        """Validate that CNAME record name does not match hostname."""
+        cf_record_name = record_name
+        if domain_name:
+            if record_name == "@":
+                cf_record_name = domain_name
+            elif not record_name.endswith(domain_name):
+                cf_record_name = f"{record_name}.{domain_name}"
+        if cf_record_name == hostname:
+            raise ValidationError("CNAME record hostname must not match record name.")
+
     def get_active_x_record_id(self) -> str | None:
         """Return the active external record id (x_record_id) for this DnsRecord via the join table."""
         try:

@@ -190,7 +190,6 @@ class DnsHostService:
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise APIError(str(e)) from e
-
         # Create and save dns record in registrar db
         try:
             DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)

@@ -48,6 +48,15 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
+        # TODO: Uncomment test case after CNAME content validations finalized
+        # {
+        #     "id": "test-cname",
+        #     "name": "www",
+        #     "type": "CNAME",
+        #     "content": "www.example.com",
+        #     "ttl": 300,
+        #     "comment": "Mocked record created",
+        # },
         {
             "id": "test1",
             "name": "www",
@@ -138,7 +147,11 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_content_throws_error(self):
-        invalid_content_by_type = {"A": "not-an-ip", "AAAA": "not-an-ip", "TXT": 'not"valid text'}
+        invalid_content_by_type = {
+            "A": "not-an-ip",
+            "AAAA": "not-an-ip",
+            "TXT": 'not"valid text',
+        }
 
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
@@ -198,3 +211,22 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "content-field-wrapper-txt")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_dns_records_page_displays_comments(self):
+        """
+        If comments are on the record, they should be available in the dns records page
+        """
+        for record_case in self.RECORD_TEST_CASES:
+            create_dns_record(
+                self.dns_zone,
+                record_type=record_case["type"],
+                record_name=record_case["name"],
+                record_content=record_case["content"],
+                record_comment=record_case["comment"],
+            )
+        response = self.client.get(self._url())
+
+        for record_case in self.RECORD_TEST_CASES:
+            self.assertContains(response, f'Toggle to view comment for {record_case["name"]}')
