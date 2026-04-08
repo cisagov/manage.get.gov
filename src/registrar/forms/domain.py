@@ -915,13 +915,22 @@ class DomainDNSRecordForm(forms.ModelForm):
     def _validate_content(self, record_type, content):
         """Validate content field based on record type."""
         record = DNSRecordTypes(record_type)
+
+        # Content is required for all record types
+        if not content:
+            # Use the record's error_message if available, otherwise use a generic message
+            error_msg = record.error_message or "Enter the content for this record."
+            self.add_error("content", error_msg)
+            return
+
+        # Validate format using type-specific validator
         if record.validator:
             try:
                 record.validator(content)
             except ValidationError as e:
-                self.add_error("content", record.error_message or e)
-        elif not content:
-            self.add_error("content", record.error_message)
+                # Use the validator's error message
+                error_msg = e.messages[0] if hasattr(e, 'messages') and e.messages else str(e)
+                self.add_error("content", error_msg)
 
     def _validate_cname_record(self, record_type, name, content):
         """Validate CNAME record constraints."""

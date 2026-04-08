@@ -93,9 +93,6 @@ def check_has_valid_quotes(content: str) -> bool:
 
 def validate_txt_content(content: str) -> None:
 
-    if not content or not content.strip():
-        raise ValidationError("Enter the content for this record.")
-
     if check_has_valid_quotes(content):
         raise ValidationError(
             'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'

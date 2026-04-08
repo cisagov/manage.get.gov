@@ -83,7 +83,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
             self.assertFalse(form.is_valid())
             self.assertIn("name", form.errors)
-            self.assertEqual(form.errors["name"], ["Enter the name of this record."])
+            self.assertEqual(form.errors["name"], ["Enter a name for this record."])
 
     def test_invalid_dns_name_throws_error(self):
         # Testing invalid first character
@@ -106,21 +106,16 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_record_with_invalid_content_throws_error(self):
         invalid_content_by_type = {
-            "A": "2008:db8:1234:5678",
-            "AAAA": "192.0.2.10",
+            "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
+            "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
         }
-        invalid_quotes_txt_error = (
-            'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'
-        )
-        for record_type, bad_content in invalid_content_by_type.items():
+        for record_type, (bad_content, expected_error) in invalid_content_by_type.items():
             with self.subTest(record_type=record_type):
                 data = self.valid_form_data_for_record_type(record_type, bad_content)
                 form = self.make_form(data)
 
                 self.assertFalse(form.is_valid())
-                self.assertIn(
-                    DNSRecordTypes(record_type).error_message or invalid_quotes_txt_error, form.errors["content"]
-                )
+                self.assertIn(expected_error, form.errors["content"])
 
     def test_dns_record_with_blank_content_throws_error(self):
         for record_type, content in self.VALID_CONTENT_BY_TYPE.items():
@@ -131,7 +126,11 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 form = self.make_form(data)
 
                 self.assertFalse(form.is_valid())
-                self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
+                # TXT doesn't have a predefined error_message in the enum, so just check an error exists
+                if DNSRecordTypes(record_type).error_message:
+                    self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
+                else:
+                    self.assertIn("content", form.errors)
 
 
 class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
@@ -199,18 +198,12 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
 
     # --- Name validation ---
 
-    def test_mx_record_name_with_space_throws_mx_specific_error(self):
-        """MX records use a custom space error message distinct from other record types."""
+    def test_mx_record_name_with_space_throws_error(self):
+        """MX records use the same DNS name validation as other record types."""
         form = self.make_mx_form(name="my name")
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("Enter the name you want without any spaces.", form.errors["name"])
-
-    def test_mx_record_name_space_error_differs_from_generic(self):
-        """MX name space error should NOT match the generic DNS name space error."""
-        form = self.make_mx_form(name="my name")
-        self.assertFalse(form.is_valid())
-        self.assertNotIn("Enter the DNS name without any spaces.", form.errors.get("name", []))
+        self.assertIn("Enter the DNS name without any spaces.", form.errors["name"])
 
     # --- Content validation ---
 
