@@ -1,5 +1,4 @@
 from unittest.mock import patch
-import re
 
 from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
