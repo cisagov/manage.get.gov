@@ -798,6 +798,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
+            # Priority is required only for MX records
+            self.fields["priority"].required = (record_type == DNSRecordTypes.MX)
 
         config = {
             rt.value: {
@@ -886,6 +888,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 "class": "usa-input",
                 "inputmode": "numeric",
                 "pattern": "[0-9]*",
+                "required": "required",
             }
         ),
     )
