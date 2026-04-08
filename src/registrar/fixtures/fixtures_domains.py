@@ -119,10 +119,10 @@ class DomainFixture(DomainRequestFixture):
         # Retrieve all domains associated with the domain requests
         domains_to_update = Domain.objects.filter(domain_info__domain_request__in=domain_requests_to_update)
 
-        # Only enroll domains in DNS hosting when using mocked CF APIs.
-        # When DNS_MOCK_EXTERNAL_APIS=False (real CF), skip enrollment to avoid
-        # creating inconsistent local DB state (DnsAccount without VendorDnsAccount)
-        # that would trigger unnecessary paginated CF API calls and hit rate limits.
+        # Only mark domains as enrolled in DNS hosting when DNS APIs are mocked.
+        # When DNS_MOCK_EXTERNAL_APIS=False (real Cloudflare), skip enrollment to
+        # avoid creating DB state without corresponding vendor records, which can
+        # trigger unnecessary paginated Cloudflare API calls and hit rate limits.
         use_mock_dns = settings.DNS_MOCK_EXTERNAL_APIS
 
         # Loop through and update expiration dates and DNS enrollment for domains
