@@ -19,7 +19,11 @@
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
                 {% include dns_record.form_template with form=dns_record.form %}
-                {% input_with_errors dns_record.form.comment %}
+                <div>
+                    {% with add_group_class="usa-form-group--unstyled-error" %}
+                        {% input_with_errors dns_record.form.comment %}
+                    {% endwith %}
+                </div>
                 <button
                     type="button"
                     class="usa-button usa-button--outline"

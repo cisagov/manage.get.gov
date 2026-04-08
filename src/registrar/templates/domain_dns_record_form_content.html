@@ -31,7 +31,12 @@
               {% include "dns_record_forms/txt_record_form.html" with form=form %}
         </div>
     </template>
-    {% input_with_errors form.comment %}
+
+    <div>
+        {% with add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.comment %}
+        {% endwith %}
+    </div>
 
     <button
         type="reset"
