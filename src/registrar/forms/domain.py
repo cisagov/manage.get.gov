@@ -799,7 +799,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
             # Priority is required only for MX records
-            self.fields["priority"].required = (record_type == DNSRecordTypes.MX)
+            self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
         config = {
             rt.value: {
