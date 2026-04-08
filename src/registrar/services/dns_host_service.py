@@ -161,6 +161,7 @@ class DnsHostService:
 
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
+        zone_name = domain_name
         try:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
@@ -239,25 +240,11 @@ class DnsHostService:
         return vendor_record_data
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
-        per_page = 50
-        page = 0
-        is_last_page = False
-        while is_last_page is False:
-            page += 1
-            try:
-                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
-                accounts = page_accounts_data["result"]
-                account_data = self._find_account_json_by_pubname(accounts, account_name)
-                if account_data:
-                    break
-                total_count = page_accounts_data["result_info"].get("total_count")
-                is_last_page = total_count <= page * per_page
-
-            except APIError as e:
-                logger.error(f"Error fetching accounts: {str(e)}")
-                raise
-
-        return account_data
+        try:
+            return self.dns_vendor_service.get_account_by_name(account_name)
+        except APIError as e:
+            logger.error(f"Error fetching accounts: {str(e)}")
+            raise
 
     def _find_existing_account_in_db(self, account_name) -> str | None:
         try:
