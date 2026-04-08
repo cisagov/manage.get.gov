@@ -4,6 +4,7 @@ import logging
 import random
 from faker import Faker
 
+from django.conf import settings
 from registrar.fixtures.fixtures_requests import DomainRequestFixture
 from registrar.fixtures.fixtures_users import UserFixture
 from registrar.models import User, DomainRequest
@@ -118,6 +119,12 @@ class DomainFixture(DomainRequestFixture):
         # Retrieve all domains associated with the domain requests
         domains_to_update = Domain.objects.filter(domain_info__domain_request__in=domain_requests_to_update)
 
+        # Only mark domains as enrolled in DNS hosting when DNS APIs are mocked.
+        # When DNS_MOCK_EXTERNAL_APIS=False (real Cloudflare), skip enrollment to
+        # avoid creating DB state without corresponding vendor records, which can
+        # trigger unnecessary paginated Cloudflare API calls and hit rate limits.
+        use_mock_dns = settings.DNS_MOCK_EXTERNAL_APIS
+
         # Loop through and update expiration dates and DNS enrollment for domains
         for domain in domains_to_update:
             domain_request = domain.domain_info.domain_request
@@ -128,8 +135,7 @@ class DomainFixture(DomainRequestFixture):
             else:
                 domain.expiration_date = cls._generate_fake_expiration_date()
 
-            # Only enroll non-legacy domains in DNS hosting
-            if not domain.is_legacy:
+            if not domain.is_legacy and use_mock_dns:
                 domain.is_enrolled_in_dns_hosting = random.choice([True, False])  # nosec
 
         # Perform bulk update for the domains
