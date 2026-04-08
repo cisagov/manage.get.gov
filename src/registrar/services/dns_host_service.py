@@ -155,11 +155,12 @@ class DnsHostService:
             zone_name = zone_data["result"].get("name")
             logger.info(f"Successfully created zone {domain_name}.")
             x_zone_id = zone_data["result"]["id"]
-            # Update zone to use and assign custom nameservers
-            self._configure_new_zone_dns_settings(x_zone_id, zone_name)
         except APIError as e:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
             raise
+
+        # Update zone to use and assign custom nameservers
+        self._configure_new_zone_dns_settings(x_zone_id, zone_name)
 
         # Create and save zone in registrar db
         try:
