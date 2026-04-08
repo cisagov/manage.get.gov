@@ -156,3 +156,36 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
         }.get(self, "")
+
+
+DNS_TTL_CHOICES = [
+    (60, "1 minute"),
+    (300, "5 minutes"),
+    (1800, "30 minutes"),
+    (3600, "1 hour"),
+    (7200, "2 hours"),
+    (18000, "5 hours"),
+    (43200, "12 hours"),
+    (86400, "1 day"),
+]
+
+
+def format_dns_ttl(ttl: int) -> str:
+    """Render a TTL value using the form's notation when possible."""
+    for seconds, label in DNS_TTL_CHOICES:
+        if ttl == seconds:
+            return label
+
+    if ttl % 86400 == 0:
+        days = ttl // 86400
+        return f"{days} day" if days == 1 else f"{days} days"
+
+    if ttl % 3600 == 0:
+        hours = ttl // 3600
+        return f"{hours} hour" if hours == 1 else f"{hours} hours"
+
+    if ttl % 60 == 0:
+        minutes = ttl // 60
+        return f"{minutes} minute" if minutes == 1 else f"{minutes} minutes"
+
+    return f"{ttl} second" if ttl == 1 else f"{ttl} seconds"

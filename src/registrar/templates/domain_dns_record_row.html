@@ -24,7 +24,7 @@
         {{dns_record.content|truncatechars:37}}
     </td>
     <td id="dns-ttl-{{ record_id }}" data-label="TTL">
-        {{dns_record.ttl}}
+        {{ dns_record.ttl_display }}
     </td>
     <td class="padding-right-0" data-label="Action">
         <div class="tablet:display-flex tablet:flex-row">
