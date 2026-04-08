@@ -929,7 +929,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 record.validator(content)
             except ValidationError as e:
                 # Use the validator's error message
-                error_msg = e.messages[0] if hasattr(e, 'messages') and e.messages else str(e)
+                error_msg = e.messages[0] if hasattr(e, "messages") and e.messages else str(e)
                 self.add_error("content", error_msg)
 
     def _validate_cname_record(self, record_type, name, content):
