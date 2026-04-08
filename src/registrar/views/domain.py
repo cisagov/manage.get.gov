@@ -1036,8 +1036,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Create a new DNS record and prepare the DB-backed row for rendering."""
         is_first_record = not DnsRecord.zone_has_records(self.object)
         dns_record = self.dns_host_service.create_dns_record(x_zone_id, form_record_data)
-        dns_name = (dns_record.name if dns_record else None) or form_record_data["name"]
-        messages.success(request, f"DNS {form_record_data['type']} record '{dns_name}' updated successfully.")
+        messages.success(request, "The DNS record for this domain has been added.")
 
         if dns_record:
             self._attach_form(dns_record)

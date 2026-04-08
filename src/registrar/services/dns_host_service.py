@@ -135,6 +135,8 @@ class DnsHostService:
             logger.error(f"Failed to create account: {str(e)}")
             raise
 
+        self._configure_new_account_dns_settings(x_account_id, account_name)
+
         try:
             self.create_db_account(account_data)
             logger.info(f"Successfully saved account '{account_name}' to database")
@@ -143,6 +145,19 @@ class DnsHostService:
             raise
 
         return x_account_id
+
+    def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
+        """Apply required DNS settings to a newly created account.
+
+        Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        Must be called after account creation and before zone creation.
+        """
+        try:
+            self.update_account_dns_settings(x_account_id)
+            logger.info(f"Successfully updated DNS settings for account '{account_name}'")
+        except Exception as e:
+            logger.error(f"Failed to update DNS settings for account {account_name}: {str(e)}")
+            raise
 
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
@@ -358,7 +373,11 @@ class DnsHostService:
                 dns_domain = Domain.objects.get(name=domain_name)
 
                 dns_zone = DnsZone.objects.create(
-                    dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
+                    dns_account=dns_account,
+                    domain=dns_domain,
+                    name=zone_name,
+                    nameservers=nameservers,
+                    zone_mode=DnsZone.ZoneModes.DNS_ONLY,
                 )
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)

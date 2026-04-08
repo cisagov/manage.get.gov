@@ -127,6 +127,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.CNAME: " Target hostname ",
             DNSRecordTypes.MX: " Mail server ",
             DNSRecordTypes.TXT: " Content ",
+            DNSRecordTypes.PTR: " Domain name ",
         }.get(self, "Content")
 
     @property
@@ -136,6 +137,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.AAAA: "Example: 2001:db8::1234:5678",
             DNSRecordTypes.CNAME: "Examples: example.gov, www.example.gov",
             DNSRecordTypes.MX: "Example: mail.example.gov",
+            DNSRecordTypes.PTR: "Example: example.gov, www.example.gov",
         }.get(self, "")
 
     @property
@@ -146,6 +148,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.CNAME: validate_dns_name,
             DNSRecordTypes.MX: validate_mx_content,
             DNSRecordTypes.TXT: validate_txt_content,
+            DNSRecordTypes.PTR: validate_dns_name,
         }.get(self)
 
     @property

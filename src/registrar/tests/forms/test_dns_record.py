@@ -20,6 +20,10 @@ class BaseDomainDNSRecordFormTest(TestCase):
             "A": "192.0.2.10",
             "AAAA": "2001:db8::1234:5678",
             "MX": "mail.example.gov",
+            # TODO: Comment out CNAME test case after implementing CNAME host name validation
+            # "CNAME": "www.example.com",
+            # TODO: Comment out PTR test case after implementing PTR host name validation
+            # "PTR": "www.example.com",
             "TXT": "Some valid text",
         }
 
@@ -108,6 +112,10 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
             "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
+            # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
+            # "CNAME": "..."
+            # TODO: Comment out and complete PTR test case when PTR validation is implemented
+            # "PTR": "..."
         }
         for record_type, (bad_content, expected_error) in invalid_content_by_type.items():
             with self.subTest(record_type=record_type):

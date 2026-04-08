@@ -847,6 +847,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             ("AAAA", "AAAA"),
             ("CNAME", "CNAME"),
             ("MX", "MX"),
+            ("PTR", "PTR"),
             ("TXT", "TXT"),
         ],
         required=True,
