@@ -290,6 +290,12 @@ class UserFixture:
             "last_name": "Alysia-Analyst",
             "email": "abroddrick+1@truss.works",
         },
+        {
+            "username": "55b55db0-bb8d-4223-b1df-9482174a3679",
+            "first_name": "Samir-Analyst",
+            "last_name": "Mishra-Analyst",
+            "email": "samir.mishra.gov@ecstech.com",
+        },
     ]
 
     # Additional emails to add to the AllowedEmail whitelist.
