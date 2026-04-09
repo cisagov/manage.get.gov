@@ -5,6 +5,7 @@ This command is intended to update the registry with new PublicContact disclosur
 - In dry-run mode (default), only logs what would be changed
 - With --no-dry-run, sends registry updates via Domain._update_epp_contact
 - Use --target-domain to only update an existing domain
+- Omit filters to run against all matching domains and contact types
 """
 
 import argparse
@@ -22,6 +23,12 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = "Updates registry disclose settings for PublicContact records to whatever the website currently computes."
     RECOVERY_LOGFILE = "update_public_contacts_recovery_log.txt"
+    ALL_CONTACT_TYPES = [
+        PublicContact.ContactTypeChoices.REGISTRANT,
+        PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+        PublicContact.ContactTypeChoices.SECURITY,
+        PublicContact.ContactTypeChoices.TECHNICAL,
+    ]
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,13 +43,12 @@ class Command(BaseCommand):
             "--contact_type",
             action="append",
             required=False,
-            choices=[
-                PublicContact.ContactTypeChoices.REGISTRANT,
-                PublicContact.ContactTypeChoices.ADMINISTRATIVE,
-                PublicContact.ContactTypeChoices.SECURITY,
-                PublicContact.ContactTypeChoices.TECHNICAL,
-            ],
-            help=("Choose one or more contact types. (e.g. --contact-type registrant --contact-type security)."),
+            choices=self.ALL_CONTACT_TYPES,
+            help=(
+                "Choose one or more contact types. "
+                "(e.g. --contact-type registrant --contact-type security). "
+                "If omitted, all contact types are included."
+            ),
         )
 
         parser.add_argument(
@@ -58,22 +64,20 @@ class Command(BaseCommand):
 
         parser.add_argument(
             "--use-recovery-log",
-            "--use-recovery-log",
+            "--use_recovery_log",
             action=argparse.BooleanOptionalAction,
             default=False,
             help=("When enabled, use the recovery log text file to skip domains that were marked 'done'."),
         )
 
-    def _build_queryset(self, *, target_domain: str, contact_types: list[str] | None):
-        qs = (
-            PublicContact.objects.select_related("domain", "domain__domain_info")
-            .all()
-            .order_by("domain__name", "contact_type")
-        )
-        qs = qs.filter(domain__name__iexact=target_domain)
-        logger.debug("Query set after domain filter: %s", list(qs.values("registry_id")))
-        qs = qs.filter(contact_type__in=contact_types)
-        logger.debug("Query set after contact_type filter: %s", list(qs.values("registry_id")))
+    def _build_queryset(self, *, target_domain: str | None, contact_types: list[str] | None):
+        qs = PublicContact.objects.select_related("domain", "domain__domain_info").all().order_by("domain__name", "id")
+        if target_domain:
+            qs = qs.filter(domain__name__iexact=target_domain)
+            logger.debug("Query set after domain filter: %s", list(qs.values("registry_id")))
+        if contact_types:
+            qs = qs.filter(contact_type__in=contact_types)
+            logger.debug("Query set after contact_type filter: %s", list(qs.values("registry_id")))
         return qs
 
     def _contact_ref(self, contact: PublicContact) -> str:
@@ -106,20 +110,43 @@ class Command(BaseCommand):
         else:
             return contact
 
+    def _read_recovery_log(self, log_filename: str) -> dict[str, str]:
+        recovery_status_by_domain = {}
+        try:
+            with open(log_filename, "r") as logfile:
+                for line in logfile:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    parts = line.split(",", 1)
+                    if len(parts) != 2:
+                        logger.warning("Skipping malformed recovery log entry: %s", line)
+                        continue
+
+                    domain_name, status = parts
+                    recovery_status_by_domain[domain_name] = status
+        except FileNotFoundError:
+            logger.warning("Recovery log %s was not found. Continuing without prior recovery state.", log_filename)
+
+        return recovery_status_by_domain
+
+    def _write_recovery_log(self, log_filename: str, recovery_status_by_domain: dict[str, str]) -> None:
+        with open(log_filename, "w") as logfile:
+            for domain_name, status in recovery_status_by_domain.items():
+                logfile.write(f"{domain_name},{status}\n")
+
     def handle(self, *args: object, **options: Any) -> None:
         contact_types = options.get("contact_type")
         if not contact_types:
-            raise ValueError("--contact-types is required")
+            contact_types = self.ALL_CONTACT_TYPES
         # if one contact type was passed in, convert to a list
         elif isinstance(contact_types, str):
             contact_types = [contact_types]
 
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain")
-        if not target_domain:
-            raise ValueError("--target-domain is required")
-
-        use_recovery_log = bool(options.get("-use-recovery-log", False))
+        use_recovery_log = bool(options.get("use_recovery_log", False))
 
         logger.info("Building queryset for: %s, %s", contact_types, target_domain)
         contacts_to_update = self._build_queryset(
@@ -131,7 +158,7 @@ class Command(BaseCommand):
 
         proposed = (
             "==Proposed Changes==\n"
-            f"Target domain: {target_domain}\n"
+            f"Target domain: {target_domain or 'all domains'}\n"
             f"Contact types: {contact_types}\n"
             f"Dry run: {dry_run}\n\n"
             "Action: compute disclose via Domain._disclose_fields and "
@@ -155,24 +182,41 @@ class Command(BaseCommand):
         processed = 0
         failed = 0
         current_domain = None
+        current_domain_failed = 0
+        skip_current_domain = False
 
         log_filename = self.RECOVERY_LOGFILE
+        recovery_status_by_domain = self._read_recovery_log(log_filename) if use_recovery_log else {}
+
+        if not dry_run and not use_recovery_log:
+            self._write_recovery_log(log_filename, recovery_status_by_domain)
 
         for contact in contacts_to_update.iterator():
             processed += 1
-            if current_domain != contact.domain.name:
-                current_domain = contact.domain.name
+            domain_name = contact.domain.name
 
-            if use_recovery_log:
-                with open(log_filename, "r") as logfile:
-                    line = logfile.readline()
-                    if line.endswith("done"):
-                        continue
-            else:
-                with open(log_filename, "w") as logfile:
-                    logfile.write(f"{current_domain},")
+            if current_domain != domain_name:
+                if current_domain is not None and not dry_run and not skip_current_domain:
+                    recovery_status_by_domain[current_domain] = "error" if current_domain_failed else "done"
+                    self._write_recovery_log(log_filename, recovery_status_by_domain)
 
-            failed += self._do_update(dry_run, use_recovery_log, log_filename, contact)
+                current_domain = domain_name
+                current_domain_failed = 0
+                skip_current_domain = use_recovery_log and recovery_status_by_domain.get(domain_name) == "done"
+
+                if skip_current_domain:
+                    logger.info("Skipping %s because recovery log marked it done.", domain_name)
+
+            if skip_current_domain:
+                continue
+
+            contact_failed = self._do_update(dry_run, contact)
+            current_domain_failed += contact_failed
+            failed += contact_failed
+
+        if current_domain is not None and not dry_run and not skip_current_domain:
+            recovery_status_by_domain[current_domain] = "error" if current_domain_failed else "done"
+            self._write_recovery_log(log_filename, recovery_status_by_domain)
 
         header = (
             "FINISHED (DRY RUN): Update PublicContact disclose settings"
@@ -184,7 +228,7 @@ class Command(BaseCommand):
         if failed:
             logger.warning("Failed: %s", failed)
 
-    def _do_update(self, dry_run, use_recovery_log, log_filename, contact):
+    def _do_update(self, dry_run, contact):
         failed = 0
         try:
             contact = self._check_and_update_contact_values(contact)
@@ -201,16 +245,10 @@ class Command(BaseCommand):
                 logger.info("Updating %s on registry", self._contact_ref(contact))
                 # Computes disclose via Domain._disclose_fields and sends UpdateContact.
                 contact.domain._update_epp_contact(contact=contact)
-                if not use_recovery_log:
-                    with open(log_filename, "a") as logfile:
-                        logfile.write("done\n")
         except Exception:
             failed += 1
             logger.exception(
                 "Failed to update disclose settings for %s on registry",
                 self._contact_ref(contact),
             )
-            if not use_recovery_log:
-                with open(log_filename, "a") as logfile:
-                    logfile.write("error\n")
         return failed

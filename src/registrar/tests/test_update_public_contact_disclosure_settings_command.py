@@ -1,3 +1,5 @@
+import os
+from tempfile import TemporaryDirectory
 from unittest.mock import patch, call
 
 from django.core.management import call_command
@@ -53,6 +55,56 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
             flag=False, fields=set(), types={DF.CC: "loc", DF.CITY: "loc", DF.PC: "loc", DF.SP: "loc"}
         )
 
+    def _create_domain_with_registrant_contact(self, domain_name):
+        domain = Domain.objects.create(name=domain_name)
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=domain,
+            organization_name="Cybersecurity and Infrastructure Security Agency",
+            address_line1="1110 N. Glebe Rd",
+            city="Arlington",
+            state_territory="VA",
+            zipcode="22201",
+        )
+
+        contact = PublicContact(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            name=self.contact.name,
+            org=self.contact.org,
+            street1=self.contact.street1,
+            city=self.contact.city,
+            sp=self.contact.sp,
+            pc=self.contact.pc,
+            cc=self.contact.cc,
+            email=self.contact.email,
+            voice=self.contact.voice,
+            pw=self.contact.pw,
+        )
+        contact.registry_id = "regContact"
+        contact.domain = domain
+        contact.save(skip_epp_save=True)
+
+        return domain
+
+    def _create_public_contact(self, domain, contact_type, registry_id, email=None):
+        contact = PublicContact(
+            contact_type=contact_type,
+            name=self.contact.name,
+            org=self.contact.org,
+            street1=self.contact.street1,
+            city=self.contact.city,
+            sp=self.contact.sp,
+            pc=self.contact.pc,
+            cc=self.contact.cc,
+            email=email or self.contact.email,
+            voice=self.contact.voice,
+            pw=self.contact.pw,
+        )
+        contact.registry_id = registry_id
+        contact.domain = domain
+        contact.save(skip_epp_save=True)
+        return contact
+
     def test_dry_run_does_not_update_registry(self):
         with less_console_noise(), patch("registrar.models.domain.Domain._update_epp_contact") as update_mock:
             call_command(
@@ -63,6 +115,52 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
             )
 
         update_mock.assert_not_called()
+
+    def test_no_filters_runs_all_domains_and_contact_types(self):
+        second_domain = self._create_domain_with_registrant_contact("second-example.gov")
+        self._create_public_contact(
+            domain=self.domain,
+            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+            registry_id="adminContact",
+        )
+        self._create_public_contact(
+            domain=self.domain,
+            contact_type=PublicContact.ContactTypeChoices.SECURITY,
+            registry_id="securityContact",
+            email="security@example.gov",
+        )
+        self._create_public_contact(
+            domain=self.domain,
+            contact_type=PublicContact.ContactTypeChoices.TECHNICAL,
+            registry_id="technicalContact",
+        )
+
+        processed_contacts = []
+
+        def record_processed_contact(_command, dry_run, contact):
+            processed_contacts.append((contact.domain.name, contact.contact_type, dry_run))
+            return 0
+
+        with patch(
+            "registrar.management.commands.update_public_contact_disclosure_settings.Command._do_update",
+            autospec=True,
+            side_effect=record_processed_contact,
+        ):
+            with less_console_noise():
+                call_command(
+                    "update_public_contact_disclosure_settings",
+                )
+
+        self.assertEqual(
+            processed_contacts,
+            [
+                (self.domain.name, PublicContact.ContactTypeChoices.REGISTRANT, True),
+                (self.domain.name, PublicContact.ContactTypeChoices.ADMINISTRATIVE, True),
+                (self.domain.name, PublicContact.ContactTypeChoices.SECURITY, True),
+                (self.domain.name, PublicContact.ContactTypeChoices.TECHNICAL, True),
+                (second_domain.name, PublicContact.ContactTypeChoices.REGISTRANT, True),
+            ],
+        )
 
     @patch(
         "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
@@ -150,3 +248,71 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                 [call(expected_update, cleaned=True)],
                 any_order=True,
             )
+
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
+    )
+    def test_recovery_log_skips_domains_marked_done(self, _mock_prompt):
+        failed_domain = self._create_domain_with_registrant_contact("middle-example.gov")
+        trailing_domain = self._create_domain_with_registrant_contact("zulu-example.gov")
+
+        attempted_domains = []
+        failed_domains = []
+
+        def fail_once(domain_self, contact):
+            attempted_domains.append(domain_self.name)
+            if domain_self.name == failed_domain.name and domain_self.name not in failed_domains:
+                failed_domains.append(domain_self.name)
+                raise RuntimeError("simulated update failure")
+
+        with TemporaryDirectory() as temp_dir:
+            recovery_log = os.path.join(temp_dir, "update_public_contacts_recovery_log.txt")
+
+            with patch(
+                "registrar.management.commands.update_public_contact_disclosure_settings.Command.RECOVERY_LOGFILE",
+                recovery_log,
+            ):
+                with patch("registrar.models.domain.Domain._update_epp_contact", autospec=True, side_effect=fail_once):
+                    with less_console_noise():
+                        call_command(
+                            "update_public_contact_disclosure_settings",
+                            dry_run=False,
+                            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                        )
+
+                    self.assertEqual(
+                        attempted_domains,
+                        [self.domain.name, failed_domain.name, trailing_domain.name],
+                    )
+                    with open(recovery_log, "r") as logfile:
+                        recovery_log_lines = logfile.read().splitlines()
+                    self.assertEqual(
+                        recovery_log_lines,
+                        [
+                            f"{self.domain.name},done",
+                            f"{failed_domain.name},error",
+                            f"{trailing_domain.name},done",
+                        ],
+                    )
+
+                    attempted_domains.clear()
+
+                    with less_console_noise():
+                        call_command(
+                            "update_public_contact_disclosure_settings",
+                            dry_run=False,
+                            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                            use_recovery_log=True,
+                        )
+
+                    self.assertEqual(attempted_domains, [failed_domain.name])
+                    with open(recovery_log, "r") as logfile:
+                        recovery_log_lines = logfile.read().splitlines()
+                    self.assertEqual(
+                        recovery_log_lines,
+                        [
+                            f"{self.domain.name},done",
+                            f"{failed_domain.name},done",
+                            f"{trailing_domain.name},done",
+                        ],
+                    )
