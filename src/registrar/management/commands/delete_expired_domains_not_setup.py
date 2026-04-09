@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.core.management import BaseCommand
 from registrar.models import Domain, UserDomainRole
 import logging
@@ -25,7 +26,7 @@ class Command(BaseCommand):
     def logging_message(self, dry_run, domains):
         count = len(domains)
         if dry_run:
-            logger.info(f"DRY RUN MODE - No changes will be made\n {count} domains will be deleted")
+            logger.info(f"DRY RUN MODE - No changes will be made\n {count} domains will be deleted if not in dry run mode: {domains}")
         else:
             if count > 1:
                 logger.info(f"{count} domains have been deleted: {domains}")
@@ -42,12 +43,33 @@ class Command(BaseCommand):
         return super().add_arguments(parser)
 
     def get_domains(self):
-        """Get domains with DNS status DNS needed or Unknown"""
-        domain_state = [Domain.State.DNS_NEEDED, Domain.State.UNKNOWN]
-        time_to_compare = timezone.now().date()
+        """Get domains with DNS status DNS needed or Unknown
+        whose expiration date is equal to the current date.
+        If the domain has a null expiration date, creation date + 30 days is used
+        as a default expiration date instead.
+        We check for null expiration dates because expiration is not currently
+        applied to domains in UNKNOWN state. We do not expect it to be null
+        for any other domain state."""
+        today_date = timezone.now().date()
+
         domains_in_expired_state = Domain.objects.filter(
-            state__in=(domain_state), expiration_date=time_to_compare
+            state__in=[Domain.State.DNS_NEEDED, Domain.State.UNKNOWN],
+        ).filter(
+            Q(expiration_date=today_date) | Q(expiration_date__isnull=True)
         ).order_by("id")
+
+        for domain in domains_in_expired_state:
+            if domain.expiration_date is None:
+                logger.warning(
+                    "Domain %s (id: %s) has a null expiration date in state %s. "
+                    "Using creation date + 30 days as default expiration instead.",
+                    domain.name,
+                    domain.id,
+                    domain.state,
+                )
+                default_expiration = domain.creation_date + timedelta(days=30)
+                if default_expiration != today_date:
+                    domains_in_expired_state = domains_in_expired_state.exclude(id=domain.id)
 
         return domains_in_expired_state
 
