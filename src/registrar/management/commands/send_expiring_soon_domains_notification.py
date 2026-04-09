@@ -40,8 +40,7 @@ class Command(BaseCommand):
         days_to_check = [30, 7, 1]
         
         # Check for expiring domains that have an expiration date in the next 30, 7, or 1 days,
-        # as well as domains with null expiration date in UNKNOWN state
-        # (since those are currently the only domains that can be expiring soon without an expiration date)
+        # as well as UNKNOWN domains with null expiration date
         # NOTE: We want to re-examine setting an expiration date for UNKNOWN state domains,
         # which would allow us to remove the check for null expiration dates here and in delete_expired_domains_not_setup.py
         expiring_domains = Domain.objects.filter(
@@ -59,7 +58,7 @@ class Command(BaseCommand):
             domains = Domain.objects.filter(
                 Q(expiration_date=forecast_expiration_date) |
                 Q(expiration_date__isnull=True, state__in=[Domain.State.UNKNOWN],
-                  creation_date=forecast_expiration_date - timedelta(days=30))
+                  creation_date=forecast_expiration_date - timedelta(days=365))
             )
 
             logger.info(f"Found {domains.count()} domains expiring in {days_remaining} days")
@@ -74,7 +73,7 @@ class Command(BaseCommand):
                         domain.id,
                         domain.state,
                     )
-                    effective_expiration = domain.creation_date + timedelta(days=30)
+                    effective_expiration = domain.creation_date + timedelta(days=365)
 
                 if domain.state == Domain.State.READY:
                     template = "emails/ready_and_expiring_soon.txt"

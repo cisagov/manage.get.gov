@@ -45,7 +45,7 @@ class Command(BaseCommand):
     def get_domains(self):
         """Get domains with DNS status DNS needed or Unknown
         whose expiration date is equal to the current date.
-        If the domain has a null expiration date, creation date + 30 days is used
+        If the domain has a null expiration date, creation date + 1yr is used
         as a default expiration date instead.
         We check for null expiration dates because expiration is not currently
         applied to domains in UNKNOWN state. We do not expect it to be null
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                     domain.id,
                     domain.state,
                 )
-                default_expiration = domain.creation_date + timedelta(days=30)
+                default_expiration = domain.creation_date + timedelta(days=365)
                 if default_expiration != today_date:
                     domains_in_expired_state = domains_in_expired_state.exclude(id=domain.id)
 
