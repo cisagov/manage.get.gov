@@ -161,19 +161,7 @@ class Command(BaseCommand):
             "update the registry via Domain._update_epp_contact (when not dry-run)."
         )
 
-        if dry_run:
-            logger.info(
-                "%sDRY RUN:%s No registry updates will be sent.\n%s",
-                TerminalColors.YELLOW,
-                TerminalColors.ENDC,
-                proposed,
-            )
-        else:
-            TerminalHelper.prompt_for_execution(
-                system_exit_on_terminate=True,
-                prompt_message=proposed,
-                prompt_title="Update EPP disclose settings on existing PublicContacts",
-            )
+        self._check_dry_run_and_prompt(dry_run, proposed)
 
         processed = 0
         failed = 0
@@ -223,6 +211,21 @@ class Command(BaseCommand):
         logger.info("Processed: %s", processed)
         if failed:
             logger.warning("Failed: %s", failed)
+
+    def _check_dry_run_and_prompt(self, dry_run, proposed):
+        if dry_run:
+            logger.info(
+                "%sDRY RUN:%s No registry updates will be sent.\n%s",
+                TerminalColors.YELLOW,
+                TerminalColors.ENDC,
+                proposed,
+            )
+        else:
+            TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=True,
+                prompt_message=proposed,
+                prompt_title="Update EPP disclose settings on existing PublicContacts",
+            )
 
     def _do_update(self, dry_run, contact):
         failed = 0
