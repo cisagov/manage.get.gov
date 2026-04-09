@@ -10,6 +10,7 @@ from registrar.models import Domain, UserDomainRole, UserPortfolioPermission
 from registrar.models.user import UserPortfolioRoleChoices
 from registrar.utility.email import send_templated_email, EmailSendingError
 from django.template.loader import render_to_string
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 

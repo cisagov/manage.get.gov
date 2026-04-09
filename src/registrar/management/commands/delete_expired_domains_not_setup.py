@@ -5,6 +5,7 @@ import logging
 import argparse
 from django.utils import timezone
 from registrar.utility.email import EmailSendingError, send_templated_email
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
