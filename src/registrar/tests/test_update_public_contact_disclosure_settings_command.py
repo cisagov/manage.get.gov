@@ -184,70 +184,71 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
         "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
     )
     def test_command_sends_expected_registrant_update(self, _mock_prompt):
-        with self.subTest(contact_type="registrant"):
-            with less_console_noise() and self.subTest(contact_type="registrant"):
-                call_command(
-                    "update_public_contact_disclosure_settings",
-                    target_domain=self.domain.name,
-                    dry_run=False,
-                    contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-                )
-
-            expected_update = self._convertPublicContactToEpp(self.contact, createContact=False)
-
-            self.mockedSendFunction.assert_has_calls(
-                [call(expected_update, cleaned=True)],
-                any_order=True,
+        with less_console_noise():
+            call_command(
+                "update_public_contact_disclosure_settings",
+                target_domain=self.domain.name,
+                dry_run=False,
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             )
 
-        with self.subTest(contact_type="security_non_default_email"):
-            security = self.domain.get_default_security_contact()
-            # PublicContact.registry_id is constrained to max_length=16.
-            security.registry_id = "regContact"
-            security.email = "security@example.gov"
+        expected_update = self._convertPublicContactToEpp(self.contact, createContact=False)
 
-            security.save(skip_epp_save=True)
+        self.mockedSendFunction.assert_has_calls(
+            [call(expected_update, cleaned=True)],
+            any_order=True,
+        )
 
-            with less_console_noise():
-                call_command(
-                    "update_public_contact_disclosure_settings",
-                    target_domain=self.domain.name,
-                    dry_run=False,
-                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
-                )
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
+    )
+    def test_command_sends_expected_security_update_with_non_default_email(self, _mock_prompt):
+        security = self.domain.get_default_security_contact()
+        # PublicContact.registry_id is constrained to max_length=16.
+        security.registry_id = "regContact"
+        security.email = "security@example.gov"
 
-            expected_update = self._convertPublicContactToEpp(security, createContact=False)
+        security.save(skip_epp_save=True)
 
-            self.mockedSendFunction.assert_has_calls(
-                [call(expected_update, cleaned=True)],
-                any_order=True,
+        with less_console_noise():
+            call_command(
+                "update_public_contact_disclosure_settings",
+                target_domain=self.domain.name,
+                dry_run=False,
+                contact_type=PublicContact.ContactTypeChoices.SECURITY,
             )
+
+        expected_update = self._convertPublicContactToEpp(security, createContact=False)
+
+        self.mockedSendFunction.assert_has_calls(
+            [call(expected_update, cleaned=True)],
+            any_order=True,
+        )
 
     @patch(
         "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
     )
     def test_format_disclose_security_default_email(self, _mockprompt):
-        with self.subTest(contact_type="security_default_email"):
-            security = self.domain.get_default_security_contact()
-            # PublicContact.registry_id is constrained to max_length=16.
-            security.registry_id = "regContact"
+        security = self.domain.get_default_security_contact()
+        # PublicContact.registry_id is constrained to max_length=16.
+        security.registry_id = "regContact"
 
-            security.save(skip_epp_save=True)
+        security.save(skip_epp_save=True)
 
-            with less_console_noise():
-                call_command(
-                    "update_public_contact_disclosure_settings",
-                    target_domain=self.domain.name,
-                    dry_run=False,
-                    contact_type=PublicContact.ContactTypeChoices.SECURITY,
-                )
-
-            expected_update = self._convertPublicContactToEpp(security, createContact=False)
-
-            self.mockedSendFunction.assert_has_calls(
-                [call(expected_update, cleaned=True)],
-                any_order=True,
+        with less_console_noise():
+            call_command(
+                "update_public_contact_disclosure_settings",
+                target_domain=self.domain.name,
+                dry_run=False,
+                contact_type=PublicContact.ContactTypeChoices.SECURITY,
             )
+
+        expected_update = self._convertPublicContactToEpp(security, createContact=False)
+
+        self.mockedSendFunction.assert_has_calls(
+            [call(expected_update, cleaned=True)],
+            any_order=True,
+        )
 
     @patch(
         "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
