@@ -62,7 +62,7 @@ class Command(BaseCommand):
             if domain.expiration_date is None:
                 logger.warning(
                     "Domain %s (id: %s) has a null expiration date in state %s. "
-                    "Using creation date + 30 days as default expiration instead.",
+                    "Using creation date + 1 yr as default expiration instead.",
                     domain.name,
                     domain.id,
                     domain.state,
