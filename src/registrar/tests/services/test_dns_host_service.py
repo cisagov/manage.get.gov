@@ -185,6 +185,61 @@ class TestDnsHostService(TestCase):
                     mock_create_and_save_zone.assert_called_once()
                     mock_create_db_zone.assert_called_once()
 
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    def test_create_and_save_account_configures_dns_settings(self, mock_create_cf_account, mock_create_db_account):
+        """After creating a new CF account, DNS settings must be configured before saving to DB.
+
+        Verifies that zone_defaults are set with zone_mode=dns_only and nameservers.type=custom.tenant.
+        """
+        account_name = make_dns_account_name("test.gov")
+        account_id = "new-account-id"
+        expected_zone_settings = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_defaults": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"type": "custom.tenant"},
+                }
+            },
+            errors=[],
+            messages=[],
+        )
+
+        mock_create_cf_account.return_value = {
+            "result": {"id": account_id, "name": account_name, "created_on": "2026-01-01T00:00:00Z"}
+        }
+        mock_create_db_account.return_value = account_id
+        self.service.dns_vendor_service.update_account_dns_settings = Mock(return_value=expected_zone_settings)
+
+        returned_id = self.service.create_and_save_account(account_name)
+
+        self.service.dns_vendor_service.update_account_dns_settings.assert_called_once_with(account_id)
+        self.assertEqual(returned_id, account_id)
+        settings_response = self.service.dns_vendor_service.update_account_dns_settings.return_value
+        self.assertEqual(settings_response.result["zone_defaults"]["zone_mode"], "dns_only")
+        self.assertEqual(settings_response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
+
+    @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
+    @patch("registrar.services.dns_host_service.DnsHostService._configure_new_account_dns_settings")
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
+    def test_create_and_save_account_raises_if_dns_settings_configuration_fails(
+        self, mock_create_cf_account, mock_configure_dns_settings, mock_create_db_account
+    ):
+        """If DNS settings configuration fails, create_and_save_account raises and does not save to DB."""
+        account_name = make_dns_account_name("test.gov")
+        account_id = "new-account-id"
+
+        mock_create_cf_account.return_value = {
+            "result": {"id": account_id, "name": account_name, "created_on": "2024-01-01T00:00:00Z"}
+        }
+        mock_configure_dns_settings.side_effect = Exception("DNS settings configuration failed")
+
+        with self.assertRaises(Exception):
+            self.service.create_and_save_account(account_name)
+
+        mock_create_db_account.assert_not_called()
+
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
     def test_dns_setup_failure_from_find_existing_account_in_cf(
@@ -214,22 +269,29 @@ class TestDnsHostService(TestCase):
             x_account_id = self.service.dns_account_setup(domain_name)
             self.service.dns_zone_setup(domain_name, x_account_id)
 
-    @patch("registrar.services.dns_host_service.CloudflareService.get_page_accounts")
-    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
-    def test_dns_setup_failure_from_create_cf_zone(self, mock_create_cf_account, mock_get_page_accounts):
+    @patch("registrar.services.dns_host_service.CloudflareService.create_cf_zone")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
+    @patch("registrar.services.dns_host_service.DnsHostService._find_existing_account_in_db")
+    def test_dns_setup_failure_from_create_cf_zone(
+        self,
+        mock_find_existing_account_in_db,
+        mock_find_existing_zone_in_cf,
+        mock_create_cf_zone,
+    ):
         domain_name = "test.gov"
         account_name = make_dns_account_name(domain_name)
         account_id = "12345"
-        mock_get_page_accounts.return_value = {"result": [{"id": "55555"}], "result_info": {"total_count": 8}}
-        mock_create_cf_account.return_value = {"result": {"id": account_id}}
-        mock_create_cf_account.side_effect = APIError("DNS setup failed to create zone")
+        mock_find_existing_account_in_db.return_value = account_id
+        mock_find_existing_zone_in_cf.return_value = None
+        mock_create_cf_zone.side_effect = APIError("DNS setup failed to create zone")
 
         with self.assertRaises(APIError) as context:
             x_account_id = self.service.dns_account_setup(domain_name)
             self.service.dns_zone_setup(domain_name, x_account_id)
 
-        mock_create_cf_account.assert_called_once_with(account_name)
-        # mock_create_cf_zone.assert_called_once_with(zone_name, account_id) not sure why this fails: 0 calls
+        mock_find_existing_account_in_db.assert_called_once_with(account_name)
+        mock_find_existing_zone_in_cf.assert_called_once_with(domain_name, account_id)
+        mock_create_cf_zone.assert_called_once_with(domain_name, account_id)
         self.assertIn("DNS setup failed to create zone", str(context.exception))
 
     @patch("registrar.models.dns.dns_record.DnsRecord.get_by_x_record_id")
@@ -535,6 +597,7 @@ class TestDnsHostServiceDB(TestCase):
         zone = dns_zones.first()
         self.assertEqual(dns_zones.count(), 1)
         self.assertEqual(zone.nameservers, self.vendor_zone_data["result"]["vanity_name_servers"])
+        self.assertEqual(zone.zone_mode, DnsZone.ZoneModes.DNS_ONLY)
 
         # DnsZone_VendorDnsZone object exists for registrar zone and vendor zone
         dns_zone = dns_zones.first()
