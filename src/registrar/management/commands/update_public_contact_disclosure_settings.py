@@ -10,7 +10,6 @@ This command is intended to update the registry with new PublicContact disclosur
 
 import argparse
 import logging
-from typing import Any
 
 from django.core.management import BaseCommand
 
@@ -24,10 +23,10 @@ class Command(BaseCommand):
     help = "Updates registry disclose settings for PublicContact records to whatever the website currently computes."
     RECOVERY_LOGFILE = "update_public_contacts_recovery_log.txt"
     ALL_CONTACT_TYPES = [
-        PublicContact.ContactTypeChoices.REGISTRANT,
-        PublicContact.ContactTypeChoices.ADMINISTRATIVE,
-        PublicContact.ContactTypeChoices.SECURITY,
-        PublicContact.ContactTypeChoices.TECHNICAL,
+        PublicContact.ContactTypeChoices.REGISTRANT.value,
+        PublicContact.ContactTypeChoices.ADMINISTRATIVE.value,
+        PublicContact.ContactTypeChoices.SECURITY.value,
+        PublicContact.ContactTypeChoices.TECHNICAL.value,
     ]
 
     def add_arguments(self, parser):
@@ -70,7 +69,7 @@ class Command(BaseCommand):
             help=("When enabled, use the recovery log text file to skip domains that were marked 'done'."),
         )
 
-    def _build_queryset(self, *, target_domain: str | None, contact_types: list[str] | None):
+    def _build_queryset(self, *, target_domain=None, contact_types=None):
         qs = PublicContact.objects.select_related("domain", "domain__domain_info").all().order_by("domain__name", "id")
         if target_domain:
             qs = qs.filter(domain__name__iexact=target_domain)
@@ -136,13 +135,10 @@ class Command(BaseCommand):
             for domain_name, status in recovery_status_by_domain.items():
                 logfile.write(f"{domain_name},{status}\n")
 
-    def handle(self, *args: object, **options: Any) -> None:
+    def handle(self, *args, **options):
         contact_types = options.get("contact_type")
         if not contact_types:
             contact_types = self.ALL_CONTACT_TYPES
-        # if one contact type was passed in, convert to a list
-        elif isinstance(contact_types, str):
-            contact_types = [contact_types]
 
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain")
