@@ -801,7 +801,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             # Priority is required only for MX records
             self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
-        self.fields["comment"].error_messages["max_length"] = "Response must be no more than 500 characters"
+        self.fields["comment"].error_messages["max_length"] = "Response must be no more than 500 characters."
 
         config = {
             rt.value: {
@@ -827,8 +827,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
-                    "hide_character_count": True,
-                    "maxLength": None,
+                    "maxlength": 500,
                 }
             ),
         }

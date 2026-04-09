@@ -1,41 +1,174 @@
 // Establishes javascript for dynamic content label based on type
 
-function createCharacterCountText (charLimit, textArea){     
-        let getCharCountText = function () {
-           const charactersLeft = charLimit - textArea.value.length
-           if(charactersLeft >= 0){
-             return `${charactersLeft} characters allowed`
-           }
-           else{
-             return `${Math.abs(charactersLeft)} characters over limit`
-           }
-        }
-        const displayCharCount = document.createElement('div')
-        displayCharCount.className = "usa-character-count__status usa-hint"
-        displayCharCount.textContent = getCharCountText()
-        textArea.addEventListener('input', function(){
-             displayCharCount.textContent = getCharCountText()
-             displayCharCount.classList.toggle('usa-character-count__status--invalid', textArea.value.length > charLimit)
-        })
-        return displayCharCount
+// Observer setup, persist across HTMX updates
+let characterCountObserverSetup = false;
+
+function setupCharacterCountObservers() {
+  if (characterCountObserverSetup) return;
+
+  characterCountObserverSetup = true;
+
+  // Observer to handle new character count elements added to existing containers
+  const containerObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.classList && node.classList.contains('usa-character-count__status')) {
+            updateCharacterCountMessage(node);
+          }
+        });
+      }
+    });
+  });
+
+  // Observer to handle new character count containers being added to the DOM
+  const newContainerObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.classList && node.classList.contains('usa-character-count')) {
+            // Update any status messages in the new container
+            node.querySelectorAll('.usa-character-count__status').forEach((el) => {
+              updateCharacterCountMessage(el);
+            });
+            // Observe this new container for future updates
+            containerObserver.observe(node, {
+              childList: true,
+            });
+          }
+        });
+      }
+    });
+  });
+
+  // Watch for new character count containers being added
+  newContainerObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Observe existing character count containers
+  document.querySelectorAll('.usa-character-count').forEach((container) => {
+    containerObserver.observe(container, {
+      childList: true,
+    });
+  });
 }
 
-function switchCommentStatusText(){
+// Override USWDS character count messages to use "characters left" instead of 
+// "characters allowed" and handle singular/plural
+function overrideUSWDSCharacterCount() {
+  // Setup observers to handle dynamic content changes and ensure character 
+  // count messages are accurate and updated
+  setupCharacterCountObservers();
 
-    const textAreasWithComemnt = document.querySelectorAll('textarea[name="comment"]')
-    
-    textAreasWithComemnt.forEach( ta => {
-        const span = ta.nextElementSibling
-        if(!span?.classList.contains('usa-character-count__status')){
-            const commentLimit = 500
-            const countText = createCharacterCountText(commentLimit, ta)
-            ta.insertAdjacentElement('afterend', countText)
+  // Create missing character count status elements and attach listeners
+  document.querySelectorAll('.usa-character-count').forEach((container) => {
+    const field = container.querySelector('.usa-character-count__field');
+    if (!field) return;
+
+    const statusEl = container.querySelector('.usa-character-count__status');
+    if (!statusEl) {
+      const maxLength = field.getAttribute('maxlength') || container.getAttribute('data-maxlength');
+      const charactersLeft = maxLength - (field.value ? field.value.length : 0);
+
+      let message;
+      if (charactersLeft >= 0) {
+        const characters = `character${charactersLeft === 1 ? '' : 's'}`;
+        message = `${charactersLeft} ${characters} left`;
+      } else {
+        const absCount = Math.abs(charactersLeft);
+        const characters = `character${absCount === 1 ? '' : 's'}`;
+        message = `${absCount} ${characters} over limit`;
+      }
+
+      const newStatus = document.createElement('div');
+      newStatus.className = 'usa-character-count__status usa-hint';
+      newStatus.setAttribute('aria-hidden', 'true');
+      newStatus.textContent = message;
+
+      // Insert after the message span
+      const messageSpan = container.querySelector('.usa-character-count__message');
+      if (messageSpan) {
+        messageSpan.insertAdjacentElement('afterend', newStatus);
+      } else {
+        container.appendChild(newStatus);
+      }
+    }
+
+    // Attach input listener to update character count as user types
+    if (!field.dataset.characterCountListenerAttached) {
+      field.addEventListener('input', function () {
+        const maxLength = this.getAttribute('maxlength') || container.getAttribute('data-maxlength');
+        const charactersLeft = maxLength - this.value.length;
+        const status = container.querySelector('.usa-character-count__status');
+        if (status) {
+          if (charactersLeft >= 0) {
+            const characters = `character${charactersLeft === 1 ? '' : 's'}`;
+            status.textContent = `${charactersLeft} ${characters} left`;
+          } else {
+            const absCount = Math.abs(charactersLeft);
+            const characters = `character${absCount === 1 ? '' : 's'}`;
+            status.textContent = `${absCount} ${characters} over limit`;
+          }
+          status.classList.toggle('usa-character-count__status--invalid', this.value.length > maxLength);
         }
+      });
+      field.dataset.characterCountListenerAttached = 'true';
+    }
+  });
 
-    })
-
+  // Update any existing character count messages (this runs every time) 
+  // to ensure they reflect the correct counts and use the new message format
+  document.querySelectorAll('.usa-character-count__status').forEach((el) => {
+    updateCharacterCountMessage(el);
+  });
 }
 
+function updateCharacterCountMessage(element) {
+  // Find the associated field and recalculate based on actual content
+  const container = element.closest('.usa-character-count');
+  if (!container) return;
+
+  const field = container.querySelector('.usa-character-count__field');
+  if (!field) return;
+
+  const maxLength = field.getAttribute('maxlength') || container.getAttribute('data-maxlength');
+  const charactersLeft = maxLength - (field.value ? field.value.length : 0);
+
+  if (charactersLeft >= 0) {
+    const characters = `character${charactersLeft === 1 ? '' : 's'}`;
+    element.textContent = `${charactersLeft} ${characters} left`;
+  } else {
+    const absCount = Math.abs(charactersLeft);
+    const characters = `character${absCount === 1 ? '' : 's'}`;
+    element.textContent = `${absCount} ${characters} over limit`;
+  }
+}
+
+function createCharacterCountText(charLimit, textArea) {
+  let getCharCountText = function () {
+    const charactersLeft = charLimit - textArea.value.length;
+    if (charactersLeft >= 0) {
+      const characters = `character${charactersLeft === 1 ? '' : 's'}`;
+      return `${charactersLeft} ${characters} left`;
+    } else {
+      const characters = `character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
+      return `${Math.abs(charactersLeft)} ${characters} over limit`;
+    }
+  };
+  const displayCharCount = document.createElement('div');
+  displayCharCount.className = 'usa-character-count__status usa-hint';
+  displayCharCount.textContent = getCharCountText();
+  textArea.addEventListener('input', function () {
+    displayCharCount.textContent = getCharCountText();
+    displayCharCount.classList.toggle(
+      'usa-character-count__status--invalid',
+      textArea.value.length > charLimit
+    );
+  });
+  return displayCharCount;
+}
 
 function switchFromInputToTextArea (element) {
         if(!element) return;
@@ -57,6 +190,10 @@ function switchFromInputToTextArea (element) {
 }
 
 
+
+export function initCharacterCountOverrides() {
+  overrideUSWDSCharacterCount();
+}
 
 export function editAndCommentButtonListener (){
         const table = document.querySelector("#dnsrecords-table");
@@ -133,10 +270,8 @@ export function initDynamicDNSRecordFormFields() {
         contentLabel.appendChild(abbrClone);
 
 
-      
-    });
 
-    switchCommentStatusText();
+    });
 
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
