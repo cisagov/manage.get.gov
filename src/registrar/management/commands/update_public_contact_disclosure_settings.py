@@ -139,6 +139,8 @@ class Command(BaseCommand):
         contact_types = options.get("contact_type")
         if not contact_types:
             contact_types = self.ALL_CONTACT_TYPES
+        elif isinstance(contact_types, str):
+            contact_types = [contact_types]
 
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain")
