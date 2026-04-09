@@ -254,6 +254,27 @@ class MockCloudflareService:
             },
         )
 
+    def _mock_get_cf_zone_response(self, request) -> httpx.Response:
+        logger.debug("😃 mocking dns record creation")
+        request_as_json = json.loads(request.content.decode("utf-8"))
+        record_id = request_as_json["id"]
+        matched = None
+        success = False
+        for zone in self.account_zones:
+            if zone.get("id") == record_id:
+                matched = zone
+                success = True
+                break
+        return httpx.Response(
+            200,
+            json={
+                "errors": [],
+                "messages": [],
+                "success": success,
+                "result": matched,
+            },
+        )
+
     def _mock_create_dns_record_response(self, request) -> httpx.Response:
         logger.debug("😃 mocking dns record creation")
         request_as_json = json.loads(request.content.decode("utf-8"))

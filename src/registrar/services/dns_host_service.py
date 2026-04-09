@@ -177,6 +177,8 @@ class DnsHostService:
 
         # Update zone to use and assign custom nameservers
         self._configure_new_zone_dns_settings(x_zone_id, zone_name)
+        # Get updated zone data with custom nameservers
+        zone_data = self.dns_vendor_service.get_zone_by_id(x_zone_id)
 
         # Create and save zone in registrar db
         try:

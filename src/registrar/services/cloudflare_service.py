@@ -221,6 +221,22 @@ class CloudflareService:
         logger.info(f"Retrieved all zones: {resp}")
         return resp.json()
 
+    def get_zone_by_id(self, x_zone_id: str):
+        """Get zone data given a Clouflare zone id"""
+        appended_url = f"/zones/{x_zone_id}"
+        try:
+            logger.info(f"Getting zone data from zone id: {x_zone_id}")
+            resp = self.client.get(appended_url)
+            resp.raise_for_status()
+        except RequestError as e:
+            logger.error(f"Failed to get zone from zone id: {e}")
+            raise
+        except HTTPStatusError as e:
+            logger.error(f"Error {e.response.status_code} while fetching zone: {e}")
+            raise
+        logger.info(f"Retrieved zone: {resp}")
+        return resp.json()
+
     def get_dns_record(self, zone_id: str, record_id: str):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
         try:
