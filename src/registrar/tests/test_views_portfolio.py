@@ -2610,10 +2610,27 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         cls.domain1 = Domain.objects.create(name="1.gov")
         cls.domain2 = Domain.objects.create(name="2.gov")
         cls.domain3 = Domain.objects.create(name="3.gov")
+        
+        DomainInformation.objects.get_or_create(
+            requester=cls.user,
+            domain=cls.domain1,
+            defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user,
+            domain=cls.domain2,
+            defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user,
+            domain=cls.domain3,
+            defaults={"portfolio": cls.portfolio}
+        )
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         Domain.objects.all().delete()
@@ -2667,6 +2684,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         DomainInvitation.objects.all().delete()
         UserPortfolioPermission.objects.all().delete()
         PortfolioInvitation.objects.all().delete()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.exclude(id=self.portfolio.id).delete()
         User.objects.exclude(id=self.user.id).delete()
 
@@ -2873,6 +2891,44 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
             "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
         )
 
+    @less_console_noise_decorator
+    def test_member_domains_edit_cross_portfolio_domain_assignment(self):
+        """Tests that a domain from a different portfolio cannot be assigned to a memeber."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(
+            requester=self.user, organization_name="Other Portfolio"
+        )
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        # Attempt to assign other portfolio's domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([other_domain.id]),
+                "removed_domains": json.dumps([]),
+            }
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No UserDomainRole should have been created
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=other_domain,
+            ).exists()
+        )
+
 
 class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
     @classmethod
@@ -2885,9 +2941,27 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         cls.domain2 = Domain.objects.create(name="2.gov")
         cls.domain3 = Domain.objects.create(name="3.gov")
 
+                
+        DomainInformation.objects.get_or_create(
+            requester=cls.user,
+            domain=cls.domain1,
+            defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user,
+            domain=cls.domain2,
+            defaults={"portfolio": cls.portfolio}
+        )
+        DomainInformation.objects.get_or_create(
+            requester=cls.user,
+            domain=cls.domain3,
+            defaults={"portfolio": cls.portfolio}
+        )
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        DomainInformation.objects.all().delete()
         Portfolio.objects.all().delete()
         User.objects.all().delete()
         Domain.objects.all().delete()
