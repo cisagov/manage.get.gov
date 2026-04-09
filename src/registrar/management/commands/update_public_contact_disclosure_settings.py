@@ -137,10 +137,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         contact_types = options.get("contact_type")
-        if not contact_types:
-            contact_types = self.ALL_CONTACT_TYPES
-        elif isinstance(contact_types, str):
-            contact_types = [contact_types]
+        contact_types = self.check_and_format_contact_types(contact_types)
 
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain")
@@ -213,6 +210,13 @@ class Command(BaseCommand):
         logger.info("Processed: %s", processed)
         if failed:
             logger.warning("Failed: %s", failed)
+
+    def check_and_format_contact_types(self, contact_types):
+        if not contact_types:
+            contact_types = self.ALL_CONTACT_TYPES
+        elif isinstance(contact_types, str):
+            contact_types = [contact_types]
+        return contact_types
 
     def _check_dry_run_and_prompt(self, dry_run, proposed):
         if dry_run:
