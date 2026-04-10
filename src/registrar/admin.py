@@ -429,7 +429,11 @@ class DomainInformationInlineForm(forms.ModelForm):
             "sub_organization": AutocompleteSelectWithPlaceholder(
                 DomainInformation._meta.get_field("sub_organization"),
                 admin.site,
-                attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json","data-allow-clear": "true"},
+                attrs={
+                    "data-placeholder": "---------",
+                    "ajax-url": "get-suborganization-list-json",
+                    "data-allow-clear": "true",
+                },
             ),
         }
 
@@ -451,10 +455,11 @@ class DomainRequestAdminForm(forms.ModelForm):
             "sub_organization": AutocompleteSelectWithPlaceholder(
                 DomainRequest._meta.get_field("sub_organization"),
                 admin.site,
-                attrs={"data-placeholder": "---------", 
-                       "ajax-url": "get-suborganization-list-json", 
-                       "data-allow-clear":"true",},
-                
+                attrs={
+                    "data-placeholder": "---------",
+                    "ajax-url": "get-suborganization-list-json",
+                    "data-allow-clear": "true",
+                },
             ),
         }
         labels = {
@@ -3185,13 +3190,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         ]
 
         # Hide FEB fields for non-FEB requests
-        if not (obj and obj.portfolio):
-            if  obj.is_feb():
-                excluded_fields.update(feb_fields)
+        if not (obj and obj.portfolio and not obj.is_feb()):
+            excluded_fields.update(feb_fields)
 
-        # Hide certain portfolio and suborg fields for users that are not in a portfolio
-
-            # In any org_fields, exclude all the other fields that aren't portfolio
+        # Hide certain portfolio and suborg fields for non portfolio domain requests
+        # In any org_fields, exclude all the other fields that aren't portfolio
+        if obj and not obj.portfolio:
             excluded_fields.update(field for field in org_fields if field != "portfolio")
             excluded_fields.update(feb_fields)
 
