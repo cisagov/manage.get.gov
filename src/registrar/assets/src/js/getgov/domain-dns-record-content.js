@@ -1,5 +1,29 @@
 // Establishes javascript for dynamic content label based on type
 
+function createCharacterCountText(charLimit, textArea) {
+  let getCharCountText = function () {
+    const charactersLeft = charLimit - textArea.value.length;
+    if (charactersLeft >= 0) {
+      const characters = `character${charactersLeft === 1 ? '' : 's'}`;
+      return `${charactersLeft} ${characters} left`;
+    } else {
+      const characters = `character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
+      return `${Math.abs(charactersLeft)} ${characters} over limit`;
+    }
+  };
+  const displayCharCount = document.createElement('div');
+  displayCharCount.className = 'usa-character-count__status usa-hint';
+  displayCharCount.textContent = getCharCountText();
+  textArea.addEventListener('input', function () {
+    displayCharCount.textContent = getCharCountText();
+    displayCharCount.classList.toggle(
+      'usa-character-count__status--invalid',
+      textArea.value.length > charLimit
+    );
+  });
+  return displayCharCount;
+}
+
 function switchFromInputToTextArea (element) {
         if(!element) return;
         const textArea = document.createElement('textarea');
@@ -13,21 +37,13 @@ function switchFromInputToTextArea (element) {
         
         // Character count
         const charLimit = 2048
-        let getCharCountText = function () {
-           return `${charLimit - textArea.value.length} characters allowed`
-        }
-        const displayCharCount = document.createElement('div')
-        displayCharCount.className = "usa-character-count__status usa-hint"
-        displayCharCount.textContent = getCharCountText()
-        textArea.addEventListener('input', function(){
-             displayCharCount.textContent = getCharCountText()
-             displayCharCount.classList.toggle('usa-character-count__status--invalid', textArea.value.length > charLimit)
-        })
-
+        const displayCharCount = createCharacterCountText(charLimit, textArea)
 
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
+
+
 
 export function editAndCommentButtonListener (){
         const table = document.querySelector("#dnsrecords-table");
@@ -77,7 +93,6 @@ export function initDynamicDNSRecordFormFields() {
                     switchFromInputToTextArea(currentInput)
                 }
     })
-  
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
@@ -105,9 +120,9 @@ export function initDynamicDNSRecordFormFields() {
         contentLabel.appendChild(abbrClone);
 
 
-      
+
     });
-    
+
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
