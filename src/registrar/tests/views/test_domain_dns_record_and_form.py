@@ -57,6 +57,15 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         #     "ttl": 300,
         #     "comment": "Mocked record created",
         # },
+        # TODO: Uncomment test case after PTR content validations finalized
+        # {
+        #     "id": "test-ptr",
+        #     "name": "www",
+        #     "type": "PTR",
+        #     "content": "www.example.com",
+        #     "ttl": 300,
+        #     "comment": "Mocked record created",
+        # },
         {
             "id": "test1",
             "name": "www",
