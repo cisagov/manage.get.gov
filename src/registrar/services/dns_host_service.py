@@ -1,4 +1,5 @@
 import logging
+import random
 
 from registrar.config import settings
 from registrar.models.domain import Domain
@@ -40,6 +41,9 @@ class DnsHostService:
 
     def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for a zone."""
+        if settings.DNS_NS_SET_RANGE:
+            ns_set = random.randint(1, settings.DNS_NS_SET_RANGE)  # nosec
+            return self.dns_vendor_service.update_zone_dns_settings(x_zone_id, ns_set=ns_set)
         return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)
 
     def _find_account_tag_by_pubname(self, items, name):
@@ -118,7 +122,7 @@ class DnsHostService:
             self.create_db_zone({"result": zone_data}, domain_name)
         else:
             try:
-                self.create_and_save_zone(domain_name, x_account_id)
+                zone_data = self.create_and_save_zone(domain_name, x_account_id)
             except Exception as e:
                 logger.error(f"dnsSetup for zone failed {e}")
                 raise
@@ -166,10 +170,15 @@ class DnsHostService:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
             logger.info(f"Successfully created zone {domain_name}.")
-
+            x_zone_id = zone_data["result"]["id"]
         except APIError as e:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
             raise
+
+        # Update zone to use and assign custom nameservers
+        self._configure_new_zone_dns_settings(x_zone_id, zone_name)
+        # Get updated zone data with custom nameservers
+        zone_data = self.dns_vendor_service.get_zone_by_id(x_zone_id)
 
         # Create and save zone in registrar db
         try:
@@ -177,6 +186,20 @@ class DnsHostService:
             logger.info(f"Successfully saved zone '{domain_name}' to database")
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
+            raise
+
+        return zone_data
+
+    def _configure_new_zone_dns_settings(self, x_zone_id: str, zone_name: str):
+        """Apply required DNS settings to a newly created zone.
+
+        Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        """
+        try:
+            self.update_zone_dns_settings(x_zone_id)
+            logger.info(f"Successfully updated DNS settings for zone '{zone_name}'")
+        except Exception as e:
+            logger.error(f"Failed to update DNS settings for zone {zone_name}: {str(e)}")
             raise
 
     def create_dns_record(self, x_zone_id, form_record_data) -> "DnsRecord | None":
@@ -191,6 +214,7 @@ class DnsHostService:
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise APIError(str(e)) from e
+
         # Create and save dns record in registrar db
         try:
             DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
