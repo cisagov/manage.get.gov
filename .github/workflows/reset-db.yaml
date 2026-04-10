@@ -17,7 +17,6 @@ on:
           - staging
           - development
           - ab
-          - ap
           - cw
           - testdb
           - acadia

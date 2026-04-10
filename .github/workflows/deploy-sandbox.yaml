@@ -9,8 +9,7 @@ on:
 jobs:
   variables: 
     if: | 
-      startsWith(github.head_ref, 'ap/')
-        || startsWith(github.head_ref, 'cw/')
+      startsWith(github.head_ref, 'cw/')
         || startsWith(github.head_ref, 'product/')
         || startsWith(github.head_ref, 'bl/')
         || startsWith(github.head_ref, 'rh/')
