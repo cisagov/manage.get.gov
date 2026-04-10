@@ -578,7 +578,7 @@ class SendExpirationEmailsTests(TestCase):
     @patch("django.utils.timezone.now")
     def test_emails_sent_for_unknown_domain_expiring_soon(self, mock_now, mock_send_email):
         """
-        1. Email should send if domain is expiring soon in UNKNOWN state
+        1. Email should send if domain is expiring soon in UNKNOWN state (WITH expiration date set)
         2. Getting the right template
         3. Sending the correct context to the right people (domain manager, org admin)
         """
@@ -699,6 +699,69 @@ class SendExpirationEmailsTests(TestCase):
         call_command("send_expiring_soon_domains_notification")
 
         mock_send_email.assert_not_called()
+
+    @patch("registrar.management.commands.send_expiring_soon_domains_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_emails_sent_for_unknown_domain_null_expiration(self, mock_now, mock_send_email):
+        """
+        If a domain in UNKNOWN state has a null expiration date, e-mails default to using
+        creation date + 1 year as the default expiration date. This tests that:
+
+        1. Email sends if domain in UNKNOWN state and has NULL expiration date
+        but is *effectively* expiring soon (using creation date + 1 year as default)
+        2. Getting the right template
+        3. Sending the correct context to the right people (domain manager, org admin)
+        4. Logging a warning that the domain has a null expiration date and that we're defaulting to using creation date + 1 year
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        # Set EFFECTIVE expiration to be 30 days out from today (to trigger 30 day e-mail)
+        # Do this by setting creation date to be 1 year ago + 30 days,
+        # since default expiration is creation + 1 year for null expiration date fields
+        one_year_timedelta = timedelta(days=365)
+        creation_date = self.fixed_today - one_year_timedelta + timedelta(days=30)
+
+        domain_unknown = Domain.objects.create(
+            name="unknown_null_exp.gov",
+            state=Domain.State.UNKNOWN,
+            expiration_date=None,
+            creation_date=creation_date,
+        )
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Null Expirations Portfolio")
+        DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, requester=self.manager)
+
+        UserDomainRole.objects.create(user=self.manager, domain=domain_unknown, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        with self.assertLogs("registrar.management.commands.send_expiring_soon_domains_notification", level="WARNING") as log:
+            call_command("send_expiring_soon_domains_notification")
+
+        # Confirm warning was raised about null expiration
+        self.assertTrue(any("null expiration" in msg.lower() for msg in log.output))
+
+        expected_context = {
+            "domain": domain_unknown,
+            "days_remaining": 30,
+            "expiration_date": creation_date + one_year_timedelta,
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/dns_needed_or_unknown_expiring_soon.txt",
+            "emails/dns_needed_or_unknown_expiring_soon_subject.txt",
+            to_addresses=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            context=expected_context,
+        )
 
 
 class SendDomainSetupReminderTests(TestCase):
