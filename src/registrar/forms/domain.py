@@ -1,6 +1,5 @@
 """Forms for domain management."""
 
-import logging
 from django import forms
 from django.core.validators import (
     RegexValidator,
@@ -11,6 +10,7 @@ from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import DomainRequest, FederalAgency
 from registrar.models.dns.dns_record import DnsRecord
+from registrar.models.dns.dns_zone import DnsZone
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
 from registrar.models.suborganization import Suborganization
 from registrar.models.utility.domain_helper import DomainHelper
@@ -32,8 +32,6 @@ from registrar.utility.enums import DNSRecordTypes
 
 import json
 import re
-
-logger = logging.getLogger(__name__)
 
 
 class DomainAddUserForm(forms.Form):
@@ -950,6 +948,47 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type == DNSRecordTypes.MX and priority is None:
             self.add_error("priority", "Enter a priority for this record.")
 
+    def _validate_name_conflict(self, record_type, name):
+        """Validate name field conflicts (CNAME vs A/AAAA).
+
+        According to DNS / RFC standards (RFC 1034 Section 3.6.2):
+        - CNAME records are aliases and cannot coexist with other records (A, AAAA, etc.)
+        - A/AAAA records cannot coexist with CNAME records
+        - MX and TXT records CAN share names with A/AAAA/CNAME records (standard practice):
+          * MX records commonly share the root domain (@) with A records
+          * TXT records (SPF, DKIM, etc.) commonly share names with other record types
+        """
+        # Early exit: only CNAME/A/AAAA records have name conflicts
+        if record_type not in DnsRecord.CONFLICTING_RECORD_TYPES:
+            return
+
+        # Early exit: can't validate without instance or name
+        if not self.instance or not name:
+            return
+
+        # Get the DNS zone ID from instance or by looking up the domain
+        instance_zone_id = getattr(self.instance, "dns_zone_id", None)
+
+        if not instance_zone_id and self.domain_name:
+            instance_zone_id = DnsZone.get_zone_id_for_domain(self.domain_name)
+
+        dns_zone_id = instance_zone_id
+
+        # Skip validation if we can't determine the DNS zone
+        if not dns_zone_id:
+            return
+
+        # Check for name conflicts using the model method
+        # The method handles case-insensitive matching and both label/FQDN formats
+        if DnsRecord.has_name_conflict(
+            dns_zone_id=dns_zone_id,
+            record_type=record_type,
+            name=name,
+            domain_name=self.domain_name,
+            exclude_record_id=self.instance.pk,
+        ):
+            self.add_error("name", "A record with that name already exists. Names must be unique.")
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
@@ -963,5 +1002,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             # Only validate MX priority if priority field didn't already have a validation error
             if "priority" not in self.errors:
                 self._validate_mx_priority(record_type, priority)
+            # Check for name conflicts if no other errors exist yet
+            if "name" not in self.errors and name:
+                self._validate_name_conflict(record_type, name)
 
         return cleaned_data
