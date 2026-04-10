@@ -39,12 +39,12 @@ class BaseDomainDNSRecordFormTest(TestCase):
             data["priority"] = priority
         return data
 
-    def make_form(self, data):
+    def make_form(self, data, domain_name=None):
         record = DnsRecord(dns_zone=self.zone)
-        return DomainDNSRecordForm(
-            data=data,
-            instance=record,
-        )
+        kwargs = {"data": data, "instance": record}
+        if domain_name:
+            kwargs["domain_name"] = domain_name
+        return DomainDNSRecordForm(**kwargs)
 
     def assert_dns_name_errors(self, name_value, expected_messages):
         """
@@ -246,3 +246,167 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         )
         form = self.make_mx_form(name="www")
         self.assertTrue(form.is_valid())
+
+
+class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
+    """Tests for name field conflict validation in DomainDNSRecordForm."""
+
+    def test_cname_conflicts_with_existing_a_record(self):
+        """Creating a CNAME record with same name as existing A record should throw error."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Try to create a CNAME record with the same name
+        data = self.valid_form_data_for_record_type("CNAME", "example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertIn("A record with that name already exists", form.errors["name"][0])
+
+    def test_cname_conflicts_with_existing_aaaa_record(self):
+        """Creating a CNAME record with same name as existing AAAA record should throw error."""
+        # Create an existing AAAA record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.AAAA,
+            name="www",
+            ttl=3600,
+            content="2001:db8::1",
+        )
+        # Try to create a CNAME record with the same name
+        data = self.valid_form_data_for_record_type("CNAME", "example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertIn("A record with that name already exists", form.errors["name"][0])
+
+    def test_a_record_conflicts_with_existing_cname_record(self):
+        """Creating an A record with same name as existing CNAME record should throw error."""
+        # Create an existing CNAME record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="www",
+            ttl=3600,
+            content="example.com",
+        )
+        # Try to create an A record with the same name
+        data = self.valid_form_data_for_record_type("A", "192.0.2.1")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertIn("A record with that name already exists", form.errors["name"][0])
+
+    def test_aaaa_record_conflicts_with_existing_cname_record(self):
+        """Creating an AAAA record with same name as existing CNAME record should throw error."""
+        # Create an existing CNAME record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="www",
+            ttl=3600,
+            content="example.com",
+        )
+        # Try to create an AAAA record with the same name
+        data = self.valid_form_data_for_record_type("AAAA", "2001:db8::1234:5678")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertIn("A record with that name already exists", form.errors["name"][0])
+
+    def test_multiple_a_records_with_same_name_allowed(self):
+        """Multiple A records with the same name should be allowed."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Create another A record with the same name but different content
+        data = self.valid_form_data_for_record_type("A", "192.0.2.2")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertTrue(form.is_valid())
+
+    def test_mx_record_same_name_as_a_record_allowed(self):
+        """MX records should be allowed with same name as A records."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # MX records are not subject to name uniqueness constraints
+        form = self.make_mx_form(name="www", priority=10)
+        self.assertTrue(form.is_valid())
+
+    def test_editing_cname_with_existing_a_record_name_throws_error(self):
+        """Editing a record to have same name as existing A record should throw error."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Create a CNAME record with different name
+        existing_cname = DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="mail",
+            ttl=3600,
+            content="example.com",
+        )
+        # Try to edit it to have the same name as the A record
+        data = self.valid_form_data_for_record_type("CNAME", "example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+        form.instance = existing_cname
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+
+    def test_name_conflict_validation_with_domain_name_lookup(self):
+        """Test name conflict detection when zone is looked up via domain_name (creating new record)."""
+        # Create an existing A record in the zone
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="api",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Try to create a CNAME with same name, using domain_name lookup instead of instance.dns_zone
+        # This simulates the form being used during new record creation (instance doesn't have dns_zone_id yet)
+        data = self.valid_form_data_for_record_type("CNAME", "api.example.com")
+        data["name"] = "api"
+
+        record = DnsRecord()  # New record without dns_zone set
+        form = DomainDNSRecordForm(
+            data=data,
+            instance=record,
+            domain_name="example.gov",  # Zone will be looked up by domain name
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertIn("A record with that name already exists", form.errors["name"][0])

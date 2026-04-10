@@ -1,6 +1,7 @@
 import logging
 
 from django.db import models, transaction
+from django.db.models import Q
 from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
@@ -17,6 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 class DnsRecord(TimeStampedModel):
+    """DNS record model with RFC 1034 compliance for record type constraints."""
+
+    # Per RFC 1034 Section 3.6.2: CNAME records cannot coexist with other record types
+    # This mapping defines which record types conflict with each other
+    CONFLICTING_RECORD_TYPES = {
+        DNSRecordTypes.CNAME: [DNSRecordTypes.A, DNSRecordTypes.AAAA],
+        DNSRecordTypes.A: [DNSRecordTypes.CNAME],
+        DNSRecordTypes.AAAA: [DNSRecordTypes.CNAME],
+    }
 
     dns_zone = models.ForeignKey("DnsZone", on_delete=models.CASCADE, related_name="records")
 
@@ -113,6 +123,47 @@ class DnsRecord(TimeStampedModel):
 
         if errors:
             raise ValidationError(errors)
+
+    @classmethod
+    def has_name_conflict(
+        cls, dns_zone_id: int, record_type: str, name: str, domain_name: str = None, exclude_record_id: int = None
+    ) -> bool:
+        """Check if a record would conflict with existing records in the zone.
+
+        Per RFC 1034 Section 3.6.2, only CNAME/A/AAAA records have name conflicts.
+        Handles both label and FQDN input formats with case-insensitive matching.
+
+        Args:
+            dns_zone_id: The DNS zone ID to check in.
+            record_type: The record type being added (e.g., DNSRecordTypes.CNAME).
+            name: The record name (can be label or FQDN; DNS is case-insensitive).
+            domain_name: The domain name (used to check for FQDN format).
+            exclude_record_id: Record ID to exclude (for editing existing records).
+
+        Returns:
+            True if a conflict exists, False otherwise.
+        """
+        # Only CNAME/A/AAAA records have name conflicts
+        record_type_enum = DNSRecordTypes(record_type)
+        if record_type_enum not in cls.CONFLICTING_RECORD_TYPES:
+            return False
+
+        conflicting_types = cls.CONFLICTING_RECORD_TYPES[record_type_enum]
+
+        # Check for conflicts with both label and FQDN formats (case-insensitive)
+        query = cls.objects.filter(
+            dns_zone_id=dns_zone_id,
+            type__in=conflicting_types,
+        ).filter(
+            Q(name__iexact=name)  # Case-insensitive match on user input
+            | Q(name__iexact=f"{name}.{domain_name}" if domain_name else name)  # or FQDN version
+        )
+
+        # Exclude current record when editing
+        if exclude_record_id:
+            query = query.exclude(pk=exclude_record_id)
+
+        return query.exists()
 
     @classmethod
     def _validate_cname_record_name_dne_hostname(self, record_name, hostname, domain_name=None):
