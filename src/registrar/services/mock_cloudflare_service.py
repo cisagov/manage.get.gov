@@ -78,6 +78,9 @@ class MockCloudflareService:
         self._mock_context.get(f"/tenants/{tenant_id}/accounts", params={"page": 1, "per_page": 50}).mock(
             side_effect=self._mock_get_page_accounts_response
         )
+        self._mock_context.get(f"/tenants/{tenant_id}/accounts", params__contains={"per_page": 1}).mock(
+            side_effect=self._mock_get_account_by_name_response
+        )
         self._mock_context.post("/accounts").mock(side_effect=self._mock_create_account_response)
 
         # PATCH account dns_settings
@@ -147,6 +150,22 @@ class MockCloudflareService:
                 "success": True,
                 "result": self.accounts,
                 "result_info": self.accounts_results_info,
+            },
+        )
+
+    def _mock_get_account_by_name_response(self, request) -> httpx.Response:
+        logger.debug("😎 Mocking accounts GET by name")
+        params = dict(request.url.params)
+        name = params.get("name")
+        matched = [a for a in self.accounts if a.get("account_pubname") == name]
+        return httpx.Response(
+            200,
+            json={
+                "errors": [],
+                "messages": [],
+                "success": True,
+                "result": matched,
+                "result_info": {"count": len(matched), "total_count": len(matched)},
             },
         )
 

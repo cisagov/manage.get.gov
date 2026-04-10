@@ -6,7 +6,7 @@ Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first
 You can no longer view this organization or its related domains within the .gov registrar.
 
 
-SOMETHING WRONG?
+NEED ASSISTANCE?
 If you have questions or concerns, reach out to the person who removed you from the
 organization, or reply to this email. 
 

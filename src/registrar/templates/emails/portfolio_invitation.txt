@@ -16,7 +16,7 @@ services with one account. If you don’t already have one, follow these steps t
 create your Login.gov account <https://login.gov/help/get-started/create-your-account/>. 
 
 
-SOMETHING WRONG?
+NEED ASSISTANCE?
 If you’re not affiliated with {{ portfolio.organization_name }} or think you received this
 message in error, reply to this email.
 
