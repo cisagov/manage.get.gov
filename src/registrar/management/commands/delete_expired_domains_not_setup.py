@@ -27,7 +27,10 @@ class Command(BaseCommand):
     def logging_message(self, dry_run, domains):
         count = len(domains)
         if dry_run:
-            logger.info(f"DRY RUN MODE - No changes will be made\n {count} domains will be deleted if not in dry run mode: {domains}")
+            logger.info(
+                f"DRY RUN MODE - No changes will be made\n {count}"
+                f"domains will be deleted if not in dry run mode:{[d.name for d in domains]}"
+            )
         else:
             if count > 1:
                 logger.info(f"{count} domains have been deleted: {domains}")
@@ -53,11 +56,13 @@ class Command(BaseCommand):
         for any other domain state."""
         today_date = timezone.now().date()
 
-        domains_in_expired_state = Domain.objects.filter(
-            state__in=[Domain.State.DNS_NEEDED, Domain.State.UNKNOWN],
-        ).filter(
-            Q(expiration_date=today_date) | Q(expiration_date__isnull=True)
-        ).order_by("id")
+        domains_in_expired_state = (
+            Domain.objects.filter(
+                state__in=[Domain.State.DNS_NEEDED, Domain.State.UNKNOWN],
+            )
+            .filter(Q(expiration_date=today_date) | Q(expiration_date__isnull=True))
+            .order_by("id")
+        )
 
         for domain in domains_in_expired_state:
             if domain.expiration_date is None:
@@ -68,7 +73,7 @@ class Command(BaseCommand):
                     domain.id,
                     domain.state,
                 )
-                default_expiration = domain.creation_date + timedelta(days=365)
+                default_expiration = domain.created_at + timedelta(days=365)
                 if default_expiration != today_date:
                     domains_in_expired_state = domains_in_expired_state.exclude(id=domain.id)
 

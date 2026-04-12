@@ -6,6 +6,7 @@ from django.core.management import BaseCommand
 
 from django.utils import timezone
 
+from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
 from registrar.models import Domain, UserDomainRole, UserPortfolioPermission
 from registrar.models.user import UserPortfolioRoleChoices
 from registrar.utility.email import send_templated_email, EmailSendingError
@@ -28,7 +29,7 @@ class Command(BaseCommand):
             help="Print emails that would be sent without actually sending them",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: C901
         """
         How to run it in dry run mode:
         ./manage.py send_expiring_soon_domains_notification --dry-run
@@ -39,14 +40,15 @@ class Command(BaseCommand):
         today = timezone.now().date()
 
         days_to_check = [30, 7, 1]
-        
+
         # Check for expiring domains that have an expiration date in the next 30, 7, or 1 days,
         # as well as UNKNOWN domains with null expiration date
         # NOTE: We want to re-examine setting an expiration date for UNKNOWN state domains,
-        # which would allow us to remove the check for null expiration dates here and in delete_expired_domains_not_setup.py
+        # which would allow us to remove the check for null expiration dates here and in
+        # delete_expired_domains_not_setup.py
         expiring_domains = Domain.objects.filter(
-            Q(expiration_date__in=[today + timedelta(days=d) for d in days_to_check]) |
-            Q(expiration_date__isnull=True, state__in=[Domain.State.UNKNOWN])
+            Q(expiration_date__in=[today + timedelta(days=d) for d in days_to_check])
+            | Q(expiration_date__isnull=True, state__in=[Domain.State.UNKNOWN])
         )
         logger.info(f"Found {expiring_domains.count()} domains expiring in 30, 7, or 1 days")
 
@@ -57,24 +59,31 @@ class Command(BaseCommand):
 
             forecast_expiration_date = today + timedelta(days=days_remaining)
             domains = Domain.objects.filter(
-                Q(expiration_date=forecast_expiration_date) |
-                Q(expiration_date__isnull=True, state__in=[Domain.State.UNKNOWN],
-                  creation_date=forecast_expiration_date - timedelta(days=365))
+                Q(expiration_date=forecast_expiration_date)
+                | Q(
+                    expiration_date__isnull=True,
+                    state__in=[Domain.State.UNKNOWN],
+                    created_at=forecast_expiration_date - timedelta(days=365),
+                )
             )
-
             logger.info(f"Found {domains.count()} domains expiring in {days_remaining} days")
 
             for domain in domains:
                 effective_expiration = domain.expiration_date
+
+                logger.info(
+                    f"{TerminalColors.MAGENTA}Domain {domain.name} (id: {domain.id})"
+                    f"has status {domain.state}, expiration date {domain.expiration_date},"
+                    f"and creation date {domain.created_at}{TerminalColors.ENDC}"
+                )
                 if domain.expiration_date is None:
+                    effective_expiration = (domain.created_at + timedelta(days=365)).date()
                     logger.warning(
-                        "Domain %s (id: %s) has a null expiration date in state %s. "
-                        "Using creation date +  1yr as default expiration instead.",
-                        domain.name,
-                        domain.id,
-                        domain.state,
+                        f"{TerminalColors.YELLOW}Domain {domain.name} (id: {domain.id}) has a"
+                        f"null expiration date in state {domain.state}. "
+                        f"Using creation date +  1yr instead for an effective expiration of"
+                        f"{effective_expiration}.{TerminalColors.ENDC}"
                     )
-                    effective_expiration = domain.creation_date + timedelta(days=365)
 
                 if domain.state == Domain.State.READY:
                     template = "emails/ready_and_expiring_soon.txt"
@@ -128,7 +137,10 @@ class Command(BaseCommand):
                             cc_addresses=portfolio_admin_emails,
                             context=context,
                         )
-                        logger.info(f"Sent email for domain {domain.name} to managers and CC’d org admins")
+                        logger.info(
+                            f"{TerminalColors.OKGREEN}Sent email {template} with context {context}"
+                            f"for domain {domain.name} to managers and CC’d org admins{TerminalColors.ENDC}"
+                        )
                 except EmailSendingError as err:
                     if not dryrun:
                         logger.error(
