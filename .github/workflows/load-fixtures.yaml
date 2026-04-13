@@ -12,7 +12,6 @@ on:
         options:
           - backup
           - ab
-          - ap
           - cw
           - testdb
           - acadia
