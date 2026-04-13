@@ -32,6 +32,7 @@ on:
           - potato
           - product
           - rh
+          - sm
           - yellowstone
           - zion
 

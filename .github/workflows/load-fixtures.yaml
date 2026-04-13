@@ -32,6 +32,7 @@ on:
           - kma
           - nl
           - rh
+          - sm
 
 jobs:
   load-fixtures:

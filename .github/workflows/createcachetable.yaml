@@ -38,6 +38,7 @@ on:
           - kma
           - nl
           - rh
+          - sm
 
 jobs:
   createcachetable:
