@@ -256,24 +256,19 @@ class MockCloudflareService:
         )
 
     def _mock_get_cf_zone_response(self, request) -> httpx.Response:
-        logger.debug("😃 mocking dns zone creation")
+        logger.debug("😃 mocking dns zone retrieval")
 
         # Get zone id from request url
         request_url = str(request.url)
-        record_id = request_url.split("/zones/")[1]
+        zone_id = request_url.split("/zones/")[1]
         matched = None
-        success = False
-        for zone in self.account_zones:
-            if zone.get("id") == record_id:
-                matched = zone
-                success = True
-                break
+        matched = next((zone for zone in self.account_zones if zone.get("id") == zone_id), None)
         return httpx.Response(
             200,
             json={
                 "errors": [],
                 "messages": [],
-                "success": success,
+                "success": bool(matched),
                 "result": matched,
             },
         )
