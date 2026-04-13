@@ -19,7 +19,6 @@ on:
           - meoward
           - backup
           - ab
-          - ap
           - cw
           - testdb
           - acadia
