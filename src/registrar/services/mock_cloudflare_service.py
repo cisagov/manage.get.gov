@@ -256,7 +256,7 @@ class MockCloudflareService:
         )
 
     def _mock_get_cf_zone_response(self, request) -> httpx.Response:
-        logger.debug("😃 mocking dns zone retrieval")
+        logger.debug("😃 mocking dns zone get response")
 
         # Get zone id from request url
         request_url = str(request.url)
