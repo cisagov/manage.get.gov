@@ -194,6 +194,7 @@ class DnsHostService:
         """Apply required DNS settings to a newly created zone.
 
         Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        Assigns nameserver set to zone.
         """
         try:
             self.update_zone_dns_settings(x_zone_id)
