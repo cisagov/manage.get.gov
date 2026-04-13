@@ -40,15 +40,11 @@ Learn more about:
 - What preloading is <https://get.gov/domains/security/#preload-your-domain>
 - Why we preload new domains <https://get.gov/posts/2021-06-21-an-intent-to-preload/>
 
-
-THANK YOU
-.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
-
 ----------------------------------------------------------------
 
 The .gov team
-Contact us: <https://get.gov/contact/>
-Learn about .gov <https://get.gov>
+Contact us <https://get.gov/contact/>
+Learn how .gov helps the public identify official, trusted information <https://get.gov>
 
 The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
 {% endautoescape %}
