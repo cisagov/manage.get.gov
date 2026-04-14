@@ -1,7 +1,8 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, ANY
 from django.test import TestCase
 from django.db import IntegrityError
 from httpx import HTTPStatusError
+import copy
 
 from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
@@ -128,6 +129,7 @@ class TestDnsHostService(TestCase):
                     "account": {"name": "test.gov"},
                     "name_servers": ["ns1.test.gov", "ns2.test.gov"],
                     "created_on": "2024-01-01 00:00:00+00:00",
+                    "vanity_name_servers": ["vanity1.test.gov", "vanity2.test.gov"],
                 },
             },
             # Case B: DB empty, but has zone in CF
@@ -143,6 +145,7 @@ class TestDnsHostService(TestCase):
                     "account": {"name": "exists.gov"},
                     "name_servers": ["ns1.exists.gov", "ns2.exists.gov"],
                     "created_on": "2024-01-01 00:00:00+00:00",
+                    "vanity_name_servers": ["vanity1.test.gov", "vanity2.test.gov"],
                 },
             },
             # Case C: Both DB and CF empty
@@ -376,7 +379,7 @@ class TestDnsHostService(TestCase):
 
         response = self.service.update_zone_dns_settings(x_zone_id)
 
-        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id)
+        self.service.dns_vendor_service.update_zone_dns_settings.assert_called_once_with(x_zone_id, ns_set=ANY)
         self.assertTrue(response.success)
         self.assertEqual(response.result["zone_mode"], "dns_only")
         self.assertEqual(response.result["nameservers"]["ns_set"], 2)
@@ -877,3 +880,47 @@ class TestDnsHostServiceDB(TestCase):
                     self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
                     self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
                     self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
+
+    def test_create_and_save_zone_assigns_custom_nameservers(self):
+        """
+        After creating a new CF zone, custom nameservers are also assigned to DB zone object.
+        """
+        domain_name = "test.gov"
+        account_id = self.vendor_account_data["result"]["id"]
+        zone_id = "new-zone-id"
+        # Create account and domain object referenced in zone
+        domain = create_domain(domain_name=domain_name)
+        create_dns_account(domain, x_account_id=account_id, account_name=self.vendor_account_data["result"]["name"])
+
+        initial_zone_data = {
+            "name": domain_name,
+            "id": zone_id,
+            "created_on": "2026-01-01T00:00:00Z",
+            "account": {"name": self.vendor_account_data["result"]["name"]},
+            "name_servers": ["ns1.test.gov", "ns2.test.gov"],
+        }
+        updated_zone_data = copy.deepcopy(initial_zone_data)
+        updated_zone_data["vanity_name_servers"] = ["vanity1.test.gov", "vanity2.test.gov"]
+
+        self.service.dns_vendor_service.create_cf_zone = Mock(return_value={"result": {**initial_zone_data}})
+        # zone response with updated custom nameservers
+        self.service.dns_vendor_service.get_zone_by_id = Mock(return_value={"result": {**updated_zone_data}})
+        expected_zone_settings = CloudflareDnsSettingsUpdateResponse(
+            success=True,
+            result={
+                "zone_defaults": {
+                    "zone_mode": "dns_only",
+                    "nameservers": {"type": "custom.tenant"},
+                }
+            },
+            errors=[],
+            messages=[],
+        )
+        self.service.dns_vendor_service.update_zone_dns_settings = Mock(return_value=expected_zone_settings)
+
+        response = self.service.create_and_save_zone(domain_name, account_id)
+
+        dns_zone = DnsZone.objects.filter(name=domain_name).first()
+        self.assertNotEqual(initial_zone_data, updated_zone_data)
+        self.assertEqual(updated_zone_data["vanity_name_servers"], dns_zone.nameservers)
+        self.assertEqual(response["result"], updated_zone_data)
