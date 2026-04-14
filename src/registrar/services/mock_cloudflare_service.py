@@ -261,7 +261,6 @@ class MockCloudflareService:
         # Get zone id from request url
         request_url = str(request.url)
         zone_id = request_url.split("/zones/")[1]
-        matched = None
         matched = next((zone for zone in self.account_zones if zone.get("id") == zone_id), None)
         return httpx.Response(
             200,
