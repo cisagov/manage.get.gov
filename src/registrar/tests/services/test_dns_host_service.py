@@ -186,7 +186,7 @@ class TestDnsHostService(TestCase):
                     mock_create_and_save_zone.assert_not_called()
                 else:
                     mock_create_and_save_zone.assert_called_once()
-                    mock_create_db_zone.assert_called_once()                    
+                    mock_create_db_zone.assert_called_once()
 
     @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
@@ -394,6 +394,7 @@ class TestDnsHostService(TestCase):
 
         with self.assertRaises(HTTPStatusError):
             self.service.update_zone_dns_settings(x_zone_id)
+
 
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
@@ -895,13 +896,8 @@ class TestDnsHostServiceDB(TestCase):
             "name": domain_name,
             "id": zone_id,
             "created_on": "2026-01-01T00:00:00Z",
-            "account": {
-                "name": self.vendor_account_data["result"]["name"]
-            },
-            "name_servers": [
-                "ns1.test.gov",
-                "ns2.test.gov"
-            ],
+            "account": {"name": self.vendor_account_data["result"]["name"]},
+            "name_servers": ["ns1.test.gov", "ns2.test.gov"],
         }
         updated_zone_data = copy.deepcopy(initial_zone_data)
         updated_zone_data["vanity_name_servers"] = ["vanity1.test.gov", "vanity2.test.gov"]
@@ -928,4 +924,3 @@ class TestDnsHostServiceDB(TestCase):
         self.assertNotEqual(initial_zone_data, updated_zone_data)
         self.assertEqual(updated_zone_data["vanity_name_servers"], dns_zone.nameservers)
         self.assertEqual(response["result"], updated_zone_data)
-
