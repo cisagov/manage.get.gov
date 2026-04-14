@@ -109,6 +109,7 @@ class MockCloudflareService:
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
+        self._mock_context.get(url__regex=r"/zones/[\w-]+").mock(side_effect=self._mock_get_cf_zone_response)
 
         # Mock the api with any zone id
         self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
@@ -251,6 +252,23 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": result_dict,
+            },
+        )
+
+    def _mock_get_cf_zone_response(self, request) -> httpx.Response:
+        logger.debug("😃 mocking dns zone get response")
+
+        # Get zone id from request url
+        request_url = str(request.url)
+        zone_id = request_url.split("/zones/")[1]
+        matched = next((zone for zone in self.account_zones if zone.get("id") == zone_id), None)
+        return httpx.Response(
+            200,
+            json={
+                "errors": [],
+                "messages": [],
+                "success": bool(matched),
+                "result": matched,
             },
         )
 
