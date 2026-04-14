@@ -17,7 +17,7 @@ on:
           - staging
           - development
           - backup
-          - ap
+          - ab
           - cw
           - testdb
           - acadia
@@ -38,6 +38,7 @@ on:
           - kma
           - nl
           - rh
+          - sm
 
 jobs:
   createcachetable:

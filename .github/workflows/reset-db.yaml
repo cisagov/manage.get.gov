@@ -16,7 +16,7 @@ on:
         options:
           - staging
           - development
-          - ap
+          - ab
           - cw
           - testdb
           - acadia
@@ -36,6 +36,7 @@ on:
           - es
           - nl
           - rh
+          - sm
           - kma
           - dg
 

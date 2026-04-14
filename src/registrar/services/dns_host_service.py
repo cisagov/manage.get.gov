@@ -135,6 +135,8 @@ class DnsHostService:
             logger.error(f"Failed to create account: {str(e)}")
             raise
 
+        self._configure_new_account_dns_settings(x_account_id, account_name)
+
         try:
             self.create_db_account(account_data)
             logger.info(f"Successfully saved account '{account_name}' to database")
@@ -144,8 +146,22 @@ class DnsHostService:
 
         return x_account_id
 
+    def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
+        """Apply required DNS settings to a newly created account.
+
+        Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        Must be called after account creation and before zone creation.
+        """
+        try:
+            self.update_account_dns_settings(x_account_id)
+            logger.info(f"Successfully updated DNS settings for account '{account_name}'")
+        except Exception as e:
+            logger.error(f"Failed to update DNS settings for account {account_name}: {str(e)}")
+            raise
+
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
+        zone_name = domain_name
         try:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
@@ -175,7 +191,6 @@ class DnsHostService:
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise APIError(str(e)) from e
-
         # Create and save dns record in registrar db
         try:
             DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
@@ -225,25 +240,11 @@ class DnsHostService:
         return vendor_record_data
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
-        per_page = 50
-        page = 0
-        is_last_page = False
-        while is_last_page is False:
-            page += 1
-            try:
-                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
-                accounts = page_accounts_data["result"]
-                account_data = self._find_account_json_by_pubname(accounts, account_name)
-                if account_data:
-                    break
-                total_count = page_accounts_data["result_info"].get("total_count")
-                is_last_page = total_count <= page * per_page
-
-            except APIError as e:
-                logger.error(f"Error fetching accounts: {str(e)}")
-                raise
-
-        return account_data
+        try:
+            return self.dns_vendor_service.get_account_by_name(account_name)
+        except APIError as e:
+            logger.error(f"Error fetching accounts: {str(e)}")
+            raise
 
     def _find_existing_account_in_db(self, account_name) -> str | None:
         try:
@@ -359,7 +360,11 @@ class DnsHostService:
                 dns_domain = Domain.objects.get(name=domain_name)
 
                 dns_zone = DnsZone.objects.create(
-                    dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
+                    dns_account=dns_account,
+                    domain=dns_domain,
+                    name=zone_name,
+                    nameservers=nameservers,
+                    zone_mode=DnsZone.ZoneModes.DNS_ONLY,
                 )
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)
