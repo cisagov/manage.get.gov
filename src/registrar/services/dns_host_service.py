@@ -193,8 +193,7 @@ class DnsHostService:
     def _configure_new_zone_dns_settings(self, x_zone_id: str, zone_name: str):
         """Apply required DNS settings to a newly created zone.
 
-        Sets zone_mode to dns_only and nameservers type to custom.tenant.
-        Assigns nameserver set to zone.
+        Sets nameservers type to custom.tenant and assigns nameserver set to zone.
         """
         try:
             self.update_zone_dns_settings(x_zone_id)
