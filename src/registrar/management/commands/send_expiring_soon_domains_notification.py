@@ -6,7 +6,7 @@ from django.core.management import BaseCommand
 
 from django.utils import timezone
 
-from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
+from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.models import Domain, UserDomainRole, UserPortfolioPermission
 from registrar.models.user import UserPortfolioRoleChoices
 from registrar.utility.email import send_templated_email, EmailSendingError
