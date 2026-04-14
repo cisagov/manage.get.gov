@@ -889,8 +889,8 @@ class TestDnsHostServiceDB(TestCase):
         account_id = self.vendor_account_data["result"]["id"]
         zone_id = "new-zone-id"
         # Create account and domain object referenced in zone
-        self.service.create_db_account(self.vendor_account_data)
-        Domain.objects.create(name=domain_name)
+        domain = create_domain(domain_name=domain_name)
+        create_dns_account(domain, x_account_id=account_id, account_name=self.vendor_account_data["result"]["name"])
 
         initial_zone_data = {
             "name": domain_name,
