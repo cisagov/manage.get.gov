@@ -757,6 +757,8 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
             self._process_removed_domains(removed_domain_ids, email)
             messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
+        except PermissionDenied:
+            raise
         except IntegrityError:
             messages.error(
                 request,
@@ -806,7 +808,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                     "Cross-portfolio domain assignment attempted",
                     extra={
                         "portfolio_id": portfolio.id,
-                        "member_id": member.id,
+                        "member_id": email,
                         "invalid_domain_ids": [d.id for d in invalid_domains],
                         "request_user": self.request.user.id,
                     },
