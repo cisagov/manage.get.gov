@@ -1,6 +1,6 @@
 ---
 applications:
-- name: getgov-ap
+- name: getgov-sm
   buildpacks:
     - python_buildpack
   path: ../../src
@@ -18,7 +18,7 @@ applications:
     # Tell Django where to find its configuration
     DJANGO_SETTINGS_MODULE: registrar.config.settings
     # Tell Django where it is being hosted
-    DJANGO_BASE_URL: https://getgov-ap.app.cloud.gov
+    DJANGO_BASE_URL: https://getgov-sm.app.cloud.gov
     # Tell Django how much stuff to log
     DJANGO_LOG_LEVEL: INFO
     # tell django what log format to use: console or json. See settings.py for more details.
@@ -31,7 +31,7 @@ applications:
     GIT_BRANCH: ((GIT_BRANCH))
     GIT_COMMIT_SHA: ((GIT_COMMIT_SHA))
   routes:
-    - route: getgov-ap.app.cloud.gov
+    - route: getgov-sm.app.cloud.gov
   services:
   - getgov-credentials
-  - getgov-ap-database
+  - getgov-sm-database
