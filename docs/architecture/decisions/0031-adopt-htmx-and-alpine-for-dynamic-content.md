@@ -8,10 +8,10 @@ Date: 2026-04-15
 
 ## Context
 
-The Django Template Library (DTL) is great at creating forms but not so great at handling complex user interactions like dynamic form updates, hidden elements, etc. We have been using DTL to load JS scripts written in vanilla JavaScript to listen to user generated events (see ./0008-server-side-rendering.md for additional context about why this decision was made). 
+The Django Template Library (DTL) is great at creating forms but not so great at handling complex user interactions like dynamic form updates, hidden elements, etc. We have been using DTL to load JS scripts written in vanilla JavaScript to listen to user generated events (see [Server Side Rendering ADR](https://github.com/cisagov/manage.get.gov/blob/main/docs/architecture/decisions/0008-server-side-rendering.md) for additional context about why this decision was made). 
 
 
-As we have grown, we have leveraged AJAX (see ./0027-ajax-for-dynamic-content) to create a more dynamic SPA-like application. This allowed us to incrementally enhance Django’s server-rendered pages without a significant refactor. However, as we introduce more dynamic FE features, manually implementing them using JS has become unsustainable. We are looking into new solutions to scale our FE with less code complexity.
+As we have grown, we have leveraged AJAX (see [AJAX for Dynamic Content ADR](https://github.com/cisagov/manage.get.gov/blob/main/docs/architecture/decisions/0027-ajax-for-dynamic-content.md)) to create a more dynamic SPA-like application. This allowed us to incrementally enhance Django’s server-rendered pages without a significant refactor. However, as we introduce more dynamic FE features, manually implementing them using JS has become unsustainable. We are looking into new solutions to scale our FE with less code complexity.
 
 @lizpearl worked on initial [FE investigation](https://docs.google.com/document/d/1IqxbxwMss2CmocbVsdk8_BV9otaHd-Wl16R9pVIoInc/edit?tab=t.0) to explore options using htmx, React, and at-the-time status quo of DTL and JS.
 
