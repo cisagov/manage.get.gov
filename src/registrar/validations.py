@@ -64,9 +64,7 @@ def _validate_pattern(value: str, pattern: re.Pattern[str], error_message: str) 
 
 
 # For use on DNS record names
-DNS_NAME_FORMAT_ERROR_MESSAGE = (
-    "Enter the name using only letters, numbers, hyphens, periods, or a single @ symbol."
-)
+DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name using only letters, numbers, hyphens, periods, or a single @ symbol."
 DNS_NAME_LENGTH_ERROR_MESSAGE = (
     "Name label must be no more than 63 characters. "
     "Full name (including label, domain, dots, and zone) must be no more than 253 characters."
