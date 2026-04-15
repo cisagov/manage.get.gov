@@ -30,7 +30,7 @@ As we have grown, we have leveraged AJAX (see [AJAX for Dynamic Content ADR](htt
 ### 2. htmx + Alpine.js + JS
 Use a combination of libraries to handle FE changes in response to a server-side request (htmx), simpler client-side FE changes that can be handled through state management (Alpine.js), and any additional FE changes (JS)
 
-[htmx discovery PR](https://github.com/cisagov/manage.get.gov/pull/4284) demonstrates current dynamic FE content that we can refactor using htmx with more minimal code.
+[#3868: htmx discovery PR](https://github.com/cisagov/manage.get.gov/pull/4284) demonstrates current dynamic FE content that we can refactor using htmx with more minimal code.
 
 **✅ Pros:**
 + Lower learning curve than React
