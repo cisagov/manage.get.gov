@@ -48,9 +48,11 @@ Use a combination of libraries to handle FE changes in response to a server-side
 (#2) Use htmx, Alpine.js, and JS to introduce (and later refactor) dynamic FE features. 
 
 - Use htmx for dynamic FE content in response to a server side request (e.g., API calls).
+   - **Example:** Submit a form to create an object in the database, then display that object as a table row on the same page - see [#4429: Refactor DNS records page to HTMX](https://github.com/cisagov/manage.get.gov/pull/4602).
 - Use Alpine for simple dynamic content that does not require a server side network request (e.g., showing/hiding an element).
+   - **Example:** Toggling visibility of certain HTML to show/hide content - see [#4400: Toggle DNS add record form visibility](https://github.com/cisagov/manage.get.gov/pull/4427). 
 - Use JS for anything edge case FE interactions, namely Alpine’s more complex events blocked by our CSP policy
-   - **Example:** Displaying different form labels based on another field's dropdown - see [AAAA record form PR](https://github.com/cisagov/manage.get.gov/pull/4696) for established patterns.
+   - **Example:** Displaying different form labels based on another field's dropdown - see [#4408: AAAA record form PR](https://github.com/cisagov/manage.get.gov/pull/4696).
 
 Combining htmx + Alpine.js is a common solution to introduce dynamic FE content to Django projects. Alpine allows us to create dynamic content when depending on a server-side request is unnecessary/excessive. The combination of htmx + Alpine also benefits from a larger support community compared to other solutions like JS + AJAX.
 
