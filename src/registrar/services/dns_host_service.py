@@ -1,4 +1,5 @@
 import logging
+import random
 
 from registrar.config import settings
 from registrar.models.domain import Domain
@@ -40,6 +41,9 @@ class DnsHostService:
 
     def update_zone_dns_settings(self, x_zone_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for a zone."""
+        if settings.DNS_NS_SET_RANGE:
+            ns_set = random.randint(1, settings.DNS_NS_SET_RANGE)  # nosec
+            return self.dns_vendor_service.update_zone_dns_settings(x_zone_id, ns_set=ns_set)
         return self.dns_vendor_service.update_zone_dns_settings(x_zone_id)
 
     def _find_account_tag_by_pubname(self, items, name):
@@ -118,7 +122,7 @@ class DnsHostService:
             self.create_db_zone({"result": zone_data}, domain_name)
         else:
             try:
-                self.create_and_save_zone(domain_name, x_account_id)
+                zone_data = self.create_and_save_zone(domain_name, x_account_id)
             except Exception as e:
                 logger.error(f"dnsSetup for zone failed {e}")
                 raise
@@ -135,6 +139,8 @@ class DnsHostService:
             logger.error(f"Failed to create account: {str(e)}")
             raise
 
+        self._configure_new_account_dns_settings(x_account_id, account_name)
+
         try:
             self.create_db_account(account_data)
             logger.info(f"Successfully saved account '{account_name}' to database")
@@ -144,16 +150,35 @@ class DnsHostService:
 
         return x_account_id
 
+    def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
+        """Apply required DNS settings to a newly created account.
+
+        Sets zone_mode to dns_only and nameservers type to custom.tenant.
+        Must be called after account creation and before zone creation.
+        """
+        try:
+            self.update_account_dns_settings(x_account_id)
+            logger.info(f"Successfully updated DNS settings for account '{account_name}'")
+        except Exception as e:
+            logger.error(f"Failed to update DNS settings for account {account_name}: {str(e)}")
+            raise
+
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
+        zone_name = domain_name
         try:
             zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
             zone_name = zone_data["result"].get("name")
             logger.info(f"Successfully created zone {domain_name}.")
-
+            x_zone_id = zone_data["result"]["id"]
         except APIError as e:
             logger.error(f"DNS setup failed to create zone {zone_name}: {str(e)}")
             raise
+
+        # Update zone to use and assign custom nameservers
+        self._configure_new_zone_dns_settings(x_zone_id, zone_name)
+        # Get updated zone data with custom nameservers
+        zone_data = self.dns_vendor_service.get_zone_by_id(x_zone_id)
 
         # Create and save zone in registrar db
         try:
@@ -161,6 +186,20 @@ class DnsHostService:
             logger.info(f"Successfully saved zone '{domain_name}' to database")
         except Exception as e:
             logger.error(f"Failed to save zone for {domain_name} in database: {str(e)}.")
+            raise
+
+        return zone_data
+
+    def _configure_new_zone_dns_settings(self, x_zone_id: str, zone_name: str):
+        """Apply required DNS settings to a newly created zone.
+
+        Sets nameservers type to custom.tenant and assigns nameserver set to zone.
+        """
+        try:
+            self.update_zone_dns_settings(x_zone_id)
+            logger.info(f"Successfully updated DNS settings for zone '{zone_name}'")
+        except Exception as e:
+            logger.error(f"Failed to update DNS settings for zone {zone_name}: {str(e)}")
             raise
 
     def create_dns_record(self, x_zone_id, form_record_data) -> "DnsRecord | None":
@@ -175,6 +214,7 @@ class DnsHostService:
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise APIError(str(e)) from e
+
         # Create and save dns record in registrar db
         try:
             DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
@@ -224,25 +264,11 @@ class DnsHostService:
         return vendor_record_data
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
-        per_page = 50
-        page = 0
-        is_last_page = False
-        while is_last_page is False:
-            page += 1
-            try:
-                page_accounts_data = self.dns_vendor_service.get_page_accounts(page, per_page)
-                accounts = page_accounts_data["result"]
-                account_data = self._find_account_json_by_pubname(accounts, account_name)
-                if account_data:
-                    break
-                total_count = page_accounts_data["result_info"].get("total_count")
-                is_last_page = total_count <= page * per_page
-
-            except APIError as e:
-                logger.error(f"Error fetching accounts: {str(e)}")
-                raise
-
-        return account_data
+        try:
+            return self.dns_vendor_service.get_account_by_name(account_name)
+        except APIError as e:
+            logger.error(f"Error fetching accounts: {str(e)}")
+            raise
 
     def _find_existing_account_in_db(self, account_name) -> str | None:
         try:
@@ -358,7 +384,11 @@ class DnsHostService:
                 dns_domain = Domain.objects.get(name=domain_name)
 
                 dns_zone = DnsZone.objects.create(
-                    dns_account=dns_account, domain=dns_domain, name=zone_name, nameservers=nameservers
+                    dns_account=dns_account,
+                    domain=dns_domain,
+                    name=zone_name,
+                    nameservers=nameservers,
+                    zone_mode=DnsZone.ZoneModes.DNS_ONLY,
                 )
 
                 ZonesJoin.objects.create(dns_zone=dns_zone, vendor_dns_zone=vendor_dns_zone)

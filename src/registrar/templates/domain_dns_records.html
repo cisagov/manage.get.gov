@@ -15,7 +15,7 @@
 
 {% block domain_content %}
 <!-- Wrapped div to store showFormId to track across all the forms on the page, so only one form appears at a time-->
-<div x-data="{ showFormId: null, recordType: '' }" @record-submit-success.camel.window="showFormId = null">
+<div x-data="{ showFormId: null, recordType: '', openComments: []}" @record-submit-success.camel.window="showFormId = null">
 
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
@@ -44,7 +44,7 @@
                     To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
 
-                <div x-cloak x-show="showFormId == 0">
+                <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
                 
                     <section class="section-outlined section-outlined--extra-padding">
