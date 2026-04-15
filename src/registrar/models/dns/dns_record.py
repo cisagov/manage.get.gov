@@ -6,7 +6,7 @@ from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import validate_dns_name
-from registrar.utility.enums import DNSRecordTypes
+from registrar.utility.enums import DNSRecordTypes, format_dns_ttl
 from registrar.models.dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord as RecordsJoin
 from registrar.models.dns.vendor_dns_record import VendorDnsRecord
 from registrar.models.dns.vendor_dns_zone import VendorDnsZone
@@ -46,6 +46,10 @@ class DnsRecord(TimeStampedModel):
     comment = models.CharField(blank=True, null=True, max_length=500)
 
     tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
+
+    @property
+    def ttl_display(self) -> str:
+        return format_dns_ttl(self.ttl)
 
     def _validate_ttl(self, errors):
         """Validate TTL is within allowed range."""

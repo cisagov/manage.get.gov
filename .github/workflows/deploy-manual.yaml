@@ -17,7 +17,6 @@ on:
           - ad
           - backup
           - ab
-          - ap
           - cw
           - testdb
           - dg
@@ -33,6 +32,7 @@ on:
           - potato
           - product
           - rh
+          - sm
           - yellowstone
           - zion
 

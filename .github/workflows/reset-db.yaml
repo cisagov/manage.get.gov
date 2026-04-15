@@ -17,7 +17,6 @@ on:
           - staging
           - development
           - ab
-          - ap
           - cw
           - testdb
           - acadia
@@ -37,6 +36,7 @@ on:
           - es
           - nl
           - rh
+          - sm
           - kma
           - dg
 

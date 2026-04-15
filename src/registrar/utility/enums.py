@@ -158,3 +158,20 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
             DNSRecordTypes.MX: "Enter a valid mail server hostname.",
         }.get(self, "")
+
+
+DNS_TTL_CHOICES = [
+    (60, "1 minute"),
+    (300, "5 minutes"),
+    (1800, "30 minutes"),
+    (3600, "1 hour"),
+    (7200, "2 hours"),
+    (18000, "5 hours"),
+    (43200, "12 hours"),
+    (86400, "1 day"),
+]
+
+
+def format_dns_ttl(ttl: int) -> str:
+    """Render a TTL value using the form's notation."""
+    return dict(DNS_TTL_CHOICES)[ttl]
