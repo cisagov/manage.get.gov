@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Updates registry disclose settings for PublicContact records to whatever the website currently computes."
+    help = (
+        "Updates registry disclose settings and field values for PublicContact records to "
+        "whatever the website currently computes (for example, portfolio relationships)."
+    )
     RECOVERY_LOGFILE = "update_public_contacts_recovery_log.txt"
     ALL_CONTACT_TYPES = [
         PublicContact.ContactTypeChoices.REGISTRANT.value,
