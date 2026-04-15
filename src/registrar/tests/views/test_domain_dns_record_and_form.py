@@ -115,8 +115,12 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    # User visible success message snippet
-                    self.assertContains(response, f'{data["type"]} record for {data["name"]}')
+                    messages = list(response.wsgi_request._messages)
+                    self.assertEqual(str(messages[0]), "The DNS record for this domain has been added.")
+                    self.assertRegex(
+                        response.content.decode(),
+                        r'<td id="dns-ttl-[^"]+"[^>]*>\s*5 minutes\s*</td>',
+                    )
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -239,3 +243,13 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         for record_case in self.RECORD_TEST_CASES:
             self.assertContains(response, f'Toggle to view comment for {record_case["name"]}')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_dns_records_page_displays_human_readable_ttl(self):
+        create_dns_record(self.dns_zone, ttl=300)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, "5 minutes")
+        self.assertNotContains(response, ">300<", html=False)
