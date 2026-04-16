@@ -199,7 +199,7 @@ def validate_txt_content(content: str) -> None:
 
     if check_has_valid_quotes(content):
         raise ValidationError(
-            'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'
+            'Enter content using quotation marks at the beginning and end.'
         )
 
     if len(content) > 2048:
