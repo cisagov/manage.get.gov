@@ -11,7 +11,7 @@ function getCharCountText (charLimit, textArea) {
     }
   };
 
-function createCharacterCountText(charLimit, textArea) {
+function createCharacterCountDiv(charLimit, textArea) {
 
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
@@ -40,7 +40,7 @@ function switchFromInputToTextArea (element) {
         
         // Character count
         const charLimit = 2048
-        const displayCharCount = createCharacterCountText(charLimit, textArea)
+        const displayCharCount = createCharacterCountDiv(charLimit, textArea)
 
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
