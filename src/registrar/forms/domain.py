@@ -801,7 +801,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             # Priority is required only for MX records
             self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
-        self.fields["comment"].error_messages["max_length"] = "Response must be no more than 500 characters."
 
         config = {
             rt.value: {
@@ -827,7 +826,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
-                    "maxlength": 500,
+                    "hide_character_count": True
                 }
             ),
         }
@@ -952,6 +951,10 @@ class DomainDNSRecordForm(forms.ModelForm):
         """Validate MX record priority."""
         if record_type == DNSRecordTypes.MX and priority is None:
             self.add_error("priority", "Enter a priority for this record.")
+    
+    def _validate_comment_field(self, comment):
+        if len(comment) > 100:
+            self.add_error("comment", "Response must be no longer than 100 characters.")
 
     def clean(self):
         cleaned_data = super().clean()
@@ -959,10 +962,12 @@ class DomainDNSRecordForm(forms.ModelForm):
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
         priority = cleaned_data.get("priority")
+        comment = cleaned_data.get("comment")
 
         if record_type:
             self._validate_content(record_type, content)
             self._validate_cname_record(record_type, name, content)
+            self._validate_comment_field(comment)
             # Only validate MX priority if priority field didn't already have a validation error
             if "priority" not in self.errors:
                 self._validate_mx_priority(record_type, priority)

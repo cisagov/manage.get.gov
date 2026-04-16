@@ -1,21 +1,23 @@
 // Establishes javascript for dynamic content label based on type
 
-function createCharacterCountText(charLimit, textArea) {
-  let getCharCountText = function () {
+function getCharCountText (charLimit, textArea) {
     const charactersLeft = charLimit - textArea.value.length;
     if (charactersLeft >= 0) {
       const characters = `character${charactersLeft === 1 ? '' : 's'}`;
-      return `${charactersLeft} ${characters} left`;
+      return `${charactersLeft} ${characters} left.`;
     } else {
       const characters = `character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
-      return `${Math.abs(charactersLeft)} ${characters} over limit`;
+      return `${Math.abs(charactersLeft)} ${characters} over limit.`;
     }
   };
+
+function createCharacterCountText(charLimit, textArea) {
+
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
-  displayCharCount.textContent = getCharCountText();
+  displayCharCount.textContent = getCharCountText(charLimit, textArea);
   textArea.addEventListener('input', function () {
-    displayCharCount.textContent = getCharCountText();
+    displayCharCount.textContent = getCharCountText(charLimit, textArea);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
       textArea.value.length > charLimit
@@ -25,6 +27,7 @@ function createCharacterCountText(charLimit, textArea) {
 }
 
 function switchFromInputToTextArea (element) {
+        console.log("switching", element)
         if(!element) return;
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
@@ -42,7 +45,6 @@ function switchFromInputToTextArea (element) {
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
-
 
 
 export function editAndCommentButtonListener (){
@@ -73,9 +75,30 @@ export function editAndCommentButtonListener (){
         })
 }
 
+export function commentCharacterEventListener(){
+    function helperEventListener (element){
+        const commentText = element.querySelector('.comment-character-count')
+        const commentTextArea = element.querySelector('textarea[name="comment"]')
+        commentTextArea.addEventListener('input', function () {
+            commentText.textContent = getCharCountText(100, commentTextArea);
+            commentText.classList.toggle(
+              'usa-character-count__status--invalid',
+              commentTextArea.value.length > 100
+          );
+       });
+
+    }
+    let rows = document.querySelectorAll('[id^="dnsrecord-edit-row-"]')
+    const form = document.getElementById('form-container')
+
+    rows.forEach(row => {
+       helperEventListener(row)
+    })
+
+    helperEventListener(form)
+}
 
 export function initDynamicDNSRecordFormFields() { 
-    
     const typeField = document.getElementById('id_type');
 
     if (!typeField) return;
@@ -120,11 +143,12 @@ export function initDynamicDNSRecordFormFields() {
         contentLabel.appendChild(abbrClone);
 
 
-
     });
+
 
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
+
 }

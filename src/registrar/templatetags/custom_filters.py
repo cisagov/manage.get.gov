@@ -337,3 +337,18 @@ def contact_text(contact, num_newlines=2):
     text = unescape(text)
     text = text.rstrip("\n")
     return text + "\n" * num_newlines
+
+@register.filter
+def remaining_characters_text(char_limit, field_value):
+    print("HELLO")
+    print(char_limit)
+    if field_value is None:
+        return f"{char_limit} characters allowed."
+    else:
+        remaining_val = char_limit - len(field_value)
+        if remaining_val == 1:
+            return  f"{remaining_val} character allowed."
+        if remaining_val  > 0:
+             return f"{remaining_val} characters allowed."
+        if remaining_val  < 0:
+            return f"{abs(remaining_val)} characters over limit."

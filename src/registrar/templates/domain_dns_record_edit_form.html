@@ -1,4 +1,5 @@
 {% load static field_helpers url_helpers %}
+{% load custom_filters %}
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
 <tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
@@ -23,6 +24,11 @@
                     {% with add_group_class="usa-form-group--unstyled-error" %}
                         {% input_with_errors dns_record.form.comment %}
                     {% endwith %}
+                    <div class="usa-character-count__status usa-hint comment-character-count">
+                    <!-- Hardcorded value should be removed if/when the model is updated -->
+                    {{ 100|remaining_characters_text:dns_record.comment }}
+                    </div>
+                    
                 </div>
                 <button
                     type="button"
