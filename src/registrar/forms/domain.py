@@ -953,7 +953,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             self.add_error("priority", "Enter a priority for this record.")
     
     def _validate_comment_field(self, comment):
-        if len(comment) > 100:
+        if comment and len(comment) > 100:
             self.add_error("comment", "Response must be no longer than 100 characters.")
 
     def clean(self):

@@ -27,7 +27,6 @@ function createCharacterCountDiv(charLimit, textArea) {
 }
 
 function switchFromInputToTextArea (element) {
-        console.log("switching", element)
         if(!element) return;
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
@@ -105,8 +104,7 @@ export function initDynamicDNSRecordFormFields() {
 
     const config = JSON.parse(
         typeField.dataset.typeConfig || "{}"
-    );
-
+    );)
     const textAreaContent = document.querySelectorAll('.content-field-wrapper-txt');
 
     // For the edit rows to update from input to text area
@@ -134,8 +132,11 @@ export function initDynamicDNSRecordFormFields() {
        
         if(selectedType == "TXT"){
             // Swap input type to text area
+            setTimeout(()=>{
             let input = document.querySelector(".content-field-wrapper-txt input")
             input && switchFromInputToTextArea(input)
+            }, 0
+            )
         }
         
 
