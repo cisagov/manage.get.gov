@@ -175,6 +175,7 @@ class Command(BaseCommand):
         recovery_status_by_domain = self._read_recovery_log(log_filename) if use_recovery_log else {}
 
         if not dry_run and not use_recovery_log:
+        # If we are not reading from an existing recovery log, write a new one
             self._write_recovery_log(log_filename, recovery_status_by_domain)
 
         for contact in contacts_to_update.iterator():
