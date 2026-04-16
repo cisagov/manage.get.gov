@@ -91,12 +91,17 @@ class Command(BaseCommand):
             f"type={contact.contact_type} "
         )
 
-    def _check_and_update_contact_values(self, contact: PublicContact) -> PublicContact:
+    def _check_and_update_contact_values(self, contact: PublicContact) -> PublicContact | None:
         if contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
             logger.info("Existing contact values: %s", contact)
             updated_contact = contact
-            # TODO: May be legacy and not have this object
-            domain_info = getattr(contact.domain, "domain_info")
+            domain_info = getattr(contact.domain, "domain_info", None)
+            if domain_info is None:
+                logger.warning(
+                    "Skipping registrant contact for %s because its domain has no DomainInformation.",
+                    self._contact_ref(contact),
+                )
+                return None
             # Computes new values for Public Contact (may not be any delta, depends on if and
             # how the data relationships have changed between portfolio, domain, suborganization)
             # Returns dict of org, street1, street2, city, state_territory, zipcode
@@ -130,6 +135,15 @@ class Command(BaseCommand):
                     recovery_status_by_domain[domain_name] = status
         except FileNotFoundError:
             logger.warning("Recovery log %s was not found. Continuing without prior recovery state.", log_filename)
+            TerminalHelper.prompt_for_execution(
+                system_exit_on_terminate=True,
+                prompt_message=(
+                    f"Recovery log {log_filename} was not found.\n"
+                    "Continuing will process every domain in scope instead of skipping domains "
+                    "previously marked done."
+                ),
+                prompt_title="Recovery log was not found",
+            )
 
         return recovery_status_by_domain
 
@@ -182,6 +196,9 @@ class Command(BaseCommand):
             processed += 1
             domain_name = contact.domain.name
 
+            # The queryset is ordered by domain, so the loop treats each domain's contacts
+            # as a set and only writes recovery status after all selected contacts for that
+            # domain have been attempted.
             if current_domain != domain_name:
                 if current_domain is not None and not dry_run and not skip_current_domain:
                     recovery_status_by_domain[current_domain] = "error" if current_domain_failed else "done"
@@ -194,6 +211,7 @@ class Command(BaseCommand):
                 if skip_current_domain:
                     logger.info("Skipping %s because recovery log marked it done.", domain_name)
 
+            # A recovered domain is skipped as a whole set, including every contact type in scope.
             if skip_current_domain:
                 continue
 
@@ -241,6 +259,8 @@ class Command(BaseCommand):
         failed = 0
         try:
             contact = self._check_and_update_contact_values(contact)
+            if contact is None:
+                return failed
 
             existing_contact = contact.domain._request_contact_info(contact)
             existing_disclose = existing_contact.disclose
