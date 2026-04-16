@@ -801,7 +801,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             # Priority is required only for MX records
             self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
-
         config = {
             rt.value: {
                 "label": getattr(rt, "field_label", "Content"),
@@ -823,11 +822,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 }
             ),
             "comment": forms.Textarea(
-                attrs={
-                    "class": "usa-textarea usa-textarea--medium",
-                    "rows": 2,
-                    "hide_character_count": True
-                }
+                attrs={"class": "usa-textarea usa-textarea--medium", "rows": 2, "hide_character_count": True}
             ),
         }
         help_texts = {
@@ -951,7 +946,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         """Validate MX record priority."""
         if record_type == DNSRecordTypes.MX and priority is None:
             self.add_error("priority", "Enter a priority for this record.")
-    
+
     def _validate_comment_field(self, comment):
         if comment and len(comment) > 100:
             self.add_error("comment", "Response must be no longer than 100 characters.")

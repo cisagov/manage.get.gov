@@ -51,11 +51,11 @@ export function editAndCommentButtonListener (){
         if(!table) return;
 
         table.addEventListener('click', function(e) {
-            const editBtn =  e.target.closest('[data-action="edit"')
-            const commenttBtn = e.target.closest('[data-action="comment"')
-            if(!editBtn && !commenttBtn) return;
+            const editBtn =  e.target.closest('[data-action="edit"]')
+            const commentBtn = e.target.closest('[data-action="comment"]')
+            if(!editBtn && !commentBtn) return;
             
-            const recordId = (editBtn || commenttBtn).dataset.recordId
+            const recordId = (editBtn || commentBtn).dataset.recordId
             const alpineData = Alpine.$data(table)
             
             if(editBtn){
@@ -64,7 +64,7 @@ export function editAndCommentButtonListener (){
                 alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
             }
 
-            if(commenttBtn){
+            if(commentBtn){
                 if(alpineData.showFormId === recordId) alpineData.showFormId = null;
                 const idx = alpineData.openComments.indexOf(recordId);
                 idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
@@ -76,6 +76,9 @@ export function editAndCommentButtonListener (){
 
 export function commentCharacterEventListener(){
     function helperEventListener (element){
+        if(!element){
+            return;
+        }
         const commentText = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[name="comment"]')
         commentTextArea.addEventListener('input', function () {
@@ -90,7 +93,7 @@ export function commentCharacterEventListener(){
     let rows = document.querySelectorAll('[id^="dnsrecord-edit-row-"]')
     const form = document.getElementById('form-container')
 
-    rows.forEach(row => {
+    rows && rows.forEach(row => {
        helperEventListener(row)
     })
 
@@ -104,7 +107,7 @@ export function initDynamicDNSRecordFormFields() {
 
     const config = JSON.parse(
         typeField.dataset.typeConfig || "{}"
-    );)
+    )
     const textAreaContent = document.querySelectorAll('.content-field-wrapper-txt');
 
     // For the edit rows to update from input to text area
@@ -145,8 +148,6 @@ export function initDynamicDNSRecordFormFields() {
 
 
     });
-
-
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
