@@ -140,7 +140,6 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         update domain in the session cache
         """
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        # self.session[domain_pk] = self.object
         self.session[domain_pk] = self.object.id
 
     def get_context_data(self, **kwargs):

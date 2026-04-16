@@ -22,7 +22,7 @@ The library is a direct drop-in replacement for the archived `django-fsm`, is al
 
 ### 1. django-fsm-2
 
-This would mean replacing the `django-fsm` import with a `django-fsm-2` import and adopting that library as a dependency. `Django-fsm-2` is a community-maintained fork of the original `django-fsm`, transferred to and maintained under [django-commons](https://github.com/django-commons/django-fsm).
+This would mean replacing the `django-fsm` import with a `django-fsm-2` import and adopting that library as a dependency. `Django-fsm-2` is a community-maintained fork of the original `django-fsm`, transferred to and maintained under [django-commons](https://github.com/django-commons).
 In this option, the state field is a FSMfield and transition logic is on the model.
 
 #### Advantages
@@ -57,7 +57,7 @@ In this option, the state field is a regular char field using enums (not an FSMf
 + Actively maintained with a wide audience (2.9k GitHub stars, 416 forks, 365 dependent projects); with code commits as recent as Jan 2026
 + Supports Django 4.2–6.0
 + Uses Python enums for state definitions
-+ Always enforces protected state at the Python descriptor level, meaning there ability to add `protected=False` and override functionality
++ Always enforces protected state at the Python descriptor level, meaning there's no ability to add `protected=False` and override functionality
 + Part of a larger system with a complex BPMN-style workflow orchestration is available if needed in the future
 + Good official documentation at [docs.viewflow.io](https://docs.viewflow.io/overview/index.html)
 
