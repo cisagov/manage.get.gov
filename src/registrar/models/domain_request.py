@@ -744,6 +744,14 @@ class DomainRequest(TimeStampedModel):
         Not presently used on the domain request wizard, though.
         """
         super().clean()
+        # A legacy domain request cannot have a federal_type
+        if (
+            self.generic_org_type == DomainRequest.OrganizationChoices.FEDERAL
+            and not self.portfolio
+            and self.federal_type is not None
+        ):
+            raise ValidationError("A legacy federal domain request cannot have a federal type.")
+
         # Validation logic for a suborganization request
         if self.is_requesting_new_suborganization():
             # Raise an error if this suborganization already exists

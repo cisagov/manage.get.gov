@@ -78,6 +78,9 @@ class MockCloudflareService:
         self._mock_context.get(f"/tenants/{tenant_id}/accounts", params={"page": 1, "per_page": 50}).mock(
             side_effect=self._mock_get_page_accounts_response
         )
+        self._mock_context.get(f"/tenants/{tenant_id}/accounts", params__contains={"per_page": 1}).mock(
+            side_effect=self._mock_get_account_by_name_response
+        )
         self._mock_context.post("/accounts").mock(side_effect=self._mock_create_account_response)
 
         # PATCH account dns_settings
@@ -106,6 +109,7 @@ class MockCloudflareService:
             side_effect=self._mock_get_account_zones_response
         )
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
+        self._mock_context.get(url__regex=r"/zones/[\w-]+").mock(side_effect=self._mock_get_cf_zone_response)
 
         # Mock the api with any zone id
         self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
@@ -147,6 +151,22 @@ class MockCloudflareService:
                 "success": True,
                 "result": self.accounts,
                 "result_info": self.accounts_results_info,
+            },
+        )
+
+    def _mock_get_account_by_name_response(self, request) -> httpx.Response:
+        logger.debug("😎 Mocking accounts GET by name")
+        params = dict(request.url.params)
+        name = params.get("name")
+        matched = [a for a in self.accounts if a.get("account_pubname") == name]
+        return httpx.Response(
+            200,
+            json={
+                "errors": [],
+                "messages": [],
+                "success": True,
+                "result": matched,
+                "result_info": {"count": len(matched), "total_count": len(matched)},
             },
         )
 
@@ -232,6 +252,23 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": result_dict,
+            },
+        )
+
+    def _mock_get_cf_zone_response(self, request) -> httpx.Response:
+        logger.debug("😃 mocking dns zone get response")
+
+        # Get zone id from request url
+        request_url = str(request.url)
+        zone_id = request_url.split("/zones/")[1]
+        matched = next((zone for zone in self.account_zones if zone.get("id") == zone_id), None)
+        return httpx.Response(
+            200,
+            json={
+                "errors": [],
+                "messages": [],
+                "success": bool(matched),
+                "result": matched,
             },
         )
 
