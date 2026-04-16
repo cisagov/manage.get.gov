@@ -4,10 +4,10 @@ function getCharCountText (charLimit, textArea) {
     const charactersLeft = charLimit - textArea.value.length;
     if (charactersLeft >= 0) {
       const characters = `character${charactersLeft === 1 ? '' : 's'}`;
-      return `${charactersLeft} ${characters} left.`;
+      return `${charactersLeft} ${characters} left`;
     } else {
       const characters = `character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
-      return `${Math.abs(charactersLeft)} ${characters} over limit.`;
+      return `${Math.abs(charactersLeft)} ${characters} over limit`;
     }
   };
 

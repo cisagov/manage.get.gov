@@ -344,12 +344,12 @@ def remaining_characters_text(char_limit, field_value):
     print("HELLO")
     print(char_limit)
     if field_value is None:
-        return f"{char_limit} characters left."
+        return f"{char_limit} characters allowed"
     else:
         remaining_val = char_limit - len(field_value)
         if remaining_val == 1:
-            return f"{remaining_val} character left."
+            return f"{remaining_val} character left"
         if remaining_val > 0:
-            return f"{remaining_val} characters left."
+            return f"{remaining_val} characters left"
         if remaining_val < 0:
-            return f"{abs(remaining_val)} characters over limit."
+            return f"{abs(remaining_val)} characters over limit"
