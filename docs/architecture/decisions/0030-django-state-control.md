@@ -25,6 +25,8 @@ The library is a direct drop-in replacement for the archived `django-fsm`, is al
 This would mean replacing the `django-fsm` import with a `django-fsm-2` import and adopting that library as a dependency. `Django-fsm-2` is a community-maintained fork of the original `django-fsm`, transferred to and maintained under [django-commons](https://github.com/django-commons/django-fsm).
 In this option, the state field is a FSMfield and transition logic is on the model.
 
+#### Advantages
+
 + Simply requires replacing the import in the pipfile-zero migration cost, same import path (`from django_fsm import FSMField, transition`)
 + Actively maintained by django-commons; supports Django 4.2–6.0 and Python 3.10–3.14
 + Pre/post transition Django signals for audit logging
@@ -36,6 +38,7 @@ In this option, the state field is a FSMfield and transition logic is on the mod
 + `ConcurrentTransitionMixin` for optimistic locking against race conditions
 + `FSMAdminMixin` renders transition buttons in Django admin automatically (we may not use this though)
 
+#### Disadvantages
 
 - Fork of an archived project — long-term health depends on the django-commons community staying active
 - Smaller contributor pool than django-fsm
@@ -49,12 +52,16 @@ Adopt viewflow and add it as a dependency, reworking the code to be compatible w
 
 In this option, the state field is a regular char field using enums (not an FSMfield) and transition logic is in a seperate flow class (not the model).
 
+#### Advantages
+
 + Actively maintained with a wide audience (2.9k GitHub stars, 416 forks, 365 dependent projects); with code commits as recent as Jan 2026
 + Supports Django 4.2–6.0
 + Uses Python enums for state definitions
 + Always enforces protected state at the Python descriptor level, meaning there ability to add `protected=False` and override functionality
 + Part of a larger system with a complex BPMN-style workflow orchestration is available if needed in the future
 + Good official documentation at [docs.viewflow.io](https://docs.viewflow.io/overview/index.html)
+
+#### Disadvantages
 
 - No new releases since april of 2024
 - **AGPL-3.0 license** — the strongest copyleft license. While this project is open-source, AGPL liscense usually means the dependent code base (this project), must also distribute under an AGPL license. 
