@@ -338,3 +338,26 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         )
         form = self.make_mx_form(name="www")
         self.assertTrue(form.is_valid())
+
+class DomainDNSRecordFormTxtRecordTests(BaseDomainDNSRecordFormTest):
+    """Tests for TXT record-specific behavior in DomainDNSRecordForm."""
+
+    def test_valid_txt_record_with_unquoted_content_adds_quotes(self):
+        data = self.valid_form_data_for_record_type("TXT", "Some unquoted text")
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["content"], '"Some unquoted text"')
+
+    def test_valid_txt_record_with_quoted_content_does_not_add_quotes(self):
+        data = self.valid_form_data_for_record_type("TXT", '"Already quoted text"')
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["content"], '"Already quoted text"')
+
+    def test_txt_record_with_mismatched_quotes_throws_error(self):
+        data = self.valid_form_data_for_record_type("TXT", '"Mismatched quotes')
+        form = self.make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("content", form.errors)
+        self.assertIn("Enter content using quotation marks at the beginning and end.", form.errors["content"])
+
