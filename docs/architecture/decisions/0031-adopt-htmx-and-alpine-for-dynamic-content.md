@@ -62,7 +62,7 @@ htmx + Alpine.js also does not interfere with future implementations of a Coded 
 When introducing dynamic FE content, consider the following solutions:
 
 | Does your change...          | Suggestion     | Example |
-| -----------                  | -----------    | ----------- |
+| :----------                  | :----------    | :---------- |
 | Require server data (e.g., API call) or persistence? | htmx | [#4429: Refactor DNS records page to HTMX](https://github.com/cisagov/manage.get.gov/pull/4602). Submit a form to create an object in the database, then display that object as a table row on the same page |
 | Need to coordinate multiple regions from one server action? | htmx with hx-swap-oob and/or hx-trigger | [#4429: Refactor DNS records page to HTMX](https://github.com/cisagov/manage.get.gov/pull/4602). Submitting a create DNS record form outputs a row for that record in the DNS table and displays form alerts on the top of the page. |
 | Act as a pure client-side UI state change (show/hide, tab selection, disclosure)? | Alpine | [#4400: Toggle DNS add record form visibility](https://github.com/cisagov/manage.get.gov/pull/4427).|
