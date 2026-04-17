@@ -2,13 +2,12 @@
 
 function getCharCountText (charLimit, textArea) {
     const charactersLeft = charLimit - textArea.value.length;
-    if (charactersLeft >= 0) {
-      const characters = `character${charactersLeft === 1 ? '' : 's'}`;
-      return `${charactersLeft} ${characters} left`;
-    } else {
-      const characters = `character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
-      return `${Math.abs(charactersLeft)} ${characters} over limit`;
-    }
+    let finalString = ""
+    const characters =`character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
+    const remainingText = charactersLeft >= 0 ? "left" : "over limit"
+    finalString+= `${charactersLeft} ${characters} ${remainingText}`
+
+    return finalString;
   };
 
 function createCharacterCountDiv(charLimit, textArea) {
