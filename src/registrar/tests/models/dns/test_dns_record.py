@@ -114,3 +114,30 @@ class DnsRecordTest(TestCase):
             priority=10,
         )
         record.clean()  # should not raise
+
+    def test_clean_txt_content_adds_quotes(self):
+        """A TXT record with content that has valid surrounding quotes should pass validation."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="TXT",
+            name="dns-test.gov",
+            ttl=3600,
+            content="This is a TXT record whose quotes get added by the cleaner function.",
+        )
+        record.clean()
+        self.assertEqual(record.content, '"This is a TXT record whose quotes get added by the cleaner function."')
+
+    def test_clean_txt_content_does_not_add_quotes_when_already_quoted(self):
+        """A TXT record with content that has valid surrounding quotes should pass validation."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="TXT",
+            name="dns-test.gov",
+            ttl=3600,
+            content='"This is a TXT record whose quotes already exist and should not be added."',
+        )
+        record.clean()
+        self.assertEqual(
+            record.content,
+            '"This is a TXT record whose quotes already exist and should not be added."',
+        )
