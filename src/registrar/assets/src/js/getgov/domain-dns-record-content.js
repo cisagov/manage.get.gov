@@ -91,7 +91,7 @@ export function commentCharacterEventListener(){
 
     }
     let rows = document.querySelectorAll('[id^="dnsrecord-edit-row-"]')
-    const form = document.getElementById('form-container')
+    const form = document.getElementById('dnsrecords-form-container')
 
     rows && rows.forEach(row => {
        helperEventListener(row)
@@ -120,6 +120,7 @@ export function initDynamicDNSRecordFormFields() {
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
+          console.log("HELLO")
         const info = config[selectedType];
         const contentLabel = document.querySelector('label[for=id_content]');
         const contentHelp = document.getElementById('id_content_helptext');

@@ -341,8 +341,6 @@ def contact_text(contact, num_newlines=2):
 
 @register.filter
 def remaining_characters_text(char_limit, field_value):
-    print("HELLO")
-    print(char_limit)
     if field_value is None:
         return f"{char_limit} characters allowed"
     else:
