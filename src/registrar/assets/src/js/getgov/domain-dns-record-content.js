@@ -135,6 +135,7 @@ export function initDynamicDNSRecordFormFields() {
        
         if(selectedType == "TXT"){
             // Swap input type to text area
+            // Utilized set time out for Firefox loading engine to grab the input after dom content loads
             setTimeout(()=>{
             let input = document.querySelector(".content-field-wrapper-txt input")
             input && switchFromInputToTextArea(input)
