@@ -157,7 +157,7 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.TXT: clean_txt_content,  # TXT records may need to be reformatted with quotes
         }.get(self)
-    
+
     @property
     def error_message(self) -> str:
         return {
