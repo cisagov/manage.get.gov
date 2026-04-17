@@ -909,6 +909,14 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def clean_content(self):
+        """Clean the content field based on the record type."""
+        record = DNSRecordTypes(self.cleaned_data.get("type"))
+        content = self.cleaned_data.get("content", "")
+        if record.cleaner:
+            content =record.cleaner(content)
+        return content
+
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
         return bool(value) and field not in self.errors
