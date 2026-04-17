@@ -895,6 +895,14 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def clean_content(self):
+        """Clean the content field based on the record type."""
+        record = DNSRecordTypes(self.cleaned_data.get("type"))
+        content = self.cleaned_data.get("content", "")
+        if record.cleaner:
+            content =record.cleaner(content)
+        return content
+
     def _validate_content(self, record_type, content):
         """Validate content field based on record type."""
         record = DNSRecordTypes(record_type)
