@@ -914,7 +914,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         record = DNSRecordTypes(self.cleaned_data.get("type"))
         content = self.cleaned_data.get("content", "")
         if record.cleaner:
-            content =record.cleaner(content)
+            content = record.cleaner(content)
         return content
 
     def _field_is_clean(self, field: str, value) -> bool:

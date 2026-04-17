@@ -339,6 +339,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(name="www")
         self.assertTrue(form.is_valid())
 
+
 class DomainDNSRecordFormTxtRecordTests(BaseDomainDNSRecordFormTest):
     """Tests for TXT record-specific behavior in DomainDNSRecordForm."""
 
@@ -360,4 +361,3 @@ class DomainDNSRecordFormTxtRecordTests(BaseDomainDNSRecordFormTest):
         self.assertFalse(form.is_valid())
         self.assertIn("content", form.errors)
         self.assertIn("Enter content using quotation marks at the beginning and end.", form.errors["content"])
-

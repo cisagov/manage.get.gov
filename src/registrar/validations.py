@@ -193,6 +193,7 @@ def _check_has_surrounding_quotes(content: str) -> bool:
 
     return first_item_char_is_double_quote and last_item_is_double_quote
 
+
 def check_has_valid_quotes(content: str) -> bool:
     double_quote = '"'
     quote_count = content.count(double_quote)
@@ -207,9 +208,7 @@ def check_has_valid_quotes(content: str) -> bool:
 def validate_txt_content(content: str) -> None:
 
     if check_has_valid_quotes(content):
-        raise ValidationError(
-            'Enter content using quotation marks at the beginning and end.'
-        )
+        raise ValidationError("Enter content using quotation marks at the beginning and end.")
 
     has_surrounding_quotes = _check_has_surrounding_quotes(content)
     if has_surrounding_quotes:
@@ -230,9 +229,10 @@ def validate_mx_content(content: str) -> None:
     if len(content) > MX_CONTENT_MAX_LENGTH:
         raise ValidationError("Name must be no more than 253 characters.")
 
-# Add this here temporarily before creating a cleaners.py file to hold any future cleaning functions that are needed for DNS record content or other fields. This is for any transformations that need to be applied to the content in addition to validation, such as ensuring TXT records are properly quoted.
+
+# Add this here temporarily, consider creating a cleaners.py file
 def clean_txt_content(content: str) -> str:
-        """Clean the content field for TXT records to ensure it is enclosed in quotes."""
-        if content and not (content.startswith('"') and content.endswith('"')):
-            return f'"{content}"'
-        return content
+    """Clean the content field for TXT records to ensure it is enclosed in quotes."""
+    if content and not (content.startswith('"') and content.endswith('"')):
+        return f'"{content}"'
+    return content
