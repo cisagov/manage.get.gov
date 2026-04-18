@@ -125,41 +125,107 @@ class DnsRecord(TimeStampedModel):
             raise ValidationError(errors)
 
     @classmethod
-    def has_name_conflict(
-        cls, dns_zone_id: int, record_type: str, name: str, domain_name: str = None, exclude_record_id: int = None
+    def _name_q(cls, name: str, domain_name: str | None) -> Q:
+        """Case-insensitive name filter that matches both label and FQDN forms.
+
+        DNS is case-insensitive, and users may enter either a label ("www") or an
+        FQDN ("www.example.gov"). Stored records can be in either form too, so we
+        match both shapes.
+        """
+        name_filter = Q(name__iexact=name)
+        if domain_name:
+            name_filter |= Q(name__iexact=f"{name}.{domain_name}")
+        return name_filter
+
+    @classmethod
+    def has_duplicate_record(
+        cls,
+        domain_name: str,
+        record_type: str,
+        name: str,
+        content: str,
+        priority: int | None = None,
+        exclude_record_id: int | None = None,
     ) -> bool:
-        """Check if a record would conflict with existing records in the zone.
+        """Return True if a record with identical data already exists in the zone.
+
+        A record is a duplicate when type, name, and content all match (plus priority
+        for MX). TTL is not part of identity — two records that differ only in TTL are
+        still duplicates. The zone is resolved from domain_name internally so callers
+        don't need to query DnsZone first.
+
+        Args:
+            domain_name: The domain whose zone should be searched. Returns False if the
+                domain has no DNS zone.
+            record_type: The record type being added (e.g., DNSRecordTypes.A).
+            name: The record name (can be label or FQDN; DNS is case-insensitive).
+            content: The record content to match against (case-insensitive).
+            priority: The MX priority. Only compared when record_type is MX;
+                ignored otherwise.
+            exclude_record_id: Record ID to exclude (for editing existing records).
+
+        Returns:
+            True if a duplicate exists, False otherwise.
+        """
+        if not (name and content and domain_name):
+            return False
+
+        dns_zone_id = DnsZone.get_zone_id_for_domain(domain_name)
+        if not dns_zone_id:
+            return False
+
+        query = cls.objects.filter(
+            dns_zone_id=dns_zone_id,
+            type=record_type,
+            content__iexact=content,
+        ).filter(cls._name_q(name, domain_name))
+
+        if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
+            query = query.filter(priority=priority)
+
+        if exclude_record_id:
+            query = query.exclude(pk=exclude_record_id)
+
+        return query.exists()
+
+    @classmethod
+    def has_name_conflict(
+        cls,
+        domain_name: str,
+        record_type: str,
+        name: str,
+        exclude_record_id: int | None = None,
+    ) -> bool:
+        """Return True if the record's name collides with an incompatible type in the zone.
 
         Per RFC 1034 Section 3.6.2, only CNAME/A/AAAA records have name conflicts.
         Handles both label and FQDN input formats with case-insensitive matching.
+        The zone is resolved from domain_name internally so callers don't need to
+        query DnsZone first.
 
         Args:
-            dns_zone_id: The DNS zone ID to check in.
+            domain_name: The domain whose zone should be searched. Returns False if the
+                domain has no DNS zone.
             record_type: The record type being added (e.g., DNSRecordTypes.CNAME).
             name: The record name (can be label or FQDN; DNS is case-insensitive).
-            domain_name: The domain name (used to check for FQDN format).
             exclude_record_id: Record ID to exclude (for editing existing records).
 
         Returns:
             True if a conflict exists, False otherwise.
         """
-        # Only CNAME/A/AAAA records have name conflicts
         record_type_enum = DNSRecordTypes(record_type)
-        if record_type_enum not in cls.CONFLICTING_RECORD_TYPES:
+        if record_type_enum not in cls.CONFLICTING_RECORD_TYPES or not (name and domain_name):
             return False
 
-        conflicting_types = cls.CONFLICTING_RECORD_TYPES[record_type_enum]
+        dns_zone_id = DnsZone.get_zone_id_for_domain(domain_name)
+        if not dns_zone_id:
+            return False
 
-        # Check for conflicts with both label and FQDN formats (case-insensitive)
         query = cls.objects.filter(
             dns_zone_id=dns_zone_id,
-            type__in=conflicting_types,
-        ).filter(
-            Q(name__iexact=name)  # Case-insensitive match on user input
-            | Q(name__iexact=f"{name}.{domain_name}" if domain_name else name)  # or FQDN version
-        )
+            type__in=cls.CONFLICTING_RECORD_TYPES[record_type_enum],
+        ).filter(cls._name_q(name, domain_name))
 
-        # Exclude current record when editing
         if exclude_record_id:
             query = query.exclude(pk=exclude_record_id)
 
