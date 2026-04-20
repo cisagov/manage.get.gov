@@ -96,7 +96,6 @@ export function commentCharacterEventListener(){
               commentTextArea.value.length > 100
           );
         
-        console.log(element.id)
         commentTextStatus.id = `${element.id}-comment--status`
         commentTextStatus.setAttribute('aria-live', 'polite')
         commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
