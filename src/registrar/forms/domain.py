@@ -822,7 +822,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 }
             ),
             "comment": forms.Textarea(
-                attrs={"class": "usa-textarea usa-textarea--medium", "rows": 2, "hide_character_count": True}
+                attrs={"class": "usa-textarea usa-textarea--medium", "rows": 2, "hide_character_count": True, "aria-describedby": "comment-aria-text"}
             ),
         }
         help_texts = {

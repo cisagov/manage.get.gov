@@ -4,7 +4,13 @@ function getCharCountText (charLimit, textArea) {
     const charactersLeft = charLimit - textArea.value.length;
     let finalString = ""
     const characters =`character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
-    const remainingText = charactersLeft >= 0 ? "left" : "over limit"
+    let remainingText;
+    if(charactersLeft == charLimit){
+        remainingText = "allowed"
+    }
+    else{
+    remainingText = charactersLeft >= 0 ? "left" : "over limit"
+    }
     finalString+= `${charactersLeft} ${characters} ${remainingText}`
 
     return finalString;
@@ -15,6 +21,8 @@ function createCharacterCountDiv(charLimit, textArea) {
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
   displayCharCount.textContent = getCharCountText(charLimit, textArea);
+  displayCharCount.id = `${textArea.id}-content--status`
+  displayCharCount.setAttribute('aria-live', 'polite')
   textArea.addEventListener('input', function () {
     displayCharCount.textContent = getCharCountText(charLimit, textArea);
     displayCharCount.classList.toggle(
@@ -22,11 +30,14 @@ function createCharacterCountDiv(charLimit, textArea) {
       textArea.value.length > charLimit
     );
   });
+  textArea.setAttribute('aria-describedby', displayCharCount.id)
   return displayCharCount;
 }
 
 function switchFromInputToTextArea (element) {
         if(!element) return;
+
+       
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
         textArea.className = 'usa-textarea usa-textarea--medium';
@@ -34,9 +45,7 @@ function switchFromInputToTextArea (element) {
         textArea.id = element.id
         textArea.value = element.value
         element.classList.forEach(cls => textArea.classList.add(cls))
-       
-        
-        // Character count
+
         const charLimit = 2048
         const displayCharCount = createCharacterCountDiv(charLimit, textArea)
 
@@ -78,14 +87,20 @@ export function commentCharacterEventListener(){
         if(!element){
             return;
         }
-        const commentText = element.querySelector('.comment-character-count')
+        const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[name="comment"]')
         commentTextArea.addEventListener('input', function () {
-            commentText.textContent = getCharCountText(100, commentTextArea);
-            commentText.classList.toggle(
+            commentTextStatus.textContent = getCharCountText(100, commentTextArea);
+            commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
               commentTextArea.value.length > 100
           );
+        
+        console.log(element.id)
+        commentTextStatus.id = `${element.id}-comment--status`
+        commentTextStatus.setAttribute('aria-live', 'polite')
+        commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
+
        });
 
     }
@@ -119,7 +134,6 @@ export function initDynamicDNSRecordFormFields() {
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
-          console.log("HELLO")
         const info = config[selectedType];
         const contentLabel = document.querySelector('label[for=id_content]');
         const contentHelp = document.getElementById('id_content_helptext');
@@ -139,8 +153,7 @@ export function initDynamicDNSRecordFormFields() {
             setTimeout(()=>{
             let input = document.querySelector(".content-field-wrapper-txt input")
             input && switchFromInputToTextArea(input)
-            }, 0
-            )
+            }, 0)
         }
         
 
