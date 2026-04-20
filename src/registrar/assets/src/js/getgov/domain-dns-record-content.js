@@ -95,13 +95,10 @@ export function commentCharacterEventListener(){
               'usa-character-count__status--invalid',
               commentTextArea.value.length > 100
           );
-        
+       });
         commentTextStatus.id = `${element.id}-comment--status`
         commentTextStatus.setAttribute('aria-live', 'polite')
         commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
-
-       });
-
     }
     let rows = document.querySelectorAll('[id^="dnsrecord-edit-row-"]')
     const form = document.getElementById('dnsrecords-form-container')
