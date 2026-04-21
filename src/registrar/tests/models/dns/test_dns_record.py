@@ -1,5 +1,6 @@
 from django.test import TestCase
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
+from registrar.validations import DNS_NAME_FORMAT_ERROR_MESSAGE
 
 
 class DnsRecordTest(TestCase):
@@ -112,5 +113,172 @@ class DnsRecordTest(TestCase):
             ttl=3600,
             content="mail.example.gov",
             priority=10,
+        )
+        record.clean()  # should not raise
+
+    # --- DNS name validation tests for model ---
+
+    def test_dns_record_name_with_consecutive_dots_raises(self):
+        """DNS record name with consecutive dots should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="test..dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+        self.assertIn(DNS_NAME_FORMAT_ERROR_MESSAGE, str(ctx.exception))
+
+    def test_dns_record_name_with_leading_dot_raises(self):
+        """DNS record name with leading dot should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name=".test.dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+        self.assertIn(DNS_NAME_FORMAT_ERROR_MESSAGE, str(ctx.exception))
+
+    def test_dns_record_name_with_trailing_dot_raises(self):
+        """DNS record name with trailing dot should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="test.dns-test.gov.",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+        self.assertIn(DNS_NAME_FORMAT_ERROR_MESSAGE, str(ctx.exception))
+
+    def test_dns_record_name_with_hyphen_at_start_of_label_raises(self):
+        """DNS record name with hyphen at start of label should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="-test.dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+        self.assertIn(DNS_NAME_FORMAT_ERROR_MESSAGE, str(ctx.exception))
+
+    def test_dns_record_name_with_hyphen_at_end_of_label_raises(self):
+        """DNS record name with hyphen at end of label should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="test-.dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+        self.assertIn(DNS_NAME_FORMAT_ERROR_MESSAGE, str(ctx.exception))
+
+    def test_dns_record_name_exceeds_per_label_limit_raises(self):
+        """DNS record name with a label exceeding 63 characters should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        long_label = "a" * 64
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name=f"{long_label}.dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_dns_record_name_exceeds_total_fqdn_limit_raises(self):
+        """DNS record name exceeding 253 characters when fully qualified should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        # Create a name that when combined with zone exceeds 253 chars
+        long_name = "a" * 250
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name=long_name,
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_dns_record_name_with_invalid_character_raises(self):
+        """DNS record name with invalid character should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="test(invalid).dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_dns_record_name_wildcard_valid(self):
+        """DNS record with wildcard as first label should be valid."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="*.dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        record.clean()  # should not raise
+
+    def test_dns_record_name_with_spaces_raises(self):
+        """DNS record name with spaces should fail validation."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="test example.dns-test.gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.full_clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_dns_record_name_apex_valid(self):
+        """DNS record name with @ (apex) should be valid."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="@",
+            ttl=3600,
+            content="192.0.2.1",
         )
         record.clean()  # should not raise

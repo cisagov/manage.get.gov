@@ -7,6 +7,7 @@ from waffle.testutils import override_flag
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
+from registrar.validations import DNS_NAME_FORMAT_ERROR_MESSAGE
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -206,9 +207,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    self.assertContains(
-                        response, "Enter a name using only letters, numbers, hyphens, periods, or the @ symbol."
-                    )
+                    self.assertContains(response, DNS_NAME_FORMAT_ERROR_MESSAGE)
 
                     # Ensures appropriate label exists
                     self.assertContains(response, DNSRecordTypes(record_type).field_label)

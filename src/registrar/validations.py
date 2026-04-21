@@ -41,6 +41,7 @@ EMAIL_MAX = 320
 
 # DNS single label max length per standards, like requested_domain, alternative_domain, etc.
 DOMAIN_LABEL = 63
+DNS_NAME_MAX_LENGTH = 253
 
 # Full FQDN max length per RFC 1035
 MX_CONTENT_MAX_LENGTH = 253
@@ -56,28 +57,114 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
 
 
+def _validate_pattern(value: str, pattern: re.Pattern[str], error_message: str) -> None:
+    """Ensure a value fully matches the expected pattern."""
+    if not pattern.fullmatch(value):
+        raise ValidationError(error_message)
+
+
 # For use on DNS record names
-DNS_NAME_FIELD_REGEX = re.compile(r"^[a-zA-Z0-9.-]+$")
+DNS_NAME_FORMAT_ERROR_MESSAGE = (
+    "Enter the name using only letters, numbers, hyphens, periods, or a single @ symbol."
+)
+DNS_NAME_LENGTH_ERROR_MESSAGE = (
+    "Name label must be no more than 63 characters. "
+    "Full name (including label, domain, dots, and zone) must be no more than 253 characters."
+)
+DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
+
+
+def _validate_dns_name_wildcard(name: str) -> None:
+    """Allow wildcards only as the full leftmost label."""
+    if "*" not in name:
+        return
+
+    if name == "*" or name.startswith("*."):
+        return
+
+    raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
+
+
+def _validate_dns_name_structure(name: str) -> None:
+    """Reject empty labels created by consecutive, leading, or trailing dots."""
+    if ".." in name or name.startswith(".") or name.endswith("."):
+        raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
+
+
+def _validate_dns_name_characters(name: str) -> None:
+    """Ensure the name contains only supported DNS record characters."""
+    _validate_pattern(name, DNS_NAME_VALID_CHAR_REGEX, DNS_NAME_FORMAT_ERROR_MESSAGE)
+
+
+def _validate_dns_name_length(name: str) -> None:
+    """Enforce the total DNS name length limit."""
+    if len(name) > DNS_NAME_MAX_LENGTH:
+        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+
+
+def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
+    """Return DNS labels that require per-label validation."""
+    return [label for label in name.split(".") if label != "*"]
+
+
+def _validate_dns_name_label_length(label: str) -> None:
+    """Enforce the per-label DNS length limit."""
+    if len(label) > DOMAIN_LABEL:
+        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+
+
+def _validate_dns_name_label_hyphen_placement(label: str) -> None:
+    """Reject labels that begin or end with a hyphen."""
+    if label.startswith("-") or label.endswith("-"):
+        raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
+
+
+def _validate_dns_name_label(label: str) -> None:
+    """Apply all per-label DNS name validations."""
+    _validate_dns_name_label_length(label)
+    _validate_dns_name_label_hyphen_placement(label)
+
+
+def _validate_dns_name_labels(name: str) -> None:
+    """Validate each label's length and hyphen placement."""
+    for label in _get_non_wildcard_dns_name_labels(name):
+        _validate_dns_name_label(label)
 
 
 def validate_dns_name(name: str) -> None:
     """
-    Validates a DNS record name (single label, excluding the root '@')
+    Validates a DNS record name. Handles both relative names (e.g., 'www') and
+    fully qualified names (e.g., 'www.example.gov').
+
+    Normalizes to lowercase and validates:
+    - No spaces
+    - Valid characters only (letters, numbers, hyphens, periods, @ for apex)
+    - No consecutive dots
+    - No leading/trailing dots
+    - No hyphens at start/end of labels
+    - Per-label max 63 characters
+    - Total max 253 characters
+    - Wildcards only valid as entire leftmost label
     """
+    if not name:
+        return
+
+    # Normalize to lowercase
+    name = name.lower()
+
+    # Special case: @ is valid (zone apex)
     if name == "@":
         return
 
+    # Check for spaces
     if " " in name:
         raise ValidationError("Enter the DNS name without any spaces.")
 
-    if not DNS_NAME_FIELD_REGEX.fullmatch(name):
-        raise ValidationError("Enter a name using only letters, numbers, hyphens, periods, or the @ symbol.")
-
-    if len(name) > DOMAIN_LABEL:
-        raise ValidationError("Name must be no more than 63 characters.")
-
-    if not name[0].isalpha() or not name[-1].isalnum():
-        raise ValidationError("Enter a name that begins with a letter and ends with a letter or number.")
+    _validate_dns_name_structure(name)
+    _validate_dns_name_wildcard(name)
+    _validate_dns_name_characters(name)
+    _validate_dns_name_length(name)
+    _validate_dns_name_labels(name)
 
 
 def check_has_valid_quotes(content: str) -> bool:

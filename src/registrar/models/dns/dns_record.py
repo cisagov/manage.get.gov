@@ -25,9 +25,9 @@ class DnsRecord(TimeStampedModel):
     )  # type: ignore
 
     type = models.CharField(choices=DNSRecordTypes.choices)
-
+    # Purposefully not enforcing max_length here in favor of custom DNS validation messaging
     name = models.CharField(
-        max_length=253,
+        max_length=255,
         blank=False,
         null=False,
         validators=[validate_dns_name],

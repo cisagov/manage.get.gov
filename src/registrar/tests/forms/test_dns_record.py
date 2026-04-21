@@ -3,6 +3,7 @@ from django.test import TestCase
 from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.utility.enums import DNSRecordTypes
+from registrar.validations import DNS_NAME_FORMAT_ERROR_MESSAGE, DNS_NAME_LENGTH_ERROR_MESSAGE
 from faker import Faker
 
 fake = Faker()
@@ -90,23 +91,90 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             self.assertEqual(form.errors["name"], ["Enter a name for this record."])
 
     def test_invalid_dns_name_throws_error(self):
-        # Testing invalid first character
-        self.assert_dns_name_errors("1bc", ["Enter a name that begins with a letter and ends with a letter or number."])
+        # Testing hyphen at start of label
+        self.assert_dns_name_errors("-abc", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
-        # Testing invalid last character
-        self.assert_dns_name_errors(
-            "abc-", ["Enter a name that begins with a letter and ends with a letter or number."]
-        )
+        # Testing hyphen at end of label
+        self.assert_dns_name_errors("abc-", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
-        # Testing invalid character and invalid last character
-        self.assert_dns_name_errors(
-            "ab$c", ["Enter a name using only letters, numbers, hyphens, periods, or the @ symbol."]
-        )
+        # Testing invalid character
+        self.assert_dns_name_errors("ab$c", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
-        self.assert_dns_name_errors("a" * 64, ["Name must be no more than 63 characters."])
+        # Testing per-label length exceeds 63 characters
+        self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])
 
         # Testing space in name
         self.assert_dns_name_errors("ab cd", ["Enter the DNS name without any spaces."])
+
+    def test_dns_name_with_consecutive_dots_throws_error(self):
+        """Consecutive dots should be rejected."""
+        self.assert_dns_name_errors("ab..cd", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_leading_dot_throws_error(self):
+        """Leading dot should be rejected."""
+        self.assert_dns_name_errors(".abc", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_trailing_dot_throws_error(self):
+        """Trailing dot should be rejected."""
+        self.assert_dns_name_errors("abc.", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_invalid_special_characters_throws_error(self):
+        """Invalid special characters should be rejected."""
+        for invalid_char in ["(", ")", ":", ";"]:
+            with self.subTest(invalid_char=invalid_char):
+                self.assert_dns_name_errors(f"ab{invalid_char}cd", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_case_insensitive(self):
+        """DNS names should be case-insensitive (normalized to lowercase)."""
+        # Valid uppercase names should pass
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["name"] = "ABC"
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+
+    def test_dns_name_with_wildcard_at_start_valid(self):
+        """Wildcard as entire first label should be valid (e.g., *.example.com)."""
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["name"] = "*"
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+
+    def test_dns_name_with_wildcard_not_at_start_throws_error(self):
+        """Wildcard not at the start should be rejected."""
+        self.assert_dns_name_errors("sub.*", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_wildcard_mid_label_throws_error(self):
+        """Wildcard in the middle of a label should be rejected."""
+        self.assert_dns_name_errors("a*b", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_exceeds_fully_qualified_length_throws_error(self):
+        """Names exceeding 253 characters when fully qualified should be rejected."""
+        # Create a name that's 254 characters
+        long_name = "a" * 254
+        self.assert_dns_name_errors(long_name, [DNS_NAME_LENGTH_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_in_middle_of_label_valid(self):
+        """Hyphens in the middle of labels should be allowed."""
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["name"] = "my-domain"
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+
+    def test_dns_name_with_hyphen_at_start_of_label_throws_error(self):
+        """Hyphen at start of a label should be rejected."""
+        self.assert_dns_name_errors("-my-domain", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_at_end_of_label_throws_error(self):
+        """Hyphen at end of a label should be rejected."""
+        self.assert_dns_name_errors("my-domain-", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_at_start_of_middle_label_throws_error(self):
+        """Hyphen at start of any label should be rejected."""
+        self.assert_dns_name_errors("my.-domain", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_at_end_of_middle_label_throws_error(self):
+        """Hyphen at end of any label should be rejected."""
+        self.assert_dns_name_errors("my-.domain", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
     def test_dns_record_with_invalid_content_throws_error(self):
         invalid_content_by_type = {
