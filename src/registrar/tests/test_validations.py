@@ -24,7 +24,7 @@ class TestValidateDNSName(SimpleTestCase):
         validate_dns_name("@")
 
     def test_validate_dns_name_accepts_valid_names(self):
-        valid_names = ["www", "WWW", "my-domain", "sub.domain", "*", "*.service"]
+        valid_names = ["www", "WWW", "my-domain", "sub.domain", "*", "*.service", "a*b", "sub.*"]
 
         for name in valid_names:
             with self.subTest(name=name):
@@ -44,7 +44,7 @@ class TestValidateDNSName(SimpleTestCase):
                 self.assert_dns_name_validation_error(name, DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
-        invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";"]] + ["ab$c", "sub.*", "a*b"]
+        invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";"]] + ["ab$c"]
         for name in invalid_names:
             with self.subTest(name=name):
                 self.assert_dns_name_validation_error(name, DNS_NAME_FORMAT_ERROR_MESSAGE)

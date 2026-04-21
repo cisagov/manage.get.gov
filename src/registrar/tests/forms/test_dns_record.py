@@ -144,13 +144,14 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         form = self.make_form(data)
         self.assertTrue(form.is_valid())
 
-    def test_dns_name_with_wildcard_not_at_start_throws_error(self):
-        """Wildcard not at the start should be rejected."""
-        self.assert_dns_name_errors("sub.*", [DNS_NAME_FORMAT_ERROR_MESSAGE])
-
-    def test_dns_name_with_wildcard_mid_label_throws_error(self):
-        """Wildcard in the middle of a label should be rejected."""
-        self.assert_dns_name_errors("a*b", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+    def test_dns_name_with_wildcard_anywhere_valid(self):
+        """Wildcard is allowed anywhere in the name."""
+        for name in ["sub.*", "a*b"]:
+            with self.subTest(name=name):
+                data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+                data["name"] = name
+                form = self.make_form(data)
+                self.assertTrue(form.is_valid())
 
     def test_dns_name_exceeds_fully_qualified_length_throws_error(self):
         """Names exceeding 253 characters when fully qualified should be rejected."""

@@ -74,17 +74,6 @@ DNS_NAME_HYPHEN_ERROR_MESSAGE = "Enter the name without a hyphen at the beginnin
 DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
 
 
-def _validate_dns_name_wildcard(name: str) -> None:
-    """Allow wildcards only as the full leftmost label."""
-    if "*" not in name:
-        return
-
-    if name == "*" or name.startswith("*."):
-        return
-
-    raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
-
-
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name or name.startswith(".") or name.endswith("."):
@@ -144,7 +133,6 @@ def validate_dns_name(name: str) -> None:
     - No hyphens at start/end of labels
     - Per-label max 63 characters
     - Total max 253 characters
-    - Wildcards only valid as entire leftmost label
     """
     if not name:
         return
@@ -161,7 +149,6 @@ def validate_dns_name(name: str) -> None:
         raise ValidationError("Enter the DNS name without any spaces.")
 
     _validate_dns_name_structure(name)
-    _validate_dns_name_wildcard(name)
     _validate_dns_name_characters(name)
     _validate_dns_name_length(name)
     _validate_dns_name_labels(name)
