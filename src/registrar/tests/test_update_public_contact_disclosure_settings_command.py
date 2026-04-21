@@ -111,12 +111,11 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                 "update_public_contact_disclosure_settings",
                 target_domain=self.domain.name,
                 dry_run=True,
-                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             )
 
         update_mock.assert_not_called()
 
-    def test_no_filters_runs_all_domains_and_contact_types(self):
+    def test_no_filters_runs_all_domains_registrant_contacts_only(self):
         second_domain = self._create_domain_with_registrant_contact("second-example.gov")
         self._create_public_contact(
             domain=self.domain,
@@ -155,9 +154,6 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
             processed_contacts,
             [
                 (self.domain.name, PublicContact.ContactTypeChoices.REGISTRANT, True),
-                (self.domain.name, PublicContact.ContactTypeChoices.ADMINISTRATIVE, True),
-                (self.domain.name, PublicContact.ContactTypeChoices.SECURITY, True),
-                (self.domain.name, PublicContact.ContactTypeChoices.TECHNICAL, True),
                 (second_domain.name, PublicContact.ContactTypeChoices.REGISTRANT, True),
             ],
         )
@@ -175,7 +171,6 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                 "update_public_contact_disclosure_settings",
                 target_domain=self.domain.name,
                 dry_run=False,
-                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             )
 
         update_mock.assert_called_once()
@@ -189,61 +184,9 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                 "update_public_contact_disclosure_settings",
                 target_domain=self.domain.name,
                 dry_run=False,
-                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             )
 
         expected_update = self._convertPublicContactToEpp(self.contact, createContact=False)
-
-        self.mockedSendFunction.assert_has_calls(
-            [call(expected_update, cleaned=True)],
-            any_order=True,
-        )
-
-    @patch(
-        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
-    )
-    def test_command_sends_expected_security_update_with_non_default_email(self, _mock_prompt):
-        security = self.domain.get_default_security_contact()
-        # PublicContact.registry_id is constrained to max_length=16.
-        security.registry_id = "regContact"
-        security.email = "security@example.gov"
-
-        security.save(skip_epp_save=True)
-
-        with less_console_noise():
-            call_command(
-                "update_public_contact_disclosure_settings",
-                target_domain=self.domain.name,
-                dry_run=False,
-                contact_type=PublicContact.ContactTypeChoices.SECURITY,
-            )
-
-        expected_update = self._convertPublicContactToEpp(security, createContact=False)
-
-        self.mockedSendFunction.assert_has_calls(
-            [call(expected_update, cleaned=True)],
-            any_order=True,
-        )
-
-    @patch(
-        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution", return_value=True
-    )
-    def test_format_disclose_security_default_email(self, _mockprompt):
-        security = self.domain.get_default_security_contact()
-        # PublicContact.registry_id is constrained to max_length=16.
-        security.registry_id = "regContact"
-
-        security.save(skip_epp_save=True)
-
-        with less_console_noise():
-            call_command(
-                "update_public_contact_disclosure_settings",
-                target_domain=self.domain.name,
-                dry_run=False,
-                contact_type=PublicContact.ContactTypeChoices.SECURITY,
-            )
-
-        expected_update = self._convertPublicContactToEpp(security, createContact=False)
 
         self.mockedSendFunction.assert_has_calls(
             [call(expected_update, cleaned=True)],
@@ -278,7 +221,6 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                         call_command(
                             "update_public_contact_disclosure_settings",
                             dry_run=False,
-                            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
                         )
 
                     self.assertEqual(
@@ -302,7 +244,6 @@ class TestUpdatePublicContactDisclosureSettingsCommand(MockEppLib):
                         call_command(
                             "update_public_contact_disclosure_settings",
                             dry_run=False,
-                            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
                             use_recovery_log=True,
                         )
 

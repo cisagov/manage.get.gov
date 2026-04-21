@@ -5,7 +5,7 @@ This command is intended to update the registry with new PublicContact disclosur
 - In dry-run mode (default), only logs what would be changed
 - With --no-dry-run, sends registry updates via Domain._update_epp_contact
 - Use --target-domain to only update an existing domain
-- Omit filters to run against all matching domains and contact types
+- Omit --target-domain to run against all registrant contacts
 """
 
 import argparse
@@ -25,12 +25,7 @@ class Command(BaseCommand):
         "whatever the website currently computes (for example, portfolio relationships)."
     )
     RECOVERY_LOGFILE = "update_public_contacts_recovery_log.txt"
-    ALL_CONTACT_TYPES = [
-        PublicContact.ContactTypeChoices.REGISTRANT.value,
-        PublicContact.ContactTypeChoices.ADMINISTRATIVE.value,
-        PublicContact.ContactTypeChoices.SECURITY.value,
-        PublicContact.ContactTypeChoices.TECHNICAL.value,
-    ]
+    CONTACT_TYPE = PublicContact.ContactTypeChoices.REGISTRANT.value
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -38,19 +33,6 @@ class Command(BaseCommand):
             "--target_domain",
             required=False,
             help="Only update contacts for a given domain name (case insensitive).",
-        )
-
-        parser.add_argument(
-            "--contact-type",
-            "--contact_type",
-            action="append",
-            required=False,
-            choices=self.ALL_CONTACT_TYPES,
-            help=(
-                "Choose one or more contact types. "
-                "(e.g. --contact-type registrant --contact-type security). "
-                "If omitted, all contact types are included."
-            ),
         )
 
         parser.add_argument(
@@ -72,14 +54,13 @@ class Command(BaseCommand):
             help=("When enabled, use the recovery log text file to skip domains that were marked 'done'."),
         )
 
-    def _build_queryset(self, *, target_domain=None, contact_types=None):
+    def _build_queryset(self, *, target_domain=None):
         qs = PublicContact.objects.select_related("domain", "domain__domain_info").all().order_by("domain__name", "id")
+        qs = qs.filter(contact_type=self.CONTACT_TYPE)
+        logger.debug("Query set after contact_type filter: %s", list(qs.values("registry_id")))
         if target_domain:
             qs = qs.filter(domain__name__iexact=target_domain)
             logger.debug("Query set after domain filter: %s", list(qs.values("registry_id")))
-        if contact_types:
-            qs = qs.filter(contact_type__in=contact_types)
-            logger.debug("Query set after contact_type filter: %s", list(qs.values("registry_id")))
         return qs
 
     def _contact_ref(self, contact: PublicContact) -> str:
@@ -92,30 +73,27 @@ class Command(BaseCommand):
         )
 
     def _check_and_update_contact_values(self, contact: PublicContact) -> PublicContact | None:
-        if contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
-            logger.info("Existing contact values: %s", contact)
-            updated_contact = contact
-            domain_info = getattr(contact.domain, "domain_info", None)
-            if domain_info is None:
-                logger.warning(
-                    "Skipping registrant contact for %s because its domain has no DomainInformation.",
-                    self._contact_ref(contact),
-                )
-                return None
-            # Computes new values for Public Contact (may not be any delta, depends on if and
-            # how the data relationships have changed between portfolio, domain, suborganization)
-            # Returns dict of org, street1, street2, city, state_territory, zipcode
-            new_values = domain_info.get_registrant_contact_data()
-            updated_contact.org = new_values["org"]
-            updated_contact.street1 = new_values["street1"]
-            updated_contact.street2 = new_values["street2"]
-            updated_contact.city = new_values["city"]
-            updated_contact.sp = new_values["state_territory"]
-            updated_contact.pc = new_values["zipcode"]
-            logger.info("Proposed new contact values: %s", updated_contact)
-            return updated_contact
-        else:
-            return contact
+        logger.info("Existing contact values: %s", contact)
+        updated_contact = contact
+        domain_info = getattr(contact.domain, "domain_info", None)
+        if domain_info is None:
+            logger.warning(
+                "Skipping registrant contact for %s because its domain has no DomainInformation.",
+                self._contact_ref(contact),
+            )
+            return None
+        # Computes new values for Public Contact (may not be any delta, depends on if and
+        # how the data relationships have changed between portfolio, domain, suborganization)
+        # Returns dict of org, street1, street2, city, state_territory, zipcode
+        new_values = domain_info.get_registrant_contact_data()
+        updated_contact.org = new_values["org"]
+        updated_contact.street1 = new_values["street1"]
+        updated_contact.street2 = new_values["street2"]
+        updated_contact.city = new_values["city"]
+        updated_contact.sp = new_values["state_territory"]
+        updated_contact.pc = new_values["zipcode"]
+        logger.info("Proposed new contact values: %s", updated_contact)
+        return updated_contact
 
     def _read_recovery_log(self, log_filename: str) -> dict[str, str]:
         recovery_status_by_domain = {}
@@ -153,17 +131,13 @@ class Command(BaseCommand):
                 logfile.write(f"{domain_name},{status}\n")
 
     def handle(self, *args, **options):
-        contact_types = options.get("contact_type")
-        contact_types = self.check_and_format_contact_types(contact_types)
-
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain")
         use_recovery_log = bool(options.get("use_recovery_log", False))
 
-        logger.info("Building queryset for: %s, %s", contact_types, target_domain)
+        logger.info("Building queryset for registrant contacts: %s", target_domain)
         contacts_to_update = self._build_queryset(
             target_domain=target_domain,
-            contact_types=contact_types,
         )
         total_count = contacts_to_update.count()
         logger.info("Found %s PublicContact record(s) in scope.", total_count)
@@ -171,7 +145,7 @@ class Command(BaseCommand):
         proposed = (
             "==Proposed Changes==\n"
             f"Target domain: {target_domain or 'all domains'}\n"
-            f"Contact types: {contact_types}\n"
+            f"Contact type: {self.CONTACT_TYPE}\n"
             f"Dry run: {dry_run}\n\n"
             "Action: compute disclose via Domain._disclose_fields and "
             "update the registry via Domain._update_epp_contact (when not dry-run)."
@@ -196,9 +170,9 @@ class Command(BaseCommand):
             processed += 1
             domain_name = contact.domain.name
 
-            # The queryset is ordered by domain, so the loop treats each domain's contacts
-            # as a set and only writes recovery status after all selected contacts for that
-            # domain have been attempted.
+            # The queryset is ordered by domain, so the loop treats each domain's selected
+            # registrant contact as a set and only writes recovery status after that set
+            # has been attempted.
             if current_domain != domain_name:
                 if current_domain is not None and not dry_run and not skip_current_domain:
                     recovery_status_by_domain[current_domain] = "error" if current_domain_failed else "done"
@@ -211,7 +185,7 @@ class Command(BaseCommand):
                 if skip_current_domain:
                     logger.info("Skipping %s because recovery log marked it done.", domain_name)
 
-            # A recovered domain is skipped as a whole set, including every contact type in scope.
+            # A recovered domain is skipped in its entirety (currently only registrant contact types)
             if skip_current_domain:
                 continue
 
@@ -232,13 +206,6 @@ class Command(BaseCommand):
         logger.info("Processed: %s", processed)
         if failed:
             logger.warning("Failed: %s", failed)
-
-    def check_and_format_contact_types(self, contact_types):
-        if not contact_types:
-            contact_types = self.ALL_CONTACT_TYPES
-        elif isinstance(contact_types, str):
-            contact_types = [contact_types]
-        return contact_types
 
     def _check_dry_run_and_prompt(self, dry_run, proposed):
         if dry_run:
