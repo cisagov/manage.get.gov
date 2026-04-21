@@ -2921,6 +2921,45 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
             ).exists()
         )
 
+    @less_console_noise_decorator
+    def test_member_domains_edit_cross_portfolio_domain_removal(self):
+        """Tests that a domain from a different portfolio cannot be removed from a member."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Other Portfolio")
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        UserDomainRole.objects.create(
+            domain=other_domain,
+            user=self.user_member,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=other_domain,
+            ).exists()
+        )
+
 
 class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
     @classmethod
@@ -3299,6 +3338,46 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
             UserDomainRole.objects.filter(
                 email=self.invited_member_email,
                 domain=other_domain,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_domains_edit_cross_portfolio_domain_removal(self):
+        """Tests that a domain from a different portfolio cannot be removed from a member."""
+        self.client.force_login(self.user)
+
+        # create a second portfolio with a domain
+        other_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Other Portfolio")
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=other_portfolio,
+        )
+
+        DomainInvitation.objects.create(
+            domain=other_domain,
+            email=self.invited_member_email,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=other_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).exists()
         )
 
