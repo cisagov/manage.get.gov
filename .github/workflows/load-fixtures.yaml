@@ -12,7 +12,6 @@ on:
         options:
           - backup
           - ab
-          - ap
           - cw
           - testdb
           - acadia
@@ -33,6 +32,7 @@ on:
           - kma
           - nl
           - rh
+          - sm
 
 jobs:
   load-fixtures:
