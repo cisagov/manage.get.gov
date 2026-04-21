@@ -1,4 +1,5 @@
 import logging
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -50,46 +51,180 @@ def invite_to_portfolio(
     Raises:
         InvitationError: If invitation cannot be created
     """
-    email = email.lower()
-    requested_user = get_requested_user(email)
-    additional_permissions = additional_permissions or []
+    permission_and_email_status = create_portfolio_permission_or_invitation(
+        email=email,
+        portfolio=portfolio,
+        requestor=requestor,
+        roles=roles,
+        additional_permissions=additional_permissions,
+        send_email=True,
+    )
+    return permission_and_email_status[0]
 
-    if check_duplicate_portfolio_invitation(email, portfolio):
-        raise InvitationError(f"{email} has already been invited to this portfolio " "or is already a member.")
 
-    is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles
+def create_portfolio_permission_or_invitation(
+    email: str,
+    portfolio: Portfolio,
+    requestor: User,
+    roles: list,
+    additional_permissions: list = None,
+    send_email: bool = True,
+    permission: UserPortfolioPermission = None,
+):
+    """
+    Create a UserPortfolioPermission for an existing user or an invitation with a new email.
+
+    Returns the saved permission and whether emails were sent.
+    """
+    email = _get_portfolio_permission_email(email, permission)
+    requested_user = _get_portfolio_permission_user(email, permission)
+
+    try:
+        validate_portfolio_permission_or_invitation(
+            email=email,
+            portfolio=portfolio,
+        )
+    except ValidationError as error:
+        raise InvitationError(error.messages[0]) from error
 
     try:
         with transaction.atomic():
-            # Create new model invitation
-            permission = UserPortfolioPermission.objects.create(
-                user=requested_user,
+            permission = _save_portfolio_permission(
+                permission=permission,
+                email=email,
                 portfolio=portfolio,
+                user=requested_user,
                 roles=roles,
                 additional_permissions=additional_permissions,
-                status=UserPortfolioPermission.Status.INVITED,
-                email=email,
-                invited_by=requestor,
-                invited_at=timezone.now(),
             )
+            send_invitation_email = _must_send_portfolio_permission_email(requested_user, send_email)
+            email_sent = True
+            if send_invitation_email:
+                email_sent = _send_portfolio_permission_email(
+                    email=email,
+                    requestor=requestor,
+                    portfolio=portfolio,
+                    roles=roles,
+                )
+                _set_portfolio_invitation_details(permission, requestor)
 
-            # Send invitation email
-            send_portfolio_invitation_email(
-                email=email,
-                requestor=requestor,
-                portfolio=portfolio,
-                is_admin_invitation=is_admin_invitation,
-            )
-
-            logger.info(f"Created portfolio invitation for {email} " f"to portfolio {portfolio.id}")
-            return permission
+            logger.info(f"Created portfolio permission or invitation for {email} to portfolio {portfolio.id}")
+            return permission, email_sent
 
     except Exception as e:
         logger.error(
-            f"Failed to create portfolio invitation for {email}: {e}",
+            f"Failed to create portfolio permission or invitation for {email}: {e}",
             exc_info=True,
         )
         raise
+
+
+def _get_portfolio_permission_email(email, permission):
+    requested_email = None
+
+    # Once an invitation is accepted, always prefer the user record.
+    if permission:
+        if permission.user:
+            if permission.user.email:
+                requested_email = permission.user.email
+
+    if not requested_email:
+        if email:
+            requested_email = email
+
+    if not requested_email:
+        if permission:
+            if permission.email:
+                requested_email = permission.email
+
+    if not requested_email:
+        raise InvitationError("An email address is required.")
+
+    return requested_email.lower()
+
+
+def _get_portfolio_permission_user(email, permission):
+    # If the email belongs to a current user, the permission should point at that user.
+    requested_user = get_requested_user(email)
+    if requested_user:
+        return requested_user
+
+    if permission:
+        if permission.user:
+            return permission.user
+
+    return None
+
+
+def validate_portfolio_permission_or_invitation(email, portfolio):
+    if check_duplicate_portfolio_invitation(email, portfolio):
+        raise ValidationError(f"{email} has an existing invitation or is already a member of this portfolio.")
+
+
+def _save_portfolio_permission(
+    permission,
+    email,
+    portfolio,
+    user,
+    roles,
+    additional_permissions,
+):
+    if permission is None:
+        permission = UserPortfolioPermission()
+
+    permission.email = email
+    permission.portfolio = portfolio
+    permission.user = user
+    permission.roles = roles
+    permission.additional_permissions = additional_permissions
+    permission.status = get_portfolio_permission_status(user)
+    permission.save()
+
+    return permission
+
+
+def get_portfolio_permission_status(user):
+    if user is None:
+        return UserPortfolioPermission.Status.INVITED
+
+    return UserPortfolioPermission.Status.ACCEPTED
+
+
+def _set_portfolio_invitation_details(permission, requestor):
+    # invited_by and invited_at mean the invitation email path completed without
+    # raising an exception.
+    permission.invited_by = requestor
+    permission.invited_at = timezone.now()
+    permission.save(update_fields=["invited_by", "invited_at"])
+
+
+def _send_portfolio_permission_email(email, requestor, portfolio, roles):
+    return send_portfolio_invitation_email(
+        email=email,
+        requestor=requestor,
+        portfolio=portfolio,
+        is_admin_invitation=_is_portfolio_admin_invitation(roles),
+    )
+
+
+def _must_send_portfolio_permission_email(user, send_email):
+    if user is None:
+        return True
+
+    if send_email:
+        return True
+
+    return False
+
+
+def _is_portfolio_admin_invitation(roles):
+    if not roles:
+        return False
+
+    if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in roles:
+        return True
+
+    return False
 
 
 def _check_existing_domain_invitation(email: str, domain: Domain, requested_user):
@@ -635,7 +770,10 @@ def check_duplicate_portfolio_invitation(email: str, portfolio: Portfolio):
     email = email.lower()
 
     # Check new model
-    if UserPortfolioPermission.objects.filter(email=email, portfolio=portfolio).exists():
+    if UserPortfolioPermission.objects.filter(email__iexact=email, portfolio=portfolio).exists():
+        return True
+
+    if UserPortfolioPermission.objects.filter(user__email__iexact=email, portfolio=portfolio).exists():
         return True
 
     # Check legacy model for active invitations
