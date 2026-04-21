@@ -153,7 +153,6 @@ class DNSRecordTypes(TextChoices):
 
     @property
     def cleaner(self):
-        """Some record types require cleaning in addition to validation."""
         return {
             DNSRecordTypes.TXT: clean_txt_content,  # TXT records may need to be reformatted with quotes
         }.get(self)
