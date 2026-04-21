@@ -101,8 +101,18 @@ class DnsRecord(TimeStampedModel):
             if conflict.exists():
                 errors["name"] = ["A record with that name already exists. Names must be unique."]
 
+    def _normalize_name(self) -> None:
+        """Normalize DNS record name to lowercase for case-insensitive storage."""
+        if self.name:
+            self.name = self.name.lower()
+
+    def save(self, *args, **kwargs):
+        self._normalize_name()
+        super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
+        self._normalize_name()
         errors = {}
 
         self._validate_ttl(errors)

@@ -64,11 +64,13 @@ def _validate_pattern(value: str, pattern: re.Pattern[str], error_message: str) 
 
 
 # For use on DNS record names
-DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name using only letters, numbers, hyphens, periods, or a single @ symbol."
+DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name without using parentheses, colons, or semicolons."
 DNS_NAME_LENGTH_ERROR_MESSAGE = (
-    "Name label must be no more than 63 characters. "
-    "Full name (including label, domain, dots, and zone) must be no more than 253 characters."
+    "Labels must be no more than 63 characters. "
+    "Full name (including labels, domain, and dots) must be no more than 253 characters."
 )
+DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE = "Enter the name without using consecutive periods."
+DNS_NAME_HYPHEN_ERROR_MESSAGE = "Enter the name without a hyphen at the beginning or end."
 DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
 
 
@@ -86,7 +88,7 @@ def _validate_dns_name_wildcard(name: str) -> None:
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name or name.startswith(".") or name.endswith("."):
-        raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
+        raise ValidationError(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
 
 
 def _validate_dns_name_characters(name: str) -> None:
@@ -114,7 +116,7 @@ def _validate_dns_name_label_length(label: str) -> None:
 def _validate_dns_name_label_hyphen_placement(label: str) -> None:
     """Reject labels that begin or end with a hyphen."""
     if label.startswith("-") or label.endswith("-"):
-        raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
+        raise ValidationError(DNS_NAME_HYPHEN_ERROR_MESSAGE)
 
 
 def _validate_dns_name_label(label: str) -> None:

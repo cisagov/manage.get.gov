@@ -2,7 +2,9 @@ from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
 from registrar.validations import (
+    DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
     DNS_NAME_FORMAT_ERROR_MESSAGE,
+    DNS_NAME_HYPHEN_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     validate_dns_name,
 )
@@ -31,20 +33,18 @@ class TestValidateDNSName(SimpleTestCase):
     def test_validate_dns_name_rejects_names_with_spaces(self):
         self.assert_dns_name_validation_error("ab cd", "Enter the DNS name without any spaces.")
 
-    def test_validate_dns_name_rejects_format_errors(self):
-        invalid_names = [
-            "-abc",
-            "abc-",
-            "ab..cd",
-            ".abc",
-            "abc.",
-            "ab$c",
-            "sub.*",
-            "a*b",
-            "my.-domain",
-            "my-.domain",
-        ]
+    def test_validate_dns_name_rejects_hyphen_at_label_boundary(self):
+        for name in ["-abc", "abc-", "my.-domain", "my-.domain"]:
+            with self.subTest(name=name):
+                self.assert_dns_name_validation_error(name, DNS_NAME_HYPHEN_ERROR_MESSAGE)
 
+    def test_validate_dns_name_rejects_consecutive_or_edge_dots(self):
+        for name in ["ab..cd", ".abc", "abc."]:
+            with self.subTest(name=name):
+                self.assert_dns_name_validation_error(name, DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
+
+    def test_validate_dns_name_rejects_invalid_characters(self):
+        invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";"]] + ["ab$c", "sub.*", "a*b"]
         for name in invalid_names:
             with self.subTest(name=name):
                 self.assert_dns_name_validation_error(name, DNS_NAME_FORMAT_ERROR_MESSAGE)
