@@ -918,6 +918,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record.validator:
             try:
                 record.validator(content)
+
             except ValidationError as e:
                 # Use the validator's error message
                 error_msg = e.messages[0] if hasattr(e, "messages") and e.messages else str(e)
