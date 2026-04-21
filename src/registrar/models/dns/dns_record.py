@@ -111,6 +111,22 @@ class DnsRecord(TimeStampedModel):
             if conflict.exists():
                 errors["name"] = ["A record with that name already exists. Names must be unique."]
 
+    def _normalize_name(self) -> None:
+        """Lowercase the record name so storage matches DNS case-insensitivity."""
+        if self.name:
+            self.name = self.name.lower()
+
+    def full_clean(self, *args, **kwargs):
+        # Normalize before field validators and clean() run so self.name is
+        # consistently lowercased for every downstream check, not just at save-time.
+        self._normalize_name()
+        super().full_clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        # Safety net for paths that bypass full_clean (e.g., create_from_vendor_data).
+        self._normalize_name()
+        super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
         errors = {}
@@ -125,17 +141,47 @@ class DnsRecord(TimeStampedModel):
             raise ValidationError(errors)
 
     @classmethod
-    def _name_q(cls, name: str, domain_name: str | None) -> Q:
-        """Case-insensitive name filter that matches both label and FQDN forms.
+    def _equivalent_name_forms(cls, name: str, domain_name: str | None) -> list[str]:
+        """Return every stored-form of a DNS name within a zone.
 
-        DNS is case-insensitive, and users may enter either a label ("www") or an
-        FQDN ("www.example.gov"). Stored records can be in either form too, so we
-        match both shapes.
+        DNS names have two equivalences that dup/conflict checks must span, because
+        records may be stored either way depending on source (user input vs vendor sync):
+          - Root of the zone: "@" ≡ the bare domain name ("example.gov").
+          - Label/FQDN: "www" ≡ "www.example.gov".
+        Case is handled by iexact in the filter, not here.
         """
-        name_filter = Q(name__iexact=name)
-        if domain_name:
-            name_filter |= Q(name__iexact=f"{name}.{domain_name}")
-        return name_filter
+        forms = {name}
+        if not domain_name:
+            return list(forms)
+
+        name_lower = name.lower()
+        domain_lower = domain_name.lower()
+
+        if name_lower == "@":
+            forms.add(domain_name)
+        elif name_lower == domain_lower:
+            forms.add("@")
+
+        if name_lower != "@" and name_lower != domain_lower and not name_lower.endswith(f".{domain_lower}"):
+            forms.add(f"{name}.{domain_name}")
+
+        if name_lower != domain_lower and name_lower.endswith(f".{domain_lower}"):
+            label = name[: -(len(domain_name) + 1)]
+            if label:
+                forms.add(label)
+
+        return list(forms)
+
+    @classmethod
+    def _name_q(cls, name: str, domain_name: str | None) -> Q:
+        """Case-insensitive name filter that matches every equivalent stored-form.
+
+        Covers label↔FQDN and root↔bare-domain equivalences — see _equivalent_name_forms.
+        """
+        q = Q()
+        for form in cls._equivalent_name_forms(name, domain_name):
+            q |= Q(name__iexact=form)
+        return q
 
     @classmethod
     def has_duplicate_record(

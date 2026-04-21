@@ -531,3 +531,40 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
         data = self.valid_form_data_for_record_type("A", "192.0.2.10")
         form = DomainDNSRecordForm(data=data, instance=existing, domain_name=self.domain.name)
         self.assertTrue(form.is_valid())
+
+    # --- root / label / FQDN equivalence (regression for root-of-zone dup bypass) ---
+
+    def test_duplicate_root_a_record_flagged_when_stored_as_bare_domain(self):
+        """Records synced from Cloudflare store the root of the zone ('@') as the bare
+        domain name. Submitting '@' with the same content must still be flagged."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.A, name=self.domain.name, ttl=3600, content="192.0.2.10"
+        )
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = "@"
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_root_a_record_flagged_when_stored_as_at_symbol(self):
+        """Reverse of the above: stored as '@', submitted as the bare domain."""
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="@", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = self.domain.name
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_label_record_flagged_when_stored_as_fqdn(self):
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name=f"www.{self.domain.name}",
+            ttl=3600,
+            content="192.0.2.10",
+        )
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = "www"
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_fqdn_record_flagged_when_stored_as_label(self):
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = f"www.{self.domain.name}"
+        self.assert_duplicate_errors(self.make_form(data))
