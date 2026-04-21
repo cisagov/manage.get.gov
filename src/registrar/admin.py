@@ -416,8 +416,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
         initial=True,
         label="Send invitation email",
         help_text=(
-            "Existing users can be added without sending an email. "
-            "New users are always sent an invitation email."
+            "Existing users can be added without sending an email. " "New users are always sent an invitation email."
         ),
     )
 
