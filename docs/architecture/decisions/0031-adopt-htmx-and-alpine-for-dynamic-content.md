@@ -17,6 +17,7 @@ As we have grown, we have leveraged AJAX (see [27. AJAX for Dynamic Content ADR]
 @lizpearl worked on initial [FE investigation](https://docs.google.com/document/d/1IqxbxwMss2CmocbVsdk8_BV9otaHd-Wl16R9pVIoInc/edit?tab=t.0) to explore options using htmx, React, and at-the-time status quo of DTL and JS.
 
 ### Decision Drivers
+* Roadmap increasingly involves pages/features with more dynamic content
 * Reduce FE complexity
 * Reduce complexity of necessary refactors 
 * Maximize compatibility with Django’s server-side rendering model. 
