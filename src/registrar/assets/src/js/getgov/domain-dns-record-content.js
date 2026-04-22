@@ -89,6 +89,7 @@ export function editAndCommentButtonListener (){
 export function commentCharacterEventListener(){
 
     // event listener to update the char count text
+    const commentCharLimit = 100
     function helperEventListener (element){
         if(!element){
             return;
@@ -96,10 +97,10 @@ export function commentCharacterEventListener(){
         const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[name="comment"]')
         commentTextArea.addEventListener('input', function () {
-            commentTextStatus.textContent = getCharCountText(100, commentTextArea.value.length);
+            commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
             commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
-              commentTextArea.value.length > 100
+              commentTextArea.value.length > commentCharLimit
           );
        });
         commentTextStatus.id = `${element.id}-comment--status`
