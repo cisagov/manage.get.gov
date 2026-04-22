@@ -5,6 +5,7 @@ Contains middleware used in settings.py
 import logging
 import time
 import re
+import uuid
 from urllib.parse import parse_qs
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -355,24 +356,36 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Only log in production (stable)
+        # Request correlation ID is set in every environment (not gated on
+        # IS_PRODUCTION) so local dev and tests can exercise the DNS error
+        # envelope. Stored on the request object (not a ContextVar) so we
+        # don't fight the existing logging_context API.
+        # See docs/developer/dns-error-handling.md.
+        incoming_id = request.META.get("HTTP_X_REQUEST_ID")
+        request_id = incoming_id or str(uuid.uuid4())
+        request._dns_request_id = request_id
+
+        # User/IP context is production-only to preserve existing behavior.
         if getattr(settings, "IS_PRODUCTION", False):
-            # Get user email (if authenticated), else None
             user_email = request.user.email if request.user.is_authenticated else None
-            # Get remote IP address or IPv6 address
             forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
             if forwarded_for:
                 remote_ip = forwarded_for.split(",")[0].strip()
             else:
                 remote_ip = request.META.get("REMOTE_ADDR")
-            # Get request path
             request_path = request.path
 
-            # set user log info
-            set_user_log_context(user_email, remote_ip, request_path)
-            # Log user information
+            set_user_log_context(
+                user_email=user_email,
+                ip_address=remote_ip,
+                request_path=request_path,
+            )
             logger.info("Router log")
-        return self.get_response(request)
+
+        response = self.get_response(request)
+        # Echo the correlation ID so upstream gateways can log the same value.
+        response["X-Request-ID"] = request_id
+        return response
 
 
 class DatabaseConnectionMiddleware:

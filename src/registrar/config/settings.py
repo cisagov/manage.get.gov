@@ -516,6 +516,10 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
             "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
+        # Top-level request_id enables structured querying in OpenSearch.
+        request_id = get_user_log_context().get("request_id")
+        if request_id:
+            log_record["request_id"] = request_id
         # Capture exception info if it exists
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))

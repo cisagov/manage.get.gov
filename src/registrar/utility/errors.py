@@ -315,3 +315,180 @@ class APIError(Exception):
     """Custom exception for API-related errors"""
 
     pass
+
+
+class DnsHostingErrorCodes(IntEnum):
+    """Error codes for DNS-hosting failures.
+
+    See docs/developer/dns-error-handling.md §2 for the full catalog and the
+    wire name for each code.
+    """
+
+    ZONE_NOT_FOUND = 1
+    RECORD_CONFLICT = 2
+    VALIDATION_FAILED = 3
+    RATE_LIMIT_EXCEEDED = 4
+    AUTH_FAILED = 5
+    UPSTREAM_TIMEOUT = 6
+    UPSTREAM_ERROR = 7
+    UNKNOWN = 8
+
+
+_DNS_WIRE_CODES = {
+    DnsHostingErrorCodes.ZONE_NOT_FOUND: "DNS_ZONE_NOT_FOUND",
+    DnsHostingErrorCodes.RECORD_CONFLICT: "DNS_RECORD_CONFLICT",
+    DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
+    DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
+    DnsHostingErrorCodes.AUTH_FAILED: "DNS_AUTH_FAILED",
+    DnsHostingErrorCodes.UPSTREAM_TIMEOUT: "DNS_UPSTREAM_TIMEOUT",
+    DnsHostingErrorCodes.UPSTREAM_ERROR: "DNS_UPSTREAM_ERROR",
+    DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
+}
+
+
+def _rebuild_dns_hosting_error(cls, code, message, upstream_status, context):
+    # Module-level rebuilder so __reduce__ stays picklable by name.
+    return cls(code=code, message=message, upstream_status=upstream_status, context=context)
+
+
+class DnsHostingError(Exception):
+    """Typed base exception for DNS-hosting failures.
+
+    Mirrors the `NameserverError` pattern: carries a code from
+    `DnsHostingErrorCodes`, a localized user-facing message, optional upstream
+    HTTP status, and a context dict of pickle-safe primitives.
+
+    Contract (see docs/developer/dns-error-handling.md §15):
+      - __init__ accepts only kwargs whose values are pickle-safe primitives.
+      - Do NOT attach live httpx.Response objects; extract fields first.
+      - Subclasses should default `code` to their canonical value.
+    """
+
+    _error_mapping = {
+        DnsHostingErrorCodes.ZONE_NOT_FOUND: (
+            "We couldn’t find the DNS zone for this domain. It may not be enrolled in DNS hosting yet."
+        ),
+        DnsHostingErrorCodes.RECORD_CONFLICT: ("A record with that name and type already exists."),
+        DnsHostingErrorCodes.VALIDATION_FAILED: (
+            "The DNS record couldn’t be saved because one of its fields wasn’t valid."
+        ),
+        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
+            "You’re making changes too quickly. Please wait a moment and try again."
+        ),
+        DnsHostingErrorCodes.AUTH_FAILED: ("We couldn’t reach our DNS provider. Please try again in a moment."),
+        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
+        DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
+        DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
+    }
+
+    def __init__(self, *, code, message=None, upstream_status=None, context=None):
+        self.code = code
+        # Explicit caller-supplied text wins over both the DB store and the
+        # code-level fallback. Stored as a private attribute so `.message`
+        # can be a property that lazily consults the admin-editable store.
+        self._explicit_message = message
+        self.upstream_status = upstream_status
+        self.context = dict(context) if context else {}
+        super().__init__(self.message)
+
+    @property
+    def message(self):
+        """Resolve user-facing text: explicit → DB store → code-level fallback.
+
+        The DB store (`DnsErrorMessage`) is admin-editable in /admin. If a row
+        is missing or the DB is unreachable, we fall back to `_error_mapping`
+        so the user always sees something meaningful. See
+        docs/developer/dns-error-handling.md §17.
+        """
+        if self._explicit_message:
+            return self._explicit_message
+        code_name = getattr(self.code, "name", None)
+        if code_name:
+            # Local import avoids Django app-registry issues at module load.
+            from registrar.utility.messages import get_user_message
+
+            db_msg = get_user_message("dns", code_name)
+            if db_msg:
+                return db_msg
+        return self._error_mapping.get(self.code) or "DNS operation failed."
+
+    def __str__(self):
+        return self.message
+
+    @property
+    def wire_code(self):
+        return _DNS_WIRE_CODES.get(self.code, "DNS_UNKNOWN")
+
+    def __reduce__(self):
+        # Ensure pickle round-trips preserve all kwargs. Default Exception
+        # pickling drops anything not in self.args.
+        return (
+            _rebuild_dns_hosting_error,
+            (type(self), self.code, self.message, self.upstream_status, self.context),
+        )
+
+
+class DnsNotFoundError(DnsHostingError):
+    """Raised when the upstream DNS provider returns 404 for a zone or record."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.ZONE_NOT_FOUND,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+def _status_to_wire_code(status):
+    if status in (401, 403):
+        return "DNS_AUTH_FAILED"
+    if status == 404:
+        return "DNS_ZONE_NOT_FOUND"
+    if status == 409:
+        return "DNS_RECORD_CONFLICT"
+    if status == 400:
+        return "DNS_VALIDATION_FAILED"
+    if status == 429:
+        return "DNS_RATE_LIMIT_EXCEEDED"
+    if status is not None and 500 <= status < 600:
+        return "DNS_UPSTREAM_ERROR"
+    return "DNS_UNKNOWN"
+
+
+def classify_legacy_dns_exception(exc):
+    """Map a pre-typed DNS exception to a (wire_code, upstream_status) tuple.
+
+    Bridge helper for code paths that a follow-up ticket hasn't migrated to
+    typed `DnsHostingError` yet — the view's `except (APIError, RequestError)`
+    branch and the admin enrollment action. Keeps the `DnsOperationLog.error_code`
+    column populated across the whole prototype rather than only the 404 path.
+
+    Returns a tuple: (wire_code: str, upstream_status: int | None).
+    """
+    # Local imports: httpx isn't a Django dep, but the view already imports it,
+    # and this helper is only called from DNS-aware code.
+    import re
+
+    from httpx import HTTPStatusError, RequestError
+
+    if isinstance(exc, DnsHostingError):
+        return exc.wire_code, exc.upstream_status
+
+    if isinstance(exc, HTTPStatusError):
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        return _status_to_wire_code(status), status
+
+    if isinstance(exc, RequestError):
+        return "DNS_UPSTREAM_TIMEOUT", None
+
+    # APIError wraps the upstream status as text in the message — try to
+    # recover it so the admin row carries real information.
+    if isinstance(exc, APIError):
+        match = re.search(r"failed:\s*(\d{3})", str(exc))
+        if match:
+            status = int(match.group(1))
+            return _status_to_wire_code(status), status
+        return "DNS_UPSTREAM_ERROR", None
+
+    return "DNS_UNKNOWN", None

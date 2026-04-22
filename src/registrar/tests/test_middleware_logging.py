@@ -56,3 +56,16 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.client.get(reverse("health"))
         log_output = self.stream.getvalue()
         self.assertNotIn("Router log", log_output)
+
+    def test_request_id_from_header_is_echoed(self):
+        """Incoming X-Request-ID is stored in the context and echoed on the response."""
+        response = self.client.get(reverse("health"), HTTP_X_REQUEST_ID="test-req-abc-123")
+        self.assertEqual(response["X-Request-ID"], "test-req-abc-123")
+
+    def test_request_id_generated_when_header_missing(self):
+        """Missing X-Request-ID triggers UUID generation; the response echoes it."""
+        response = self.client.get(reverse("health"))
+        echoed = response["X-Request-ID"]
+        # UUID4 strings are 36 chars including hyphens.
+        self.assertEqual(len(echoed), 36)
+        self.assertEqual(echoed.count("-"), 4)

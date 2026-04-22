@@ -55,8 +55,9 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes, classify_legacy_dns_exception
 from registrar.utility.waffle import flag_is_active_for_user
+from registrar.utility.dns_operation_log import record_dns_operation
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -77,7 +78,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
 from django.db.models import Exists, OuterRef
-from .models import DnsRecord
+from .models import DnsRecord, DnsOperationLog, DnsErrorMessage
 
 logger = logging.getLogger(__name__)
 
@@ -4693,12 +4694,28 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             service.enroll_domain(obj)
         except Exception as e:
             logger.exception(e)
+            wire_code, upstream_status = classify_legacy_dns_exception(e)
+            record_dns_operation(
+                request=request,
+                operation="enroll_domain",
+                outcome="failure",
+                domain_name=getattr(obj, "name", "") or "",
+                error_code=wire_code,
+                upstream_status=upstream_status,
+                notes=str(e)[:500],
+            )
             self.message_user(
                 request,
                 "Failed to enroll domain in DNS hosting.",
                 messages.ERROR,
             )
         else:
+            record_dns_operation(
+                request=request,
+                operation="enroll_domain",
+                outcome="success",
+                domain_name=getattr(obj, "name", "") or "",
+            )
             self.message_user(
                 request,
                 "Domain successfully enrolled in DNS hosting.",
@@ -4738,6 +4755,138 @@ class DnsRecordAdmin(admin.ModelAdmin):
     list_filter = ("type", "created_at", "updated_at")
 
     search_fields = ("name", "content", "comment")
+
+
+@admin.register(DnsOperationLog)
+class DnsOperationLogAdmin(admin.ModelAdmin):
+    """Read-only admin surface for DNS-hosting operation history.
+
+    Staff land here after a user reports a DNS failure — search by the
+    `request_id` printed in the error envelope / 500 page, filter by
+    `error_code` / `outcome` / `operation`, and see the redacted upstream
+    context without leaving Django. Full tracebacks stay in OpenSearch.
+
+    See docs/developer/dns-error-handling.md §12.
+    """
+
+    list_display = (
+        "timestamp",
+        "operation",
+        "outcome",
+        "domain_name",
+        "error_code",
+        "upstream_status",
+        "user_email",
+        "request_id",
+    )
+    list_filter = ("operation", "outcome", "error_code")
+    search_fields = ("request_id", "domain_name", "zone_id", "record_id", "user_email", "cf_ray")
+    readonly_fields = (
+        "timestamp",
+        "operation",
+        "outcome",
+        "domain_name",
+        "user_email",
+        "request_id",
+        "dns_account_id",
+        "zone_id",
+        "record_id",
+        "error_code",
+        "upstream_status",
+        "cf_ray",
+        "duration_ms",
+        "notes",
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "timestamp",
+                    "operation",
+                    "outcome",
+                    "domain_name",
+                    "user_email",
+                    "request_id",
+                )
+            },
+        ),
+        (
+            "Cloudflare / upstream",
+            {
+                "fields": (
+                    "dns_account_id",
+                    "zone_id",
+                    "record_id",
+                    "error_code",
+                    "upstream_status",
+                    "cf_ray",
+                    "duration_ms",
+                    "notes",
+                ),
+            },
+        ),
+    )
+    ordering = ("-timestamp",)
+    date_hierarchy = "timestamp"
+
+    # Rows are written by record_dns_operation(); staff never create or edit
+    # them by hand.
+    def has_add_permission(self, request):  # noqa: D401
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Allow delete so retention / TTL cleanups can run through the admin
+        # UI. A management command is the intended long-term cleanup path.
+        return super().has_delete_permission(request, obj)
+
+
+@admin.register(DnsErrorMessage)
+class DnsErrorMessageAdmin(admin.ModelAdmin):
+    """Admin-editable user-facing copy for DNS errors.
+
+    Staff edit the `message` field directly — changes take effect immediately
+    via a post_save signal that invalidates the in-process cache. No deploy
+    required. See docs/developer/dns-error-handling.md §17.
+
+    `namespace` and `code` are the lookup keys and are read-only for non-
+    superusers to prevent accidental key drift between code enum and DB rows.
+    """
+
+    list_display = ("namespace", "code", "message_preview", "updated_at")
+    list_filter = ("namespace",)
+    search_fields = ("code", "message", "internal_notes")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (
+            "Content (editable)",
+            {"fields": ("message", "internal_notes")},
+        ),
+        (
+            "Key (superuser only)",
+            {"fields": ("namespace", "code")},
+        ),
+        (
+            "Audit",
+            {"fields": ("created_at", "updated_at")},
+        ),
+    )
+
+    @admin.display(description="Message")
+    def message_preview(self, obj):
+        text = obj.message or ""
+        return text if len(text) <= 80 else text[:77] + "…"
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        # Non-superusers cannot rename the key; prevents silent drift between
+        # the code enum and the DB row. Message text stays editable for staff.
+        if not request.user.is_superuser:
+            ro.extend(["namespace", "code"])
+        return ro
 
 
 class DraftDomainResource(resources.ModelResource):

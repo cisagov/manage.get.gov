@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from django.conf import settings
 
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsHostingErrorCodes, DnsNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,16 @@ class CloudflareService:
             raise
         except HTTPStatusError as e:
             error_body = e.response.text
+            cf_ray = e.response.headers.get("cf-ray") if hasattr(e.response, "headers") else None
             logger.error(f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {error_body}")
+            # Prototype scope: only 404 raises a typed DnsHostingError. Other
+            # status codes continue to raise APIError until ticket is done.
+            if e.response.status_code == 404:
+                raise DnsNotFoundError(
+                    code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+                    upstream_status=404,
+                    context={"zone_id": zone_id, "cf_ray": cf_ray},
+                ) from e
             raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}")
         return resp.json()
 
