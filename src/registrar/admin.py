@@ -451,6 +451,30 @@ class UserOrEmailAutocompleteSelect(AutocompleteSelectWithPlaceholder):
             options.append(self.create_option(name, email, email, True, len(options)))
 
 
+class UserPortfolioPermissionsLegacyForm(PortfolioPermissionsForm):
+    """Original UserPortfolioPermission admin form for direct user assignments."""
+
+    class Meta:
+        """
+        Meta class defining the model and the ordered list of form fields.
+        """
+
+        model = models.UserPortfolioPermission
+        fields = [
+            "user",
+            "portfolio",
+            "role",
+            "domain_permissions",
+            "request_permissions",
+            "member_permissions",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "user" in self.fields:
+            self.fields["user"].required = True
+
+
 class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     """
     Form for managing user portfolio permissions in Django admin.
@@ -525,6 +549,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
         self._set_email(cleaned_data, email)
         self._set_status_for_new_permission(user, email)
         self._validate_new_invitation(cleaned_data, user, email)
+        self._validate_invitation_email_can_be_sent(cleaned_data, user, email)
 
         return cleaned_data
 
@@ -578,6 +603,30 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
             )
         except ValidationError as error:
             self.add_error("user", error)
+
+    def _validate_invitation_email_can_be_sent(self, cleaned_data, user, email):
+        if settings.IS_PRODUCTION:
+            return
+
+        if not self._will_send_invitation_email(cleaned_data, user):
+            return
+
+        if not email:
+            return
+
+        if models.AllowedEmail.is_allowed_email(email):
+            return
+
+        self.add_error("user", f"Could not send email. The email '{email}' does not exist within the allowlist.")
+
+    def _will_send_invitation_email(self, cleaned_data, user):
+        if user is None:
+            return True
+
+        if cleaned_data.get("send_email"):
+            return True
+
+        return False
 
 
 class PortfolioInvitationForm(PortfolioPermissionsForm):
@@ -1828,7 +1877,8 @@ class UserDomainRoleResource(resources.ModelResource):
 
 
 class UserPortfolioPermissionAdmin(ListHeaderAdmin):
-    form = UserPortfolioPermissionsForm
+    form = UserPortfolioPermissionsLegacyForm
+    invitation_form = UserPortfolioPermissionsForm
 
     class Meta:
         """Contains meta information about this class"""
@@ -1867,6 +1917,15 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 
     get_roles.short_description = "Member role"  # type: ignore
 
+    def _use_invitation_admin(self, request):
+        return flag_is_active(request, "user_portfolio_permission_invitations")
+
+    def get_form(self, request, obj=None, **kwargs):
+        if self._use_invitation_admin(request):
+            kwargs["form"] = self.invitation_form
+
+        return super().get_form(request, obj, **kwargs)
+
     @admin.display(description="Invitation status")
     def invitation_status(self, obj):
         if not obj:
@@ -1878,6 +1937,9 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         return "Set on save"
 
     def get_readonly_fields(self, request, obj=None):
+        if not self._use_invitation_admin(request):
+            return super().get_readonly_fields(request, obj)
+
         if obj:
             return [
                 "email",
@@ -1891,6 +1953,9 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         return ["invitation_status"]
 
     def get_fieldsets(self, request, obj=None):
+        if not self._use_invitation_admin(request):
+            return self._get_direct_permission_fieldsets()
+
         if obj:
             return (
                 (None, {"fields": ("user", "email", "portfolio", "status")}),
@@ -1933,8 +1998,24 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
             ),
         )
 
+    def _get_direct_permission_fieldsets(self):
+        return (
+            (None, {"fields": ("user", "portfolio")}),
+            (
+                "Permissions",
+                {
+                    "fields": (
+                        "role",
+                        "domain_permissions",
+                        "request_permissions",
+                        "member_permissions",
+                    )
+                },
+            ),
+        )
+
     def save_model(self, request, obj, form, change):
-        if change:
+        if change or not self._use_invitation_admin(request):
             super().save_model(request, obj, form, change)
             return
 
