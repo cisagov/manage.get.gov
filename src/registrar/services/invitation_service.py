@@ -97,6 +97,14 @@ def create_portfolio_permission_or_invitation(
                 roles=roles,
                 additional_permissions=additional_permissions,
             )
+            # Temporary support for legacy invitations
+            _save_legacy_portfolio_invitation(
+                email=email,
+                portfolio=portfolio,
+                user=requested_user,
+                roles=roles,
+                additional_permissions=additional_permissions,
+            )
             send_invitation_email = _must_send_portfolio_permission_email(requested_user, send_email)
             email_sent = True
             if send_invitation_email:
@@ -181,6 +189,29 @@ def _save_portfolio_permission(
     permission.save()
 
     return permission
+
+
+def _save_legacy_portfolio_invitation(
+    email,
+    portfolio,
+    user,
+    roles,
+    additional_permissions,
+):
+
+    legacy_invitation = PortfolioInvitation(
+        email=email,
+        portfolio=portfolio,
+        roles=roles,
+        additional_permissions=additional_permissions,
+    )
+    legacy_invitation.save()
+
+    if user:
+        legacy_invitation.retrieve()
+        legacy_invitation.save()
+
+    return legacy_invitation
 
 
 def get_portfolio_permission_status(user):
