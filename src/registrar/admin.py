@@ -371,7 +371,8 @@ class UserOrEmailChoiceField(forms.ModelChoiceField):
     def _clean_user_choice(self, value):
         try:
             return super().clean(value)
-        except ValidationError:
+        except (TypeError, ValueError, ValidationError):
+            # Tagged email values are not user ids, so let email validation handle them.
             return None
 
     def _set_resolved_email_from_user(self, user):
@@ -390,6 +391,66 @@ class UserOrEmailChoiceField(forms.ModelChoiceField):
         return models.User.objects.filter(email__iexact=self.resolved_email).first()
 
 
+class UserOrEmailAutocompleteSelect(AutocompleteSelectWithPlaceholder):
+    """Autocomplete widget that differentiates emails from Users."""
+
+    def optgroups(self, name, value, attr=None):
+        # Autocomplete assumes selected values for this field are
+        # User.id values. It can also contain typed email addresses.
+        user_id_values = []
+        email_values = []
+
+        for selected_value in self._get_selected_values(value):
+            if self._is_user_id_value(selected_value):
+                user_id_values.append(selected_value)
+            else:
+                email_values.append(selected_value)
+
+        groups = super().optgroups(name, user_id_values, attr)
+        self._add_email_options(name, groups, email_values)
+        return groups
+
+    def _get_selected_values(self, value):
+        # Django can pass one value or a list of values. Convert all
+        # possibilities to a list.
+        if value is None:
+            return []
+
+        if isinstance(value, (list, tuple, set)):
+            selected_values = value
+        else:
+            selected_values = [value]
+
+        values = []
+        for selected_value in selected_values:
+            value_as_text = str(selected_value)
+            if value_as_text not in self.choices.field.empty_values:
+                values.append(value_as_text)
+
+        return values
+
+    def _is_user_id_value(self, value):
+        # The normal admin autocomplete render path looks up selected values as
+        # User.id. Values that cannot be converted to an integer are typed
+        # emails.
+        try:
+            int(value)
+        except (TypeError, ValueError):
+            return False
+
+        return True
+
+    def _add_email_options(self, name, groups, email_values):
+        # Add typed email as selected option values after django has
+        # rendered the User options.
+        if not email_values:
+            return
+
+        options = groups[0][1]
+        for email in email_values:
+            options.append(self.create_option(name, email, email, True, len(options)))
+
+
 class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     """
     Form for managing user portfolio permissions in Django admin.
@@ -401,7 +462,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     user = UserOrEmailChoiceField(
         queryset=models.User.objects.all(),
         label="User",
-        widget=AutocompleteSelectWithPlaceholder(
+        widget=UserOrEmailAutocompleteSelect(
             models.UserPortfolioPermission._meta.get_field("user"),
             admin.site,
             attrs={
