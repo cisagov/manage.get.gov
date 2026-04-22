@@ -1,30 +1,34 @@
 // Establishes javascript for dynamic content label based on type
-
-function getCharCountText (charLimit, textArea) {
-    const charactersLeft = charLimit - textArea.value.length;
-    let finalString = ""
-    const characters =`character${Math.abs(charactersLeft) === 1 ? '' : 's'}`;
-    let remainingText;
-    if(charactersLeft == charLimit){
-        remainingText = "allowed"
+function getCharCountText (charLimit, charLength) {
+    let finalString = "";
+  
+    if(charLength == 0){
+        finalString = `${charLimit} characters allowed`
     }
     else{
-    remainingText = charactersLeft >= 0 ? "left" : "over limit"
+        const charactersLeft = Math.abs(charLimit - charLength);
+        const remainingText =  charactersLeft > 0 ? "left" : "over limit";
+        const characters =`character${charactersLeft === 1 ? '' : 's'}`;
+        finalString = `${charactersLeft} ${characters} ${remainingText}`
     }
-    finalString+= `${charactersLeft} ${characters} ${remainingText}`
-
+    
     return finalString;
   };
 
 function createCharacterCountDiv(charLimit, textArea) {
 
+
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
-  displayCharCount.textContent = getCharCountText(charLimit, textArea);
+  displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length)
+
+
   displayCharCount.id = `${textArea.id}-content--status`
   displayCharCount.setAttribute('aria-live', 'polite')
+
+
   textArea.addEventListener('input', function () {
-    displayCharCount.textContent = getCharCountText(charLimit, textArea);
+    displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
       textArea.value.length > charLimit
@@ -83,6 +87,8 @@ export function editAndCommentButtonListener (){
 }
 
 export function commentCharacterEventListener(){
+
+    // event listener to update the char count text
     function helperEventListener (element){
         if(!element){
             return;
@@ -90,7 +96,7 @@ export function commentCharacterEventListener(){
         const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[name="comment"]')
         commentTextArea.addEventListener('input', function () {
-            commentTextStatus.textContent = getCharCountText(100, commentTextArea);
+            commentTextStatus.textContent = getCharCountText(100, commentTextArea.value.length);
             commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
               commentTextArea.value.length > 100
@@ -100,6 +106,8 @@ export function commentCharacterEventListener(){
         commentTextStatus.setAttribute('aria-live', 'polite')
         commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
     }
+
+
     let rows = document.querySelectorAll('[id^="dnsrecord-edit-row-"]')
     const form = document.getElementById('dnsrecords-form-container')
 
