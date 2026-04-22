@@ -60,8 +60,13 @@ function switchFromInputToTextArea (element) {
 
         // Character count
         const charLimit = 4080
+        // strip out surrounding double quotes and string splitting used for RFC compliance.
+        // They should not be included in the character count displayed to to user.
+        const adjustedValue =textArea.value.split('" "').join()
+        if (adjustedValue.startsWith('"') && adjustedValue.endsWith('"'))
+            adjustedValue = adjustedValue.slice(1, -1);
         let getCharCountText = function () {
-           return `${charLimit - textArea.value.length} characters allowed`
+           return `${charLimit - adjustedValue.length} characters allowed`
         }
         const displayCharCount = document.createElement('div')
         displayCharCount.className = "usa-character-count__status usa-hint"
