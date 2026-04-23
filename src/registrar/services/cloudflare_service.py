@@ -119,11 +119,10 @@ class CloudflareService:
         return resp.json()
 
     def update_zone_dns_settings(
-        self, zone_id: str, *, zone_mode: str = "dns_only", nameservers_type: str = "custom.tenant", ns_set: int = 1
+        self, zone_id: str, *, nameservers_type: str = "custom.tenant", ns_set: int = 1
     ) -> CloudflareDnsSettingsUpdateResponse:
         """PATCH /zones/{zone_id}/dns_settings
         Required settings:
-        - zone_mode: "standard" | "cdn_only" | "dns_only"
         - nameservers_type: "cloudflare.standard"
                 "cloudflare.standard.random"
                 "custom.account"
@@ -132,7 +131,6 @@ class CloudflareService:
         """
         appended_url = f"/zones/{zone_id}/dns_settings"
         data = {
-            "zone_mode": zone_mode,
             "nameservers": {"ns_set": ns_set, "type": nameservers_type},
         }
 
@@ -142,7 +140,6 @@ class CloudflareService:
             logger.info(
                 "Updated zone DNS settings for zone_id=%s (zone_mode=%s, nameservers.type=%s, namservers.ns_set=%s)",
                 zone_id,
-                zone_mode,
                 nameservers_type,
                 ns_set,
             )
@@ -219,6 +216,22 @@ class CloudflareService:
             logger.error(f"Error {e.response.status_code} while fetching account zones: {e}")
             raise
         logger.info(f"Retrieved all zones: {resp}")
+        return resp.json()
+
+    def get_zone_by_id(self, x_zone_id: str):
+        """Get zone data given a Clouflare zone id"""
+        appended_url = f"/zones/{x_zone_id}"
+        try:
+            logger.info(f"Getting zone data from zone id: {x_zone_id}")
+            resp = self.client.get(appended_url)
+            resp.raise_for_status()
+        except RequestError as e:
+            logger.error(f"Failed to get zone from zone id: {e}")
+            raise
+        except HTTPStatusError as e:
+            logger.error(f"Error {e.response.status_code} while fetching zone: {e}")
+            raise
+        logger.info(f"Retrieved zone: {resp}")
         return resp.json()
 
     def get_dns_record(self, zone_id: str, record_id: str):

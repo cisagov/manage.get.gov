@@ -105,6 +105,17 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(len(result), 4)
         self.assertEqual(result[3]["account_pubname"], account_name)
 
+    def test_mock_get_cf_zone_by_id_response(self):
+        zone_name = "test.gov"
+        existing_account_id = self.mock_api_service.existing_account_id
+
+        zone_data = self.service.create_cf_zone(zone_name, existing_account_id)["result"]
+        zone_id = zone_data["id"]
+
+        resp = self.service.get_zone_by_id(zone_id)
+        result = resp["result"]
+        self.assertEquals(result, zone_data)
+
     def test_mock_create_cf_zone_response(self):
         zone_name = "peace.gov"
         account_id = "1359"

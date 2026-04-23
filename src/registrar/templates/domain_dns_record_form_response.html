@@ -20,7 +20,7 @@
             </td>
             <td id="dns-name-{{ record_id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
             <td id="dns-content-{{ record_id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content }}</td>
-            <td id="dns-ttl-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl }}</td>
+            <td id="dns-ttl-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl_display }}</td>
             <span id="dns-comment-{{record_id}}-text" hx-swap-oob="textContent">{{ dns_record.comment }}</span>
         {% endif %}
         {# Always OOB swap the edit form row so errors are shown/cleared #}
