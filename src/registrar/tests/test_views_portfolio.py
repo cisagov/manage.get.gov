@@ -2996,8 +2996,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
 
     @less_console_noise_decorator
-    def test_member_domains__edit_domain_removal_for_legacy_domain_forbidden(self):
-        """Tests that a member from one portfolio cannot be removed from a legacy domain of a different portfolio."""
+    def test_member_domains_edit_domain_removal_for_legacy_domain_forbidden(self):
+        """Tests that a member from one portfolio cannot be removed from a legacy domain."""
         self.client.force_login(self.user)
 
         # create a second domain (not in a portfolio)
@@ -3394,7 +3394,6 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
 
         # Attempt to assign other portfolio's domain to a member
-        print(json.dumps([other_domain.id]))
         response = self.client.post(
             self.url,
             {
@@ -3458,7 +3457,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_invited_member_edit_domains_assignment_for_legacy_domain_forbidden(self):
-        """Tests that a member of one portfolio can't be assigned to a legacy domain."""
+        """Tests that a member of one portfolio can't be invited to a legacy domain."""
         self.client.force_login(self.user)
 
         # create a second domain (not in a portfolio)
@@ -3494,7 +3493,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_invited_member_edit_domains_removal_for_legacy_domain_forbidden(self):
-        """Tests that a member from one portfolio cannot be removed from a domain of a different portfolio."""
+        """Tests that a member from one portfolio cannot be uninvited from a legacy domain."""
         self.client.force_login(self.user)
 
         # create a second domain (not in a portfolio)
