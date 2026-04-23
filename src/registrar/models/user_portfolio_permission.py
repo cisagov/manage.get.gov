@@ -62,6 +62,7 @@ class UserPortfolioPermission(TimeStampedModel):
     user = models.ForeignKey(
         "registrar.User",
         null=True,
+        blank=True,
         # when a user is deleted, permissions are too
         on_delete=models.CASCADE,
         related_name="portfolio_permissions",
@@ -124,10 +125,17 @@ class UserPortfolioPermission(TimeStampedModel):
 
     # End Invitation fields
     def __str__(self):
-        readable_roles = []
+        identity = "Unknown user"
+        if self.user:
+            identity = self.user
+        elif self.email:
+            identity = f"Invite to {self.email}"
+
         if self.roles:
             readable_roles = self.get_readable_roles()
-        return f"{self.user}" f" <Roles: {', '.join(readable_roles)}>" if self.roles else ""
+            return f"{identity} <Roles: {', '.join(readable_roles)}>"
+
+        return str(identity)
 
     def get_readable_roles(self):
         """Returns a readable list of self.roles"""
@@ -321,8 +329,14 @@ class UserPortfolioPermission(TimeStampedModel):
 
         user = self.user  # Capture the user before the instance is deleted
         portfolio = self.portfolio  # Capture the portfolio before the instance is deleted
+        email = None
+        if user:
+            email = user.email
+        elif self.email:
+            email = self.email
 
         # Call the superclass delete method to actually delete the instance
         super().delete(*args, **kwargs)
 
-        cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=user.email, user=user)
+        if user or email:
+            cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
