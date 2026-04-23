@@ -346,6 +346,6 @@ def remaining_characters_text(char_limit, field_value):
         final_string = f"{char_limit} characters allowed"
     else:
         characters_left = abs(char_limit - len(field_value))
-        characters = "" if characters_left == 1 else "s"
-        final_string = f"{characters_left} character{characters} left"
+        check_plural = "" if characters_left == 1 else "s"
+        final_string = f"{characters_left} character{check_plural} left"
     return final_string
