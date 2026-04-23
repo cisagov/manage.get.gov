@@ -48,7 +48,9 @@ class Command(BaseCommand):
         # delete_expired_domains_not_setup.py
         expiring_domains = Domain.objects.filter(
             Q(expiration_date__in=[today + timedelta(days=d) for d in days_to_check])
-            | Q(expiration_date__isnull=True, state__in=[Domain.State.UNKNOWN])
+            | Q(expiration_date__isnull=True,
+                state__in=[Domain.State.UNKNOWN],
+                created_at__in=[today + timedelta(days=d) - timedelta(days=365) for d in days_to_check],)
         )
         logger.info(f"Found {expiring_domains.count()} domains expiring in 30, 7, or 1 days")
 
