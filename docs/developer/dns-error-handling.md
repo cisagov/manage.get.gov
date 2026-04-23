@@ -66,7 +66,8 @@ This document is the living design proposal. It is versioned in the repo at [`do
 14. [Exception contract for contributors](#14-exception-contract-for-contributors)
 15. [Support runbook — tracing a DNS failure](#15-support-runbook--tracing-a-dns-failure)
 16. [Admin-editable error message store](#16-admin-editable-error-message-store)
-17. [Decisions needed from stakeholders](#17-decisions-needed-from-stakeholders)
+17. [Integration with in-flight prototype work](#17-integration-with-in-flight-prototype-work)
+18. [Decisions needed from stakeholders](#18-decisions-needed-from-stakeholders)
 
 ---
 
@@ -122,7 +123,7 @@ This document defines a consistent pattern for where errors are caught, what the
 - [`RequestLoggingMiddleware`](../../src/registrar/registrar_middleware.py) sets those ContextVars. **Note:** currently guarded by `if getattr(settings, "IS_PRODUCTION", False)`, which means local development logs are missing this context entirely.
 - [`DatabaseConnectionMiddleware`](../../src/registrar/registrar_middleware.py) reads `HTTP_X_REQUEST_ID` directly from `request.META` — not propagated to anyone else.
 - `JsonFormatter` in [`config/settings.py`](../../src/registrar/config/settings.py) emits JSON logs and merges `extra=` kwargs into the log record. OpenSearch-ready.
-- No correlation ID in the DNS service logs. No `cf_ray` captured. No `duration_ms`. No `error_code`.
+- No correlation ID in the DNS service logs. No `cf_ray` captured. No `duration_ms`. No `error_code`. (Prototype branch `dg/4893-error-handling-improvements-proto` has since added `cf_ray` capture on `create_dns_record` and `update_dns_record`, and verified end-to-end on 2026-04-23 against the live Cloudflare API — a real ray ID of the form `9f0fb528c8e290be-IAD` is now logged on success and present in `DnsNotFoundError.context["cf_ray"]` on 404. See §17.)
 
 ### 3.5 Admin
 
@@ -239,7 +240,7 @@ The registrar is a government system. We treat application log streams as subjec
 - `dns_account_id` — vendor account tag (Cloudflare).
 - `zone_id` — vendor zone ID.
 - `record_id` — vendor DNS record ID.
-- `cf_ray` — Cloudflare `cf-ray` response header.
+- `cf_ray` — Cloudflare `cf-ray` response header. Availability verified end-to-end (real ray IDs returned on both success and error paths; see §17).
 - `upstream_status` — HTTP status integer.
 - `error_code` — `DnsHostingErrorCodes` name.
 - `duration_ms` — integer latency.
@@ -576,7 +577,67 @@ self.assertIn(expected, response.content.decode())
 - Draft/published states or approval workflow (security/compliance can request in a follow-up).
 - Non-DNS exception classes (`Nameserver`, `DsData`, `SecurityEmail`, `Generic`) — one pattern at a time.
 
-## 17. Decisions needed from stakeholders
+## 17. Integration with in-flight prototype work
+
+This section reconciles this design with parallel in-flight work on DNS error handling (a prototype PR that introduces `CloudflareValidationError` and hardcoded user-facing constants). The two efforts are **compatible, not competing**. Notes below capture how the prototype's artifacts map onto this design so the migration path is explicit when the full typed-error and admin-editable-copy tickets land.
+
+### 17.1 `cf_ray` availability is confirmed, not a question
+
+Previous drafts of this document treated `cf_ray` capture as theoretical. As of 2026-04-23 it is verified end-to-end:
+
+- `create_dns_record` and `update_dns_record` in [`cloudflare_service.py`](../../src/registrar/services/cloudflare_service.py) extract `resp.headers.get("cf-ray")` on both success and error paths and include it in log output.
+- A real Cloudflare response carried `cf-ray=9f0fb528c8e290be-IAD` through the httpx client, into the log line, and into `DnsNotFoundError.context["cf_ray"]` on 404.
+- Unit tests cover both branches of the read: header present ([`test_create_dns_record_404_raises_dns_not_found_error`](../../src/registrar/tests/services/test_cloudflare_service.py)) and header absent ([`test_create_dns_record_404_without_cf_ray_header`](../../src/registrar/tests/services/test_cloudflare_service.py)).
+
+`cf_ray` is therefore a first-class field in the structured log set (§8.1) and the `DnsOperationLog` surface (§11) — the remaining work is propagating capture to the other `CloudflareService` methods using a shared helper rather than re-deciding whether to capture it at all.
+
+### 17.2 `CloudflareValidationError` → `DnsHostingError` subclass
+
+The prototype's `CloudflareValidationError` is exactly the kind of specific, named exception the §6 vocabulary envisions. When the typed-error hierarchy lands:
+
+- `CloudflareValidationError` becomes (or is replaced by) `DnsValidationError` / `DnsRecordConflictError` extending `DnsHostingError`.
+- Stable `DnsHostingErrorCodes` values — at minimum `DNS_RECORD_CONFLICT` and `DNS_VALIDATION_FAILED` (both already in §6) — are the wire contract. No catch-all "validation failed" code.
+- Callers that currently `except CloudflareValidationError` migrate to `except DnsHostingError` + branch on `exc.code`.
+
+Migration is mechanical — the prototype's choice of exception shape was the correct shape; only the base class and code attribute need to change.
+
+### 17.3 Hardcoded message constants → admin-editable store
+
+The prototype stores user-facing copy (e.g., `CF_DUPLICATE_RECORD_MESSAGE`) as Python constants. That is the right tradeoff for an in-flight PR that must ship before the `DnsErrorMessage` table exists, but it recreates the spreadsheet-drift problem §16 explicitly exists to eliminate.
+
+**Planned migration when §16 lands:**
+
+- Each constant is replaced with `utility/messages.get_user_message("dns", <code>)` keyed on the stable error code.
+- The constant remains in-file as the `_error_mapping` fallback (§16.3) so the system stays functional if the DB row is missing or the store is unreachable.
+- Leave a `# TODO(#4893/#4932): replace with get_user_message lookup` comment on every constant now so the migration is obvious to whoever picks it up.
+
+### 17.4 View-layer mapping vs. the error envelope
+
+The prototype's view layer emits per-field form errors (e.g., `{"name": "...", "content": "..."}`) so the DNS form can highlight the offending input. The §9 envelope contract currently returns one message per response, which is correct for non-form JSON endpoints but **insufficient** for the DNS record form UX.
+
+Two viable resolutions — decide before the envelope ticket is split:
+
+1. **Extend the envelope** with an optional `fields: {name: message, ...}` attribute, populated only when the error is a validation failure tied to specific inputs. All other envelope fields (`status`, `code`, `message`, `request_id`) stay unchanged.
+2. **Keep the view owning form-level mapping.** The service raises `DnsValidationError` with structured context (e.g., `context={"field_errors": {...}}`), the view renders the form with per-field errors using standard Django form machinery, and the envelope is reserved for non-form JSON endpoints.
+
+Either works; (1) is more uniform, (2) is closer to how Django form errors are rendered elsewhere in the codebase. Flag for the envelope ticket owner — do not silently pick one.
+
+### 17.5 `cf_errors` raw payload → `DnsOperationLog.upstream_body_truncated`
+
+The prototype attaches a `cf_errors` list (parsed from the Cloudflare error response body) to `CloudflareValidationError`. That list is exactly what §11's `DnsOperationLog.upstream_body_truncated` wants to record — structured, already-parsed, and free of credentials.
+
+When the admin-visibility ticket lands, the logging middleware can:
+
+```python
+if isinstance(exc, DnsHostingError) and getattr(exc, "cf_errors", None):
+    upstream_body = json.dumps(exc.cf_errors)[:2048]  # already structured, just truncate
+else:
+    upstream_body = redact(response_body)[:2048]      # raw-text fallback path
+```
+
+Action item for the typed-error ticket: **preserve `cf_errors` as a documented attribute on `DnsHostingError`** (optional, `list[dict] | None`), so the `DnsOperationLog` writer has a single well-typed place to read structured upstream error data without re-parsing response bodies.
+
+## 18. Decisions needed from stakeholders
 
 These are the questions this proposal does not answer alone — they need input from leads, design, product, or leadership before implementation can finalize.
 

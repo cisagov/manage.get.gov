@@ -35,6 +35,13 @@ class TestCloudflareService(SimpleTestCase):
         patcher.start()
         cls.addClassCleanup(patcher.stop)
 
+        # Prime the DNS error-message cache with an empty dict so lookups during
+        # these SimpleTestCase tests don't attempt a (forbidden) DB query.
+        from registrar.utility import messages as dns_messages
+
+        dns_messages._cache = {}
+        cls.addClassCleanup(dns_messages.invalidate_cache)
+
         super().setUpClass()
 
     def setUp(self):
@@ -218,6 +225,25 @@ class TestCloudflareService(SimpleTestCase):
         self.assertEqual(exc.wire_code, "DNS_ZONE_NOT_FOUND")
         self.assertEqual(exc.context.get("zone_id"), zone_id)
         self.assertEqual(exc.context.get("cf_ray"), "ray-abc-123")
+
+    def test_create_dns_record_404_without_cf_ray_header(self):
+        """When Cloudflare's response has no cf-ray header, DnsNotFoundError.context
+        still carries cf_ray=None rather than crashing."""
+        zone_id = "missing-zone"
+        record_data = {"name": "democracy.gov", "type": "A", "content": "1.2.3.4", "ttl": 3600}
+        error = {
+            "exception": HTTPStatusError,
+            "response": "404 Not Found",
+            "message": "Zone not found",
+        }
+        mock_response = self._setUpFailureMockResponse(error, status_code=404)
+        mock_response.headers = {}
+        self.service.client.post.return_value = mock_response
+
+        with self.assertRaises(DnsNotFoundError) as ctx:
+            self.service.create_dns_record(zone_id, record_data)
+
+        self.assertIsNone(ctx.exception.context.get("cf_ray"))
 
     def test_update_dns_record_success(self):
         """Test successful update_dns_record call"""
