@@ -315,3 +315,64 @@ class APIError(Exception):
     """Custom exception for API-related errors"""
 
     pass
+
+
+class CloudflareValidationError(APIError):
+    """Vendor-specific — raised inside :mod:`registrar.services.cloudflare_service`.
+
+    Carries the parsed ``errors`` array from the Cloudflare response so the service layer
+    can translate vendor error codes into vendor-agnostic :class:`DnsHostingError` subclasses.
+    The view layer does not import or catch this type.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        cf_errors: list[dict] | None = None,
+        status_code: int | None = None,
+    ):
+        super().__init__(message)
+        self.cf_errors = cf_errors or []
+        self.status_code = status_code
+
+
+class DnsHostingError(Exception):
+    """Base class for vendor-agnostic DNS hosting errors surfaced to the view layer.
+
+    The service layer (:mod:`registrar.services.dns_host_service`) is responsible for
+    translating vendor exceptions (e.g. :class:`CloudflareValidationError`) into one of
+    the subclasses below. The view layer catches these, not vendor-specific types.
+
+    When PR #4932's DnsHostingError taxonomy lands (codes like ``DNS_RECORD_CONFLICT``,
+    ``DNS_VALIDATION_FAILED``), these subclasses should be migrated under that hierarchy.
+    """
+
+    def __init__(
+        self,
+        message: str = "",
+        *,
+        submitted_record_type: str | None = None,
+        vendor_errors: list[dict] | None = None,
+    ):
+        super().__init__(message)
+        self.submitted_record_type = submitted_record_type
+        self.vendor_errors = vendor_errors or []
+
+
+class DnsDuplicateRecordError(DnsHostingError):
+    """An exact duplicate record (identical type + name + content) was submitted."""
+
+
+class DnsNameConflictError(DnsHostingError):
+    """The submitted name conflicts with an existing record of an incompatible type
+    (e.g. CNAME vs A/AAAA at the same host)."""
+
+
+class DnsContentLengthExceededError(DnsHostingError):
+    """The combined content length for this name+type exceeds the provider limit
+    (e.g. TXT records sharing a name may not exceed 8192 bytes combined)."""
+
+
+class DnsValidationError(DnsHostingError):
+    """Generic DNS validation failure returned by the provider that doesn't map to a
+    more specific subclass. The vendor's raw message is carried in ``str(exc)``."""

@@ -17,7 +17,8 @@ from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsHostingError
+from registrar.utility.dns_error_messages import resolve_dns_error_messages
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -993,6 +994,20 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.dns_record = dns_record
         return record_id
 
+    def _handle_dns_hosting_error(self, request, form, is_edit, error: DnsHostingError):
+        """Map a vendor-agnostic DNS hosting error to form-field messages and re-render.
+
+        The DNS host service translates vendor validation failures (duplicate record,
+        CNAME/A/AAAA name conflict, TXT >8192 combined length, …) into a ``DnsHostingError``
+        subclass. This helper turns that into per-field form errors via the copy defined
+        for ticket #4672.
+        """
+        logger.info(f"DNS host rejected record: {type(error).__name__} vendor_errors={error.vendor_errors}")
+        for field, messages_for_field in resolve_dns_error_messages(error).items():
+            for message in messages_for_field:
+                form.add_error(None if field == "__all__" else field, message)
+        return self._handle_invalid_form(request, form, is_edit)
+
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
         errors = self.get_form_errors(form)
@@ -1077,6 +1092,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
+        except DnsHostingError as e:
+            return self._handle_dns_hosting_error(request, form, is_edit, e)
         except (APIError, RequestError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")
             messages.error(request, "Failed to save DNS record.")

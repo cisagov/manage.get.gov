@@ -924,3 +924,88 @@ class TestDnsHostServiceDB(TestCase):
         self.assertNotEqual(initial_zone_data, updated_zone_data)
         self.assertEqual(updated_zone_data["vanity_name_servers"], dns_zone.nameservers)
         self.assertEqual(response["result"], updated_zone_data)
+
+
+class TestDnsHostServiceTranslateCfErrors(TestCase):
+    """DnsHostService translates CF validation errors into vendor-agnostic domain errors.
+
+    Covers ticket #4672 — the view layer should never see CloudflareValidationError.
+    """
+
+    def setUp(self):
+        mock_client = Mock()
+        self.service = DnsHostService(client=mock_client)
+
+    def _build_cf_error(self, cf_errors):
+        from registrar.utility.errors import CloudflareValidationError
+
+        return CloudflareValidationError("boom", cf_errors=cf_errors, status_code=400)
+
+    def test_duplicate_record_cf_error_translates_to_duplicate_domain_error(self):
+        from registrar.utility.errors import DnsDuplicateRecordError
+
+        cf_err = self._build_cf_error([{"code": 81057, "message": "An identical record already exists."}])
+        result = self.service._translate_cf_validation_error(cf_err, {"type": "A"})
+
+        self.assertIsInstance(result, DnsDuplicateRecordError)
+        self.assertEqual(result.submitted_record_type, "A")
+        self.assertEqual(result.vendor_errors, cf_err.cf_errors)
+
+    def test_duplicate_record_cf_code_81058_translates_to_duplicate_domain_error(self):
+        """CF returned 81058 (not 81057) in sandbox manual testing — both map to duplicate."""
+        from registrar.utility.errors import DnsDuplicateRecordError
+
+        cf_err = self._build_cf_error([{"code": 81058, "message": "An identical record already exists."}])
+        result = self.service._translate_cf_validation_error(cf_err, {"type": "A"})
+
+        self.assertIsInstance(result, DnsDuplicateRecordError)
+
+    def test_host_conflict_cf_error_translates_to_name_conflict_domain_error(self):
+        from registrar.utility.errors import DnsNameConflictError
+
+        cf_err = self._build_cf_error(
+            [{"code": 81053, "message": "An A, AAAA, or CNAME record with that host already exists."}]
+        )
+        result = self.service._translate_cf_validation_error(cf_err, {"type": "CNAME"})
+
+        self.assertIsInstance(result, DnsNameConflictError)
+        self.assertEqual(result.submitted_record_type, "CNAME")
+
+    def test_txt_overflow_cf_error_translates_to_content_length_domain_error(self):
+        from registrar.utility.errors import DnsContentLengthExceededError
+
+        cf_err = self._build_cf_error([{"code": 81061, "message": "combined length exceeds 8192"}])
+        result = self.service._translate_cf_validation_error(cf_err, {"type": "TXT"})
+
+        self.assertIsInstance(result, DnsContentLengthExceededError)
+
+    def test_txt_overflow_detected_by_message_when_code_missing(self):
+        from registrar.utility.errors import DnsContentLengthExceededError
+
+        cf_err = self._build_cf_error([{"code": 9999, "message": "length exceeds the 8192 limit"}])
+        result = self.service._translate_cf_validation_error(cf_err, {"type": "TXT"})
+
+        self.assertIsInstance(result, DnsContentLengthExceededError)
+
+    def test_unmapped_cf_error_translates_to_generic_dns_validation_error(self):
+        from registrar.utility.errors import DnsValidationError
+
+        cf_err = self._build_cf_error([{"code": 1234, "message": "Something unexpected went wrong."}])
+        result = self.service._translate_cf_validation_error(cf_err, {"type": "A"})
+
+        self.assertIsInstance(result, DnsValidationError)
+        self.assertEqual(str(result), "Something unexpected went wrong.")
+
+    def test_create_dns_record_raises_domain_error_not_cloudflare_error(self):
+        """View-layer contract: create_dns_record never surfaces CloudflareValidationError."""
+        from registrar.utility.errors import CloudflareValidationError, DnsDuplicateRecordError
+
+        cf_err = CloudflareValidationError(
+            "boom",
+            cf_errors=[{"code": 81057, "message": "An identical record already exists."}],
+            status_code=400,
+        )
+        self.service.dns_vendor_service.create_dns_record = Mock(side_effect=cf_err)
+
+        with self.assertRaises(DnsDuplicateRecordError):
+            self.service.create_dns_record("zone-id", {"type": "A", "name": "x", "content": "1.2.3.4"})
