@@ -341,13 +341,11 @@ def contact_text(contact, num_newlines=2):
 
 @register.filter
 def remaining_characters_text(char_limit, field_value):
+    final_string = ""
     if field_value is None:
-        return f"{char_limit} characters allowed"
+        final_string = f"{char_limit} characters allowed"
     else:
-        remaining_val = char_limit - len(field_value)
-        if remaining_val == 1:
-            return f"{remaining_val} character left"
-        if remaining_val > 0:
-            return f"{remaining_val} characters left"
-        if remaining_val < 0:
-            return f"{abs(remaining_val)} characters over limit"
+        characters_left = abs(char_limit - len(field_value))
+        characters = "" if characters_left == 1 else "s"
+        final_string = f"{characters_left} character{characters} left"
+    return final_string

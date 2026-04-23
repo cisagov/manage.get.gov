@@ -7,7 +7,7 @@ function getCharCountText (charLimit, charLength) {
     }
     else{
         const charactersLeft = Math.abs(charLimit - charLength);
-        const remainingText =  charactersLeft > 0 ? "left" : "over limit";
+        const remainingText =  charLength > charLimit ? "left" : "over limit";
         const characters =`character${charactersLeft === 1 ? '' : 's'}`;
         finalString = `${charactersLeft} ${characters} ${remainingText}`
     }
@@ -95,7 +95,7 @@ export function commentCharacterEventListener(){
             return;
         }
         const commentTextStatus = element.querySelector('.comment-character-count')
-        const commentTextArea = element.querySelector('textarea[name="comment"]')
+        const commentTextArea = element.querySelector('textarea[id$="_comment"]')
         commentTextArea.addEventListener('input', function () {
             commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
             commentTextStatus.classList.toggle(
@@ -109,9 +109,9 @@ export function commentCharacterEventListener(){
     }
 
 
-    let rows = document.querySelectorAll('[id^="dnsrecord-edit-row-"]')
+    let rows = document.querySelectorAll('tr[id^="dnsrecord-edit-row-"]')
     const form = document.getElementById('dnsrecords-form-container')
-
+   
     rows && rows.forEach(row => {
        helperEventListener(row)
     })

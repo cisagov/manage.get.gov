@@ -37,7 +37,7 @@
         {% with add_group_class="usa-form-group--unstyled-error" %}
             {% input_with_errors form.comment %} 
             <div class="usa-character-count__status usa-hint comment-character-count">
-            <!-- Hardcorded value should be removed if/when the model is updated -->
+            <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
            
             {{ 100|remaining_characters_text:form.comment.value }}
             </div>

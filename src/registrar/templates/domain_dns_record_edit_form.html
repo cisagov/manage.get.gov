@@ -25,7 +25,7 @@
                         {% input_with_errors dns_record.form.comment %}
                     {% endwith %}
                     <div class="usa-character-count__status usa-hint comment-character-count">
-                    <!-- Hardcorded value should be removed if/when the model is updated -->
+                    <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
                     {{ 100|remaining_characters_text:dns_record.comment }}
                     </div>
                     
