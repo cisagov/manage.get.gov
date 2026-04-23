@@ -2,7 +2,7 @@
 
 from enum import Enum
 from registrar.utility import StrEnum
-from registrar.validations import validate_dns_name, validate_mx_content
+from registrar.validations import validate_dns_name, validate_mx_content, clean_txt_content
 from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from django.db.models import TextChoices
 from registrar.validations import validate_txt_content
@@ -149,6 +149,12 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.MX: validate_mx_content,
             DNSRecordTypes.TXT: validate_txt_content,
             DNSRecordTypes.PTR: validate_dns_name,
+        }.get(self)
+
+    @property
+    def cleaner(self):
+        return {
+            DNSRecordTypes.TXT: clean_txt_content,  # TXT records may need to be reformatted with quotes
         }.get(self)
 
     @property

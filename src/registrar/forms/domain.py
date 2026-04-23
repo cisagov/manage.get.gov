@@ -836,20 +836,8 @@ class DomainDNSRecordForm(forms.ModelForm):
         error_messages = {"name": {"required": "Enter a name for this record."}}
 
     type = forms.ChoiceField(
-        # TODO: choices has been temporarily hard-coded for user testing.
-        # This is to prevent the need for multiple migrations.
-        # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
-        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[
-            ("", "- Select -"),
-            ("A", "A"),
-            ("AAAA", "AAAA"),
-            ("CNAME", "CNAME"),
-            ("MX", "MX"),
-            ("PTR", "PTR"),
-            ("TXT", "TXT"),
-        ],
+        choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
         required=True,
         widget=forms.Select(
             attrs={
@@ -907,6 +895,14 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def clean_content(self):
+        """Clean the content field based on the record type."""
+        record = DNSRecordTypes(self.cleaned_data.get("type"))
+        content = self.cleaned_data.get("content", "")
+        if record.cleaner:
+            content = record.cleaner(content)
+        return content
+
     def _validate_content(self, record_type, content):
         """Validate content field based on record type."""
         record = DNSRecordTypes(record_type)
@@ -922,6 +918,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record.validator:
             try:
                 record.validator(content)
+
             except ValidationError as e:
                 # Use the validator's error message
                 error_msg = e.messages[0] if hasattr(e, "messages") and e.messages else str(e)
