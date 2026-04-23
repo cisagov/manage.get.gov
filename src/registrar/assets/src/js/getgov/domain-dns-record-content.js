@@ -7,7 +7,7 @@ function getCharCountText (charLimit, charLength) {
     }
     else{
         const charactersLeft = Math.abs(charLimit - charLength);
-        const remainingText =  charLimit > charLength ? "left" : "over limit";
+        const remainingText =  charLimit < charLength ? "over limit" : "left";
         const characters =`character${charactersLeft === 1 ? '' : 's'}`;
         finalString = `${charactersLeft} ${characters} ${remainingText}`
     }
