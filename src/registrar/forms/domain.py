@@ -29,6 +29,7 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
+from registrar.validations import validate_dns_name_fqdn_length
 
 import json
 import re
@@ -833,7 +834,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {"name": {"required": "Enter the name of this record."}}
 
     type = forms.ChoiceField(
         # TODO: choices has been temporarily hard-coded for user testing.
@@ -941,6 +942,15 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type == DNSRecordTypes.MX and priority is None:
             self.add_error("priority", "Enter a priority for this record.")
 
+    def _validate_name_fqdn_length(self, name):
+        """Enforce the 253-char limit after the zone name is appended."""
+        if not name or "name" in self.errors:
+            return
+        try:
+            validate_dns_name_fqdn_length(name, self.domain_name)
+        except ValidationError as e:
+            self.add_error("name", e.messages[0] if getattr(e, "messages", None) else str(e))
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
@@ -951,6 +961,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type:
             self._validate_content(record_type, content)
             self._validate_cname_record(record_type, name, content)
+            self._validate_name_fqdn_length(name)
             # Only validate MX priority if priority field didn't already have a validation error
             if "priority" not in self.errors:
                 self._validate_mx_priority(record_type, priority)

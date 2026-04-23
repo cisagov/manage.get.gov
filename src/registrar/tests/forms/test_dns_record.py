@@ -7,6 +7,7 @@ from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
     DNS_NAME_FORMAT_ERROR_MESSAGE,
     DNS_NAME_HYPHEN_ERROR_MESSAGE,
+    DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
 )
 from faker import Faker
@@ -93,7 +94,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
             self.assertFalse(form.is_valid())
             self.assertIn("name", form.errors)
-            self.assertEqual(form.errors["name"], ["Enter a name for this record."])
+            self.assertEqual(form.errors["name"], ["Enter the name of this record."])
 
     def test_invalid_dns_name_throws_error(self):
         # Testing hyphen at start of label
@@ -109,7 +110,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])
 
         # Testing space in name
-        self.assert_dns_name_errors("ab cd", ["Enter the DNS name without any spaces."])
+        self.assert_dns_name_errors("ab cd", ["Enter the name without any spaces."])
 
     def test_dns_name_with_consecutive_dots_throws_error(self):
         """Consecutive dots should be rejected."""
@@ -117,11 +118,11 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_name_with_leading_dot_throws_error(self):
         """Leading dot should be rejected."""
-        self.assert_dns_name_errors(".abc", [DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE])
+        self.assert_dns_name_errors(".abc", [DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE])
 
     def test_dns_name_with_trailing_dot_throws_error(self):
         """Trailing dot should be rejected."""
-        self.assert_dns_name_errors("abc.", [DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE])
+        self.assert_dns_name_errors("abc.", [DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE])
 
     def test_dns_name_with_invalid_special_characters_throws_error(self):
         """Parentheses, colons, and semicolons are rejected."""
@@ -285,7 +286,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(name="my name")
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("Enter the DNS name without any spaces.", form.errors["name"])
+        self.assertIn("Enter the name without any spaces.", form.errors["name"])
 
     # --- Content validation ---
 

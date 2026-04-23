@@ -65,19 +65,22 @@ def _validate_pattern(value: str, pattern: re.Pattern[str], error_message: str) 
 
 # For use on DNS record names
 DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name without using parentheses, colons, or semicolons."
+DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE = "Enter the name without using consecutive periods."
+DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE = "Enter the name without using consecutive periods."
+DNS_NAME_HYPHEN_ERROR_MESSAGE = "placeholder error message for leading or trailing hyphen"
 DNS_NAME_LENGTH_ERROR_MESSAGE = (
     "Labels must be no more than 63 characters. "
-    "Full name (including labels, domain, and dots) must be no more than 253 characters."
+    "Full name (including labels, domain, and period) must be no more than 253 characters."
 )
-DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE = "Enter the name without using consecutive periods."
-DNS_NAME_HYPHEN_ERROR_MESSAGE = "Enter the name without a hyphen at the beginning or end."
 DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
 
 
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
-    if ".." in name or name.startswith(".") or name.endswith("."):
+    if ".." in name:
         raise ValidationError(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
+    if name.startswith(".") or name.endswith("."):
+        raise ValidationError(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE)
 
 
 def _validate_dns_name_characters(name: str) -> None:
@@ -146,12 +149,36 @@ def validate_dns_name(name: str) -> None:
 
     # Check for spaces
     if " " in name:
-        raise ValidationError("Enter the DNS name without any spaces.")
+        raise ValidationError("Enter the name without any spaces.")
 
     _validate_dns_name_structure(name)
     _validate_dns_name_characters(name)
     _validate_dns_name_length(name)
     _validate_dns_name_labels(name)
+
+
+def validate_dns_name_fqdn_length(name: str, zone_name: str | None) -> None:
+    """
+    Enforce the 253-character limit on the fully qualified DNS name.
+
+    The zone name is appended when the entered name is relative (or the apex '@'),
+    matching the Cloudflare-style behavior of auto-qualifying against the zone.
+    """
+    if not name or not zone_name:
+        return
+
+    name = name.lower()
+    zone_name = zone_name.lower()
+
+    if name == "@":
+        fqdn = zone_name
+    elif name == zone_name or name.endswith(f".{zone_name}"):
+        fqdn = name
+    else:
+        fqdn = f"{name}.{zone_name}"
+
+    if len(fqdn) > DNS_NAME_MAX_LENGTH:
+        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
 
 
 def check_has_valid_quotes(content: str) -> bool:

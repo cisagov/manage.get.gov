@@ -3,6 +3,7 @@ from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
     DNS_NAME_HYPHEN_ERROR_MESSAGE,
+    DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
 )
 
 
@@ -151,7 +152,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE, str(ctx.exception))
+        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE, str(ctx.exception))
 
     def test_dns_record_name_with_trailing_dot_raises(self):
         """DNS record name with trailing dot should fail validation."""
@@ -167,7 +168,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE, str(ctx.exception))
+        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE, str(ctx.exception))
 
     def test_dns_record_name_with_hyphen_at_start_of_label_raises(self):
         """DNS record name with hyphen at start of label should fail validation."""

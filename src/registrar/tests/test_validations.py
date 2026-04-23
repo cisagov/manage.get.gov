@@ -5,8 +5,10 @@ from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
     DNS_NAME_FORMAT_ERROR_MESSAGE,
     DNS_NAME_HYPHEN_ERROR_MESSAGE,
+    DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     validate_dns_name,
+    validate_dns_name_fqdn_length,
 )
 
 
@@ -31,17 +33,20 @@ class TestValidateDNSName(SimpleTestCase):
                 validate_dns_name(name)
 
     def test_validate_dns_name_rejects_names_with_spaces(self):
-        self.assert_dns_name_validation_error("ab cd", "Enter the DNS name without any spaces.")
+        self.assert_dns_name_validation_error("ab cd", "Enter the name without any spaces.")
 
     def test_validate_dns_name_rejects_hyphen_at_label_boundary(self):
         for name in ["-abc", "abc-", "my.-domain", "my-.domain"]:
             with self.subTest(name=name):
                 self.assert_dns_name_validation_error(name, DNS_NAME_HYPHEN_ERROR_MESSAGE)
 
-    def test_validate_dns_name_rejects_consecutive_or_edge_dots(self):
-        for name in ["ab..cd", ".abc", "abc."]:
+    def test_validate_dns_name_rejects_consecutive_dots(self):
+        self.assert_dns_name_validation_error("ab..cd", DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
+
+    def test_validate_dns_name_rejects_leading_or_trailing_dot(self):
+        for name in [".abc", "abc."]:
             with self.subTest(name=name):
-                self.assert_dns_name_validation_error(name, DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
+                self.assert_dns_name_validation_error(name, DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
         invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";"]] + ["ab$c"]
@@ -54,3 +59,33 @@ class TestValidateDNSName(SimpleTestCase):
 
     def test_validate_dns_name_rejects_names_over_253_characters(self):
         self.assert_dns_name_validation_error("a" * 254, DNS_NAME_LENGTH_ERROR_MESSAGE)
+
+
+class TestValidateDNSNameFQDNLength(SimpleTestCase):
+    ZONE = "example.gov"
+
+    def assert_error(self, name: str, zone: str | None) -> None:
+        with self.assertRaises(ValidationError) as ctx:
+            validate_dns_name_fqdn_length(name, zone)
+        self.assertEqual(ctx.exception.messages, [DNS_NAME_LENGTH_ERROR_MESSAGE])
+
+    def test_no_error_when_zone_missing(self):
+        validate_dns_name_fqdn_length("a" * 300, None)
+
+    def test_no_error_when_name_empty(self):
+        validate_dns_name_fqdn_length("", self.ZONE)
+
+    def test_apex_fits_within_limit(self):
+        validate_dns_name_fqdn_length("@", self.ZONE)
+
+    def test_already_fully_qualified_name_is_not_double_appended(self):
+        name = ("a" * 63) + "." + self.ZONE
+        validate_dns_name_fqdn_length(name, self.ZONE)
+
+    def test_relative_name_becomes_too_long_after_append(self):
+        # 245 + "." + "example.gov" (11) = 257 chars → too long
+        self.assert_error("a" * 245, self.ZONE)
+
+    def test_relative_name_fits_after_append(self):
+        # 240 + "." + "example.gov" = 252 chars → ok
+        validate_dns_name_fqdn_length("a" * 240, self.ZONE)
