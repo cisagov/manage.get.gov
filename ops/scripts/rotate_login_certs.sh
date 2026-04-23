@@ -31,9 +31,15 @@ fi
 echo "Targeting space"
 cf target -o cisa-dotgov -s $1
 
+# EMAIL="nicolle.leclair@ecstech.com" #--Hardcoded email for batch jobs
+read -p "Enter email: " $EMAIL
+
 echo "Creating new login.gov credentials for $1..."
 django_key=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
-openssl req -noenc -x509 -days 365 -newkey rsa:2048 -keyout private-$1.pem -out public-$1.crt
+openssl req -noenc -x509 -days 365 -newkey rsa:2048 \
+  -keyout private-$1.pem \
+  -out public-$1.crt \
+  -subj "/C=US/ST=DC/L=DC/O=DHS/OU=CISA/CN=$1/emailAddress=$EMAIL"
 login_key=$(base64 -i private-$1.pem)
 
 echo "Creating the final json"
