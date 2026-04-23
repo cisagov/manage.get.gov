@@ -2886,8 +2886,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
 
     @less_console_noise_decorator
-    def test_member_domains_edit_cross_portfolio_domain_assignment(self):
-        """Tests that a domain from a different portfolio cannot be assigned to a member."""
+    def test_member_domains_edit_cross_portfolio_domain_assignment_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a domain from a different portfolio."""
         self.client.force_login(self.user)
 
         # create a second portfolio with a domain
@@ -2922,8 +2922,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
 
     @less_console_noise_decorator
-    def test_member_domains_edit_cross_portfolio_domain_removal(self):
-        """Tests that a domain from a different portfolio cannot be removed from a member."""
+    def test_member_domains_edit_cross_portfolio_domain_removal_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a domain from a different portfolio."""
         self.client.force_login(self.user)
 
         # create a second portfolio with a domain
@@ -2957,6 +2957,79 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
             UserDomainRole.objects.filter(
                 user=self.user_member,
                 domain=other_domain,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_member_domains_edit_domain_assignment_for_legacy_domain_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a legacy domain."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        legacy_domain = Domain.objects.create(name="legacy-example.gov")
+
+        # Associate with domain info
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=legacy_domain,
+            portfolio=None,
+        )
+
+        # Attempt to assign legacy domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([legacy_domain.id]),
+                "removed_domains": json.dumps([]),
+            },
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No UserDomainRole should have been created
+        self.assertFalse(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=legacy_domain,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_member_domains__edit_domain_removal_for_legacy_domain_forbidden(self):
+        """Tests that a member from one portfolio cannot be removed from a legacy domain of a different portfolio."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        other_domain = Domain.objects.create(name="other.gov")
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=None,
+        )
+
+        UserDomainRole.objects.create(
+            domain=other_domain,
+            user=self.user_member,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # The DomainRole should still exist since the removal was forbidden
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                user=self.user_member,
+                domain=other_domain,
+                role=UserDomainRole.Roles.MANAGER,
             ).exists()
         )
 
@@ -3305,8 +3378,8 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
 
     @less_console_noise_decorator
-    def test_invited_member_domains_edit_cross_portfolio_domain_assignment(self):
-        """Tests that a domain from a different portfolio cannot be assigned to an invited member."""
+    def test_invited_member_domains_edit_cross_portfolio_domain_assignment_forbidden(self):
+        """Tests that a member one portfolio cannot invite another member to a domain in another portfolio."""
         self.client.force_login(self.user)
 
         # create a second portfolio with a domain
@@ -3333,17 +3406,18 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         # Validate that this is forbidden
         self.assertEqual(response.status_code, 403)
 
-        # No UserDomainRole should have been created
+        # No DomainInvitation should have been created
         self.assertFalse(
-            UserDomainRole.objects.filter(
+            DomainInvitation.objects.filter(
                 email=self.invited_member_email,
                 domain=other_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).exists()
         )
 
     @less_console_noise_decorator
-    def test_invited_member_domains_edit_cross_portfolio_domain_removal(self):
-        """Tests that a domain from a different portfolio cannot be removed from a member."""
+    def test_invited_member_domains_edit_cross_portfolio_domain_removal_forbidden(self):
+        """Tests that a member from one portfolio cannot be removed from a domain of a different portfolio."""
         self.client.force_login(self.user)
 
         # create a second portfolio with a domain
@@ -3373,6 +3447,83 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
 
         self.assertEqual(response.status_code, 403)
 
+        # The DomainInvitation should still exist with status INVITED
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=other_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_edit_domains_assignment_for_legacy_domain_forbidden(self):
+        """Tests that a member of one portfolio can't be assigned to a legacy domain."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        legacy_domain = Domain.objects.create(name="legacy-example.gov")
+
+        # Associate with domain info
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=legacy_domain,
+            portfolio=None,
+        )
+
+        # Attempt to assign legacy domain to a member
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([legacy_domain.id]),
+                "removed_domains": json.dumps([]),
+            },
+        )
+
+        # Validate that this is forbidden
+        self.assertEqual(response.status_code, 403)
+
+        # No DomainInvitation should have been created
+        self.assertFalse(
+            DomainInvitation.objects.filter(
+                email=self.invited_member_email,
+                domain=legacy_domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @less_console_noise_decorator
+    def test_invited_member_edit_domains_removal_for_legacy_domain_forbidden(self):
+        """Tests that a member from one portfolio cannot be removed from a domain of a different portfolio."""
+        self.client.force_login(self.user)
+
+        # create a second domain (not in a portfolio)
+        other_domain = Domain.objects.create(name="other.gov")
+
+        # Associate other_domain with its portfolio
+        DomainInformation.objects.create(
+            requester=self.user,
+            domain=other_domain,
+            portfolio=None,
+        )
+
+        DomainInvitation.objects.create(
+            domain=other_domain,
+            email=self.invited_member_email,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "added_domains": json.dumps([]),
+                "removed_domains": json.dumps([other_domain.id]),
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # The DomainInvitation should still exist with status INVITED
         self.assertTrue(
             DomainInvitation.objects.filter(
                 email=self.invited_member_email,
