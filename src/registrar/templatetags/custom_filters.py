@@ -345,7 +345,9 @@ def remaining_characters_text(char_limit, field_value):
     if field_value is None:
         final_string = f"{char_limit} characters allowed"
     else:
-        characters_left = abs(char_limit - len(field_value))
+        char_length = len(field_value)
+        characters_left = abs(char_limit - char_length)
         pluralize = "" if characters_left == 1 else "s"
-        final_string = f"{characters_left} character{pluralize} left"
+        remaining_text = "over limit" if char_length > char_limit else "left"
+        final_string = f"{characters_left} character{pluralize} {remaining_text}"
     return final_string
