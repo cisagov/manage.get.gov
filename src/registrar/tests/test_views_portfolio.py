@@ -3379,7 +3379,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_invited_member_domains_edit_cross_portfolio_domain_assignment_forbidden(self):
-        """Tests that a member one portfolio cannot invite another member to a domain in another portfolio."""
+        """Tests that a member from one portfolio cannot invite another member to a domain in another portfolio."""
         self.client.force_login(self.user)
 
         # create a second portfolio with a domain
