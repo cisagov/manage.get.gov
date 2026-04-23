@@ -2081,8 +2081,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.debug(
             "Updated domain contact %s to disclose: %s",
-            contact.email,
-            disclose_args.get("flag"),
+            contact.registry_id,
+            disclose_fields,
         )
         return epp.Disclose(**disclose_args)  # type: ignore
 
