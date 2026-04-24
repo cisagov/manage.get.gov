@@ -232,7 +232,7 @@ By the end of this epic, we should have:
 
 ## For Team Review
 
-Use this to align on the approach. We will not polish every implementation detail here that is for ticket refinement. The most important questions are:
+Let’s use this to align on the approach. We will not iron out every implementation detail here that is for ticket refinement.
 
 1. Do we agree on the overall approach — one shared way to classify DNS errors, send them to the frontend, log them, and surface them in `/admin`, instead of each flow handling errors its own way? (See items 1, 2, 4, and 5.)
 2. Do we agree that user-correctable errors (bad input, duplicates, rate limiting) should show specific, actionable messages, while system failures (timeouts, provider outages, auth problems) show a single consistent "something went wrong on our end" message with a reference ID? (See item 3.)
