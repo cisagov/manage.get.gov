@@ -4249,32 +4249,40 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     @admin.display(description="Support links")
     def dns_support_links(self, obj):
-        """Render two deep-links on the domain detail page: auditlog + OpenSearch placeholder.
+        """Render deep-links + request-ID paste box on the domain detail page.
 
         Preview implementation for ticket #4927 (admin visibility via auditlog +
-        OpenSearch deep-link helpers). The OpenSearch base URL is a placeholder —
-        real wiring happens when that ticket ships.
+        OpenSearch deep-link helpers). Final OpenSearch query-param shape will be
+        confirmed when that ticket ships.
         """
-        from django.utils.html import format_html
+        from django.utils.html import escape
+        from django.utils.safestring import mark_safe
 
-        domain_name = getattr(obj, "name", "") or ""
-        audit_url = "/admin/auditlog/logentry/?content_type__model__in=dnsrecord,dnszone,dnsaccount"
-        opensearch_url = (
-            "https://opensearch.example.gov/_dashboards/app/discover"
-            f"#/?domain_name={domain_name}&request_id=PASTE_FROM_USER_HERE"
-        )
-        return format_html(
-            '<ul style="margin: 0; padding-left: 1.25em;">'
-            '<li><a href="{}">DNS audit trail (all registered DNS model changes)</a> — '
+        domain_name = escape(getattr(obj, "name", "") or "")
+        audit_url = f"/admin/auditlog/logentry/?q={domain_name}"
+        opensearch_base = "https://logs.fr.cloud.gov/"
+        input_id = f"dns-reqid-{obj.pk}"
+        # Can't use a nested <form> here — the admin change page already wraps
+        # this widget in its own <form>, and HTML forbids nested forms. Use a
+        # plain button + JS onclick instead. All interpolated values here are
+        # either static or already escaped.
+        html = (
+            '<ul style="margin: 0 0 0.75em 0; padding-left: 1.25em;">'
+            f'<li><a href="{audit_url}">DNS audit trail (all registered DNS model changes)</a> — '
             "successful create/update/delete events on DnsRecord, DnsZone, DnsAccount.</li>"
-            '<li><a href="{}" target="_blank" rel="noopener">DNS logs in OpenSearch for <code>{}</code></a> '
-            "(placeholder URL) — replace <code>PASTE_FROM_USER_HERE</code> with the "
-            "<code>request_id</code> the user quoted to see the full lifecycle of a failed request.</li>"
-            "</ul>",
-            audit_url,
-            opensearch_url,
-            domain_name,
+            f"<li>DNS logs in OpenSearch for <code>{domain_name}</code> — paste the "
+            "<code>request_id</code> the user quoted to search the full lifecycle of their request:"
+            '<div style="margin-top: 0.4em;">'
+            f'<input type="text" id="{input_id}" placeholder="paste request_id here" '
+            'style="width: 22em; padding: 3px 6px;" />'
+            '<button type="button" style="margin-left: 0.4em;" onclick="'
+            f"var v=document.getElementById('{input_id}').value.trim();"
+            "if(!v){alert('Paste a request_id first');return false;}"
+            f"window.open('{opensearch_base}?q='+encodeURIComponent(v),'_blank','noopener');"
+            'return false;">Open in OpenSearch</button>'
+            "</div></li></ul>"
         )
+        return mark_safe(html)  # nosec B308 — all interpolated values are escaped or static
 
     # ------- Domain Information Fields
 

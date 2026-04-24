@@ -410,8 +410,10 @@ class DatabaseConnectionMiddleware:
             query_count = len(connection.queries) - request._db_queries_start
             duration = time.time() - request._db_start_time
 
-            # Get request ID for correlation
-            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
+            # Get request ID for correlation (set by RequestLoggingMiddleware)
+            request_id = getattr(request, "_dns_request_id", None) or request.META.get(
+                "HTTP_X_REQUEST_ID", "unknown"
+            )
             logger.info(
                 f"DB_CONN_END: req_id={request_id}, "
                 f"queries={query_count}, "

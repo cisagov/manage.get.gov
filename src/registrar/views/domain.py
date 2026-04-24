@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -1093,8 +1094,17 @@ class DomainDNSRecordsView(DomainFormBaseView):
             )
             return dns_error_response(exc, request=request)
         except (APIError, RequestError) as e:
-            logger.error(f"DNS record create/update failed, API error in view {e}")
-            messages.error(request, "Failed to save DNS record.")
+            request_id = getattr(request, "_dns_request_id", "unknown")
+            logger.error(f"DNS record create/update failed, API error in view req_id={request_id} {e}")
+            opensearch_link = f"https://logs.fr.cloud.gov/?q={request_id}"
+            messages.error(
+                request,
+                mark_safe(  # nosec B308 — request_id is a UUID generated server-side
+                    "Failed to save DNS record. If the problem persists, share this reference "
+                    f'ID with support: <a href="{opensearch_link}" target="_blank" '
+                    f'rel="noopener"><code>{request_id}</code></a>'
+                ),
+            )
             self.dns_record = None
             record_id = None
         except GenericError:
