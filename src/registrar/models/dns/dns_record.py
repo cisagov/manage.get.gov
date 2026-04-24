@@ -186,6 +186,10 @@ class DnsRecord(TimeStampedModel):
         """Create and save a DnsRecord and its join row from vendor API response data."""
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
+        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # (including any that read the vendor payload directly) see a consistent value.
+        if record_data.get("name"):
+            record_data["name"] = record_data["name"].lower()
 
         try:
             with transaction.atomic():
@@ -223,6 +227,10 @@ class DnsRecord(TimeStampedModel):
         """Update an existing DnsRecord from vendor API response data."""
         record_data = vendor_record_data["result"]
         excluded_fields = ["id", "type", "created_on"]
+        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # (including any that read the vendor payload directly) see a consistent value.
+        if record_data.get("name"):
+            record_data["name"] = record_data["name"].lower()
 
         try:
             with transaction.atomic():
