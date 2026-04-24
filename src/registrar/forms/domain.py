@@ -833,6 +833,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
+                    "hide_character_count": True,
                 }
             ),
         }
@@ -969,16 +970,22 @@ class DomainDNSRecordForm(forms.ModelForm):
         except ValidationError as e:
             self.add_error("name", e.messages[0] if getattr(e, "messages", None) else str(e))
 
+    def _validate_comment_field(self, comment):
+        if comment and len(comment) > 100:
+            self.add_error("comment", "Response must be no longer than 100 characters.")
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
         priority = cleaned_data.get("priority")
+        comment = cleaned_data.get("comment")
 
         if record_type:
             self._validate_content(record_type, content)
             self._validate_cname_record(record_type, name, content)
+            self._validate_comment_field(comment)
             self._validate_name_fqdn_length(name)
             # Only validate MX priority if priority field didn't already have a validation error
             if "priority" not in self.errors:
