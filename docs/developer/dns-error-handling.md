@@ -29,7 +29,7 @@ DNS hosting errors bubble up inconsistently today. The same failure can surface 
 
 **What changes for support and content teams**
 
-- `/admin` gains a `DnsOperationLog` — search a user-reported `request_id` and see operation, upstream status, `cf_ray`, and a redacted upstream body without leaving Django.
+- `/admin` gains audit coverage for DNS model changes via `django-auditlog`, plus deep-link helpers on the domain page that jump to auditlog entries for the domain's DNS models and to OpenSearch pre-filtered by `request_id` for failure investigation.
 - **User-facing error copy moves from spreadsheets to an admin-editable table — a significant process improvement.** Today a single word change in an error message costs a Jira ticket, a developer context-switch, a code review, and a deploy. After this change, design or product self-serves the edit in `/admin`; the new copy is live to users on the next request via cache invalidation. See 17 for the full benefits and workflow — this is one of the larger-lift items in the proposal and one of the highest-leverage wins for cross-team velocity.
 
 **Decisions we need from stakeholders before we start**
@@ -37,7 +37,7 @@ DNS hosting errors bubble up inconsistently today. The same failure can surface 
 - leads: retention posture for `user_email` in logs, final httpx timeout numbers.
 - Design: review or claim ownership of the 4xx message copy in 11.
 - Product/security: editorial policy for admin-edited messages — trust the audit log, or require review before an edit goes live? (17.5)
-- leads + leadership: direction on the distributed-tracing spike. Today a `request_id` ContextVar stitches a single Django process's logs together, but we have no way to follow one user action across service boundaries (browser → Django → httpx → Cloudflare) or to see latency breakdowns per hop. The spike would evaluate adopting a tracing backend — OpenTelemetry (open standard, self-host or vendor-neutral), Sentry (already in use for errors; tracing is an add-on), Datadog or Honeycomb (paid SaaS, richer analytics) — versus staying with the manual `request_id` approach. Decision drivers: cost, vendor lock-in, leads/ops burden, and whether support's needs are met by `request_id` + `DnsOperationLog` alone. See the Distributed tracing section for the full comparison.
+- **Proposed out of scope, parked for leadership:** whether to adopt a dedicated request-tracing tool (e.g., OpenTelemetry). That is a program-level architectural decision spanning every service the team owns, not something a DNS hosting epic should decide. What this epic ships — OpenSearch + structured fields — lets us reconstruct a failed request's full lifecycle with a single `request_id:"..."` query (browser action → middleware → DB → service → Cloudflare), which is sufficient for DNS error-handling needs. The broader tracing-tool question is filed as #4930 for a future leadership conversation and should not gate this epic's delivery. See [section 13](#13-request-tracing-is-opensearch-enough) for the comparison.
 
 Full detail follows.
 
@@ -54,7 +54,7 @@ This document is the living design proposal. It is versioned in the repo at [`do
 2. [Goals and non-goals](#2-goals-and-non-goals)
 3. [Current state (before this work)](#3-current-state-before-this-work)
 4. [Target architecture](#4-target-architecture)
-5. [Cross-cutting decisions](#5-cross-cutting-decisions)
+5. [Decisions that apply across the whole epic](#5-decisions-that-apply-across-the-whole-epic)
 6. [Error-code vocabulary](#6-error-code-vocabulary)
 7. [Captured-errors catalog](#7-captured-errors-catalog)
 8. [PII and log hygiene](#8-pii-and-log-hygiene)
@@ -62,12 +62,13 @@ This document is the living design proposal. It is versioned in the repo at [`do
 10. [User-facing error messaging](#10-user-facing-error-messaging)
 11. [Admin visibility and support workflow](#11-admin-visibility-and-support-workflow)
 12. [httpx resilience policy](#12-httpx-resilience-policy)
-13. [Distributed tracing (OpenTelemetry and alternatives)](#13-distributed-tracing-opentelemetry-and-alternatives)
+13. [Request tracing: is OpenSearch enough?](#13-request-tracing-is-opensearch-enough)
 14. [Exception contract for contributors](#14-exception-contract-for-contributors)
 15. [Support runbook — tracing a DNS failure](#15-support-runbook--tracing-a-dns-failure)
 16. [Admin-editable error message store](#16-admin-editable-error-message-store)
 17. [Integration with in-flight prototype work](#17-integration-with-in-flight-prototype-work)
 18. [Decisions needed from stakeholders](#18-decisions-needed-from-stakeholders)
+19. [Sub-tickets filed](#19-sub-tickets-filed)
 
 ---
 
@@ -96,10 +97,10 @@ This document defines a consistent pattern for where errors are caught, what the
 
 ### Non-goals
 
-- **Full OpenTelemetry adoption.** Deferred to the spike ticket (#11). The manual `request_id` ContextVar  is the bare minimum.
+- **Adopting a dedicated distributed-tracing tool.** Deferred to the spike ([section 13](#13-request-tracing-is-opensearch-enough)). `request_id` in OpenSearch is the floor, and for our one-app-plus-Cloudflare topology it may well be the ceiling too.
 - **Redesigning the DNS form validation layer.** In-model / in-form validation (`validations.py`, `models/dns/dns_record.py` `.clean()`) is in wowrk solid and out of scope.
 - **Cross-cutting log-format changes.** The JSON formatter in `config/settings.py` stays as-is; we extend it with new structured fields, not replace it.
-- **A new CSS/UX design for errors.** We reuse the existing USWDS alert components and the Django messages framework. Design consultation (see §10) may refine the specific copy.
+- **A new CSS/UX design for errors.** We reuse the existing USWDS alert components and the Django messages framework. Design consultation (see [section 10](#10-user-facing-error-messaging)) may refine the specific copy.
 
 ## 3. Current state (before this work)
 
@@ -123,7 +124,7 @@ This document defines a consistent pattern for where errors are caught, what the
 - [`RequestLoggingMiddleware`](../../src/registrar/registrar_middleware.py) sets those ContextVars. **Note:** currently guarded by `if getattr(settings, "IS_PRODUCTION", False)`, which means local development logs are missing this context entirely.
 - [`DatabaseConnectionMiddleware`](../../src/registrar/registrar_middleware.py) reads `HTTP_X_REQUEST_ID` directly from `request.META` — not propagated to anyone else.
 - `JsonFormatter` in [`config/settings.py`](../../src/registrar/config/settings.py) emits JSON logs and merges `extra=` kwargs into the log record. OpenSearch-ready.
-- No correlation ID in the DNS service logs. No `cf_ray` captured. No `duration_ms`. No `error_code`. (Prototype branch `dg/4893-error-handling-improvements-proto` has since added `cf_ray` capture on `create_dns_record` and `update_dns_record`, and verified end-to-end on 2026-04-23 against the live Cloudflare API — a real ray ID of the form `9f0fb528c8e290be-IAD` is now logged on success and present in `DnsNotFoundError.context["cf_ray"]` on 404. See §17.)
+- No correlation ID in the DNS service logs. No `cf_ray` captured. No `duration_ms`. No `error_code`. (Prototype branch `dg/4893-error-handling-improvements-proto` has since added `cf_ray` capture on `create_dns_record` and `update_dns_record`, and verified end-to-end on 2026-04-23 against the live Cloudflare API — a real ray ID of the form `9f0fb528c8e290be-IAD` is now logged on success and present in `DnsNotFoundError.context["cf_ray"]` on 404. See [section 17](#17-integration-with-in-flight-prototype-work).)
 
 ### 3.5 Admin
 
@@ -141,11 +142,13 @@ This document defines a consistent pattern for where errors are caught, what the
         │  fragment / toast    └────────────────────────────┘
         │       │                            │
         │       │                            ▼
-        │       │             ┌────────────────────────────┐
-        │       │             │  DomainDNSRecordsView      │  ← catches DnsHostingError
-        │       │             │  (terminal handler)        │     logs with structured fields
-        │       │             └────────────────────────────┘     returns JSON envelope
-        │       │                            │
+        │       │             ┌────────────────────────────┐        ┌───────────────────────────┐
+        │       │             │  DomainDNSRecordsView      │        │  DnsErrorMessage          │
+        │       │             │  (terminal handler)        │◀───────│  (admin-editable copy)    │
+        │       │             │  catches DnsHostingError,  │  resolves   keyed by error code;   │
+        │       │             │  logs, returns envelope    │  message   edited in /admin; falls │
+        │       │             └────────────────────────────┘  text      back to _error_mapping  │
+        │       │                            │                       └───────────────────────────┘
         │       │                            ▼
         │       │             ┌────────────────────────────┐
         │       │             │  DnsHostService            │  ← passes typed errors through
@@ -160,39 +163,42 @@ This document defines a consistent pattern for where errors are caught, what the
         │       │                            ▼
         │       │                      Cloudflare API
         │       │
-        │       └───── DnsOperationLog row (admin-visible audit trail) ──────┐
+        │       └───── django-auditlog row (successful model changes) ───────┐
         │                                                                    │
         └───── OpenSearch log line w/ request_id, cf_ray, upstream_status ───┘
 ```
 
 - **Services raise.** Never return sentinels, never swallow.
 - **View catches.** One `except DnsHostingError as exc:` block per DNS endpoint, delegates to `dns_error_response(exc)` helper.
-- **`request_id` threads through** via ContextVar, into every log line, into the JSON envelope, into `500.html`, into `DnsOperationLog`.
+- **`request_id` threads through** via ContextVar, into every log line, into the JSON envelope, into `500.html`, and into the OpenSearch record for deep-dive investigation.
+- **Successful DNS changes are audited via `django-auditlog`** on the DNS models (`DnsRecord`, `DnsZone`, `DnsAccount`). This is the pattern the registrar already uses for domains and other resources — no new table. Admin deep-link helpers on the domain page jump to the auditlog entries for that domain.
+- **Failure investigations go through OpenSearch**, reached via one-click deep-link from `/admin` pre-filtered by `request_id` or domain name. Support doesn't have to know Lucene syntax; the link is built for them.
+- **User-facing message text is resolved at render time** by `DnsHostingError.message`: explicit override → admin-edited row in `DnsErrorMessage` (keyed by code, edited in `/admin`, cached in-process with signal invalidation) → code-level `_error_mapping` fallback. The DB is authoritative; the code dict is the safety net. See [section 16](#16-admin-editable-error-message-store) for the full design and [section 16.6](#16-admin-editable-error-message-store) for the deploy / seed contract.
 
-## 5. Cross-cutting decisions
+## 5. Decisions that apply across the whole epic
 
-These are answered here so sub-tickets inherit them instead of re-deciding.
+These are answered once, here, so every sub-ticket starts from the same answer — no re-debate in individual PRs.
 
 | Question (from original issue) | Decision |
 |---|---|
-| Security/privacy: what can we log? | Field-level allow/deny list (see §8). Audit retention posture with leads before broad rollout. |
-| Frontend error shape? | JSON envelope: `{status, code, message, request_id}`. See §9. |
-| Which errors to surface in /admin? | `DnsOperationLog` — structured technical summary, not a raw traceback. See §11. |
-| How specific should API error types be? | Seven subclasses. See §6. Coarse categories beat sprawling taxonomies. |
-| request_id / trace_id passthrough? | Yes — `request_id_var` ContextVar, set in `RequestLoggingMiddleware`, echoed in response header and JSON envelope. Full distributed tracing deferred to the spike (§13). |
-| How to display 500 errors? | Generic "we couldn't reach our DNS provider" message + `request_id`. See §10. |
-| Distinguish 4xx vs 5xx in the UX? | Yes. 4xx → actionable inline error. 5xx → generic + request_id. See §10. |
-| How to bubble up errors? | Log at the source with structured fields, raise a typed `DnsHostingError` subclass. Never log-and-swallow. Never convert to `None` in place of raising. See §4 and §14. |
-| Pickling? | Exceptions must be picklable. See §14. |
-| httpx recommendations? | Explicit timeouts, transport retries on idempotent calls only, manual backoff on 429/5xx w/ Retry-After. See §12. |
-| When do we "give up"? | At the view layer. Services never terminate user flows. See §4. |
-| Admin vs end-user detail? | Admin sees structured summary + `cf_ray` + upstream status. End-user sees code + message + `request_id`. Neither sees the raw Python traceback. See §11. |
-| Retry strategy? | Only for idempotent HTTP methods. Honor `Retry-After`. Cap attempts. See §12. |
-| Log schema for OpenSearch? | JSON formatter already exists. Extend with the field list in §8. |
-| OpenTelemetry? | Spike first; `request_id` ContextVar is the floor. See §13. |
-| High-priority errors? | Visible via `DnsOperationLog` in `/admin` and OpenSearch filters on `error_code`. Dashboard work lives in the epic, not this doc. |
-| Backend→frontend error code mapping? | §6 is the source of truth. |
-| Log content pattern? | `logger.xxx(msg, extra={...})` with the §8 allow-list fields. |
+| Security/privacy: what can we log? | Field-level allow/deny list (see [section 8](#8-pii-and-log-hygiene)). Audit retention posture with leads before broad rollout. |
+| Frontend error shape? | JSON envelope: `{status, code, message, request_id}`. See [section 9](#9-api-error-envelope-contract). |
+| Which errors to surface in /admin? | Successful changes via `django-auditlog` on DNS models; failures via OpenSearch reached through a deep-link from the domain admin page. See [section 11](#11-admin-visibility-and-support-workflow). |
+| How specific should API error types be? | Seven subclasses. See [section 6](#6-error-code-vocabulary). Coarse categories beat sprawling taxonomies. |
+| request_id / trace_id passthrough? | Yes — `request_id_var` ContextVar, set in `RequestLoggingMiddleware`, echoed in response header and JSON envelope. Full distributed tracing deferred to the spike ([section 13](#13-request-tracing-is-opensearch-enough)). |
+| How to display 500 errors? | Generic "we couldn't reach our DNS provider" message + `request_id`. See [section 10](#10-user-facing-error-messaging). |
+| Distinguish 4xx vs 5xx in the UX? | Yes. 4xx → actionable inline error. 5xx → generic + request_id. See [section 10](#10-user-facing-error-messaging). |
+| How to bubble up errors? | Log at the source with structured fields, raise a typed `DnsHostingError` subclass. Never log-and-swallow. Never convert to `None` in place of raising. See [section 4](#4-target-architecture) and [section 14](#14-exception-contract-for-contributors). |
+| Pickling? | Exceptions must be picklable. See [section 14](#14-exception-contract-for-contributors). |
+| httpx recommendations? | Explicit timeouts, transport retries on idempotent calls only, manual backoff on 429/5xx w/ Retry-After. See [section 12](#12-httpx-resilience-policy). |
+| When do we "give up"? | At the view layer. Services never terminate user flows. See [section 4](#4-target-architecture). |
+| Admin vs end-user detail? | Admin sees structured summary + `cf_ray` + upstream status. End-user sees code + message + `request_id`. Neither sees the raw Python traceback. See [section 11](#11-admin-visibility-and-support-workflow). |
+| Retry strategy? | Only for idempotent HTTP methods. Honor `Retry-After`. Cap attempts. See [section 12](#12-httpx-resilience-policy). |
+| Log schema for OpenSearch? | JSON formatter already exists. Extend with the field list in [section 8](#8-pii-and-log-hygiene). |
+| Request tracing beyond OpenSearch? | OpenSearch + structured fields covers most of our needs; spike decides if we need more. See [section 13](#13-request-tracing-is-opensearch-enough). |
+| High-priority errors? | Visible via OpenSearch filters on `error_code` (reached from `/admin` via deep-link). Dashboard work lives in the epic, not this doc. |
+| Backend→frontend error code mapping? | [section 6](#6-error-code-vocabulary) is the source of truth. |
+| Log content pattern? | `logger.xxx(msg, extra={...})` with the [section 8](#8-pii-and-log-hygiene) allow-list fields. |
 
 ## 6. Error-code vocabulary
 
@@ -217,7 +223,7 @@ This catalog is the reference for every DNS failure condition we know about toda
 
 | Source | Trigger | Code | User surface | Admin surface | Log level |
 |---|---|---|---|---|---|
-| Cloudflare 404 on `POST /zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_ZONE_NOT_FOUND` | Inline: "We couldn't find the DNS zone for this domain. It may not be enrolled in DNS hosting yet." | `DnsOperationLog` row with `outcome=failure`, `error_code=ZONE_NOT_FOUND` | `warning` |
+| Cloudflare 404 on `POST /zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_ZONE_NOT_FOUND` | Inline: "We couldn't find the DNS zone for this domain. It may not be enrolled in DNS hosting yet." | OpenSearch log line with `error_code=DNS_ZONE_NOT_FOUND` | `warning` |
 | Cloudflare 409 | Duplicate record (same name+type) | `DNS_RECORD_CONFLICT` | Inline field error | log row | `warning` |
 | Cloudflare 400 | Invalid record content (field Cloudflare refuses) | `DNS_VALIDATION_FAILED` | Inline field error (reuse CF's human-readable reason when safe) | log row | `warning` |
 | Cloudflare 429 | Rate limit | `DNS_RATE_LIMIT_EXCEEDED` | "You're making changes too quickly — please wait a moment and try again." | log row; backoff metadata visible | `warning` |
@@ -240,7 +246,7 @@ The registrar is a government system. We treat application log streams as subjec
 - `dns_account_id` — vendor account tag (Cloudflare).
 - `zone_id` — vendor zone ID.
 - `record_id` — vendor DNS record ID.
-- `cf_ray` — Cloudflare `cf-ray` response header. Availability verified end-to-end (real ray IDs returned on both success and error paths; see §17).
+- `cf_ray` — Cloudflare `cf-ray` response header. Availability verified end-to-end (real ray IDs returned on both success and error paths; see [section 17](#17-integration-with-in-flight-prototype-work)).
 - `upstream_status` — HTTP status integer.
 - `error_code` — `DnsHostingErrorCodes` name.
 - `duration_ms` — integer latency.
@@ -259,11 +265,11 @@ The registrar is a government system. We treat application log streams as subjec
 - `X-Auth-Email`, `X-Auth-Key`, `Authorization`, or any Cloudflare credential.
 - Django session cookies or CSRF tokens.
 - Raw stack traces in any user-facing surface (UI, admin, 500 page). Tracebacks stay in OpenSearch.
-- Upstream response bodies without redaction in `DnsOperationLog` (truncate ≤ 2 KB, scrub token-like patterns).
+- Upstream response bodies without redaction when logged to OpenSearch (truncate ≤ 2 KB, scrub token-like patterns).
 
 ### 8.4 Redaction
 
-`DnsOperationLog.upstream_body_truncated` stores at most 2 KB of the upstream response body with token-like patterns scrubbed. Use a conservative allow-list (leave Cloudflare error codes and human-readable reasons; redact anything matching typical secret patterns). Implementation belongs in a small utility covered by unit tests.
+When DNS service code logs an upstream response body to OpenSearch, it truncates to ≤ 2 KB and scrubs token-like patterns before logging. Use a conservative allow-list (leave Cloudflare error codes and human-readable reasons; redact anything matching typical secret patterns). Implementation belongs in a small utility covered by unit tests.
 
 ## 9. API error envelope contract
 
@@ -279,7 +285,7 @@ Every DNS endpoint returns this exact shape on error:
 ```
 
 - `status` is always `"error"` for failure cases. (Keeps the envelope discriminable from success fragments without sniffing HTTP status.)
-- `code` is the wire name (ALL_CAPS_SNAKE) from §6.
+- `code` is the wire name (ALL_CAPS_SNAKE) from [section 6](#6-error-code-vocabulary).
 - `message` is the localized user-facing message from `_error_mapping`.
 - `request_id` echoes the ContextVar value so users (and their support rep) can quote it when reporting the failure.
 
@@ -294,7 +300,9 @@ The bare `{"error": "..."}` shape used by some legacy API views is **retired for
 
 ## 10. User-facing error messaging
 
-Design consultation recommended (see "Consult Design as needed" in the parent ticket). Copy below is a starting point; expect refinement.
+Design review of the copy below is a **required** step before the API envelope ticket ([#4925](https://github.com/cisagov/manage.get.gov/issues/4925)) ships. That review is filed as [#4950](https://github.com/cisagov/manage.get.gov/issues/4950).
+
+**The messages below become the initial values of the admin-editable `DnsErrorMessage` rows** ([section 16](#16-admin-editable-error-message-store)). Design's sign-off seeds the DB; after that, design and product can keep editing the same rows in `/admin` without a dev cycle. Copy below is a starting point; expect Design refinement.
 
 ### 4xx — actionable inline errors
 
@@ -313,7 +321,7 @@ Shown as a USWDS alert at the page level. Never inline.
 
 > We couldn't reach our DNS provider. Please try again in a moment. If the problem persists, contact <help@get.gov> and include this reference: `1a2b3c4d-5e6f-7890-1234-567890abcdef`.
 
-The reference is `request_id`. Support looks it up in OpenSearch or `DnsOperationLog`.
+The reference is `request_id`. Support looks it up in OpenSearch via the deep-link helper on the domain admin page.
 
 For unhandled 500s (anything not caught by DNS-specific handlers), the existing `500.html` template already has a "log identifier" block — ticket #9 wires it to `request_id`.
 
@@ -323,40 +331,75 @@ Reuse the existing Django messages tagging convention already in the `base.html`
 
 ## 11. Admin visibility and support workflow
 
-### 11.1 What admins see
+Admin visibility uses infrastructure the registrar already has — `django-auditlog` for successful model changes, OpenSearch for failure investigation — plus one piece of new UX: deep-link helpers from the domain admin page into both.
 
-The `DnsOperationLog` admin (new in the admin-visibility ticket) lists:
+### 11.1 How successful DNS changes are audited
 
-- timestamp
-- user_email
-- request_id (click to filter all rows for this request)
-- operation name (`create_record`, `update_zone_dns_settings`, …)
-- dns_account_id
-- zone_id
-- record_id (when applicable)
-- error_code (filter + facet)
-- upstream_status
-- cf_ray (useful for escalating to Cloudflare support)
-- duration_ms
-- outcome (success / failure)
-- upstream_body_truncated (≤ 2 KB, redacted — displayed in a read-only `<pre>` block on the detail page, not in the list view)
+`django-auditlog` is already installed and already used across the registrar (Contact, Domain, DomainRequest, etc.). Registering the DNS models adds audit coverage without new infrastructure:
 
-### 11.2 What admins do NOT see
+- `DnsRecord`
+- `DnsZone`
+- `DnsAccount`
+
+Every create / update / delete on those models produces an audit entry with the user, the timestamp, and a field-level diff — the same pattern support already uses for domain changes.
+
+**What auditlog does NOT capture:** failures. If a user clicks Save and Cloudflare returns 404, no model was created, so auditlog has no entry. That case is handled via OpenSearch ([section 11.3](#11-admin-visibility-and-support-workflow)).
+
+### 11.2 How failures are investigated
+
+Failures land in OpenSearch as JSON log lines with structured fields ([section 3](#3-current-state-before-this-work)): `request_id`, `dns_account_id`, `zone_id`, `record_id`, `cf_ray`, `upstream_status`, `error_code`, `duration_ms`. A single OpenSearch query `request_id:"..."` reconstructs the full lifecycle of a failed DNS action — middleware → DB → service → Cloudflare.
+
+Support gets there via a deep-link from `/admin` ([section 11.4](#11-admin-visibility-and-support-workflow)). No Lucene syntax required.
+
+### 11.3 Which DNS operations show up, and where
+
+Not every DNS-related call is worth capturing. The criteria:
+
+1. **Initiated by a user or admin action** — not background sync, not internal polls, not health checks.
+2. **Changes state on a domain's DNS hosting** — creates, updates, deletes, enrollment transitions. Read-only lookups do not.
+3. **Has a well-defined success/failure outcome the user or admin could notice.**
+
+**One-liner test for contributors:** *"If a user could reasonably report 'I tried to X and something went wrong,' X should be captured."*
+
+| Operation | Triggered by | Where it lands |
+|---|---|---|
+| Create DNS record | User submits the form | Success → auditlog on `DnsRecord`. Failure → OpenSearch. |
+| Update DNS record | User edits a record | Success → auditlog on `DnsRecord`. Failure → OpenSearch. |
+| Delete DNS record | User deletes a record | Success → auditlog on `DnsRecord`. Failure → OpenSearch. |
+| Enroll domain in DNS hosting | Admin action | Success → auditlog on `DnsAccount` / `DnsZone`. Failure → OpenSearch. |
+| Unenroll domain | Admin action | Success → auditlog. Failure → OpenSearch. |
+| Update zone DNS settings | Admin action | Success → auditlog on `DnsZone`. Failure → OpenSearch. |
+
+**Operations that explicitly do NOT get captured:**
+
+- Read-only lookups (`get_zone_by_id`, `get_account_zones`, `get_dns_record`).
+- Internal helper calls inside an orchestration flow (sub-calls inside enrollment).
+- Background sync, periodic polls, health probes (if / when those exist).
+- Form-validation failures that never reach the DNS service layer. They surface inline on the form and never touch Cloudflare, so auditlog sees nothing and OpenSearch has nothing DNS-specific to show.
+
+### 11.4 Deep-link helpers from the domain admin page
+
+The new UX lives here — making both audit layers navigable without training support on Lucene or Django ContentTypes.
+
+From a domain's admin detail page, add two links (or a small panel):
+
+- **"DNS audit trail for this domain"** → Django admin's auditlog list, pre-filtered by the domain's `DnsRecord` / `DnsZone` / `DnsAccount` content types and object IDs.
+- **"DNS logs in OpenSearch for this domain"** → a pre-built OpenSearch URL filtered by `domain_name` (or by `request_id` if the support ticket quotes one).
+
+These are the entire "new admin visibility" surface: no new table, no new retention command, just two helpers that make the existing data navigable.
+
+### 11.5 What admins do NOT see in `/admin`
 
 - **Raw Python tracebacks.** Those stay in OpenSearch. If a support ticket truly needs a traceback, an engineer fetches it by `request_id`.
-- Unredacted upstream response bodies.
+- Unredacted upstream response bodies. Auditlog doesn't carry them; the OpenSearch entry does (subject to log-hygiene rules in [section 8](#8-pii-and-log-hygiene)).
 - Request bodies.
 - Cloudflare credentials.
 
-### 11.3 Why not just query OpenSearch?
+### 11.6 Retention
 
-Every PR that touches `DnsOperationLog`:
+Auditlog retention follows whatever policy already covers the registrar's existing auditlog usage (domains, requests, users). No new retention plumbing introduced by this epic.
 
-> `DnsOperationLog` is a **bounded, admin-UI correlation surface**. It is not a log replacement. Different audience (support vs. engineer), different retention (TTL'd days, not months), different UX (clickable admin rows, not Lucene queries). Support staff should be able to action a user-reported `request_id` without SSO-ing into OpenSearch.
-
-### 11.4 Retention
-
-Default 30 days, managed by a Django management command run nightly. Final number from leads before launch.
+OpenSearch retention follows infra's existing policy for logs. Confirm with infra before launch that the DNS-hosting fields are covered under the same retention and access posture.
 
 ## 12. httpx resilience policy
 
@@ -386,39 +429,52 @@ No automatic retry on POST, PATCH, DELETE. Rationale: Cloudflare does not univer
 
 ### 12.5 Circuit breaker (explicitly deferred)
 
-We do not implement a circuit breaker. `DNS_AUTH_FAILED` and sustained `DNS_UPSTREAM_TIMEOUT` failures are visible in `DnsOperationLog` and in OpenSearch for human intervention.
+We do not implement a circuit breaker. `DNS_AUTH_FAILED` and sustained `DNS_UPSTREAM_TIMEOUT` failures are visible in OpenSearch (reached via the domain admin deep-link) for human intervention.
 
-## 13. Distributed tracing (OpenTelemetry and alternatives)
+## 13. Request tracing: is OpenSearch enough?
 
-The original issue specifically called out OpenTelemetry. A full spike is scheduled as the distributed-tracing evaluation ticket. This section frames the trade-off so the spike has a starting point.
+The planning ticket's Observability section suggested looking into distributed tracing (e.g., OpenTelemetry). This section reframes that: **OpenSearch is the incumbent, and it already gets us most of the way.** The spike (#4930) decides whether the remaining gap is worth the cost of adopting any dedicated tracing tool.
 
-### 13.1 What `request_id` ContextVar gives us
+### 13.1 What OpenSearch + structured log fields already gives us
 
-- Every JSON log line correlatable by ID.
-- UI ↔ Django ↔ services ↔ Cloudflare lifecycle visible (modulo Cloudflare: `cf-ray` gives us the CF side).
-- Minimal leads — one ContextVar, one middleware line, one formatter field.
-- Zero external dependencies.
+Once the DNS-hosting work in this proposal ships, every log line across middleware, DB queries, service calls, and httpx requests carries `request_id`, `zone_id`, `record_id`, `dns_account_id`, `error_code`, `upstream_status`, `cf_ray`, and `duration_ms`. A single query in OpenSearch —
 
-### 13.2 What it does not give us
+```
+request_id: "1a2b3c4d-..."
+```
 
-- Automatic spans across Django views, DB queries, httpx calls.
-- Latency breakdowns (how much of the 2.3s was DB vs. Cloudflare vs. rendering?).
-- Flame graphs.
-- Cross-service propagation if we add more backend services in the future.
+— returns the full lifecycle of one user action in chronological order, including the Cloudflare side via `cf_ray`. Support can act on this without SSO-ing into anywhere new.
 
-### 13.3 Evaluation criteria for the spike
+### 13.2 What OpenSearch does not give us
 
-For each of {OpenTelemetry + OTLP, Sentry tracing, Datadog APM, Honeycomb Beelines, status-quo manual spans}:
+- **Automatic span instrumentation.** Tracing tools ship Django, DB, and httpx plugins that emit structured spans for free. With OpenSearch we emit a log line at every hop and pay the author-cost forever.
+- **Parent-child relationships / flame graphs.** Answering "how much of the 2.3s was DB vs. Cloudflare vs. rendering?" is possible but manual: you read duration_ms fields across log lines. A tracing tool renders this as a waterfall.
+- **Standardized wire format for future services.** Tracing tools speak industry-standard span formats; any future service we add (or vendor we integrate with) can emit spans a tracing backend ingests directly. Flat log records don't travel that way.
+- **Sampling & retention tuned for traces.** Log retention is chosen for logs; trace retention is usually shorter with heavier sampling on busy paths.
 
-- Installation cost (ongoing leads, license, agent overhead).
-- Automatic vs. manual instrumentation for Django views and httpx.
-- Compatibility with / replacement for the `request_id` ContextVar.
-- FedRAMP / data-handling posture.
+### 13.3 What the spike needs to answer
+
+Only one question: **is the gap in 13.2 big enough to justify adopting a new tool?**
+
+That question depends on our actual topology, not on abstract comparisons:
+
+- We have one Django app talking to one external vendor (Cloudflare). Cross-service propagation is mostly theoretical today.
+- We already pay for and operate OpenSearch. The marginal cost of emitting more structured fields is near zero.
+- Support's stated workflow (search a user-reported `request_id`) is already served by OpenSearch + auditlog, reached via admin deep-links.
+
+The spike should evaluate the available tracing options on these axes, but the default answer should be "OpenSearch is enough" unless the spike finds evidence otherwise. Specific vendors and open-source projects are for the spike author to identify; naming them here would bias the evaluation.
+
+For each alternative considered, document:
+
+- What specific use case it serves that OpenSearch + structured fields doesn't.
+- Installation / operating cost (infra, license, agent overhead, engineering time).
+- FedRAMP / data-handling posture (this is a government system).
 - Rough weeks to adopt.
+- What we'd have to rip out or change in the shipped ContextVar + log-field work.
 
 ### 13.4 Decision ownership
 
-If the spike lands a strong OTel recommendation **before** the API error envelope or structured-logging tickets start, the **team lead** decides whether to halt the ContextVar track and pivot, or to ship the ContextVar plumbing as planned and layer OTel on top later. This is explicit so no dev in-flight on those tickets has to make the call alone.
+If the spike recommends adopting a new tool **before** the API error envelope or structured-logging tickets start, the **team lead** decides whether to halt those tickets and pivot, or to ship them as planned and layer the new tool on top later. This is explicit so no dev in-flight has to make the call alone.
 
 ## 14. Exception contract for contributors
 
@@ -454,15 +510,15 @@ def test_dns_hosting_error_is_picklable(self):
 
 - Every `DnsHostingErrorCodes` entry has a user-facing message in `_error_mapping`.
 - Messages are written to be shown verbatim to an end user — no internal jargon, no Cloudflare terminology the user hasn't seen, no stack trace excerpts.
-- 5xx codes share the generic template (§10); the code is what distinguishes them, not the message.
+- 5xx codes share the generic template ([section 10](#10-user-facing-error-messaging)); the code is what distinguishes them, not the message.
 
 ### 14.3 Adding to the catalog
 
 Update:
 
-- The §6 error-code vocabulary table.
+- The [section 6](#6-error-code-vocabulary) error-code vocabulary table.
 - The wire-name mapping helper (`code.to_wire()`).
-- The §7 captured-errors catalog.
+- The [section 7](#7-captured-errors-catalog) captured-errors catalog.
 
 ### 14.4 When in doubt
 
@@ -472,9 +528,11 @@ Start with `DNS_UNKNOWN`. Promote to a named code only when a pattern of product
 
 A user reports: "I tried to add an A record and got an error. It said the reference was `1a2b3c4d-5e6f-7890-1234-567890abcdef`."
 
-1. **Django `/admin`** → `DnsOperationLog` → search by `request_id`. You'll see the operation name, user_email, zone_id, error_code, upstream_status, cf_ray, duration_ms, and a redacted upstream body excerpt. For most tickets this is enough.
-2. **OpenSearch** → filter `request_id: "1a2b3c4d-..."` for the full log trail across the lifecycle of that request (middleware, DB queries, service calls). Use when the admin row is insufficient or an engineer needs the full traceback.
-3. **Cloudflare support** → escalate using the `cf_ray` value. Do NOT share `request_id` with Cloudflare (it's our internal correlation, not theirs).
+1. **Django `/admin` — domain page.** Navigate to the domain. Two deep-link helpers:
+   - *DNS audit trail for this domain* → Django auditlog entries for `DnsRecord` / `DnsZone` / `DnsAccount`. Shows any successful changes recently (create/update/delete). Confirms whether the user's request actually persisted.
+   - *DNS logs in OpenSearch for this domain* → OpenSearch pre-filtered by the domain name. Shows the full lifecycle of recent requests, including failures.
+2. **OpenSearch by `request_id`.** Filter `request_id: "1a2b3c4d-..."` (click the admin deep-link, or paste the user's reference ID). Returns the full log trail: middleware → DB → service → Cloudflare. Look at `error_code`, `upstream_status`, `cf_ray`, `duration_ms`. For most tickets this is enough.
+3. **Cloudflare support** → escalate using the `cf_ray` value from the OpenSearch log line. Do NOT share `request_id` with Cloudflare (it's our internal correlation, not theirs).
 4. **User-facing follow-up** → if the code was 4xx-user-correctable, point them to the inline guidance. If 5xx, confirm it's transient and ask them to retry; if sustained, escalate to the engineering team.
 
 ## 16. Admin-editable error message store
@@ -507,7 +565,7 @@ Every step above costs calendar time and engineering attention — for a change 
 - **Zero engineering time** spent on editorial changes. Devs stop being a serialization point for copy updates.
 - **No deploy required** for copy updates. Emergency wording fixes (typo, wrong URL, stale support email) can ship in minutes instead of hours.
 - **Eliminates spreadsheet/code drift.** The DB is the source of truth; spreadsheets go away entirely for DNS error copy.
-- **Tests don't break when copy changes** — tests assert on `exc.code`, not on literal strings (see §16.4). This alone pays for the ticket in avoided test churn.
+- **Tests don't break when copy changes** — tests assert on `exc.code`, not on literal strings (see [section 16.4](#16-admin-editable-error-message-store)). This alone pays for the ticket in avoided test churn.
 - **Audit trail is automatic** via `LogEntry` — no separate change log to maintain.
 - **Preserves safety net.** If the DB row is missing or the store is unreachable, exceptions fall back to the code-level `_error_mapping` dict, so users always see something meaningful and the deploy pipeline never breaks on a missing row.
 
@@ -515,10 +573,24 @@ Every step above costs calendar time and engineering attention — for a change 
 
 - **Editorial policy.** Do edits go live immediately, or do we require design+product sign-off inside admin first (e.g., a draft/published state)? Section 17.5 flags this as an open decision. The default (trust the audit log) is the fastest but least gated.
 
-### 16.1 Scope (v1)
+### 16.1 Scope: phase 1 (this epic)
 
-- **DNS hosting only.** Just `DnsHostingErrorCodes`. If the pattern is well-received, follow-up tickets migrate `NameserverError`, `DsDataError`, `SecurityEmailError`, and `GenericError`.
-- **Error messages only.** Not form labels, not success copy, not email templates. Those are candidates for a future, broader content registry but are not in scope here.
+- **DNS hosting only.** Just `DnsHostingErrorCodes` — 8 rows, one namespace.
+- **Error messages only.** Not form labels, not success copy, not email templates.
+- **Deliberately a test run, not the end state.** The editorial churn the team feels today lives largely in form-validation messages (`validations.py`) and the older error namespaces (`NameserverError`, `DsDataError`, `SecurityEmailError`) — not in DNS hosting errors. Phase 1 on its own does not eliminate that pain. What it does is prove the mechanism on a small, contained surface (8 rows, one namespace, one relatively new feature) before applying it to the higher-traffic, stakeholder-sensitive flows.
+
+### 16.1.1 Scope: phase 2 (proposed, pending proposal buy-in)
+
+Once phase 1 ships and the pattern is proven, phase 2 would migrate:
+
+- Form validation messages in `src/registrar/validations.py` (DNS record name, TTL, MX priority, CNAME exclusivity, TXT quoting, etc.).
+- `NameserverError` / `NameserverErrorCodes`.
+- `DsDataError` / `DsDataErrorCodes`.
+- `SecurityEmailError` / `SecurityEmailErrorCodes`.
+
+This is the next major component moving off the spreadsheet after DNS hosting. The spreadsheet is used across the registrar for more than just error and validation copy, so phase 2 doesn't retire it — it continues the phase-out that phase 1 starts, addressing the largest error-copy footprint next. Phase 2 is **not** part of this epic and has **not** been filed as a ticket — it is pending proposal buy-in on the two-phase approach. Once phase 1 ships and phase 2 is scoped, a dedicated ticket goes in under a separate parent (or under #4892 as a stretch goal, TBD with the team).
+
+Why not file it now? Phase 2 touches more code paths, many more tests, and stakeholder-sensitive flows (domain requests, DNSSEC, security contacts). Sizing and decomposing it is cheaper after we see what phase 1 actually looks like in practice, including any cache / test / editor-UX issues we didn't anticipate.
 
 ### 16.2 Model
 
@@ -567,15 +639,15 @@ self.assertIn(expected, response.content.decode())
 
 ### 16.6 Deploy / fixture contract
 
-- Fixture seeds each `DnsHostingErrorCodes` value with the text currently in `_error_mapping`.
-- On a **fresh environment**, `loaddata` (or a data migration) creates the rows.
-- On **existing environments** with admin edits, fixture loads must never overwrite — use `update_or_create` with `defaults=` only on fresh envs, or gate behind a management command.
+- **Initial values come from Design.** The Design-review ticket ([#4950](https://github.com/cisagov/manage.get.gov/issues/4950)) produces the approved strings that seed each `DnsHostingErrorCodes` value. The seed migration writes those strings into `DnsErrorMessage` — they are the starting point of the admin-editable rows, not a one-time snapshot.
+- On a **fresh environment**, the data migration creates the rows.
+- On **existing environments** with admin edits, the seed must never overwrite — `get_or_create` only inserts missing rows.
 - Engineers: changes to the *fallback* text in `_error_mapping` are only user-visible on fresh environments where no DB row exists yet. If you need to update production copy, do it through `/admin`, not code.
 
 ### 16.7 Out of scope (punts noted for future tickets)
 
 - Draft/published states or approval workflow (security/compliance can request in a follow-up).
-- Non-DNS exception classes (`Nameserver`, `DsData`, `SecurityEmail`, `Generic`) — one pattern at a time.
+- Non-DNS exception classes (`Nameserver`, `DsData`, `SecurityEmail`, `Generic`) and form-validation messages in `validations.py` — covered in the proposed phase 2 ([section 16.1.1](#16-admin-editable-error-message-store)). Not filed yet; pending proposal buy-in on the two-phase approach.
 
 ## 17. Integration with in-flight prototype work
 
@@ -589,31 +661,31 @@ Previous drafts of this document treated `cf_ray` capture as theoretical. As of 
 - A real Cloudflare response carried `cf-ray=9f0fb528c8e290be-IAD` through the httpx client, into the log line, and into `DnsNotFoundError.context["cf_ray"]` on 404.
 - Unit tests cover both branches of the read: header present ([`test_create_dns_record_404_raises_dns_not_found_error`](../../src/registrar/tests/services/test_cloudflare_service.py)) and header absent ([`test_create_dns_record_404_without_cf_ray_header`](../../src/registrar/tests/services/test_cloudflare_service.py)).
 
-`cf_ray` is therefore a first-class field in the structured log set (§8.1) and the `DnsOperationLog` surface (§11) — the remaining work is propagating capture to the other `CloudflareService` methods using a shared helper rather than re-deciding whether to capture it at all.
+`cf_ray` is therefore a first-class field in the structured log set ([section 8.1](#8-pii-and-log-hygiene)) that support sees via the OpenSearch deep-link from `/admin` ([section 11](#11-admin-visibility-and-support-workflow)) — the remaining work is propagating capture to the other `CloudflareService` methods using a shared helper rather than re-deciding whether to capture it at all.
 
 ### 17.2 `CloudflareValidationError` → `DnsHostingError` subclass
 
-The prototype's `CloudflareValidationError` is exactly the kind of specific, named exception the §6 vocabulary envisions. When the typed-error hierarchy lands:
+The prototype's `CloudflareValidationError` is exactly the kind of specific, named exception the [section 6](#6-error-code-vocabulary) vocabulary envisions. When the typed-error hierarchy lands:
 
 - `CloudflareValidationError` becomes (or is replaced by) `DnsValidationError` / `DnsRecordConflictError` extending `DnsHostingError`.
-- Stable `DnsHostingErrorCodes` values — at minimum `DNS_RECORD_CONFLICT` and `DNS_VALIDATION_FAILED` (both already in §6) — are the wire contract. No catch-all "validation failed" code.
+- Stable `DnsHostingErrorCodes` values — at minimum `DNS_RECORD_CONFLICT` and `DNS_VALIDATION_FAILED` (both already in [section 6](#6-error-code-vocabulary)) — are the wire contract. No catch-all "validation failed" code.
 - Callers that currently `except CloudflareValidationError` migrate to `except DnsHostingError` + branch on `exc.code`.
 
 Migration is mechanical — the prototype's choice of exception shape was the correct shape; only the base class and code attribute need to change.
 
 ### 17.3 Hardcoded message constants → admin-editable store
 
-The prototype stores user-facing copy (e.g., `CF_DUPLICATE_RECORD_MESSAGE`) as Python constants. That is the right tradeoff for an in-flight PR that must ship before the `DnsErrorMessage` table exists, but it recreates the spreadsheet-drift problem §16 explicitly exists to eliminate.
+The prototype stores user-facing copy (e.g., `CF_DUPLICATE_RECORD_MESSAGE`) as Python constants. That is the right tradeoff for an in-flight PR that must ship before the `DnsErrorMessage` table exists, but it recreates the spreadsheet-drift problem [section 16](#16-admin-editable-error-message-store) explicitly exists to eliminate.
 
-**Planned migration when §16 lands:**
+**Planned migration when [section 16](#16-admin-editable-error-message-store) lands:**
 
 - Each constant is replaced with `utility/messages.get_user_message("dns", <code>)` keyed on the stable error code.
-- The constant remains in-file as the `_error_mapping` fallback (§16.3) so the system stays functional if the DB row is missing or the store is unreachable.
+- The constant remains in-file as the `_error_mapping` fallback ([section 16.3](#16-admin-editable-error-message-store)) so the system stays functional if the DB row is missing or the store is unreachable.
 - Leave a `# TODO(#4893/#4932): replace with get_user_message lookup` comment on every constant now so the migration is obvious to whoever picks it up.
 
 ### 17.4 View-layer mapping vs. the error envelope
 
-The prototype's view layer emits per-field form errors (e.g., `{"name": "...", "content": "..."}`) so the DNS form can highlight the offending input. The §9 envelope contract currently returns one message per response, which is correct for non-form JSON endpoints but **insufficient** for the DNS record form UX.
+The prototype's view layer emits per-field form errors (e.g., `{"name": "...", "content": "..."}`) so the DNS form can highlight the offending input. The [section 9](#9-api-error-envelope-contract) envelope contract currently returns one message per response, which is correct for non-form JSON endpoints but **insufficient** for the DNS record form UX.
 
 Two viable resolutions — decide before the envelope ticket is split:
 
@@ -622,20 +694,20 @@ Two viable resolutions — decide before the envelope ticket is split:
 
 Either works; (1) is more uniform, (2) is closer to how Django form errors are rendered elsewhere in the codebase. Flag for the envelope ticket owner — do not silently pick one.
 
-### 17.5 `cf_errors` raw payload → `DnsOperationLog.upstream_body_truncated`
+### 17.5 `cf_errors` raw payload → structured OpenSearch logging
 
-The prototype attaches a `cf_errors` list (parsed from the Cloudflare error response body) to `CloudflareValidationError`. That list is exactly what §11's `DnsOperationLog.upstream_body_truncated` wants to record — structured, already-parsed, and free of credentials.
+The prototype attaches a `cf_errors` list (parsed from the Cloudflare error response body) to `CloudflareValidationError`. That list is exactly what the structured-logging ticket ([section 3](#3-current-state-before-this-work)) wants in OpenSearch — already parsed, free of credentials, and queryable by support.
 
-When the admin-visibility ticket lands, the logging middleware can:
+When the structured-logging ticket lands, the DNS service can log:
 
 ```python
-if isinstance(exc, DnsHostingError) and getattr(exc, "cf_errors", None):
-    upstream_body = json.dumps(exc.cf_errors)[:2048]  # already structured, just truncate
+if getattr(exc, "cf_errors", None):
+    log_extra["cf_errors"] = exc.cf_errors          # already structured
 else:
-    upstream_body = redact(response_body)[:2048]      # raw-text fallback path
+    log_extra["cf_body"] = redact(response_body)[:2048]  # raw-text fallback
 ```
 
-Action item for the typed-error ticket: **preserve `cf_errors` as a documented attribute on `DnsHostingError`** (optional, `list[dict] | None`), so the `DnsOperationLog` writer has a single well-typed place to read structured upstream error data without re-parsing response bodies.
+Action item for the typed-error ticket: **preserve `cf_errors` as a documented attribute on `DnsHostingError`** (optional, `list[dict] | None`), so the structured-logger has a single well-typed place to read structured upstream error data without re-parsing response bodies.
 
 ## 18. Decisions needed from stakeholders
 
@@ -643,14 +715,36 @@ These are the questions this proposal does not answer alone — they need input 
 
 | # | Decision | Owner(s) | Blocks |
 |---|---|---|---|
-| 1 | Retention posture for `user_email` in logs | leads | §8 rollout |
+| 1 | Retention posture for `user_email` in logs | leads | [section 8](#8-pii-and-log-hygiene) rollout |
 | 2 | Final httpx timeout values (current draft: `connect=3, read=10, write=10, pool=5`) | leads | httpx resilience ticket |
-| 3 | Sign-off on 4xx user-facing copy in §10 | Design | API error envelope ticket |
-| 4 | `DnsOperationLog` retention (draft: 30 days) | leads + security | Admin visibility ticket |
-| 5 | Distributed-tracing direction: OpenTelemetry, Sentry, Datadog, Honeycomb, or status quo | Leadership + leads | Distributed-tracing spike; may change scope of the request_id ContextVar ticket |
-| 6 | Editorial policy for admin-edited error copy (§16.5) — review required, or trust audit log? | Product + security | Admin-editable message store ticket |
+| 3 | Sign-off on 4xx user-facing copy in [section 10](#10-user-facing-error-messaging) (required, not optional) — filed as [#4950](https://github.com/cisagov/manage.get.gov/issues/4950), blocks [#4925](https://github.com/cisagov/manage.get.gov/issues/4925) | Design | API error envelope ticket ([#4925](https://github.com/cisagov/manage.get.gov/issues/4925)) |
+| 4 | Confirm existing `django-auditlog` and OpenSearch retention policies cover DNS model changes and DNS log lines (no new retention plumbing introduced) | leads + security | Admin visibility ticket |
+| 5 | Is OpenSearch + structured fields enough for request tracing, or do we adopt a dedicated tracing tool? | Leadership + leads | Request-tracing spike; may change scope of the request_id ContextVar ticket |
+| 6 | Editorial policy for admin-edited error copy ([section 16.5](#16-admin-editable-error-message-store)) — review required, or trust audit log? | Product + security | Admin-editable message store ticket |
 | 7 | Safely retry record Cloudflare create/update/delete without causing duplicates | Engineering (future) | Deferred — not blocking |
 
 Each unresolved decision has a sub-ticket dependency noted so we know what is blocked.
+
+## 19. Sub-tickets filed
+
+All 13 sub-tickets are filed under epic **[#4892 — Improve error handling and logging](https://github.com/cisagov/manage.get.gov/issues/4892)**. Each is a sub-issue of #4892 with `blocked_by` relationships. Labels: `dev`, `Feature: DNS hosting`. Project: `.gov Product Board` (status `👶 New`). No assignees.
+
+| # | Title | Issue | Blocked by |
+|---|---|---|---|
+| 1 | Introduce `DnsHostingError` hierarchy and error codes | [#4920](https://github.com/cisagov/manage.get.gov/issues/4920) | — |
+| 2 | Migrate `CloudflareService` to raise typed `DnsHostingError` subclasses | [#4921](https://github.com/cisagov/manage.get.gov/issues/4921) | [#4920](https://github.com/cisagov/manage.get.gov/issues/4920) |
+| 3 | Simplify `DnsHostService` to pass exceptions through | [#4922](https://github.com/cisagov/manage.get.gov/issues/4922) | [#4921](https://github.com/cisagov/manage.get.gov/issues/4921) |
+| 4 | Add httpx timeout and retry policy | [#4923](https://github.com/cisagov/manage.get.gov/issues/4923) | — |
+| 5 | Propagate `X-Request-ID` through ContextVars | [#4924](https://github.com/cisagov/manage.get.gov/issues/4924) | — |
+| 6 | Standardize DNS API JSON error envelope | [#4925](https://github.com/cisagov/manage.get.gov/issues/4925) | [#4920](https://github.com/cisagov/manage.get.gov/issues/4920), [#4924](https://github.com/cisagov/manage.get.gov/issues/4924), [#4950](https://github.com/cisagov/manage.get.gov/issues/4950) |
+| 7 | Add structured logging fields to DNS services | [#4926](https://github.com/cisagov/manage.get.gov/issues/4926) | [#4924](https://github.com/cisagov/manage.get.gov/issues/4924) |
+| 8 | Admin visibility: register DNS models with auditlog + OpenSearch deep-link helpers | [#4927](https://github.com/cisagov/manage.get.gov/issues/4927) | [#4926](https://github.com/cisagov/manage.get.gov/issues/4926) |
+| 9 | Surface `request_id` on the 500 error page | [#4928](https://github.com/cisagov/manage.get.gov/issues/4928) | [#4924](https://github.com/cisagov/manage.get.gov/issues/4924) |
+| 10 | Developer docs: captured-errors catalog and logging pattern | [#4929](https://github.com/cisagov/manage.get.gov/issues/4929) | [#4920](https://github.com/cisagov/manage.get.gov/issues/4920), [#4921](https://github.com/cisagov/manage.get.gov/issues/4921), [#4922](https://github.com/cisagov/manage.get.gov/issues/4922), [#4923](https://github.com/cisagov/manage.get.gov/issues/4923), [#4924](https://github.com/cisagov/manage.get.gov/issues/4924), [#4925](https://github.com/cisagov/manage.get.gov/issues/4925), [#4926](https://github.com/cisagov/manage.get.gov/issues/4926) |
+| 11 | Spike: is OpenSearch + structured logs enough for request tracing? | [#4930](https://github.com/cisagov/manage.get.gov/issues/4930) | — |
+| 12 | Admin-editable DNS error message store | [#4931](https://github.com/cisagov/manage.get.gov/issues/4931) | [#4920](https://github.com/cisagov/manage.get.gov/issues/4920) |
+| 13 | Design review of user-facing 4xx and 5xx error copy | [#4950](https://github.com/cisagov/manage.get.gov/issues/4950) | — |
+
+**No blockers**: [#4920](https://github.com/cisagov/manage.get.gov/issues/4920), [#4923](https://github.com/cisagov/manage.get.gov/issues/4923), [#4924](https://github.com/cisagov/manage.get.gov/issues/4924), [#4930](https://github.com/cisagov/manage.get.gov/issues/4930), [#4950](https://github.com/cisagov/manage.get.gov/issues/4950).
 
 ---

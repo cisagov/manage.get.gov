@@ -55,9 +55,8 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes, classify_legacy_dns_exception
+from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.waffle import flag_is_active_for_user
-from registrar.utility.dns_operation_log import record_dns_operation
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
@@ -78,7 +77,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
 from django.db.models import Exists, OuterRef
-from .models import DnsRecord, DnsOperationLog, DnsErrorMessage
+from .models import DnsRecord, DnsErrorMessage
 
 logger = logging.getLogger(__name__)
 
@@ -4227,6 +4226,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 ]
             },
         ),
+        (
+            "DNS support links (prototype preview for #4927)",
+            {
+                "fields": ["dns_support_links"],
+                "description": (
+                    "Starting points for support to investigate DNS changes and failures for this domain. "
+                    "The OpenSearch URL is a placeholder — the real base URL and query syntax get wired "
+                    "up in the admin-visibility ticket."
+                ),
+            },
+        ),
     )
 
     def get_readonly_fields(self, request, obj=None):
@@ -4234,6 +4244,36 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return super().get_readonly_fields(request, obj) + (
             "on_hold_date_display",
             "days_on_hold_display",
+            "dns_support_links",
+        )
+
+    @admin.display(description="Support links")
+    def dns_support_links(self, obj):
+        """Render two deep-links on the domain detail page: auditlog + OpenSearch placeholder.
+
+        Preview implementation for ticket #4927 (admin visibility via auditlog +
+        OpenSearch deep-link helpers). The OpenSearch base URL is a placeholder —
+        real wiring happens when that ticket ships.
+        """
+        from django.utils.html import format_html
+
+        domain_name = getattr(obj, "name", "") or ""
+        audit_url = "/admin/auditlog/logentry/?content_type__model__in=dnsrecord,dnszone,dnsaccount"
+        opensearch_url = (
+            "https://opensearch.example.gov/_dashboards/app/discover"
+            f"#/?domain_name={domain_name}&request_id=PASTE_FROM_USER_HERE"
+        )
+        return format_html(
+            '<ul style="margin: 0; padding-left: 1.25em;">'
+            '<li><a href="{}">DNS audit trail (all registered DNS model changes)</a> — '
+            "successful create/update/delete events on DnsRecord, DnsZone, DnsAccount.</li>"
+            '<li><a href="{}" target="_blank" rel="noopener">DNS logs in OpenSearch for <code>{}</code></a> '
+            "(placeholder URL) — replace <code>PASTE_FROM_USER_HERE</code> with the "
+            "<code>request_id</code> the user quoted to see the full lifecycle of a failed request.</li>"
+            "</ul>",
+            audit_url,
+            opensearch_url,
+            domain_name,
         )
 
     # ------- Domain Information Fields
@@ -4694,28 +4734,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             service.enroll_domain(obj)
         except Exception as e:
             logger.exception(e)
-            wire_code, upstream_status = classify_legacy_dns_exception(e)
-            record_dns_operation(
-                request=request,
-                operation="enroll_domain",
-                outcome="failure",
-                domain_name=getattr(obj, "name", "") or "",
-                error_code=wire_code,
-                upstream_status=upstream_status,
-                notes=str(e)[:500],
-            )
             self.message_user(
                 request,
                 "Failed to enroll domain in DNS hosting.",
                 messages.ERROR,
             )
         else:
-            record_dns_operation(
-                request=request,
-                operation="enroll_domain",
-                outcome="success",
-                domain_name=getattr(obj, "name", "") or "",
-            )
             self.message_user(
                 request,
                 "Domain successfully enrolled in DNS hosting.",
@@ -4755,93 +4779,6 @@ class DnsRecordAdmin(admin.ModelAdmin):
     list_filter = ("type", "created_at", "updated_at")
 
     search_fields = ("name", "content", "comment")
-
-
-@admin.register(DnsOperationLog)
-class DnsOperationLogAdmin(admin.ModelAdmin):
-    """Read-only admin surface for DNS-hosting operation history.
-
-    Staff land here after a user reports a DNS failure — search by the
-    `request_id` printed in the error envelope / 500 page, filter by
-    `error_code` / `outcome` / `operation`, and see the redacted upstream
-    context without leaving Django. Full tracebacks stay in OpenSearch.
-
-    See docs/developer/dns-error-handling.md §12.
-    """
-
-    list_display = (
-        "timestamp",
-        "operation",
-        "outcome",
-        "domain_name",
-        "error_code",
-        "upstream_status",
-        "user_email",
-        "request_id",
-    )
-    list_filter = ("operation", "outcome", "error_code")
-    search_fields = ("request_id", "domain_name", "zone_id", "record_id", "user_email", "cf_ray")
-    readonly_fields = (
-        "timestamp",
-        "operation",
-        "outcome",
-        "domain_name",
-        "user_email",
-        "request_id",
-        "dns_account_id",
-        "zone_id",
-        "record_id",
-        "error_code",
-        "upstream_status",
-        "cf_ray",
-        "duration_ms",
-        "notes",
-    )
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "timestamp",
-                    "operation",
-                    "outcome",
-                    "domain_name",
-                    "user_email",
-                    "request_id",
-                )
-            },
-        ),
-        (
-            "Cloudflare / upstream",
-            {
-                "fields": (
-                    "dns_account_id",
-                    "zone_id",
-                    "record_id",
-                    "error_code",
-                    "upstream_status",
-                    "cf_ray",
-                    "duration_ms",
-                    "notes",
-                ),
-            },
-        ),
-    )
-    ordering = ("-timestamp",)
-    date_hierarchy = "timestamp"
-
-    # Rows are written by record_dns_operation(); staff never create or edit
-    # them by hand.
-    def has_add_permission(self, request):  # noqa: D401
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        # Allow delete so retention / TTL cleanups can run through the admin
-        # UI. A management command is the intended long-term cleanup path.
-        return super().has_delete_permission(request, obj)
 
 
 @admin.register(DnsErrorMessage)

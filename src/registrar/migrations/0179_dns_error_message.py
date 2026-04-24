@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0178_dns_operation_log"),
+        ("registrar", "0178_alter_dnsrecord_name"),
     ]
 
     operations = [

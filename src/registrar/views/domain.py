@@ -51,10 +51,8 @@ from registrar.utility.errors import (
     DsDataErrorCodes,
     SecurityEmailError,
     SecurityEmailErrorCodes,
-    classify_legacy_dns_exception,
 )
 from registrar.utility.api_responses import dns_error_response
-from registrar.utility.dns_operation_log import record_dns_operation
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.invitation_helper import (
@@ -1081,18 +1079,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
-            # Success path: record to DnsOperationLog for admin visibility.
-            record_dns_operation(
-                request=request,
-                operation=("update_dns_record" if is_edit else "create_dns_record"),
-                outcome="success",
-                domain_name=self.object.name,
-                zone_id=x_zone_id or "",
-                record_id=str(record_id) if record_id else "",
-            )
-
         except DnsHostingError as exc:
-            # Prototype: typed DNS errors return the canonical JSON envelope.
+            # Typed DNS errors return the canonical JSON envelope.
             # See docs/developer/dns-error-handling.md.
             logger.error(
                 "DNS record create/update failed (typed)",
@@ -1103,31 +1091,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     **exc.context,
                 },
             )
-            record_dns_operation(
-                request=request,
-                operation=("update_dns_record" if is_edit else "create_dns_record"),
-                outcome="failure",
-                domain_name=self.object.name,
-                zone_id=exc.context.get("zone_id", "") if isinstance(exc.context, dict) else "",
-                error_code=exc.wire_code,
-                upstream_status=exc.upstream_status,
-                cf_ray=exc.context.get("cf_ray", "") if isinstance(exc.context, dict) else "",
-                notes=exc.message,
-            )
             return dns_error_response(exc, request=request)
         except (APIError, RequestError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")
             messages.error(request, "Failed to save DNS record.")
-            wire_code, upstream_status = classify_legacy_dns_exception(e)
-            record_dns_operation(
-                request=request,
-                operation=("update_dns_record" if is_edit else "create_dns_record"),
-                outcome="failure",
-                domain_name=self.object.name,
-                error_code=wire_code,
-                upstream_status=upstream_status,
-                notes=str(e)[:500],
-            )
             self.dns_record = None
             record_id = None
         except GenericError:
