@@ -1,3 +1,4 @@
+import json
 import os
 from unittest import mock
 from unittest.mock import Mock
@@ -5,7 +6,7 @@ from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, CloudflareValidationError
 
 
 class TestCloudflareService(SimpleTestCase):
@@ -473,3 +474,50 @@ class TestCloudflareService(SimpleTestCase):
                     self.service.update_zone_dns_settings(zone_id)
 
                 self.assertIn(error["message"], str(context.exception))
+
+    def _setUpCfValidationFailure(self, cf_errors):
+        """Build a mock response that mimics a Cloudflare 4xx with a structured errors array."""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = json.dumps({"success": False, "errors": cf_errors, "messages": []})
+        http_error = HTTPStatusError(request="r", response="400", message="validation")
+        http_error.response = mock_response
+        mock_response.raise_for_status.side_effect = http_error
+        return mock_response
+
+    def test_create_dns_record_raises_cloudflare_validation_error_with_parsed_errors(self):
+        """create_dns_record surfaces CF's structured validation errors via CloudflareValidationError."""
+        cf_errors = [{"code": 81057, "message": "An identical record already exists."}]
+        self.service.client.post.return_value = self._setUpCfValidationFailure(cf_errors)
+
+        with self.assertRaises(CloudflareValidationError) as ctx:
+            self.service.create_dns_record("zone-id", {"type": "A", "name": "x", "content": "1.2.3.4"})
+
+        self.assertEqual(ctx.exception.cf_errors, cf_errors)
+        self.assertEqual(ctx.exception.status_code, 400)
+
+    def test_update_dns_record_raises_cloudflare_validation_error_with_parsed_errors(self):
+        """update_dns_record surfaces CF's structured validation errors via CloudflareValidationError."""
+        cf_errors = [{"code": 81053, "message": "An A, AAAA, or CNAME record with that host already exists."}]
+        self.service.client.patch.return_value = self._setUpCfValidationFailure(cf_errors)
+
+        with self.assertRaises(CloudflareValidationError) as ctx:
+            self.service.update_dns_record("zone-id", "rec-id", {"type": "CNAME", "name": "x", "content": "y.gov"})
+
+        self.assertEqual(ctx.exception.cf_errors, cf_errors)
+
+    def test_create_dns_record_non_json_body_falls_back_to_api_error(self):
+        """When CF doesn't return a JSON body with errors, we still raise the legacy APIError."""
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_response.text = "<html>gateway timeout</html>"
+        http_error = HTTPStatusError(request="r", response="500", message="boom")
+        http_error.response = mock_response
+        mock_response.raise_for_status.side_effect = http_error
+        self.service.client.post.return_value = mock_response
+
+        with self.assertRaises(APIError) as ctx:
+            self.service.create_dns_record("zone-id", {"type": "A", "name": "x", "content": "1.2.3.4"})
+
+        # Plain APIError (not the validation subclass) when there are no structured CF errors.
+        self.assertNotIsInstance(ctx.exception, CloudflareValidationError)
