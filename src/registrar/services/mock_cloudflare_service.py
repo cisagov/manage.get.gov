@@ -280,6 +280,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        content = self.do_string_splitting_for_txt_record(type, content)
         request_url = str(request.url)
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
 
@@ -336,6 +337,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        content = self.do_string_splitting_for_txt_record(type, content)
         # Get record id from request url to return back in response
         request_url = str(request.url)
         # Split string between "/dns_records/ and extract second partition
@@ -409,3 +411,18 @@ class MockCloudflareService:
             return record_name
         except Exception as e:
             logger.error(f"Failed to rename record using record's DNS zone: {e}.")
+
+    def do_string_splitting_for_txt_record(self, type, content):
+        """
+        This method takes a string and splits it into 255 character chunks,
+        then adds quotes around each chunk to mimic how Cloudflare formats TXT record content
+        that exceeds 255 characters to meet RFC compliance.
+        """
+
+        if type != "TXT" or len(content) <= 255:
+            return content
+        else:
+            chunks = [content[i : i + 255] for i in range(0, len(content), 255)]
+            quoted_chunks = [f'"{chunk}"' for chunk in chunks]
+            return " ".join(quoted_chunks)
+        

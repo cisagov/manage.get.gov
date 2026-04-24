@@ -1,4 +1,4 @@
-function adjustedCharCount(charLength){
+function adjustCharCount(charLength){
     // strip out surrounding double quotes and string splitting used for RFC compliance.
         // They should not be included in the character count displayed to to user.
         const adjustedValue =textArea.value.split('" "').join()
@@ -24,10 +24,10 @@ function getCharCountText (charLimit, charLength) {
 
 function createCharacterCountDiv(charLimit, textArea) {
 
-
+  modifiedCharCount = adjustCharCount(textArea.value.length)
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
-  displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length)
+  displayCharCount.textContent = getCharCountText(charLimit, modifiedCharCount)
 
 
   displayCharCount.id = `${textArea.id}-content--status`
@@ -35,7 +35,7 @@ function createCharacterCountDiv(charLimit, textArea) {
 
 
   textArea.addEventListener('input', function () {
-    displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length);
+    displayCharCount.textContent = getCharCountText(charLimit, modifiedCharCount);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
       textArea.value.length > charLimit
@@ -60,20 +60,16 @@ function switchFromInputToTextArea (element) {
 
         // Character count
         const charLimit = 4080
-        // strip out surrounding double quotes and string splitting used for RFC compliance.
-        // They should not be included in the character count displayed to to user.
-        const adjustedValue =textArea.value.split('" "').join()
-        if (adjustedValue.startsWith('"') && adjustedValue.endsWith('"'))
-            adjustedValue = adjustedValue.slice(1, -1);
+        modifiedCharCount = adjustCharCount(textArea.value.length)
         let getCharCountText = function () {
-           return `${charLimit - adjustedValue.length} characters allowed`
+           return `${charLimit - modifiedCharCount} characters allowed`
         }
         const displayCharCount = document.createElement('div')
         displayCharCount.className = "usa-character-count__status usa-hint"
         displayCharCount.textContent = getCharCountText()
         textArea.addEventListener('input', function(){
              displayCharCount.textContent = getCharCountText()
-             displayCharCount.classList.toggle('usa-character-count__status--invalid', textArea.value.length > charLimit)
+             displayCharCount.classList.toggle('usa-character-count__status--invalid', modifiedCharCount > charLimit)
         })
 
 
