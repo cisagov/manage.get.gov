@@ -57,6 +57,13 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
+function clearRecordForm(){
+    const form = document.getElementById("dnsrecords-form-container")
+    const inputs = form.querySelectorAll('input:not=([type="hidden"]), textarea')
+
+    inputs.forEach(input => input.value = "")
+
+}
 
 export function editAndCommentButtonListener (){
         const table = document.querySelector("#dnsrecords-table");
@@ -85,6 +92,7 @@ export function editAndCommentButtonListener (){
         
         })
 }
+
 
 export function commentCharacterEventListener(){
 
@@ -137,7 +145,11 @@ export function initDynamicDNSRecordFormFields() {
                 }
     })
 
-    typeField.addEventListener('change', function (){
+    typeField.addEventListener('change', function (e){
+        if(e.isTrusted){
+            clearRecordForm()
+        }
+
         const selectedType = this.value;
         const info = config[selectedType];
         const contentLabel = document.querySelector('label[for=id_content]');
