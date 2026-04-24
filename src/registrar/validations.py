@@ -75,6 +75,13 @@ DNS_NAME_LENGTH_ERROR_MESSAGE = (
 DNS_NAME_SPACES_ERROR_MESSAGE = "Enter the DNS name without any spaces."
 DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
 
+# For use on DNS record fields outside of name
+DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
+DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
+DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
+DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
+MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
+
 
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
@@ -209,7 +216,7 @@ def validate_mx_content(content: str) -> None:
     Validates an MX record's mail server hostname.
     """
     if " " in content:
-        raise ValidationError("Enter the mail server without any spaces.")
+        raise ValidationError(MX_CONTENT_SPACES_ERROR_MESSAGE)
 
     if len(content) > MX_CONTENT_MAX_LENGTH:
         raise ValidationError("Name must be no more than 253 characters.")

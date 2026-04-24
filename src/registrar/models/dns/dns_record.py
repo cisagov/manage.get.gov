@@ -5,7 +5,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from registrar.validations import DNS_NAME_LENGTH_ERROR_MESSAGE, validate_dns_name
+from registrar.validations import (
+    DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    validate_dns_name,
+)
 from registrar.utility.enums import DNSRecordTypes, format_dns_ttl
 from registrar.models.dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord as RecordsJoin
 from registrar.models.dns.vendor_dns_record import VendorDnsRecord
@@ -71,7 +75,7 @@ class DnsRecord(TimeStampedModel):
     def _validate_mx_priority(self, record_type, errors):
         """Validate MX record has priority."""
         if record_type == DNSRecordTypes.MX and self.priority is None:
-            errors["priority"] = ["Enter a priority for this record."]
+            errors["priority"] = [DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE]
 
     def _validate_exclusive_names(self, record_type, errors):
         """Validate CNAME/A/AAAA records don't share names."""

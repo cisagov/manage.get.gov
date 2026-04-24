@@ -10,6 +10,9 @@ from registrar.validations import (
     DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_NAME_SPACES_ERROR_MESSAGE,
+    DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    MX_CONTENT_SPACES_ERROR_MESSAGE,
 )
 from faker import Faker
 
@@ -95,7 +98,20 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
             self.assertFalse(form.is_valid())
             self.assertIn("name", form.errors)
-            self.assertEqual(form.errors["name"], ["Enter the name of this record."])
+            self.assertEqual(form.errors["name"], [DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE])
+
+    def test_blank_cname_name_does_not_crash_and_shows_required_error(self):
+        """CNAME with empty name should surface the required error, not raise an AttributeError."""
+        data = {
+            "type": "CNAME",
+            "name": "",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "",
+        }
+        form = self.make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors["name"], [DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE])
 
     def test_invalid_dns_name_throws_error(self):
         # Testing hyphen at start of label
@@ -258,7 +274,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_form(data)
         self.assertFalse(form.is_valid())
         self.assertIn("priority", form.errors)
-        self.assertIn("Enter a priority for this record.", form.errors["priority"])
+        self.assertIn(DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE, form.errors["priority"])
 
     def test_mx_record_priority_below_minimum_throws_error(self):
         form = self.make_mx_form(priority=-1)
@@ -295,7 +311,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(content="invalid hostname")
         self.assertFalse(form.is_valid())
         self.assertIn("content", form.errors)
-        self.assertIn("Enter the mail server without any spaces.", form.errors["content"])
+        self.assertIn(MX_CONTENT_SPACES_ERROR_MESSAGE, form.errors["content"])
 
     def test_mx_record_with_content_too_long_throws_error(self):
         form = self.make_mx_form(content="a" * 254)
