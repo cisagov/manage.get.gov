@@ -94,14 +94,21 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                 with patch("registrar.views.domain.DnsHostService") as MockSvc:
                     svc = MockSvc.return_value
                     svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
-                    dns_record = create_dns_record(
-                        self.dns_zone,
-                        record_name=data["name"],
-                        record_type=data["type"],
-                        record_content=data["content"],
-                        ttl=data["ttl"],
-                    )
-                    svc.create_dns_record.return_value = dns_record
+
+                    # Create the DnsRecord row inside the mocked service call, not before the POST.
+                    # Otherwise the new duplicate-record validator flags the POST as a dup of the
+                    # pre-created row (since it has identical type/name/content).
+                    def _create_and_return(*_args, _data=data, **_kwargs):
+                        return create_dns_record(
+                            self.dns_zone,
+                            record_name=_data["name"],
+                            record_type=_data["type"],
+                            record_content=_data["content"],
+                            ttl=_data["ttl"],
+                            x_record_id=f"x-create-{_data['type']}",
+                        )
+
+                    svc.create_dns_record.side_effect = _create_and_return
 
                     response = self.client.post(
                         self._url(),
@@ -253,3 +260,83 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         self.assertContains(response, "5 minutes")
         self.assertNotContains(response, ">300<", html=False)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_edit_unchanged_data_is_not_flagged_as_duplicate(self):
+        """Editing a record and resubmitting without changes must not trip the
+        full-duplicate validator. Regression: without binding the existing record
+        as the form's instance, form.instance.pk is None and the validator fails
+        to exclude the record being edited from its own uniqueness check.
+        """
+        existing = create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="www",
+            record_content="192.0.2.10",
+            ttl=300,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.update_dns_record.return_value = existing
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": existing.id,
+                    "type": "A",
+                    "name": "www",
+                    "content": "192.0.2.10",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertNotContains(response, "You already entered this DNS record")
+            svc.update_dns_record.assert_called_once()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_edit_to_match_other_record_is_flagged_as_duplicate(self):
+        """Editing a record so its fields collide with a DIFFERENT existing record
+        must be flagged as a duplicate and must NOT call the vendor update."""
+        # The record being edited
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="mail",
+            record_content="192.0.2.20",
+            ttl=300,
+            x_record_id="x-editing",
+        )
+        # Another record we're about to collide with
+        create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="www",
+            record_content="192.0.2.10",
+            ttl=300,
+            x_record_id="x-other",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "www",
+                    "content": "192.0.2.10",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.update_dns_record.assert_not_called()

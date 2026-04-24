@@ -1,6 +1,5 @@
 """Forms for domain management."""
 
-import logging
 from django import forms
 from django.core.validators import (
     RegexValidator,
@@ -32,8 +31,6 @@ from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
 
 import json
 import re
-
-logger = logging.getLogger(__name__)
 
 
 class DomainAddUserForm(forms.Form):
@@ -941,6 +938,45 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type == DNSRecordTypes.MX and priority is None:
             self.add_error("priority", "Enter a priority for this record.")
 
+    def _validate_name_conflict(self, record_type, name):
+        """Flag CNAME vs A/AAAA name conflicts (RFC 1034 §3.6.2).
+
+        CNAME records cannot coexist with A/AAAA records at the same name. MX and TXT
+        records are allowed to share names with other types (standard practice: e.g.
+        MX at the root alongside A, or SPF/DKIM TXT alongside A).
+        """
+        if DnsRecord.has_name_conflict(
+            domain_name=self.domain_name,
+            record_type=record_type,
+            name=name,
+            exclude_record_id=self.instance.pk,
+        ):
+            self.add_error("name", "A record with that name already exists. Names must be unique.")
+
+    def _validate_duplicate_record(self, record_type, name, content, priority):
+        """Flag when the submitted record matches an existing record in the zone.
+
+        Per ticket #4779: a record is a duplicate when type + name + content match
+        (plus priority for MX). TTL may differ. When found, surface a form-level
+        error plus inline errors on name, content, and (for MX) priority.
+        """
+        if not DnsRecord.has_duplicate_record(
+            domain_name=self.domain_name,
+            record_type=record_type,
+            name=name,
+            content=content,
+            priority=priority,
+            exclude_record_id=self.instance.pk,
+        ):
+            return
+
+        message = "You already entered this DNS record. DNS records must be unique."
+        self.add_error(None, message)
+        self.add_error("name", message)
+        self.add_error("content", message)
+        if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
+            self.add_error("priority", message)
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
@@ -954,5 +990,12 @@ class DomainDNSRecordForm(forms.ModelForm):
             # Only validate MX priority if priority field didn't already have a validation error
             if "priority" not in self.errors:
                 self._validate_mx_priority(record_type, priority)
+            # Check for name conflicts if no other errors exist yet
+            if "name" not in self.errors and name:
+                self._validate_name_conflict(record_type, name)
+            # Only check for full duplicates after per-field validation has passed,
+            # so we don't flag a record as "duplicate" when its fields aren't even valid yet.
+            if not self.errors and name and content:
+                self._validate_duplicate_record(record_type, name, content, priority)
 
         return cleaned_data

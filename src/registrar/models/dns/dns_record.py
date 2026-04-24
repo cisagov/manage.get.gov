@@ -1,6 +1,7 @@
 import logging
 
 from django.db import models, transaction
+from django.db.models import Q
 from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
@@ -17,6 +18,15 @@ logger = logging.getLogger(__name__)
 
 
 class DnsRecord(TimeStampedModel):
+    """DNS record model with RFC 1034 compliance for record type constraints."""
+
+    # Per RFC 1034 Section 3.6.2: CNAME records cannot coexist with other record types
+    # This mapping defines which record types conflict with each other
+    CONFLICTING_RECORD_TYPES = {
+        DNSRecordTypes.CNAME: [DNSRecordTypes.A, DNSRecordTypes.AAAA],
+        DNSRecordTypes.A: [DNSRecordTypes.CNAME],
+        DNSRecordTypes.AAAA: [DNSRecordTypes.CNAME],
+    }
 
     dns_zone = models.ForeignKey("DnsZone", on_delete=models.CASCADE, related_name="records")
 
@@ -101,6 +111,22 @@ class DnsRecord(TimeStampedModel):
             if conflict.exists():
                 errors["name"] = ["A record with that name already exists. Names must be unique."]
 
+    def _normalize_name(self) -> None:
+        """Lowercase the record name so storage matches DNS case-insensitivity."""
+        if self.name:
+            self.name = self.name.lower()
+
+    def full_clean(self, *args, **kwargs):
+        # Normalize before field validators and clean() run so self.name is
+        # consistently lowercased for every downstream check, not just at save-time.
+        self._normalize_name()
+        super().full_clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        # Safety net for paths that bypass full_clean (e.g., create_from_vendor_data).
+        self._normalize_name()
+        super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
         errors = {}
@@ -113,6 +139,143 @@ class DnsRecord(TimeStampedModel):
 
         if errors:
             raise ValidationError(errors)
+
+    @classmethod
+    def _equivalent_name_forms(cls, name: str, domain_name: str | None) -> list[str]:
+        """Return every stored-form of a DNS name within a zone.
+
+        DNS names have two equivalences that dup/conflict checks must span, because
+        records may be stored either way depending on source (user input vs vendor sync):
+          - Root of the zone: "@" ≡ the bare domain name ("example.gov").
+          - Label/FQDN: "www" ≡ "www.example.gov".
+        Case is handled by iexact in the filter, not here.
+        """
+        forms = {name}
+        if not domain_name:
+            return list(forms)
+
+        name_lower = name.lower()
+        domain_lower = domain_name.lower()
+
+        if name_lower == "@":
+            forms.add(domain_name)
+        elif name_lower == domain_lower:
+            forms.add("@")
+
+        if name_lower != "@" and name_lower != domain_lower and not name_lower.endswith(f".{domain_lower}"):
+            forms.add(f"{name}.{domain_name}")
+
+        if name_lower != domain_lower and name_lower.endswith(f".{domain_lower}"):
+            label = name[: -(len(domain_name) + 1)]
+            if label:
+                forms.add(label)
+
+        return list(forms)
+
+    @classmethod
+    def _name_q(cls, name: str, domain_name: str | None) -> Q:
+        """Case-insensitive name filter that matches every equivalent stored-form.
+
+        Covers label↔FQDN and root↔bare-domain equivalences — see _equivalent_name_forms.
+        """
+        q = Q()
+        for form in cls._equivalent_name_forms(name, domain_name):
+            q |= Q(name__iexact=form)
+        return q
+
+    @classmethod
+    def has_duplicate_record(
+        cls,
+        domain_name: str,
+        record_type: str,
+        name: str,
+        content: str,
+        priority: int | None = None,
+        exclude_record_id: int | None = None,
+    ) -> bool:
+        """Return True if a record with identical data already exists in the zone.
+
+        A record is a duplicate when type, name, and content all match (plus priority
+        for MX). TTL is not part of identity — two records that differ only in TTL are
+        still duplicates. The zone is resolved from domain_name internally so callers
+        don't need to query DnsZone first.
+
+        Args:
+            domain_name: The domain whose zone should be searched. Returns False if the
+                domain has no DNS zone.
+            record_type: The record type being added (e.g., DNSRecordTypes.A).
+            name: The record name (can be label or FQDN; DNS is case-insensitive).
+            content: The record content to match against (case-insensitive).
+            priority: The MX priority. Only compared when record_type is MX;
+                ignored otherwise.
+            exclude_record_id: Record ID to exclude (for editing existing records).
+
+        Returns:
+            True if a duplicate exists, False otherwise.
+        """
+        if not (name and content and domain_name):
+            return False
+
+        dns_zone_id = DnsZone.get_zone_id_for_domain(domain_name)
+        if not dns_zone_id:
+            return False
+
+        query = cls.objects.filter(
+            dns_zone_id=dns_zone_id,
+            type=record_type,
+            content__iexact=content,
+        ).filter(cls._name_q(name, domain_name))
+
+        if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
+            query = query.filter(priority=priority)
+
+        if exclude_record_id:
+            query = query.exclude(pk=exclude_record_id)
+
+        return query.exists()
+
+    @classmethod
+    def has_name_conflict(
+        cls,
+        domain_name: str,
+        record_type: str,
+        name: str,
+        exclude_record_id: int | None = None,
+    ) -> bool:
+        """Return True if the record's name collides with an incompatible type in the zone.
+
+        Per RFC 1034 Section 3.6.2, only CNAME/A/AAAA records have name conflicts.
+        Handles both label and FQDN input formats with case-insensitive matching.
+        The zone is resolved from domain_name internally so callers don't need to
+        query DnsZone first.
+
+        Args:
+            domain_name: The domain whose zone should be searched. Returns False if the
+                domain has no DNS zone.
+            record_type: The record type being added (e.g., DNSRecordTypes.CNAME).
+            name: The record name (can be label or FQDN; DNS is case-insensitive).
+            exclude_record_id: Record ID to exclude (for editing existing records).
+
+        Returns:
+            True if a conflict exists, False otherwise.
+        """
+        record_type_enum = DNSRecordTypes(record_type)
+        if record_type_enum not in cls.CONFLICTING_RECORD_TYPES or not (name and domain_name):
+            return False
+
+        dns_zone_id = DnsZone.get_zone_id_for_domain(domain_name)
+        if not dns_zone_id:
+            return False
+
+        query = cls.objects.filter(
+            dns_zone_id=dns_zone_id,
+            type__in=cls.CONFLICTING_RECORD_TYPES[record_type_enum],
+        ).filter(cls._name_q(name, domain_name))
+
+        if exclude_record_id:
+            query = query.exclude(pk=exclude_record_id)
+
+        return query.exists()
 
     @classmethod
     def _validate_cname_record_name_dne_hostname(self, record_name, hostname, domain_name=None):
