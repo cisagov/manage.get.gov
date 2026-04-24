@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
     HAS_PORTFOLIO_DOMAINS_ANY_PERM,
@@ -310,7 +311,7 @@ class PortfolioMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member role and permission changes have been saved.")
+            messages.success(self.request, "The member's role and permissions have been updated.")
             return redirect("member", member_pk=member_pk) if not removing_admin_role_on_self else redirect("home")
         else:
             return render(
@@ -404,9 +405,11 @@ class PortfolioMemberDomainsEditView(DetailView, View):
 
         try:
             self._process_added_domains(added_domain_ids, member, request.user, portfolio)
-            self._process_removed_domains(removed_domain_ids, member)
+            self._process_removed_domains(removed_domain_ids, member, portfolio)
             messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
+        except PermissionDenied:
+            raise
         except IntegrityError:
             messages.error(
                 request,
@@ -444,6 +447,23 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         if added_domain_ids:
             # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
+
+            # validate all domains belong to this portfolio
+            invalid_domains = [d for d in added_domains if d.domain_info.portfolio_id != portfolio.id]
+
+            if invalid_domains:
+                logger.warning(
+                    f"Cross-portfolio domain assignment attempted for portfolio {portfolio.id} "
+                    f"by user {self.request.user.email}",
+                    extra={
+                        "portfolio_id": portfolio.id,
+                        "member_id": member.id,
+                        "invalid_domain_ids": [d.id for d in invalid_domains],
+                        "request_user": self.request.user.id,
+                    },
+                )
+                raise PermissionDenied("Cross-portfolio domain assignment is not allowed")
+
             member_of_a_different_org, _ = get_org_membership(portfolio, member.email, member)
             if not send_domain_invitation_email(
                 email=member.email,
@@ -462,7 +482,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 ignore_conflicts=True,  # Avoid duplicate entries
             )
 
-    def _process_removed_domains(self, removed_domain_ids, member):
+    def _process_removed_domains(self, removed_domain_ids, member, portfolio):
         """
         Processes removed domains by deleting corresponding UserDomainRole instances.
         """
@@ -470,6 +490,22 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             # Notify domain managers for domains which the member is being removed from
             # Fetch Domain objects from removed_domain_ids
             removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+
+            # First, validate all domains belong to this portfolio
+            invalid_domains = [d for d in removed_domains if d.domain_info.portfolio_id != portfolio.id]
+            if invalid_domains:
+                logger.warning(
+                    f"Cross-portfolio domain removal attempted for portfolio {portfolio.id} "
+                    f"by user {self.request.user.email}",
+                    extra={
+                        "portfolio_id": portfolio.id,
+                        "member_id": member.id,
+                        "invalid_domain_ids": [d.id for d in invalid_domains],
+                        "request_user": self.request.user.id,
+                    },
+                )
+                raise PermissionDenied("Cross-portfolio domain removal is not allowed")
+
             # need to get the domains from removed_domain_ids
             for domain in removed_domains:
                 if not send_domain_manager_removal_emails_to_domain_managers(
@@ -647,7 +683,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member role and permission changes have been saved.")
+            messages.success(self.request, "The member's role and permissions have been updated.)
             return redirect("invitedmember", invitedmember_pk=invitedmember_pk)
 
         return render(
@@ -733,9 +769,11 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
 
         try:
             self._process_added_domains(added_domain_ids, email, request.user, portfolio)
-            self._process_removed_domains(removed_domain_ids, email)
+            self._process_removed_domains(removed_domain_ids, email, portfolio)
             messages.success(request, "The domain assignment changes have been saved.")
             return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
+        except PermissionDenied:
+            raise
         except IntegrityError:
             messages.error(
                 request, 
@@ -775,6 +813,23 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         if added_domain_ids:
             # get added_domains from ids to pass to send email method and bulk create
             added_domains = Domain.objects.filter(id__in=added_domain_ids)
+
+            # validate all domains belong to this portfolio
+            invalid_domains = [d for d in added_domains if d.domain_info.portfolio_id != portfolio.id]
+
+            if invalid_domains:
+                logger.warning(
+                    f"Cross-portfolio domain assignment attempted for portfolio {portfolio.id} "
+                    f"by user {self.request.user.email}",
+                    extra={
+                        "portfolio_id": portfolio.id,
+                        "email": email,
+                        "invalid_domain_ids": [d.id for d in invalid_domains],
+                        "request_user": self.request.user.id,
+                    },
+                )
+                raise PermissionDenied("Cross-portfolio domain assignment is not allowed")
+
             member_of_a_different_org, _ = get_org_membership(portfolio, email, None)
             if not send_domain_invitation_email(
                 email=email,
@@ -804,7 +859,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 ]
             )
 
-    def _process_removed_domains(self, removed_domain_ids, email):
+    def _process_removed_domains(self, removed_domain_ids, email, portfolio):
         """
         Processes removed domain invitations by updating their status to CANCELED.
         """
@@ -814,6 +869,22 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         # Notify domain managers for domains which the member is being removed from
         # Fetch Domain objects from removed_domain_ids
         removed_domains = Domain.objects.filter(id__in=removed_domain_ids)
+
+        # First, validate all domains belong to this portfolio
+        invalid_domains = [d for d in removed_domains if d.domain_info.portfolio_id != portfolio.id]
+        if invalid_domains:
+            logger.warning(
+                f"Cross-portfolio domain removal attempted for portfolio {portfolio.id} "
+                f"by user {self.request.user.email}",
+                extra={
+                    "portfolio_id": portfolio.id,
+                    "email": email,
+                    "invalid_domain_ids": [d.id for d in invalid_domains],
+                    "request_user": self.request.user.id,
+                },
+            )
+            raise PermissionDenied("Cross-portfolio domain removal is not allowed")
+
         # need to get the domains from removed_domain_ids
         for domain in removed_domains:
             if not send_domain_manager_removal_emails_to_domain_managers(
@@ -1161,10 +1232,10 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited.")
+                messages.success(self.request, f"{requested_email} has been invited to this organization..")
             else:
                 if permission_exists:
-                    messages.warning(self.request, "User is already a member of this portfolio.")
+                    messages.warning(self.request, f"{email} is already a member of this organization.")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
@@ -1178,7 +1249,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 portfolio,
                 exc_info=True,
             )
-            messages.error(self.request, "Could not send organization invitation email.")
+            messages.error(self.request, mark_safe(f"An unexpected error occurred: {requested_email} could not be added to this organization. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"))
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
