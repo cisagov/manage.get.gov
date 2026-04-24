@@ -59,8 +59,13 @@ class TestValidateDNSName(SimpleTestCase):
         self.assert_all_raise([".abc", "abc."], DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
-        invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";", "@"]] + ["ab$c"]
+        invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";", "@"]]
         self.assert_all_raise(invalid_names, DNS_NAME_FORMAT_ERROR_MESSAGE)
+
+    def test_validate_dns_name_accepts_characters_not_in_blacklist(self):
+        """Characters not in the AC's disallowed list should pass — including ones
+        our prior whitelist rejected (underscore is load-bearing for _dmarc etc.)."""
+        self.assert_all_valid(["_dmarc", "ab_cd", "ab,cd", "ab$cd", "ab!cd"])
 
     def test_validate_dns_name_rejects_labels_over_63_characters(self):
         self.assert_dns_name_validation_error("a" * 64, DNS_NAME_LENGTH_ERROR_MESSAGE)

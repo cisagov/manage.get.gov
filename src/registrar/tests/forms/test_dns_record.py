@@ -120,8 +120,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         # Testing hyphen at end of label
         self.assert_dns_name_errors("abc-", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
 
-        # Testing invalid character
-        self.assert_dns_name_errors("ab$c", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+        # Testing invalid character from the AC's disallowed list
+        self.assert_dns_name_errors("ab(c", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
         # Testing per-label length exceeds 63 characters
         self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])

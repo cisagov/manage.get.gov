@@ -1,4 +1,3 @@
-import re
 from django.core.validators import MaxLengthValidator
 from django.core.exceptions import ValidationError
 
@@ -57,12 +56,6 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
 
 
-def _validate_pattern(value: str, pattern: re.Pattern[str], error_message: str) -> None:
-    """Ensure a value fully matches the expected pattern."""
-    if not pattern.fullmatch(value):
-        raise ValidationError(error_message)
-
-
 # For use on DNS record names
 DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name without using parentheses, colons, or semicolons."
 DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE = "Enter the name without using consecutive periods."
@@ -73,7 +66,7 @@ DNS_NAME_LENGTH_ERROR_MESSAGE = (
     "Full name (including labels, domain, and period) must be no more than 253 characters."
 )
 DNS_NAME_SPACES_ERROR_MESSAGE = "Enter the DNS name without any spaces."
-DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
+DNS_NAME_INVALID_CHARS = frozenset("@():;")
 
 # For use on DNS record fields outside of name
 DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
@@ -92,8 +85,10 @@ def _validate_dns_name_structure(name: str) -> None:
 
 
 def _validate_dns_name_characters(name: str) -> None:
-    """Ensure the name contains only supported DNS record characters."""
-    _validate_pattern(name, DNS_NAME_VALID_CHAR_REGEX, DNS_NAME_FORMAT_ERROR_MESSAGE)
+    """Reject characters explicitly disallowed by the AC (@ ( ) : ;).
+    The apex '@' is handled earlier in validate_dns_name; any remaining '@' is invalid."""
+    if any(ch in DNS_NAME_INVALID_CHARS for ch in name):
+        raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
 
 
 def _validate_dns_name_length(name: str) -> None:

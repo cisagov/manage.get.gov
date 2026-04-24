@@ -190,7 +190,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_post_invalid_dns_name_for_dns_record_throws_error(self):
-        invalid_name = "testing!"
+        invalid_name = "testing("
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
