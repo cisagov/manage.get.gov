@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -42,6 +43,7 @@ from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
+    DnsHostingError,
     GenericError,
     GenericErrorCodes,
     NameserverError,
@@ -51,6 +53,7 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
 )
+from registrar.utility.api_responses import dns_error_response
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.invitation_helper import (
@@ -1077,9 +1080,31 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
+        except DnsHostingError as exc:
+            # Typed DNS errors return the canonical JSON envelope.
+            # See docs/developer/dns-error-handling.md.
+            logger.error(
+                "DNS record create/update failed (typed)",
+                extra={
+                    "error_code": exc.wire_code,
+                    "upstream_status": exc.upstream_status,
+                    "dns_operation": "update_dns_record" if is_edit else "create_dns_record",
+                    **exc.context,
+                },
+            )
+            return dns_error_response(exc, request=request)
         except (APIError, RequestError) as e:
-            logger.error(f"DNS record create/update failed, API error in view {e}")
-            messages.error(request, "Failed to save DNS record.")
+            request_id = getattr(request, "_dns_request_id", "unknown")
+            logger.error(f"DNS record create/update failed, API error in view req_id={request_id} {e}")
+            opensearch_link = f"https://logs.fr.cloud.gov/?q={request_id}"
+            messages.error(
+                request,
+                mark_safe(  # nosec B308 — request_id is a UUID generated server-side
+                    "Failed to save DNS record. If the problem persists, share this reference "
+                    f'ID with support: <a href="{opensearch_link}" target="_blank" '
+                    f'rel="noopener"><code>{request_id}</code></a>'
+                ),
+            )
             self.dns_record = None
             record_id = None
         except GenericError:

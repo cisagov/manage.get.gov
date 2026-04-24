@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from django.conf import settings
 
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsHostingErrorCodes, DnsNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ class CloudflareService:
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
             logger.info(
-                "Updated zone DNS settings for zone_id=%s (zone_mode=%s, nameservers.type=%s, namservers.ns_set=%s)",
+                "Updated zone DNS settings for zone_id=%s (nameservers.type=%s, nameservers.ns_set=%s)",
                 zone_id,
                 nameservers_type,
                 ns_set,
@@ -157,13 +157,24 @@ class CloudflareService:
         try:
             resp = self.client.post(appended_url, json=record_data)
             resp.raise_for_status()
-            logger.info(f"Created dns record for zone {zone_id}")
+            logger.info(f"Created dns record for zone {zone_id} (cf-ray={resp.headers.get('cf-ray')})")
         except RequestError as e:
             logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
             error_body = e.response.text
+            cf_ray = e.response.headers.get("cf-ray") if hasattr(e.response, "headers") else None
             logger.error(f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {error_body}")
+            # Prototype scope: only 404 raises a typed DnsHostingError. Other
+            # status codes continue to raise APIError until the full typed-error
+            # migration lands. cf_ray capture is verified end-to-end — see
+            # docs/developer/dns-error-handling.md §3.4 and §17.
+            if e.response.status_code == 404:
+                raise DnsNotFoundError(
+                    code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+                    upstream_status=404,
+                    context={"zone_id": zone_id, "cf_ray": cf_ray},
+                ) from e
             raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}")
         return resp.json()
 
@@ -255,13 +266,15 @@ class CloudflareService:
         try:
             resp = self.client.patch(appended_url, headers=self.headers, json=record_data)
             resp.raise_for_status()
-            logger.info(f"Updated dns record {record_id} in zone {zone_id}.")
+            logger.info(f"Updated dns record {record_id} in zone {zone_id} (cf-ray={resp.headers.get('cf-ray')}).")
         except RequestError as e:
             logger.error(f"Failed to update dns record {record_id} for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
+            cf_ray = e.response.headers.get("cf-ray") if hasattr(e.response, "headers") else None
             logger.error(
-                f"Error {e.response.status_code} while updating dns record: {e}\nResponse body: {e.response.text}"
+                f"Error {e.response.status_code} while updating dns record "
+                f"(cf-ray={cf_ray}): {e}\nResponse body: {e.response.text}"
             )
             raise APIError(f"Cloudflare update_dns_record failed: {e.response.status_code} {e.response.text}")
         return resp.json()

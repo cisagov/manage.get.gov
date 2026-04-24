@@ -77,7 +77,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
 from django.db.models import Exists, OuterRef
-from .models import DnsRecord
+from .models import DnsRecord, DnsErrorMessage
 
 logger = logging.getLogger(__name__)
 
@@ -4226,6 +4226,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 ]
             },
         ),
+        (
+            "DNS support links (prototype preview for #4927)",
+            {
+                "fields": ["dns_support_links"],
+                "description": (
+                    "Starting points for support to investigate DNS changes and failures for this domain. "
+                    "The OpenSearch URL is a placeholder — the real base URL and query syntax get wired "
+                    "up in the admin-visibility ticket."
+                ),
+            },
+        ),
     )
 
     def get_readonly_fields(self, request, obj=None):
@@ -4233,7 +4244,45 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return super().get_readonly_fields(request, obj) + (
             "on_hold_date_display",
             "days_on_hold_display",
+            "dns_support_links",
         )
+
+    @admin.display(description="Support links")
+    def dns_support_links(self, obj):
+        """Render deep-links + request-ID paste box on the domain detail page.
+
+        Preview implementation for ticket #4927 (admin visibility via auditlog +
+        OpenSearch deep-link helpers). Final OpenSearch query-param shape will be
+        confirmed when that ticket ships.
+        """
+        from django.utils.html import escape
+        from django.utils.safestring import mark_safe
+
+        domain_name = escape(getattr(obj, "name", "") or "")
+        audit_url = f"/admin/auditlog/logentry/?q={domain_name}"
+        opensearch_base = "https://logs.fr.cloud.gov/"
+        input_id = f"dns-reqid-{obj.pk}"
+        # Can't use a nested <form> here — the admin change page already wraps
+        # this widget in its own <form>, and HTML forbids nested forms. Use a
+        # plain button + JS onclick instead. All interpolated values here are
+        # either static or already escaped.
+        html = (
+            '<ul style="margin: 0 0 0.75em 0; padding-left: 1.25em;">'
+            f'<li><a href="{audit_url}">DNS audit trail (all registered DNS model changes)</a> — '
+            "successful create/update/delete events on DnsRecord, DnsZone, DnsAccount.</li>"
+            f"<li>DNS logs in OpenSearch for <code>{domain_name}</code> — paste the "
+            "<code>request_id</code> the user quoted to search the full lifecycle of their request:"
+            '<div style="margin-top: 0.4em;">'
+            f'<input type="text" id="{input_id}" placeholder="paste request_id here" '
+            'style="width: 22em; padding: 3px 6px;" />'
+            '<button type="button" style="margin-left: 0.4em;" onclick="'
+            f"var v=document.getElementById('{input_id}').value.trim();"
+            "if(!v){alert('Paste a request_id first');return false;}"
+            f"window.open('{opensearch_base}?q='+encodeURIComponent(v),'_blank','noopener');"
+            'return false;">Open in OpenSearch</button>'
+            "</div></li></ul>"
+        )
+        return mark_safe(html)  # nosec B308 — all interpolated values are escaped or static
 
     # ------- Domain Information Fields
 
@@ -4738,6 +4787,51 @@ class DnsRecordAdmin(admin.ModelAdmin):
     list_filter = ("type", "created_at", "updated_at")
 
     search_fields = ("name", "content", "comment")
+
+
+@admin.register(DnsErrorMessage)
+class DnsErrorMessageAdmin(admin.ModelAdmin):
+    """Admin-editable user-facing copy for DNS errors.
+
+    Staff edit the `message` field directly — changes take effect immediately
+    via a post_save signal that invalidates the in-process cache. No deploy
+    required. See docs/developer/dns-error-handling.md §17.
+
+    `namespace` and `code` are the lookup keys and are read-only for non-
+    superusers to prevent accidental key drift between code enum and DB rows.
+    """
+
+    list_display = ("namespace", "code", "message_preview", "updated_at")
+    list_filter = ("namespace",)
+    search_fields = ("code", "message", "internal_notes")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (
+            "Content (editable)",
+            {"fields": ("message", "internal_notes")},
+        ),
+        (
+            "Key (superuser only)",
+            {"fields": ("namespace", "code")},
+        ),
+        (
+            "Audit",
+            {"fields": ("created_at", "updated_at")},
+        ),
+    )
+
+    @admin.display(description="Message")
+    def message_preview(self, obj):
+        text = obj.message or ""
+        return text if len(text) <= 80 else text[:77] + "…"
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        # Non-superusers cannot rename the key; prevents silent drift between
+        # the code enum and the DB row. Message text stays editable for staff.
+        if not request.user.is_superuser:
+            ro.extend(["namespace", "code"])
+        return ro
 
 
 class DraftDomainResource(resources.ModelResource):

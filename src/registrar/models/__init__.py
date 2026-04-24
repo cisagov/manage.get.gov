@@ -21,6 +21,7 @@ from .dns.dns_record import DnsRecord
 from .dns.vendor_dns_record import VendorDnsRecord
 from .dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord
 from .dns.dns_soa import DnsSoa
+from .dns.dns_error_message import DnsErrorMessage
 
 # IMPORTANT: UserPortfolioPermission must be before PortfolioInvitation.
 # PortfolioInvitation imports from UserPortfolioPermission, so you will get a circular import otherwise.
@@ -74,6 +75,7 @@ __all__ = [
     "VendorDnsRecord",
     "DnsRecord_VendorDnsRecord",
     "DnsSoa",
+    "DnsErrorMessage",
 ]
 
 auditlog.register(Contact)
@@ -100,3 +102,6 @@ auditlog.register(Suborganization)
 auditlog.register(SeniorOfficial)
 auditlog.register(UserPortfolioPermission)
 auditlog.register(AllowedEmail)
+auditlog.register(DnsRecord)
+auditlog.register(DnsZone)
+auditlog.register(DnsAccount)
