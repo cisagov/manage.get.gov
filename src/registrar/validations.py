@@ -67,11 +67,12 @@ def _validate_pattern(value: str, pattern: re.Pattern[str], error_message: str) 
 DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name without using parentheses, colons, or semicolons."
 DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE = "Enter the name without using consecutive periods."
 DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE = "Enter the name without using consecutive periods."
-DNS_NAME_HYPHEN_ERROR_MESSAGE = "placeholder error message for leading or trailing hyphen"
+DNS_NAME_HYPHEN_ERROR_MESSAGE = "Enter the name without using hyphens at the start or end of a label."
 DNS_NAME_LENGTH_ERROR_MESSAGE = (
     "Labels must be no more than 63 characters. "
     "Full name (including labels, domain, and period) must be no more than 253 characters."
 )
+DNS_NAME_SPACES_ERROR_MESSAGE = "Enter the DNS name without any spaces."
 DNS_NAME_VALID_CHAR_REGEX = re.compile(r"^[a-zA-Z0-9.*-]+$")
 
 
@@ -149,7 +150,7 @@ def validate_dns_name(name: str) -> None:
 
     # Check for spaces
     if " " in name:
-        raise ValidationError("Enter the name without any spaces.")
+        raise ValidationError(DNS_NAME_SPACES_ERROR_MESSAGE)
 
     _validate_dns_name_structure(name)
     _validate_dns_name_characters(name)

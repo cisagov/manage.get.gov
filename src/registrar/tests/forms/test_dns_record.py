@@ -9,6 +9,7 @@ from registrar.validations import (
     DNS_NAME_HYPHEN_ERROR_MESSAGE,
     DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_NAME_SPACES_ERROR_MESSAGE,
 )
 from faker import Faker
 
@@ -110,7 +111,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])
 
         # Testing space in name
-        self.assert_dns_name_errors("ab cd", ["Enter the name without any spaces."])
+        self.assert_dns_name_errors("ab cd", [DNS_NAME_SPACES_ERROR_MESSAGE])
 
     def test_dns_name_with_consecutive_dots_throws_error(self):
         """Consecutive dots should be rejected."""
@@ -125,8 +126,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assert_dns_name_errors("abc.", [DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE])
 
     def test_dns_name_with_invalid_special_characters_throws_error(self):
-        """Parentheses, colons, and semicolons are rejected."""
-        for invalid_char in ["(", ")", ":", ";"]:
+        """Invalid characters (e.g. @ ( ) : ;) should be rejected."""
+        for invalid_char in ["(", ")", ":", ";", "@"]:
             with self.subTest(invalid_char=invalid_char):
                 self.assert_dns_name_errors(f"ab{invalid_char}cd", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
@@ -286,7 +287,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(name="my name")
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("Enter the name without any spaces.", form.errors["name"])
+        self.assertIn(DNS_NAME_SPACES_ERROR_MESSAGE, form.errors["name"])
 
     # --- Content validation ---
 

@@ -5,7 +5,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from registrar.validations import validate_dns_name
+from registrar.validations import DNS_NAME_LENGTH_ERROR_MESSAGE, validate_dns_name
 from registrar.utility.enums import DNSRecordTypes, format_dns_ttl
 from registrar.models.dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord as RecordsJoin
 from registrar.models.dns.vendor_dns_record import VendorDnsRecord
@@ -25,12 +25,12 @@ class DnsRecord(TimeStampedModel):
     )  # type: ignore
 
     type = models.CharField(choices=DNSRecordTypes.choices)
-    # Purposefully not enforcing max_length here in favor of custom DNS validation messaging
     name = models.CharField(
-        max_length=255,
+        max_length=253,
         blank=False,
         null=False,
         validators=[validate_dns_name],
+        error_messages={"max_length": DNS_NAME_LENGTH_ERROR_MESSAGE},
     )
 
     ttl = models.PositiveIntegerField(default=1)

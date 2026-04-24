@@ -29,7 +29,7 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
-from registrar.validations import validate_dns_name_fqdn_length
+from registrar.validations import DNS_NAME_LENGTH_ERROR_MESSAGE, validate_dns_name_fqdn_length
 
 import json
 import re
@@ -834,7 +834,12 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter the name of this record."}}
+        error_messages = {
+            "name": {
+                "required": "Enter the name of this record.",
+                "max_length": DNS_NAME_LENGTH_ERROR_MESSAGE,
+            }
+        }
 
     type = forms.ChoiceField(
         # TODO: choices has been temporarily hard-coded for user testing.
