@@ -38,7 +38,6 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
             )
         ],
         label="",
-        help_text="Maximum 2000 characters allowed.",
     )
 
 
