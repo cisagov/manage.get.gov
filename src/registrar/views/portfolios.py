@@ -683,7 +683,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member's role and permissions have been updated.)
+            messages.success(self.request, "The member's role and permissions have been updated.")
             return redirect("invitedmember", invitedmember_pk=invitedmember_pk)
 
         return render(
@@ -1249,7 +1249,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 portfolio,
                 exc_info=True,
             )
-            messages.error(self.request, mark_safe(f"An unexpected error occurred: {requested_email} could not be added to this organization. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"))
+            messages.error(self.request, mark_safe(f"An unexpected error occurred: {email} could not be added to this organization. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"))
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
@@ -1258,7 +1258,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
             )
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send portfolio email invitation.")
+            messages.warning(self.request, mark_safe(f"An unexpected error occurred: {email} could not be added to this organization. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"))
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
