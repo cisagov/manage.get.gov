@@ -29,6 +29,14 @@ from .common import (
     DIGEST_TYPE_CHOICES,
 )
 from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
+from registrar.validations import (
+    DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    validate_dns_name_fqdn_length,
+)
 
 import json
 import re
@@ -834,7 +842,12 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {
+            "name": {
+                "required": DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+                "max_length": DNS_NAME_LENGTH_ERROR_MESSAGE,
+            }
+        }
 
     type = forms.ChoiceField(
         # TODO: choices has been temporarily hard-coded for user testing.
@@ -881,9 +894,9 @@ class DomainDNSRecordForm(forms.ModelForm):
         max_value=65535,
         help_text="0 - 65535",
         error_messages={
-            "invalid": "Enter a priority number between 0-65535.",
-            "min_value": "Enter a priority number between 0-65535.",
-            "max_value": "Enter a priority number between 0-65535.",
+            "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+            "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+            "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
         },
         widget=forms.TextInput(
             attrs={
@@ -908,6 +921,10 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def _field_is_clean(self, field: str, value) -> bool:
+        """True if a field has a non-empty value and no field-level errors yet."""
+        return bool(value) and field not in self.errors
+
     def _validate_content(self, record_type, content):
         """Validate content field based on record type."""
         record = DNSRecordTypes(record_type)
@@ -915,7 +932,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         # Content is required for all record types
         if not content:
             # Use the record's error_message if available, otherwise use a generic message
-            error_msg = record.error_message or "Enter the content for this record."
+            error_msg = record.error_message or DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE
             self.add_error("content", error_msg)
             return
 
@@ -930,17 +947,28 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     def _validate_cname_record(self, record_type, name, content):
         """Validate CNAME record constraints."""
-        if record_type == DNSRecordTypes.CNAME:
-            try:
-                DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
-            except ValidationError as e:
-                record = DNSRecordTypes(record_type)
-                self.add_error("content", record.error_message or e)
+        if record_type != DNSRecordTypes.CNAME:
+            return
+        if not (self._field_is_clean("name", name) and self._field_is_clean("content", content)):
+            return
+        try:
+            DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
+        except ValidationError as e:
+            self.add_error("content", DNSRecordTypes(record_type).error_message or e)
 
     def _validate_mx_priority(self, record_type, priority):
         """Validate MX record priority."""
         if record_type == DNSRecordTypes.MX and priority is None:
-            self.add_error("priority", "Enter a priority for this record.")
+            self.add_error("priority", DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
+
+    def _validate_name_fqdn_length(self, name):
+        """Enforce the 253-char limit after the zone name is appended."""
+        if not self._field_is_clean("name", name):
+            return
+        try:
+            validate_dns_name_fqdn_length(name, self.domain_name)
+        except ValidationError as e:
+            self.add_error("name", e.messages[0] if getattr(e, "messages", None) else str(e))
 
     def _validate_comment_field(self, comment):
         if comment and len(comment) > 100:
@@ -958,6 +986,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             self._validate_content(record_type, content)
             self._validate_cname_record(record_type, name, content)
             self._validate_comment_field(comment)
+            self._validate_name_fqdn_length(name)
             # Only validate MX priority if priority field didn't already have a validation error
             if "priority" not in self.errors:
                 self._validate_mx_priority(record_type, priority)
