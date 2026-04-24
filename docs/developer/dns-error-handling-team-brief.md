@@ -29,7 +29,7 @@ This epic proposes a standard pattern for how DNS errors are classified, logged,
 
 ### For users
 
-- Validation and conflict errors should be actionable, not generic.
+- Validation and conflict errors should be actionable.
 - When something breaks on our side, users see one consistent, non-alarming message with a reference ID they can give to support.
 - A visible `request_id` helps support investigate reported failures faster.
 
@@ -47,7 +47,7 @@ This epic proposes a standard pattern for how DNS errors are classified, logged,
 
 ### For design and product
 
-- User-facing DNS error copy lives in `/admin` as a first-class editable table, not in spreadsheets that drift out of sync with code.
+- User-facing DNS error copy lives in `/admin` as an editable table.
 - Edits go live on the next request via cache invalidation — no deploy required.
 - Django's built-in audit log captures who changed what and when.
 
@@ -137,21 +137,21 @@ DNS user-facing error copy currently lives in spreadsheets that drift out of syn
 
 **After this epic**, design or product opens `/admin → DNS error messages`, edits the text, saves — and the next user to hit that error sees the new copy.
 
-Tests assert on the error **code**, not the literal string, so copy edits never break tests. If the DB row is missing or unreachable, exceptions fall back to a code-level default, so the deploy pipeline cannot break on a missing row. Django's built-in audit log captures every change. Whether edits go live immediately or require a review step first is an open question for product and security.
+Tests assert on the error **code** rather than the literal string, so copy edits never break tests. If the DB row is missing or unreachable, exceptions fall back to a code-level default, so the deploy pipeline cannot break on a missing row. Django's built-in audit log captures every change. Whether edits go live immediately or require a review step first is an open question for product and security.
 
 **Scope for phase 1 (this epic):** DNS hosting error messages only — 8 rows, one namespace. This is a deliberate test run to prove the pattern on a small, contained surface before applying it to the higher-traffic validation flows.
 
 **Phase 2 (proposed, separate ticket pending proposal buy-in):** migrate form-validation messages (`validations.py`) and the other error namespaces (`NameserverError`, `DsDataError`, `SecurityEmailError`) into the same store. **This is the next major component moving off the spreadsheet after DNS hosting** — most of the error-related editorial churn today lives in form validation. The spreadsheet is used across the registrar for more than just error copy, so phase 2 doesn't end the spreadsheet entirely; it continues the phase-out that phase 1 starts.
 
-If phase 1 surfaces problems with the pattern (cache behavior, test churn, editor UX, audit-log gaps), we learn with 8 rows migrated instead of 80+. Phase 2 gets scoped and sequenced once phase 1 ships; proposal buy-in on the two-phase approach is the gate for filing the phase-2 ticket.
+If phase 1 surfaces problems with the pattern (cache behavior, test churn, editor UX, audit-log gaps), we learn with 8 rows migrated instead of 80+. Phase 2 gets scoped and sequenced once phase 1 is complete; proposal buy-in on the two-phase approach is the gate for filing the phase-2 ticket.
 
 ## Guiding Principles
 
 - Detect errors as early as possible, but turn them into user-facing responses in one place — the view.
-- Log errors as structured data (fields like `zone_id`, `error_code`, `request_id`) so we can query them, not just as free-form text.
+- Log errors as structured data (fields like `zone_id`, `error_code`, `request_id`) so we can query them correctly in OpenSearch.
 - Keep secrets, provider credentials, and sensitive request data out of logs.
 - Use a small, well-understood set of error types.
-- Make it as easy for support to troubleshoot a failure as it is for an engineer to ship one.
+- Make it as easier to troubleshoot and communicate on a failure.
 
 ## What Changes for Each Audience
 
@@ -216,7 +216,7 @@ All 13 sub-tickets are filed under epic **[#4892 — Improve error handling and 
   - **PII:** `user_email` and client IP. These already live in `logging_context.py` today — this epic inherits them, doesn't introduce them. Does current retention cover them, or do we need a shorter window / masking?
   - **Vendor identifiers (new in this epic):** `dns_account_id` (Cloudflare account tag), `zone_id`, `record_id`, `cf_ray`, `upstream_status`, `error_code`, `duration_ms`, `request_id`. These don't identify a person but do describe the shape of a DNS request. Are the defaults fine for these, or do any of them need restricted access?
 - How much technical detail should `/admin` show by default?
-- **Proposed out of scope for this epic, parked for leadership:** whether to adopt a dedicated request-tracing tool (e.g., OpenTelemetry). That is a program-level architectural decision that affects every service the team owns, not just DNS hosting. What this epic ships — OpenSearch + structured fields (`request_id`, `zone_id`, `cf_ray`, `duration_ms`, `error_code`) — already lets us reconstruct a failed request's lifecycle with a single query, which is sufficient for DNS error-handling needs. The broader tracing-tool question is filed as #4930 for leadership to pick up when they're ready; it should not gate this epic's delivery.
+- **Proposed out of scope for this epic, parked for leadership:** whether to adopt a dedicated request-tracing tool (e.g., OpenTelemetry). That is a program-level architectural decision that affects every service the team owns. What this epic includes — OpenSearch + structured fields (`request_id`, `zone_id`, `cf_ray`, `duration_ms`, `error_code`) — already lets us reconstruct a failed request's lifecycle with a single query, which is sufficient for DNS error-handling needs. The broader tracing-tool question is filed as #4930 for leadership to pick up when they're ready; it should not gate this epic's delivery.
 - Design review and sign-off on the user-facing 4xx and 5xx error copy is a required step before implementation. This is filed as **[#4950](https://github.com/cisagov/manage.get.gov/issues/4950)** and blocks the API envelope ticket ([#4925](https://github.com/cisagov/manage.get.gov/issues/4925)). Proposed copy is in [`dns-error-handling.md` section 10](dns-error-handling.md#10-user-facing-error-messaging). **The reviewed messages become the initial values of the admin-editable `DnsErrorMessage` rows** — after sign-off, Design and product can keep editing them in `/admin` with no further dev cycle.
 
 ## Recommended Epic Outcome
@@ -232,7 +232,7 @@ By the end of this epic, we should have:
 
 ## For Team Review
 
-Use this to align on the approach. We will not polish every implementation detail here that is for ticket refinement. The most important questions are:
+Let’s use this to align on the approach. We will not iron out every implementation detail here that is for ticket refinement.
 
 1. Do we agree on the overall approach — one shared way to classify DNS errors, send them to the frontend, log them, and surface them in `/admin`, instead of each flow handling errors its own way? (See items 1, 2, 4, and 5.)
 2. Do we agree that user-correctable errors (bad input, duplicates, rate limiting) should show specific, actionable messages, while system failures (timeouts, provider outages, auth problems) show a single consistent "something went wrong on our end" message with a reference ID? (See item 3.)

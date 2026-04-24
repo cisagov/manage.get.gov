@@ -4231,9 +4231,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             {
                 "fields": ["dns_support_links"],
                 "description": (
-                    "Starting points for support to investigate DNS changes and failures for this domain. "
-                    "The OpenSearch URL is a placeholder — the real base URL and query syntax get wired "
-                    "up in the admin-visibility ticket."
+                    "DNS changes and failures on this domain. "
+                    "OpenSearch URL is a placeholder; final URL and query syntax delivered in #4927."
                 ),
             },
         ),
