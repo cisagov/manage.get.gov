@@ -280,7 +280,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
-        content = self.do_string_splitting_for_txt_record(type, content)
+        content = self._do_string_splitting_for_txt_record(type, content)
         request_url = str(request.url)
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
 
@@ -337,7 +337,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
-        content = self.do_string_splitting_for_txt_record(type, content)
+        content = self._do_string_splitting_for_txt_record(type, content)
         # Get record id from request url to return back in response
         request_url = str(request.url)
         # Split string between "/dns_records/ and extract second partition
@@ -412,17 +412,23 @@ class MockCloudflareService:
         except Exception as e:
             logger.error(f"Failed to rename record using record's DNS zone: {e}.")
 
-    def do_string_splitting_for_txt_record(self, type, content):
+    def _do_string_splitting_for_txt_record(self, type, content):
         """
         This method takes a string and splits it into 255 character chunks,
         then adds quotes around each chunk to mimic how Cloudflare formats TXT record content
         that exceeds 255 characters to meet RFC compliance.
         """
-
-        if type != "TXT" or len(content) <= 255:
+        if type != "TXT":
             return content
+
         else:
-            chunks = [content[i : i + 255] for i in range(0, len(content), 255)]
+            # clean of quotes and resplit content into 255 quoted chunks to mimic how
+            # Cloudflare formats long TXT records
+            if content.startswith('"') and content.endswith('"'):
+                content = content[1:-1]  # Remove the surrounding quotes for splitting
+                content.split('" "')
+                cleaned_content = "".join(content.split('" "'))
+            chunks = [cleaned_content[i : i + 255] for i in range(0, len(cleaned_content), 255)]
             quoted_chunks = [f'"{chunk}"' for chunk in chunks]
+
             return " ".join(quoted_chunks)
-        

@@ -4,6 +4,7 @@ from httpx import Client
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
 from registrar.utility.errors import APIError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
@@ -154,7 +155,23 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])
 
+    def test_mock_create_TXT_record_response(self):
+        # Create initial DNS record
+        domain, account, zone =create_initial_dns_setup()
+        initial_record_data = {"type": "TXT", "name": "blog", "content": "I am a record that is longer that 255 characters so that we can test the double quotes and ensure they are added as 'string splitting' the way we expect the response from the API. When it gets returned, there will be surrounding double quotes and is split by a space. I am 295 without the split."}
+        resp = self.service.create_dns_record(zone.id, initial_record_data)
 
+        result = resp["result"]
+
+        expected_record_data = {
+            "type": "TXT",
+            "name": "blog",
+            "content": '"I am a record that is longer that 255 characters so that we can test the double quotes and ensure they are added as \'string splitting\' the way we expect the response from the API. When it gets returned, there will be surrounding double quotes and is split" " by a space. I am 295 without the split."',
+        }
+
+        self.assertEquals(result["name"], initial_record_data["name"] + "." + domain.name)
+        self.assertEquals(result["content"], expected_record_data["content"])
+        self.assertEquals(result["type"], expected_record_data["type"])
 class TestMockCloudflareServiceEndpointsWithDB(TestCase):
     """
     Test that mocked endpoints that query DB return correct data.

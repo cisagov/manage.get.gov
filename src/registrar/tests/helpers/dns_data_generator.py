@@ -127,7 +127,10 @@ def create_dns_zone(domain, account, **kwargs):
 
 
 def create_initial_dns_setup(domain=None, **kwargs):
-    """Generate a domain, account objects and zone object and their links"""
+    """Generate a domain, account objects and zone object and their links.
+    Defaults if no kwargs are provided: creates a domain with name example.gov,
+    an account with a generated name, and a zone with the same name as the domain.
+    """
     domain = domain or create_domain()
     dns_account = kwargs.get("dns_account", create_dns_account(domain))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
