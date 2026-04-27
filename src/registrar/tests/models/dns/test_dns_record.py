@@ -140,6 +140,13 @@ class DnsRecordTest(TestCase):
             dns_zone=self.dns_zone,
             type="A",
             name="WWW",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        record.save()
+        record.refresh_from_db()
+        self.assertEqual(record.name, "www")
+
     # --- DNS name validation tests for model ---
 
     def test_dns_record_name_with_consecutive_dots_raises(self):
@@ -344,7 +351,7 @@ class DnsRecordTest(TestCase):
         )
         record.save()
         record.refresh_from_db()
-        self.assertEqual(record.name, "www")
+        self.assertEqual(record.name, "test.dns-test.gov")
 
     def test_name_q_at_symbol_matches_bare_domain(self):
         """A query for '@' (root of the zone) matches records stored as the bare domain name."""

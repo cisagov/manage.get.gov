@@ -24,10 +24,10 @@ logger = logging.getLogger(__name__)
 class DnsRecord(TimeStampedModel):
     """DNS record model with RFC 1034 compliance for record type constraints."""
 
-    # Per RFC 1034 Section 3.6.2: CNAME records cannot coexist with other record types
-    # This mapping defines which record types conflict with each other
+    # CNAME records cannot coexist with other record types.
+    # DNS also prevents multiple CNAME records at the same name (only one CNAME per label).
     CONFLICTING_RECORD_TYPES = {
-        DNSRecordTypes.CNAME: [DNSRecordTypes.A, DNSRecordTypes.AAAA],
+        DNSRecordTypes.CNAME: [DNSRecordTypes.A, DNSRecordTypes.AAAA, DNSRecordTypes.CNAME],
         DNSRecordTypes.A: [DNSRecordTypes.CNAME],
         DNSRecordTypes.AAAA: [DNSRecordTypes.CNAME],
     }
@@ -88,32 +88,34 @@ class DnsRecord(TimeStampedModel):
             errors["priority"] = [DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE]
 
     def _validate_exclusive_names(self, record_type, errors):
-        """Validate CNAME/A/AAAA records don't share names."""
+        """Validate CNAME/A/AAAA records don't share names.
+
+        Uses _name_q to handle label/FQDN and @/domain-name equivalences so that
+        records stored in different but equivalent forms are still detected.
+        """
         if not (self.name and self.dns_zone_id):
             return
 
-        # CNAME records cannot share a name with A or AAAA records
-        if record_type == DNSRecordTypes.CNAME:
-            conflict = DnsRecord.objects.filter(
-                dns_zone_id=self.dns_zone_id,
-                name=self.name,
-                type__in=[DNSRecordTypes.A, DNSRecordTypes.AAAA],
-            )
-            if self.pk:
-                conflict = conflict.exclude(pk=self.pk)
-            if conflict.exists():
-                errors["name"] = ["A record with that name already exists. Names must be unique."]
-        # A or AAAA records cannot share a name with CNAME records
-        elif record_type in [DNSRecordTypes.A, DNSRecordTypes.AAAA]:
-            conflict = DnsRecord.objects.filter(
-                dns_zone_id=self.dns_zone_id,
-                name=self.name,
-                type=DNSRecordTypes.CNAME,
-            )
-            if self.pk:
-                conflict = conflict.exclude(pk=self.pk)
-            if conflict.exists():
-                errors["name"] = ["A record with that name already exists. Names must be unique."]
+        if record_type not in self.CONFLICTING_RECORD_TYPES:
+            return
+
+        # Resolve domain name for matching (e.g. "@" vs "example.gov",
+        # "sub" vs "sub.example.gov").
+        try:
+            domain_name = DnsZone.objects.get(pk=self.dns_zone_id).domain.name
+        except DnsZone.DoesNotExist:
+            domain_name = None
+
+        conflict = DnsRecord.objects.filter(
+            dns_zone_id=self.dns_zone_id,
+            type__in=self.CONFLICTING_RECORD_TYPES[record_type],
+        ).filter(self._name_q(self.name, domain_name))
+
+        if self.pk:
+            conflict = conflict.exclude(pk=self.pk)
+
+        if conflict.exists():
+            errors["name"] = ["A record with that name already exists. Names must be unique."]
 
     def _normalize_name(self) -> None:
         """Lowercase the record name so storage matches DNS case-insensitivity."""

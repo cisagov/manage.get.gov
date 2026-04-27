@@ -4,6 +4,7 @@ from django.urls import reverse
 from django_webtest import WebTest  # type: ignore
 from waffle.testutils import override_flag
 
+from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
@@ -339,3 +340,137 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
             self.assertEqual(response.status_code, 200)
             svc.update_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_conflicts_with_existing_cname_flagged_inline(self):
+        """Adding a CNAME when a CNAME with the same name already exists must surface
+        an inline name-field error and must NOT call the vendor service."""
+        create_dns_record(
+            self.dns_zone,
+            record_type="CNAME",
+            record_name="www",
+            record_content="cdn.example.com",
+            ttl=300,
+            x_record_id="x-existing-cname",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "www",
+                    "content": "cdn2.example.com",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "A record with that name already exists")
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_conflicts_with_existing_a_record_flagged_inline(self):
+        """Adding a CNAME when an A record with the same name exists must surface an
+        inline error and must NOT call the vendor service."""
+        create_dns_record(
+            self.dns_zone,
+            record_type="A",
+            record_name="api",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "api",
+                    "content": "cdn.example.com",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "A record with that name already exists")
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_duplicate_mx_record_at_root_flagged_inline(self):
+        """Creating a duplicate MX record at the zone root must surface an inline error
+        (priority must be stored correctly so the duplicate check can match it)."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            content="mail.example.gov",
+            ttl=300,
+            priority=1,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "MX",
+                    "name": "@",
+                    "content": "mail.example.gov",
+                    "priority": 1,
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "You already entered this DNS record")
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_duplicate_mx_record_using_zone_name_instead_of_at_flagged(self):
+        """Submitting an MX record using the full zone name is treated as equivalent to '@'."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            content="mail.example.gov",
+            ttl=300,
+            priority=1,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            # Submit with full domain name instead of @
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "MX",
+                    "name": self.domain.name,
+                    "content": "mail.example.gov",
+                    "priority": 1,
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "You already entered this DNS record")
+            svc.create_dns_record.assert_not_called()
