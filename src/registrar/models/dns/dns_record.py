@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class DnsRecord(TimeStampedModel):
-    """DNS record model with RFC 1034 compliance for record type constraints."""
+    """DNS record model with record type constraints."""
 
     # CNAME records cannot coexist with other record types.
     # DNS also prevents multiple CNAME records at the same name (only one CNAME per label).
