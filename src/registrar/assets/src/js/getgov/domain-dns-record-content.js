@@ -59,8 +59,7 @@ function switchFromInputToTextArea (element) {
 
 function clearRecordForm(){
     const form = document.getElementById("dnsrecords-form-container")
-    
-    // remove error styling and reset values  
+// remove error styling and reset values  
     const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
 
     inputs.forEach(input =>{ 
@@ -164,6 +163,9 @@ export function initDynamicDNSRecordFormFields() {
     })
 
     typeField.addEventListener('change', function (e){
+        if(e.isTrusted){
+            clearRecordForm()
+        }
 
         const selectedType = this.value;
         const info = config[selectedType];
@@ -198,7 +200,7 @@ export function initDynamicDNSRecordFormFields() {
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
-
+    
     // clearForm on cancel
     document.getElementById("dnsrecords-cancel-button").addEventListener('click', function(e){
         clearRecordForm()
