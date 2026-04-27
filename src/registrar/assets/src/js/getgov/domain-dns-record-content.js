@@ -64,7 +64,7 @@ function clearRecordForm(){
 
     inputs.forEach(input =>{ 
         input.classList.remove("usa-input--error")
-        input.value = ""})
+    })
 
     // remove label styling
     const labels = form.querySelectorAll('label')
@@ -163,7 +163,10 @@ export function initDynamicDNSRecordFormFields() {
     })
 
     typeField.addEventListener('change', function (e){
-        
+        if(e.isTrusted){
+            clearRecordForm()
+        }
+
         const selectedType = this.value;
         const info = config[selectedType];
         const contentLabel = document.querySelector('label[for=id_content]');
