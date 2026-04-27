@@ -42,7 +42,6 @@ class DnsRecord(TimeStampedModel):
     # Max TXT content sans double quotes is 4080, and 4127 accounts for any added quotes through string splitting
     content = models.CharField(blank=True, null=True, max_length=4127)
 
-
     priority = models.PositiveIntegerField(
         blank=True,
         null=True,

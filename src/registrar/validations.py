@@ -214,8 +214,8 @@ def validate_txt_content(content: str) -> None:
     if has_surrounding_quotes:
         # Remove the surrounding quotes for length validation
         content = content[1:-1]
-        # string any string splitting quotes
-        content = content.replace('" "')
+        # Remove any string-splitting quotes
+        content = content.replace('" "', "")
 
     if len(content) > 4080:
         raise ValidationError("Content must be no more than 4080 characters.")
