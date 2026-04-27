@@ -1,7 +1,7 @@
 function adjustCharCount(textArea){
     // strip out surrounding double quotes and string splitting used for RFC compliance.
         // They should not be included in the character count, though should be displayed to user.
-        let adjustedValue = textArea.value.split('" "').join("")
+        let adjustedValue = textArea.value.replace('" "', '')
         if (adjustedValue.startsWith('"') && adjustedValue.endsWith('"'))
             adjustedValue = adjustedValue.slice(1, -1);
         return adjustedValue.length
@@ -23,7 +23,7 @@ function getCharCountText (charLimit, charLength) {
   };
 
 function createCharacterCountDiv(charLimit, textArea) {
-  let modifiedTextAreaLength = adjustCharCount(textArea)
+  let modifiedTextAreaLength = adjustCharCount(textArea)  // removes quotes from count
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
   displayCharCount.textContent = getCharCountText(charLimit, modifiedTextAreaLength)
@@ -38,7 +38,7 @@ function createCharacterCountDiv(charLimit, textArea) {
     displayCharCount.textContent = getCharCountText(charLimit, modifiedTextAreaLength);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
-      textArea.value.length > charLimit
+      modifiedTextAreaLength > charLimit
     );
   });
   textArea.setAttribute('aria-describedby', displayCharCount.id)
@@ -105,12 +105,11 @@ export function commentCharacterEventListener(){
         }
         const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[id$="_comment"]')
-        let modifiedTextAreaLength = adjustCharCount(commentTextArea)
         commentTextArea.addEventListener('input', function () {
-            commentTextStatus.textContent = getCharCountText(commentCharLimit, modifiedTextAreaLength);
+            commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
             commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
-              modifiedTextAreaLength > commentCharLimit
+              commentTextArea.value.length > commentCharLimit
           );
        });
         commentTextStatus.id = `${element.id}-comment--status`
