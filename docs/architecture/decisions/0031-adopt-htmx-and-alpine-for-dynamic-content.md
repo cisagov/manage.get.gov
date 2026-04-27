@@ -53,7 +53,7 @@ Use a combination of libraries to handle FE changes in response to a server-side
 - Using two libraries may introduce some complexity, however small
 
 ## Decision
-(#2) Use htmx, Alpine.js, and JS to introduce (and later refactor) dynamic FE features. 
+(#2) Use htmx, Alpine.js, and JS to implement dynamic FE features going forward. Plan to refactor existing AJAX dynamic content using htmx.
 
 Combining htmx + Alpine.js is a common solution to introduce dynamic FE content to Django projects. Alpine allows us to create dynamic content when depending on a server-side request is unnecessary/excessive. The combination of htmx + Alpine also benefits from a larger support community compared to other solutions like JS + AJAX.
 
