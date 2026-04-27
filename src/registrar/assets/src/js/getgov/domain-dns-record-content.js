@@ -60,13 +60,19 @@ function switchFromInputToTextArea (element) {
 function clearRecordForm(){
     const form = document.getElementById("dnsrecords-form-container")
     
+    // remove error styling and reset values  
     const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
 
     inputs.forEach(input =>{ 
         input.classList.remove("usa-input--error")
         input.value = ""})
 
-    
+    // remove label styling
+    const labels = form.querySelectorAll('label')
+
+    labels.forEach( label => label.classList.remove("usa-label--error"))
+
+    // remove error messages that appear on the top of the page
     form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
 
     // remove top message errors
@@ -159,7 +165,6 @@ export function initDynamicDNSRecordFormFields() {
 
     typeField.addEventListener('change', function (e){
         if(e.isTrusted){
-            console.log("HELLO")
             clearRecordForm()
         }
 
