@@ -59,10 +59,22 @@ function switchFromInputToTextArea (element) {
 
 function clearRecordForm(){
     const form = document.getElementById("dnsrecords-form-container")
-    const inputs = form.querySelectorAll('input:not=([type="hidden"]), textarea')
+    
+    const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
 
-    inputs.forEach(input => input.value = "")
+    inputs.forEach(input =>{ 
+        input.classList.remove("usa-input--error")
+        input.value = ""})
 
+    
+    form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
+
+    // remove top message errors
+    document.querySelectorAll('.usa-alert--error').forEach(el => el.remove())
+
+    // reset count for comment field
+    document.getElementById('dnsrecords-form-container-comment--status').textContent = getCharCountText(100, 0)
+    
 }
 
 export function editAndCommentButtonListener (){
@@ -147,6 +159,7 @@ export function initDynamicDNSRecordFormFields() {
 
     typeField.addEventListener('change', function (e){
         if(e.isTrusted){
+            console.log("HELLO")
             clearRecordForm()
         }
 
