@@ -34,7 +34,6 @@ DNS hosting errors bubble up inconsistently today. The same failure can surface 
 
 **Decisions we need from stakeholders before we start**
 
-- leads: retention posture for `user_email` in logs, final httpx timeout numbers.
 - Design: review or claim ownership of the 4xx message copy in 11.
 - Product/security: editorial policy for admin-edited messages — trust the audit log, or require review before an edit goes live? (17.5)
 - **Proposed out of scope, parked for leadership:** whether to adopt a dedicated request-tracing tool (e.g., OpenTelemetry). That is a program-level architectural decision spanning every service the team owns — one that sits above the DNS hosting epic. What this epic delivers — OpenSearch + structured fields — lets us reconstruct a failed request's full lifecycle with a single `request_id:"..."` query (browser action → middleware → DB → service → Cloudflare), which is sufficient for DNS error-handling needs. The broader tracing-tool question is filed as #4930 for a future leadership conversation and should not gate this epic's delivery. See [section 13](#13-request-tracing-is-opensearch-enough) for the comparison.
@@ -178,7 +177,7 @@ These are answered once, here, so every sub-ticket starts from the same answer �
 
 | Question (from original issue) | Decision |
 |---|---|
-| Security/privacy: what can we log? | Field-level allow/deny list (see [section 8](#8-pii-and-log-hygiene)). Audit retention posture with leads before broad rollout. |
+| Security/privacy: what can we log? | Field-level allow/deny list (see [section 8](#8-pii-and-log-hygiene)). `user_email` and client IP inherit existing retention policy. |
 | Frontend error shape? | JSON envelope: `{status, code, message, request_id}`. See [section 9](#9-api-error-envelope-contract). |
 | Which errors to surface in /admin? | Successful changes via `django-auditlog` on DNS models; failures via OpenSearch reached through a deep-link from the domain admin page. See [section 11](#11-admin-visibility-and-support-workflow). |
 | How specific should API error types be? | Seven subclasses. See [section 6](#6-error-code-vocabulary). Coarse categories beat sprawling taxonomies. |
@@ -233,7 +232,7 @@ Post-launch: add a row every time a new production incident surfaces a code we h
 
 ## 8. PII and log hygiene
 
-The registrar is a government system. We treat application log streams as subject to the same handling posture as application data. **leads sign-off required** on retention before the field list below goes live in production.
+The registrar is a government system. We treat application log streams as subject to the same handling posture as application data.
 
 ### 8.1 Safe to log unmasked
 
@@ -251,7 +250,7 @@ The registrar is a government system. We treat application log streams as subjec
 
 ### 8.2 Restricted / conditional
 
-- `user_email` — PII, carried in `logging_context.user_email_var`. Keep, but audit retention with leads.
+- `user_email` — PII, carried in `logging_context.user_email_var`. Already logged today; this epic inherits existing retention policy.
 - Client IP — `logging_context.ip_address_var`. Same treatment as `user_email`.
 
 ### 8.3 Never log
@@ -363,7 +362,7 @@ No new retention plumbing. Auditlog follows existing registrar policy; OpenSearc
 
 ### 12.1 Timeouts
 
-`httpx.Timeout(connect=3, read=10, write=10, pool=5)` on every DNS client. Prototype values — leads should confirm before prod.
+`httpx.Timeout(connect=3, read=10, write=10, pool=5)` on every DNS client.
 
 ### 12.2 Transport retries
 
@@ -505,6 +504,32 @@ class DnsErrorMessage(models.Model):
 - **Code-level `_error_mapping` is the fallback** — used only when the DB row is missing or the store is unreachable. Never a hard dependency on the DB.
 - **Exceptions resolve lazily.** `DnsHostingError.message` is a property that reads from `utility/messages.get_user_message(namespace, code)` with the `_error_mapping` dict as the fallback. Admin edits take effect without a process restart via a `post_save` cache-invalidation signal.
 
+### 16.3.1 How a runtime edit takes effect
+
+The full chain when design edits a row in `/admin`:
+
+1. Django saves the `DnsErrorMessage` row to the DB and fires a `post_save` signal.
+2. The signal handler calls `invalidate_cache()`, clearing the in-process message cache (`utility/messages.py`).
+3. The next request that raises a `DnsHostingError` calls `exc.message` (a lazy property).
+4. The property calls `get_user_message("dns", code_name)`, which finds the cache empty, queries the `DnsErrorMessage` table, repopulates the cache, and returns the updated string.
+5. That string is what the user sees — no deploy, no process restart.
+
+### 16.3.2 Production edits and git
+
+**Admin edits are runtime overrides, not the canonical record.** The code-level `_error_mapping` values are the git-tracked baseline — they live in source control and have a full commit history. A DB row in `DnsErrorMessage` overrides the code value for that environment at runtime, but it does not replace the git trace.
+
+The intended workflow for a permanent copy change:
+
+1. Edit the row in `/admin` for the immediate fix — the change is live on the next request.
+2. Open a PR that updates the matching string in `_error_mapping` (and the seed migration if the initial value should also change). This creates the git record of the approved copy.
+3. Once the PR merges, the DB override and the code value are in sync; the DB row can be left in place or cleared — both produce the same result.
+
+This means:
+
+- **Quick fixes go to `/admin` first** — no deploy needed, no one blocked.
+- **Permanent changes land in code too** — so the git history reflects what's actually running, and a fresh environment gets the right text from the seed migration without needing a manual DB edit.
+- **There is no auto-commit to `main`.** Admin edits are strictly a DB write; git is updated through a normal PR.
+
 ### 16.4 Test pattern
 
 Tests must not assert on literal message strings — they would break every time product edits the copy. Two correct patterns:
@@ -527,6 +552,20 @@ self.assertIn(expected, response.content.decode())
 ### 16.6 Deploy / fixture contract
 
 Initial values come from Design ([#4950](https://github.com/cisagov/manage.get.gov/issues/4950)); the seed migration writes them into `DnsErrorMessage`. Fresh environments get all rows created; existing environments use `get_or_create` — never overwrite admin edits. Changes to `_error_mapping` fallback text are only user-visible where no DB row exists; update production copy through `/admin`.
+
+### 16.7 Production edit workflow — change governance options
+
+Once this table is live in production, someone will edit a message in `/admin` and then: *does this need to go back into git, and does it need review before it goes live?* 
+
+Two paths:
+
+**Path A — edits go live immediately, git gets a record after the fact.**
+Admin saves the row → cache invalidates → users see the new copy on the next request. A scheduled job (nightly or on-demand) runs a management command that exports the current table state to a tracked fixture file and opens a draft PR against `main`. The PR is an audit artifact — the change is already live, and the team merges the PR at their leisure to keep git in sync. This preserves the "no deploy required" win entirely. The tradeoff: the PR is after-the-fact, and if it goes unmerged for a long time the fixture drifts from production.
+
+**Path B — edits require a second person to approve before going live.**
+`DnsErrorMessage` gets a `state` field (`draft` | `published`). Admin edits flip the row to `draft` automatically — change is *not* live yet. A second person with a "publisher" role uses an admin action to approve: *Publish selected messages* → flips to `published` → cache invalidates → now live. No deploy required, but a two-person workflow entirely inside `/admin`. The tradeoff: slightly more model complexity, and the self-serve speed benefit is reduced to "same day" instead of "same request."
+
+**Which path to pick is a product decision** — see [decision #6 in section 18](#18-decisions-needed-from-stakeholders). Both are straightforward to build on top of the current implementation without redesigning the store.
 
 ## 17. Integration with in-flight prototype work
 
@@ -596,13 +635,11 @@ These are the questions this proposal does not answer alone — they need input 
 
 | # | Decision | Owner(s) | Blocks |
 |---|---|---|---|
-| 1 | Retention posture for `user_email` in logs | leads | [section 8](#8-pii-and-log-hygiene) rollout |
-| 2 | Final httpx timeout values (current draft: `connect=3, read=10, write=10, pool=5`) | leads | httpx resilience ticket |
-| 3 | Sign-off on 4xx user-facing copy in [section 10](#10-user-facing-error-messaging) (required) — filed as [#4950](https://github.com/cisagov/manage.get.gov/issues/4950), blocks [#4925](https://github.com/cisagov/manage.get.gov/issues/4925) | Design | API error envelope ticket ([#4925](https://github.com/cisagov/manage.get.gov/issues/4925)) |
-| 4 | Confirm existing `django-auditlog` and OpenSearch retention policies cover DNS model changes and DNS log lines (no new retention plumbing introduced) | leads + security | Admin visibility ticket |
-| 5 | Is OpenSearch + structured fields enough for request tracing, or do we adopt a dedicated tracing tool? | Leadership + leads | Request-tracing spike; may change scope of the request_id ContextVar ticket |
-| 6 | Editorial policy for admin-edited error copy ([section 16.5](#16-admin-editable-error-message-store)) — review required, or trust audit log? | Product + security | Admin-editable message store ticket |
-| 7 | Safely retry record Cloudflare create/update/delete without causing duplicates | Engineering (future) | Deferred — not blocking |
+| 1 | Sign-off on 4xx user-facing copy in [section 10](#10-user-facing-error-messaging) (required) — filed as [#4950](https://github.com/cisagov/manage.get.gov/issues/4950), blocks [#4925](https://github.com/cisagov/manage.get.gov/issues/4925) | Design | API error envelope ticket ([#4925](https://github.com/cisagov/manage.get.gov/issues/4925)) |
+| 2 | Confirm existing `django-auditlog` and OpenSearch retention policies cover DNS model changes and DNS log lines (no new retention plumbing introduced) | leads + security | Admin visibility ticket |
+| 3 | Is OpenSearch + structured fields enough for request tracing, or do we adopt a dedicated tracing tool? | Leadership + leads | Request-tracing spike; may change scope of the request_id ContextVar ticket |
+| 4 | Editorial policy for admin-edited error copy ([section 16.5](#16-admin-editable-error-message-store)) — review required, or trust audit log? | Product + security | Admin-editable message store ticket |
+| 5 | Safely retry record Cloudflare create/update/delete without causing duplicates | Engineering (future) | Deferred — not blocking |
 
 ## 19. Sub-tickets filed
 
