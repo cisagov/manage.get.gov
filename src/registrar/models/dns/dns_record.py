@@ -88,7 +88,16 @@ class DnsRecord(TimeStampedModel):
         if record_type == DNSRecordTypes.MX and self.priority is None:
             errors["priority"] = [DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE]
 
-    def _validate_exclusive_names(self, record_type, errors):
+    def _resolve_domain_name(self) -> str | None:
+        """Return this record's zone domain name, or None if the zone doesn't exist."""
+        if not self.dns_zone_id:
+            return None
+        try:
+            return DnsZone.objects.get(pk=self.dns_zone_id).domain.name
+        except DnsZone.DoesNotExist:
+            return None
+
+    def _validate_exclusive_names(self, record_type, domain_name, errors):
         """Validate CNAME/A/AAAA records don't share names.
 
         Uses _name_q to handle label/FQDN and @/domain-name equivalences so that
@@ -99,13 +108,6 @@ class DnsRecord(TimeStampedModel):
 
         if record_type not in self.CONFLICTING_RECORD_TYPES:
             return
-
-        # Resolve domain name for matching (e.g. "@" vs "example.gov",
-        # "sub" vs "sub.example.gov").
-        try:
-            domain_name = DnsZone.objects.get(pk=self.dns_zone_id).domain.name
-        except DnsZone.DoesNotExist:
-            domain_name = None
 
         conflict = DnsRecord.objects.filter(
             dns_zone_id=self.dns_zone_id,
@@ -139,11 +141,14 @@ class DnsRecord(TimeStampedModel):
         self._normalize_name()
         errors = {}
 
+        domain_name = self._resolve_domain_name()
+
         self._validate_ttl(errors)
         record_type = DNSRecordTypes(self.type)
         self._validate_content(record_type, errors)
         self._validate_mx_priority(record_type, errors)
-        self._validate_exclusive_names(record_type, errors)
+        self._validate_exclusive_names(record_type, domain_name, errors)
+        self._validate_cname_name_not_hostname(record_type, domain_name, errors)
 
         if errors:
             raise ValidationError(errors)
@@ -285,11 +290,29 @@ class DnsRecord(TimeStampedModel):
 
         return query.exists()
 
+    def _validate_cname_name_not_hostname(self, record_type, domain_name, errors):
+        """Validate that a CNAME record's name does not resolve to the same hostname as its content.
+
+        Accounts for shorthand forms: "@" expands to the domain name, and a bare label
+        (e.g. "www") expands to "www.<domain>". This mirrors the form-level validation so
+        that records cannot bypass the constraint by being created at the model level.
+        """
+        if record_type != DNSRecordTypes.CNAME or not (self.name and self.content):
+            return
+
+        try:
+            self._validate_cname_record_name_dne_hostname(self.name, self.content, domain_name=domain_name)
+        except ValidationError as e:
+            # Surface on "name" — the user-entered name is the thing that needs changing.
+            errors["name"] = e.messages
+
     @classmethod
-    def _validate_cname_record_name_dne_hostname(self, record_name, hostname, domain_name=None):
+    def _validate_cname_record_name_dne_hostname(cls, record_name, hostname, domain_name=None):
         """Validate that CNAME record name does not match hostname."""
         cf_record_name = record_name
         if domain_name:
+            # Expand shorthand forms to the fully-qualified name that Cloudflare would store,
+            # so the comparison catches "@" or bare labels that resolve to the same hostname.
             if record_name == "@":
                 cf_record_name = domain_name
             elif not record_name.endswith(domain_name):
@@ -379,8 +402,8 @@ class DnsRecord(TimeStampedModel):
                     vendor_dns_record=vendor_dns_record,
                 )
 
-        except Exception as e:
-            logger.error(f"Failed to create and save record to database: {str(e)}.")
+        except Exception:
+            logger.exception("Failed to create and save record to database.")
             raise
 
     @classmethod
@@ -404,6 +427,6 @@ class DnsRecord(TimeStampedModel):
                     if record_field not in excluded_fields:
                         setattr(dns_record, record_field, record_value)
                 dns_record.save()
-        except Exception as e:
-            logger.error(f"Failed to update and save record to database: {str(e)}.")
+        except Exception:
+            logger.exception("Failed to update and save record to database.")
             raise

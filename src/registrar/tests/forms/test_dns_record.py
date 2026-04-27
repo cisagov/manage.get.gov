@@ -31,9 +31,8 @@ class BaseDomainDNSRecordFormTest(TestCase):
         self.VALID_CONTENT_BY_TYPE = {
             "A": "192.0.2.10",
             "AAAA": "2001:db8::1234:5678",
+            "CNAME": "www.example.com",
             "MX": "mail.example.gov",
-            # TODO: Comment out CNAME test case after implementing CNAME host name validation
-            # "CNAME": "www.example.com",
             # TODO: Comment out PTR test case after implementing PTR host name validation
             # "PTR": "www.example.com",
             "TXT": "Some valid text",
@@ -211,8 +210,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
             "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
-            # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
-            # "CNAME": "..."
+            "CNAME": ("invalid..hostname", DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE),
             # TODO: Comment out and complete PTR test case when PTR validation is implemented
             # "PTR": "..."
         }
@@ -848,3 +846,52 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
         priority_errors = form.errors.get("priority", [])
         self.assertIn(self.DUPLICATE_MESSAGE, priority_errors)
         self.assertNotIn(DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE, priority_errors)
+
+
+class DomainCNAMENameHostnameValidationTests(DomainDNSRecordNameConflictTests):
+    """Form-level tests for the CNAME name != hostname constraint.
+
+    The form surfaces this as a 'content' error (not 'name') because the mismatch
+    is with what the user typed as content/target. The model surfaces it as 'name'.
+    The error message is: "CNAME record hostname must not match record name."
+    """
+
+    HOSTNAME_ERROR = "CNAME record hostname must not match record name."
+
+    def test_cname_fqdn_name_matches_content_raises_content_error(self):
+        """CNAME where the FQDN name equals the content hostname should fail."""
+        data = self.valid_form_data_for_record_type("CNAME", "sub.example.gov")
+        data["name"] = "sub.example.gov"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("content", form.errors)
+        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
+
+    def test_cname_bare_label_expands_to_match_content_raises_content_error(self):
+        """CNAME with bare label 'sub' expands to 'sub.example.gov'; matching content should fail."""
+        data = self.valid_form_data_for_record_type("CNAME", "sub.example.gov")
+        data["name"] = "sub"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("content", form.errors)
+        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
+
+    def test_cname_at_symbol_expands_to_match_content_raises_content_error(self):
+        """CNAME with '@' expands to 'example.gov'; matching content should fail."""
+        data = self.valid_form_data_for_record_type("CNAME", "example.gov")
+        data["name"] = "@"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("content", form.errors)
+        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
+
+    def test_cname_name_differs_from_content_valid(self):
+        """CNAME where name does not resolve to the same hostname as content should pass."""
+        data = self.valid_form_data_for_record_type("CNAME", "other.example.gov")
+        data["name"] = "sub"
+        form = self.make_form(data)
+
+        self.assertTrue(form.is_valid())
