@@ -164,9 +164,6 @@ export function initDynamicDNSRecordFormFields() {
     })
 
     typeField.addEventListener('change', function (e){
-        if(e.isTrusted){
-            clearRecordForm()
-        }
 
         const selectedType = this.value;
         const info = config[selectedType];
@@ -202,4 +199,8 @@ export function initDynamicDNSRecordFormFields() {
         typeField.dispatchEvent(new Event('change'));
     }
 
+    // clearForm on cancel
+    document.getElementById("dnsrecords-cancel-button").addEventListener('click', function(e){
+        clearRecordForm()
+    })
 }
