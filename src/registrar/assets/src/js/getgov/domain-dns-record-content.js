@@ -1,14 +1,14 @@
-function adjustCharCount(charLength){
+function adjustCharCount(textArea){
     // strip out surrounding double quotes and string splitting used for RFC compliance.
-        // They should not be included in the character count displayed to to user.
-        const adjustedValue =textArea.value.split('" "').join()
+        // They should not be included in the character count, though should be displayed to user.
+        let adjustedValue = textArea.value.split('" "').join("")
         if (adjustedValue.startsWith('"') && adjustedValue.endsWith('"'))
             adjustedValue = adjustedValue.slice(1, -1);
+        return adjustedValue.length
 }
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
     let finalString = "";
-
     if(charLength == 0){
         finalString = `${charLimit} characters allowed`
     }
@@ -23,11 +23,10 @@ function getCharCountText (charLimit, charLength) {
   };
 
 function createCharacterCountDiv(charLimit, textArea) {
-
-  modifiedCharCount = adjustCharCount(textArea.value.length)
+  let modifiedTextAreaLength = adjustCharCount(textArea)
   const displayCharCount = document.createElement('div');
   displayCharCount.className = 'usa-character-count__status usa-hint';
-  displayCharCount.textContent = getCharCountText(charLimit, modifiedCharCount)
+  displayCharCount.textContent = getCharCountText(charLimit, modifiedTextAreaLength)
 
 
   displayCharCount.id = `${textArea.id}-content--status`
@@ -35,7 +34,8 @@ function createCharacterCountDiv(charLimit, textArea) {
 
 
   textArea.addEventListener('input', function () {
-    displayCharCount.textContent = getCharCountText(charLimit, modifiedCharCount);
+    modifiedTextAreaLength = adjustCharCount(textArea)
+    displayCharCount.textContent = getCharCountText(charLimit, modifiedTextAreaLength);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
       textArea.value.length > charLimit
@@ -58,19 +58,8 @@ function switchFromInputToTextArea (element) {
         element.classList.forEach(cls => textArea.classList.add(cls))
 
 
-        // Character count
         const charLimit = 4080
-        modifiedCharCount = adjustCharCount(textArea.value.length)
-        let getCharCountText = function () {
-           return `${charLimit - modifiedCharCount} characters allowed`
-        }
-        const displayCharCount = document.createElement('div')
-        displayCharCount.className = "usa-character-count__status usa-hint"
-        displayCharCount.textContent = getCharCountText()
-        textArea.addEventListener('input', function(){
-             displayCharCount.textContent = getCharCountText()
-             displayCharCount.classList.toggle('usa-character-count__status--invalid', modifiedCharCount > charLimit)
-        })
+        const displayCharCount = createCharacterCountDiv(charLimit, textArea)
 
 
         element.replaceWith(textArea)
@@ -116,11 +105,12 @@ export function commentCharacterEventListener(){
         }
         const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[id$="_comment"]')
+        let modifiedTextAreaLength = adjustCharCount(commentTextArea)
         commentTextArea.addEventListener('input', function () {
-            commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
+            commentTextStatus.textContent = getCharCountText(commentCharLimit, modifiedTextAreaLength);
             commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
-              commentTextArea.value.length > commentCharLimit
+              modifiedTextAreaLength > commentCharLimit
           );
        });
         commentTextStatus.id = `${element.id}-comment--status`
