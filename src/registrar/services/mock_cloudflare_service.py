@@ -272,6 +272,76 @@ class MockCloudflareService:
             },
         )
 
+    def _mock_cf_error_response(self, record_name: str) -> "httpx.Response | None":
+        """Return an error response for magic ``error-*`` record names, or None for success."""
+        # CF validation errors — these are parsed by CloudflareService into CloudflareValidationError.
+        # Use these prefixes in tests to exercise the DnsHostingError translation path.
+        if record_name.startswith("error-duplicate"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 81057, "message": "An identical record already exists."}],
+                    "messages": [],
+                },
+            )
+        if record_name.startswith("error-conflict-cname"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 81053, "message": "A CNAME record with this host already exists."}],
+                    "messages": [],
+                },
+            )
+        if record_name.startswith("error-conflict-host"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 81053, "message": "An A or AAAA record with this host already exists."}],
+                    "messages": [],
+                },
+            )
+        if record_name.startswith("error-txt-long"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [
+                        {
+                            "code": 81061,
+                            "message": (
+                                "Combined content length of records with this name and type"
+                                " must not exceed 8192 characters."
+                            ),
+                        }
+                    ],
+                    "messages": [],
+                },
+            )
+        if record_name.startswith("error-400"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 9005, "message": "Bad request for dns record."}],
+                    "messages": [],
+                },
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
+            )
+        if record_name.startswith("error"):
+            return httpx.Response(500)
+        return None
+
     def _mock_create_dns_record_response(self, request) -> httpx.Response:
         logger.debug("😃 mocking dns record creation")
         request_as_json = json.loads(request.content.decode("utf-8"))
@@ -283,23 +353,9 @@ class MockCloudflareService:
         request_url = str(request.url)
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
 
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
-        if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
-                )
-            return httpx.Response(500)
+        error_response = self._mock_cf_error_response(record_name)
+        if error_response is not None:
+            return error_response
 
         return httpx.Response(
             200,
@@ -342,23 +398,9 @@ class MockCloudflareService:
         record_id = request_url.split("/dns_records/")[1]
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
 
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
-        if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
-                )
-            return httpx.Response(500)
+        error_response = self._mock_cf_error_response(record_name)
+        if error_response is not None:
+            return error_response
 
         # Update response so it fits with whatever record we're returning
         return httpx.Response(

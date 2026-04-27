@@ -4,7 +4,7 @@ from httpx import Client
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, CloudflareValidationError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
 
@@ -226,6 +226,24 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
 
+    def test_mock_create_dns_record_cf_validation_errors(self):
+        """New error-* prefixes trigger CloudflareValidationError with the correct CF error code."""
+        zone_id = self.mock_api_service.fake_zone_id
+
+        cases = [
+            ("error-duplicate", 81057),
+            ("error-conflict-cname", 81053),
+            ("error-conflict-host", 81053),
+            ("error-txt-long", 81061),
+        ]
+        for name_prefix, expected_code in cases:
+            with self.subTest(name_prefix=name_prefix):
+                record_data = {"type": "A", "name": name_prefix, "content": "1.2.3.4"}
+                with self.assertRaises(CloudflareValidationError) as ctx:
+                    self.service.create_dns_record(zone_id, record_data)
+                codes = [e["code"] for e in ctx.exception.cf_errors]
+                self.assertIn(expected_code, codes)
+
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
         zone_id = self.mock_api_service.fake_zone_id
@@ -269,3 +287,22 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+
+    def test_mock_update_dns_record_cf_validation_errors(self):
+        """New error-* prefixes trigger CloudflareValidationError with the correct CF error code on update."""
+        zone_id = self.mock_api_service.fake_zone_id
+        record_id = self.mock_api_service.fake_record_id
+
+        cases = [
+            ("error-duplicate", 81057),
+            ("error-conflict-cname", 81053),
+            ("error-conflict-host", 81053),
+            ("error-txt-long", 81061),
+        ]
+        for name_prefix, expected_code in cases:
+            with self.subTest(name_prefix=name_prefix):
+                record_data = {"type": "A", "name": name_prefix, "content": "1.2.3.4"}
+                with self.assertRaises(CloudflareValidationError) as ctx:
+                    self.service.update_dns_record(zone_id, record_id, record_data)
+                codes = [e["code"] for e in ctx.exception.cf_errors]
+                self.assertIn(expected_code, codes)
