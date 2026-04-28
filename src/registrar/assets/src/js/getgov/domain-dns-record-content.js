@@ -72,11 +72,11 @@ export function editAndCommentButtonListener (){
         if(!table) return;
 
         table.addEventListener('click', function(e) {
-            const editBtn =  e.target.closest('[data-action="edit"')
-            const commentBtn = e.target.closest('[data-action="comment"')
+            const editBtn =  e.target.closest('[data-action="edit"]')
+            const commentBtn = e.target.closest('[data-action="comment"]')
             if(!editBtn && !commentBtn) return;
 
-            const recordId = (editBtn || commenttBtn).dataset.recordId
+            const recordId = (editBtn || commentBtn).dataset.recordId
             const alpineData = Alpine.$data(table)
 
             if(editBtn){
