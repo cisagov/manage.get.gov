@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import (
     DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     validate_dns_name,
 )
@@ -115,7 +116,7 @@ class DnsRecord(TimeStampedModel):
             conflict = conflict.exclude(pk=self.pk)
 
         if conflict.exists():
-            errors["name"] = ["A record with that name already exists. Names must be unique."]
+            errors["name"] = [DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE]
 
     def _normalize_name(self) -> None:
         """Lowercase the record name so storage matches DNS case-insensitivity."""

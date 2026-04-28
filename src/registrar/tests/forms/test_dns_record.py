@@ -10,6 +10,7 @@ from registrar.validations import (
     DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_NAME_SPACES_ERROR_MESSAGE,
+    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     MX_CONTENT_SPACES_ERROR_MESSAGE,
@@ -366,7 +367,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_cname_conflicts_with_existing_aaaa_record(self):
         """Creating a CNAME record with same name as existing AAAA record should throw error."""
@@ -385,7 +386,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_a_record_conflicts_with_existing_cname_record(self):
         """Creating an A record with same name as existing CNAME record should throw error."""
@@ -404,7 +405,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_aaaa_record_conflicts_with_existing_cname_record(self):
         """Creating an AAAA record with same name as existing CNAME record should throw error."""
@@ -423,7 +424,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_multiple_a_records_with_same_name_allowed(self):
         """Multiple A records with the same name should be allowed."""
@@ -507,7 +508,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_cname_conflicts_with_existing_cname_same_name_different_content(self):
         """Two CNAME records at the same name are not allowed — DNS permits only one CNAME per label."""
@@ -524,7 +525,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_editing_cname_to_same_name_not_flagged_as_cname_conflict(self):
         """Editing a CNAME record and resubmitting the same name must not flag as a conflict with itself."""
@@ -558,7 +559,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_cname_conflicts_with_existing_cname_at_root(self):
         """CNAME-CNAME name conflict is detected for root (@) records."""
@@ -575,7 +576,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("A record with that name already exists", form.errors["name"][0])
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
 
 
 class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
@@ -796,6 +797,37 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
         )
         form = self.make_mx_form(content="mail.example.gov", priority=10, name="@")
         self.assertTrue(form.is_valid())
+
+    def test_duplicate_cname_shows_duplicate_error_not_name_conflict_error(self):
+        """A CNAME with the same name AND same content as an existing CNAME is a
+        duplicate, not a name conflict. The duplicate check is more specific than
+        the CNAME-vs-CNAME name-uniqueness rule and must take precedence so the
+        user sees the same friendly 'You already entered this DNS record' message
+        that other record types show on duplicate submission."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.CNAME, name="www", ttl=3600, content="example.gov"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("CNAME", "example.gov"))
+        self.assert_duplicate_errors(form)
+        self.assertNotIn(
+            DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+            form.errors.get("name", []),
+        )
+
+    def test_cname_with_different_content_still_flagged_as_name_conflict(self):
+        """Two CNAMEs with the same name but DIFFERENT content are still a name
+        conflict (only one CNAME allowed per name) — the duplicate-first ordering
+        must not break this case."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.CNAME, name="www", ttl=3600, content="example.gov"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("CNAME", "other.example.gov"))
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+            form.errors.get("name", []),
+        )
+        self.assertNotIn(self.DUPLICATE_MESSAGE, form.errors.get("name", []))
 
     def test_duplicate_mx_shows_only_duplicate_error_on_priority_not_required_error(self):
         """Submitting a duplicate MX record should show only the duplicate message on
