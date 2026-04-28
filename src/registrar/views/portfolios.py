@@ -413,14 +413,18 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         except IntegrityError:
             messages.error(
                 request,
-                mark_safe("A database error occurred while saving changes. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance")
+                mark_safe(
+                    'A database error occurred while saving changes. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance'
+                ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
         except Exception as e:
             messages.error(
                 request,
-                mark_safe(f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"),
+                mark_safe(
+                    f'An unexpected error occurred: {str(e)}. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance'
+                ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
@@ -776,16 +780,19 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
             raise
         except IntegrityError:
             messages.error(
-                request, 
-                mark_safe("A database error occurred while saving changes. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance")
-,
+                request,
+                mark_safe(
+                    'A database error occurred while saving changes. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance'
+                ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
             return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
         except Exception as e:
             messages.error(
                 request,
-                mark_safe(f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"),
+                mark_safe(
+                    f'An unexpected error occurred: {str(e)}. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance'
+                ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
             return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
@@ -1054,7 +1061,9 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
             except Exception as e:
                 messages.error(
                     request,
-                    mark_safe(f"A database error occurred: {str(e)}. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"),
+                    mark_safe(
+                        f'A database error occurred: {str(e)}. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance'
+                    ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
@@ -1124,7 +1133,9 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
             except Exception as e:
                 messages.error(
                     request,
-                    mark_safe(f"A database error occurred: {str(e)}. Please try again. If the problem persists, <a href=\"https://get.gov/contact/\">contact us</a> for assistance"),
+                    mark_safe(
+                        f'A database error occurred: {str(e)}. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance'
+                    ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
