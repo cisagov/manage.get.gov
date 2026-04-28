@@ -78,6 +78,7 @@ function clearRecordForm(){
     document.querySelectorAll('.usa-alert--error').forEach(el => el.remove())
 
     // reset count for comment field
+    // comment character count is hardcoded due to the model having different max length limits. Should be updated if/when max length is updated on the model
     document.getElementById('dnsrecords-form-container-comment--status').textContent = getCharCountText(100, 0)
     
 }
@@ -163,6 +164,7 @@ export function initDynamicDNSRecordFormFields() {
     })
 
     typeField.addEventListener('change', function (e){
+        // e.isTrusted ensures that this only fires when a user select a new type.
         if(e.isTrusted){
             clearRecordForm()
         }
