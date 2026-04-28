@@ -1412,7 +1412,7 @@ class TestPortfolioInvitationAdmin(TestCase):
         mock_send_email.assert_not_called()
 
         # Assert that a warning message was triggered
-        mock_messages_error.assert_called_once_with(request, "STaff@example.com is already a member of this organization.")
+        mock_messages_error.assert_called_once_with(request, "staff@example.com is already a member of this organization.")
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")

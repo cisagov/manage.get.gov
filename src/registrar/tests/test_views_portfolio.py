@@ -4355,7 +4355,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            f"{self.user.email} is already a member of this organization.",
+            "User is already a member of this portfolio.",
         )
 
         # Validate Database has not changed
