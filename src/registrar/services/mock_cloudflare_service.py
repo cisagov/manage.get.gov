@@ -426,8 +426,8 @@ class MockCloudflareService:
             # Cloudflare formats long TXT records
             if content.startswith('"') and content.endswith('"'):
                 content = content[1:-1]  # Remove the surrounding quotes for splitting
-                cleaned_content = content.replace('" "', "")
-            chunks = [cleaned_content[i : i + 255] for i in range(0, len(cleaned_content), 255)]
+                content = content.replace('" "', "")
+            chunks = [content[i : i + 255] for i in range(0, len(content), 255)]
             quoted_chunks = [f'"{chunk}"' for chunk in chunks]
 
             return " ".join(quoted_chunks)

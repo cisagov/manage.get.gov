@@ -4,7 +4,6 @@ from httpx import Client
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
 from registrar.utility.errors import APIError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
@@ -155,34 +154,6 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])
 
-    def test_mock_create_TXT_record_response(self):
-        # Create initial DNS record
-        domain, _, zone = create_initial_dns_setup()
-        initial_record_data = {
-            "type": "TXT",
-            "name": "blog",
-            "content": "I am a record that is longer that 255 characters so that we can test the double quotes and "
-            "ensure they are added as 'string splitting' the way we expect the response from the API. "
-            "When it gets returned, there will be surrounding double quotes and is split by a space. "
-            "I am 295 without the split.",
-        }
-        resp = self.service.create_dns_record(zone.id, initial_record_data)
-
-        result = resp["result"]
-
-        expected_record_data = {
-            "type": "TXT",
-            "name": "blog",
-            "content": '"I am a record that is longer that 255 characters so that we can test the double quotes '
-            "and ensure they are added as 'string splitting' the way we expect the response from the API. "
-            'When it gets returned, there will be surrounding double quotes and is split" " by a space. '
-            'I am 295 without the split."',
-        }
-
-        self.assertEquals(result["name"], initial_record_data["name"] + "." + domain.name)
-        self.assertEquals(result["content"], expected_record_data["content"])
-        self.assertEquals(result["type"], expected_record_data["type"])
-
 
 class TestMockCloudflareServiceEndpointsWithDB(TestCase):
     """
@@ -254,6 +225,43 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+
+    def test_mock_create_TXT_record_response(self):
+        # Add TXT record with long content to test split string response
+        zone_id = self.mock_api_service.fake_zone_id
+        self.vendor_dns_zone = VendorDnsZone.objects.create(
+            x_zone_id=zone_id,
+            x_created_at="2025-10-17 19:57:53.157055+00",
+            x_updated_at="2025-10-17 19:57:53.157055+00",
+        )
+        DnsZone_VendorDnsZone.objects.create(
+            dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
+        )
+
+        initial_record_data = {
+            "type": "TXT",
+            "name": "hope",
+            "content": "I am a record that is longer that 255 characters so that we can test the double quotes and "
+            "ensure they are added as 'string splitting' the way we expect the response from the API. "
+            "When it gets returned, there will be surrounding double quotes and is split by a space. "
+            "I am 295 without the split.",
+        }
+        resp = self.service.create_dns_record(zone_id, initial_record_data)
+
+        result = resp["result"]
+
+        expected_record_data = {
+            "type": "TXT",
+            "name": "hope" + "." + self.dns_zone.name,
+            "content": '"I am a record that is longer that 255 characters so that we can test the double quotes '
+            "and ensure they are added as 'string splitting' the way we expect the response from the API. "
+            'When it gets returned, there will be surrounding double quotes and is split" " by a space. '
+            'I am 295 without the split."',
+        }
+
+        self.assertEquals(result["name"], expected_record_data["name"])
+        self.assertEquals(result["content"], expected_record_data["content"])
+        self.assertEquals(result["type"], expected_record_data["type"])
 
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
