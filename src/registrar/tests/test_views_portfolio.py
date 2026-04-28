@@ -2882,7 +2882,8 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertEqual(len(messages), 1)
         self.assertEqual(
             str(messages[0]),
-            'An unexpected error occurred: Failed to send email. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance',
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact/">contact us</a> for assistance',
         )
 
     @less_console_noise_decorator
@@ -3374,7 +3375,8 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(len(messages), 1)
         self.assertEqual(
             str(messages[0]),
-            'An unexpected error occurred: Failed to send email. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance',
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact/">contact us</a> for assistance',
         )
 
     @less_console_noise_decorator

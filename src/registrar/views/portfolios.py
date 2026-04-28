@@ -414,8 +414,8 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             messages.error(
                 request,
                 mark_safe(
-                    'A database error occurred while saving changes. Please try again. If the problem persists, '
-                    '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                    "A database error occurred while saving changes. Please try again. If the problem persists,"
+                    ' <a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
@@ -424,8 +424,8 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             messages.error(
                 request,
                 mark_safe(
-                    f'An unexpected error occurred: {str(e)}. Please try again. If the problem persists, '
-                    '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
+                    ' <a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
@@ -784,7 +784,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
             messages.error(
                 request,
                 mark_safe(
-                    'A database error occurred while saving changes. Please try again. If the problem persists, '
+                    "A database error occurred while saving changes. Please try again. If the problem persists, "
                     '<a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
             )
@@ -794,7 +794,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
             messages.error(
                 request,
                 mark_safe(
-                    f'An unexpected error occurred: {str(e)}. Please try again. If the problem persists, ' 
+                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, "
                     '<a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
             )
@@ -1066,7 +1066,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
                 messages.error(
                     request,
                     mark_safe(
-                        f'A database error occurred: {str(e)}. Please try again. If the problem persists,' 
+                        f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
                         '<a href="https://get.gov/contact/">contact us</a> for assistance'
                     ),
                 )
@@ -1139,8 +1139,8 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                 messages.error(
                     request,
                     mark_safe(
-                        f'A database error occurred: {str(e)}. Please try again. If the problem persists, '
-                         '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                        f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
+                        '<a href="https://get.gov/contact/">contact us</a> for assistance'
                     ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
