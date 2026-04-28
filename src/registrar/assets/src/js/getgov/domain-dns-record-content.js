@@ -73,8 +73,8 @@ export function editAndCommentButtonListener (){
 
         table.addEventListener('click', function(e) {
             const editBtn =  e.target.closest('[data-action="edit"')
-            const commenttBtn = e.target.closest('[data-action="comment"')
-            if(!editBtn && !commenttBtn) return;
+            const commentBtn = e.target.closest('[data-action="comment"')
+            if(!editBtn && !commentBtn) return;
 
             const recordId = (editBtn || commenttBtn).dataset.recordId
             const alpineData = Alpine.$data(table)
