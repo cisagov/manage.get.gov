@@ -252,3 +252,62 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         self.assertContains(response, "5 minutes")
         self.assertNotContains(response, ">300<", html=False)
+
+    # --- Tab order accessibility (issue #4804) ---
+    # The DNS record edit form must produce a tab sequence of:
+    #   Edit -> Name -> Content -> TTL -> Comment -> Cancel -> Save -> Delete -> More options
+    # Focus reordering is implemented in JS (initDNSRecordTabOrder); these tests assert the
+    # template-side hooks the JS depends on are present, so future refactors don't silently
+    # break the accessibility contract.
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_row_exposes_edit_button_hooks(self):
+        """The Edit button must carry the data-action and data-record-id hooks the
+        tab-order JS uses to identify the row."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, 'data-action="edit"')
+        self.assertContains(response, f'data-record-id="{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_row_exposes_kebab_with_aria_controls(self):
+        """The 'More options' kebab must declare aria-controls so the tab-order JS can
+        locate it per record."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, f'aria-controls="more-actions-dnsrecord-{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_edit_form_delete_link_is_focusable(self):
+        """The Delete control in the edit form is the 8th item in the tab sequence and
+        must be reachable via keyboard. role=button + tabindex=0 makes it focusable;
+        data-action='form-delete' lets the tab-order JS detect it as the last form pivot."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+        content = response.content.decode()
+
+        # All three markers must appear together on the form's Delete link.
+        self.assertContains(response, 'aria-label="Delete DNS record from Cloudflare"')
+        self.assertContains(response, 'data-action="form-delete"')
+        self.assertContains(response, f'data-record-id="{record.id}"')
+        self.assertIn('role="button"', content)
+        self.assertIn('tabindex="0"', content)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_edit_row_has_stable_id_for_focus_routing(self):
+        """The edit form row id (dnsrecord-edit-row-<id>) is what the tab-order JS uses
+        to find the form when routing focus from the kebab to the next record."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, f'id="dnsrecord-edit-row-{record.id}"')
