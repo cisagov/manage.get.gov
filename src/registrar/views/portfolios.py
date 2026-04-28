@@ -413,7 +413,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         except IntegrityError:
             messages.error(
                 request,
-                mark_safe(
+                mark_safe( # nosec
                     "A database error occurred while saving changes. Please try again. If the problem persists,"
                     ' <a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
@@ -423,7 +423,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         except Exception as e:
             messages.error(
                 request,
-                mark_safe(
+                mark_safe( # nosec
                     f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
                     ' <a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
@@ -783,7 +783,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         except IntegrityError:
             messages.error(
                 request,
-                mark_safe(
+                mark_safe( # nosec
                     "A database error occurred while saving changes. Please try again. If the problem persists, "
                     '<a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
@@ -793,7 +793,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         except Exception as e:
             messages.error(
                 request,
-                mark_safe(
+                mark_safe( # nosec
                     f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, "
                     '<a href="https://get.gov/contact/">contact us</a> for assistance'
                 ),
@@ -1065,7 +1065,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
             except Exception as e:
                 messages.error(
                     request,
-                    mark_safe(
+                    mark_safe( # nosec
                         f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
                         '<a href="https://get.gov/contact/">contact us</a> for assistance'
                     ),
@@ -1138,7 +1138,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
             except Exception as e:
                 messages.error(
                     request,
-                    mark_safe(
+                    mark_safe( # nosec
                         f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
                         '<a href="https://get.gov/contact/">contact us</a> for assistance'
                     ),
