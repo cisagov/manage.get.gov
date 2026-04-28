@@ -24,14 +24,14 @@ The .gov team includes contractor developers. For incident management purposes, 
 2. If no developers have acknowledged the incident announcement within 10 minutes, the person who called the incident should initiate a Slack Huddle call in DMs with individual engineers.  
    1. If there are no responses, escalate to a phone call, utilizing the [.gov emergency contact list document](https://docs.google.com/document/d/1k4r-1MNCfW8EXSXa-tqJQzOvJxQv0ARvHnOjjAH0LII/edit?tab=t.0#heading=h.jzudhpsxyys2)  
 3. Start a huddle in \#dotgov-redalert to begin incident response  
-  * Identify **incident lead**, who will coordinate across *engineers and team* for necessary actions.  
-  * Identify any required participants for incident response (ie, if the incident requires specific engineers or leads because of its scope)  
-  * Designate **communication lead**  
-    * This will typically not be an engineer, but someone who will assist in drafting banner content; communicating outside of the .gov team; and updating the team and the incident document.  
-  * *Communication lead* creates a copy of our incident response template Google Doc and begins comms as detailed in the “Communications” section.  
-    * Template document to copy: : [0 - Template - Incident Dashboard + Report](https://docs.google.com/document/d/1cSRso-d71EafJKt8_3RXj37Oz_lPpM0n05leiyyHiLc/edit?usp=drive_link)  
-    * Location: [incidents \- .gov \- Google Drive](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu) folder  
-    * Name: `YYYY-MM-DD \- Incident \- {short description}`
+    * Identify **incident lead**, who will coordinate across *engineers and team* for necessary actions.  
+    * Identify any required participants for incident response (ie, if the incident requires specific engineers or leads because of its scope)  
+    * Designate **communication lead**  
+      * This will typically not be an engineer, but someone who will assist in drafting banner content; communicating outside of the .gov team; and updating the team and the incident document.  
+    * *Communication lead* creates a copy of our incident response template Google Doc and begins comms as detailed in the “Communications” section.  
+      * Template document to copy: : [0 - Template - Incident Dashboard + Report](https://docs.google.com/document/d/1cSRso-d71EafJKt8_3RXj37Oz_lPpM0n05leiyyHiLc/edit?usp=drive_link)  
+      * Location: [incidents \- .gov \- Google Drive](https://drive.google.com/drive/folders/1LPVICVpI4Xb5KGdrNkSwhX2OAJ6hYTyu) folder  
+      * Name: `YYYY-MM-DD \- Incident \- {short description}`
 4. **Troubleshoot, patch, or resolve issue**   
 5. Make updates to the incident report document and status information on the Dashboard tab of the document  
 6. Schedule a team retrospective, typically within 24 hours of resolution  
