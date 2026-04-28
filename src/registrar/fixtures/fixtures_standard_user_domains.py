@@ -235,4 +235,5 @@ class StandardUserDomainFixture(DomainRequestFixture):
             Domain.objects.filter(id=domain.id).update(
                 state=target_state,
                 expiration_date=expiration_date,
+                is_enrolled_in_epp=True,
             )
