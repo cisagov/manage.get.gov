@@ -1,4 +1,4 @@
- Downtime & Incident Management Runbook
+# Downtime & Incident Management Runbook
 
 For the .gov registry and registrar, an incident is defined as an event that impacts the security, availability, or integrity of the registrar that isn’t expected. Some examples include:
 
