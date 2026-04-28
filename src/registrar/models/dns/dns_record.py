@@ -128,7 +128,7 @@ class DnsRecord(TimeStampedModel):
 
         self._validate_ttl(errors)
         record_type = DNSRecordTypes(self.type)
-        self._clean_content(record_type, self.content)  # Must clean befor validating
+        self._clean_content(record_type)  # Must clean befor validating
         self._validate_content(record_type, errors)
         self._validate_mx_priority(record_type, errors)
         self._validate_exclusive_names(record_type, errors)
