@@ -96,13 +96,6 @@ class UserFixture:
             "title": "Software Engineer",
         },
         {
-            "username": "c9c64cd5-bc76-45ef-85cd-4f6eefa9e998",
-            "first_name": "Samiyah",
-            "last_name": "Key",
-            "email": "skey@truss.works",
-            "title": "Designer",
-        },
-        {
             "username": "f20b7a53-f40d-48f8-8c12-f42f35eede92",
             "first_name": "Kimberly",
             "last_name": "Aralar",
@@ -226,12 +219,6 @@ class UserFixture:
             "first_name": "Elizabeth-Analyst",
             "last_name": "Liao-Analyst",
             "email": "elizabeth.liao@gwe.cisa.dhs.gov",
-        },
-        {
-            "username": "ee1e68da-41a5-47f7-949b-d8a4e9e2b9d2",
-            "first_name": "Samiyah-Analyst",
-            "last_name": "Key-Analyst",
-            "email": "skey+1@truss.works",
         },
         {
             "username": "cf2b32fe-280d-4bc0-96c2-99eec09ba4da",

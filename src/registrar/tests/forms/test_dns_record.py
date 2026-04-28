@@ -3,6 +3,17 @@ from django.test import TestCase
 from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.utility.enums import DNSRecordTypes
+from registrar.validations import (
+    DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
+    DNS_NAME_FORMAT_ERROR_MESSAGE,
+    DNS_NAME_HYPHEN_ERROR_MESSAGE,
+    DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
+    DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_NAME_SPACES_ERROR_MESSAGE,
+    DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    MX_CONTENT_SPACES_ERROR_MESSAGE,
+)
 from faker import Faker
 
 fake = Faker()
@@ -87,26 +98,107 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
             self.assertFalse(form.is_valid())
             self.assertIn("name", form.errors)
-            self.assertEqual(form.errors["name"], ["Enter a name for this record."])
+            self.assertEqual(form.errors["name"], [DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE])
+
+    def test_blank_cname_name_does_not_crash_and_shows_required_error(self):
+        """CNAME with empty name should surface the required error, not raise an AttributeError."""
+        data = {
+            "type": "CNAME",
+            "name": "",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "",
+        }
+        form = self.make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors["name"], [DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE])
 
     def test_invalid_dns_name_throws_error(self):
-        # Testing invalid first character
-        self.assert_dns_name_errors("1bc", ["Enter a name that begins with a letter and ends with a letter or number."])
+        # Testing hyphen at start of label
+        self.assert_dns_name_errors("-abc", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
 
-        # Testing invalid last character
-        self.assert_dns_name_errors(
-            "abc-", ["Enter a name that begins with a letter and ends with a letter or number."]
-        )
+        # Testing hyphen at end of label
+        self.assert_dns_name_errors("abc-", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
 
-        # Testing invalid character and invalid last character
-        self.assert_dns_name_errors(
-            "ab$c", ["Enter a name using only letters, numbers, hyphens, periods, or the @ symbol."]
-        )
+        # Testing invalid character from the AC's disallowed list
+        self.assert_dns_name_errors("ab(c", [DNS_NAME_FORMAT_ERROR_MESSAGE])
 
-        self.assert_dns_name_errors("a" * 64, ["Name must be no more than 63 characters."])
+        # Testing per-label length exceeds 63 characters
+        self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])
 
         # Testing space in name
-        self.assert_dns_name_errors("ab cd", ["Enter the DNS name without any spaces."])
+        self.assert_dns_name_errors("ab cd", [DNS_NAME_SPACES_ERROR_MESSAGE])
+
+    def test_dns_name_with_consecutive_dots_throws_error(self):
+        """Consecutive dots should be rejected."""
+        self.assert_dns_name_errors("ab..cd", [DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE])
+
+    def test_dns_name_with_leading_dot_throws_error(self):
+        """Leading dot should be rejected."""
+        self.assert_dns_name_errors(".abc", [DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE])
+
+    def test_dns_name_with_trailing_dot_throws_error(self):
+        """Trailing dot should be rejected."""
+        self.assert_dns_name_errors("abc.", [DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE])
+
+    def test_dns_name_with_invalid_special_characters_throws_error(self):
+        """Invalid characters (e.g. @ ( ) : ;) should be rejected."""
+        for invalid_char in ["(", ")", ":", ";", "@"]:
+            with self.subTest(invalid_char=invalid_char):
+                self.assert_dns_name_errors(f"ab{invalid_char}cd", [DNS_NAME_FORMAT_ERROR_MESSAGE])
+
+    def test_dns_name_case_insensitive(self):
+        """DNS names should be case-insensitive (normalized to lowercase)."""
+        # Valid uppercase names should pass
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["name"] = "ABC"
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+
+    def test_dns_name_with_wildcard_at_start_valid(self):
+        """Wildcard as entire first label should be valid (e.g., *.example.com)."""
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["name"] = "*"
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+
+    def test_dns_name_with_wildcard_anywhere_valid(self):
+        """Wildcard is allowed anywhere in the name."""
+        for name in ["sub.*", "a*b"]:
+            with self.subTest(name=name):
+                data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+                data["name"] = name
+                form = self.make_form(data)
+                self.assertTrue(form.is_valid())
+
+    def test_dns_name_exceeds_fully_qualified_length_throws_error(self):
+        """Names exceeding 253 characters when fully qualified should be rejected."""
+        # Create a name that's 254 characters
+        long_name = "a" * 254
+        self.assert_dns_name_errors(long_name, [DNS_NAME_LENGTH_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_in_middle_of_label_valid(self):
+        """Hyphens in the middle of labels should be allowed."""
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["name"] = "my-domain"
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+
+    def test_dns_name_with_hyphen_at_start_of_label_throws_error(self):
+        """Hyphen at start of a label should be rejected."""
+        self.assert_dns_name_errors("-my-domain", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_at_end_of_label_throws_error(self):
+        """Hyphen at end of a label should be rejected."""
+        self.assert_dns_name_errors("my-domain-", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_at_start_of_middle_label_throws_error(self):
+        """Hyphen at start of any label should be rejected."""
+        self.assert_dns_name_errors("my.-domain", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
+
+    def test_dns_name_with_hyphen_at_end_of_middle_label_throws_error(self):
+        """Hyphen at end of any label should be rejected."""
+        self.assert_dns_name_errors("my-.domain", [DNS_NAME_HYPHEN_ERROR_MESSAGE])
 
     def test_dns_record_with_invalid_content_throws_error(self):
         invalid_content_by_type = {
@@ -182,7 +274,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_form(data)
         self.assertFalse(form.is_valid())
         self.assertIn("priority", form.errors)
-        self.assertIn("Enter a priority for this record.", form.errors["priority"])
+        self.assertIn(DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE, form.errors["priority"])
 
     def test_mx_record_priority_below_minimum_throws_error(self):
         form = self.make_mx_form(priority=-1)
@@ -211,7 +303,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(name="my name")
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertIn("Enter the DNS name without any spaces.", form.errors["name"])
+        self.assertIn(DNS_NAME_SPACES_ERROR_MESSAGE, form.errors["name"])
 
     # --- Content validation ---
 
@@ -219,7 +311,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(content="invalid hostname")
         self.assertFalse(form.is_valid())
         self.assertIn("content", form.errors)
-        self.assertIn("Enter the mail server without any spaces.", form.errors["content"])
+        self.assertIn(MX_CONTENT_SPACES_ERROR_MESSAGE, form.errors["content"])
 
     def test_mx_record_with_content_too_long_throws_error(self):
         form = self.make_mx_form(content="a" * 254)

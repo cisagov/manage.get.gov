@@ -5,7 +5,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from registrar.validations import validate_dns_name
+from registrar.validations import (
+    DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    validate_dns_name,
+)
 from registrar.utility.enums import DNSRecordTypes, format_dns_ttl
 from registrar.models.dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord as RecordsJoin
 from registrar.models.dns.vendor_dns_record import VendorDnsRecord
@@ -25,12 +29,12 @@ class DnsRecord(TimeStampedModel):
     )  # type: ignore
 
     type = models.CharField(choices=DNSRecordTypes.choices)
-
     name = models.CharField(
         max_length=253,
         blank=False,
         null=False,
         validators=[validate_dns_name],
+        error_messages={"max_length": DNS_NAME_LENGTH_ERROR_MESSAGE},
     )
 
     ttl = models.PositiveIntegerField(default=1)
@@ -71,7 +75,7 @@ class DnsRecord(TimeStampedModel):
     def _validate_mx_priority(self, record_type, errors):
         """Validate MX record has priority."""
         if record_type == DNSRecordTypes.MX and self.priority is None:
-            errors["priority"] = ["Enter a priority for this record."]
+            errors["priority"] = [DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE]
 
     def _validate_exclusive_names(self, record_type, errors):
         """Validate CNAME/A/AAAA records don't share names."""
@@ -101,8 +105,18 @@ class DnsRecord(TimeStampedModel):
             if conflict.exists():
                 errors["name"] = ["A record with that name already exists. Names must be unique."]
 
+    def _normalize_name(self) -> None:
+        """Normalize DNS record name to lowercase for case-insensitive storage."""
+        if self.name:
+            self.name = self.name.lower()
+
+    def save(self, *args, **kwargs):
+        self._normalize_name()
+        super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
+        self._normalize_name()
         errors = {}
 
         self._validate_ttl(errors)
@@ -176,6 +190,10 @@ class DnsRecord(TimeStampedModel):
         """Create and save a DnsRecord and its join row from vendor API response data."""
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
+        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # (including any that read the vendor payload directly) see a consistent value.
+        if record_data.get("name"):
+            record_data["name"] = record_data["name"].lower()
 
         try:
             with transaction.atomic():
@@ -213,6 +231,10 @@ class DnsRecord(TimeStampedModel):
         """Update an existing DnsRecord from vendor API response data."""
         record_data = vendor_record_data["result"]
         excluded_fields = ["id", "type", "created_on"]
+        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # (including any that read the vendor payload directly) see a consistent value.
+        if record_data.get("name"):
+            record_data["name"] = record_data["name"].lower()
 
         try:
             with transaction.atomic():
