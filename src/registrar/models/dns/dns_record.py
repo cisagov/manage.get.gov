@@ -64,7 +64,7 @@ class DnsRecord(TimeStampedModel):
         if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
 
-    def _clean_content(self, record_type, content):
+    def _clean_content(self, record_type):
         """Clean content based on record type."""
         cleaner = record_type.cleaner
         if cleaner and self.content:
