@@ -1034,4 +1034,12 @@ class DomainDNSRecordForm(forms.ModelForm):
             if not self.errors and name and content:
                 self._validate_duplicate_record(record_type, name, content, priority)
 
+            # Django's add_error() removes the field from cleaned_data, so after
+            # _validate_duplicate_record fires on an MX record, _post_clean() won't
+            # update instance.priority. For new records the default is None, which
+            # causes the model-level "priority required" check to add a second
+            # error. Here we keep the known, good submitted value to prevent that.
+            if DNSRecordTypes(record_type) == DNSRecordTypes.MX and priority is not None:
+                self.instance.priority = priority
+
         return cleaned_data

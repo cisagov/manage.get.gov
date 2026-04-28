@@ -8,7 +8,7 @@ from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
-from registrar.validations import DNS_NAME_FORMAT_ERROR_MESSAGE
+from registrar.validations import DNS_NAME_FORMAT_ERROR_MESSAGE, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
@@ -473,4 +473,42 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, "You already entered this DNS record")
+            svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_duplicate_mx_shows_only_duplicate_error_on_priority_not_required_error(self):
+        """A duplicate MX submission must show the duplicate message on priority but
+        must NOT show the 'Enter a priority for this record.' required message.
+        The two errors were co-appearing because add_error() removed priority from
+        cleaned_data, causing _post_clean to skip setting instance.priority, which
+        left it as None and triggered the model-level required check a second time."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            content="mail.example.gov",
+            ttl=300,
+            priority=1,
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "MX",
+                    "name": "@",
+                    "content": "mail.example.gov",
+                    "priority": 1,
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "You already entered this DNS record")
+            self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()

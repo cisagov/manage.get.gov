@@ -796,3 +796,23 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
         )
         form = self.make_mx_form(content="mail.example.gov", priority=10, name="@")
         self.assertTrue(form.is_valid())
+
+    def test_duplicate_mx_shows_only_duplicate_error_on_priority_not_required_error(self):
+        """Submitting a duplicate MX record should show only the duplicate message on
+        the priority field — not the 'Enter a priority for this record.' required message.
+        Django's add_error() side-effect removes priority from cleaned_data; without the
+        form-level guard that restores instance.priority before _post_clean, the model's
+        _validate_mx_priority fires on None and injects a spurious second error."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="www",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=10,
+        )
+        form = self.make_mx_form(priority=10)
+        self.assertFalse(form.is_valid())
+        priority_errors = form.errors.get("priority", [])
+        self.assertIn(self.DUPLICATE_MESSAGE, priority_errors)
+        self.assertNotIn(DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE, priority_errors)
