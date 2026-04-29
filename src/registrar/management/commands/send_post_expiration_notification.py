@@ -53,14 +53,17 @@ class Command(BaseCommand):
 
             # -- GRAB PORTFOLIO ADMIN EMAILS --
             portfolio_id = domain.domain_info.portfolio_id
-            portfolio_admin_emails = list(
-                UserPortfolioPermission.objects.filter(
-                    portfolio_id=portfolio_id,
-                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            if portfolio_id:
+                portfolio_admin_emails = list(
+                    UserPortfolioPermission.objects.filter(
+                        portfolio_id=portfolio_id,
+                        roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                    )
+                    .values_list("user__email", flat=True)
+                    .distinct()
                 )
-                .values_list("user__email", flat=True)
-                .distinct()
-            )
+            else:
+                portfolio_admin_emails = []
 
             context = {
                 "domain": domain,
