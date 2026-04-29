@@ -71,6 +71,9 @@ env_log_format = env.str("DJANGO_LOG_FORMAT", "console")
 env_base_url: str = env.str("DJANGO_BASE_URL")
 env_getgov_public_site_url = env.str("GETGOV_PUBLIC_SITE_URL", "")
 env_oidc_active_provider = env.str("OIDC_ACTIVE_PROVIDER", "identity sandbox")
+# Dev-only: when True, exposes /dev-auto-login/ to bypass login.gov for local E2E tests.
+# Must also have DEBUG=True. Never set this in sandbox or production environments.
+env_allow_auto_login = env.bool("ALLOW_AUTO_LOGIN", default=False)
 
 secret_login_key = b64decode(secret("DJANGO_SECRET_LOGIN_KEY", ""))
 secret_key = secret("DJANGO_SECRET_KEY")
@@ -111,6 +114,9 @@ BASE_DIR = path.resolve().parent.parent.parent
 # TODO - Investigate the behaviour of this flag. Does not appear
 # to function for the IS_PRODUCTION flag.
 DEBUG = env_debug
+
+# Only active when DEBUG=True; gates the /dev-auto-login/ bypass URL for E2E tests.
+ALLOW_AUTO_LOGIN = env_allow_auto_login and env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
@@ -740,6 +746,8 @@ LOGIN_URL = "/openid/login"
 # the initial login requests without erroring.
 LOGIN_REQUIRED_IGNORE_PATHS = [
     r"/openid/(.+)$",
+    # Dev-only auto-login bypass — must be reachable before a session exists
+    r"/dev-auto-login/$",
 ]
 
 # where to go after logging out
