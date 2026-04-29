@@ -64,8 +64,8 @@ function clearRecordForm(){
 
     inputs.forEach(input =>{ 
         input.classList.remove("usa-input--error")
-        input.value = ""
     })
+
 
     // remove label styling
     const labels = form.querySelectorAll('label')
@@ -79,7 +79,9 @@ function clearRecordForm(){
     document.querySelectorAll('.usa-alert--error').forEach(el => el.remove())
 
     // reset count for comment field
+    // clear comment field
     // comment character count is hardcoded due to the model having different max length limits. Should be updated if/when max length is updated on the model
+    document.getElementById('id_comment').value = ''
     document.getElementById('dnsrecords-form-container-comment--status').textContent = getCharCountText(100, 0)
     
 }
