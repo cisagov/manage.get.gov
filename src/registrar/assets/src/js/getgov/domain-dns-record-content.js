@@ -64,6 +64,7 @@ function clearRecordForm(){
 
     inputs.forEach(input =>{ 
         input.classList.remove("usa-input--error")
+        input.value = ""
     })
 
     // remove label styling
