@@ -19,22 +19,7 @@
 
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
-        <div class="display-flex flex-align-center">
-            <div class="grid-col">
-                <h1>DNS records</h1>
-            </div>
-            
-            <div class="grid-col-auto">
-                <button
-                    class="usa-button"
-                    id="add-dnsrecord-button"
-                    type="button"
-                    x-on:click="showFormId = 0"
-                >
-                    Add record
-                </button>
-            </div>
-        </div>
+        <h1>DNS records</h1>
     
         <div class="grid-row">
             <div class="grid-col-12">
@@ -44,7 +29,21 @@
                 <p class="measure-none">
                     To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
-                <h2>Manage DNS records</h2>
+                <div class="display-flex flex-align-center margin-top-4">
+                    <div class="grid-col">
+                        <h2 class="margin-top-0 margin-bottom-0">Manage DNS records</h2>
+                    </div>        
+                    <div class="grid-col-auto">
+                        <button
+                            class="usa-button"
+                            id="add-dnsrecord-button"
+                            type="button"
+                            x-on:click="showFormId = 0"
+                        >
+                            Add record
+                        </button>
+                    </div>
+                </div>
 
                 <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
