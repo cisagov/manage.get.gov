@@ -759,7 +759,100 @@ class SendExpirationEmailsTests(TestCase):
         call_command("send_expiring_soon_domains_notification")
 
         mock_send_email.assert_not_called()
+    
 
+class SendPostExpirationEmailsTests(TestCase):
+    def setUp(self):
+        self.fixed_today = date(2025, 5, 29)
+        self.manager = User.objects.create(email="manager@example.com", username="manageruser")
+        self.admin = User.objects.create(email="admin@example.com", username="admin_user")
+
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_expired_ready_domain_sends_email_success(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is Ready and already expired
+        2. Getting the right template
+        3. Sending the correct context to the right people
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_expired = Domain.objects.create(
+            name="expiredready.gov",
+            state=Domain.State.READY,
+            expiration_date=self.fixed_today - timedelta(days=1),
+        )
+
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expired Portfolio")
+        DomainInformation.objects.create(domain=domain_expired, portfolio=portfolio, requester=self.manager)
+
+        UserDomainRole.objects.create(user=self.manager, domain=domain_expired, role="manager")
+
+        UserPortfolioPermission.objects.create(
+            user=self.manager,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        UserPortfolioPermission.objects.create(
+            user=self.admin,
+            portfolio=portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        call_command("send_post_expiration_notification")
+
+        expected_context = {
+            "domain": domain_expired,
+            "expiration_date": self.fixed_today - timedelta(days=1),
+            "domain_manager_emails":["manager@example.com"],
+            "one_week_after_expiration": self.fixed_today - timedelta(days=1) + timedelta(days=7)
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/ready_and_expired.txt",
+            "emails/ready_and_expired_subject.txt",
+            to_addresses=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            bcc_addresses=["help@get.gov"],
+            context=expected_context,
+        )
+
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_ready_not_expired_domain_email_skipped(self, mock_now, mock_send_email):
+        """
+        Email should NOT send for a ready domain that is not expired
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        Domain.objects.create(
+            name="notexpired.gov",
+            state=Domain.State.READY,
+            expiration_date=self.fixed_today + timedelta(days=1),
+        )
+
+        call_command("send_post_expiration_notification")
+
+        mock_send_email.assert_not_called()
+    
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_not_ready_expired_domain_email_skipped(self, mock_now, mock_send_email):
+        """
+        Email should NOT send for a valid domain (not expired) in any state that is not ready
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        Domain.objects.create(
+            name="expirednotready.gov",
+            state=Domain.State.DNS_NEEDED,
+            expiration_date=self.fixed_today - timedelta(days=1),
+        )
+
+        call_command("send_post_expiration_notification")
+
+        mock_send_email.assert_not_called()
 
 class SendDomainSetupReminderTests(TestCase):
     def setUp(self):
