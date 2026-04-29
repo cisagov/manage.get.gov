@@ -4281,7 +4281,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             'return false;">Open in OpenSearch</button>'
             "</div></li></ul>"
         )
-        return mark_safe(html)  # nosec B308 — all interpolated values are escaped or static
+        return mark_safe(html)  # nosec B308 B703 — all interpolated values are escaped or static
 
     # ------- Domain Information Fields
 

@@ -6,7 +6,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -44,6 +44,8 @@ from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     DnsHostingError,
+    DnsHostingErrorCodes,
+    DnsNotFoundError,
     GenericError,
     GenericErrorCodes,
     NameserverError,
@@ -53,7 +55,6 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
 )
-from registrar.utility.api_responses import dns_error_response
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.invitation_helper import (
@@ -1070,9 +1071,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             form_record_data = self._build_dns_record_form_data(form)
             x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if not x_zone_id:
-                return JsonResponse(
-                    {"status": "error", "message": "DNS zone not found. Domain may not be enrolled."},
-                    status=400,
+                raise DnsNotFoundError(
+                    code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+                    context={"domain_name": self.object.name},
                 )
 
             if is_edit:
@@ -1081,8 +1082,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
         except DnsHostingError as exc:
-            # Typed DNS errors return the canonical JSON envelope.
-            # See docs/developer/dns-error-handling.md.
+            # Typed DNS errors currently use Django messages so the admin-editable
+            # error copy appears inline at the top of the form, consistent with the
+            # generic APIError UX. API consumers can still use the canonical JSON
+            # response from dns_error_response(); switch to Accept-based rendering once
+            # the HTMX form layer is ready to handle that envelope directly.
             logger.error(
                 "DNS record create/update failed (typed)",
                 extra={
@@ -1092,14 +1096,16 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     **exc.context,
                 },
             )
-            return dns_error_response(exc, request=request)
+            messages.error(request, exc.message)
+            self.dns_record = None
+            record_id = None
         except (APIError, RequestError) as e:
             request_id = getattr(request, "_dns_request_id", "unknown")
             logger.error(f"DNS record create/update failed, API error in view req_id={request_id} {e}")
             opensearch_link = f"https://logs.fr.cloud.gov/?q={request_id}"
             messages.error(
                 request,
-                mark_safe(  # nosec B308 — request_id is a UUID generated server-side
+                mark_safe(  # nosec B308 B703 — request_id is a UUID generated server-side
                     "Failed to save DNS record. If the problem persists, share this reference "
                     f'ID with support: <a href="{opensearch_link}" target="_blank" '
                     f'rel="noopener"><code>{request_id}</code></a>'
