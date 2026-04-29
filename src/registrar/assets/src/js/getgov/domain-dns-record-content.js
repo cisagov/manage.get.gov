@@ -75,8 +75,10 @@ function clearRecordForm(){
     // remove error messages that appear on the top of the page
     form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
 
-    // remove top message errors
-    document.querySelectorAll('.usa-alert--error').forEach(el => el.remove())
+    // remove top message alerts
+    const alertMessagesContainer = document.getElementById('messages-container')
+    
+    alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
 
     // reset count for comment field
     // clear comment field
