@@ -759,7 +759,7 @@ class SendExpirationEmailsTests(TestCase):
         call_command("send_expiring_soon_domains_notification")
 
         mock_send_email.assert_not_called()
-    
+
 
 class SendPostExpirationEmailsTests(TestCase):
     def setUp(self):
@@ -805,8 +805,8 @@ class SendPostExpirationEmailsTests(TestCase):
         expected_context = {
             "domain": domain_expired,
             "expiration_date": self.fixed_today - timedelta(days=1),
-            "domain_manager_emails":["manager@example.com"],
-            "one_week_after_expiration": self.fixed_today - timedelta(days=1) + timedelta(days=7)
+            "domain_manager_emails": ["manager@example.com"],
+            "one_week_after_expiration": self.fixed_today - timedelta(days=1) + timedelta(days=7),
         }
 
         mock_send_email.assert_any_call(
@@ -835,7 +835,7 @@ class SendPostExpirationEmailsTests(TestCase):
         call_command("send_post_expiration_notification")
 
         mock_send_email.assert_not_called()
-    
+
     @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
     @patch("django.utils.timezone.now")
     def test_not_ready_expired_domain_email_skipped(self, mock_now, mock_send_email):
@@ -853,6 +853,7 @@ class SendPostExpirationEmailsTests(TestCase):
         call_command("send_post_expiration_notification")
 
         mock_send_email.assert_not_called()
+
 
 class SendDomainSetupReminderTests(TestCase):
     def setUp(self):
