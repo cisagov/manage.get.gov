@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi,{% if portfolio_admin and portfolio_admin.first_name %} {{ portfolio_admin.first_name }}.{% endif %}
+Hi,{% if portfolio_admin and portfolio_admin.first_name %} {{ portfolio_admin.first_name }},{% endif %}
 
 An admin was removed from your .gov organization.
 

@@ -1,7 +1,47 @@
 // Establishes javascript for dynamic content label based on type
+function getCharCountText (charLimit, charLength) {
+    let finalString = "";
+  
+    if(charLength == 0){
+        finalString = `${charLimit} characters allowed`
+    }
+    else{
+        const charactersLeft = Math.abs(charLimit - charLength);
+        const remainingText =  charLimit < charLength ? "over limit" : "left";
+        const characters =`character${charactersLeft === 1 ? '' : 's'}`;
+        finalString = `${charactersLeft} ${characters} ${remainingText}`
+    }
+    
+    return finalString;
+  };
+
+function createCharacterCountDiv(charLimit, textArea) {
+
+
+  const displayCharCount = document.createElement('div');
+  displayCharCount.className = 'usa-character-count__status usa-hint';
+  displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length)
+
+
+  displayCharCount.id = `${textArea.id}-content--status`
+  displayCharCount.setAttribute('aria-live', 'polite')
+
+
+  textArea.addEventListener('input', function () {
+    displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length);
+    displayCharCount.classList.toggle(
+      'usa-character-count__status--invalid',
+      textArea.value.length > charLimit
+    );
+  });
+  textArea.setAttribute('aria-describedby', displayCharCount.id)
+  return displayCharCount;
+}
 
 function switchFromInputToTextArea (element) {
         if(!element) return;
+
+       
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
         textArea.className = 'usa-textarea usa-textarea--medium';
@@ -9,36 +49,25 @@ function switchFromInputToTextArea (element) {
         textArea.id = element.id
         textArea.value = element.value
         element.classList.forEach(cls => textArea.classList.add(cls))
-       
-        
-        // Character count
-        const charLimit = 2048
-        let getCharCountText = function () {
-           return `${charLimit - textArea.value.length} characters allowed`
-        }
-        const displayCharCount = document.createElement('div')
-        displayCharCount.className = "usa-character-count__status usa-hint"
-        displayCharCount.textContent = getCharCountText()
-        textArea.addEventListener('input', function(){
-             displayCharCount.textContent = getCharCountText()
-             displayCharCount.classList.toggle('usa-character-count__status--invalid', textArea.value.length > charLimit)
-        })
 
+        const charLimit = 2048
+        const displayCharCount = createCharacterCountDiv(charLimit, textArea)
 
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
+
 
 export function editAndCommentButtonListener (){
         const table = document.querySelector("#dnsrecords-table");
         if(!table) return;
 
         table.addEventListener('click', function(e) {
-            const editBtn =  e.target.closest('[data-action="edit"')
-            const commenttBtn = e.target.closest('[data-action="comment"')
-            if(!editBtn && !commenttBtn) return;
+            const editBtn =  e.target.closest('[data-action="edit"]')
+            const commentBtn = e.target.closest('[data-action="comment"]')
+            if(!editBtn && !commentBtn) return;
             
-            const recordId = (editBtn || commenttBtn).dataset.recordId
+            const recordId = (editBtn || commentBtn).dataset.recordId
             const alpineData = Alpine.$data(table)
             
             if(editBtn){
@@ -47,7 +76,7 @@ export function editAndCommentButtonListener (){
                 alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
             }
 
-            if(commenttBtn){
+            if(commentBtn){
                 if(alpineData.showFormId === recordId) alpineData.showFormId = null;
                 const idx = alpineData.openComments.indexOf(recordId);
                 idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
@@ -57,17 +86,47 @@ export function editAndCommentButtonListener (){
         })
 }
 
+export function commentCharacterEventListener(){
+
+    // event listener to update the char count text
+    const commentCharLimit = 100
+    function helperEventListener (element){
+        if(!element){
+            return;
+        }
+        const commentTextStatus = element.querySelector('.comment-character-count')
+        const commentTextArea = element.querySelector('textarea[id$="_comment"]')
+        commentTextArea.addEventListener('input', function () {
+            commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
+            commentTextStatus.classList.toggle(
+              'usa-character-count__status--invalid',
+              commentTextArea.value.length > commentCharLimit
+          );
+       });
+        commentTextStatus.id = `${element.id}-comment--status`
+        commentTextStatus.setAttribute('aria-live', 'polite')
+        commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
+    }
+
+
+    let rows = document.querySelectorAll('tr[id^="dnsrecord-edit-row-"]')
+    const form = document.getElementById('dnsrecords-form-container')
+   
+    rows && rows.forEach(row => {
+       helperEventListener(row)
+    })
+
+    helperEventListener(form)
+}
 
 export function initDynamicDNSRecordFormFields() { 
-    
     const typeField = document.getElementById('id_type');
 
     if (!typeField) return;
 
     const config = JSON.parse(
         typeField.dataset.typeConfig || "{}"
-    );
-
+    )
     const textAreaContent = document.querySelectorAll('.content-field-wrapper-txt');
 
     // For the edit rows to update from input to text area
@@ -77,7 +136,6 @@ export function initDynamicDNSRecordFormFields() {
                     switchFromInputToTextArea(currentInput)
                 }
     })
-  
 
     typeField.addEventListener('change', function (){
         const selectedType = this.value;
@@ -96,8 +154,11 @@ export function initDynamicDNSRecordFormFields() {
        
         if(selectedType == "TXT"){
             // Swap input type to text area
+            // Utilized set time out for Firefox loading engine to grab the input after dom content loads
+            setTimeout(()=>{
             let input = document.querySelector(".content-field-wrapper-txt input")
             input && switchFromInputToTextArea(input)
+            }, 0)
         }
         
 
@@ -105,11 +166,10 @@ export function initDynamicDNSRecordFormFields() {
         contentLabel.appendChild(abbrClone);
 
 
-      
     });
-    
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
+
 }
