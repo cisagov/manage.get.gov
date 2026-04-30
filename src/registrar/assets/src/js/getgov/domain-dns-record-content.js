@@ -59,35 +59,26 @@ function switchFromInputToTextArea (element) {
 
 function clearRecordForm(){
     const form = document.getElementById("dnsrecords-form-container")
-    // remove error styling and reset values  
+    
+    // remove error styling from inputs and labels 
     const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
-
     inputs.forEach(input =>{ 
         input.classList.remove("usa-input--error")
     })
-
-
-    // remove label styling
     const labels = form.querySelectorAll('label')
-
     labels.forEach( label => label.classList.remove("usa-label--error"))
 
-    // remove error messages that appear on the top of the page
+    // remove error messages in line and top-level error messages
     form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
-
-    // remove top message alerts
     const alertMessagesContainer = document.getElementById('messages-container')
-    
     alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
     
-    // clear comment field
+    // Reset the comment field and its character count
     document.getElementById('id_comment').value = ''
     const commentStatus =  document.getElementById('dnsrecords-form-container-comment--status')
-    // remove error styling on count text
     commentStatus.classList.remove("usa-character-count__status--invalid")
-     // reset count for comment field, character count is hardcoded for now if/when the model is updated with the current maxlength
-    document.getElementById('dnsrecords-form-container-comment--status').textContent = getCharCountText(100, 0)
-    
+     // Character count is hardcoded for now if/when the model is updated with the current maxlength
+    commentStatus.textContent = getCharCountText(100, 0)
 }
 
 export function editAndCommentButtonListener (){
@@ -210,11 +201,9 @@ export function initDynamicDNSRecordFormFields() {
         typeField.dispatchEvent(new Event('change'));
     }
     
-    // clearForm on cancel
+    // clearForm when a user hits the cancel button on the dns record form and table
     document.querySelectorAll(".js-dnsrecord-cancel-button").forEach( button => {
-        button.addEventListener('click',function(e) {
-            clearRecordForm()
-            })
+        button.addEventListener('click',clearRecordForm)
         }
     )
 }
