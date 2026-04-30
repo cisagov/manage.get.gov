@@ -3,18 +3,19 @@
 For the .gov registry and registrar, an incident is defined as an event that impacts the confidentiality, availability, or integrity of the registrar that isn’t expected. Some examples include:
 
 * Get.gov or manage.get.gov is completely offline;  
-* The application is returning errors unexpectedly; or  
+* The application is returning critical errors unexpectedly; or  
 * Data is able to be accessed by someone other than the intended audience.
 
-This runbook is primarily designed to cover the process for incidents that are a result of critical bugs in the .gov codebase, or an outage with one of our providers, in contrast with intentional or malicious actions against the application or providers. However, since the root cause or source of a problem may not be immediately evident, following these procedures will assist in ensuring the root cause is identified and mitigated appropriately.
+This runbook is primarily designed to cover our response for incidents that are a result of critical bugs in the .gov codebase or an outage with one of our providers. However, since the root cause of a problem may not be immediately evident, following these procedures will assist in identifying and mitigating the issue, even if that source is an intentional, malign actor.
 
-Certain types of incidents, such as when the root cause is determined to be malware, ransomware, denial of service, and the like, may require additional measures and assessment, including further coordination with CISA incident response or privacy offices. Those are not detailed in this runbook.
+Certain types of incidents, such as when the root cause is determined to be malware, ransomware, denial of service, and the like, may require additional measures and assessment, including coordination with CISA's incident response or privacy offices. Those are not detailed in this runbook.
 
 ## Availability and developer support
 
-The .gov team includes contractor developers. For incident management purposes, the following should be noted:
+The .gov team's availability spans normal business hours for CONUS. The team also includes contract developers. 
 
-* When an incident occurs outside of business hours, engineer support is on a volunteer basis; answering a call does not necessarily mean that the engineer is available to assist throughout the incident.  
+For incident management purposes, the following should be noted:
+
 * Engineers who are online should join the incident-related huddle as soon as practical. Engineers who are off may be pinged or invited to join, but are not obligated to assist.
 
 ## Something’s wrong\! Now what?
@@ -82,4 +83,4 @@ The .gov team includes contractor developers. For incident management purposes, 
    4. Review what we learned, and any risks that were uncovered  
    5. Propose and agree on follow-up actions, including necessary GitHub issues, and owners for completion of follow-up activities
 
-After retrospective, the program team coordinates to finalize the Incident Report using the template in the incident report document. The incident report is a consolidated narrative, timeline, and assessment of the incident to share internally. The program team will also determine if any external notifications are warranted, such as to Users, within CISA, published to get.gov, etc.
+After retrospective, the program team coordinates to finalize the Incident Report using the template in the incident report document. The incident report is a consolidated narrative, timeline, and assessment of the incident to share internally. The program team will also determine if any external notifications are warranted, such as emails to users, published to get.gov, etc.
