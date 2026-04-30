@@ -2,7 +2,7 @@
 
 ## Project overview
 
-This repository contains the source code for the **.gov domain registrar** — the system used by U.S. government organizations to request and manage `.gov` domains. It is a Django 4.2 web application deployed on Cloud.gov (Cloud Foundry), backed by PostgreSQL, and integrated with Login.gov (OIDC) and an EPP-based domain registry.
+This repository contains the source code for the **.gov domain registrar** — the system used by U.S.-based government organizations to request and manage `.gov` domains. It is a Django 4.2 web application deployed on Cloud.gov (Cloud Foundry), backed by PostgreSQL, and integrated with Login.gov (OIDC) and an EPP-based domain registry.
 
 All application source code lives under `src/`. Documentation lives under `docs/`.
 
