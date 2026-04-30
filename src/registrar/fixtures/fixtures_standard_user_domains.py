@@ -84,25 +84,32 @@ class StandardUserDomainFixture(DomainRequestFixture):
         {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        }, {
+        },
+        {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
         },
@@ -175,7 +182,7 @@ class StandardUserDomainFixture(DomainRequestFixture):
                 DomainRequest.objects.filter(
                     requester=user,
                     status=DomainRequest.DomainRequestStatus.IN_REVIEW,
-                ).order_by("id")[:len(cls.DOMAIN_STATE_CONFIGS)]
+                ).order_by("id")[: len(cls.DOMAIN_STATE_CONFIGS)]
             )
 
             if len(in_review_requests) != len(cls.DOMAIN_STATE_CONFIGS):
@@ -195,9 +202,7 @@ class StandardUserDomainFixture(DomainRequestFixture):
 
             if approved_pairs:
                 try:
-                    DomainRequest.objects.bulk_update(
-                        [r for r, _ in approved_pairs], ["status", "investigator"]
-                    )
+                    DomainRequest.objects.bulk_update([r for r, _ in approved_pairs], ["status", "investigator"])
                 except Exception as e:
                     logger.error(f"Error bulk updating domain requests for {user}: {e}")
 

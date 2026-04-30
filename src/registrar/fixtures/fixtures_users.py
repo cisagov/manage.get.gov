@@ -453,7 +453,7 @@ class UserFixture:
             first_name = user_data.get("first_name", "Bob")
             last_name = user_data.get("last_name", "Builder")
             # If username is not provided, create one (must be unique)
-            username = user_data.get("username", first_name+last_name+str(id))
+            username = user_data.get("username", first_name + last_name + str(id))
 
             default_email = f"placeholder.{first_name.lower()}.{last_name.lower()}+{i}@igorville.gov"
             email = user_data.get("email", default_email)
@@ -532,9 +532,7 @@ class UserFixture:
             )
             cls._create_new_users(new_users)
 
-            created_or_existing = User.objects.filter(
-                username__in=[u["username"] for u in cls.STANDARD_USERS]
-            )
+            created_or_existing = User.objects.filter(username__in=[u["username"] for u in cls.STANDARD_USERS])
             users_to_update = cls._get_users_to_update(created_or_existing, is_staff=False)
             cls._update_existing_users(users_to_update)
             logger.info("Standard users loaded.")
