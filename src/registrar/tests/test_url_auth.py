@@ -7,7 +7,7 @@ https://github.com/18F/tock/blob/main/tock/tock/tests/test_url_auth.py
 from django.test import TestCase
 from django.urls import reverse, URLPattern
 from django.urls.resolvers import URLResolver
-
+import traceback
 import registrar.config.urls
 
 from .common import less_console_noise
@@ -130,7 +130,6 @@ class TestURLAuth(TestCase):
     # and that the url returns a 200 response
     NO_AUTH_URLS = [
         "/health",
-        "/admin/login/",
     ]
 
     def assertURLIsProtectedByAuth(self, url):
@@ -147,7 +146,7 @@ class TestURLAuth(TestCase):
             # accessed at the time the exception occurred.  Python 3 will
             # also include a full traceback of the original exception, so
             # we don't need to worry about hiding the original cause.
-            raise AssertionError(f'Accessing {url} raised "{e}"', e)
+            raise AssertionError(f"Accessing {url} raised {e}:\n{traceback.format_exc()}")
 
         code = response.status_code
         if code == 302:
@@ -177,7 +176,7 @@ class TestURLAuth(TestCase):
             # accessed at the time the exception occurred.  Python 3 will
             # also include a full traceback of the original exception, so
             # we don't need to worry about hiding the original cause.
-            raise AssertionError(f'Accessing {url} raised "{e}"', e)
+            raise AssertionError(f"Accessing {url} raised {e}:\n{traceback.format_exc()}")
 
         code = response.status_code
         if code != 200:
