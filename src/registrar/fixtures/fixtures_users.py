@@ -300,57 +300,49 @@ class UserFixture:
 
     STANDARD_USERS = [
         {
-                  
-            "username": "<uuid>21",
+            "username": "e2201529-6901-44ee-9698-0d08bfe7fb01",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_1",
             "email": "feedback+1@get.gov",
         },
         {
-                  
-            "username": "<uuid>2",
+            "username": "74cca338-21d6-4135-910e-4cf9ce179ea6",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_2",
             "email": "feedback+2@get.gov",
         },
         {
-                  
-            "username": "<uuid>3",
+            "username": "22acf459-79d5-43b3-a73e-a81b30cc693c",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_3",
             "email": "feedback+3@get.gov",
         },
         {
-                  
-            "username": "<uuid>4",
+            "username": "f88283cc-0a1f-4c23-b1a8-0cd31411d852",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_4",
             "email": "feedback+4@get.gov",
         },
         {
-                  
-            "username": "<uuid>5",
+            "username": "c2e02542-8cc4-4d95-b153-fb97706a72f1",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_5",
             "email": "feedback+5@get.gov",
         },
         {
-                  
-            "username": "<uuid>6",
+            "username": "fbb06d6c-c58f-49c0-8845-21f0c77b6497",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_6",
             "email": "feedback+6@get.gov",
         },
         {
-                  
-            "username": "<uuid>7",
+            "username": "9e820a1c-c570-465a-9fc3-979c65f3ab17",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_7",
             "email": "feedback+7@get.gov",
         },
         {
-                  
-            "username": "<uuid>8",
+            "username": "b8194c1a-4dec-4b3e-9cc1-829f3dbf78a7",
             "first_name": "FAKEY",
             "last_name": "MCFAKERSON_8",
             "email": "feedback+8@get.gov",
@@ -457,13 +449,12 @@ class UserFixture:
     def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers, is_staff=True):
         new_users = []
         for i, user_data in enumerate(users):
-            
             id = user_data.get("id")
             first_name = user_data.get("first_name", "Bob")
             last_name = user_data.get("last_name", "Builder")
             # If username is not provided, create one (must be unique)
             username = user_data.get("username", first_name+last_name+str(id))
-            
+
             default_email = f"placeholder.{first_name.lower()}.{last_name.lower()}+{i}@igorville.gov"
             email = user_data.get("email", default_email)
             if username not in existing_usernames and id not in existing_user_ids:
@@ -471,7 +462,7 @@ class UserFixture:
                     id=id,
                     first_name=first_name,
                     last_name=last_name,
-                    username= username,
+                    username=username,
                     email=email,
                     title=user_data.get("title", "team member"),
                     phone=user_data.get("phone", "2022222222"),

@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
             # set standardUserDomainFixture to not run locally, as these users are for user testing
             # user testing should not be done locally AND these fixtures will eventually
-            # send messages in EPP. EPP code would fail locally. 
+            # send messages in EPP. EPP code would fail locally.
             if not settings.IS_LOCAL:
                 StandardUserDomainFixture.load()
             UserPortfolioPermissionFixture.load()

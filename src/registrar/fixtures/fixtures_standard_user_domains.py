@@ -84,25 +84,25 @@ class StandardUserDomainFixture(DomainRequestFixture):
         {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
-        },{
+        }, {
             "status": DomainRequest.DomainRequestStatus.IN_REVIEW,
             "organization_name": "Standard User - In Review",
         },
@@ -128,11 +128,11 @@ class StandardUserDomainFixture(DomainRequestFixture):
     def load(cls):
         standard_usernames = [u["username"] for u in UserFixture.STANDARD_USERS]
         users = list(User.objects.filter(username__in=standard_usernames))
-        
+
         if not users:
             logger.warning("Standard users not found, skipping StandardUserDomainFixture.")
             return
-        
+
         cls._create_status_requests(users)
         cls._create_domains(users)
 
@@ -160,8 +160,6 @@ class StandardUserDomainFixture(DomainRequestFixture):
                 cls._set_many_to_many_relations(request, {})
             except Exception as e:
                 logger.warning(e)
-        
-       
 
     @classmethod
     def _create_domains(cls, users):
@@ -173,13 +171,13 @@ class StandardUserDomainFixture(DomainRequestFixture):
         for user in users:
             approved_pairs = []
             # get all the in_review requests for this user, up to the number of domain state configs we have
-            in_review_requests = list(                                                                         
+            in_review_requests = list(
                 DomainRequest.objects.filter(
                     requester=user,
-                    status=DomainRequest.DomainRequestStatus.IN_REVIEW,                                        
-                ).order_by("id")[:len (cls.DOMAIN_STATE_CONFIGS)]
-                )
-            
+                    status=DomainRequest.DomainRequestStatus.IN_REVIEW,
+                ).order_by("id")[:len(cls.DOMAIN_STATE_CONFIGS)]
+            )
+
             if len(in_review_requests) != len(cls.DOMAIN_STATE_CONFIGS):
                 logger.warning(
                     f"Not enough IN_REVIEW requests for user {user.username} to approve. "
@@ -187,8 +185,7 @@ class StandardUserDomainFixture(DomainRequestFixture):
                 )
                 continue
 
-            for request, config in zip (in_review_requests, cls.DOMAIN_STATE_CONFIGS):
-                     
+            for request, config in zip(in_review_requests, cls.DOMAIN_STATE_CONFIGS):
                 try:
                     request.investigator = random.choice(User.objects.filter(is_staff=True))  # nosec
                     request.approve(send_email=False)
@@ -203,16 +200,16 @@ class StandardUserDomainFixture(DomainRequestFixture):
                     )
                 except Exception as e:
                     logger.error(f"Error bulk updating domain requests for {user}: {e}")
-            
+
             cls._force_domain_states(approved_pairs)
 
     @classmethod
     def _force_domain_states(cls, approved_pairs):
         """
         Forces each approved domain into its target state via queryset update().
-        Domain.state is FSMField(protected=True), so direct attribute assignment raises AttributeError 
+        Domain.state is FSMField(protected=True), so direct attribute assignment raises AttributeError
         — queryset update() issues a raw SQL UPDATE that bypasses the FSM with no EPP calls.
-        Expect these domains to throw errors or switch back to "unknown" if any code tries to send EPP commands for them 
+        Expect these domains to throw errors or switch back to "unknown" if any code tries to send EPP commands for them
         (such as clicking 'manage' on the domain's table)
         """
         today = timezone.now().date()
