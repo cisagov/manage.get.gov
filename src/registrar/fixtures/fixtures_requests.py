@@ -184,7 +184,7 @@ class DomainRequestFixture:
     def _set_foreign_key_fields(cls, request: DomainRequest, request_dict: dict, user: User):
         """Helper method used by `load`."""
         if not user.is_staff:
-            user = random.choice(User.objects.filter(is_staff=True))
+            user = random.choice(User.objects.filter(is_staff=True)) #nosec
         request.investigator = cls._get_investigator(request, request_dict, user)
         request.senior_official = cls._get_senior_official(request, request_dict)
         request.requested_domain = cls._get_requested_domain(request, request_dict)
