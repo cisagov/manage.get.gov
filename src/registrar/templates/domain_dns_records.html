@@ -48,7 +48,7 @@
                 <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
                 
-                    <section class="section-outlined margin-top-0">
+                    <section class="section-outlined padding-3 padding-left-3 padding-right-3">
                     <form 
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
@@ -71,10 +71,10 @@
         {% include "domain_dns_records_table.html" %}
     </div>
 
-    <h2 class="h3">Authoritative nameservers</h2>
+    <h2 class="h3 margin-top-6 margin-bottom-2">Authoritative nameservers</h2>
     <div class="grid-row">
         <div class="grid-col-12">
-            <p class="measure-none margin-bottom-1">
+            <p class="measure-none margin-bottom-1 margin-top-0">
                 Name servers indicate which DNS server is authoritative for your domain. Every .gov domain enrolled in DNS hosting is assigned a set of default name servers, which cannot be edited.
             </p>
         </div>
