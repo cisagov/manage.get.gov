@@ -979,7 +979,6 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-# SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"
 # JSONSerializer is also default
 # FYI everyone will get logged out and will have to re login again

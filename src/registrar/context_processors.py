@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import reverse
-from registrar.models import Portfolio
+from registrar.utility.db_helpers import get_portfolio_from_session
 
 from waffle import flag_is_active
 
@@ -81,8 +81,7 @@ def portfolio_permissions(request):
         if not user.is_authenticated:
             return portfolio_context
 
-        portfolio_id = request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(request.session)
 
         num_portfolios = user.get_num_portfolios()
 

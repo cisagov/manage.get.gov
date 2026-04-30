@@ -21,6 +21,7 @@ from registrar.forms import domain_request_wizard as forms
 from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
 from registrar.models import DomainRequest, Portfolio
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
@@ -183,8 +184,7 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        portfolio_id = self.request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio:
             return self.domain_request.is_feb()
         return False
@@ -1288,8 +1288,7 @@ class DomainRequestStatusViewOnly(DetailView):
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
         context["view_only_mode"] = True
         context["is_portfolio"] = is_portfolio
-        portfolio_id = self.request.session.get("portfolio")
-        context["portfolio"] = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        context["portfolio"] = get_portfolio_from_session(self.request.session)
 
         return context
 

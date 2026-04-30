@@ -33,7 +33,6 @@ from registrar.models import (
     DomainRequest,
     DomainInformation,
     DomainInvitation,
-    Portfolio,
     PortfolioInvitation,
     UserDomainRole,
     PublicContact,
@@ -54,6 +53,7 @@ from registrar.utility.errors import (
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
     get_requested_user,
@@ -110,8 +110,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         return self.render_to_response(context)
 
     def get_portfolio(self):
-        portfolio_id = self.request.session.get("portfolio")
-        return Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        return get_portfolio_from_session(self.request.session)
 
     def in_portfolio_context(self) -> bool:
         return bool(self.get_portfolio())
@@ -468,9 +467,8 @@ class DomainView(DomainBaseView):
         context["breadcrumb_domain_is_current"] = True
         context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
-        portfolio_id = self.request.session.get("portfolio")
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
-            user=self.request.user, portfolio=Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+            user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
 
         if self.object.state != self.object.State.DELETED:
@@ -485,8 +483,7 @@ class DomainView(DomainBaseView):
         """Most views should not allow permission to portfolio users.
         If particular views allow permissions, they will need to override
         this function."""
-        portfolio_id = self.request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(self.request.session)
         if self.request.user.has_any_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
@@ -689,8 +686,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio_id = self.request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio and is_org_user:
             return False
         else:
@@ -714,8 +710,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # non-org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio_id = self.request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio and is_org_user:
             return super().has_permission()
         else:
@@ -802,8 +797,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio_id = self.request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio and is_org_user:
             return False
         else:
@@ -1483,8 +1477,7 @@ class DomainUsersView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         # Get portfolio from session (if set)
-        portfolio_id = self.request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(self.request.session)
 
         # Add domain manager roles separately in order to also pass admin status
         context = self._add_domain_manager_roles_to_context(context, portfolio)

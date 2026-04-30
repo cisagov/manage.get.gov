@@ -5,9 +5,9 @@ from django.views import View
 from django.shortcuts import render
 from django.contrib import admin
 from django.db.models import Avg, F, Q
-from registrar.models import Portfolio
 
 from registrar.decorators import ALL, HAS_PORTFOLIO_MEMBERS_VIEW, IS_CISA_ANALYST, IS_FULL_ACCESS, grant_access
+from registrar.utility.db_helpers import get_portfolio_from_session
 from .. import models
 import datetime
 from django.utils import timezone
@@ -214,8 +214,7 @@ class ExportMembersPortfolio(View):
 
     def get(self, request, *args, **kwargs):
         """Returns the members report"""
-        portfolio_id = request.session.get("portfolio")
-        portfolio = Portfolio.objects.get(id=portfolio_id) if portfolio_id else None
+        portfolio = get_portfolio_from_session(request.session)
 
         # Check if the user has organization access
         if not request.user.is_org_user(request):
