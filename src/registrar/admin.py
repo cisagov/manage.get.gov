@@ -678,7 +678,7 @@ class MultiFieldSortableChangeList(ChangeList):
         listing it as a filter option on the right side of Change List on the
         portfolio list.
         """
-        params = params or self.filter_params
+        params = params or self.params
         lookup_params = params.copy()  # a dictionary of the query string
         # Remove all the parameters that are globally and systematically
         # ignored.
