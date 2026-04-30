@@ -124,12 +124,18 @@ class UserPortfolioPermission(TimeStampedModel):
     revocation_reason = models.TextField(null=True, blank=True)
 
     # End Invitation fields
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         identity = "Unknown user"
         if self.user:
             identity = self.user
         elif self.email:
-            identity = f"Invite to {self.email}"
+            identity = f"Invite to {self.email.lower()}"
 
         if self.roles:
             readable_roles = self.get_readable_roles()

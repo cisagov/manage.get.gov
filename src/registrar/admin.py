@@ -2077,10 +2077,12 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         if not obj.email:
             return
 
+        email = obj.email.lower()
+
         if obj.status == UserPortfolioPermission.Status.INVITED:
-            messages.success(request, f"{obj.email} has been invited.")
+            messages.success(request, f"{email} has been invited.")
         else:
-            messages.success(request, f"{obj.email} has been added to {obj.portfolio}.")
+            messages.success(request, f"{email} has been added to {obj.portfolio}.")
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
