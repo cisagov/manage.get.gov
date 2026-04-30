@@ -79,11 +79,13 @@ function clearRecordForm(){
     const alertMessagesContainer = document.getElementById('messages-container')
     
     alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
-
-    // reset count for comment field
+    
     // clear comment field
-    // comment character count is hardcoded due to the model having different max length limits. Should be updated if/when max length is updated on the model
     document.getElementById('id_comment').value = ''
+    const commentStatus =  document.getElementById('dnsrecords-form-container-comment--status')
+    // remove error styling on count text
+    commentStatus.classList.remove("usa-character-count__status--invalid")
+     // reset count for comment field, character count is hardcoded for now if/when the model is updated with the current maxlength
     document.getElementById('dnsrecords-form-container-comment--status').textContent = getCharCountText(100, 0)
     
 }
