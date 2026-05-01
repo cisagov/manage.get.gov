@@ -1880,7 +1880,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is not called
@@ -1956,7 +1956,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is called
@@ -2031,7 +2031,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is called
@@ -2208,7 +2208,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2271,7 +2271,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2342,7 +2342,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')

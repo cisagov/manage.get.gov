@@ -232,7 +232,7 @@ class PortfolioMemberDeleteView(View):
         """
         Return a success response (JSON or redirect with messages).
         """
-        success_message = f"You've removed {member_email} from the organization."
+        success_message = f"{member_email} has been removed from this organization."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
         messages.success(request, success_message)
@@ -621,7 +621,7 @@ class PortfolioInvitedMemberDeleteView(View):
 
         portfolio_invitation.delete()
 
-        success_message = f"You've removed {portfolio_invitation.email} from the organization."
+        success_message = f"{portfolio_invitation.email} has been removed from this organization."
         # From the Members Table page Else the Member Page
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
