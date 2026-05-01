@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, {{ portfolio.organization_name }}. 
+Hi, {{ domain.domain_info.organization_name }}. 
 
 On {{ expiration_date }}, the following domain expired: {{ domain }}
 
