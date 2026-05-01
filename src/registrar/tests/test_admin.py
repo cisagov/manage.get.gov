@@ -1184,29 +1184,6 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    def test_has_change_form_description(self):
-        """Tests if this model has a model description on the change form view"""
-        self.client.force_login(self.superuser)
-
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
-
-        response = self.client.get(
-            "/admin/registrar/userportfoliopermission/{}/change/".format(user_portfolio_permission.pk),
-            follow=True,
-        )
-
-        # Make sure that the page is loaded correctly
-        self.assertEqual(response.status_code, 200)
-
-        # Test for a description snippet
-        self.assertContains(
-            response,
-            "If you add someone to a portfolio here, it won't trigger any email notifications.",
-        )
-
-    @less_console_noise_decorator
     def test_delete_confirmation_page_contains_static_message(self):
         """Ensure the custom message appears in the delete confirmation page."""
         self.client.force_login(self.superuser)

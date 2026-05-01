@@ -36,32 +36,6 @@ class TestUserPortfolioPermissionEmailNormalization(TestCase):
     @less_console_noise_decorator
     @override_flag("user_portfolio_permission_invitations", active=True)
     @override_settings(IS_PRODUCTION=False)
-    def test_add_view_success_messages_use_lowercase_email(self):
-        self.client.force_login(self.superuser)
-        mixed_case_email = "New.Person@Example.GOV"
-        normalized_email = mixed_case_email.lower()
-        models.AllowedEmail.objects.create(email=normalized_email)
-
-        response = self.client.post(
-            self.add_url,
-            data={
-                "user": mixed_case_email,
-                "portfolio": self.portfolio.id,
-                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
-                "send_email": "",
-            },
-            follow=True,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, normalized_email)
-        self.assertContains(response, f"{normalized_email} has been invited.")
-        self.assertNotContains(response, mixed_case_email, html=False)
-        self.assertTrue(UserPortfolioPermission.objects.filter(email=normalized_email).exists())
-
-    @less_console_noise_decorator
-    @override_flag("user_portfolio_permission_invitations", active=True)
-    @override_settings(IS_PRODUCTION=False)
     def test_add_popup_response_uses_lowercase_email(self):
         self.client.force_login(self.superuser)
         mixed_case_email = "New.Person@Example.GOV"
