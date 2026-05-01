@@ -297,12 +297,6 @@ A: Ask: "Could this contain user secrets or personal info?" If yes, don't log it
 
 ---
 
-## Full Technical Details
-
-For stakeholder discussions, architectural deep-dives, and implementation details, see the full design document (referenced by the DG team).
-
----
-
 ## Need Help?
 
 - **This guide unclear?** Open an issue or ask in Slack.
