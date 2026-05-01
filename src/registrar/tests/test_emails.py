@@ -770,7 +770,7 @@ class SendPostExpirationEmailsTests(TestCase):
     def _create_expired_domain(self, name="expiredready.gov", expiration_date=None):
         if expiration_date is None:
             expiration_date = self.fixed_today
-        
+
         domain = Domain.objects.create(
             name="expiredready.gov",
             state=Domain.State.READY,
@@ -866,7 +866,7 @@ class SendPostExpirationEmailsTests(TestCase):
     @patch("django.utils.timezone.now")
     def test_all_expired_flag_sends_email_for_previously_expired_domain_success(self, mock_now, mock_send_email):
         """
-        Email should NOT send for a domain that expired yesterday by default, 
+        Email should NOT send for a domain that expired yesterday by default,
         but SHOULD send when --all-expired flag is used.
         """
         mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
@@ -882,7 +882,7 @@ class SendPostExpirationEmailsTests(TestCase):
         # -- all expired should email
         call_command("send_post_expiration_notification", all_expired=True)
         mock_send_email.assert_called()
-        
+
 
 class SendDomainSetupReminderTests(TestCase):
     def setUp(self):
