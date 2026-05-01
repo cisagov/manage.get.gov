@@ -837,6 +837,7 @@ SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
 # Configuration
 DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
+DNS_NS_SET_RANGE = 5
 
 # endregion
 
@@ -876,8 +877,8 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
+    "getgov-sm.app.cloud.gov",
     "getgov-ab.app.cloud.gov",
-    "getgov-ap.app.cloud.gov",
     "getgov-cw.app.cloud.gov",
     "getgov-cw.app.cloud.gov",
     "getgov-testdb.app.cloud.gov",

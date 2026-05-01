@@ -1,4 +1,5 @@
 {% load static field_helpers url_helpers %}
+{% load custom_filters %}
 
 {% csrf_token %}
 <h2>Add record</h2>
@@ -14,20 +15,35 @@
 </div>
 
 <div x-cloak x-show="recordType" x-cloak>
-  
-    <template x-if="recordType !== 'TXT' " >
-        <!-- Only show this for forms that are not txt -->
+
+    <template x-if="recordType !== 'TXT' && recordType !== 'MX'">
+        <!-- Only show this for forms that are not txt or mx -->
         <div>
               {% include "dns_record_forms/base_record_form.html" with form=form %}
         </div>
-    
+    </template>
+    <template x-if="recordType === 'MX'">
+        <div>
+              {% include "dns_record_forms/mx_record_form.html" with form=form %}
+        </div>
     </template>
     <template x-if="recordType === 'TXT' ">
         <div>
               {% include "dns_record_forms/txt_record_form.html" with form=form %}
-        </div> 
+        </div>
     </template>
-    {% input_with_errors form.comment %}
+
+    <div>
+        {% with add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.comment %} 
+            <div class="usa-character-count__status usa-hint comment-character-count">
+            <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
+           
+            {{ 100|remaining_characters_text:form.comment.value }}
+            </div>
+    
+        {% endwith %}
+    </div>
 
     <button
         type="reset"

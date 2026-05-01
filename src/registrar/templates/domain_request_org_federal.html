@@ -2,9 +2,8 @@
 {% load field_helpers %}
 
 {% block form_instructions %}
-  <h2 id="id_domain_request_federal_org_header" class="margin-bottom-05">
-    Which federal branch is your organization in?
-  </h2>
+  <p>You aren't authorized to continue with this domain request. Federal agencies limit who can submit requests on their behalf. Coordinate with your organization's CIO office to determine what you should do next.</p>
+  <p>If you have questions or need further assistance, <a href="https://get.gov/contact/">contact us</a>.</p>
 {% endblock %}
 
 {% block form_required_fields_help_text %}
@@ -12,7 +11,19 @@
 {% endblock %}
 
 {% block form_fields %}
-  {% with add_class="usa-radio__input--tile"  add_legend_class="usa-sr-only" %}
-    {% input_with_errors forms.0.federal_type %}
-  {% endwith %}
+  {# No form fields on this page #}
+{% endblock %}
+
+{% block form_buttons %}
+  <div class="stepnav">
+    {% if steps.prev %}
+      <button
+        type="submit"
+        name="submit_button"
+        value="back"
+        class="usa-button usa-button--outline"
+      >Back</button>
+    {% endif %}
+    <a href="{% url 'home' %}" class="usa-button">Exit request form</a>
+  </div>
 {% endblock %}

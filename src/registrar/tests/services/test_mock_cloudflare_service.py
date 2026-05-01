@@ -1,10 +1,11 @@
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
+from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
 
 class TestMockCloudflareServiceBasics(SimpleTestCase):
@@ -104,6 +105,17 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(len(result), 4)
         self.assertEqual(result[3]["account_pubname"], account_name)
 
+    def test_mock_get_cf_zone_by_id_response(self):
+        zone_name = "test.gov"
+        existing_account_id = self.mock_api_service.existing_account_id
+
+        zone_data = self.service.create_cf_zone(zone_name, existing_account_id)["result"]
+        zone_id = zone_data["id"]
+
+        resp = self.service.get_zone_by_id(zone_id)
+        result = resp["result"]
+        self.assertEquals(result, zone_data)
+
     def test_mock_create_cf_zone_response(self):
         zone_name = "peace.gov"
         account_id = "1359"
@@ -119,13 +131,80 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(len(result), 2)
         self.assertEquals(result[1].get("name"), zone_name)
 
+    def test_mock_update_account_dns_settings_response(self):
+        account_id = self.mock_api_service.new_account_id
+
+        resp = self.service.update_account_dns_settings(account_id)
+
+        self.assertTrue(resp.success)
+        self.assertEqual(resp.result["zone_defaults"]["zone_mode"], "dns_only")
+        self.assertEqual(resp.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(resp.errors, [])
+        self.assertEqual(resp.messages, [])
+
+    def test_mock_update_zone_dns_settings_response(self):
+        zone_id = self.mock_api_service.fake_zone_id
+
+        resp = self.service.update_zone_dns_settings(zone_id)
+
+        self.assertTrue(resp.success)
+        self.assertEqual(resp.result["zone_mode"], "dns_only")
+        self.assertEqual(resp.result["nameservers"]["ns_set"], 2)
+        self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
+        self.assertEqual(resp.errors, [])
+        self.assertEqual(resp.messages, [])
+
+
+class TestMockCloudflareServiceEndpointsWithDB(TestCase):
+    """
+    Test that mocked endpoints that query DB return correct data.
+    Record creation involves adding root name (queried from db) to record name
+    when not included in input.
+    """
+
+    mock_api_service = MockCloudflareService()
+
+    @classmethod
+    def setUpClass(cls):
+        """Start mock service once for all tests in this class"""
+        super().setUpClass()
+        cls.mock_api_service.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Stop mock service after all tests"""
+        cls.mock_api_service.stop()
+        super().tearDownClass()
+
+    def setUp(self):
+        self.mock_api_service.reset()
+        client = Client()
+        self.service = CloudflareService(client)
+        self.db_domain = Domain.objects.create(name="domain.gov")
+        self.db_account = DnsAccount.objects.create(name="acct-base")
+        self.dns_zone = DnsZone.objects.create(
+            dns_account=self.db_account,
+            domain=self.db_domain,
+        )
+
     def test_mock_create_dns_record_response(self):
         zone_id = self.mock_api_service.fake_zone_id
         record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
+        expected_cf_record_name = "blog.domain.gov"
+        # Create db dns zone objects to set up adding root to record name
+        self.vendor_dns_zone = VendorDnsZone.objects.create(
+            x_zone_id=zone_id,
+            x_created_at="2025-10-17 19:57:53.157055+00",
+            x_updated_at="2025-10-17 19:57:53.157055+00",
+        )
+        DnsZone_VendorDnsZone.objects.create(
+            dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
+        )
+
         resp = self.service.create_dns_record(zone_id, record_data)
         result = resp["result"]
 
-        self.assertEquals(result["name"], record_data["name"])
+        self.assertEquals(result["name"], expected_cf_record_name)
         self.assertEquals(result["type"], record_data["type"])
         self.assertEquals(result["content"], record_data["content"])
 
@@ -151,14 +230,25 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         # Create initial DNS record
         zone_id = self.mock_api_service.fake_zone_id
         record_id = self.mock_api_service.fake_record_id
+        # Create db dns zone objects to set up adding root to record name
+        self.vendor_dns_zone = VendorDnsZone.objects.create(
+            x_zone_id=zone_id,
+            x_created_at="2025-10-17 19:57:53.157055+00",
+            x_updated_at="2025-10-17 19:57:53.157055+00",
+        )
+        DnsZone_VendorDnsZone.objects.create(
+            dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
+        )
         initial_record_data = {"type": "A", "name": "blog", "content": "11.22.33.44"}
         self.service.create_dns_record(zone_id, initial_record_data)
 
         updated_record_data = {"type": "A", "name": "newblog", "content": "55.66.77.88"}
+        expected_cf_record_name = "newblog.domain.gov"
+
         resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         result = resp["result"]
 
-        self.assertEquals(result["name"], updated_record_data["name"])
+        self.assertEquals(result["name"], expected_cf_record_name)
         self.assertEquals(result["content"], updated_record_data["content"])
         self.assertEquals(result["type"], updated_record_data["type"])
 
@@ -179,26 +269,3 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
-
-    def test_mock_update_account_dns_settings_response(self):
-        account_id = self.mock_api_service.new_account_id
-
-        resp = self.service.update_account_dns_settings(account_id)
-
-        self.assertTrue(resp.success)
-        self.assertEqual(resp.result["zone_defaults"]["zone_mode"], "dns_only")
-        self.assertEqual(resp.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
-        self.assertEqual(resp.errors, [])
-        self.assertEqual(resp.messages, [])
-
-    def test_mock_update_zone_dns_settings_response(self):
-        zone_id = self.mock_api_service.fake_zone_id
-
-        resp = self.service.update_zone_dns_settings(zone_id)
-
-        self.assertTrue(resp.success)
-        self.assertEqual(resp.result["zone_mode"], "dns_only")
-        self.assertEqual(resp.result["nameservers"]["ns_set"], 2)
-        self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
-        self.assertEqual(resp.errors, [])
-        self.assertEqual(resp.messages, [])

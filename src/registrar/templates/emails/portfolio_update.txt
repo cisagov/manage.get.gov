@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }}.{% endif %}
+Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }},{% endif %}
 
 Your permissions were updated in the .gov registrar.
 
@@ -15,21 +15,15 @@ Your updated permissions are now active in the .gov registrar <https://manage.ge
 
 ----------------------------------------------------------------
 
-SOMETHING WRONG?
+NEED ASSISTANCE?
 If you have questions or concerns, reach out to the person who updated your
 permissions, or reply to this email.
-
-
-THANK YOU
-.Gov helps the public identify official, trusted information. Thank you for using a .gov
-domain.
 
 ----------------------------------------------------------------
 
 The .gov team
-Contact us: <https://get.gov/contact/>
-Learn about .gov <https://get.gov>
+Contact us <https://get.gov/contact/>
+Learn how .gov helps the public identify official, trusted information <https://get.gov>
 
-The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency
-(CISA) <https://cisa.gov/>
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
 {% endautoescape %}

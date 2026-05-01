@@ -872,10 +872,27 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form_dir = "./dns_record_forms/"
         base_template = f"{form_dir}base_record_form.html"
         txt_template = f"{form_dir}txt_record_form.html"
+        mx_template = f"{form_dir}mx_record_form.html"
         if record_type == "TXT":
             return txt_template
+        elif record_type == "MX":
+            return mx_template
         else:
             return base_template
+
+    def get_form_kwargs(self):
+        kwargs = super(DomainDNSRecordsView, self).get_form_kwargs()
+        kwargs["domain_name"] = self.object.name
+        # On edit POST, bind the existing DnsRecord as the form's instance so that
+        # uniqueness validators (name-conflict, full-duplicate) can exclude the record
+        # being edited via self.instance.pk. get_for_domain scopes the lookup to this
+        # domain's zone so we don't trust arbitrary PKs from the request.
+        record_id = self._parse_dns_record_id(self.request)
+        if record_id and self.object:
+            existing = DnsRecord.get_for_domain(self.object, record_id)
+            if existing:
+                kwargs["instance"] = existing
+        return kwargs
 
     def attach_edit_form(self, dns_records):
         """adding a form instance to the dns_record objects
@@ -922,13 +939,17 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""
-        return {
+        data = {
             "type": form.cleaned_data["type"],
             "name": form.cleaned_data["name"],
             "content": form.cleaned_data["content"],
             "ttl": int(form.cleaned_data["ttl"]),
             "comment": form.cleaned_data.get("comment", ""),
         }
+        priority = form.cleaned_data.get("priority")
+        if priority is not None:
+            data["priority"] = priority
+        return data
 
     def _attach_form(self, dns_record: DnsRecord, *, form=None) -> None:
         """Prepare a DNS record for template rendering by attaching a form and template path.
@@ -943,7 +964,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             dns_record.form = form  # type: ignore[attr-defined]
         else:
             initial_data = self.record_dict_for_initial_data(dns_record)
-            dns_record.form = DomainDNSRecordForm(initial=initial_data, auto_id=auto_id)  # type: ignore[attr-defined]
+            dns_record.form = DomainDNSRecordForm(  # type: ignore[attr-defined]
+                initial=initial_data, auto_id=auto_id, domain_name=self.object.name  # type: ignore[attr-defined]
+            )  # type: ignore[attr-defined]
         dns_record.form_template = self.get_form_template(dns_record.type)  # type: ignore[attr-defined]
 
     def _error_response(self, request, form=None, status=200):
@@ -982,8 +1005,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
-        errors = self.get_form_errors(form)
-        for error in errors:
+        # Duplicate-record errors attach the same message to multiple fields (name, content,
+        # priority) plus a form-level error, so we dedupe by text before queuing.
+        # dict.fromkeys preserves insertion order and dedupes in one pass.
+        for error in dict.fromkeys(self.get_form_errors(form)):
             messages.error(request, error)
 
         if is_edit:
@@ -1023,8 +1048,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Create a new DNS record and prepare the DB-backed row for rendering."""
         is_first_record = not DnsRecord.zone_has_records(self.object)
         dns_record = self.dns_host_service.create_dns_record(x_zone_id, form_record_data)
-        dns_name = (dns_record.name if dns_record else None) or form_record_data["name"]
-        messages.success(request, f"DNS {form_record_data['type']} record '{dns_name}' updated successfully.")
+        messages.success(request, "The DNS record for this domain has been added.")
 
         if dns_record:
             self._attach_form(dns_record)
