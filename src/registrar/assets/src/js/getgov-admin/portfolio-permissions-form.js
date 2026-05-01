@@ -7,9 +7,12 @@ import { hideElement, showElement } from './helpers-admin.js';
 function handlePortfolioPermissionFields(){
 
     const roleDropdown = document.getElementById("id_role");
+    const userField = document.getElementById("id_user");
     const domainPermissionsField = document.querySelector(".field-domain_permissions");
     const domainRequestPermissionsField = document.querySelector(".field-request_permissions");
     const memberPermissionsField = document.querySelector(".field-member_permissions");
+    const sendEmailField = document.querySelector(".field-send_email");
+    const sendEmailCheckbox = document.getElementById("id_send_email");
     
     /**
      * Updates the visibility of portfolio permissions fields based on the selected role.
@@ -39,6 +42,26 @@ function handlePortfolioPermissionFields(){
         }
     }
 
+    function isSelectedUserIdValue(value) {
+        const normalizedValue = String(value ?? "");
+        return normalizedValue !== "" && Number.isInteger(Number(normalizedValue));
+    }
+
+    function updateSendEmailVisibility() {
+        if (!sendEmailField || !sendEmailCheckbox) {
+            return;
+        }
+
+        if (isSelectedUserIdValue(userField?.value)) {
+            showElement(sendEmailField);
+            sendEmailCheckbox.disabled = false;
+        } else {
+            hideElement(sendEmailField);
+            sendEmailCheckbox.checked = false;
+            sendEmailCheckbox.disabled = true;
+        }
+    }
+
 
     /**
      * Sets event listeners for key UI elements.
@@ -49,10 +72,19 @@ function handlePortfolioPermissionFields(){
                 updatePortfolioPermissionsFormVisibility();
             })
         }
+
+        if (userField) {
+            // The admin autocomplete updates the underlying field value and fires
+            // "change" for both selected users and typed email tags.
+            userField.addEventListener("change", function() {
+                updateSendEmailVisibility();
+            });
+        }
     }
 
     // Run initial setup functions
     updatePortfolioPermissionsFormVisibility();
+    updateSendEmailVisibility();
     setEventListeners();
 }
 
