@@ -86,12 +86,11 @@ export function editAndCommentButtonListener (){
         })
 }
 
-// when an edit form is open, splice the kebab "More options" in after the form's
-// tab order is Edit -> form fields -> Delete -> kebab (instead of the DOM-natural
-// Edit -> kebab -> form fields). When closed, normal tab order applies. 
-// This is to prevent the user from accidentally tabbing into the kebab menu while 
-// trying to navigate form fields, which would be disruptive since the form 
-// is still visible in the DOM when open.
+// When an edit form is open, route focus through the form before the kebab:
+// Edit -> form fields -> Delete -> kebab -> next row's Edit. Shift+Tab follows
+// the same sequence in reverse. When closed, normal tab order applies.
+// This prevents users from tabbing into the kebab menu while trying to navigate
+// form fields.
 export function initDNSRecordTabOrder() {
     const table = document.querySelector("#dnsrecords-table");
     if (!table) return;
@@ -118,14 +117,22 @@ export function initDNSRecordTabOrder() {
         return { editBtn, formRow, kebab, formFirst, formDelete };
     }
 
-    // Walk the table's focusables in DOM order to find the next visible focusable after `node`.
-    // Used so that Tab from the kebab (when a form is open) skips the still-rendered form row
-    // and lands on the next record's Edit button instead of cycling back into the form.
-    function nextFocusableAfter(node) {
+    // Find the next record row's Edit button, skipping edit/comment rows between records.
+    function nextRecordEditAfter(recordId) {
+        let row = document.getElementById(`dnsrecord-row-${recordId}`);
+        while (row?.nextElementSibling) {
+            row = row.nextElementSibling;
+            if (!row.id?.startsWith('dnsrecord-row-')) continue;
+            return row.querySelector('button[data-action="edit"]');
+        }
+        return null;
+    }
+
+    function nextFocusableAfterElement(node) {
         const selector = 'a[href], a[tabindex="0"], button:not([disabled]), '
             + 'input:not([disabled]):not([type="hidden"]), select:not([disabled]), '
             + 'textarea:not([disabled]), [tabindex="0"]';
-        const candidates = table.querySelectorAll(selector);
+        const candidates = document.querySelectorAll(selector);
         let past = false;
         for (const el of candidates) {
             if (past && el.offsetParent !== null) return el;
@@ -135,7 +142,7 @@ export function initDNSRecordTabOrder() {
     }
 
     // After Edit is clicked and the form opens, jump focus to the form's first input so the
-    // user lands inside the form rather than on the (now-skipped) kebab.
+    // user lands inside the form rather than continuing to the kebab.
     table.addEventListener('click', (e) => {
         const editBtn = e.target.closest('[data-action="edit"]');
         if (!editBtn) return;
@@ -149,7 +156,7 @@ export function initDNSRecordTabOrder() {
         });
     });
 
-    // Intercept Tab at the four pivot points to enforce the desired order.
+    // Intercept Tab to enforce the desired order.
     table.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
         const recordId = getOpenRecordId();
@@ -158,6 +165,11 @@ export function initDNSRecordTabOrder() {
         if (!elems) return;
 
         const t = e.target;
+        const kebabMenu = elems.kebab
+            ? document.getElementById(elems.kebab.getAttribute('aria-controls'))
+            : null;
+        const isKebabFocus = elems.kebab && (t === elems.kebab || kebabMenu?.contains(t));
+        const nextRecordEdit = nextRecordEditAfter(recordId);
 
         // Edit -> first form field (Tab forward)
         if (!e.shiftKey && t === elems.editBtn) {
@@ -178,15 +190,23 @@ export function initDNSRecordTabOrder() {
             return;
         }
         // Kebab -> Form Delete (Shift+Tab backward, only when form is open)
-        if (e.shiftKey && elems.kebab && t === elems.kebab) {
+        if (e.shiftKey && isKebabFocus) {
             e.preventDefault();
             elems.formDelete?.focus();
             return;
         }
-        // Kebab -> next record's Edit (Tab forward, skipping the still-visible form row)
-        if (!e.shiftKey && elems.kebab && t === elems.kebab) {
+        // Next record's Edit -> kebab (Shift+Tab backward)
+        if (e.shiftKey && elems.kebab && t === nextRecordEdit) {
             e.preventDefault();
-            nextFocusableAfter(elems.formRow)?.focus();
+            elems.kebab.focus();
+            return;
+        }
+        // Kebab -> next record's Edit (or out of the table if this is the last row)
+        if (!e.shiftKey && isKebabFocus) {
+            const destination = nextRecordEdit || nextFocusableAfterElement(table);
+            if (!destination) return;
+            e.preventDefault();
+            destination.focus();
             return;
         }
     });

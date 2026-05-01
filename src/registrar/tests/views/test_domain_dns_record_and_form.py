@@ -254,8 +254,10 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         self.assertNotContains(response, ">300<", html=False)
 
     # --- Tab order accessibility (issue #4804) ---
-    # The DNS record edit form must produce a tab sequence of:
-    #   Edit -> Name -> Content -> TTL -> Comment -> Cancel -> Save -> Delete -> More options
+    # An open DNS record edit form must support a tab sequence of:
+    #   Edit -> Name -> Content -> TTL -> Comment -> Cancel -> Save -> Delete
+    #   -> More options -> next row's Edit
+    # and the same sequence in reverse with Shift+Tab.
     # Focus reordering is implemented in JS (initDNSRecordTabOrder); these tests assert the
     # template-side hooks the JS depends on are present, so future refactors don't silently
     # break the accessibility contract.
@@ -305,9 +307,20 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @less_console_noise_decorator
     def test_dns_record_edit_row_has_stable_id_for_focus_routing(self):
         """The edit form row id (dnsrecord-edit-row-<id>) is what the tab-order JS uses
-        to find the form when routing focus from the kebab to the next record."""
+        to find the open form's focusable controls."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
 
         self.assertContains(response, f'id="dnsrecord-edit-row-{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_dns_record_readonly_row_has_stable_id_for_focus_routing(self):
+        """The readonly row id (dnsrecord-row-<id>) is what the tab-order JS uses
+        to find the next record's Edit button when routing focus from the kebab."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, f'id="dnsrecord-row-{record.id}"')
