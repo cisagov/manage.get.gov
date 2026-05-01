@@ -57,8 +57,9 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
-function clearRecordForm(){
-    const form = document.getElementById("dnsrecords-form-container")
+function clearRecordForm(root){
+    const form = root || document.getElementById("dnsrecords-form-container")
+    if(!form) return;
     
     // remove error styling from inputs and labels 
     const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
@@ -203,7 +204,8 @@ export function initDynamicDNSRecordFormFields() {
     
     // clearForm when a user hits the cancel button on the dns record form and table
     document.querySelectorAll(".js-dnsrecord-cancel-button").forEach( button => {
-        button.addEventListener('click',clearRecordForm)
+        const formInRow = button.closest('form')
+        button.addEventListener('click',() => clearRecordForm(formInRow))
         }
     )
 }
