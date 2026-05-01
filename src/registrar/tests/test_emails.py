@@ -822,7 +822,7 @@ class SendPostExpirationEmailsTests(TestCase):
             "emails/ready_and_expired_subject.txt",
             to_addresses=["manager@example.com"],
             cc_addresses=["admin@example.com"],
-            bcc_addresses=["help@get.gov"],
+            bcc_address="help@get.gov",
             context=expected_context,
         )
 

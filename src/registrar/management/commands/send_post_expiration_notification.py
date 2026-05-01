@@ -103,7 +103,7 @@ class Command(BaseCommand):
                         subject_template,
                         to_addresses=domain_manager_emails,
                         cc_addresses=portfolio_admin_emails,
-                        bcc_addresses=["help@get.gov"],
+                        bcc_address="help@get.gov",
                         context=context,
                     )
                     logger.info(f"Sent email for domain {domain.name} to managers and CC'd org admins")
