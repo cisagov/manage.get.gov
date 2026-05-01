@@ -2883,7 +2883,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         print(str(messages[0]))
         self.assertEqual(
             str(messages[0]),
-            'An unexpected error occurred: Failed to send email. Please try again. If the problem persists, '
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
             '<a href="https://get.gov/contact/">contact us</a> for assistance.',
         )
 
@@ -4203,9 +4203,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_error.assert_called_once_with(response.wsgi_request, 'An unexpected error occurred: Failed to send'
-            ' email.. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
-            ' for assistance.')
+            mock_error.assert_called_once_with(
+                response.wsgi_request,
+                "An unexpected error occurred: Failed to send"
+                ' email.. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
+                " for assistance.",
+            )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -4289,8 +4292,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, 'An unexpected error occurred: Generic exception.'
-            ' Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.')
+            mock_warning.assert_called_once_with(
+                response.wsgi_request,
+                "An unexpected error occurred: Generic exception."
+                ' Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                "for assistance.",
+            )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
