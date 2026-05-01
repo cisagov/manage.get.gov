@@ -273,6 +273,23 @@ class MockCloudflareService:
         )
 
     def _mock_create_dns_record_response(self, request) -> httpx.Response:
+        # Fields returned in the result object mirror real Cloudflare DNS record responses.
+        # Keep this list in sync with what CF actually returns so tests don't silently diverge:
+        #   id          — CF-assigned record UUID (generated here via _mock_create_cf_id)
+        #   name        — Fully-qualified record name (apex '@' expanded to zone name)
+        #   type        — Record type (A, AAAA, CNAME, MX, TXT, PTR, …)
+        #   content     — Record value (IP address, hostname, text, …)
+        #   ttl         — TTL in seconds (1 = automatic in CF)
+        #   comment     — Optional freetext annotation
+        #   priority    — MX priority (None for all other record types)
+        #   proxiable   — Whether the record can be proxied (always True here)
+        #   proxied     — Whether the record is currently proxied (always False here)
+        #   settings    — Per-record CF settings object (empty dict)
+        #   meta        — CF internal metadata (empty dict)
+        #   tags        — List of string tags (empty list)
+        #   created_on  — ISO-8601 timestamp
+        #   modified_on — ISO-8601 timestamp
+        # If CF adds new fields that our code reads, add them here to avoid silent None storage.
         logger.debug("😃 mocking dns record creation")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
@@ -280,6 +297,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        priority = request_as_json.get("priority")
         request_url = str(request.url)
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
 
@@ -317,6 +335,7 @@ class MockCloudflareService:
                     "meta": {},
                     "comment": comment,
                     "tags": [],
+                    "priority": priority,
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
@@ -326,9 +345,9 @@ class MockCloudflareService:
         )
 
     def _mock_update_dns_record_response(self, request) -> httpx.Response:
-        # Mocks updating a DNS A record.
-        # If we want to mock updating other DNS records, we may want to split
-        # this out and write a method to return a DNS record response by type.
+        # Update response shape must match the create response — see the field inventory
+        # in _mock_create_dns_record_response. The only difference is that the record id
+        # comes from the request URL rather than being newly generated.
         logger.debug("🐟 mocking dns A record update")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
@@ -336,6 +355,7 @@ class MockCloudflareService:
         type = request_as_json["type"]
         ttl = request_as_json.get("ttl") or 1
         comment = request_as_json.get("comment") or ""
+        priority = request_as_json.get("priority")
         # Get record id from request url to return back in response
         request_url = str(request.url)
         # Split string between "/dns_records/ and extract second partition
@@ -377,6 +397,7 @@ class MockCloudflareService:
                     "meta": {},
                     "comment": comment,
                     "tags": [],
+                    "priority": priority,
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
                 },
