@@ -25,6 +25,12 @@ class Command(BaseCommand):
             help="Print emails that would be sent without actually sending them",
         )
 
+        parser.add_argument(
+            "--all-expired",
+            action="store_true",
+            help="Send emails to all expired Ready domains, not just those that expired today.",
+        )
+
     def handle(self, *args, **options):
         """How to run it in dry run mode:
         ./manage.py send_post_expiration_notification --dry-run
@@ -34,10 +40,16 @@ class Command(BaseCommand):
         all_emails_sent = True
         today = timezone.now().date()
 
-        expired_domains = Domain.objects.filter(
-            expiration_date__lt=today,
-            state=Domain.State.READY,
-        )
+        if options.get("all_expired"):
+            expired_domains = Domain.objects.filter(
+                expiration_date__lt=today,
+                state=Domain.State.READY,
+            )
+        else:
+            expired_domains = Domain.objects.filter(
+                expiration_date=today,
+                state=Domain.State.READY,
+            )
 
         logger.info(f"Found {expired_domains.count()} expired domains that are in 'Ready' state.")
 
@@ -108,7 +120,9 @@ class Command(BaseCommand):
                     )
                 all_emails_sent = False
 
-        if all_emails_sent:
+        if not expired_domains:
+            self.stdout.write(self.style.SUCCESS("No expired Ready domains found."))
+        elif all_emails_sent:
             self.stdout.write(self.style.SUCCESS("All post-expiration emails sent successfully."))
         else:
             self.stderr.write(self.style.ERROR("Some post-expiration emails failed to send."))

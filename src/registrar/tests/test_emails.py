@@ -767,26 +767,20 @@ class SendPostExpirationEmailsTests(TestCase):
         self.manager = User.objects.create(email="manager@example.com", username="manageruser")
         self.admin = User.objects.create(email="admin@example.com", username="admin_user")
 
-    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
-    @patch("django.utils.timezone.now")
-    def test_expired_ready_domain_sends_email_success(self, mock_now, mock_send_email):
-        """
-        1. Email should send if domain is Ready and already expired
-        2. Getting the right template
-        3. Sending the correct context to the right people
-        """
-        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
-
-        domain_expired = Domain.objects.create(
+    def _create_expired_domain(self, name="expiredready.gov", expiration_date=None):
+        if expiration_date is None:
+            expiration_date = self.fixed_today
+        
+        domain = Domain.objects.create(
             name="expiredready.gov",
             state=Domain.State.READY,
-            expiration_date=self.fixed_today - timedelta(days=1),
+            expiration_date=expiration_date,
         )
 
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expired Portfolio")
-        DomainInformation.objects.create(domain=domain_expired, portfolio=portfolio, requester=self.manager)
+        DomainInformation.objects.create(domain=domain, portfolio=portfolio, requester=self.manager)
 
-        UserDomainRole.objects.create(user=self.manager, domain=domain_expired, role="manager")
+        UserDomainRole.objects.create(user=self.manager, domain=domain, role="manager")
 
         UserPortfolioPermission.objects.create(
             user=self.manager,
@@ -800,13 +794,27 @@ class SendPostExpirationEmailsTests(TestCase):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
 
+        return domain
+
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_expired_ready_domain_sends_email_success(self, mock_now, mock_send_email):
+        """
+        1. Email should send if domain is Ready and already expired
+        2. Getting the right template
+        3. Sending the correct context to the right people
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_expired = self._create_expired_domain()
+
         call_command("send_post_expiration_notification")
 
         expected_context = {
             "domain": domain_expired,
-            "expiration_date": self.fixed_today - timedelta(days=1),
+            "expiration_date": self.fixed_today,
             "domain_manager_emails": ["manager@example.com"],
-            "one_week_after_expiration": self.fixed_today - timedelta(days=1) + timedelta(days=7),
+            "one_week_after_expiration": self.fixed_today + timedelta(days=7),
         }
 
         mock_send_email.assert_any_call(
@@ -854,6 +862,27 @@ class SendPostExpirationEmailsTests(TestCase):
 
         mock_send_email.assert_not_called()
 
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_all_expired_flag_sends_email_for_previously_expired_domain_success(self, mock_now, mock_send_email):
+        """
+        Email should NOT send for a domain that expired yesterday by default, 
+        but SHOULD send when --all-expired flag is used.
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        self._create_expired_domain(expiration_date=self.fixed_today - timedelta(days=1))
+
+        # Default run should NOT send email
+        call_command("send_post_expiration_notification")
+        mock_send_email.assert_not_called()
+
+        mock_send_email.reset_mock()
+
+        # -- all expired should email
+        call_command("send_post_expiration_notification", all_expired=True)
+        mock_send_email.assert_called()
+        
 
 class SendDomainSetupReminderTests(TestCase):
     def setUp(self):
