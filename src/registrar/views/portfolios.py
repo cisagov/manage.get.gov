@@ -415,7 +415,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 request,
                 mark_safe(  # nosec
                     "A database error occurred while saving changes. Please try again. If the problem persists,"
-                    ' <a href="https://get.gov/contact/">contact us</a> for assistance'
+                    ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
@@ -425,7 +425,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 request,
                 mark_safe(  # nosec
                     f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
-                    ' <a href="https://get.gov/contact/">contact us</a> for assistance'
+                    ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
@@ -785,7 +785,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 request,
                 mark_safe(  # nosec
                     "A database error occurred while saving changes. Please try again. If the problem persists, "
-                    '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
@@ -795,7 +795,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 request,
                 mark_safe(  # nosec
                     f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, "
-                    '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
@@ -1067,7 +1067,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
                     request,
                     mark_safe(  # nosec
                         f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
-                        '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                        '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                     ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
@@ -1140,7 +1140,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
                     request,
                     mark_safe(  # nosec
                         f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
-                        '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                        '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                     ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
@@ -1267,8 +1267,8 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 exc_info=True,
             )
             messages.error(self.request, mark_safe(  # nosec
-                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, "
-                    '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                    f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ))
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
@@ -1279,8 +1279,8 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         else:
             logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
             messages.warning(self.request, mark_safe(  # nosec
-                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, "
-                    '<a href="https://get.gov/contact/">contact us</a> for assistance'
+                    f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ))
 
 

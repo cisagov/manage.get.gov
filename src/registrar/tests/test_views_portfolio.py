@@ -2880,10 +2880,11 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
+        print(str(messages[0]))
         self.assertEqual(
             str(messages[0]),
-            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
-            '<a href="https://get.gov/contact/">contact us</a> for assistance',
+            'An unexpected error occurred: Failed to send email. Please try again. If the problem persists, '
+            '<a href="https://get.gov/contact/">contact us</a> for assistance.',
         )
 
     @less_console_noise_decorator
@@ -3376,7 +3377,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(
             str(messages[0]),
             "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
-            '<a href="https://get.gov/contact/">contact us</a> for assistance',
+            '<a href="https://get.gov/contact/">contact us</a> for assistance.',
         )
 
     @less_console_noise_decorator
@@ -4202,7 +4203,9 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_error.assert_called_once_with(response.wsgi_request, "Could not send organization invitation email.")
+            mock_error.assert_called_once_with(response.wsgi_request, 'An unexpected error occurred: Failed to send'
+            ' email.. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
+            ' for assistance.')
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -4286,7 +4289,8 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
+            mock_warning.assert_called_once_with(response.wsgi_request, 'An unexpected error occurred: Generic exception.'
+            ' Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.')
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -4357,7 +4361,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            "User is already a member of this portfolio.",
+            f"{self.user.email} is already a member of this organization.",
         )
 
         # Validate Database has not changed
@@ -4395,7 +4399,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            "User is already a member of this portfolio.",
+            f"{self.user.email.upper()} is already a member of this organization.",
         )
 
         # Validate Database has not changed
