@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }}.{% endif %}
+Hi,{% if requested_user and requested_user.first_name %} {{ requested_user.first_name }},{% endif %}
 
 {{ requestor_email }} has invited you to manage:
 {% for domain in domains %}{{ domain.name }}
