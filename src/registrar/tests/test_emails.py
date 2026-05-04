@@ -882,7 +882,7 @@ class SendPostExpirationEmailsTests(TestCase):
         # -- all expired should email
         call_command("send_post_expiration_notification", all_expired=True)
         mock_send_email.assert_called()
-    
+
     @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
     @patch("django.utils.timezone.now")
     def test_domain_flag_sends_email_for_specific_domain_success(self, mock_now, mock_send_email):
@@ -898,7 +898,7 @@ class SendPostExpirationEmailsTests(TestCase):
         self._create_expired_domain(name="anotherexpiredready.gov")
 
         call_command("send_post_expiration_notification", domain="expiredready2.gov")
-        
+
         expected_context = {
             "domain": domain_expired,
             "expiration_date": self.fixed_today - timedelta(days=1),
@@ -914,7 +914,7 @@ class SendPostExpirationEmailsTests(TestCase):
             bcc_address="help@get.gov",
             context=expected_context,
         )
-        
+
     @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
     @patch("django.utils.timezone.now")
     def test_domain_flag_sends_email_for_specific_domain_failure(self, mock_now, mock_send_email):
@@ -925,9 +925,7 @@ class SendPostExpirationEmailsTests(TestCase):
         mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
 
         Domain.objects.create(
-            name="notexpired2.gov",
-            state=Domain.State.READY,
-            expiration_date=self.fixed_today + timedelta(days=7)
+            name="notexpired2.gov", state=Domain.State.READY, expiration_date=self.fixed_today + timedelta(days=7)
         )
 
         call_command("send_post_expiration_notification", domain="notexpired.gov")

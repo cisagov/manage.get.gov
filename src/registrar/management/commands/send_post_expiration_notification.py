@@ -31,10 +31,40 @@ class Command(BaseCommand):
             help="Send emails to all expired Ready domains, not just those that expired today.",
         )
 
-        parser.add_argument(
-            "--domain",
-            help="Run for a sepcific domain name only (e.g. example.gov)"
-        )
+        parser.add_argument("--domain", help="Run for a sepcific domain name only (e.g. example.gov)")
+
+    def _get_expired_domains(self, today, options):
+        if options.get("domain"):
+            return Domain.objects.filter(
+                name=options.get("domain"),
+                expiration_date__lt=today,
+                state=Domain.State.READY,
+            )
+        elif options.get("all_expired"):
+            return Domain.objects.filter(
+                expiration_date__lt=today,
+                state=Domain.State.READY,
+            )
+        else:
+            return Domain.objects.filter(
+                expiration_date=today,
+                state=Domain.State.READY,
+            )
+
+    def _get_admin_emails(self, domain):
+        portfolio_id = domain.domain_info.portfolio_id
+        if portfolio_id:
+            return list(
+                UserPortfolioPermission.objects.filter(
+                    portfolio_id=portfolio_id,
+                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                )
+                .values_list("user__email", flat=True)
+                .distinct()
+            )
+        else:
+            senior_official = domain.domain_info.senior_official
+            return [senior_official.email] if senior_official and senior_official.email else []
 
     def handle(self, *args, **options):
         """How to run it in dry run mode:
@@ -44,24 +74,8 @@ class Command(BaseCommand):
 
         all_emails_sent = True
         today = timezone.now().date()
-        
-        if options.get("domain"):
-            expired_domains = Domain.objects.filter(
-                name=options.get("domain"),
-                expiration_date__lt=today,
-                state=Domain.State.READY,
-            )
-        elif options.get("all_expired"):
-            expired_domains = Domain.objects.filter(
-                expiration_date__lt=today,
-                state=Domain.State.READY,
-            )
-        else:
-            expired_domains = Domain.objects.filter(
-                expiration_date=today,
-                state=Domain.State.READY,
-            )
 
+        expired_domains = self._get_expired_domains(today, options)
         logger.info(f"Found {expired_domains.count()} expired domains that are in 'Ready' state.")
 
         for domain in expired_domains:
@@ -75,19 +89,7 @@ class Command(BaseCommand):
             )
 
             # -- GRAB PORTFOLIO ADMIN EMAILS --
-            portfolio_id = domain.domain_info.portfolio_id
-            if portfolio_id:
-                admin_emails = list(
-                    UserPortfolioPermission.objects.filter(
-                        portfolio_id=portfolio_id,
-                        roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
-                    )
-                    .values_list("user__email", flat=True)
-                    .distinct()
-                )
-            else:
-                senior_official = domain.domain_info.senior_official
-                admin_emails = [senior_official.email] if senior_official and senior_official.email else []
+            admin_emails = self._get_admin_emails(domain)
 
             context = {
                 "domain": domain,
