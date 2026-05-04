@@ -31,6 +31,11 @@ class Command(BaseCommand):
             help="Send emails to all expired Ready domains, not just those that expired today.",
         )
 
+        parser.add_argument(
+            "--domain",
+            help="Run for a sepcific domain name only (e.g. example.gov)"
+        )
+
     def handle(self, *args, **options):
         """How to run it in dry run mode:
         ./manage.py send_post_expiration_notification --dry-run
@@ -39,8 +44,14 @@ class Command(BaseCommand):
 
         all_emails_sent = True
         today = timezone.now().date()
-
-        if options.get("all_expired"):
+        
+        if options.get("domain"):
+            expired_domains = Domain.objects.filter(
+                name=options.get("domain"),
+                expiration_date__lt=today,
+                state=Domain.State.READY,
+            )
+        elif options.get("all_expired"):
             expired_domains = Domain.objects.filter(
                 expiration_date__lt=today,
                 state=Domain.State.READY,

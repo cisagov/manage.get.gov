@@ -772,12 +772,12 @@ class SendPostExpirationEmailsTests(TestCase):
             expiration_date = self.fixed_today
 
         domain = Domain.objects.create(
-            name="expiredready.gov",
+            name=name,
             state=Domain.State.READY,
             expiration_date=expiration_date,
         )
 
-        portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Expired Portfolio")
+        portfolio = Portfolio.objects.create(requester=self.admin, organization_name=f"Expired Portfolio for {name}")
         DomainInformation.objects.create(domain=domain, portfolio=portfolio, requester=self.manager)
 
         UserDomainRole.objects.create(user=self.manager, domain=domain, role="manager")
@@ -882,6 +882,57 @@ class SendPostExpirationEmailsTests(TestCase):
         # -- all expired should email
         call_command("send_post_expiration_notification", all_expired=True)
         mock_send_email.assert_called()
+    
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_domain_flag_sends_email_for_specific_domain_success(self, mock_now, mock_send_email):
+        """
+        Email should send for a specified domain when --domain flag is used and the domain is expired
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        domain_expired = self._create_expired_domain(
+            name="expiredready2.gov",
+            expiration_date=self.fixed_today - timedelta(days=1),
+        )
+        self._create_expired_domain(name="anotherexpiredready.gov")
+
+        call_command("send_post_expiration_notification", domain="expiredready2.gov")
+        
+        expected_context = {
+            "domain": domain_expired,
+            "expiration_date": self.fixed_today - timedelta(days=1),
+            "domain_manager_emails": ["manager@example.com"],
+            "one_week_after_expiration": self.fixed_today - timedelta(days=1) + timedelta(days=7),
+        }
+
+        mock_send_email.assert_any_call(
+            "emails/ready_and_expired.txt",
+            "emails/ready_and_expired_subject.txt",
+            to_addresses=["manager@example.com"],
+            cc_addresses=["admin@example.com"],
+            bcc_address="help@get.gov",
+            context=expected_context,
+        )
+        
+    @patch("registrar.management.commands.send_post_expiration_notification.send_templated_email")
+    @patch("django.utils.timezone.now")
+    def test_domain_flag_sends_email_for_specific_domain_failure(self, mock_now, mock_send_email):
+        """
+        Email should NOT send for a specified domain when --domain flag is used
+        and the domain is NOT expired
+        """
+        mock_now.return_value = timezone.make_aware(datetime.combine(self.fixed_today, datetime.min.time()))
+
+        Domain.objects.create(
+            name="notexpired2.gov",
+            state=Domain.State.READY,
+            expiration_date=self.fixed_today + timedelta(days=7)
+        )
+
+        call_command("send_post_expiration_notification", domain="notexpired.gov")
+
+        mock_send_email.assert_not_called()
 
 
 class SendDomainSetupReminderTests(TestCase):
