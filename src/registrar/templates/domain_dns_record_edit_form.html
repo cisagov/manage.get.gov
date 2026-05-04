@@ -13,7 +13,7 @@
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
                 hx-swap="none"
             >
-                <h2 class="margin-top-0">Edit record</h2>
+                <h3 class="margin-top-0">Edit record</h3>
                 {% csrf_token %}
 
                 <input type="hidden" name="id" value="{{ record_id }}" />
