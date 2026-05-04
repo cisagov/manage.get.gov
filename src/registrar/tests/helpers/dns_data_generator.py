@@ -15,7 +15,7 @@ from registrar.models import (
     DnsZone_VendorDnsZone as ZonesJoin,
     DnsRecord_VendorDnsRecord as RecordsJoin,
     User,
-    UserDomainRole
+    UserDomainRole,
 )
 from registrar.models.portfolio import Portfolio
 from registrar.services.utility.dns_helper import make_dns_account_name
@@ -135,9 +135,7 @@ def create_initial_dns_setup(domain=None, domain_manager=None, **kwargs):
     domain.is_enrolled_in_dns_hosting = True
     domain.save()
     if domain_manager:
-        UserDomainRole.objects.get_or_create(
-            user=domain_manager, domain=domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=domain_manager, domain=domain, role=UserDomainRole.Roles.MANAGER)
     return domain, dns_account, dns_zone
 
 

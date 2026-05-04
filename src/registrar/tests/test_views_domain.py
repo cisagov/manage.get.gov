@@ -3688,7 +3688,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_vanity_nameservers_table(self):
         """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
-        domain, _, _ = create_initial_dns_setup(domain_manager=self.user, **{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]})
+        domain, _, _ = create_initial_dns_setup(
+            domain_manager=self.user, **{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]}
+        )
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")
         self.assertContains(page, "rainbow.dns.gov")
@@ -3708,7 +3710,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_updates_record(self):
         """Editing an existing DNS record saves changes and returns the updated row."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
 
         response = self.client.post(
@@ -3749,7 +3753,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
            form with a clean one, so reopening the form shows no leftover errors.
         """
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
 
         response = self.client.post(
@@ -3779,7 +3785,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_returns_400_without_active_vendor_id(self):
         """Editing fails when the DNS record has no active vendor record link."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124", dns_record_is_active=False)
 
         response = self.client.post(
