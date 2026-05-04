@@ -90,7 +90,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     def test_get_renders_page_success(self):
         page = self.client.get(self._url())
         # Assert we are on the correct page
-        self.assertContains(page, "<h2>Add record</h2>")
+        self.assertContains(page, "Add record</h3>")
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
