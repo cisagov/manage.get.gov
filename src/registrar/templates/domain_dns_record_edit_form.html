@@ -32,7 +32,7 @@
                 </div>
                 <button
                     type="button"
-                    class="usa-button usa-button--outline"
+                    class="usa-button usa-button--outline js-dnsrecord-cancel-button"
                     hx-get="{% url 'domain-dns-records' domain.pk %}"
                     hx-select="#dnsrecord-edit-form-{{ record_id }}"
                     hx-target="#dnsrecord-edit-form-{{ record_id }}"
