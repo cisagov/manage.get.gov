@@ -103,7 +103,13 @@ class TestWithDomainPermissions(TestWithUser):
             ),
         )
         # Set up a domain enrolled in DNS hosting
-        self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(name="enrolledindnshosting.gov")
+        self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(
+            name="enrolledindnshosting.gov", 
+            state=Domain.State.READY,
+            expiration_date=timezone.make_aware(
+                datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
+            )
+        )
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="New org", requester=self.user)
         DomainInformation.objects.get_or_create(
             requester=self.user, domain=self.domain_enrolled_in_dns_hosting, portfolio=portfolio
@@ -298,10 +304,11 @@ class TestDomainPermissions(TestWithDomainPermissions):
                     self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    @skip("For some reason, this test is breaking and returning 200 instead of 403. Need to investigate and fix.")
     def test_domain_pages_blocked_for_on_hold_and_deleted_for_dns_records(self):
         """Test that the domain pages are blocked for on hold and deleted domains for DNS Records page"""
         self.client.force_login(self.user)
+        self.domain_enrolled_in_dns_hosting.place_client_hold()
+        self.domain_enrolled_in_dns_hosting.save()
         with override_flag("dns_hosting", active=True):
             response = self.client.get(
                 reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
