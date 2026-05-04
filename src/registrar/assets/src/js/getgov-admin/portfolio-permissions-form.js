@@ -11,7 +11,6 @@ function handlePortfolioPermissionFields(){
     const domainPermissionsField = document.querySelector(".field-domain_permissions");
     const domainRequestPermissionsField = document.querySelector(".field-request_permissions");
     const memberPermissionsField = document.querySelector(".field-member_permissions");
-    const sendEmailField = document.querySelector(".field-send_email");
     const sendEmailCheckbox = document.getElementById("id_send_email");
     
     /**
@@ -47,16 +46,14 @@ function handlePortfolioPermissionFields(){
         return normalizedValue !== "" && Number.isInteger(Number(normalizedValue));
     }
 
-    function updateSendEmailVisibility() {
-        if (!sendEmailField || !sendEmailCheckbox) {
+    function updateSendEmailAvailability() {
+        if (!sendEmailCheckbox) {
             return;
         }
 
         if (isSelectedUserIdValue(userField?.value)) {
-            showElement(sendEmailField);
             sendEmailCheckbox.disabled = false;
         } else {
-            hideElement(sendEmailField);
             sendEmailCheckbox.checked = false;
             sendEmailCheckbox.disabled = true;
         }
@@ -77,14 +74,14 @@ function handlePortfolioPermissionFields(){
             // The admin autocomplete updates the underlying field value and fires
             // "change" for both selected users and typed email tags.
             userField.addEventListener("change", function() {
-                updateSendEmailVisibility();
+                updateSendEmailAvailability();
             });
         }
     }
 
     // Run initial setup functions
     updatePortfolioPermissionsFormVisibility();
-    updateSendEmailVisibility();
+    updateSendEmailAvailability();
     setEventListeners();
 }
 
