@@ -104,11 +104,11 @@ class TestWithDomainPermissions(TestWithUser):
         )
         # Set up a domain enrolled in DNS hosting
         self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(
-            name="enrolledindnshosting.gov", 
+            name="enrolledindnshosting.gov",
             state=Domain.State.READY,
             expiration_date=timezone.make_aware(
                 datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
-            )
+            ),
         )
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="New org", requester=self.user)
         DomainInformation.objects.get_or_create(
