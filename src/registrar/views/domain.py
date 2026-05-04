@@ -23,7 +23,6 @@ from registrar.decorators import (
     IS_DOMAIN_MANAGER,
     IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
     IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
-    IS_STAFF,
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
