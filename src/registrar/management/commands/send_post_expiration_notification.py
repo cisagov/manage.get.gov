@@ -66,7 +66,7 @@ class Command(BaseCommand):
             # -- GRAB PORTFOLIO ADMIN EMAILS --
             portfolio_id = domain.domain_info.portfolio_id
             if portfolio_id:
-                portfolio_admin_emails = list(
+                admin_emails = list(
                     UserPortfolioPermission.objects.filter(
                         portfolio_id=portfolio_id,
                         roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
@@ -75,7 +75,8 @@ class Command(BaseCommand):
                     .distinct()
                 )
             else:
-                portfolio_admin_emails = []
+                senior_official = domain.domain_info.senior_official
+                admin_emails = [senior_official.email] if senior_official and senior_official.email else []
 
             context = {
                 "domain": domain,
@@ -93,7 +94,7 @@ class Command(BaseCommand):
                         f"[DRYRUN]\n"
                         f"Would send email for domain {domain.name}\n"
                         f"TO: {domain_manager_emails}\n"
-                        f"CC: {portfolio_admin_emails}\n"
+                        f"CC: {admin_emails}\n"
                         f"Subject: {rendered_subject}\n"
                         f"Body:\n{rendered_body}"
                     )
@@ -102,7 +103,7 @@ class Command(BaseCommand):
                         template,
                         subject_template,
                         to_addresses=domain_manager_emails,
-                        cc_addresses=portfolio_admin_emails,
+                        cc_addresses=admin_emails,
                         bcc_address="help@get.gov",
                         context=context,
                     )
@@ -113,7 +114,7 @@ class Command(BaseCommand):
                         "Failed to send post-expiration email(s):\n"
                         f"  Subject template: {subject_template}\n"
                         f"  To: {'. '.join(domain_manager_emails)}\n"
-                        f"  CC: {', '.join(portfolio_admin_emails)}\n"
+                        f"  CC: {', '.join(admin_emails)}\n"
                         f"  Domain: {domain.name}\n"
                         f"  Error: {err}",
                         exc_info=True,
