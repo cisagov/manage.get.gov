@@ -57,6 +57,30 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
+function clearRecordForm(root){
+    const form = root || document.getElementById("dnsrecords-form-container")
+    if(!form) return;
+    
+    // remove error styling from inputs and labels 
+    const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
+    inputs.forEach(input =>{ 
+        input.classList.remove("usa-input--error")
+    })
+    const labels = form.querySelectorAll('label')
+    labels.forEach( label => label.classList.remove("usa-label--error"))
+
+    // remove error messages in line and top-level error messages
+    form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
+    const alertMessagesContainer = document.getElementById('messages-container')
+    alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
+    
+    // Reset the comment field and its character count
+    document.getElementById('id_comment').value = ''
+    const commentStatus =  document.getElementById('dnsrecords-form-container-comment--status')
+    commentStatus.classList.remove("usa-character-count__status--invalid")
+     // Character count is hardcoded for now if/when the model is updated with the current maxlength
+    commentStatus.textContent = getCharCountText(100, 0)
+}
 
 export function editAndCommentButtonListener (){
         const table = document.querySelector("#dnsrecords-table");
@@ -284,7 +308,12 @@ export function initDynamicDNSRecordFormFields() {
                 }
     })
 
-    typeField.addEventListener('change', function (){
+    typeField.addEventListener('change', function (e){
+        // e.isTrusted ensures that this only fires when a user select a new type.
+        if(e.isTrusted){
+            clearRecordForm()
+        }
+
         const selectedType = this.value;
         const info = config[selectedType];
         const contentLabel = document.querySelector('label[for=id_content]');
@@ -319,4 +348,10 @@ export function initDynamicDNSRecordFormFields() {
         typeField.dispatchEvent(new Event('change'));
     }
 
+    // clearForm when a user hits the cancel button on the dns record form and table
+    document.querySelectorAll(".js-dnsrecord-cancel-button").forEach( button => {
+        const formInRow = button.closest('form')
+        button.addEventListener('click',() => clearRecordForm(formInRow))
+        }
+    )
 }
