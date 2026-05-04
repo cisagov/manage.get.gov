@@ -120,6 +120,33 @@ class DnsRecordTest(TestCase):
         )
         record.clean()  # should not raise
 
+    # --- name normalization + _name_q equivalence tests ---
+
+    def test_full_clean_normalizes_name_before_validation(self):
+        """Mixed-case names are lowercased by full_clean before anything else runs."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="WWW.Dns-Test.Gov",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        record.full_clean()
+        self.assertEqual(record.name, "www.dns-test.gov")
+
+    def test_save_normalizes_name_when_full_clean_bypassed(self):
+        """Direct save() without full_clean still lowercases the stored name."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="WWW",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        record.save()
+        record.refresh_from_db()
+        self.assertEqual(record.name, "www")
+
     # --- DNS name validation tests for model ---
 
     def test_dns_record_name_with_consecutive_dots_raises(self):
@@ -325,3 +352,29 @@ class DnsRecordTest(TestCase):
         record.save()
         record.refresh_from_db()
         self.assertEqual(record.name, "test.dns-test.gov")
+
+    def test_name_q_at_symbol_matches_bare_domain(self):
+        """A query for '@' (root of the zone) matches records stored as the bare domain name."""
+        DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="dns-test.gov", ttl=3600, content="192.0.2.1")
+        matches = DnsRecord.objects.filter(DnsRecord._name_q("@", "dns-test.gov"))
+        self.assertEqual(matches.count(), 1)
+
+    def test_name_q_bare_domain_matches_at_symbol(self):
+        """A query for the bare domain matches records stored as '@'."""
+        DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="@", ttl=3600, content="192.0.2.1")
+        matches = DnsRecord.objects.filter(DnsRecord._name_q("dns-test.gov", "dns-test.gov"))
+        self.assertEqual(matches.count(), 1)
+
+    def test_name_q_label_matches_fqdn(self):
+        """A query for a bare label matches records stored as the FQDN."""
+        DnsRecord.objects.create(
+            dns_zone=self.dns_zone, type="A", name="www.dns-test.gov", ttl=3600, content="192.0.2.1"
+        )
+        matches = DnsRecord.objects.filter(DnsRecord._name_q("www", "dns-test.gov"))
+        self.assertEqual(matches.count(), 1)
+
+    def test_name_q_fqdn_matches_label(self):
+        """A query for an FQDN matches records stored as the bare label."""
+        DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="www", ttl=3600, content="192.0.2.1")
+        matches = DnsRecord.objects.filter(DnsRecord._name_q("www.dns-test.gov", "dns-test.gov"))
+        self.assertEqual(matches.count(), 1)
