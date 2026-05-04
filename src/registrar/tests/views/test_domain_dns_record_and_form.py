@@ -305,6 +305,19 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
+    def test_dns_record_edit_form_cancel_button_has_focus_routing_hooks(self):
+        """The Cancel button must carry data-action='form-cancel' so the tab-order JS can
+        return focus to the Edit button when the form closes — otherwise focus is stranded
+        inside the hidden form row and Tab walks past the kebab to the next record."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, 'data-action="form-cancel"')
+        self.assertContains(response, f'data-record-id="{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
     def test_dns_record_edit_row_has_stable_id_for_focus_routing(self):
         """The edit form row id (dnsrecord-edit-row-<id>) is what the tab-order JS uses
         to find the open form's focusable controls."""

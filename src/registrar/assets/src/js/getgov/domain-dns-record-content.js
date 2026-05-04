@@ -141,42 +141,62 @@ export function initDNSRecordTabOrder() {
         return null;
     }
 
-    // After Edit is clicked and the form opens, jump focus to the form's first input so the
-    // user lands inside the form rather than continuing to the kebab.
+    // After Edit is clicked, jump focus into the form's first input (open) or back to
+    // the Edit button (closed). After Cancel is clicked, return focus to Edit so the
+    // browser doesn't strand focus inside the now-hidden form row, which makes Tab walk
+    // past our row's kebab into the next record.
     table.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('[data-action="edit"]');
-        if (!editBtn) return;
+        const trigger = e.target.closest('[data-action="edit"], [data-action="form-cancel"]');
+        if (!trigger) return;
+        const recordId = trigger.dataset.recordId;
         // The existing editAndCommentButtonListener updates Alpine state synchronously on
         // click; queue a microtask so we observe the post-click state.
         queueMicrotask(() => {
-            const recordId = editBtn.dataset.recordId;
-            if (getOpenRecordId() !== recordId) return; // form was just toggled closed
             const elems = getRecordElements(recordId);
-            elems?.formFirst?.focus();
+            if (!elems) return;
+            const isOpen = getOpenRecordId() === recordId;
+            (isOpen ? elems.formFirst : elems.editBtn)?.focus();
         });
     });
 
-    // Intercept Tab to enforce the desired order.
+    // Intercept Tab to enforce the desired order. We always reroute Tab from the Edit
+    // button explicitly (rather than relying on natural DOM order) because the row's
+    // mobile-only Delete and the USWDS accordion can intercept Tab in ways that vary
+    // by viewport and post-HTMX state.
     table.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
+
+        const t = e.target;
+
+        // Tab/Shift+Tab from any record's Edit button: route based on that record's
+        // form state, regardless of whether any other form is open.
+        const editBtn = t.closest?.('[data-action="edit"]');
+        if (editBtn === t) {
+            const rid = editBtn.dataset.recordId;
+            const r = getRecordElements(rid);
+            if (!r) return;
+            const isOpen = getOpenRecordId() === rid;
+            if (!e.shiftKey) {
+                // Edit -> first form field (open) | kebab (closed)
+                e.preventDefault();
+                (isOpen ? r.formFirst : r.kebab)?.focus();
+            }
+            // Shift+Tab from Edit: let natural DOM order go to the previous focusable.
+            return;
+        }
+
+        // The remaining rules apply only while a form is open.
         const recordId = getOpenRecordId();
         if (!recordId) return;
         const elems = getRecordElements(recordId);
         if (!elems) return;
 
-        const t = e.target;
         const kebabMenu = elems.kebab
             ? document.getElementById(elems.kebab.getAttribute('aria-controls'))
             : null;
         const isKebabFocus = elems.kebab && (t === elems.kebab || kebabMenu?.contains(t));
         const nextRecordEdit = nextRecordEditAfter(recordId);
 
-        // Edit -> first form field (Tab forward)
-        if (!e.shiftKey && t === elems.editBtn) {
-            e.preventDefault();
-            elems.formFirst?.focus();
-            return;
-        }
         // First form field -> Edit (Shift+Tab backward)
         if (e.shiftKey && t === elems.formFirst) {
             e.preventDefault();
@@ -189,19 +209,20 @@ export function initDNSRecordTabOrder() {
             elems.kebab?.focus();
             return;
         }
-        // Kebab -> Form Delete (Shift+Tab backward, only when form is open)
+        // Kebab -> Form Delete (Shift+Tab backward, form open)
         if (e.shiftKey && isKebabFocus) {
             e.preventDefault();
             elems.formDelete?.focus();
             return;
         }
-        // Next record's Edit -> kebab (Shift+Tab backward)
+        // Next record's Edit -> kebab (Shift+Tab backward, form open)
         if (e.shiftKey && elems.kebab && t === nextRecordEdit) {
             e.preventDefault();
             elems.kebab.focus();
             return;
         }
-        // Kebab -> next record's Edit (or out of the table if this is the last row)
+        // Kebab -> next record's Edit / out of table (Tab forward, form open — skip the
+        // visible form row that would otherwise be next in DOM order).
         if (!e.shiftKey && isKebabFocus) {
             const destination = nextRecordEdit || nextFocusableAfterElement(table);
             if (!destination) return;
