@@ -110,11 +110,10 @@ export function editAndCommentButtonListener (){
         })
 }
 
-// When an edit form is open, route focus through the form before the kebab:
-// Edit -> form fields -> Delete -> kebab -> next row's Edit. Shift+Tab follows
-// the same sequence in reverse. When closed, normal tab order applies.
-// This prevents users from tabbing into the kebab menu while trying to navigate
-// form fields.
+// Tab-order routing for the DNS records table (#4804).
+// When a form is open, route Tab to walk:
+//   Edit → form fields → Delete → kebab → next row's Edit
+// Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
     const table = document.querySelector("#dnsrecords-table");
     if (!table) return;
@@ -165,17 +164,22 @@ export function initDNSRecordTabOrder() {
         return null;
     }
 
-    // After Edit is clicked, jump focus into the form's first input (open) or back to
-    // the Edit button (closed). After Cancel is clicked, return focus to Edit so the
-    // browser doesn't strand focus inside the now-hidden form row, which makes Tab walk
-    // past our row's kebab into the next record.
+    // Defer focus calls until Alpine has flushed x-show — otherwise .focus()
+    // hits a still-hidden element and silently no-ops. Alpine.nextTick
+    // handles that; rAF is a safety net for headless Chromium.
+    function deferFocus(fn) {
+        if (window.Alpine?.nextTick) {
+            window.Alpine.nextTick(() => requestAnimationFrame(fn));
+        } else {
+            requestAnimationFrame(fn);
+        }
+    }
+
     table.addEventListener('click', (e) => {
         const trigger = e.target.closest('[data-action="edit"], [data-action="form-cancel"]');
         if (!trigger) return;
         const recordId = trigger.dataset.recordId;
-        // The existing editAndCommentButtonListener updates Alpine state synchronously on
-        // click; queue a microtask so we observe the post-click state.
-        queueMicrotask(() => {
+        deferFocus(() => {
             const elems = getRecordElements(recordId);
             if (!elems) return;
             const isOpen = getOpenRecordId() === recordId;

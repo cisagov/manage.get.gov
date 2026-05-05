@@ -428,3 +428,12 @@ if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not setting
     urlpatterns += [
         path("__debug__/", include(debug_toolbar.urls)),
     ]
+
+# Dev-only Playwright seed/purge endpoints; never in prod.
+if not settings.IS_PRODUCTION:
+    from registrar.views.dev_playwright import playwright_purge, playwright_seed
+
+    urlpatterns += [
+        path("api/v1/dev/playwright-seed", playwright_seed, name="dev-playwright-seed"),
+        path("api/v1/dev/playwright-purge", playwright_purge, name="dev-playwright-purge"),
+    ]

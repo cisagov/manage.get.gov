@@ -1,0 +1,70 @@
+#!/bin/bash
+# Run the Playwright UI test suite. Mirrors `./manage.py test` for browser
+# tests — invoke from inside the running playwright service:
+#
+#   docker compose exec playwright ./test_ui                    # headless
+#   docker compose exec playwright ./test_ui --slow             # watch in slow-mo
+#   docker compose exec playwright ./test_ui --headed           # watch normal speed
+#   docker compose exec playwright ./test_ui --ui               # Playwright UI
+#   docker compose exec playwright ./test_ui --grep "Tab walks" # filter
+#
+# Visible-browser modes draw to the virtual display the playwright service
+# brought up at startup. Open http://localhost:7900/vnc.html in your
+# normal browser to watch.
+set -e
+
+BASE_URL="${PLAYWRIGHT_BASE_URL:-http://getgov-test:8080}"
+
+# --slow is shorthand for "--headed --workers=1 plus PWDEMO slow-mo".
+# Strip it from the args we forward to playwright; flip the env vars that
+# our playwright.config.mjs reads.
+SLOW=false
+filtered_args=()
+for arg in "$@"; do
+    case "$arg" in
+        --slow) SLOW=true ;;
+        *) filtered_args+=("$arg") ;;
+    esac
+done
+set -- "${filtered_args[@]+"${filtered_args[@]}"}"
+if [ "$SLOW" = true ]; then
+    export PWDEMO=1
+    export PWDEMO_MS="${PWDEMO_MS:-1200}"
+    case " $* " in *" --headed "*) ;; *) set -- --headed "$@" ;; esac
+    case " $* " in *" --workers"*) ;; *) set -- "$@" --workers=1 ;; esac
+fi
+
+# Anything that opens a browser window needs DISPLAY pointed at the Xvfb
+# the service started — we set it here so callers don't have to.
+case " $* " in
+    *" --headed "*|*" --ui "*|*" --debug "*) export DISPLAY=:99 ;;
+esac
+
+# Wait for Django to respond. /health/ returns a 302 when the server is up.
+echo "Waiting for ${BASE_URL} to respond..."
+for _ in $(seq 1 60); do
+    code=$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/health/" 2>/dev/null || echo 000)
+    case "$code" in 2*|3*) break ;; esac
+    sleep 1
+done
+
+# Seed test data + a login session via the dev endpoint. Returns
+# eval-able key=value lines we read into env vars.
+seed_output=$(curl -sf "${BASE_URL}/api/v1/dev/playwright-seed")
+if [ -z "$seed_output" ]; then
+    echo "Failed to fetch ${BASE_URL}/api/v1/dev/playwright-seed (dev endpoint disabled?)"
+    exit 1
+fi
+eval "$seed_output"
+export PLAYWRIGHT_SESSION_KEY="$SESSION_KEY"
+export PLAYWRIGHT_DOMAIN_ID="$DOMAIN_ID"
+export PLAYWRIGHT_RECORD_IDS="$RECORD_IDS"
+
+# Purge the seeded rows + sessions on exit, no matter how we got there
+# (tests passed, tests failed, Ctrl+C). The endpoint is idempotent.
+cleanup() {
+    curl -sf -X POST "${BASE_URL}/api/v1/dev/playwright-purge" >/dev/null || true
+}
+trap cleanup EXIT
+
+npx playwright test "$@"

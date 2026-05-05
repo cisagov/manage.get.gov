@@ -125,6 +125,39 @@ services:
     profiles:
       - pa11y
 
+  # Playwright UI tests.:
+  #     docker compose exec playwright ./test_ui [--slow|--ui|--grep ...]
+  # The container stays up running an Xvfb + VNC stack — keep
+  # http://localhost:7900/vnc.html?autoconnect=1&resize=scale open in a
+  # browser tab to watch tests run or view the Readme for instructions.
+  playwright:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: playwright.Dockerfile
+    cap_add:
+      - SYS_ADMIN  # Chromium needs this to run in a container
+    depends_on:
+      - app
+      - db
+    volumes:
+      - .:/app
+    working_dir: /app
+    # Aliased so Chrome doesn't HSTS-upgrade to HTTPS — `.app` is on
+    # Chrome's preload list, `getgov-test` isn't. (Also in ALLOWED_HOSTS.)
+    links:
+      - app:getgov-test
+    ports:
+      - "7900:7900"  # noVNC web viewer
+    environment:
+      - PLAYWRIGHT_BASE_URL=http://getgov-test:8080
+      # Shared Chromium cache so the long-running container (circleci user)
+      # and `docker compose exec` (root) both find the same browser binary.
+      - PLAYWRIGHT_BROWSERS_PATH=/app/.ms-playwright
+      - PWDEMO
+      - PWDEMO_MS
+    entrypoint: ["/app/node_entrypoint.sh", "/app/scripts/playwright-vnc.sh"]
+
   owasp:
     image: ghcr.io/zaproxy/zaproxy:stable
     user: "root"

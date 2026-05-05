@@ -167,6 +167,14 @@ cython_debug/
 # Node
 node_modules
 
+# Playwright
+test-results/
+src/test-results/
+playwright-report/
+src/playwright-report/
+src/tests/playwright/.auth-state.json
+src/.ms-playwright/
+
 # Mac
 .DS_Store
 

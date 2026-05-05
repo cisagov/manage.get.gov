@@ -740,6 +740,9 @@ LOGIN_URL = "/openid/login"
 # the initial login requests without erroring.
 LOGIN_REQUIRED_IGNORE_PATHS = [
     r"/openid/(.+)$",
+    # Dev-only Playwright endpoints — must be reachable without a session.
+    # URLs are only registered when IS_PRODUCTION=False.
+    r"/api/v1/dev/playwright-(seed|purge)/?$",
 ]
 
 # where to go after logging out
@@ -1007,8 +1010,9 @@ if DEBUG and not RUNNING_TESTS:
         "::1",
     ]
 
-    # allow dev laptop and docker-compose network to connect
-    ALLOWED_HOSTS += ("localhost", "app")
+    # `getgov-test` is the alias the playwright service uses for `app`
+    # (avoids Chrome's `.app` HSTS rule). See docker-compose.yml.
+    ALLOWED_HOSTS += ("localhost", "app", "getgov-test")
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_PRELOAD = False
 
