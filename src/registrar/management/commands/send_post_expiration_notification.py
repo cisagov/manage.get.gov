@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = (
         "Sends post-expiration emails to domain managers and portfolio managers for "
-        "domains in 'Ready' state that are expected."
+        "domains in 'Ready' state that are expired."
     )
 
     def add_arguments(self, parser):
@@ -31,7 +31,7 @@ class Command(BaseCommand):
             help="Send emails to all expired Ready domains, not just those that expired today.",
         )
 
-        parser.add_argument("--domain", help="Run for a sepcific domain name only (e.g. example.gov)")
+        parser.add_argument("--domain", help="Run for a specific domain name only (e.g. example.gov)")
 
     def _get_expired_domains(self, today, options):
         if options.get("domain"):
@@ -74,9 +74,13 @@ class Command(BaseCommand):
 
         all_emails_sent = True
         today = timezone.now().date()
+        bcc = "help@get.gov"
 
         expired_domains = self._get_expired_domains(today, options)
         logger.info(f"Found {expired_domains.count()} expired domains that are in 'Ready' state.")
+
+        # first_domain used to output sample email template.
+        first_domain = expired_domains.first()
 
         for domain in expired_domains:
 
@@ -100,16 +104,12 @@ class Command(BaseCommand):
 
             try:
                 if dryrun:
-                    rendered_subject = render_to_string(subject_template, context).strip()
-                    rendered_body = render_to_string(template, context)
-
                     logger.info(
                         f"[DRYRUN]\n"
-                        f"Would send email for domain {domain.name}\n"
-                        f"TO: {domain_manager_emails}\n"
-                        f"CC: {admin_emails}\n"
-                        f"Subject: {rendered_subject}\n"
-                        f"Body:\n{rendered_body}"
+                        f"{domain.name} would be sent to\n"
+                        f"TO: {domain_manager_emails}, "
+                        f"CC: {admin_emails}, "
+                        f"BCC: {bcc}"
                     )
                 else:
                     send_templated_email(
@@ -117,7 +117,7 @@ class Command(BaseCommand):
                         subject_template,
                         to_addresses=domain_manager_emails,
                         cc_addresses=admin_emails,
-                        bcc_address="help@get.gov",
+                        bcc_address=bcc,
                         context=context,
                     )
                     logger.info(f"Sent email for domain {domain.name} to managers and CC'd org admins")
@@ -128,6 +128,7 @@ class Command(BaseCommand):
                         f"  Subject template: {subject_template}\n"
                         f"  To: {'. '.join(domain_manager_emails)}\n"
                         f"  CC: {', '.join(admin_emails)}\n"
+                        f"  BCC: {bcc}\n"
                         f"  Domain: {domain.name}\n"
                         f"  Error: {err}",
                         exc_info=True,
@@ -137,6 +138,10 @@ class Command(BaseCommand):
         if not expired_domains:
             self.stdout.write(self.style.SUCCESS("No expired Ready domains found."))
         elif all_emails_sent:
+            if first_domain and dryrun:
+                rendered_subject = render_to_string(subject_template, context).strip()
+                rendered_body = render_to_string(template, context)
+                self.stdout.write(f"Sample email:\n" f"Subject:{rendered_subject}\n" f"Body:{rendered_body}")
             self.stdout.write(self.style.SUCCESS("All post-expiration emails sent successfully."))
         else:
             self.stderr.write(self.style.ERROR("Some post-expiration emails failed to send."))
