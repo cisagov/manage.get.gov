@@ -105,11 +105,11 @@ class Command(BaseCommand):
             try:
                 if dryrun:
                     logger.info(
-                        f"[DRYRUN]\n"
-                        f"{domain.name} would be sent to\n"
+                        f"[DRYRUN] "
+                        f"{domain.name} post-expiration email would be sent to: "
                         f"TO: {domain_manager_emails}, "
                         f"CC: {admin_emails}, "
-                        f"BCC: {bcc}"
+                        f"BCC: {bcc}\n"
                     )
                 else:
                     send_templated_email(
