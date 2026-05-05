@@ -124,7 +124,7 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: " IPv4 address ",
             DNSRecordTypes.AAAA: " IPv6 address ",
-            DNSRecordTypes.CNAME: " Target hostname ",
+            DNSRecordTypes.CNAME: " Target ",
             DNSRecordTypes.MX: " Mail server ",
             DNSRecordTypes.TXT: " Content ",
             DNSRecordTypes.PTR: " Domain name ",
