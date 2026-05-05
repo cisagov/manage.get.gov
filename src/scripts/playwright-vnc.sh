@@ -5,11 +5,16 @@
 # the virtual display already running so Chromium has somewhere to draw.
 set -e
 
-# Make sure Node deps + Chromium are installed (no-op on later runs).
+# Make sure Node deps + Chromium are installed. test_ui also runs this on
+# every invocation so the container recovers if the cache disappears
+# mid-life (e.g. someone wiped src/.ms-playwright while switching branches).
 if [ ! -d node_modules/@playwright/test ]; then
   npm install --silent
 fi
-npx playwright install chromium > /dev/null 2>&1 || npx playwright install chromium
+if ! npx playwright install chromium > /dev/null 2>&1; then
+  # Verbose retry so a real failure (no network, disk full, etc.) is loud.
+  npx playwright install chromium
+fi
 
 # Start the virtual display + VNC stack. Runs in the background; ports are
 # exposed via docker-compose so http://localhost:7900 is your viewer.

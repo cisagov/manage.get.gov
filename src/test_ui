@@ -40,6 +40,11 @@ case " $* " in
     *" --headed "*|*" --ui "*|*" --debug "*) export DISPLAY=:99 ;;
 esac
 
+# Make sure Chromium is installed. Fast no-op when already cached; recovers
+# automatically if someone wiped /app/.ms-playwright while the container was
+# still running (e.g. switching branches).
+npx playwright install chromium > /dev/null 2>&1 || npx playwright install chromium
+
 # Wait for Django to respond. /health/ returns a 302 when the server is up.
 echo "Waiting for ${BASE_URL} to respond..."
 for _ in $(seq 1 60); do
