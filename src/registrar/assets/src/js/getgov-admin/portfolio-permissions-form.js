@@ -12,10 +12,10 @@ function handlePortfolioPermissionFields(){
     const domainRequestPermissionsField = document.querySelector(".field-request_permissions");
     const memberPermissionsField = document.querySelector(".field-member_permissions");
     const sendEmailCheckbox = document.getElementById("id_send_email");
-    
+
     /**
      * Updates the visibility of portfolio permissions fields based on the selected role.
-     * 
+     *
      * This function checks the value of the role dropdown (`roleDropdown`):
      * - If the selected role is "organization_member":
      *     - Shows the domain permissions field (`domainPermissionsField`).
@@ -23,7 +23,7 @@ function handlePortfolioPermissionFields(){
      *     - Shows the member permissions field (`memberPermissionsField`).
      * - Otherwise:
      *     - Hides all the above fields.
-     * 
+     *
      * The function ensures that the appropriate fields are dynamically displayed
      * or hidden depending on the role selection in the form.
      */
@@ -71,11 +71,11 @@ function handlePortfolioPermissionFields(){
         }
 
         if (userField) {
-            // The admin autocomplete updates the underlying field value and fires
-            // "change" for both selected users and typed email tags.
-            userField.addEventListener("change", function() {
-                updateSendEmailAvailability();
-            });
+            if (typeof django !== "undefined" && django.jQuery) {
+                django.jQuery(userField).on("change select2:select select2:clear", function() {
+                    updateSendEmailAvailability();
+                });
+            }
         }
     }
 
