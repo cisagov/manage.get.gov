@@ -123,6 +123,10 @@ class TestURLAuth(TestCase):
         "/api/v1/rdap/",
         "/health",
         "/version",
+        # Dev-only Playwright endpoints (registered only when IS_PRODUCTION
+        # is False). They must be reachable without a session.
+        "/api/v1/dev/playwright-seed",
+        "/api/v1/dev/playwright-purge",
     ]
 
     # We will test that the following URLs are not protected by auth
