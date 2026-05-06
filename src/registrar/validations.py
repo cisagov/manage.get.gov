@@ -73,6 +73,7 @@ DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
 DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
 DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
 DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
+DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 
 
