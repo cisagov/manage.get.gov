@@ -79,7 +79,7 @@ For incident management purposes, the following should be noted:
 4. Program team or incident lead will schedule an hour-long retrospective session for the team. The retro is an opportunity to do the following:  
    1. Review the timeline of the incident and ensure it’s accurate  
    2. Identify anything that contributed to the incident \- not just causes, but conditions that worked together to create the incident, and escalate to the severity it was  
-   3. Identify anything that helped mitigate impacts of the incident, if any  
+   3. Identify anything that helped mitigate impacts of the incident
    4. Review what we learned, and any risks that were uncovered  
    5. Propose and agree on follow-up actions, including necessary GitHub issues, and owners for completion of follow-up activities
 
