@@ -99,7 +99,7 @@ class Command(BaseCommand):
                 "domain": domain,
                 "expiration_date": domain.expiration_date,
                 "domain_manager_emails": domain_manager_emails,
-                "one_week_after_expiration": domain.expiration_date + timedelta(days=7),
+                "one_week_after_today": today + timedelta(days=7),
             }
 
             try:

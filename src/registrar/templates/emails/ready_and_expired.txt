@@ -22,7 +22,7 @@ Learn more about the renewal process at <https://get.gov/help/domain-management/
 AVOID SERVICE DISRUPTION
 If you still need {{ domain }}, renew it immediately to avoid a disruption in service.
 
-If action isn’t taken on {{ domain }} or we don’t hear from your organization before {{ one_week_after_expiration }}, we will attempt to contact others who may be able to reach your organization. If we still haven’t reached you, the domain will be placed on hold, removed from the internet, and then finally deleted.
+If action isn’t taken on {{ domain }} or we don’t hear from your organization before {{ one_week_after_today }}, we will attempt to contact others who may be able to reach your organization. If we still haven’t reached you, the domain will be placed on hold, removed from the internet, and then finally deleted.
 
 Keep in mind that your DNS hosting provider may stop service if they notice the domain is expired. If that happens, email or websites using the domain won’t be available online.
 

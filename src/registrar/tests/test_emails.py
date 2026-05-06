@@ -814,7 +814,7 @@ class SendPostExpirationEmailsTests(TestCase):
             "domain": domain_expired,
             "expiration_date": self.fixed_today,
             "domain_manager_emails": ["manager@example.com"],
-            "one_week_after_expiration": self.fixed_today + timedelta(days=7),
+            "one_week_after_today": self.fixed_today + timedelta(days=7),
         }
 
         mock_send_email.assert_any_call(
@@ -903,7 +903,7 @@ class SendPostExpirationEmailsTests(TestCase):
             "domain": domain_expired,
             "expiration_date": self.fixed_today - timedelta(days=1),
             "domain_manager_emails": ["manager@example.com"],
-            "one_week_after_expiration": self.fixed_today - timedelta(days=1) + timedelta(days=7),
+            "one_week_after_today": self.fixed_today + timedelta(days=7),
         }
 
         mock_send_email.assert_any_call(
