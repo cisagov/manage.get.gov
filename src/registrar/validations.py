@@ -77,11 +77,11 @@ DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 
 
-def _validate_dns_name_structure(name: str) -> None:
+def _validate_dns_name_structure(name: str, validate_hostname=False) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name:
         raise ValidationError(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
-    if name.startswith(".") or name.endswith("."):
+    if name.startswith(".") or (name.endswith(".") and not validate_hostname):
         raise ValidationError(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE)
 
 
@@ -194,6 +194,35 @@ def check_has_valid_quotes(content: str) -> bool:
     last_item_is_double_quote = content[len(content) - 1] == double_quote
 
     return quote_count % 2 != 0 or first_item_char_is_double_quote != last_item_is_double_quote
+
+
+def validate_dns_target(content: str) -> None:
+    """Validates target hostname content for CNAME, MX, and PTR records.
+    Only handles fully qualified names (e.g., 'www.example.gov'), NOT relative names (e.g., 'www').
+    
+    Normalizes to lowercase and validates:
+    - No spaces
+    - Valid characters only (letters, numbers, hyphens, periods, @ for apex)
+    - No consecutive dots
+    - No leading dots
+    - No hyphens at start/end of labels TODO: cross check if this is still expected for hostname
+    - Per-label max 63 characters
+    - Total max 253 characters"""
+    if not content:
+        return
+
+    # Normalize to lowercase
+    content = content.lower()
+
+    # Special case: @ is valid (zone apex)
+    if content == "@":
+        return
+
+    # Check for spaces
+    if " " in content:
+        raise ValidationError(DNS_NAME_SPACES_ERROR_MESSAGE)
+
+    _validate_dns_name_structure(content, validate_hostname=True)
 
 
 def validate_txt_content(content: str) -> None:
