@@ -54,7 +54,9 @@ function handlePortfolioPermissionFields(){
         if (isSelectedUserIdValue(userField?.value)) {
             sendEmailCheckbox.disabled = false;
         } else {
-            sendEmailCheckbox.checked = false;
+            // Typed emails always send an invitation email, so keep the
+            // checkbox checked while disabling it.
+            sendEmailCheckbox.checked = true;
             sendEmailCheckbox.disabled = true;
         }
     }
