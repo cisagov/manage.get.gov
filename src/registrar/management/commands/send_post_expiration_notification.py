@@ -72,7 +72,7 @@ class Command(BaseCommand):
         """
         if options.get("domain") and options.get("all_expired"):
             raise CommandError("Cannot use --domain and --all-expired together.")
-        
+
         dryrun = options.get("dry_run", False)
 
         all_emails_sent = True
