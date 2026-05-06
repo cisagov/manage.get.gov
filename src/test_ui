@@ -53,8 +53,10 @@ for _ in $(seq 1 60); do
     sleep 1
 done
 
-# Seed test data + a login session via the dev endpoint. Returns
-# eval-able key=value lines we read into env vars.
+# Seed test data + a login session via the dev endpoint. Returns three
+# KEY=value lines (SESSION_KEY, DOMAIN_ID, RECORD_IDS). We `eval` because
+# the source is our own dev-only endpoint on localhost — not user input —
+# and the values are short alphanumerics from the management command.
 seed_output=$(curl -sf "${BASE_URL}/api/v1/dev/playwright-seed")
 if [ -z "$seed_output" ]; then
     echo "Failed to fetch ${BASE_URL}/api/v1/dev/playwright-seed (dev endpoint disabled?)"
@@ -66,7 +68,7 @@ export PLAYWRIGHT_DOMAIN_ID="$DOMAIN_ID"
 export PLAYWRIGHT_RECORD_IDS="$RECORD_IDS"
 
 # Purge the seeded rows + sessions on exit, no matter how we got there
-# (tests passed, tests failed, Ctrl+C). The endpoint is idempotent.
+# (tests passed, tests failed, Ctrl+C). Safe to call when nothing's there.
 cleanup() {
     curl -sf -X POST "${BASE_URL}/api/v1/dev/playwright-purge" >/dev/null || true
 }

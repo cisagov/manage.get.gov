@@ -125,18 +125,22 @@ services:
     profiles:
       - pa11y
 
-  # Playwright UI tests.:
+  # Playwright UI tests:
   #     docker compose exec playwright ./test_ui [--slow|--ui|--grep ...]
   # The container stays up running an Xvfb + VNC stack — keep
   # http://localhost:7900/vnc.html?autoconnect=1&resize=scale open in a
   # browser tab to watch tests run or view the Readme for instructions.
+  # No `profiles:` set on purpose — we want this up by default alongside
+  # `app` and `db` so `docker compose exec playwright ./test_ui` just works.
   playwright:
     platform: linux/amd64
     build:
       context: .
       dockerfile: playwright.Dockerfile
     cap_add:
-      - SYS_ADMIN  # Chromium needs this to run in a container
+      # Needed for Chromium's sandbox inside a container; without it Chrome
+      # refuses to launch ("Operation not permitted" on clone()).
+      - SYS_ADMIN
     depends_on:
       - app
       - db

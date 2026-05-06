@@ -1,5 +1,5 @@
 """Set up the user, domain, DNS records, and login session that the
-Playwright UI tests need. Idempotent — reuses existing rows on re-runs.
+Playwright UI tests need. Safe to re-run — reuses existing rows.
 
 Outputs eval-friendly key=value lines:
     SESSION_KEY=...
@@ -54,14 +54,14 @@ class Command(BaseCommand):
     def _ensure_user(self):
         # All four name/title/phone fields are required so the
         # CheckUserProfileMiddleware doesn't redirect us to /user-profile.
-        # is_staff is required by @grant_access(IS_STAFF) on the DNS view.
+        # No is_staff: the DNS view accepts IS_DOMAIN_MANAGER OR IS_STAFF,
+        # and we grant the manager role below.
         defaults = {
             "email": TEST_EMAIL,
             "first_name": "Playwright",
             "last_name": "Tester",
             "title": "Test Engineer",
             "phone": "+1-555-555-5555",
-            "is_staff": True,
         }
         user, created = User.objects.get_or_create(
             username=TEST_USERNAME,

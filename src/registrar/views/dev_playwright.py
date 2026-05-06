@@ -66,13 +66,16 @@ def playwright_seed(request):
     return HttpResponse(body, content_type="text/plain")
 
 
+# csrf_exempt: POST without a session can't carry a CSRF token. Safe
+# because the URL is dev-only (only registered when IS_PRODUCTION is
+# False) and the work is bounded to the seeded test rows.
 @csrf_exempt
 @require_POST
 @transaction.atomic
 def playwright_purge(request):
     """Delete the user/domain/DNS rows + sessions seeded by playwright_seed.
 
-    Idempotent — silent no-op if any of the rows are missing.
+    Safe to re-run — silent no-op if any of the rows are already gone.
     """
     if settings.IS_PRODUCTION:
         raise Http404

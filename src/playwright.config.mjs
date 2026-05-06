@@ -1,6 +1,6 @@
 // Playwright config — runs against the live Django app.
 // baseURL: container uses `getgov-test` alias; host scripts override.
-// PWDEMO=1 + PWDEMO_MS for slow-mo (npm run test:ui-demo).
+// PWDEMO=1 + PWDEMO_MS turn on slow-mo (set automatically by `./test_ui --slow`).
 
 import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';

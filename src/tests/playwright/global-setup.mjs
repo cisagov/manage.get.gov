@@ -1,6 +1,6 @@
 // Runs once before any test. Writes a JSESSIONID cookie to storageState
-// so every browser context starts logged in. Env vars are set by either
-// scripts/run-playwright.sh (container) or scripts/host-playwright.sh (host).
+// so every browser context starts logged in. Env vars are set by `test_ui`
+// after it calls the dev seed endpoint.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,7 +15,7 @@ export default async function globalSetup() {
     if (!sessionKey || !domainId) {
         throw new Error(
             'PLAYWRIGHT_SESSION_KEY / PLAYWRIGHT_DOMAIN_ID not set — '
-            + 'run via `docker compose run --rm playwright`.',
+            + 'run via `docker compose exec playwright ./test_ui`.',
         );
     }
 

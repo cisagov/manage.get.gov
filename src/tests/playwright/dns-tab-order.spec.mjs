@@ -1,19 +1,11 @@
 // Playwright tests for DNS records tab order (#4804).
-// Run: `docker compose run --rm playwright` (headless) or
-//      `npm run test:ui-headed` / `test:ui-demo` (visible Chrome on host).
+// Run: `docker compose exec playwright ./test_ui` (headless) or
+//      `./test_ui --slow` / `--headed` / `--ui` to watch in the VNC viewer.
 
 import { test, expect } from '@playwright/test';
 
 const DOMAIN_ID = process.env.PLAYWRIGHT_DOMAIN_ID;
 const RECORD_IDS = (process.env.PLAYWRIGHT_RECORD_IDS || '').split(',').filter(Boolean);
-
-if (!DOMAIN_ID || RECORD_IDS.length < 2) {
-    throw new Error(
-        'PLAYWRIGHT_DOMAIN_ID / PLAYWRIGHT_RECORD_IDS missing — '
-        + 'run via `docker compose run --rm playwright`.',
-    );
-}
-
 const [RECORD_A, RECORD_B] = RECORD_IDS;
 const PAGE_PATH = `/domain/${DOMAIN_ID}/dns/records`;
 
@@ -30,6 +22,17 @@ const formField = (page, id, fieldName) =>
     page.locator(`#id_edit_${id}_${fieldName}`);
 
 test.describe('DNS records tab order (#4804)', () => {
+    test.beforeAll(() => {
+        // Friendly failure if the suite was launched without the seed step
+        // (e.g. someone ran `npx playwright test` directly).
+        if (!DOMAIN_ID || RECORD_IDS.length < 2) {
+            throw new Error(
+                'PLAYWRIGHT_DOMAIN_ID / PLAYWRIGHT_RECORD_IDS missing — '
+                + 'run via `docker compose exec playwright ./test_ui`.',
+            );
+        }
+    });
+
     test.beforeEach(async ({ page }) => {
         await page.goto(PAGE_PATH);
         // Wait until Alpine + the bundle are ready before any keyboard input.
