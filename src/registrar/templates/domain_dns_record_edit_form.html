@@ -1,4 +1,5 @@
 {% load static field_helpers url_helpers %}
+{% load custom_filters %}
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
 <tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
@@ -12,17 +13,28 @@
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
                 hx-swap="none"
             >
-                <h2 class="margin-top-0">Edit record</h2>
+                <h3 class="margin-top-0">Edit record</h3>
                 {% csrf_token %}
 
                 <input type="hidden" name="id" value="{{ record_id }}" />
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
                 {% include dns_record.form_template with form=dns_record.form %}
-                {% input_with_errors dns_record.form.comment %}
+                <div>
+                    {% with add_group_class="usa-form-group--unstyled-error" %}
+                        {% input_with_errors dns_record.form.comment %}
+                    {% endwith %}
+                    <div class="usa-character-count__status usa-hint comment-character-count">
+                    <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
+                    {{ 100|remaining_characters_text:dns_record.form.comment.value }}
+                    </div>
+                    
+                </div>
                 <button
                     type="button"
-                    class="usa-button usa-button--outline"
+                    class="usa-button usa-button--outline js-dnsrecord-cancel-button"
+                    data-action="form-cancel"
+                    data-record-id="{{ record_id }}"
                     hx-get="{% url 'domain-dns-records' domain.pk %}"
                     hx-select="#dnsrecord-edit-form-{{ record_id }}"
                     hx-target="#dnsrecord-edit-form-{{ record_id }}"
@@ -38,6 +50,10 @@
 
                 <a
                     class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                    role="button"
+                    tabindex="0"
+                    data-action="form-delete"
+                    data-record-id="{{ record_id }}"
                     aria-label="Delete DNS record from Cloudflare"
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
