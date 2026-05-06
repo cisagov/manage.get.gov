@@ -1,7 +1,7 @@
 {% load custom_filters %}SUMMARY OF YOUR DOMAIN REQUEST
 
 Requesting entity: {# if blockmakes a newline #}
-{{ domain_request.portfolio.organization_name }} ({{ domain_request|display_requesting_entity }})
+{{ domain_request|display_requesting_entity }}
 
 .gov domain:
 {{ domain_request.requested_domain.name }}

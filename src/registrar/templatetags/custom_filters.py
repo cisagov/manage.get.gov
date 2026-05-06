@@ -295,16 +295,18 @@ def display_requesting_entity(domain_request):
     """
     display = ""
     if domain_request.sub_organization:
-        display = domain_request.sub_organization
+        display = (
+            f"{domain_request.portfolio.organization_name} ({domain_request.sub_organization})"
+        )
     elif domain_request.requesting_entity_is_suborganization():
         display = (
-            f"{domain_request.requested_suborganization}\n"
+            f"{domain_request.portfolio.organization_name}\n"
+            f"Requested suborganization: {domain_request.requested_suborganization}\n"
             f"{domain_request.suborganization_city}, {domain_request.suborganization_state_territory}"
         )
     elif domain_request.requesting_entity_is_portfolio():
         display = (
-            f"{domain_request.portfolio.organization_name}\n"
-            f"{domain_request.portfolio.city}, {domain_request.portfolio.state_territory}"
+            f"{domain_request.portfolio.organization_name}"
         )
 
     return display
