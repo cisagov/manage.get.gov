@@ -208,7 +208,7 @@ django-waffle is used for feature flags. Check and modify flags via Django Admin
 ## Branch and PR conventions
 
 - **Branch naming**: `initials/issue-number-description` (e.g., `ab/1234-update-documentation`). Branches starting with `initials/` auto-deploy to a personal sandbox when a PR exists.
-- **Merge strategy**: Always **merge**, never rebase. This project values merge context over linear history.
+- **Merge strategy**: Merge and squash to main.  Never rebase main. 
 - **PR title format**: `#issue_number: Descriptive name ideally matching ticket name - [sandbox]`
   - Add ` - MIGRATION` suffix if the PR includes a migration.
 - **PR size**: Keep PRs small and focused.
