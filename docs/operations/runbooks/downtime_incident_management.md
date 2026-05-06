@@ -41,7 +41,7 @@ For incident management purposes, the following should be noted:
 
 ### Communications
 
-#### As soon as possible once an issue is called
+#### As soon as possible once an incident is called
 
 1. Identify the issue sufficiently to have 1-3 sentences explaining what’s happening, to provide the following notifications:  
    1. CISA incident response team  
@@ -66,7 +66,7 @@ For incident management purposes, the following should be noted:
    6. Consider if it is appropriate to directly notify users via emails  
 2. Continue to monitor incident actions and communications to add to the timeline in the incident response document.
 
-#### On issue resolution
+#### On incident resolution
 
 1. Update the following to provide notice that the incident is resolved  
    1. In \#dotgov-announce Slack channel  
