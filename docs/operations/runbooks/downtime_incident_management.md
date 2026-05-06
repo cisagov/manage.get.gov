@@ -2,7 +2,7 @@
 
 For the .gov registry and registrar, an incident is defined as an event that impacts the confidentiality, availability, or integrity of the registrar that isn’t expected. Some examples include:
 
-* Get.gov or manage.get.gov is completely offline;  
+* When get.gov and/or manage.get.gov are completely offline/unavailable to users;  
 * The application is returning critical errors unexpectedly; or  
 * Data is able to be accessed by someone other than the intended audience.
 
