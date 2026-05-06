@@ -1,5 +1,5 @@
 import logging
-from django.core.management import BaseCommand
+from django.core.management import BaseCommand, CommandError
 
 from django.utils import timezone
 from datetime import timedelta
@@ -70,6 +70,9 @@ class Command(BaseCommand):
         """How to run it in dry run mode:
         ./manage.py send_post_expiration_notification --dry-run
         """
+        if options.get("domain") and options.get("all_expired"):
+            raise CommandError("Cannot use --domain and --all-expired together.")
+        
         dryrun = options.get("dry_run", False)
 
         all_emails_sent = True
