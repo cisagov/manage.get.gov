@@ -1,5 +1,5 @@
 <button type="button"
-            class="usa-button usa-button--unstyled comment-button margin-top-05"
+            class="usa-button usa-button--unstyled dns-comment-button margin-top-05"
             data-record-id="{{ record_id }}"
             data-action="comment"
             aria-label="Toggle to view comment for {{ dns_record.name }}"
@@ -24,5 +24,4 @@
                         <use x-show="!openComments.includes('{{ record_id }}')" xlink:href="/public/img/sprite.svg#expand_more" ></use>
                         <use x-show="openComments.includes('{{ record_id }}')" xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
-            
 </button>

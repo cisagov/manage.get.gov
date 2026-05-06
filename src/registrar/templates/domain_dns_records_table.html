@@ -6,7 +6,7 @@
     {% endif %}
 
     {# Always render thead/tbody so htmx OOB swaps have stable targets. Hide thead when empty. #}
-    <thead id="dnsrecords-table-head" {% if not dns_records %}hidden{% endif %}>
+    <thead id="dnsrecords-table-head">
         <tr>
             <th scope="col" role="columnheader">Type</th>
             <th scope="col" role="columnheader">Name</th>
@@ -15,7 +15,6 @@
             <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
         </tr>
     </thead>
-
     <tbody id="dnsrecords-table-body">
         {% for dns_record in dns_records %}
             {% include "domain_dns_record_row.html" with record_id=dns_record.id dns_record=dns_record %}
@@ -23,3 +22,4 @@
         {% endfor %}
     </tbody>
 </table>
+<p id="dnsrecords-no-records-message" {% if dns_records %} hidden {% endif %}>You don't have any DNS records added.</p>

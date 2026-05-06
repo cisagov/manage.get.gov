@@ -882,6 +882,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def get_form_kwargs(self):
         kwargs = super(DomainDNSRecordsView, self).get_form_kwargs()
         kwargs["domain_name"] = self.object.name
+        # On edit POST, bind the existing DnsRecord as the form's instance so that
+        # uniqueness validators (name-conflict, full-duplicate) can exclude the record
+        # being edited via self.instance.pk. get_for_domain scopes the lookup to this
+        # domain's zone so we don't trust arbitrary PKs from the request.
+        record_id = self._parse_dns_record_id(self.request)
+        if record_id and self.object:
+            existing = DnsRecord.get_for_domain(self.object, record_id)
+            if existing:
+                kwargs["instance"] = existing
         return kwargs
 
     def attach_edit_form(self, dns_records):
@@ -995,8 +1004,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
-        errors = self.get_form_errors(form)
-        for error in errors:
+        # Duplicate-record errors attach the same message to multiple fields (name, content,
+        # priority) plus a form-level error, so we dedupe by text before queuing.
+        # dict.fromkeys preserves insertion order and dedupes in one pass.
+        for error in dict.fromkeys(self.get_form_errors(form)):
             messages.error(request, error)
 
         if is_edit:
