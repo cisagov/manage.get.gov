@@ -32,7 +32,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from .common import MockEppLib, MockSESClient, less_console_noise
+from .common import DEFAULT_EPP_CR_DATE, MockEppLib, MockSESClient, less_console_noise
 import logging
 import boto3_mocking  # type: ignore
 import copy
@@ -2768,7 +2768,7 @@ class TestCreationDate(MockEppLib):
         # for the tests, need a domain with a creation date
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         # creation_date returned from MockEppLib
-        self.creation_date = self.epp_cr_date
+        self.creation_date = DEFAULT_EPP_CR_DATE
 
     def tearDown(self):
         Domain.objects.all().delete()

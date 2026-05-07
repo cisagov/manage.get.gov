@@ -53,9 +53,9 @@ from registrar.utility.enums import DefaultEmail
 logger = logging.getLogger(__name__)
 
 # Default mocked EPP "creation date" (cr_date). This is intentionally set in the
-# future relative to import time so that domains created during tests ("now") will
-# still satisfy DB ordering constraints when registry dates are synced onto them.
-DEFAULT_EPP_CR_DATE = timezone.now() + timedelta(minutes=10)
+# far future so that domains created during tests ("now") will still satisfy DB
+# ordering constraints when registry dates are synced onto them.
+DEFAULT_EPP_CR_DATE = timezone.now() + timedelta(days=365 * 100)
 
 
 #  https://digital.va.gov/oit-brand-system/ap-styles/#:~:text=of%20the%20above.-,Dates%2C%20Months%2C%20Years%2C%20Days%20of%20the%20Week,-For%20dates%20and
@@ -2073,57 +2073,6 @@ class MockEppLib(TestCase):
         self.mockSendPatch = patch("registrar.models.domain.registry.send")
         self.mockedSendFunction = self.mockSendPatch.start()
         self.mockedSendFunction.side_effect = self.mockSend
-
-        # Many tests create Domain rows "now" and then trigger an EPP InfoDomain
-        # fetch which writes registry creation date (cr_date) into the model.
-        # Keep the mocked cr_date safely after the registrar-side record creation
-        # time so DB constraints on ordering remain valid.
-        self._refresh_mock_cr_dates()
-
-    def _refresh_mock_cr_dates(self):
-        """Refresh per-test EPP mock cr_date values.
-
-        If a test needs a specific cr_date, set _mock_cr_date_source = "custom" on the
-        object to prevent this method from overwriting it"""
-
-        self.epp_cr_date = timezone.now() + timedelta(minutes=10)
-
-        for value in self._iter_safe_attrs():
-            # Update faked EPP domains that already define cr_date.
-            if isinstance(value, self.fakedEppObject):
-                current = getattr(value, "cr_date", ...)
-                source = getattr(value, "_mock_cr_date_source", None)
-                if source != "custom" and (current is DEFAULT_EPP_CR_DATE or source == "auto"):
-                    value.cr_date = self.epp_cr_date
-                    value._mock_cr_date_source = "auto"
-                continue
-
-            # Update other objects that expose a writable cr_date (e.g., InfoContactResultData).
-            if not hasattr(value, "cr_date"):
-                continue
-
-            try:
-                current = getattr(value, "cr_date")
-                source = getattr(value, "_mock_cr_date_source", None)
-                if source != "custom" and (current is DEFAULT_EPP_CR_DATE or source == "auto"):
-                    value.cr_date = self.epp_cr_date
-                    value._mock_cr_date_source = "auto"
-            except Exception:
-                pass
-
-    def _set_custom_mock_cr_date(self, obj, cr_date):
-        """Set a specific cr_date on a mock object and prevent auto refresh"""
-
-        obj.cr_date = cr_date
-        obj._mock_cr_date_source = "custom"
-
-    def _iter_safe_attrs(self):
-        """Ignore getters that raise."""
-        for attr_name in dir(self):
-            try:
-                yield getattr(self, attr_name)
-            except Exception:
-                continue
 
     def _convertPublicContactToEpp(
         self,
