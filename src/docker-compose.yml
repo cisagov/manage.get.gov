@@ -25,6 +25,8 @@ services:
       - DJANGO_SECRET_KEY=really-long-random-string-BNPecI7+s8jMahQcGHZ3XQ5yUfRrSibdapVLIz0UemdktVPofDKcoy
       # Run Django in debug mode on local
       - DJANGO_DEBUG=True
+      # Enable dev-only auto-login bypass for local E2E regression tests
+      - ALLOW_AUTO_LOGIN=True
       # Set DJANGO_LOG_LEVEL in env
       - DJANGO_LOG_LEVEL=DEBUG
       # Run Django without production flags
@@ -69,7 +71,7 @@ services:
     tty: true
     ports:
       - "8080:8080"
-      - "5678:5678"  # debugger port
+      - "5678:5678"
     # command: "python"
     command: >
       bash -c " python manage.py migrate &&
