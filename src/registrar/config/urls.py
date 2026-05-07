@@ -431,7 +431,7 @@ if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not setting
 
 # Dev-only: expose an auto-login URL for local E2E regression tests.
 # Bypasses login.gov — only active when ALLOW_AUTO_LOGIN=True and DEBUG=True.
-if settings.DEBUG  and getattr(settings, "ALLOW_AUTO_LOGIN", False):
+if settings.DEBUG and getattr(settings, "ALLOW_AUTO_LOGIN", False):
     urlpatterns += [
         path("dev-auto-login/", views.dev_auto_login, name="dev-auto-login"),
     ]

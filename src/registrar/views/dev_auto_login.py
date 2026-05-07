@@ -36,7 +36,6 @@ _AUTH_BACKEND = "django.contrib.auth.backends.ModelBackend"
 # returns None if in non local env
 
 
-
 def _get_or_create_user(username, email, first_name, last_name, title, phone, **extra_fields):
     """Get or create an E2E test user, setting an unusable password on first creation."""
     user, created = User.objects.get_or_create(
