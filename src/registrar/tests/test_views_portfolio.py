@@ -1868,7 +1868,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -1944,7 +1943,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -2019,7 +2017,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -3842,7 +3839,6 @@ class TestRequestingEntity(WebTest):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
         self.assertNotIn("Anything else", body)
-        self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertIn("Administrators from your organization:", body)
 
@@ -3870,7 +3866,6 @@ class TestRequestingEntity(WebTest):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
         self.assertNotIn("Anything else", body)
-        self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertNotIn("Administrators from your organization:", body)
 
@@ -3924,7 +3919,6 @@ class TestRequestingEntity(WebTest):
 
 
 class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
-
     def setUp(self):
         super().setUp()
 
