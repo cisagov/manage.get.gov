@@ -8,7 +8,7 @@ You can confirm this by doing a WHOIS search online or at <https://get.gov/domai
 ---------------------------------------------------------------- 
 
 HOW TO RENEW A DOMAIN
-We allow an expired domain to be renewed for a limited time before it is deleted. After renewal, the expiration date will be extended one year. There is no renewal fee.  
+We allow an expired domain to be renewed for a limited time before it's deleted. After renewal, the registration will be extended one year from the date of expiration. There is no renewal fee.  
 
 To renew {{ domain }}, one of the following people must complete the renewal process at <https://manage.get.gov> using a Login.gov account tied to one of these email addresses:
 {% for email in domain_manager_emails %}
