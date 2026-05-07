@@ -1,37 +1,58 @@
 {% load static field_helpers url_helpers %}
+{% load custom_filters %}
 
 {% csrf_token %}
-<h2>Add record</h2>
+<h3 class="margin-top-0 margin-bottom-0">Add record</h3>
 
-<div class="grid-row grid-gap">
+<div
+    class="grid-row grid-gap"
+    x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
+    x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }"
+>
     <div class="grid-col-3">
-        {% input_with_errors form.type %}        
+        {% input_with_errors form.type %}
     </div>
 </div>
 
-<div x-cloak x-show="recordType">
-    {% input_with_errors form.name %}    
-    <div class="grid-row grid-gap flex-align-end">
-        <div class="grid-col-9">
-            {% input_with_errors form.content %}
-        </div>
-        <div class="grid-col-3">
-            {% input_with_errors form.ttl %}        
-        </div>
-    </div>
+<div x-cloak x-show="recordType" x-cloak>
 
-    {% input_with_errors form.comment %}
+    <template x-if="recordType !== 'TXT' && recordType !== 'MX'">
+        <!-- Only show this for forms that are not txt or mx -->
+        <div>
+              {% include "dns_record_forms/base_record_form.html" with form=form %}
+        </div>
+    </template>
+    <template x-if="recordType === 'MX'">
+        <div>
+              {% include "dns_record_forms/mx_record_form.html" with form=form %}
+        </div>
+    </template>
+    <template x-if="recordType === 'TXT' ">
+        <div>
+              {% include "dns_record_forms/txt_record_form.html" with form=form %}
+        </div>
+    </template>
+
+    <div>
+        {% with add_group_class="usa-form-group--unstyled-error" %}
+            {% input_with_errors form.comment %} 
+            <div class="usa-character-count__status usa-hint comment-character-count">
+            <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
+           
+            {{ 100|remaining_characters_text:form.comment.value }}
+            </div>
+    
+        {% endwith %}
+    </div>
 
     <button
         type="reset"
-        class="usa-button usa-button--outline"
-        x-on:click="show_form = false"
+        class="usa-button usa-button--outline js-dnsrecord-cancel-button"
+        x-on:click="showFormId = null"
     >
         Cancel
     </button>
-    <button
-            class="usa-button"
-        >
+    <button type="submit" class="usa-button">
             Save
     </button>
 </div>

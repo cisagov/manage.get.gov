@@ -12,7 +12,6 @@ import logging
 
 from django.db import models
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -284,6 +283,44 @@ class DomainInformation(TimeStampedModel):
         except Exception:
             return ""
 
+    def get_registrant_contact_data(self):
+        """Return registrant contact values for EPP contact creation."""
+        if self.portfolio and self.portfolio.organization_name:
+            registrant_org = self.portfolio.organization_name
+        elif self.federal_agency and self.federal_agency.agency == "Non-Federal Agency":
+            registrant_org = self.organization_name
+        elif self.federal_agency:
+            registrant_org = self.federal_agency.agency
+        else:
+            registrant_org = self.converted_organization_name
+
+        registrant_city = None
+        registrant_state_territory = None
+        # First try and use the sub_organization city / state if present
+        if self.sub_organization:
+            registrant_city = self.sub_organization.city
+            registrant_state_territory = self.sub_organization.state_territory
+        # if the sub_organization city or state is null, fallback to the portfolio values
+        if self.portfolio and registrant_city is None:
+            registrant_city = self.portfolio.city
+        if self.portfolio and registrant_state_territory is None:
+            registrant_state_territory = self.portfolio.state_territory
+        # if the city or state are still null, use the default value
+        if registrant_city is None:
+            registrant_city = self.city
+        if registrant_state_territory is None:
+            registrant_state_territory = self.state_territory
+        # If they are still null, check_missing_fields will raise a user facing error message
+
+        return {
+            "org": registrant_org,
+            "street1": self.converted_address_line1,
+            "street2": self.converted_address_line2,
+            "city": registrant_city,
+            "state_territory": registrant_state_territory,
+            "zipcode": self.converted_zipcode,
+        }
+
     def sync_yes_no_form_fields(self):
         """Some yes/no forms use a db field to track whether it was checked or not.
         We handle that here for def save().
@@ -531,20 +568,20 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_senior_official(self):
         if self.portfolio:
-            return self.portfolio.display_senior_official
-        return self.display_senior_official
+            return self.portfolio.senior_official
+        return self.senior_official
 
     @property
     def converted_address_line1(self):
         if self.portfolio:
-            return self.portfolio.display_address_line1
-        return self.display_address_line1
+            return self.portfolio.address_line1
+        return self.address_line1
 
     @property
     def converted_address_line2(self):
         if self.portfolio:
-            return self.portfolio.display_address_line2
-        return self.display_address_line2
+            return self.portfolio.address_line2
+        return self.address_line2
 
     @property
     def converted_city(self):
@@ -561,14 +598,14 @@ class DomainInformation(TimeStampedModel):
     @property
     def converted_zipcode(self):
         if self.portfolio:
-            return self.portfolio.display_zipcode
-        return self.display_zipcode
+            return self.portfolio.zipcode
+        return self.zipcode
 
     @property
     def converted_urbanization(self):
         if self.portfolio:
-            return self.portfolio.display_urbanization
-        return self.display_urbanization
+            return self.portfolio.urbanization
+        return self.urbanization
 
     # ----- Portfolio Properties (display values)-----
     @property

@@ -17,7 +17,6 @@ from registrar.forms.utility.wizard_form_helper import (
 from registrar.models import Contact, DomainRequest, DraftDomain, Domain, FederalAgency, Suborganization
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
-from registrar.utility.constants import BranchChoices
 from django.core.exceptions import ValidationError
 from registrar.validations import (
     TEXT_SHORT,
@@ -294,20 +293,6 @@ class TribalGovernmentForm(RegistrarForm):
             )
 
 
-class OrganizationFederalForm(RegistrarForm):
-    federal_type = forms.ChoiceField(
-        choices=BranchChoices.choices,
-        widget=forms.RadioSelect,
-        label="Which federal branch is your organization in?",
-        error_messages={"required": ("Select the part of the federal government your organization is in.")},
-    )
-
-    def to_database(self, domain_request):
-        federal_type = self.cleaned_data.get("federal_type")
-        domain_request.federal_type = federal_type
-        domain_request.save(update_fields=["federal_type"])
-
-
 class OrganizationElectionForm(RegistrarForm):
     is_election_board = forms.NullBooleanField(
         widget=forms.RadioSelect(
@@ -553,6 +538,7 @@ class AlternativeDomainForm(RegistrarForm):
         label="Alternative domain",
         validators=[get_max_length_validator(DOMAIN_LABEL)],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
+        strip=False,
     )
 
 
@@ -639,6 +625,7 @@ class DotGovDomainForm(RegistrarForm):
         },
         validators=[get_max_length_validator(DOMAIN_LABEL)],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
+        strip=False,
     )
 
 

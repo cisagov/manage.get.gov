@@ -6,7 +6,6 @@ from registrar.models import User, DomainRequest, FederalAgency
 from registrar.models.portfolio import Portfolio
 from registrar.models.senior_official import SeniorOfficial
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 

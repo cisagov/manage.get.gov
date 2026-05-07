@@ -6,7 +6,6 @@ from django.core.management import BaseCommand
 from registrar.management.commands.utility.terminal_helper import PopulateScriptTemplate, TerminalColors
 from registrar.models import DomainRequest
 
-
 logger = logging.getLogger(__name__)
 
 

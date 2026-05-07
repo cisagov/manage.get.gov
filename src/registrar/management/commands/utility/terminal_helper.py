@@ -7,7 +7,6 @@ from django.db.models.manager import BaseManager
 from typing import List
 from registrar.utility.enums import LogCode
 
-
 logger = logging.getLogger(__name__)
 
 

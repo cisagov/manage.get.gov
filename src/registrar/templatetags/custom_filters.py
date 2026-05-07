@@ -8,6 +8,7 @@ from phonenumber_field.phonenumber import PhoneNumber
 from registrar.views.domain_request import DomainRequestWizard
 
 from registrar.models.utility.generic_helper import get_url_name
+from html import unescape
 
 register = template.Library()
 logger = logging.getLogger(__name__)
@@ -333,5 +334,20 @@ def contact_text(contact, num_newlines=2):
         return ""
     text = render_to_string(CONTACT_TEMPLATE, {"contact": contact})
     # Remove whitespace/trailing + add exact new line(s) amount at end
+    text = unescape(text)
     text = text.rstrip("\n")
     return text + "\n" * num_newlines
+
+
+@register.filter
+def remaining_characters_text(char_limit, field_value):
+    final_string = ""
+    if field_value is None:
+        final_string = f"{char_limit} characters allowed"
+    else:
+        char_length = len(field_value)
+        characters_left = abs(char_limit - char_length)
+        pluralize = "" if characters_left == 1 else "s"
+        remaining_text = "over limit" if char_length > char_limit else "left"
+        final_string = f"{characters_left} character{pluralize} {remaining_text}"
+    return final_string

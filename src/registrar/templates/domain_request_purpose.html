@@ -2,6 +2,7 @@
 {% load field_helpers url_helpers %}
 
 {% block form_instructions %}
+{% if requires_feb_questions %}
   <h4>Compliance with the 21st Century IDEA is required</h4> 
   <p>As required by the DOTGOV Act, agencies must ensure that any website or digital service that uses a .gov domain 
     name is in compliance with the 
@@ -13,6 +14,7 @@
       M-23-22, Delivering a Digital-First Public Experience
     </a>.
   </p>
+{% endif %}
 {% endblock %}
 
 {% block form_required_fields_help_text %}

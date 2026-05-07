@@ -16,6 +16,7 @@ from registrar.models import (
     DnsRecord_VendorDnsRecord as RecordsJoin,
     User,
 )
+from registrar.models.portfolio import Portfolio
 from registrar.services.utility.dns_helper import make_dns_account_name
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,9 @@ def create_domain(**kwargs):
 
     try:
         domain = Domain.objects.create(name=domain_name)
-        DomainInformation.objects.get_or_create(requester=test_user, domain=domain)
+        default_portfolio, _ = Portfolio.objects.get_or_create(organization_name="Example Org", requester=test_user)
+        portfolio = kwargs.get("portfolio", default_portfolio)
+        DomainInformation.objects.get_or_create(requester=test_user, domain=domain, portfolio=portfolio)
         return domain
     except IntegrityError as e:
         logger.error(
@@ -128,7 +131,8 @@ def create_initial_dns_setup(domain=None, **kwargs):
     domain = domain or create_domain()
     dns_account = kwargs.get("dns_account", create_dns_account(domain))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
-
+    domain.is_enrolled_in_dns_hosting = True
+    domain.save()
     return domain, dns_account, dns_zone
 
 
@@ -137,6 +141,7 @@ def create_dns_record(zone, **kwargs):
     record_name = kwargs.get("record_name", "www")
     record_type = kwargs.get("record_type", "A")
     record_content = kwargs.get("record_content", "192.168.1.1")
+    record_comment = kwargs.get("record_comment", "")
     x_record_id = kwargs.get("x_record_id", "example_x_record_id")
     default_datetime = datetime(2026, 1, 19, 12, 0, 0)
     x_created_at = kwargs.get("record_x_created_at", default_datetime)
@@ -147,6 +152,7 @@ def create_dns_record(zone, **kwargs):
         name=record_name,
         type=record_type,
         content=record_content,
+        comment=record_comment,
         ttl=ttl,
     )
     vendor_dns_record = VendorDnsRecord.objects.create(
@@ -176,4 +182,6 @@ def delete_all_dns_data():
     VendorDnsAccount.objects.all().delete()
     DnsAccount.objects.all().delete()
     AccountsJoin.objects.all().delete()
+    DomainInformation.objects.all().delete()
+    Portfolio.objects.all().delete()
     Domain.objects.all().delete()

@@ -31,12 +31,15 @@ from ..logging_context import get_user_log_context
 
 from csp.constants import NONCE, SELF
 
+import sys
+
 # # #                          ###
 #      Setup code goes here      #
 # # #                          ###
 
 env = environs.Env()
 
+RUNNING_TESTS = "test" in sys.argv
 # Get secrets from Cloud.gov user provided service, if exists
 # If not, get secrets from environment variables
 key_service = AppEnv().get_service(name="getgov-credentials")
@@ -832,6 +835,7 @@ SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
 # Configuration
 DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
+DNS_NS_SET_RANGE = 5
 
 # endregion
 
@@ -871,7 +875,8 @@ ALLOWED_HOSTS = [
     "getgov-stable.app.cloud.gov",
     "getgov-staging.app.cloud.gov",
     "getgov-development.app.cloud.gov",
-    "getgov-ap.app.cloud.gov",
+    "getgov-sm.app.cloud.gov",
+    "getgov-ab.app.cloud.gov",
     "getgov-cw.app.cloud.gov",
     "getgov-cw.app.cloud.gov",
     "getgov-testdb.app.cloud.gov",
@@ -896,6 +901,11 @@ ALLOWED_HOSTS = [
     "getgov-dg.app.cloud.gov",
     "manage.get.gov",
 ]
+
+# Allow Django test client w/localhost during tests
+if RUNNING_TESTS:
+    ALLOWED_HOSTS += ["localhost", "localhost:8080", "testserver"]
+    SECURE_SSL_REDIRECT = False
 
 # Extend ALLOWED_HOSTS.
 # IP addresses can also be hosts, which are used by internal
@@ -990,7 +1000,7 @@ FIXTURE_DIRS: "list[str]" = []
 #      Development settings      #
 # # #                          ###
 
-if DEBUG:
+if DEBUG and not RUNNING_TESTS:
     # used by debug() context processor
     INTERNAL_IPS = [
         "127.0.0.1",

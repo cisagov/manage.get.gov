@@ -1,7 +1,7 @@
 import logging
 
 from django.db import models
-
+from registrar.models import Domain
 from registrar.models.dns.dns_soa import DnsSoa
 from registrar.models.dns.dns_zone_vendor_dns_zone import DnsZone_VendorDnsZone as ZonesLink
 from ..utility.time_stamped_model import TimeStampedModel
@@ -29,7 +29,7 @@ class DnsZone(TimeStampedModel):
         "registrar.DnsSoa", on_delete=models.SET_DEFAULT, related_name="+", default=DnsSoa.get_default_pk
     )
 
-    name = models.CharField(null=True, blank=True, unique=True)
+    name = models.CharField(null=True, blank=True, unique=True, max_length=253)
 
     nameservers = ArrayField(models.CharField(), null=False, blank=True, default=list)
 
@@ -69,3 +69,28 @@ class DnsZone(TimeStampedModel):
             return None
 
         return x_zone_id
+
+    @classmethod
+    def get_zone_id_for_domain(cls, domain_name: str) -> int | None:
+        """Get the DNS zone ID for a given domain name.
+
+        Used in form validation and lightweight lookups where you need the zone ID
+        but may not have the instance fully initialized (e.g., when creating new records).
+
+        Args:
+            domain_name: The domain name to look up.
+
+        Returns:
+            The DNS zone ID if found, None otherwise.
+
+        Example:
+            zone_id = DnsZone.get_zone_id_for_domain("example.gov")
+            if zone_id:
+                # Use zone_id for validation or queries
+        """
+        try:
+            domain = Domain.objects.get(name=domain_name)
+            zone = cls.objects.get(domain=domain)
+            return zone.id
+        except (cls.DoesNotExist, Domain.DoesNotExist):
+            return None

@@ -1,28 +1,56 @@
 {% if dns_record %}
-<template>
-    <!-- Populate table columns when creating first DNS record row  -->
-    {% if counter == 1 %}
-    <table hx-swap-oob="afterbegin:#dnsrecords-table">
-        <caption class="sr-only">Your DNS records</caption>
-        <thead>
-            <tr>
-            <th scope="col" role="columnheader">Type</th>
-            <th scope="col" role="columnheader">Name</th>
-            <th scope="col" role="columnheader">Content</th>
-            <th scope="col" role="columnheader">TTL</th>
-            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
-            </tr>
-        </thead>
-        <tbody id="dnsrecords-table-body">
-    {% else %}
-    <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
-    {% endif %}
-        {% include "domain_dns_record_row.html" with counter=counter dns_record=dns_record %}
-    </tbody>
-    {% if counter == 1%}
-    </table>
-    {% endif %}
-</template>
-{% endif %}
+    {% if is_edit %}
+        {# OOB-swap individual cells to preserve the action column (Edit button) DOM for ANDI #}
+        <template>
+        {% if update_cells %}
+            <td id="dns-type-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">
+                    <div class="tablet:display-flex tablet:flex-align-baseline">
+            <span>
+                {{dns_record.type}}
+            </span>
+           
+         {% if dns_record.comment %}
+            <span class="margin-left-auto">
+            {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
+                </span>
+        {% endif %}
 
-{% include "domain_dns_record_form_content.html" with form=form %}
+       
+        </div>
+            </td>
+            <td id="dns-name-{{ record_id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
+            <td id="dns-content-{{ record_id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content }}</td>
+            <td id="dns-ttl-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl_display }}</td>
+            <span id="dns-comment-{{record_id}}-text" hx-swap-oob="textContent">{{ dns_record.comment }}</span>
+        {% endif %}
+        {# Always OOB swap the edit form row so errors are shown/cleared #}
+        {% include "domain_dns_record_edit_form.html" with record_id=record_id dns_record=dns_record oob_swap=True %}
+        
+        </template>
+    {% else %}
+        <template>
+            {% if is_first_record %}
+            <thead id="dnsrecords-table-head" hx-swap-oob="outerHTML">
+                <tr>
+                    <th scope="col" role="columnheader">Type</th>
+                    <th scope="col" role="columnheader">Name</th>
+                    <th scope="col" role="columnheader">Content</th>
+                    <th scope="col" role="columnheader">TTL</th>
+                    <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+                </tr>
+            </thead>
+            {% endif %}
+
+            <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
+                {% include "domain_dns_record_row.html" with record_id=record_id dns_record=dns_record %}
+                {% include "domain_dns_record_edit_form.html" with record_id=record_id dns_record=dns_record %}
+            </tbody>
+        </template>
+
+        {% include "domain_dns_record_form_content.html" with form=form %}
+        <p id="dnsrecords-no-records-message" {% if dns_records %} hidden {% endif %} hx-swap-oob="outerHTML"></p>
+
+    {% endif %}
+{% else %}
+    {% include "domain_dns_record_form_content.html" with form=form %}
+{% endif %}

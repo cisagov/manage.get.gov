@@ -1,8 +1,10 @@
 """Forms for domain management."""
 
-import logging
 from django import forms
-from django.core.validators import RegexValidator, MaxLengthValidator, validate_ipv4_address
+from django.core.validators import (
+    RegexValidator,
+    MaxLengthValidator,
+)
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
@@ -25,11 +27,19 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
+from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
+from registrar.validations import (
+    DNS_NAME_LENGTH_ERROR_MESSAGE,
+    DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    validate_dns_name_fqdn_length,
+)
 
+import json
 import re
-
-
-logger = logging.getLogger(__name__)
 
 
 class DomainAddUserForm(forms.Form):
@@ -407,10 +417,8 @@ class SeniorOfficialContactForm(ContactForm):
         self.fields["last_name"].error_messages = {
             "required": "Enter the last name / family name of your senior official."
         }
-        self.fields["title"].error_messages = {
-            "required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."
-        }
+        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer)."}
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
@@ -787,11 +795,31 @@ class DomainDNSRecordForm(forms.ModelForm):
     """Form for adding DNS records"""
 
     def __init__(self, *args, **kwargs):
+        self.domain_name = kwargs.pop("domain_name", None)
         super().__init__(*args, **kwargs)
+
+        record_type = self.data.get("type") or self.initial.get("type")
+
+        if record_type:
+            rt = DNSRecordTypes(record_type)
+            self.fields["content"].label = rt.field_label
+            self.fields["content"].help_text = rt.help_text
+            # Priority is required only for MX records
+            self.fields["priority"].required = record_type == DNSRecordTypes.MX
+
+        config = {
+            rt.value: {
+                "label": getattr(rt, "field_label", "Content"),
+                "help_text": getattr(rt, "help_text"),
+            }
+            for rt in DNSRecordTypes
+        }
+
+        self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
 
     class Meta:
         model = DnsRecord
-        fields = ["type", "name", "content", "ttl", "comment"]
+        fields = ["type", "name", "content", "priority", "ttl", "comment"]
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -803,6 +831,7 @@ class DomainDNSRecordForm(forms.ModelForm):
                 attrs={
                     "class": "usa-textarea usa-textarea--medium",
                     "rows": 2,
+                    "hide_character_count": True,
                 }
             ),
         }
@@ -811,11 +840,28 @@ class DomainDNSRecordForm(forms.ModelForm):
             is meant only for your reference.",
             "name": "Use @ for root",
         }
-        error_messages = {"name": {"required": "Enter a name for this record."}}
+        error_messages = {
+            "name": {
+                "required": DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+                "max_length": DNS_NAME_LENGTH_ERROR_MESSAGE,
+            }
+        }
 
     type = forms.ChoiceField(
+        # TODO: choices has been temporarily hard-coded for user testing.
+        # This is to prevent the need for multiple migrations.
+        # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
-        choices=[("", "- Select -"), ("a", "A")],
+        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
+        choices=[
+            ("", "- Select -"),
+            ("A", "A"),
+            ("AAAA", "AAAA"),
+            ("CNAME", "CNAME"),
+            ("MX", "MX"),
+            ("PTR", "PTR"),
+            ("TXT", "TXT"),
+        ],
         required=True,
         widget=forms.Select(
             attrs={
@@ -827,31 +873,44 @@ class DomainDNSRecordForm(forms.ModelForm):
     )
 
     content = forms.CharField(
-        label="IPv4 Address",
-        required=True,
-        # The ip address below is reserved for documentation, so it is guaranteed not to resolve in the real world.
-        help_text="Example: 192.0.2.10",
-        error_messages={"required": "Enter a valid IPv4 address using numbers and periods."},
+        label="Content",
+        required=False,
+        help_text=" ",
         widget=forms.TextInput(
             attrs={
                 "class": "usa-input",
                 "hide_character_count": True,
+                "required": "required",
             }
         ),
     )
 
-    ttl = forms.ChoiceField(
+    priority = forms.IntegerField(
+        label="Priority",
+        required=False,
+        min_value=0,
+        max_value=65535,
+        help_text="0 - 65535",
+        error_messages={
+            "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+            "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+            "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+            "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
+        },
+        widget=forms.TextInput(
+            attrs={
+                "class": "usa-input",
+                "inputmode": "numeric",
+                "pattern": "[0-9]*",
+                "required": "required",
+            }
+        ),
+    )
+
+    ttl = forms.TypedChoiceField(
         label="TTL",
-        choices=[
-            (60, "1 minute"),
-            (300, "5 minutes"),
-            (1800, "30 minutes"),
-            (3600, "1 hour"),
-            (7200, "2 hours"),
-            (18000, "5 hours"),
-            (43200, "12 hours"),
-            (86400, "1 day"),
-        ],
+        coerce=int,
+        choices=DNS_TTL_CHOICES,
         initial=300,
         required=False,
         widget=forms.Select(
@@ -861,15 +920,129 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def _field_is_clean(self, field: str, value) -> bool:
+        """True if a field has a non-empty value and no field-level errors yet."""
+        return bool(value) and field not in self.errors
+
+    def _validate_content(self, record_type, content):
+        """Validate content field based on record type."""
+        record = DNSRecordTypes(record_type)
+
+        # Content is required for all record types
+        if not content:
+            # Use the record's error_message if available, otherwise use a generic message
+            error_msg = record.error_message or DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE
+            self.add_error("content", error_msg)
+            return
+
+        # Validate format using type-specific validator
+        if record.validator:
+            try:
+                record.validator(content)
+            except ValidationError as e:
+                # Use the validator's error message
+                error_msg = e.messages[0] if hasattr(e, "messages") and e.messages else str(e)
+                self.add_error("content", error_msg)
+
+    def _validate_cname_record(self, record_type, name, content):
+        """Validate CNAME record constraints."""
+        if record_type != DNSRecordTypes.CNAME:
+            return
+        if not (self._field_is_clean("name", name) and self._field_is_clean("content", content)):
+            return
+        try:
+            DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
+        except ValidationError as e:
+            self.add_error("content", DNSRecordTypes(record_type).error_message or e)
+
+    def _validate_name_fqdn_length(self, name):
+        """Enforce the 253-char limit after the zone name is appended."""
+        if not self._field_is_clean("name", name):
+            return
+        try:
+            validate_dns_name_fqdn_length(name, self.domain_name)
+        except ValidationError as e:
+            self.add_error("name", e.messages[0] if getattr(e, "messages", None) else str(e))
+
+    def _validate_comment_field(self, comment):
+        if comment and len(comment) > 100:
+            self.add_error("comment", "Response must be no longer than 100 characters.")
+
+    def _validate_name_conflict(self, record_type, name):
+        """Flag CNAME vs A/AAAA name conflicts (RFC 1034 §3.6.2).
+
+        CNAME records cannot coexist with A/AAAA records at the same name. MX and TXT
+        records are allowed to share names with other types (standard practice: e.g.
+        MX at the root alongside A, or SPF/DKIM TXT alongside A).
+        """
+        if DnsRecord.has_name_conflict(
+            domain_name=self.domain_name,
+            record_type=record_type,
+            name=name,
+            exclude_record_id=self.instance.pk,
+        ):
+            self.add_error("name", DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def _validate_duplicate_record(self, record_type, name, content, priority):
+        """Flag when the submitted record matches an existing record in the zone.
+
+        Per ticket #4779: a record is a duplicate when type + name + content match
+        (plus priority for MX). TTL may differ. When found, surface a form-level
+        error plus inline errors on name, content, and (for MX) priority.
+        """
+        if not DnsRecord.has_duplicate_record(
+            domain_name=self.domain_name,
+            record_type=record_type,
+            name=name,
+            content=content,
+            priority=priority,
+            exclude_record_id=self.instance.pk,
+        ):
+            return
+
+        message = "You already entered this DNS record. DNS records must be unique."
+        self.add_error(None, message)
+        self.add_error("name", message)
+        self.add_error("content", message)
+        if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
+            self.add_error("priority", message)
+
     def clean(self):
         cleaned_data = super().clean()
-
         record_type = cleaned_data.get("type")
+        name = cleaned_data.get("name")
         content = cleaned_data.get("content")
+        priority = cleaned_data.get("priority")
+        comment = cleaned_data.get("comment")
 
-        if record_type == "a" and content:
-            try:
-                validate_ipv4_address(content)
-            except ValidationError as e:
-                self.add_error("content", e)
+        # The form layer is responsible for early UI / form-only checks.
+        # The model is the source of truth for record validity:
+        #   - _validate_content here mirrors model._validate_content; it runs early
+        #     so we can gate _validate_cname_record on a clean content value.
+        #   - MX priority "required" is enforced via the priority field's required=True
+        #     (set in __init__) and re-checked at the model level via _post_clean.
+        #   - _validate_name_conflict and _validate_duplicate_record delegate to
+        #     DnsRecord classmethods so the DB query lives in one place.
+        # Validation order matters: validate per-field shape (content, CNAME, name
+        # length) before cross-record DB checks. Duplicate is checked before
+        # name-conflict so a duplicate CNAME (same name AND same content) gets the
+        # specific "duplicate" message rather than the broader "name conflict" one.
+        if record_type:
+            self._validate_content(record_type, content)
+            self._validate_cname_record(record_type, name, content)
+            self._validate_comment_field(comment)
+            self._validate_name_fqdn_length(name)
+            if not self.errors and name and content:
+                self._validate_duplicate_record(record_type, name, content, priority)
+            if not self.errors and name:
+                self._validate_name_conflict(record_type, name)
+
+            # Django's add_error() removes the field from cleaned_data, so after
+            # _validate_duplicate_record fires on an MX record, _post_clean() won't
+            # update instance.priority. For new records the default is None, which
+            # causes the model-level "priority required" check to add a second
+            # error. Here we keep the known, good submitted value to prevent that.
+            if DNSRecordTypes(record_type) == DNSRecordTypes.MX and priority is not None:
+                self.instance.priority = priority
+
         return cleaned_data
