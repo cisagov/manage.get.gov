@@ -1252,7 +1252,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 messages.success(self.request, f"{requested_email} has been invited to this organization..")
             else:
                 if permission_exists:
-                    messages.warning(self.request, f"{requested_email} is already a member of this organization.")
+                    messages.error(self.request, f"{requested_email} is already a member of this organization.")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
