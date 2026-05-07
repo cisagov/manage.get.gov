@@ -20,7 +20,7 @@ jobs:
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
           cf_space: ${{ secrets.CF_NOTIFICATIONS_ENV }}
-          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py send_expiring_soon_domains_notification' --name expiringnotif"
+          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py send_expiring_soon_domains_notification' --name expiringsoonnotif"
       - name: Send domain setup reminders for domains approved 7 days ago
         uses: cloud-gov/cg-cli-tools@main
         with:
@@ -29,3 +29,11 @@ jobs:
           cf_org: cisa-dotgov
           cf_space: ${{ secrets.CF_NOTIFICATIONS_ENV }}
           cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py send_domain_setup_reminder' --name setupreminder"
+      - name: Send notification for "Ready" domains that are expired
+        uses: cloud-gov/cg-cli-tools@main
+        with:
+          cf_username: ${{ secrets[env.CF_USERNAME] }}
+          cf_password: ${{ secrets[env.CF_PASSWORD] }}
+          cf_org: cisa-dotgov
+          cf_space: ${{ secrets.CF_NOTIFICATIONS_ENV }}
+          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py send_post_expiration_notification' --name expiredreadynotif"
