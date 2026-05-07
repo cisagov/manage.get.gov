@@ -4278,7 +4278,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         }
 
         # Act
-        with patch("django.contrib.messages.warning") as mock_warning:
+        with patch("django.contrib.messages.error") as mock_error:
             response = self.client.post(reverse("new-member"), data=form_data)
 
             # Assert
@@ -4292,7 +4292,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(
+            mock_error.assert_called_once_with(
                 response.wsgi_request,
                 "An unexpected error occurred: Generic exception."
                 ' Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> '

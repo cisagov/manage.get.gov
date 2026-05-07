@@ -1280,8 +1280,8 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 exc_info=True,
             )
         else:
-            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(
+            logger.error("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.error(
                 self.request,
                 mark_safe(  # nosec
                     f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
