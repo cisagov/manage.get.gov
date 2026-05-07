@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="domain",
-            constraint=models.CheckConstraint(
+            constraint=models.CheckConstraint(  # type: ignore[call-arg]
                 check=models.Q(
                     ("x_registry_created_at__isnull", True),
                     ("created_at_reference__lte", models.F("x_registry_created_at")),

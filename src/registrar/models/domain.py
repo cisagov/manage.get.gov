@@ -87,7 +87,8 @@ class Domain(TimeStampedModel, DomainHelper):
             models.UniqueConstraint(
                 fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
             ),
-            models.CheckConstraint(
+            # django-stubs 6.x expects `condition=`, but Django 4.2 still uses `check=`.
+            models.CheckConstraint(  # type: ignore[call-arg]
                 check=models.Q(x_registry_created_at__isnull=True)
                 | models.Q(created_at_reference__lte=models.F("x_registry_created_at")),
                 name="domain_created_at_reference_lte_x_registry_created_at",
