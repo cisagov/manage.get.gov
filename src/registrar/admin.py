@@ -653,7 +653,7 @@ class MultiFieldSortableChangeList(ChangeList):
             ordering = []
 
             order_value = params[ORDER_VAR]
-            if isinstance(order_value, list) and len(order_value)>=1:
+            if isinstance(order_value, list) and len(order_value) >= 1:
                 order_value = order_value[0]
 
             order_params = order_value.split(".")

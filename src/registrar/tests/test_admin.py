@@ -283,7 +283,7 @@ class TestDomainInvitationAdmin(WebTest):
         self.portfolio.save()
         response = self.client.get(
             reverse("admin:registrar_domaininvitation_changelist"),
-            {"status__exact": DomainInvitation.DomainInvitationStatus.INVITED},
+            {"status": DomainInvitation.DomainInvitationStatus.INVITED},
         )
         self.assertContains(response, invitation.email)
 
