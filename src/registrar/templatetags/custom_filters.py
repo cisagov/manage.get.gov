@@ -287,22 +287,25 @@ def is_members_subpage(path):
 
 @register.filter(name="display_requesting_entity")
 def display_requesting_entity(domain_request):
-    """Workaround for a newline issue in .txt files (our emails) as if statements
-    count as a newline to the file.
+    """Workaround for a newline issue in .txt files (our emails) because if statements
+    count as a newline to the file and add extra space we don't want in the emails.
     Will output something that looks like:
-    MyOrganizationName
-    Boise, ID
+    Organization (Suborganization)
     """
     display = ""
     if domain_request.sub_organization:
         display = (
             f"{domain_request.portfolio.organization_name} ({domain_request.sub_organization})"
         )
+    elif (domain_request.requesting_entity_is_suborganization() and requires_feb_questions):
+        display = (
+            f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization}*)\n"
+            f"* {domain_request.requested_suborganization} is not an existing suborganization. "
+            f"New suborganizations for Federal Executive Branch agencies are reviewed before being added."
+        )
     elif domain_request.requesting_entity_is_suborganization():
         display = (
-            f"{domain_request.portfolio.organization_name}\n"
-            f"Requested suborganization: {domain_request.requested_suborganization}\n"
-            f"{domain_request.suborganization_city}, {domain_request.suborganization_state_territory}"
+            f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization})\n"
         )
     elif domain_request.requesting_entity_is_portfolio():
         display = (
