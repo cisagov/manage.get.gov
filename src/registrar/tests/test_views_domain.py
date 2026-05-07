@@ -304,8 +304,12 @@ class TestDomainPermissions(TestWithDomainPermissions):
                     self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    def test_domain_pages_blocked_for_on_hold_and_deleted_for_dns_records(self):
-        """Test that the domain pages are blocked for on hold and deleted domains for DNS Records page"""
+    def test_dns_records_page_blocked_for_on_hold_domains(self):
+        """
+        Test that the domain DNS records page is blocked for on hold domains.
+        Separated from other on hold/deleted domain subpage tests because DNS domains 
+        require portfolio setup while other subpage tests which use legacy mode.
+        """
         self.client.force_login(self.user)
         self.domain_enrolled_in_dns_hosting.place_client_hold()
         self.domain_enrolled_in_dns_hosting.save()
@@ -315,6 +319,24 @@ class TestDomainPermissions(TestWithDomainPermissions):
             )
             self.assertEqual(response.status_code, 403)
 
+    @less_console_noise_decorator
+    def test_dns_records_page_blocked_for_deleted_domains(self):
+        """
+        Test that the domain DNS records page is blocked for deleted domains.
+        Separated from other on hold/deleted domain subpage tests because DNS domains 
+        require portfolio setup while other subpage tests which use legacy mode.
+        """
+        self.client.force_login(self.user)
+        self.domain_enrolled_in_dns_hosting.place_client_hold()
+        # Bypass EPP requirements to delete domain since we're just trying to get domain in Deleted state
+        with patch("registrar.models.domain.Domain._domain_can_be_deleted", return_value=True):
+            self.domain_enrolled_in_dns_hosting.deleteInEpp()
+        self.domain_enrolled_in_dns_hosting.save()
+        with override_flag("dns_hosting", active=True):
+            response = self.client.get(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+            )
+            self.assertEqual(response.status_code, 403)
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
 
