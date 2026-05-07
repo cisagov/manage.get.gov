@@ -199,7 +199,7 @@ def check_has_valid_quotes(content: str) -> bool:
 def validate_dns_target(content: str) -> None:
     """Validates target hostname content for CNAME, MX, and PTR records.
     Only handles fully qualified names (e.g., 'www.example.gov'), NOT relative names (e.g., 'www').
-    
+
     Normalizes to lowercase and validates:
     - No spaces
     - Valid characters only (letters, numbers, hyphens, periods, @ for apex)

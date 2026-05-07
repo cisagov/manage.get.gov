@@ -307,7 +307,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
     def test_dns_records_page_blocked_for_on_hold_domains(self):
         """
         Test that the domain DNS records page is blocked for on hold domains.
-        Separated from other on hold/deleted domain subpage tests because DNS domains 
+        Separated from other on hold/deleted domain subpage tests because DNS domains
         require portfolio setup while other subpage tests which use legacy mode.
         """
         self.client.force_login(self.user)
@@ -323,7 +323,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
     def test_dns_records_page_blocked_for_deleted_domains(self):
         """
         Test that the domain DNS records page is blocked for deleted domains.
-        Separated from other on hold/deleted domain subpage tests because DNS domains 
+        Separated from other on hold/deleted domain subpage tests because DNS domains
         require portfolio setup while other subpage tests which use legacy mode.
         """
         self.client.force_login(self.user)
@@ -337,6 +337,7 @@ class TestDomainPermissions(TestWithDomainPermissions):
                 reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
             )
             self.assertEqual(response.status_code, 403)
+
 
 class TestDomainOverview(TestWithDomainPermissions, WebTest):
 
