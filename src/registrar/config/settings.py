@@ -115,11 +115,12 @@ BASE_DIR = path.resolve().parent.parent.parent
 # to function for the IS_PRODUCTION flag.
 DEBUG = env_debug
 
-# Only active when DEBUG=True; gates the /dev-auto-login/ bypass URL for E2E tests.
-ALLOW_AUTO_LOGIN = env_allow_auto_login and env_debug
-
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+
+# Only active when DEBUG=True; gates the /dev-auto-login/ bypass URL for E2E tests.
+ALLOW_AUTO_LOGIN = env_allow_auto_login and not IS_PRODUCTION
+
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 
@@ -1018,6 +1019,7 @@ if DEBUG and not RUNNING_TESTS:
     # allow dev laptop and docker-compose network to connect
     ALLOWED_HOSTS += ("localhost", "app")
     SECURE_SSL_REDIRECT = False
+
     SECURE_HSTS_PRELOAD = False
 
     # discover potentially inefficient database queries

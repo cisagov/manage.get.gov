@@ -32,8 +32,7 @@ services:
       # Run Django without production flags
       - IS_PRODUCTION=False
       # Tell Django where it is being hosted
-      # TODO change back to 8080 if not running another instance
-      - DJANGO_BASE_URL=http://localhost:8081
+      - DJANGO_BASE_URL=http://localhost:8080
       # Is this a production environment
       - IS_PRODUCTION
       # Public site URL link
@@ -71,8 +70,8 @@ services:
     stdin_open: true
     tty: true
     ports:
-      - "8081:8080" # TODO: change back changed from 8080:8080 because I have another instance of the app running
-      - "5679:5678"  # debugger port, change from 5678:5678
+      - "8080:8080"
+      - "5678:5678"
     # command: "python"
     command: >
       bash -c " python manage.py migrate &&
@@ -94,8 +93,7 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=feedabee
     ports:
-    # Todo: change back. changed this port from 5432 because I have another instance of the app running
-      - "5433:5432"
+      - "5432:5432"
 
   node:
     platform: linux/amd64
