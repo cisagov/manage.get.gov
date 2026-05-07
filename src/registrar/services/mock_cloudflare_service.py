@@ -443,12 +443,18 @@ class MockCloudflareService:
             return content
 
         else:
-            # clean of quotes and resplit content into 255 quoted chunks to mimic how
+            # Split up any quoted segments greater than 255 characters to mimic how
             # Cloudflare formats long TXT records
-            if content.startswith('"') and content.endswith('"'):
-                content = content[1:-1]  # Remove the surrounding quotes for splitting
-                content = content.replace('" "', "")
-            chunks = [content[i : i + 255] for i in range(0, len(content), 255)]
-            quoted_chunks = [f'"{chunk}"' for chunk in chunks]
+            content_segments = re.findall(r'"([^"]*)"', content)  # extract segments between quotes
+            modified_segments = []
+            for s in content_segments:
+                if len(s) > 255:
 
-            return " ".join(quoted_chunks)
+                    split_segments = [s[i : i + 255] for i in range(0, len(s), 255)]
+                    split_segments_with_quotes = [f'"{chunk}"' for chunk in split_segments]
+                    modified_segments.extend(split_segments_with_quotes)
+                else:
+                    segment_with_quotes = f'"{s}"'
+                    modified_segments.append(segment_with_quotes)
+
+            return " ".join(modified_segments)

@@ -1,11 +1,14 @@
 function adjustCharCount(textArea){
-    // strip out surrounding double quotes and string splitting used for RFC compliance.
-        // They should not be included in the character count, though should be displayed to user.
-        let adjustedValue = textArea.value.replace('" "', '')
-        if (adjustedValue.startsWith('"') && adjustedValue.endsWith('"'))
-            adjustedValue = adjustedValue.slice(1, -1);
-        return adjustedValue.length
+    // Only count characters within segments if string splitting is present (don't count surrounding quotes or spaces between).
+    // They should not be included in the character count, though should be displayed to user.
+    let textAreaValue = textArea.value
+    if(textArea.value.startsWith('"') && textArea.value.endsWith('"')){
+        const segments = [...textArea.value.matchAll(/"([^"]*)"/g)].map(m => m[1])
+        textAreaValue =segments.join('')
+    }
+    return textAreaValue.length
 }
+
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
     let finalString = "";
@@ -47,7 +50,6 @@ function createCharacterCountDiv(charLimit, textArea) {
 
 function switchFromInputToTextArea (element) {
         if(!element) return;
-
 
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
@@ -332,8 +334,9 @@ export function initDynamicDNSRecordFormFields() {
         if(e.isTrusted){
             clearRecordForm()
         }
+    })
 
-      typeField.addEventListener('change', function (){
+    typeField.addEventListener('change', function (){
         const selectedType = this.value;
         const info = config[selectedType];
         const contentLabel = document.querySelector('label[for=id_content]');
@@ -360,9 +363,6 @@ export function initDynamicDNSRecordFormFields() {
 
         // Appending the asterisk to the label
         contentLabel.appendChild(abbrClone);
-
-
-
     });
 
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
