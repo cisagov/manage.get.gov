@@ -87,9 +87,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 fields=["name"], condition=~models.Q(state="deleted"), name="unique_name_except_deleted"
             ),
             models.CheckConstraint(
-                check=models.Q(registry_created_at__isnull=True)
-                | models.Q(created_at_reference__lte=models.F("registry_created_at")),
-                name="domain_created_at_reference_lte_registry_created_at",
+                check=models.Q(x_registry_created_at__isnull=True)
+                | models.Q(created_at_reference__lte=models.F("x_registry_created_at")),
+                name="domain_created_at_reference_lte_x_registry_created_at",
             ),
         ]
 
@@ -1348,14 +1348,14 @@ class Domain(TimeStampedModel, DomainHelper):
     created_at_reference = models.DateTimeField(
         null=True,
         blank=True,
-        editable=False,
+        editable=True,
         help_text=("Date the domain record was created in the registrar"),
     )
 
-    registry_created_at = models.DateTimeField(
+    x_registry_created_at = models.DateTimeField(
         null=True,
         blank=True,
-        editable=False,
+        editable=True,
         help_text=("Date the domain record was created in the registry"),
     )
 
@@ -2369,8 +2369,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 self.created_at = cr_date
                 requires_save = True
 
-            if cr_date and self.registry_created_at != cr_date:
-                self.registry_created_at = cr_date
+            if cr_date and self.x_registry_created_at != cr_date:
+                self.x_registry_created_at = cr_date
                 requires_save = True
 
         # if either registration date or creation date need updating
