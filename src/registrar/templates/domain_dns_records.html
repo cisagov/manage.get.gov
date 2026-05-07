@@ -19,35 +19,36 @@
 
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
-        <div class="display-flex flex-align-center">
-            <div class="grid-col">
-                <h1>DNS records</h1>
-            </div>
-            
-            <div class="grid-col-auto">
-                <button
-                    class="usa-button"
-                    id="add-dnsrecord-button"
-                    type="button"
-                    x-on:click="showFormId = 0"
-                >
-                    Add record
-                </button>
-            </div>
-        </div>
+        <h1>DNS records</h1>
     
         <div class="grid-row">
             <div class="grid-col-12">
-                <p class="measure-none">
-                    Review, add, and edit DNS records for this domain. Changes take effect once they’re saved.                </p>
+                <p class="measure-none margin-top-0">
+                    Review, add, and edit DNS records for this domain. Changes take effect once they’re saved.
+                </p>
                 <p class="measure-none">
                     To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
+                <div class="display-flex flex-align-center margin-top-4 margin-bottom-1">
+                    <div class="grid-col">
+                        <h2 class="margin-top-0 margin-bottom-0">Manage DNS records</h2>
+                    </div>        
+                    <div class="grid-col-auto">
+                        <button
+                            class="usa-button"
+                            id="add-dnsrecord-button"
+                            type="button"
+                            x-on:click="showFormId = 0"
+                        >
+                            Add record
+                        </button>
+                    </div>
+                </div>
 
                 <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
                 
-                    <section class="section-outlined section-outlined--extra-padding">
+                    <section class="border radius-lg border-base-lighter padding-3">
                     <form 
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
@@ -70,7 +71,18 @@
         {% include "domain_dns_records_table.html" %}
     </div>
 
-    {% include "domain_dns_nameservers_table.html" %}
-
+    <h2 class="h3 margin-top-6 margin-bottom-2">Authoritative nameservers</h2>
+    <div class="grid-row">
+        <div class="grid-col-12">
+            <p class="measure-none margin-bottom-1 margin-top-0">
+                Name servers indicate which DNS server is authoritative for your domain. Every .gov domain enrolled in DNS hosting is assigned a set of default name servers, which cannot be edited.
+            </p>
+        </div>
     </div>
+    <ul class="usa-list">
+        {% for nameserver in nameservers %}
+            <li class="margin-top-1">{{nameserver}}</li>
+        {% endfor %}
+    </ul>
+</div>
 {% endblock %}  {# domain_content #}
