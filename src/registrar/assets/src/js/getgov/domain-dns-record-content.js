@@ -141,12 +141,16 @@ export function initDNSRecordTabOrder() {
     }
 
     // Find the next record row's Edit button, skipping edit/comment rows between records.
-    function nextRecordEditAfter(recordId) {
+    // First focusable on the next record row. The comment toggle button
+    // (only rendered when that record has a comment) sits before the Edit
+    // button in DOM, so prefer it when present so screen-reader / keyboard
+    // users don't skip past the comment indicator.
+    function nextRecordEntryAfter(recordId) {
         let row = document.getElementById(`dnsrecord-row-${recordId}`);
         while (row?.nextElementSibling) {
             row = row.nextElementSibling;
             if (!row.id?.startsWith('dnsrecord-row-')) continue;
-            return row.querySelector('button[data-action="edit"]');
+            return row.querySelector('button[data-action="comment"], button[data-action="edit"]');
         }
         return null;
     }
@@ -223,7 +227,7 @@ export function initDNSRecordTabOrder() {
             ? document.getElementById(elems.kebab.getAttribute('aria-controls'))
             : null;
         const isKebabFocus = elems.kebab && (t === elems.kebab || kebabMenu?.contains(t));
-        const nextRecordEdit = nextRecordEditAfter(recordId);
+        const nextRecordEntry = nextRecordEntryAfter(recordId);
 
         // First form field -> Edit (Shift+Tab backward)
         if (e.shiftKey && t === elems.formFirst) {
@@ -244,7 +248,7 @@ export function initDNSRecordTabOrder() {
             return;
         }
         // Next record's Edit -> kebab (Shift+Tab backward, form open)
-        if (e.shiftKey && elems.kebab && t === nextRecordEdit) {
+        if (e.shiftKey && elems.kebab && t === nextRecordEntry) {
             e.preventDefault();
             elems.kebab.focus();
             return;
@@ -252,7 +256,7 @@ export function initDNSRecordTabOrder() {
         // Kebab -> next record's Edit / out of table (Tab forward, form open — skip the
         // visible form row that would otherwise be next in DOM order).
         if (!e.shiftKey && isKebabFocus) {
-            const destination = nextRecordEdit || nextFocusableAfterElement(table);
+            const destination = nextRecordEntry || nextFocusableAfterElement(table);
             if (!destination) return;
             e.preventDefault();
             destination.focus();
