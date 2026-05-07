@@ -34,6 +34,8 @@
                 <button
                     type="button"
                     class="usa-button usa-button--outline js-dnsrecord-cancel-button"
+                    data-action="form-cancel"
+                    data-record-id="{{ record_id }}"
                     hx-get="{% url 'domain-dns-records' domain.pk %}"
                     hx-select="#dnsrecord-edit-form-{{ record_id }}"
                     hx-target="#dnsrecord-edit-form-{{ record_id }}"
@@ -49,6 +51,10 @@
 
                 <a
                     class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                    role="button"
+                    tabindex="0"
+                    data-action="form-delete"
+                    data-record-id="{{ record_id }}"
                     aria-label="Delete DNS record from Cloudflare"
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
