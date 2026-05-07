@@ -295,7 +295,7 @@ def display_requesting_entity(domain_request):
     display = ""
     if domain_request.sub_organization:
         display = f"{domain_request.portfolio.organization_name} ({domain_request.sub_organization})"
-    elif domain_request.requesting_entity_is_suborganization() and domain_request.requires_feb_questions():
+    elif domain_request.requesting_entity_is_suborganization() and domain_request.is_feb():
         display = (
             f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization}*)\n"
             f"* {domain_request.requested_suborganization} is not an existing suborganization. "
