@@ -753,6 +753,9 @@ address.dja-address-contact-list {
         }
     }
 }
+.collapse--dgfieldset.collapsed .form-row {
+    display: none;
+}
 .collapse--dgfieldset.collapsed .collapse-toggle--dgfieldset  {
     display: inline-block!important;
     * {
