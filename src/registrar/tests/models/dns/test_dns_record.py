@@ -466,3 +466,20 @@ class DnsRecordTest(TestCase):
             content="dns-test.gov",
         )
         record.clean()  # should not raise — TXT records can have name == content
+
+    def test_clean_cname_bare_label_matches_content_case_insensitive_raises(self):
+        """A CNAME whose name and content differ only in letter case should still fail.
+        DNS names are not case-sensitive, so 'www' pointing to 'Www.dns-test.gov' is
+        the same as pointing to itself."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="www",
+            ttl=3600,
+            content="Www.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)

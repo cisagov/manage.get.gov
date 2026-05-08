@@ -120,25 +120,31 @@ class DnsRecord(TimeStampedModel):
         if conflict.exists():
             errors["name"] = [DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE]
 
-    def _normalize_name(self) -> None:
-        """Lowercase the record name so storage matches DNS case-insensitivity."""
+    def _normalize_fields(self) -> None:
+        """Lowercase the fields that DNS treats as not case-sensitive.
+
+        Names are always lowercased. Content is only lowercased for CNAME
+        records, where the content is itself a hostname. Other record types
+        (such as TXT) keep their content as-is.
+        """
         if self.name:
             self.name = self.name.lower()
+        if self.content and self.type == DNSRecordTypes.CNAME:
+            self.content = self.content.lower()
 
     def full_clean(self, *args, **kwargs):
-        # Normalize before field validators and clean() run so self.name is
-        # consistently lowercased for every downstream check, not just at save-time.
-        self._normalize_name()
+        # Lowercase before validation runs so every check compares values the same way.
+        self._normalize_fields()
         super().full_clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        # Safety net for paths that bypass full_clean (e.g., create_from_vendor_data).
-        self._normalize_name()
+        # Covers paths that skip full_clean (such as create_from_vendor_data).
+        self._normalize_fields()
         super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()
-        self._normalize_name()
+        self._normalize_fields()
         errors = {}
 
         domain_name = self._resolve_domain_name()
@@ -308,11 +314,15 @@ class DnsRecord(TimeStampedModel):
 
     @classmethod
     def _validate_cname_record_name_dne_hostname(cls, record_name, hostname, domain_name=None):
-        """Validate that CNAME record name does not match hostname."""
+        """Block a CNAME that points at itself.
+
+        Callers should pass lowercased values. The form does that in clean_name
+        and clean_content; the model does it in _normalize_fields.
+        """
         cf_record_name = record_name
         if domain_name:
-            # Expand shorthand forms to the fully-qualified name that Cloudflare would store,
-            # so the comparison catches "@" or bare labels that resolve to the same hostname.
+            # Build the full name so "@" and short names like "www" can be
+            # compared against a full hostname like "www.example.gov".
             if record_name == "@":
                 cf_record_name = domain_name
             elif not record_name.endswith(domain_name):

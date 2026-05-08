@@ -920,6 +920,21 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
+    def clean_name(self):
+        """Lowercase the name field. DNS names are not case-sensitive, so
+        lowercasing here lets every check below compare values the same way."""
+        name = self.cleaned_data.get("name")
+        return name.lower() if name else name
+
+    def clean_content(self):
+        """Lowercase content for CNAME records, where the content is itself a
+        hostname. Other record types (such as TXT) keep their original case."""
+        content = self.cleaned_data.get("content")
+        record_type = self.cleaned_data.get("type")
+        if content and record_type == DNSRecordTypes.CNAME:
+            return content.lower()
+        return content
+
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
         return bool(value) and field not in self.errors

@@ -895,3 +895,15 @@ class DomainCNAMENameHostnameValidationTests(DomainDNSRecordNameConflictTests):
         form = self.make_form(data)
 
         self.assertTrue(form.is_valid())
+
+    def test_cname_bare_label_matches_mixed_case_content_raises_content_error(self):
+        """A CNAME 'www' pointing to 'Www.example.gov' should fail. DNS names are not
+        case-sensitive, so this still amounts to a record pointing at itself.
+        Regression test for a case-sensitive comparison that previously allowed this."""
+        data = self.valid_form_data_for_record_type("CNAME", "Www.example.gov")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("content", form.errors)
+        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
