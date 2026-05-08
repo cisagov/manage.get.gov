@@ -9,6 +9,9 @@ from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_NAME_FORMAT_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
@@ -601,3 +604,71 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.assertContains(response, "You already entered this DNS record")
             self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_self_reference_shows_single_banner_with_inline_errors(self):
+        """A CNAME pointing at itself should show a single banner message and two
+        distinct inline messages (per ticket #4825).
+
+        Top banner queues exactly one message: the banner text. The name and target
+        fields each render their own inline error in the response body.
+        """
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "www",
+                    "content": "www.example.gov",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.create_dns_record.assert_not_called()
+
+            # Banner: a single message, matching the banner text
+            queued = [str(m) for m in list(response.wsgi_request._messages)]
+            self.assertEqual(queued, [CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE])
+
+            # Inline errors are attached to the form's name and content fields, but the
+            # inline texts must NOT appear in the queued messages (otherwise the user
+            # would see them stacked as banner alerts).
+            form = response.context["form"]
+            self.assertIn(CNAME_NAME_INLINE_ERROR_MESSAGE, form.errors.get("name", []))
+            self.assertIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, form.errors.get("content", []))
+            self.assertNotIn(CNAME_NAME_INLINE_ERROR_MESSAGE, queued)
+            self.assertNotIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, queued)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_field_only_error_still_shows_field_message_as_banner(self):
+        """Regression test for the banner fallback path. When the form has no banner-level
+        error, each unique field error is still queued as a banner message — preserving
+        the existing UX for content/name shape errors and similar single-field validations.
+        """
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "www",
+                    "content": "not-an-ip",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.create_dns_record.assert_not_called()
+
+            queued = [str(m) for m in list(response.wsgi_request._messages)]
+            self.assertTrue(queued, "Expected at least one banner message for a field-only error")

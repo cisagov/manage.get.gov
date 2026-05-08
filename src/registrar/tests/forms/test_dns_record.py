@@ -4,6 +4,9 @@ from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
     DNS_NAME_FORMAT_ERROR_MESSAGE,
     DNS_NAME_HYPHEN_ERROR_MESSAGE,
@@ -851,59 +854,51 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
 class DomainCNAMENameHostnameValidationTests(DomainDNSRecordNameConflictTests):
     """Form-level tests for the CNAME name != hostname constraint.
 
-    The form surfaces this as a 'content' error (not 'name') because the mismatch
-    is with what the user typed as content/target. The model surfaces it as 'name'.
-    The error message is: "CNAME record hostname must not match record name."
+    Per ticket #4825, when the name and target match the form must show a single
+    banner at the top plus inline errors on both the name and target fields.
     """
 
-    HOSTNAME_ERROR = "CNAME record hostname must not match record name."
+    def assertCNAMESelfReferenceErrors(self, form):
+        """Assert all three messages required by ticket #4825 are present."""
+        self.assertFalse(form.is_valid())
+        self.assertIn(CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE, form.errors.get("__all__", []))
+        self.assertIn(CNAME_NAME_INLINE_ERROR_MESSAGE, form.errors.get("name", []))
+        self.assertIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, form.errors.get("content", []))
 
-    def test_cname_fqdn_name_matches_content_raises_content_error(self):
-        """CNAME where the FQDN name equals the content hostname should fail."""
+    def test_cname_fqdn_name_matches_content_raises_all_three_errors(self):
+        """CNAME where the FQDN name equals the target should fail with banner + two inline errors."""
         data = self.valid_form_data_for_record_type("CNAME", "sub.example.gov")
         data["name"] = "sub.example.gov"
         form = self.make_form(data)
+        self.assertCNAMESelfReferenceErrors(form)
 
-        self.assertFalse(form.is_valid())
-        self.assertIn("content", form.errors)
-        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
-
-    def test_cname_bare_label_expands_to_match_content_raises_content_error(self):
-        """CNAME with bare label 'sub' expands to 'sub.example.gov'; matching content should fail."""
+    def test_cname_bare_label_expands_to_match_content_raises_all_three_errors(self):
+        """CNAME with bare label 'sub' expands to 'sub.example.gov'; matching target should fail."""
         data = self.valid_form_data_for_record_type("CNAME", "sub.example.gov")
         data["name"] = "sub"
         form = self.make_form(data)
+        self.assertCNAMESelfReferenceErrors(form)
 
-        self.assertFalse(form.is_valid())
-        self.assertIn("content", form.errors)
-        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
-
-    def test_cname_at_symbol_expands_to_match_content_raises_content_error(self):
-        """CNAME with '@' expands to 'example.gov'; matching content should fail."""
+    def test_cname_at_symbol_expands_to_match_content_raises_all_three_errors(self):
+        """CNAME with '@' expands to 'example.gov'; matching target should fail."""
         data = self.valid_form_data_for_record_type("CNAME", "example.gov")
         data["name"] = "@"
         form = self.make_form(data)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn("content", form.errors)
-        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
+        self.assertCNAMESelfReferenceErrors(form)
 
     def test_cname_name_differs_from_content_valid(self):
-        """CNAME where name does not resolve to the same hostname as content should pass."""
+        """CNAME where name does not resolve to the same hostname as the target should pass."""
         data = self.valid_form_data_for_record_type("CNAME", "other.example.gov")
         data["name"] = "sub"
         form = self.make_form(data)
 
         self.assertTrue(form.is_valid())
 
-    def test_cname_bare_label_matches_mixed_case_content_raises_content_error(self):
+    def test_cname_bare_label_matches_mixed_case_content_raises_all_three_errors(self):
         """A CNAME 'www' pointing to 'Www.example.gov' should fail. DNS names are not
         case-sensitive, so this still amounts to a record pointing at itself.
         Regression test for a case-sensitive comparison that previously allowed this."""
         data = self.valid_form_data_for_record_type("CNAME", "Www.example.gov")
         data["name"] = "www"
         form = self.make_form(data)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn("content", form.errors)
-        self.assertIn(self.HOSTNAME_ERROR, form.errors["content"])
+        self.assertCNAMESelfReferenceErrors(form)

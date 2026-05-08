@@ -1004,10 +1004,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
-        # Duplicate-record errors attach the same message to multiple fields (name, content,
-        # priority) plus a form-level error, so we dedupe by text before queuing.
-        # dict.fromkeys preserves insertion order and dedupes in one pass.
-        for error in dict.fromkeys(self.get_form_errors(form)):
+        # If the form set a banner-level (non-field) error, show only that as the banner;
+        # otherwise show each unique field error.
+        non_field_errors = list(form.non_field_errors())
+        errors = non_field_errors if non_field_errors else self.get_form_errors(form)
+        for error in dict.fromkeys(errors):
             messages.error(request, error)
 
         if is_edit:

@@ -7,6 +7,7 @@ from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
@@ -328,7 +329,7 @@ class DnsRecord(TimeStampedModel):
             elif not record_name.endswith(domain_name):
                 cf_record_name = f"{record_name}.{domain_name}"
         if cf_record_name == hostname:
-            raise ValidationError("CNAME record hostname must not match record name.")
+            raise ValidationError(CNAME_NAME_INLINE_ERROR_MESSAGE)
 
     def get_active_x_record_id(self) -> str | None:
         """Return the active external record id (x_record_id) for this DnsRecord via the join table."""

@@ -29,6 +29,9 @@ from .common import (
 )
 from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
 from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
@@ -960,15 +963,22 @@ class DomainDNSRecordForm(forms.ModelForm):
                 self.add_error("content", error_msg)
 
     def _validate_cname_record(self, record_type, name, content):
-        """Validate CNAME record constraints."""
+        """Validate CNAME record constraints.
+
+        When the name and target resolve to the same hostname, surface a banner
+        message at the top of the form plus inline messages on the name and
+        target fields. See ticket #4825.
+        """
         if record_type != DNSRecordTypes.CNAME:
             return
         if not (self._field_is_clean("name", name) and self._field_is_clean("content", content)):
             return
         try:
             DnsRecord._validate_cname_record_name_dne_hostname(name, content, domain_name=self.domain_name)
-        except ValidationError as e:
-            self.add_error("content", DNSRecordTypes(record_type).error_message or e)
+        except ValidationError:
+            self.add_error(None, CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE)
+            self.add_error("name", CNAME_NAME_INLINE_ERROR_MESSAGE)
+            self.add_error("content", CNAME_TARGET_INLINE_ERROR_MESSAGE)
 
     def _validate_name_fqdn_length(self, name):
         """Enforce the 253-char limit after the zone name is appended."""
