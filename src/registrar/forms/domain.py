@@ -32,7 +32,7 @@ from registrar.validations import (
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
-    DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_NAME_REQUIREMENT,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     validate_dns_name_fqdn_length,
@@ -842,7 +842,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         }
         error_messages = {
             "name": {
-                "required": DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
+                "required": DNS_RECORD_NAME_REQUIREMENT,
                 "max_length": DNS_NAME_LENGTH_ERROR_MESSAGE,
             }
         }
@@ -1009,6 +1009,11 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        record_types_with_hostname_content = [
+            DNSRecordTypes.CNAME,
+            DNSRecordTypes.PTR,
+            DNSRecordTypes.MX
+        ]
         record_type = cleaned_data.get("type")
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
@@ -1032,6 +1037,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             self._validate_cname_record(record_type, name, content)
             self._validate_comment_field(comment)
             self._validate_name_fqdn_length(name)
+            if record_type in record_types_with_hostname_content:
+                self.validate_dns_hostname_content(content, record_type)
             if not self.errors and name and content:
                 self._validate_duplicate_record(record_type, name, content, priority)
             if not self.errors and name:

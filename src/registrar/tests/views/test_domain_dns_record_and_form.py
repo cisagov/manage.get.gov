@@ -9,7 +9,7 @@ from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
-    DNS_NAME_FORMAT_ERROR_MESSAGE,
+    DNS_NAME_FORMAT_REQUIREMENT,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
 )
@@ -219,7 +219,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    self.assertContains(response, DNS_NAME_FORMAT_ERROR_MESSAGE)
+                    self.assertContains(response, DNS_NAME_FORMAT_REQUIREMENT)
 
                     # Ensures appropriate label exists
                     self.assertContains(response, DNSRecordTypes(record_type).field_label)
