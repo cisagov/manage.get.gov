@@ -324,32 +324,32 @@ export function initDynamicDNSRecordFormFields() {
 
         const selectedType = this.value;
         const info = config[selectedType];
-        const contentLabel = document.querySelector('label[for=id_content]');
-        const contentHelp = document.getElementById('id_content_helptext');
-        
-        // Getting and cloning the required field asterisk
-        const abbrElement = contentLabel?.querySelector('abbr');
-        const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
-     
-        if (info) { 
-            contentLabel.textContent = info.label;
-            contentHelp && (contentHelp.textContent = info.help_text)
-        }
-       
-        if(selectedType == "TXT"){
-            // Swap input type to text area
-            // Utilized set time out for Firefox loading engine to grab the input after dom content loads
-            setTimeout(()=>{
-            let input = document.querySelector(".content-field-wrapper-txt input")
-            input && switchFromInputToTextArea(input)
-            }, 0)
-        }
-        
 
-        // Appending the asterisk to the label
-        contentLabel.appendChild(abbrClone);
+        // Defer to the next tick so Alpine.js has time to swap the form sub-template
+        // (x-if base/MX/TXT) before we query the freshly-mounted label and helptext.
+        // Without this, we update DOM nodes that are about to be removed, and the new
+        // template renders with the default server-rendered label/help text.
+        setTimeout(() => {
+            const contentLabel = document.querySelector('label[for=id_content]');
+            if (!contentLabel) return;
 
+            // Preserve the required field asterisk while overwriting label text
+            const abbrElement = contentLabel.querySelector('abbr');
+            const abbrClone = abbrElement ? abbrElement.cloneNode(true) : null;
 
+            if (info) {
+                contentLabel.textContent = info.label;
+                const contentHelp = document.getElementById('id_content_helptext');
+                if (contentHelp) contentHelp.textContent = info.help_text;
+            }
+
+            if (selectedType === "TXT") {
+                const input = document.querySelector(".content-field-wrapper-txt input");
+                if (input) switchFromInputToTextArea(input);
+            }
+
+            if (abbrClone) contentLabel.appendChild(abbrClone);
+        }, 0);
     });
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
