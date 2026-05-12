@@ -10,6 +10,7 @@ from registrar.validations import (
     DNS_NAME_SPACES_REQUIREMENT,
     validate_dns_name,
     validate_dns_name_fqdn_length,
+    get_error_message_from_requirement
 )
 
 
@@ -47,20 +48,25 @@ class TestValidateDNSName(SimpleTestCase):
             "a b c",  # multiple spaces
             "sub.domain name",  # space in a label of a multi-label name
         ]
-        self.assert_all_raise(names_with_spaces, DNS_NAME_SPACES_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        self.assert_all_raise(names_with_spaces, expected_error)
 
     def test_validate_dns_name_rejects_hyphen_at_label_boundary(self):
-        self.assert_all_raise(["-abc", "abc-", "my.-domain", "my-.domain"], DNS_NAME_HYPHEN_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        self.assert_all_raise(["-abc", "abc-", "my.-domain", "my-.domain"], expected_error)
 
     def test_validate_dns_name_rejects_consecutive_dots(self):
-        self.assert_dns_name_validation_error("ab..cd", DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
+        self.assert_dns_name_validation_error("ab..cd", expected_error)
 
     def test_validate_dns_name_rejects_leading_or_trailing_dot(self):
-        self.assert_all_raise([".abc", "abc."], DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        self.assert_all_raise([".abc", "abc."], expected_error)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
         invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";", "@"]]
-        self.assert_all_raise(invalid_names, DNS_NAME_FORMAT_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
+        self.assert_all_raise(invalid_names, expected_error)
 
     def test_validate_dns_name_accepts_characters_not_in_blacklist(self):
         """Characters not in the AC's disallowed list should pass — including ones

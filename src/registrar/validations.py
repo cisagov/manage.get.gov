@@ -79,7 +79,7 @@ DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 
 
-def _get_error_message_from_requirement(requirement: str, field: str) -> str:
+def get_error_message_from_requirement(requirement: str, field: str) -> str:
     """Returns full error message for a field given a validation requirement."""
     return f"Enter the {field} {requirement}."
 
@@ -87,10 +87,10 @@ def _get_error_message_from_requirement(requirement: str, field: str) -> str:
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name:
-        error_message = _get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
         raise ValidationError(error_message)
     if name.startswith(".") or name.endswith("."):
-        error_message = _get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
         raise ValidationError(error_message)
 
 
@@ -98,15 +98,14 @@ def _validate_dns_name_characters(name: str) -> None:
     """Reject characters explicitly disallowed by the AC (@ ( ) : ;).
     The apex '@' is handled earlier in validate_dns_name; any remaining '@' is invalid."""
     if any(ch in DNS_NAME_INVALID_CHARS for ch in name):
-        error_message = _get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
         raise ValidationError(error_message)
 
 
 def _validate_dns_name_length(name: str) -> None:
     """Enforce the total DNS name length limit."""
     if len(name) > DNS_NAME_MAX_LENGTH:
-        error_message = _get_error_message_from_requirement(DNS_NAME_LENGTH_ERROR_MESSAGE, "name")
-        raise ValidationError(error_message)
+        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
 
 
 def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
@@ -117,14 +116,13 @@ def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
 def _validate_dns_name_label_length(label: str) -> None:
     """Enforce the per-label DNS length limit."""
     if len(label) > DOMAIN_LABEL:
-        error_message = _get_error_message_from_requirement(DNS_NAME_LENGTH_ERROR_MESSAGE, "name")
-        raise ValidationError(error_message)
+        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
 
 
 def _validate_dns_name_label_hyphen_placement(label: str) -> None:
     """Reject labels that begin or end with a hyphen."""
     if label.startswith("-") or label.endswith("-"):
-        error_message = _get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
         raise ValidationError(error_message)
 
 
@@ -165,7 +163,7 @@ def validate_dns_hostname_content(hostname: str) -> None:
 
     # Check for spaces
     if " " in hostname:
-        error_message = _get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
         raise ValidationError(error_message)
 
     _validate_dns_name_structure(hostname)
@@ -199,7 +197,7 @@ def validate_dns_name(name: str) -> None:
 
     # Check for spaces
     if " " in name:
-        error_message = _get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
         raise ValidationError(error_message)
 
     _validate_dns_name_structure(name)
@@ -229,8 +227,7 @@ def validate_dns_name_fqdn_length(name: str, zone_name: str | None) -> None:
         fqdn = f"{name}.{zone_name}"
 
     if len(fqdn) > DNS_NAME_MAX_LENGTH:
-        error_message = _get_error_message_from_requirement(DNS_NAME_LENGTH_ERROR_MESSAGE, "name")
-        raise ValidationError(error_message)
+        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
 
 
 def check_has_valid_quotes(content: str) -> bool:
@@ -260,7 +257,7 @@ def validate_mx_content(content: str) -> None:
     Validates an MX record's mail server hostname.
     """
     if " " in content:
-        error_message = _get_error_message_from_requirement(MX_CONTENT_SPACES_ERROR_MESSAGE, "name")
+        error_message = MX_CONTENT_SPACES_ERROR_MESSAGE
         raise ValidationError(error_message)
 
     if len(content) > MX_CONTENT_MAX_LENGTH:
