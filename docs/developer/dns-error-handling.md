@@ -330,6 +330,49 @@ Error messages live in a database table (sub-ticket [#4931](https://github.com/c
 
 ---
 
+## Suggested Rollout
+
+Four phases. Each one delivers something usable on its own; earlier phases unblock the later ones.
+
+### Phase 1: Foundations
+
+Building blocks everything else depends on.
+
+- Typed DNS error classes and shared error codes — [#4920](https://github.com/cisagov/manage.get.gov/issues/4920)
+- `request_id` flows through every log line — [#4924](https://github.com/cisagov/manage.get.gov/issues/4924)
+- One consistent JSON error envelope returned to the browser — [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)
+
+### Phase 2: Service and UI alignment
+
+Wire the new error types into the services and the form.
+
+- `CloudflareService` raises typed errors — [#4921](https://github.com/cisagov/manage.get.gov/issues/4921)
+- Remove the duplicate error-wrapping in `DnsHostService` — [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)
+- Timeouts + bounded retry on the httpx client — [#4923](https://github.com/cisagov/manage.get.gov/issues/4923)
+- Surface `request_id` on the 500 page — [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)
+- Register `DnsRecord` / `DnsZone` / `DnsAccount` with `django-auditlog` — [#4996](https://github.com/cisagov/manage.get.gov/issues/4996)
+- Design review of user-facing copy — [#4950](https://github.com/cisagov/manage.get.gov/issues/4950)
+
+### Phase 3: Visibility, support, and self-serve copy
+
+Make failures easy to investigate and let Design/Product own the copy.
+
+- Structured fields on every DNS log line — [#4926](https://github.com/cisagov/manage.get.gov/issues/4926)
+- Domain admin OpenSearch deep-links + paste box — [#4927](https://github.com/cisagov/manage.get.gov/issues/4927)
+- Admin-editable user-facing error copy — [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)
+- Developer docs and support runbook finalized — [#4929](https://github.com/cisagov/manage.get.gov/issues/4929)
+
+### Phase 4: Future-facing
+
+Decisions and follow-ups we don't have to make right now.
+
+- Spike: is OpenSearch + structured logs enough for request tracing? — [#4930](https://github.com/cisagov/manage.get.gov/issues/4930)
+- Extend the admin-editable copy pattern to `Nameserver` / `DsData` / `SecurityEmail` if v1 proves out (no ticket yet)
+
+After Phase 1 and Phase 2, we will re-evaluate the scope of Phase 3 and Phase 4.
+
+---
+
 ## Key Files
 
 - **Error types:** `src/registrar/utility/errors.py`
