@@ -359,7 +359,7 @@ class User(AbstractUser):
                 # retrieving should not fail because of a missing user, but
                 # if it does fail, log the error so a new user can continue
                 # logging in
-                logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
+                logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
 
     def create_domain_and_invite(self, transition_domain: TransitionDomain):
         transition_domain_name = transition_domain.domain_name
@@ -397,9 +397,9 @@ class User(AbstractUser):
                     # retrieving should not fail because of a missing user, but
                     # if it does fail, log the error so a new user can continue
                     # logging in
-                    logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
+                    logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
             else:
-                logger.warn("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
+                logger.warning("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
 
     def on_each_login(self):
         """Callback each time the user is authenticated.

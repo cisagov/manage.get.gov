@@ -2,7 +2,7 @@
 ========================
 
 1. Check the [Pipfile](../../../src/Pipfile) for pinned dependencies and manually adjust the version numbers
-2. Run `docker-compose stop` to spin down the current containers and images so we can start afresh
+2. Run `docker compose stop` to spin down the current containers and images so we can start afresh
 3. Run
 
         cd src
