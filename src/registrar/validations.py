@@ -183,7 +183,8 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
     if content == "@":
         return
 
-    _validate_dns_name_spaces(content, field_type)
+    print("field type: ", field_type)
+    _validate_dns_name_spaces(content, field_type=field_type)
     _validate_dns_hostname_structure(content, field_type=field_type)
     _validate_dns_name_characters(content, field_type=field_type)
 
@@ -273,7 +274,10 @@ def validate_txt_content(content: str) -> None:
 
 def validate_cname_content(content: str) -> None:
     """Validates a CNAME record's target."""
+    from registrar.utility.enums import DNSRecordTypes
+    field_type = get_content_type_by_record_type(DNSRecordTypes.CNAME)
 
+    _validate_dns_hostname_content(content, field_type)
 
 def validate_mx_content(content: str) -> None:
     """
@@ -283,6 +287,3 @@ def validate_mx_content(content: str) -> None:
     field_type = get_content_type_by_record_type(DNSRecordTypes.MX)
 
     _validate_dns_hostname_content(content, field_type)
-
-    if len(content) > MX_CONTENT_MAX_LENGTH:
-        raise ValidationError("Name must be no more than 253 characters.")
