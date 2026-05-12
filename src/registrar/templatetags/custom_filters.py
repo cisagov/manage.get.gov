@@ -298,8 +298,7 @@ def display_requesting_entity(domain_request):
     elif domain_request.requesting_entity_is_suborganization() and domain_request.is_feb():
         display = (
             f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization}*)\n"
-            f"* {domain_request.requested_suborganization} is not an existing suborganization. "
-            f"New suborganizations for Federal Executive Branch agencies are reviewed before being added."
+            f"* This is not an existing suborganization in the registrar. It must be reviewed before being added."
         )
     elif domain_request.requesting_entity_is_suborganization():
         display = f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization})\n"
