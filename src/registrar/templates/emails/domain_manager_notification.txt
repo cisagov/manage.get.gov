@@ -3,7 +3,7 @@ Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first
 
 A domain manager was invited to {{ domain.name }}.
 
-INVITED BY: {{ requestor_email }} (Org admin)
+INVITED BY: {{ requestor_email }} {% if is_org_admin %} (Org admin) {% endif %}
 INVITED ON: {{date}}
 MANAGER INVITED: {{ invited_email_address }}
 

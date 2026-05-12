@@ -99,6 +99,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": email,
                 "domain_manager": mock_user1,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
 
@@ -184,6 +185,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": email,
                 "domain_manager": mock_user1,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
         mock_send_templated_email.assert_any_call(
@@ -196,6 +198,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": email,
                 "domain_manager": mock_user2,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
 
@@ -377,6 +380,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": mock_email,
                 "domain_manager": mock_user,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
 
@@ -417,6 +421,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": mock_email,
                 "domain_manager": mock_user,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
 
@@ -480,6 +485,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": mock_email,
                 "domain_manager": mock_user_1,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
         mock_send_templated_email.assert_any_call(
@@ -492,6 +498,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "invited_email_address": mock_email,
                 "domain_manager": mock_user_2,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
 
