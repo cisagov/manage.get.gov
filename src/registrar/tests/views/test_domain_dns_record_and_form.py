@@ -96,6 +96,31 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
+    def test_add_record_resets_record_type_alpine_state(self):
+        """Issue #4688: reopening 'Add record' after a submit showed the form body
+        already drawn, like a type had been picked. Closing the form sets showFormId
+        to null, and x-effect clears recordType whenever showFormId is null. This
+        test keeps that wiring in place.
+        """
+        response = self.client.get(self._url())
+
+        # The wrapper div ties recordType to showFormId so closing the form clears
+        # the type pick.
+        self.assertContains(
+            response,
+            "x-effect=\"showFormId === null ? recordType = '' : null\"",
+        )
+        # Closing the form on submit-success drives recordType back to '' via the
+        # x-effect above.
+        self.assertContains(
+            response,
+            '@record-submit-success.camel.window="showFormId = null"',
+        )
+        # Cancel closes the form, which clears recordType via x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = null"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
     def test_post_valid_forms_create_dns_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
