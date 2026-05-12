@@ -44,11 +44,17 @@ The work is grouped into four phases so each one delivers something usable on it
 
 ### Phase 1: Foundations
 
-The building blocks everything else depends on.
+The building blocks everything else depends on. Two tracks that can run in parallel: dev foundations and copy.
+
+**Dev track:**
 
 * New DNS-specific error types and a shared list of error codes — [#4920](https://github.com/cisagov/manage.get.gov/issues/4920)
 * Reference ID (`request_id`) that flows through every log line — [#4924](https://github.com/cisagov/manage.get.gov/issues/4924)
 * One consistent error shape sent back to the browser — [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)
+
+**Copy track (Product/Content, runs in parallel):**
+
+* Writes and approves user-facing copy for all 8 error codes so it's ready when the envelope and seed migration land — [#4999](https://github.com/cisagov/manage.get.gov/issues/4999)
 
 ### Phase 2: Service and UI alignment
 
@@ -58,17 +64,20 @@ Wire the new error types into the services and the form so users see the standar
 * Remove the duplicate error-wrapping in `DnsHostService` — [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)
 * Set timeouts and a bounded retry policy so a stuck Cloudflare call can't hang a worker — [#4923](https://github.com/cisagov/manage.get.gov/issues/4923)
 * Surface the reference ID on the 500 error page — [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)
+* Tighten `register_nameservers` error handling — [#4997](https://github.com/cisagov/manage.get.gov/issues/4997)
 * Register `DnsRecord` / `DnsZone` / `DnsAccount` with `django-auditlog` so support gets a "who changed what" history right away — [#4996](https://github.com/cisagov/manage.get.gov/issues/4996)
-* Design review of the user-facing copy — [#4950](https://github.com/cisagov/manage.get.gov/issues/4950)
+* Engineering wires the approved copy from #4999 into the seed migration and `_error_mapping` — [#4950](https://github.com/cisagov/manage.get.gov/issues/4950)
 
 ### Phase 3: Visibility, support, and self-serve copy
 
 Make failures easy to investigate and let Design and Product own the copy.
 
 * Structured fields on every DNS log line (zone, record, `cf_ray`, duration, etc.) — [#4926](https://github.com/cisagov/manage.get.gov/issues/4926)
+* Narrow `except Exception` to `(IntegrityError, DatabaseError)` in `DnsHostService` DB-write blocks — [#4998](https://github.com/cisagov/manage.get.gov/issues/4998)
 * Domain admin OpenSearch deep-links + paste box (uses the request ID and structured fields from earlier phases) — [#4927](https://github.com/cisagov/manage.get.gov/issues/4927)
 * Admin-editable user-facing error copy, no deploy needed — [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)
 * Developer docs and support runbook finalized — [#4929](https://github.com/cisagov/manage.get.gov/issues/4929)
+* Verify the new retry policy in production using OpenSearch — kicks off the moment #4923 and #4926 are live — [#5000](https://github.com/cisagov/manage.get.gov/issues/5000)
 
 ### Phase 4: Future-facing
 

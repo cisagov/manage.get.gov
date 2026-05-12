@@ -40,9 +40,59 @@ Called out in the body of #4893 (not formal AC).
 
 ---
 
+## Suggested Rollout
+
+Four phases. Each one delivers something usable on its own; earlier phases unblock the later ones.
+
+### Phase 1: Foundations
+
+Building blocks everything else depends on. Two tracks that can run in parallel: dev foundations and copy.
+
+**Dev track:**
+- Typed DNS error classes and shared error codes — [#4920](https://github.com/cisagov/manage.get.gov/issues/4920)
+- `request_id` flows through every log line — [#4924](https://github.com/cisagov/manage.get.gov/issues/4924)
+- One consistent JSON error envelope returned to the browser — [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)
+
+**Copy track needed for Phase 2 (Product/Content, runs in parallel):**
+- Writes and approves user-facing copy for all 8 error codes so it's ready when the envelope and seed migration land — [#4999](https://github.com/cisagov/manage.get.gov/issues/4999)
+
+### Phase 2: Service and UI alignment
+
+Wire the new error types into the services and the form.
+
+- `CloudflareService` raises typed errors — [#4921](https://github.com/cisagov/manage.get.gov/issues/4921)
+- Remove the duplicate error-wrapping in `DnsHostService` — [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)
+- Timeouts + bounded retry on the httpx client — [#4923](https://github.com/cisagov/manage.get.gov/issues/4923)
+- Surface `request_id` on the 500 page — [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)
+- Tighten `register_nameservers` error handling — [#4997](https://github.com/cisagov/manage.get.gov/issues/4997)
+- Register `DnsRecord` / `DnsZone` / `DnsAccount` with `django-auditlog` — [#4996](https://github.com/cisagov/manage.get.gov/issues/4996)
+- Engineering wires the approved copy from #4999 into the seed migration and `_error_mapping` — [#4950](https://github.com/cisagov/manage.get.gov/issues/4950)
+
+### Phase 3: Visibility, support, and self-serve copy
+
+Make failures easy to investigate and let Design/Product own the copy.
+
+- Structured fields on every DNS log line — [#4926](https://github.com/cisagov/manage.get.gov/issues/4926)
+- Narrow `except Exception` to `(IntegrityError, DatabaseError)` in `DnsHostService` DB-write blocks — [#4998](https://github.com/cisagov/manage.get.gov/issues/4998)
+- Domain admin OpenSearch deep-links + paste box — [#4927](https://github.com/cisagov/manage.get.gov/issues/4927)
+- Admin-editable user-facing error copy — [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)
+- Developer docs and support runbook finalized — [#4929](https://github.com/cisagov/manage.get.gov/issues/4929)
+- Verify the retry policy in production once #4923 + #4926 are live (kicks off the moment structured logs are flowing) — [#5000](https://github.com/cisagov/manage.get.gov/issues/5000)
+
+### Phase 4: Future-facing
+
+Decisions and follow-ups we don't have to make right now.
+
+- Spike: is OpenSearch + structured logs enough for request tracing? — [#4930](https://github.com/cisagov/manage.get.gov/issues/4930)
+- Extend the admin-editable copy pattern to `Nameserver` / `DsData` / `SecurityEmail` if v1 proves out (no ticket yet)
+
+After Phase 1 and Phase 2, we will re-evaluate the scope of Phase 3 and Phase 4.
+
+---
+
 ## Current State
 
-What the code looks like before this work lands. Each ticket in the epic replaces a piece of this.
+What the code looks like before this work. Each ticket in the epic replaces a piece of this.
 
 - **`CloudflareService`** (`src/registrar/services/cloudflare_service.py`) — every method catches `httpx.RequestError` and `httpx.HTTPStatusError`, logs an f-string, and re-raises. Two methods wrap with a generic `APIError(...)`. The httpx client has **no timeout** and **no retries**.
 - **`DnsHostService`** (`src/registrar/services/dns_host_service.py`) — wraps Cloudflare exceptions with `raise APIError(str(e)) from e` in a couple of methods. This re-wraps the same error type and produces a second log line for the same failure.
@@ -60,7 +110,7 @@ When Cloudflare says "no," here's what it means:
 | What went wrong | Error name | User sees |
 |---|---|---|
 | Zone doesn't exist | `DNS_ZONE_NOT_FOUND` | "We can't find the DNS zone. It might not be set up yet." |
-| Record already exists | `DNS_RECORD_CONFLICT` | "There's already a record with that name. Edit the existing one." |
+| Record already exists | `DNS_RECORD_CONFLICT` | "A record with that name already exists. Names must be unique." (reuses the existing model-level validation string) |
 | Bad data | `DNS_VALIDATION_FAILED` | "That data isn't valid." (+ Cloudflare's reason) |
 | Too many requests | `DNS_RATE_LIMIT_EXCEEDED` | "You're going too fast. Wait a moment and try again." |
 | Permission denied | `DNS_AUTH_FAILED` | "We couldn't reach Cloudflare. Try again later." |
@@ -85,7 +135,7 @@ Use this when wiring up the exception in code or asserting on it in tests.
 | `DNS_UPSTREAM_ERROR` | `UPSTREAM_ERROR` | `DnsUpstreamError` | 5xx | 5xx |
 | `DNS_UNKNOWN` | `UNKNOWN` | `DnsHostingError` (base) | any | 5xx |
 
-Every `DnsHostingError` carries: `code` (enum), `message` (from `_error_mapping`), `upstream_status` (int or None), `context` (dict of primitives). Subclasses are coarse categories; finer distinctions are carried in `code` and `context`, not in new subclasses.
+Every `DnsHostingError` carries: `code` (enum), `message` (from `_error_mapping`), `upstream_status` (int or None), `context` (dict of primitives). Subclasses are coarse categories. Carry finer distinctions in `code` and `context` rather than adding new subclasses.
 
 ### Captured-errors catalog
 
@@ -94,7 +144,7 @@ The reference for every DNS failure condition we know about today. Update when a
 | Source | Trigger | Code | User surface | Admin surface | Log level |
 |---|---|---|---|---|---|
 | Cloudflare 404 on POST `/zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_ZONE_NOT_FOUND` | Inline: "We couldn't find the DNS zone for this domain. It may not be enrolled in DNS hosting yet." | OpenSearch log line with `error_code=DNS_ZONE_NOT_FOUND` | warning |
-| Cloudflare 409 | Duplicate record (same name+type) | `DNS_RECORD_CONFLICT` | Inline field error | OpenSearch log line | warning |
+| Cloudflare 409 | Duplicate record (same name+type). Rare — the local model validation at `dns_record.py` should catch most duplicates first; this fires only on races / vendor-side duplicates. | `DNS_RECORD_CONFLICT` | Inline field error using the existing model validation string ("A record with that name already exists. Names must be unique.") | OpenSearch log line | warning |
 | Cloudflare 400 | Invalid record content | `DNS_VALIDATION_FAILED` | Inline field error (reuse Cloudflare's reason when safe) | OpenSearch log line | warning |
 | Cloudflare 429 | Rate limit | `DNS_RATE_LIMIT_EXCEEDED` | "You're making changes too quickly — please wait a moment and try again." | OpenSearch log line; backoff metadata visible | warning |
 | Cloudflare 401 / 403 | Invalid auth token or scope | `DNS_AUTH_FAILED` | Generic "couldn't reach DNS provider" + `request_id` | OpenSearch log line; critical | error |
@@ -128,6 +178,107 @@ In background:
 
 ## What Developers Do
 
+### The full failure flow (Cloudflare → service → view)
+
+The end-to-end shape of one failed DNS save after this epic ships. Read this first; the numbered rules below are the principles behind it.
+
+**Layer 1 — `CloudflareService` raises a typed error** (sub-ticket [#4921](https://github.com/cisagov/manage.get.gov/issues/4921)).
+
+Status-to-exception mapping lives in one table and one helper at module scope, reused by every Cloudflare method. Each method body stays small.
+
+```python
+# cloudflare_service.py — module scope
+
+_STATUS_TO_ERROR = {
+    400: (DnsValidationError, DnsHostingErrorCodes.VALIDATION_FAILED),
+    401: (DnsAuthError,       DnsHostingErrorCodes.AUTH_FAILED),
+    403: (DnsAuthError,       DnsHostingErrorCodes.AUTH_FAILED),
+    404: (DnsNotFoundError,   DnsHostingErrorCodes.ZONE_NOT_FOUND),
+    409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
+    429: (DnsRateLimitError,  DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
+}
+
+
+def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
+    """Map a Cloudflare HTTP error to the right DnsHostingError subclass and log once."""
+    status = e.response.status_code
+    ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
+    exc_cls, code = _STATUS_TO_ERROR.get(status, (DnsHostingError, DnsHostingErrorCodes.UNKNOWN))
+    logger.error(
+        "Cloudflare returned %s",
+        status,
+        extra={"upstream_status": status, "error_code": code.name, **ctx},
+    )
+    return exc_cls(code=code, upstream_status=status, context=ctx)
+
+
+class CloudflareService:
+    def create_dns_record(self, zone_id, record_data):
+        url = f"/zones/{zone_id}/dns_records"
+        try:
+            resp = self.client.post(url, json=record_data)
+            resp.raise_for_status()
+        except HTTPStatusError as e:
+            raise _typed_dns_error(e, zone_id=zone_id, record_type=record_data.get("type")) from e
+        return resp.json()
+```
+
+Adding a new status code is one line in the table. The classifier is testable on its own — feed it a fake `HTTPStatusError` and assert the returned exception type and code.
+
+**Layer 2 — `DnsHostService` passes the typed exception through unchanged** (sub-ticket [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)). The current try/except around the Cloudflare call is removed. The local DB save keeps its own narrow try/except for DB errors only (sub-ticket [#4998](https://github.com/cisagov/manage.get.gov/issues/4998)).
+
+```python
+# Before (today):
+def create_dns_record(self, x_zone_id, form_record_data):
+    try:
+        vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
+    except (APIError, HTTPStatusError) as e:
+        logger.error(f"Error creating DNS record: {str(e)}")
+        raise APIError(str(e)) from e   # ← duplicate log, type collapsed to string
+    try:
+        DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
+    except Exception as e:               # ← too broad
+        logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
+        raise
+    ...
+
+# After (post-#4922 + #4998):
+def create_dns_record(self, x_zone_id, form_record_data):
+    # CloudflareService raises typed DnsHostingErrors; let them through.
+    vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
+    try:
+        DnsRecord.create_from_vendor_data(x_zone_id, vendor_record_data)
+    except (IntegrityError, DatabaseError) as e:
+        logger.error(
+            "Failed to persist DNS record",
+            extra={"zone_id": x_zone_id, "error_class": type(e).__name__},
+        )
+        raise
+    ...
+```
+
+**Layer 3 — the view catches and renders the JSON envelope** (sub-ticket [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)):
+
+```python
+try:
+    self.dns_host_service.create_dns_record(zone_id, form_record_data)
+except DnsHostingError as exc:
+    return dns_error_response(exc, request=request)
+```
+
+`dns_error_response` reads `exc.code`, picks the right HTTP status from the [Wire-code reference](#wire-code-reference) Severity column, and returns:
+
+```json
+{
+  "status": "error",
+  "code": "DNS_ZONE_NOT_FOUND",
+  "message": "We couldn't find the DNS zone for this domain.",
+  "request_id": "1a2b3c4d-..."
+}
+```
+
+Python's `from e` chain preserves the original `HTTPStatusError` in the traceback, so engineers searching by `request_id` in OpenSearch can still see Cloudflare's response body, status, and `cf-ray`.
+
 ### 1. Raise Specific Errors
 
 ```python
@@ -152,7 +303,7 @@ except DnsHostingError as exc:
     return dns_error_response(exc)
 ```
 
-Services raise. Views catch. Simple.
+Services raise. Views catch.
 
 ### 3. Include Useful Context
 
@@ -187,8 +338,8 @@ def test_my_error_is_picklable(self):
 Three rules for `DnsHostingError` and its subclasses:
 
 1. **Only simple values on the exception.** `str`, `int`, dict-of-primitives. The parallel test runner pickles exceptions across processes; an `httpx.Response` object or a lambda in `context` breaks the pickle and the test run fails in confusing ways.
-2. **The code, not the string, is the source of truth.** `_error_mapping` in `errors.py` provides default copy. After sub-ticket #4931 lands, the admin-editable `DnsErrorMessage` table can override it. Tests assert on `exc.code`, never on the message string.
-3. **Adding a new error type:** add the enum value, add a subclass if the new category doesn't fit an existing one, add the `_error_mapping` entry, ship a seed migration with the user-facing copy. Update the [Wire-code reference](#wire-code-reference-for-developers) and [Captured-errors catalog](#captured-errors-catalog).
+2. **The code, not the string, is the source of truth.** `_error_mapping` in `errors.py` provides default copy. After sub-ticket #4931, the admin-editable `DnsErrorMessage` table can override it. Tests assert on `exc.code` rather than the message string.
+3. **Adding a new error type:** add the enum value, add a subclass if the new category doesn't fit an existing one, add the `_error_mapping` entry, ship a seed migration with the user-facing copy. Update the [Wire-code reference](#wire-code-reference) and [Captured-errors catalog](#captured-errors-catalog).
 
 ---
 
@@ -294,7 +445,7 @@ User reports: "I got an error. The reference is `abc123-def456`."
 
 > "We couldn't find the DNS zone for this domain. It might not be enrolled in DNS hosting yet."
 
-> "A record with that name and type already exists. Edit the existing record instead."
+> "A record with that name already exists. Names must be unique."
 
 > "The IP address isn't in a valid format."
 
@@ -302,7 +453,7 @@ User reports: "I got an error. The reference is `abc123-def456`."
 
 ### When it's our fault (5xx — shown at page level):
 
-> "We couldn't reach our DNS provider. Please try again in a moment. If the problem persists, contact help@get.gov and include this reference: `abc123-def456`."
+> "We couldn't reach our DNS provider. Please try again in a moment. If the problem persists, share this reference with support: `abc123-def456`."
 
 ---
 
@@ -327,49 +478,6 @@ User reports: "I got an error. The reference is `abc123-def456`."
 ## Editing Error Messages
 
 Error messages live in a database table (sub-ticket [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)). Go to `/admin` → DNS error messages, edit the row, save. Live immediately. Django audits the change.
-
----
-
-## Suggested Rollout
-
-Four phases. Each one delivers something usable on its own; earlier phases unblock the later ones.
-
-### Phase 1: Foundations
-
-Building blocks everything else depends on.
-
-- Typed DNS error classes and shared error codes — [#4920](https://github.com/cisagov/manage.get.gov/issues/4920)
-- `request_id` flows through every log line — [#4924](https://github.com/cisagov/manage.get.gov/issues/4924)
-- One consistent JSON error envelope returned to the browser — [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)
-
-### Phase 2: Service and UI alignment
-
-Wire the new error types into the services and the form.
-
-- `CloudflareService` raises typed errors — [#4921](https://github.com/cisagov/manage.get.gov/issues/4921)
-- Remove the duplicate error-wrapping in `DnsHostService` — [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)
-- Timeouts + bounded retry on the httpx client — [#4923](https://github.com/cisagov/manage.get.gov/issues/4923)
-- Surface `request_id` on the 500 page — [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)
-- Register `DnsRecord` / `DnsZone` / `DnsAccount` with `django-auditlog` — [#4996](https://github.com/cisagov/manage.get.gov/issues/4996)
-- Design review of user-facing copy — [#4950](https://github.com/cisagov/manage.get.gov/issues/4950)
-
-### Phase 3: Visibility, support, and self-serve copy
-
-Make failures easy to investigate and let Design/Product own the copy.
-
-- Structured fields on every DNS log line — [#4926](https://github.com/cisagov/manage.get.gov/issues/4926)
-- Domain admin OpenSearch deep-links + paste box — [#4927](https://github.com/cisagov/manage.get.gov/issues/4927)
-- Admin-editable user-facing error copy — [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)
-- Developer docs and support runbook finalized — [#4929](https://github.com/cisagov/manage.get.gov/issues/4929)
-
-### Phase 4: Future-facing
-
-Decisions and follow-ups we don't have to make right now.
-
-- Spike: is OpenSearch + structured logs enough for request tracing? — [#4930](https://github.com/cisagov/manage.get.gov/issues/4930)
-- Extend the admin-editable copy pattern to `Nameserver` / `DsData` / `SecurityEmail` if v1 proves out (no ticket yet)
-
-After Phase 1 and Phase 2, we will re-evaluate the scope of Phase 3 and Phase 4.
 
 ---
 
