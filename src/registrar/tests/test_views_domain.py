@@ -103,7 +103,13 @@ class TestWithDomainPermissions(TestWithUser):
             ),
         )
         # Set up a domain enrolled in DNS hosting
-        self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(name="enrolledindnshosting.gov")
+        self.domain_enrolled_in_dns_hosting, _ = Domain.objects.get_or_create(
+            name="enrolledindnshosting.gov",
+            state=Domain.State.READY,
+            expiration_date=timezone.make_aware(
+                datetime.combine(date.today() + timedelta(days=1), datetime.min.time())
+            ),
+        )
         portfolio, _ = Portfolio.objects.get_or_create(organization_name="New org", requester=self.user)
         DomainInformation.objects.get_or_create(
             requester=self.user, domain=self.domain_enrolled_in_dns_hosting, portfolio=portfolio
@@ -298,10 +304,34 @@ class TestDomainPermissions(TestWithDomainPermissions):
                     self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    @skip("For some reason, this test is breaking and returning 200 instead of 403. Need to investigate and fix.")
-    def test_domain_pages_blocked_for_on_hold_and_deleted_for_dns_records(self):
-        """Test that the domain pages are blocked for on hold and deleted domains for DNS Records page"""
+    def test_dns_records_page_blocked_for_on_hold_domains(self):
+        """
+        Test that the domain DNS records page is blocked for on hold domains.
+        Separated from other on hold/deleted domain subpage tests because DNS domains
+        require portfolio setup while other subpage tests which use legacy mode.
+        """
         self.client.force_login(self.user)
+        self.domain_enrolled_in_dns_hosting.place_client_hold()
+        self.domain_enrolled_in_dns_hosting.save()
+        with override_flag("dns_hosting", active=True):
+            response = self.client.get(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+            )
+            self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_dns_records_page_blocked_for_deleted_domains(self):
+        """
+        Test that the domain DNS records page is blocked for deleted domains.
+        Separated from other on hold/deleted domain subpage tests because DNS domains
+        require portfolio setup while other subpage tests which use legacy mode.
+        """
+        self.client.force_login(self.user)
+        self.domain_enrolled_in_dns_hosting.place_client_hold()
+        # Bypass EPP requirements to delete domain since we're just trying to get domain in Deleted state
+        with patch("registrar.models.domain.Domain._domain_can_be_deleted", return_value=True):
+            self.domain_enrolled_in_dns_hosting.deleteInEpp()
+        self.domain_enrolled_in_dns_hosting.save()
         with override_flag("dns_hosting", active=True):
             response = self.client.get(
                 reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
@@ -3644,7 +3674,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
         """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
-        domain, _, _ = create_initial_dns_setup()  # creates enrolled domain
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "DNS records")
 
@@ -3670,7 +3700,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_name_servers_no_vanity_servers_table(self):
         """Name Servers table appears when there are nameservers and shows DNS records"""
-        domain, _, dns_zone = create_initial_dns_setup()
+        domain, _, dns_zone = create_initial_dns_setup(domain_manager=self.user)
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")
@@ -3681,7 +3711,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records_with_vanity_nameservers_table(self):
         """Name Servers table shows custom (vanity) nameservers when they exist and shows DNS records"""
-        domain, _, _ = create_initial_dns_setup(**{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]})
+        domain, _, _ = create_initial_dns_setup(
+            domain_manager=self.user, **{"vanity_nameservers": ["rainbow.dns.gov", "rainbow2.dns.gov"]}
+        )
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Name servers")
         self.assertContains(page, "rainbow.dns.gov")
@@ -3691,7 +3723,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_form_is_available_for_new_dns_record(self):
         """User should be able to leave edit form with clicking cancel"""
-        domain, _, dns_zone = create_initial_dns_setup()
+        domain, _, dns_zone = create_initial_dns_setup(domain_manager=self.user)
         create_dns_record(dns_zone)
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "Edit record")
@@ -3701,7 +3733,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_updates_record(self):
         """Editing an existing DNS record saves changes and returns the updated row."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-edit-123")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
 
         response = self.client.post(
@@ -3742,7 +3776,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
            form with a clean one, so reopening the form shows no leftover errors.
         """
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-close-123")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
 
         response = self.client.post(
@@ -3772,7 +3808,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_edit_dns_record_save_returns_400_without_active_vendor_id(self):
         """Editing fails when the DNS record has no active vendor record link."""
-        _, _, dns_zone = create_initial_dns_setup(domain=self.portfolio_domain, x_zone_id="zone-edit-124")
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124"
+        )
         dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124", dns_record_is_active=False)
 
         response = self.client.post(

@@ -29,7 +29,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup(domain_manager=self.user)
 
         self.client.force_login(self.user)
 
