@@ -1006,7 +1006,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         self.add_error("name", message)
         self.add_error("content", message)
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
-            self.add_error("priority", message)
+            self.add_error("priority", message)         
 
     def clean(self):
         cleaned_data = super().clean()
@@ -1038,8 +1038,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             self._validate_cname_record(record_type, name, content)
             self._validate_comment_field(comment)
             self._validate_name_fqdn_length(name)
-            # if record_type in record_types_with_hostname_content:
-            #     self.validate_dns_hostname_content(content, record_type)
             if not self.errors and name and content:
                 self._validate_duplicate_record(record_type, name, content, priority)
             if not self.errors and name:
