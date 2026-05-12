@@ -874,7 +874,6 @@ class Domain(TimeStampedModel, DomainHelper):
         A domain's status indicates various properties. See Domain.Status.
         """
         try:
-            import gevent; gevent.sleep(35) # REMOVE---- simulate long registry call to test caching
             return self._get_property("statuses")
         except KeyError:
             logger.error("Can't retrieve status from domain info")

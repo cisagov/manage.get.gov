@@ -399,7 +399,9 @@ class User(AbstractUser):
                     # logging in
                     logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
             else:
-                logger.warning("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
+                logger.warning(
+                    "User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True
+                )
 
     def on_each_login(self):
         """Callback each time the user is authenticated.
