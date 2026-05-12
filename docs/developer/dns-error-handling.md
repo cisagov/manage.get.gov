@@ -1,37 +1,55 @@
 # DNS Error Handling — A Developer's Guide
 
-**How DNS errors work in manage.get.gov and what you need to know.**
-
 | | |
 |---|---|
 | **Status** | Ready to build |
 | **Author** | Daisy Gutierrez |
 | **Last updated** | 2026-04-22 |
-| **For** | Engineers and developers (all levels) |
 
 ---
 
-## The Big Picture
-
-DNS errors are currently messy. Users get vague error messages. Support can't trace problems. We're fixing that by using specific error types, adding request IDs, and giving support better tools.
+DNS errors today are inconsistent: users get vague messages, support can't trace problems, services log the same failure three times. We're fixing that with typed error classes, request IDs through the logs, and admin links into the audit trail and OpenSearch.
 
 ---
 
-## What Changes
+## This Doc Covers DNS Error Handling Design Proposal Ticket [#4893](https://github.com/cisagov/manage.get.gov/issues/4893)
 
-### For Users
-- Specific, actionable error messages instead of generic "Failed to save DNS record."
-- A reference ID (request_id) they can give support if something goes wrong
+### Formal acceptance criteria
 
-### For Developers
-- Use typed error classes instead of generic ones
-- Every DNS log line gets useful context (request ID, zone info, error code, etc.)
-- Follow a standard pattern everywhere
+| AC from #4893 | Where it's covered |
+|---|---|
+| Document a prototype for bubbling errors up to the frontend | [Current State](#current-state) → [How It Works](#how-it-works) |
+| Document which errors we capture from API calls | [The 8 Error Types](#the-8-error-types) → [Captured-errors catalog](#captured-errors-catalog) |
+| Standardize error codes (backend → frontend vocabulary) | [Wire-code reference](#wire-code-reference) |
+| Document what info we include in logs | [What Gets Logged](#what-gets-logged) |
+| What errors to surface in `/admin` | [Admin Panel Features](#admin-panel-features) |
+| Break work into bite-sized tickets under epic #4892 | [Sub-tickets filed](https://github.com/cisagov/manage.get.gov/issues/4892) (13 sub-tickets: #4920–#4931, #4950) |
 
-### For Support
-- Look up any problem by request ID
-- Click links from `/admin` to see what happened
-- Know which Cloudflare error (`cf_ray`) is involved
+### Considerations from the planning ticket description
+
+Called out in the body of #4893 (not formal AC).
+
+| Consideration | Where it's covered |
+|---|---|
+| Pickle safety on exceptions | [Exception Contract](#exception-contract) |
+| httpx retry / timeout strategy | [Network Timeouts & Retries](#network-timeouts--retries) |
+| Correlation IDs through logs | [How It Works](#how-it-works) + sub-ticket #4924 |
+| 4xx vs 5xx distinction | [User-Facing Error Messages](#user-facing-error-messages) |
+| Admin vs end-user detail level | [Admin Panel Features](#admin-panel-features) |
+| When to "give up" and bubble to the user | [Catch Errors in Views Only](#2-catch-errors-in-views-only) (view is the terminal handler) |
+
+---
+
+## Current State
+
+What the code looks like before this work lands. Each ticket in the epic replaces a piece of this.
+
+- **`CloudflareService`** (`src/registrar/services/cloudflare_service.py`) — every method catches `httpx.RequestError` and `httpx.HTTPStatusError`, logs an f-string, and re-raises. Two methods wrap with a generic `APIError(...)`. The httpx client has **no timeout** and **no retries**.
+- **`DnsHostService`** (`src/registrar/services/dns_host_service.py`) — wraps Cloudflare exceptions with `raise APIError(str(e)) from e` in a couple of methods. This re-wraps the same error type and produces a second log line for the same failure.
+- **View layer** (`src/registrar/views/domain.py`) — catches `(APIError, RequestError)` and shows a generic `messages.error("Failed to save DNS record.")`. JSON responses use two different shapes (`{"status": "error", "message": ...}` and `{"error": ...}`).
+- **Exception classes** (`src/registrar/utility/errors.py`) — `NameserverError`, `DsDataError`, and `SecurityEmailError` already follow a typed code-based pattern. DNS hosting has only a bare `APIError(Exception)` with no codes, no subclasses, no status propagation. We mirror the `NameserverError` pattern.
+- **Logging** — `logging_context.py` uses ContextVars for `user_email`, `ip_address`, `request_path`, but the middleware that sets them is gated on `IS_PRODUCTION`. `DatabaseConnectionMiddleware` reads `HTTP_X_REQUEST_ID` directly but doesn't share it. DNS service logs are f-strings with no `request_id`, `cf_ray`, `duration_ms`, or `error_code`.
+- **Admin** — `DnsRecordAdmin` is minimal. No ModelAdmin for `DnsAccount`, `DnsZone`, or `DnsVendor`. Support can't see DNS operation history from `/admin`.
 
 ---
 
@@ -52,9 +70,45 @@ When Cloudflare says "no," here's what it means:
 
 **Quick rule:** First 4 are the user's problem (they can fix it). Last 4 are our problem (Cloudflare or network).
 
+### Wire-code reference
+
+Use this when wiring up the exception in code or asserting on it in tests.
+
+| Wire code | Enum | Subclass | Upstream status | Severity |
+|---|---|---|---|---|
+| `DNS_ZONE_NOT_FOUND` | `ZONE_NOT_FOUND` | `DnsNotFoundError` | 404 | 4xx |
+| `DNS_RECORD_CONFLICT` | `RECORD_CONFLICT` | `DnsValidationError` | 409 | 4xx |
+| `DNS_VALIDATION_FAILED` | `VALIDATION_FAILED` | `DnsValidationError` | 400 | 4xx |
+| `DNS_RATE_LIMIT_EXCEEDED` | `RATE_LIMIT_EXCEEDED` | `DnsRateLimitError` | 429 | 4xx (retryable) |
+| `DNS_AUTH_FAILED` | `AUTH_FAILED` | `DnsAuthError` | 401 / 403 | 5xx-equivalent |
+| `DNS_UPSTREAM_TIMEOUT` | `UPSTREAM_TIMEOUT` | `DnsTransportError` | (none) | 5xx |
+| `DNS_UPSTREAM_ERROR` | `UPSTREAM_ERROR` | `DnsUpstreamError` | 5xx | 5xx |
+| `DNS_UNKNOWN` | `UNKNOWN` | `DnsHostingError` (base) | any | 5xx |
+
+Every `DnsHostingError` carries: `code` (enum), `message` (from `_error_mapping`), `upstream_status` (int or None), `context` (dict of primitives). Subclasses are coarse categories; finer distinctions are carried in `code` and `context`, not in new subclasses.
+
+### Captured-errors catalog
+
+The reference for every DNS failure condition we know about today. Update when a new code is added.
+
+| Source | Trigger | Code | User surface | Admin surface | Log level |
+|---|---|---|---|---|---|
+| Cloudflare 404 on POST `/zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_ZONE_NOT_FOUND` | Inline: "We couldn't find the DNS zone for this domain. It may not be enrolled in DNS hosting yet." | OpenSearch log line with `error_code=DNS_ZONE_NOT_FOUND` | warning |
+| Cloudflare 409 | Duplicate record (same name+type) | `DNS_RECORD_CONFLICT` | Inline field error | OpenSearch log line | warning |
+| Cloudflare 400 | Invalid record content | `DNS_VALIDATION_FAILED` | Inline field error (reuse Cloudflare's reason when safe) | OpenSearch log line | warning |
+| Cloudflare 429 | Rate limit | `DNS_RATE_LIMIT_EXCEEDED` | "You're making changes too quickly — please wait a moment and try again." | OpenSearch log line; backoff metadata visible | warning |
+| Cloudflare 401 / 403 | Invalid auth token or scope | `DNS_AUTH_FAILED` | Generic "couldn't reach DNS provider" + `request_id` | OpenSearch log line; critical | error |
+| httpx `ConnectTimeout` / `ReadTimeout` / `WriteTimeout` | Network blip, Cloudflare slowdown | `DNS_UPSTREAM_TIMEOUT` | Generic + `request_id`, encourage retry | OpenSearch log line; `duration_ms` present | error |
+| httpx `ConnectError` / `NetworkError` / DNS failure | Loss of connectivity to Cloudflare | `DNS_UPSTREAM_TIMEOUT` (catch-all for transport) | Generic + `request_id` | OpenSearch log line | error |
+| Cloudflare 5xx | Provider outage | `DNS_UPSTREAM_ERROR` | Generic + `request_id` | OpenSearch log line | error |
+| Any other Cloudflare status | Unexpected | `DNS_UNKNOWN` | Generic + `request_id` | OpenSearch log line with full upstream body (redacted) | error |
+| Local model/form validation (existing, out of scope) | Invalid TTL, MX priority, CNAME conflict, bad DNS name | (uses `ValidationError`, not `DnsHostingError`) | Inline form field error | Django admin default | debug |
+
+For successes (DNS record create/update/delete that landed), see django-auditlog at `/admin/auditlog/logentry/`. The catalog above covers failures only.
+
 ---
 
-## How It Works (The Flow)
+## How It Works
 
 ```
 User clicks "Save"
@@ -69,8 +123,6 @@ In background:
   Success? → Audit log (for admin to see)
   Failure? → OpenSearch (for engineers to investigate)
 ```
-
-Every error gets tagged with a `request_id` so we can trace it from the user's browser through our code to Cloudflare's response.
 
 ---
 
@@ -119,22 +171,80 @@ self.assertEqual(exc.code, DnsHostingErrorCodes.ZONE_NOT_FOUND)
 self.assertIn("We couldn't find", str(exc))
 ```
 
+Exceptions must also survive `pickle.dumps`/`pickle.loads` (the parallel test runner serializes them across processes):
+
+```python
+def test_my_error_is_picklable(self):
+    exc = DnsNotFoundError(code=DnsHostingErrorCodes.ZONE_NOT_FOUND, upstream_status=404)
+    restored = pickle.loads(pickle.dumps(exc))
+    self.assertEqual(restored.code, exc.code)
+```
+
+---
+
+## Exception Contract
+
+Three rules for `DnsHostingError` and its subclasses:
+
+1. **Only simple values on the exception.** `str`, `int`, dict-of-primitives. The parallel test runner pickles exceptions across processes; an `httpx.Response` object or a lambda in `context` breaks the pickle and the test run fails in confusing ways.
+2. **The code, not the string, is the source of truth.** `_error_mapping` in `errors.py` provides default copy. After sub-ticket #4931 lands, the admin-editable `DnsErrorMessage` table can override it. Tests assert on `exc.code`, never on the message string.
+3. **Adding a new error type:** add the enum value, add a subclass if the new category doesn't fit an existing one, add the `_error_mapping` entry, ship a seed migration with the user-facing copy. Update the [Wire-code reference](#wire-code-reference-for-developers) and [Captured-errors catalog](#captured-errors-catalog).
+
 ---
 
 ## Network Timeouts & Retries
 
-Clear rules for talking to Cloudflare:
+Sub-ticket [#4923](https://github.com/cisagov/manage.get.gov/issues/4923). All values are in **seconds**. Leads should confirm or adjust before prod.
 
-- **Give up after:** 3 seconds to connect, 10 seconds to read response
-- **Retry automatically:** Once if connection fails (safe at network layer)
-- **Retry on error:** For read-only calls (GET) up to 3 times with pauses
-- **Never retry:** Write operations (POST, PATCH, DELETE) — might create duplicates
+> Addresses [#4893](https://github.com/cisagov/manage.get.gov/issues/4893)'s description item: *"Define a retry strategy for httpx calls (when to fail fast vs. when to retry)."* Not a formal AC checkbox but called out as a consideration in the planning ticket.
+
+### Timeouts
+
+```python
+httpx.Timeout(connect=3, read=10, write=10, pool=5)
+```
+
+- `connect=3` — Cloudflare's edge is normally sub-second. 3 seconds covers transient issues without hanging.
+- `read=10` / `write=10` — DNS changes are small payloads. 10 seconds is generous but bounded.
+- `pool=5` — if we wait longer than 5 seconds for a connection slot, we're under-provisioned and that's worth knowing.
+
+### Hung Cloudflare calls
+
+**Today (no timeout):** a hung Cloudflare call can pin a gunicorn worker until the OS-level TCP keepalive gives up (minutes) or gunicorn kills the worker (often 30s, returns a 502 with no app log).
+
+**After this ticket:** the worst case is bounded.
+- **Write calls (POST/PATCH/DELETE — the DNS save path):** no retry. Worst case = one attempt = ~13 seconds (`connect` + `read`).
+- **Read calls (GET/HEAD):** up to 2 attempts + 1 backoff pause ≈ ~27 seconds worst case. Sized to fit comfortably inside gunicorn's 30s worker timeout so we never hand a request over to the worker killer.
+
+So adding timeouts + bounded retries holds the worker for **less** time than the current unbounded state, not more. The worker is released cleanly and the user gets a real error response with a `request_id` instead of a 502 from gunicorn.
+
+### Retry: transport level
+
+```python
+httpx.HTTPTransport(retries=2)
+```
+
+Retries only the *initial connect*. Safe at any HTTP method because httpx only retries before it sees a response — no risk of double-creating a DNS record.
+
+### Retry: at the app level (with backoff)
+
+**Only for read-only calls (GET, HEAD).** Triggers:
+
+- HTTP 429 — wait the number of seconds in the `Retry-After` header, then retry.
+- HTTP 5xx — wait with increasing pauses (e.g. 1s, 2s, 4s) with a small random offset so all retries don't land at the same moment.
+- Network errors (timeouts, connection drops) — same backoff as 5xx.
+
+Cap at **2 total attempts** in all cases. We deliberately stay under 30 seconds of worker time — gunicorn kills workers that run longer than that, which would turn a recoverable Cloudflare blip into a 502 with no app log.
+
+### Never retry writes (POST, PATCH, DELETE)
+
+Retrying a write that already succeeded but was slow can create a duplicate DNS record. Writes fail fast; the user sees the error with a `request_id` and can decide whether to try again.
 
 ---
 
-## What Gets Logged (Safely)
+## What Gets Logged
 
-### Safe to log (no secrets):
+### Safe to log:
 - Request ID
 - Zone ID / record ID
 - HTTP status codes
@@ -149,13 +259,13 @@ Clear rules for talking to Cloudflare:
 - Raw Python tracebacks (they go to OpenSearch only)
 - Passwords or tokens
 
-### Log carefully (existing policy applies):
+### Log carefully:
 - User email
 - Client IP
 
 ---
 
-## Finding a Problem (Support Runbook)
+## Support Runbook
 
 User reports: "I got an error. The reference is `abc123-def456`."
 
@@ -194,8 +304,6 @@ User reports: "I got an error. The reference is `abc123-def456`."
 
 > "We couldn't reach our DNS provider. Please try again in a moment. If the problem persists, contact help@get.gov and include this reference: `abc123-def456`."
 
-That's it. No technical jargon. No HTTP status codes. Just "here's what happened" and "here's your reference number."
-
 ---
 
 ## Admin Panel Features
@@ -216,51 +324,9 @@ That's it. No technical jargon. No HTTP status codes. Just "here's what happened
 
 ---
 
-## Editing Error Messages (Product/Design)
+## Editing Error Messages
 
-**Today:** Changing one error message = code change + PR + deploy = days.
-
-**After this:** Error messages live in a database table. Admins edit them.
-
-### How it works:
-
-1. Go to `/admin` → DNS error messages
-2. Find the message you want to change
-3. Edit and save
-4. **It's live immediately** — no deploy
-5. Django tracks who changed what and when
-
----
-
-## Checklist: New Error Type
-
-If you find a new way things can break:
-
-- [ ] Does it fit one of the 8 types above?
-- [ ] Add the new code (e.g., `DNS_NEW_THING`)
-- [ ] Write a user-friendly message
-- [ ] Add it to the catalog
-- [ ] Write a test (exception must be picklable)
-- [ ] Update docs
-
-**But first:** Start with `DNS_UNKNOWN`. Only make a new code if you see the same problem multiple times in production.
-
----
-
-## Testing Error Code
-
-Exceptions must survive being pickled (tests pass them between processes):
-
-```python
-def test_my_error_is_picklable(self):
-    exc = DnsNotFoundError(
-        code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
-        upstream_status=404,
- context={"zone_id": "abc123"}
-    )
-    restored = pickle.loads(pickle.dumps(exc))
-    self.assertEqual(restored.code, exc.code)
-```
+Error messages live in a database table (sub-ticket [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)). Go to `/admin` → DNS error messages, edit the row, save. Live immediately. Django audits the change.
 
 ---
 
@@ -272,33 +338,3 @@ def test_my_error_is_picklable(self):
 - **View layer:** `src/registrar/views/domain.py`
 - **Logging context:** `src/registrar/logging_context.py`
 - **Admin interface:** `src/registrar/admin.py`
-
----
-
-## Common Questions
-
-**Q: Should I catch errors everywhere or just in views?**  
-A: Views only. Services should raise and let it bubble up.
-
-**Q: What error code should I use?**  
-A: Start with `DNS_UNKNOWN`. Promote to a specific code later if you see the pattern again in production.
-
-**Q: Can I change error messages without deploying?**  
-A: Yes (once this is done). Go to `/admin` and edit the `DnsErrorMessage` table.
-
-**Q: Do I set the request_id myself?**  
-A: No. Middleware sets it automatically. It'll show up in logs.
-
-**Q: Why 3 seconds timeout instead of something else?**  
-A: Cloudflare usually responds faster. If they don't in 3 seconds, something's broken and waiting longer won't help.
-
-**Q: What if I don't know whether to log something?**  
-A: Ask: "Could this contain user secrets or personal info?" If yes, don't log it.
-
----
-
-## Need Help?
-
-- **This guide unclear?** Open an issue or ask in Slack.
-- **Error handling question?** Look at existing DNS code for patterns.
-- **Incident response?** Check OpenSearch by request_id.

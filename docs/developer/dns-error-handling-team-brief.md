@@ -37,3 +37,44 @@ You might see these terms in the tickets; here is what they actually mean for th
 * **Auditlog:** The automatic history book of changes.
 * **Admin-editable copy:** Letting non-devs update text in the browser.
 * **Deep-linking:** A one-click button to jump from a problem to the detailed logs in OpenSearch.
+
+## Suggested Rollout
+
+The work is grouped into four phases so each one delivers something usable on its own. Earlier phases unblock the later ones.
+
+### Phase 1: Foundations
+
+The building blocks everything else depends on.
+
+* New DNS-specific error types and a shared list of error codes — [#4920](https://github.com/cisagov/manage.get.gov/issues/4920)
+* Reference ID (`request_id`) that flows through every log line — [#4924](https://github.com/cisagov/manage.get.gov/issues/4924)
+* One consistent error shape sent back to the browser — [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)
+
+### Phase 2: Service and UI alignment
+
+Wire the new error types into the services and the form so users see the standard shape.
+
+* Cloudflare service raises the new typed errors — [#4921](https://github.com/cisagov/manage.get.gov/issues/4921)
+* Remove the duplicate error-wrapping in `DnsHostService` — [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)
+* Set timeouts and a bounded retry policy so a stuck Cloudflare call can't hang a worker — [#4923](https://github.com/cisagov/manage.get.gov/issues/4923)
+* Surface the reference ID on the 500 error page — [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)
+* Register `DnsRecord` / `DnsZone` / `DnsAccount` with `django-auditlog` so support gets a "who changed what" history right away — [#4996](https://github.com/cisagov/manage.get.gov/issues/4996)
+* Design review of the user-facing copy — [#4950](https://github.com/cisagov/manage.get.gov/issues/4950)
+
+### Phase 3: Visibility, support, and self-serve copy
+
+Make failures easy to investigate and let Design and Product own the copy.
+
+* Structured fields on every DNS log line (zone, record, `cf_ray`, duration, etc.) — [#4926](https://github.com/cisagov/manage.get.gov/issues/4926)
+* Domain admin OpenSearch deep-links + paste box (uses the request ID and structured fields from earlier phases) — [#4927](https://github.com/cisagov/manage.get.gov/issues/4927)
+* Admin-editable user-facing error copy, no deploy needed — [#4931](https://github.com/cisagov/manage.get.gov/issues/4931)
+* Developer docs and support runbook finalized — [#4929](https://github.com/cisagov/manage.get.gov/issues/4929)
+
+### Phase 4: Future-facing
+
+Decisions and follow-ups we don't have to make right now.
+
+* Decide whether OpenSearch + structured logs is enough for request tracing, or whether we should adopt a dedicated tracing tool — [#4930](https://github.com/cisagov/manage.get.gov/issues/4930)
+* If admin-editable copy works for DNS, extend the same pattern to Nameserver, DsData, and SecurityEmail errors — no ticket yet
+
+After Phase 1 and 2 are done, we can re-evaluate the scope of Phases 3 and 4.
