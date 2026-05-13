@@ -207,6 +207,7 @@ def is_domain_subpage(path):
         "domain-users",
         "domain-dns",
         "domain-dns-nameservers",
+        "domain-dns-records",
         "domain-dns-dnssec",
         "domain-dns-dnssec-dsdata",
         "domain-your-contact-information",
