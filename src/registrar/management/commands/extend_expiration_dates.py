@@ -180,27 +180,22 @@ class Command(BaseCommand):
         )
 
         if update_failed_count == 0 and update_skipped_count == 0:
-            logger.info(
-                f"""{TerminalColors.OKGREEN}
+            logger.info(f"""{TerminalColors.OKGREEN}
                 ============= FINISHED ===============
                 Updated {update_success_count} Domain entries
                 {TerminalColors.ENDC}
-                """
-            )
+                """)
         elif update_failed_count == 0:
-            logger.info(
-                f"""{TerminalColors.YELLOW}
+            logger.info(f"""{TerminalColors.YELLOW}
                 ============= FINISHED ===============
                 Updated {update_success_count} Domain entries
 
                 ----- IDEMPOTENCY CHECK FAILED -----
                 Skipped updating {update_skipped_count} Domain entries
                 {TerminalColors.ENDC}
-                """
-            )
+                """)
         else:
-            logger.info(
-                f"""{TerminalColors.FAIL}
+            logger.info(f"""{TerminalColors.FAIL}
                 ============= FINISHED ===============
                 Updated {update_success_count} Domain entries
 
@@ -208,5 +203,4 @@ class Command(BaseCommand):
                 Failed to update {update_failed_count} Domain entries,
                 Skipped updating {update_skipped_count} Domain entries
                 {TerminalColors.ENDC}
-                """
-            )
+                """)

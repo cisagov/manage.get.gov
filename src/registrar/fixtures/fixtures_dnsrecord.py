@@ -1,12 +1,14 @@
 import logging
 from faker import Faker
 
+from django.conf import settings
 from registrar.fixtures.fixtures_domains import DomainFixture
 from registrar.models import Domain
 from registrar.models.dns.dns_record import DnsRecord
 from registrar.models.dns.dns_zone import DnsZone
 from registrar.models.dns.dns_account import DnsAccount
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.utility.enums import DNSRecordTypes
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -21,6 +23,13 @@ class DnsRecordFixture(DomainFixture):
     @classmethod
     def load(cls):
         """Create DNS zones and records for approved domains enrolled in DNS hosting."""
+        if not settings.DNS_MOCK_EXTERNAL_APIS:
+            logger.info(
+                "Skipping DNS record fixture — DNS_MOCK_EXTERNAL_APIS is False. "
+                "Enroll domains via the admin to provision real Cloudflare resources."
+            )
+            return
+
         try:
             # Get approved domains that are enrolled in DNS hosting
             domains = Domain.objects.filter(is_enrolled_in_dns_hosting=True, dnszone__isnull=True)[:5]
@@ -60,7 +69,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DnsRecord.RecordTypes.A,
+                        type=DNSRecordTypes.A,
                         name="@",
                         ttl=3600,
                         content=fake.ipv4(),
@@ -73,7 +82,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DnsRecord.RecordTypes.A,
+                        type=DNSRecordTypes.A,
                         name="www",
                         ttl=3600,
                         content=fake.ipv4(),
@@ -86,7 +95,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DnsRecord.RecordTypes.A,
+                        type=DNSRecordTypes.A,
                         name="mail",
                         ttl=7200,
                         content=fake.ipv4(),
@@ -99,7 +108,7 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DnsRecord.RecordTypes.A,
+                        type=DNSRecordTypes.A,
                         name="api",
                         ttl=1800,
                         content=fake.ipv4(),
@@ -112,12 +121,26 @@ class DnsRecordFixture(DomainFixture):
                 dns_records_to_create.append(
                     DnsRecord(
                         dns_zone=dns_zone,
-                        type=DnsRecord.RecordTypes.A,
+                        type=DNSRecordTypes.A,
                         name="dev",
                         ttl=300,
                         content=fake.ipv4(),
                         comment="Development environment",
                         tags=["development", "non-production"],
+                    )
+                )
+
+                # MX record for mail routing
+                dns_records_to_create.append(
+                    DnsRecord(
+                        dns_zone=dns_zone,
+                        type=DNSRecordTypes.MX,
+                        name="@",
+                        ttl=3600,
+                        content=f"mail.{dns_zone.name}",
+                        priority=10,
+                        comment="Primary mail server",
+                        tags=["email", "production"],
                     )
                 )
 

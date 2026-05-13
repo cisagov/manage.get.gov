@@ -22,7 +22,6 @@ from datetime import timedelta
 
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
-
 logger = logging.getLogger(__name__)
 
 

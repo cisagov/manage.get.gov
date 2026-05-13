@@ -16,8 +16,9 @@ from unittest import skip
 from registrar.models.domain_request import DomainRequest
 from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
-from registrar.models.public_contact import PublicContact
+from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
+from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import ActionNotAllowed, NameserverError
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
@@ -37,7 +38,6 @@ import logging
 import boto3_mocking  # type: ignore
 import copy
 from django.core.exceptions import ValidationError
-
 
 logger = logging.getLogger(__name__)
 
@@ -869,10 +869,38 @@ class TestRegistrantContacts(MockEppLib):
             And the registrant is the admin on a domain
         """
         super().setUp()
+        self.requester, _ = User.objects.get_or_create(
+            username="requester",
+            defaults={"email": "requester@example.com"},
+        )
         # Creates a domain with no contact associated to it
         self.domain, _ = Domain.objects.get_or_create(name="security.gov")
         # Creates a domain with an associated contact
         self.domain_contact, _ = Domain.objects.get_or_create(name="freeman.gov")
+
+        # DomainInformation is required
+        DomainInformation.objects.get_or_create(
+            domain=self.domain,
+            defaults={
+                "requester": self.requester,
+                "organization_name": "Example Org",
+                "address_line1": "123 Main St",
+                "city": "Arlington",
+                "state_territory": "VA",
+                "zipcode": "22201",
+            },
+        )
+        DomainInformation.objects.get_or_create(
+            domain=self.domain_contact,
+            defaults={
+                "requester": self.requester,
+                "organization_name": "Example Org",
+                "address_line1": "123 Main St",
+                "city": "Arlington",
+                "state_territory": "VA",
+                "zipcode": "22201",
+            },
+        )
         DF = common.DiscloseField
         excluded_disclose_fields = {DF.NOTIFY_EMAIL, DF.VAT, DF.IDENT}
         self.all_disclose_fields = {field for field in DF} - excluded_disclose_fields
@@ -884,6 +912,27 @@ class TestRegistrantContacts(MockEppLib):
         PublicContact.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
+
+    def test_add_registrant_raises_when_required_domain_info_values_missing(self):
+        with less_console_noise():
+            domain_info = self.domain.domain_info
+            domain_info.organization_name = None
+            domain_info.address_line1 = None
+            domain_info.city = None
+            domain_info.state_territory = None
+            domain_info.zipcode = None
+            domain_info.save()
+
+            with self.assertRaises(ValueError) as error:
+                self.domain.addRegistrant()
+
+            message = str(error.exception)
+            self.assertIn(self.domain.name, message)
+            self.assertIn("organization", message)
+            self.assertIn("address_line1", message)
+            self.assertIn("city", message)
+            self.assertIn("state_territory", message)
+            self.assertIn("zipcode", message)
 
     def test_no_security_email(self):
         """
@@ -912,9 +961,7 @@ class TestRegistrantContacts(MockEppLib):
                 contact_type=PublicContact.ContactTypeChoices.SECURITY,
             ).registry_id
             expectedSecContact.registry_id = id
-            expectedCreateCommand = self._convertPublicContactToEpp(
-                expectedSecContact, disclose=False, disclose_fields=self.all_disclose_fields
-            )
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact)
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
@@ -944,7 +991,7 @@ class TestRegistrantContacts(MockEppLib):
             #  self.domain.security_contact=expectedSecContact
             expectedSecContact.save()
             # no longer the default email it should be disclosed
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact)
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=expectedSecContact.registry_id, type="security")],
@@ -969,9 +1016,7 @@ class TestRegistrantContacts(MockEppLib):
             security_contact.registry_id = "fail"
             security_contact.save()
             self.domain.security_contact = security_contact
-            expectedCreateCommand = self._convertPublicContactToEpp(
-                security_contact, disclose=False, disclose_fields=self.all_disclose_fields
-            )
+            expectedCreateCommand = self._convertPublicContactToEpp(security_contact)
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
@@ -1004,7 +1049,7 @@ class TestRegistrantContacts(MockEppLib):
             new_contact.registry_id = "fail"
             new_contact.email = ""
             self.domain.security_contact = new_contact
-            firstCreateContactCall = self._convertPublicContactToEpp(old_contact, disclose=False)
+            firstCreateContactCall = self._convertPublicContactToEpp(old_contact)
             updateDomainAddCall = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=old_contact.registry_id, type="security")],
@@ -1014,7 +1059,7 @@ class TestRegistrantContacts(MockEppLib):
                 PublicContact.get_default_security().email,
             )
             # this one triggers the fail
-            secondCreateContact = self._convertPublicContactToEpp(new_contact, disclose=False)
+            secondCreateContact = self._convertPublicContactToEpp(new_contact)
             updateDomainRemCall = commands.UpdateDomain(
                 name=self.domain.name,
                 rem=[common.DomainContact(contact=old_contact.registry_id, type="security")],
@@ -1022,9 +1067,7 @@ class TestRegistrantContacts(MockEppLib):
             defaultSecID = PublicContact.objects.filter(domain=self.domain).get().registry_id
             default_security = PublicContact.get_default_security()
             default_security.registry_id = defaultSecID
-            createDefaultContact = self._convertPublicContactToEpp(
-                default_security, disclose=False, disclose_fields=self.all_disclose_fields
-            )
+            createDefaultContact = self._convertPublicContactToEpp(default_security)
             updateDomainWDefault = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=defaultSecID, type="security")],
@@ -1052,15 +1095,15 @@ class TestRegistrantContacts(MockEppLib):
             security_contact.email = "originalUserEmail@gmail.com"
             security_contact.registry_id = "fail"
             security_contact.save()
-            expectedCreateCommand = self._convertPublicContactToEpp(security_contact, disclose=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(security_contact)
             expectedUpdateDomain = commands.UpdateDomain(
                 name=self.domain.name,
                 add=[common.DomainContact(contact=security_contact.registry_id, type="security")],
             )
             security_contact.email = "changedEmail@email.com"
             security_contact.save()
-            expectedSecondCreateCommand = self._convertPublicContactToEpp(security_contact, disclose=False)
-            updateContact = self._convertPublicContactToEpp(security_contact, disclose=False, createContact=False)
+            expectedSecondCreateCommand = self._convertPublicContactToEpp(security_contact)
+            updateContact = self._convertPublicContactToEpp(security_contact, createContact=False)
             expected_calls = [
                 call(expectedCreateCommand, cleaned=True),
                 call(expectedUpdateDomain, cleaned=True),
@@ -1123,12 +1166,24 @@ class TestRegistrantContacts(MockEppLib):
                 on all fields except security
         """
         with less_console_noise():
-            # Generates a domain with four existing contacts
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
-            # Contact setup
             expected_admin = domain.get_default_administrative_contact()
             expected_admin.email = self.mockAdministrativeContact.email
-            expected_registrant = domain.get_default_registrant_contact()
+            expected_registrant, _ = PublicContact.objects.get_or_create(
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                registry_id=get_id(),
+                domain=domain,
+                name="CSD/CB – Attn: .gov TLD",
+                org="Cybersecurity and Infrastructure Security Agency",
+                street1="1110 N. Glebe Rd",
+                city="Arlington",
+                sp="VA",
+                pc="22201",
+                cc="US",
+                email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+                voice="+1.8882820870",
+                pw="thisisnotapassword",
+            )
             expected_registrant.email = self.mockRegistrantContact.email
             expected_security = domain.get_default_security_contact()
             expected_security.email = self.mockSecurityContact.email
@@ -1144,44 +1199,112 @@ class TestRegistrantContacts(MockEppLib):
                 (expected_security, domain.security_contact),
                 (expected_tech, domain.technical_contact),
             ]
-            # Test for each contact
-            for contact in contacts:
-                expected_contact = contact[0]
-                actual_contact = contact[1]
+            DF = common.DiscloseField
+            for expected_contact, actual_contact in contacts:
                 if expected_contact.contact_type == PublicContact.ContactTypeChoices.SECURITY:
-                    disclose_fields = self.all_disclose_fields - {"email"}
-                    expectedCreateCommand = self._convertPublicContactToEpp(
-                        expected_contact, disclose=False, disclose_fields=disclose_fields
-                    )
-                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
-                    disclose_fields = self.all_disclose_fields - {"name", "email", "voice", "addr"}
+                    expectedCreateCommand = self._convertPublicContactToEpp(expected_contact)
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.REGISTRANT:
+                    registrant_disclose_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
+                    registrant_disclose_types = {
+                        DF.NAME: "loc",
+                        DF.ORG: "loc",
+                        DF.ADDR: "loc",
+                        DF.STREET: "loc",
+                        DF.CITY: "loc",
+                        DF.SP: "loc",
+                        DF.PC: "loc",
+                        DF.CC: "loc",
+                    }
                     expectedCreateCommand = self._convertPublicContactToEpp(
                         expected_contact,
-                        disclose=False,
+                        disclose_fields=registrant_disclose_fields,
+                        disclose_types=registrant_disclose_types,
+                    )
+                elif expected_contact.contact_type == PublicContact.ContactTypeChoices.ADMINISTRATIVE:
+                    disclose_fields = {
+                        DF.NAME,
+                        DF.ORG,
+                        DF.ADDR,
+                        DF.STREET,
+                        DF.CITY,
+                        DF.SP,
+                        DF.PC,
+                        DF.CC,
+                        DF.VOICE,
+                        DF.FAX,
+                        DF.EMAIL,
+                    }
+                    expectedCreateCommand = self._convertPublicContactToEpp(
+                        expected_contact,
                         disclose_fields=disclose_fields,
-                        disclose_types={"addr": "loc", "name": "loc"},
                     )
                 else:
-                    expectedCreateCommand = self._convertPublicContactToEpp(
-                        expected_contact, disclose=False, disclose_fields=self.all_disclose_fields
-                    )
+                    expectedCreateCommand = self._convertPublicContactToEpp(expected_contact)
                 self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
-                # The emails should match on both items
                 self.assertEqual(expected_contact.email, actual_contact.email)
+
+    def test_registrant_discloses_org_city_state_country_only(self):
+        with less_console_noise():
+            domain, _ = Domain.objects.get_or_create(name="example.gov")
+            DomainInformation.objects.get_or_create(domain=domain, defaults={"requester": self.requester})
+            registrant, _ = PublicContact.objects.get_or_create(
+                contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                registry_id=get_id(),
+                domain=domain,
+                name="CSD/CB – Attn: .gov TLD",
+                org="Cybersecurity and Infrastructure Security Agency",
+                street1="1110 N. Glebe Rd",
+                city="Arlington",
+                sp="VA",
+                pc="22201",
+                cc="US",
+                email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+                voice="+1.8882820870",
+                pw="thisisnotapassword",
+            )
+
+            disclose = domain._disclose_fields(registrant)
+            DF = common.DiscloseField
+            expected_fields = {DF.ORG, DF.CITY, DF.SP, DF.CC}
+            expected_types = {
+                DF.NAME: "loc",
+                DF.ORG: "loc",
+                DF.ADDR: "loc",
+                DF.STREET: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.PC: "loc",
+                DF.CC: "loc",
+            }
+
+            self.assertTrue(disclose.flag)
+            self.assertEqual(disclose.fields, expected_fields)
+            self.assertEqual(disclose.types, expected_types)
 
     def test_convert_public_contact_to_epp(self):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="freeman.gov")
             dummy_contact = domain.get_default_security_contact()
-            test_disclose = self._convertPublicContactToEpp(dummy_contact, disclose=False).__dict__
-            test_not_disclose = self._convertPublicContactToEpp(dummy_contact, disclose=False).__dict__
+            test_disclose = self._convertPublicContactToEpp(dummy_contact).__dict__
+            test_not_disclose = self._convertPublicContactToEpp(dummy_contact).__dict__
             # Separated for linter
-            disclose_email_field = self.all_disclose_fields - {common.DiscloseField.EMAIL}
+            disclose_email_field = set()
             DF = common.DiscloseField
             expected_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
                 "disclose": common.Disclose(
-                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                    flag=True,
+                    fields=disclose_email_field,
+                    types={
+                        DF.NAME: "loc",
+                        DF.ORG: "loc",
+                        DF.ADDR: "loc",
+                        DF.STREET: "loc",
+                        DF.CITY: "loc",
+                        DF.SP: "loc",
+                        DF.PC: "loc",
+                        DF.CC: "loc",
+                    },
                 ),
                 "email": "help@get.gov",
                 "extensions": [],
@@ -1208,7 +1331,18 @@ class TestRegistrantContacts(MockEppLib):
             expected_not_disclose = {
                 "auth_info": common.ContactAuthInfo(pw="2fooBAR123fooBaz"),
                 "disclose": common.Disclose(
-                    flag=False, fields=disclose_email_field, types={DF.ADDR: "loc", DF.NAME: "loc"}
+                    flag=True,
+                    fields=disclose_email_field,
+                    types={
+                        DF.NAME: "loc",
+                        DF.ORG: "loc",
+                        DF.ADDR: "loc",
+                        DF.STREET: "loc",
+                        DF.CITY: "loc",
+                        DF.SP: "loc",
+                        DF.PC: "loc",
+                        DF.CC: "loc",
+                    },
                 ),
                 "email": "help@get.gov",
                 "extensions": [],
@@ -1268,7 +1402,19 @@ class TestRegistrantContacts(MockEppLib):
         # Verify disclosure settings
         self.assertEqual(result.disclose.flag, True)
         self.assertEqual(result.disclose.fields, {DF.EMAIL})
-        self.assertEqual(result.disclose.types, {DF.ADDR: "loc", DF.NAME: "loc"})
+        self.assertEqual(
+            result.disclose.types,
+            {
+                DF.ORG: "loc",
+                DF.STREET: "loc",
+                DF.CITY: "loc",
+                DF.SP: "loc",
+                DF.PC: "loc",
+                DF.CC: "loc",
+                DF.NAME: "loc",
+                DF.ADDR: "loc",
+            },
+        )
 
     def test_not_disclosed_on_default_security_contact(self):
         """
@@ -1283,9 +1429,7 @@ class TestRegistrantContacts(MockEppLib):
             expectedSecContact.domain = domain
             expectedSecContact.registry_id = "defaultSec"
             domain.security_contact = expectedSecContact
-            expectedCreateCommand = self._convertPublicContactToEpp(
-                expectedSecContact, disclose=False, disclose_fields=self.all_disclose_fields
-            )
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact)
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting a default email
             self.assertEqual(domain.security_contact.email, expectedSecContact.email)
@@ -1303,9 +1447,7 @@ class TestRegistrantContacts(MockEppLib):
             expectedTechContact.domain = domain
             expectedTechContact.registry_id = "defaultTech"
             domain.technical_contact = expectedTechContact
-            expectedCreateCommand = self._convertPublicContactToEpp(
-                expectedTechContact, disclose=False, disclose_fields=self.all_disclose_fields
-            )
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedTechContact)
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting a default email
             self.assertEqual(domain.technical_contact.email, expectedTechContact.email)
@@ -1324,7 +1466,7 @@ class TestRegistrantContacts(MockEppLib):
             expectedSecContact.domain = domain
             expectedSecContact.email = "security@mail.gov"
             domain.security_contact = expectedSecContact
-            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact, disclose=False)
+            expectedCreateCommand = self._convertPublicContactToEpp(expectedSecContact)
             self.mockedSendFunction.assert_any_call(expectedCreateCommand, cleaned=True)
             # Confirm that we are getting the desired email
             self.assertEqual(domain.security_contact.email, expectedSecContact.email)
@@ -3306,12 +3448,12 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
     @less_console_noise_decorator
     def test_is_legacy_helper_method(self):
         """
-        Scenario: The _is_legacy() helper correctly ids legacy domains
+        Scenario: The is_legacy helper correctly ids legacy domains
             Given various domain configurations
-            When _is_legacy() is called
+            When is_legacy is called
             Then it correctly ids portfolio vs legacy domains
 
-        CONTEXT: The _is_legacy() method is used internally to determine
+        CONTEXT: The is_legacy property is used internally to determine
         if a domain can enroll in DNS hosting.
         """
         from registrar.models import Portfolio
@@ -3319,10 +3461,10 @@ class TestDomainDNSHostingEnrollment(MockEppLib):
         # Legacy domain (no portfolio)
         legacy_domain = Domain.objects.create(name="legacy.gov")
         DomainInformation.objects.create(domain=legacy_domain, requester=self.user, portfolio=None)
-        self.assertTrue(legacy_domain._is_legacy())
+        self.assertTrue(legacy_domain.is_legacy)
 
         # Portfolio domain
         portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Org")  # Added required field
         portfolio_domain = Domain.objects.create(name="portfolio.gov")
         DomainInformation.objects.create(domain=portfolio_domain, requester=self.user, portfolio=portfolio)
-        self.assertFalse(portfolio_domain._is_legacy())
+        self.assertFalse(portfolio_domain.is_legacy)

@@ -634,8 +634,7 @@ class TestMigrations(TestCase):
         total_domain_informations = len(DomainInformation.objects.all())
         total_domain_invitations = len(DomainInvitation.objects.all())
 
-        logger.debug(
-            f"""
+        logger.debug(f"""
         total_missing_domains = {len(missing_domains)}
         total_duplicate_domains = {len(duplicate_domains)}
         total_missing_domain_informations = {len(missing_domain_informations)}
@@ -645,8 +644,7 @@ class TestMigrations(TestCase):
         total_domains = {len(Domain.objects.all())}
         total_domain_informations = {len(DomainInformation.objects.all())}
         total_domain_invitations = {len(DomainInvitation.objects.all())}
-        """
-        )
+        """)
         self.assertEqual(total_missing_domains, expected_missing_domains)
         self.assertEqual(total_duplicate_domains, expected_duplicate_domains)
         self.assertEqual(total_missing_domain_informations, expected_missing_domain_informations)

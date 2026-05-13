@@ -1,21 +1,25 @@
 <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
-    <caption class="sr-only">Your DNS records</caption>
     {% if dns_records %}
-    <thead>
+    <caption class="sr-only">Your DNS records</caption>
+    {% else %}
+    <caption class="sr-only">You currently have no DNS records.</caption>
+    {% endif %}
+
+    {# Always render thead/tbody so htmx OOB swaps have stable targets. Hide thead when empty. #}
+    <thead id="dnsrecords-table-head">
         <tr>
-        <th scope="col" role="columnheader">Type</th>
-        <th scope="col" role="columnheader">Name</th>
-        <th scope="col" role="columnheader">Content</th>
-        <th scope="col" role="columnheader">TTL</th>
-        <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
+            <th scope="col" role="columnheader">Type</th>
+            <th scope="col" role="columnheader">Name</th>
+            <th scope="col" role="columnheader">Content</th>
+            <th scope="col" role="columnheader">TTL</th>
+            <th scope="col" role="columnheader" class="width-0 padding-right-0">Action</th>
         </tr>
     </thead>
     <tbody id="dnsrecords-table-body">
         {% for dns_record in dns_records %}
-            {% include "domain_dns_record_row.html" with counter=forloop.counter dns_record=dns_record %}
+            {% include "domain_dns_record_row.html" with record_id=dns_record.id dns_record=dns_record %}
+            {% include "domain_dns_record_edit_form.html" with record_id=dns_record.id dns_record=dns_record %}
         {% endfor %}
     </tbody>
-    {% else %}
-    <caption class="sr-only">You currently have no DNS records.</caption>
-    {% endif %}
 </table>
+<p id="dnsrecords-no-records-message" {% if dns_records %} hidden {% endif %}>You don't have any DNS records added.</p>

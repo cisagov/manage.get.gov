@@ -52,7 +52,7 @@ error messages, if necessary.
   {% endif %}
   
   {% if field.help_text %}
-    <span class="usa-hint">{{ field.help_text }}</span>
+    <span id="{{widget.attrs.id}}_helptext" class="usa-hint">{{ field.help_text }}</span>
   {% endif %}
 
   {% if field.errors %}
@@ -94,7 +94,7 @@ error messages, if necessary.
           class="usa-character-count__message"
           aria-live="polite"
         >
-          You can enter up to {{ widget.attrs.maxlength }} characters
+          You can enter up to {{ widget.attrs.maxlength }} characters.
         </span>
       </div>
     {% endif %}

@@ -7,7 +7,6 @@ from registrar.models import (
 )
 from registrar.models.allowed_email import AllowedEmail
 
-
 fake = Faker()
 logger = logging.getLogger(__name__)
 
@@ -97,13 +96,6 @@ class UserFixture:
             "title": "Software Engineer",
         },
         {
-            "username": "c9c64cd5-bc76-45ef-85cd-4f6eefa9e998",
-            "first_name": "Samiyah",
-            "last_name": "Key",
-            "email": "skey@truss.works",
-            "title": "Designer",
-        },
-        {
             "username": "f20b7a53-f40d-48f8-8c12-f42f35eede92",
             "first_name": "Kimberly",
             "last_name": "Aralar",
@@ -151,6 +143,20 @@ class UserFixture:
             "email": "charles.wells@ecstech.com",
             "title": "ADMIN",
         },
+        {
+            "username": "eb2214cd-fc0c-48c0-9dbd-bc4cd6820c74",
+            "first_name": "Alysia",
+            "last_name": "Broddrick",
+            "email": "abroddrick@truss.works",
+            "title": "I drink coffee and know things",
+        },
+        {
+            "username": "41407964-a570-4c5c-9179-ddbf45326eeb",
+            "first_name": "Samir",
+            "last_name": "Mishra",
+            "email": "samir.mishra@ecstech.com",
+            "title": "Code Mage",
+        },
     ]
 
     STAFF = [
@@ -185,9 +191,16 @@ class UserFixture:
             "email": "gaby+1@truss.works",
         },
         {
-            "username": "cfe7c2fc-e24a-480e-8b78-28645a1459b3",
+            "username": "02f96e16-fff9-4eb1-bb7e-e61a17c63f3f",
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
+            "email": "nicolle.leclair.gov@ecstech.com",
+        },
+        {
+            "username": "106632de-8681-43db-85dd-83857c55660f",
+            "first_name": "Natalie-Analyst",
+            "last_name": "Wong-Analyst",
+            "email": "wai-wan.wong@associates.cisa.dhs.gov",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
@@ -206,12 +219,6 @@ class UserFixture:
             "first_name": "Elizabeth-Analyst",
             "last_name": "Liao-Analyst",
             "email": "elizabeth.liao@gwe.cisa.dhs.gov",
-        },
-        {
-            "username": "ee1e68da-41a5-47f7-949b-d8a4e9e2b9d2",
-            "first_name": "Samiyah-Analyst",
-            "last_name": "Key-Analyst",
-            "email": "skey+1@truss.works",
         },
         {
             "username": "cf2b32fe-280d-4bc0-96c2-99eec09ba4da",
@@ -249,6 +256,32 @@ class UserFixture:
             "last_name": "Wells",
             "email": "charles.wells.analyst@ecstech.com",
             "title": "ANALYST",
+        },
+        {
+            "username": "9db645e5-6db1-457a-9a93-abecfb98c5a5",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON",
+            "email": "feedback+9@get.gov",
+            "title": "ANALYST",
+        },
+        {
+            "username": "1ddd1444-937e-4a0a-9202-e68f2851edde",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON",
+            "email": "feedback+10@get.gov",
+            "title": "ANALYST",
+        },
+        {
+            "username": "b6a15987-5c88-4e26-8de2-ca71a0bdb2cd",
+            "first_name": "Alysia-Analyst",
+            "last_name": "Alysia-Analyst",
+            "email": "abroddrick+1@truss.works",
+        },
+        {
+            "username": "55b55db0-bb8d-4223-b1df-9482174a3679",
+            "first_name": "Samir-Analyst",
+            "last_name": "Mishra-Analyst",
+            "email": "samir.mishra.gov@ecstech.com",
         },
     ]
 

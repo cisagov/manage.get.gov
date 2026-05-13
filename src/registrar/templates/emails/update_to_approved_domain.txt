@@ -1,6 +1,6 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 
-Hi, {{recipient.first_name}}.
+Hi, domain managers,
 An update was made to {{domain}}.
 
 UPDATED BY: {{user}}
@@ -15,16 +15,14 @@ Get help with managing your .gov domain <https://get.gov/help/domain-management/
 
 WHY DID YOU RECEIVE THIS EMAIL? 
 You’re listed as a domain manager for {{domain}}, so you’ll receive a notification whenever changes are made to that domain.
-If you have questions or concerns, reach out to the person who made the change or reply to this email.
 
-THANK YOU
-.Gov helps the public identify official, trusted information. Thank you for using a .gov domain.
+If you have questions or concerns, reach out to the person who made the change or reply to this email.
 
 ----------------------------------------------------------------
 
 The .gov team
-Contact us <https://get.gov/contact/> 
-Learn about .gov <https://get.gov>
+Contact us <https://get.gov/contact/>
+Learn how .gov helps the public identify official, trusted information <https://get.gov>
 
 The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
 {% endautoescape %}

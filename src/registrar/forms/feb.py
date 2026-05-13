@@ -38,7 +38,6 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
             )
         ],
         label="",
-        help_text="Maximum 2000 characters allowed.",
     )
 
 
@@ -82,12 +81,8 @@ class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
 class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
     time_frame_details = forms.CharField(
         label="time_frame_details",
-        widget=forms.Textarea(
-            attrs={
-                "aria-label": "Provide details on your target time frame. \
-                    Is there a special significance to this date (legal requirement, announcement, event, etc)?"
-            }
-        ),
+        widget=forms.Textarea(attrs={"aria-label": "Provide details on your target time frame. \
+                    Is there a special significance to this date (legal requirement, announcement, event, etc)?"}),
         validators=[
             MaxLengthValidator(
                 2000,

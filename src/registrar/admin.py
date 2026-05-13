@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.services.dns_host_service import DnsHostService
 from registrar.utility.admin_helpers import (
     AutocompleteSelectWithPlaceholder,
     get_action_needed_reason_default_email,
@@ -77,7 +78,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
 from django.db.models import Exists, OuterRef
 from .models import DnsRecord
-
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +410,11 @@ class DomainInformationAdminForm(forms.ModelForm):
             "sub_organization": AutocompleteSelectWithPlaceholder(
                 DomainInformation._meta.get_field("sub_organization"),
                 admin.site,
-                attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
+                attrs={
+                    "data-placeholder": "---------",
+                    "ajax-url": "get-suborganization-list-json",
+                    "data-allow-clear": "true",
+                },
             ),
         }
 
@@ -429,7 +433,11 @@ class DomainInformationInlineForm(forms.ModelForm):
             "sub_organization": AutocompleteSelectWithPlaceholder(
                 DomainInformation._meta.get_field("sub_organization"),
                 admin.site,
-                attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
+                attrs={
+                    "data-placeholder": "---------",
+                    "ajax-url": "get-suborganization-list-json",
+                    "data-allow-clear": "true",
+                },
             ),
         }
 
@@ -451,7 +459,11 @@ class DomainRequestAdminForm(forms.ModelForm):
             "sub_organization": AutocompleteSelectWithPlaceholder(
                 DomainRequest._meta.get_field("sub_organization"),
                 admin.site,
-                attrs={"data-placeholder": "---------", "ajax-url": "get-suborganization-list-json"},
+                attrs={
+                    "data-placeholder": "---------",
+                    "ajax-url": "get-suborganization-list-json",
+                    "data-allow-clear": "true",
+                },
             ),
         }
         labels = {
@@ -2046,7 +2058,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     def display_error_msgs(self, request, email, permission_exists, invitation_exists):
         if permission_exists:
-            messages.error(request, "User is already a member of this portfolio.")
+            messages.error(request, f"{email} is already a member of this organization.")
         elif invitation_exists:
             messages.error(request, f"{email} has an existing invitation.")
 
@@ -2090,7 +2102,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
-                    messages.success(request, f"{requested_email} has been invited.")
+                    messages.success(request, f"{requested_email} has been invited to this organization.")
                 else:
                     return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation
@@ -3182,12 +3194,12 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         ]
 
         # Hide FEB fields for non-FEB requests
-        if not (obj and obj.portfolio and obj.is_feb()):
+        if not (obj and obj.portfolio and not obj.is_feb()):
             excluded_fields.update(feb_fields)
 
-        # Hide certain portfolio and suborg fields for users that are not in a portfolio
-        if not request.user.is_org_user(request):
-            # In any org_fields, exclude all the other fields that aren't portfolio
+        # Hide certain portfolio and suborg fields for non portfolio domain requests
+        # In any org_fields, exclude all the other fields that aren't portfolio
+        if obj and not obj.portfolio:
             excluded_fields.update(field for field in org_fields if field != "portfolio")
             excluded_fields.update(feb_fields)
 
@@ -3493,7 +3505,7 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if should_apply_default_filter:
             # modify the GET of the request to set the selected filter
             modified_get = copy.deepcopy(request.GET)
-            modified_get["status__in"] = "submitted,in review,action needed"
+            modified_get["status__in"] = "submitted,in review,in review - omb,action needed"
             request.GET = modified_get
 
         response = super().changelist_view(request, extra_context=extra_context)
@@ -4395,6 +4407,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             extra_context["curr_exp_date"] = (
                 domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
             )
+            extra_context["dns_hosting_enabled"] = flag_is_active(request, "dns_hosting")
 
         return super().changeform_view(request, object_id, form_url, extra_context)
 
@@ -4407,6 +4420,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "_delete_domain": self.do_delete_domain,
             "_get_status": self.do_get_status,
             "_extend_expiration_date": self.do_extend_expiration_date,
+            "_enroll_dns_hosting": self.do_enroll_dns_hosting,
         }
 
         # Check which action button was pressed and call the corresponding function
@@ -4672,6 +4686,26 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         form.is_omb_analyst = is_omb_analyst
 
         return form
+
+    def do_enroll_dns_hosting(self, request, obj):
+        try:
+            service = DnsHostService()
+            service.enroll_domain(obj)
+        except Exception as e:
+            logger.exception(e)
+            self.message_user(
+                request,
+                "Failed to enroll domain in DNS hosting.",
+                messages.ERROR,
+            )
+        else:
+            self.message_user(
+                request,
+                "Domain successfully enrolled in DNS hosting.",
+                messages.SUCCESS,
+            )
+
+        return HttpResponseRedirect(".")
 
 
 @admin.register(DnsRecord)

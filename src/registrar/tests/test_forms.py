@@ -101,7 +101,10 @@ class TestFormValidation(MockEppLib):
         form = DotGovDomainForm(data={"requested_domain": "top-level-agency.com"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Enter the .gov domain you want without any periods."],
+            [
+                "Enter a domain using only letters, numbers, or hyphens. "
+                "We don’t register subdomains, like blog.example.gov."
+            ],
         )
 
     @less_console_noise_decorator
@@ -112,11 +115,15 @@ class TestFormValidation(MockEppLib):
         """
         test_cases = [
             # extra_dots
-            ("top-level-agency.com", "Enter the .gov domain you want without any periods."),
+            (
+                "top-level-agency.com",
+                "Enter a domain using only letters, numbers, or hyphens. "
+                "We don’t register subdomains, like blog.example.gov.",
+            ),
             # invalid
             (
                 "underscores_forever",
-                "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
             ),
             # required
             (
@@ -128,9 +135,18 @@ class TestFormValidation(MockEppLib):
             # unavailable
             (
                 "whitehouse.gov",
-                "That domain isn’t available. <a class='usa-link' "
-                "href='https://get.gov/domains/choosing' target='_blank'>Read more about "
-                "choosing your .gov domain</a>.",
+                "That domain isn’t available. You can learn more about this domain by performing a <a class='usa-link' "
+                "href='https://get.gov/domains/whois/?domain=whitehouse.gov' target='_blank'>WHOIS search</a>.",
+            ),
+            # spaces
+            (
+                "    ",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
+            ),
+            # spaces with text
+            (
+                "    test",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
             ),
         ]
 
@@ -171,18 +187,32 @@ class TestFormValidation(MockEppLib):
         """
         test_cases = [
             # extra_dots
-            ("top-level-agency.com", "Enter the .gov domain you want without any periods."),
+            (
+                "top-level-agency.com",
+                "Enter a domain using only letters, numbers, or hyphens. "
+                "We don’t register subdomains, like blog.example.gov.",
+            ),
             # invalid
             (
                 "underscores_forever",
-                "Enter a domain using only letters, numbers, " "or hyphens (though we don't recommend using hyphens).",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
             ),
             # unavailable
             (
                 "whitehouse.gov",
-                "That domain isn’t available. <a class='usa-link' "
-                "href='https://get.gov/domains/choosing' target='_blank'>Read more about "
-                "choosing your .gov domain</a>.",
+                "That domain isn’t available. You can learn more about this domain by performing a "
+                "<a class='usa-link' href='https://get.gov/domains/whois/?domain=whitehouse.gov' "
+                "target='_blank'>WHOIS search</a>.",
+            ),
+            # spaces
+            (
+                "     ",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
+            ),
+            # spaces with text
+            (
+                "    test",
+                "Enter a domain using only letters, numbers, or hyphens (though we don't recommend using hyphens).",
             ),
         ]
 
@@ -221,17 +251,26 @@ class TestFormValidation(MockEppLib):
         form = DotGovDomainForm(data={"requested_domain": "sub.top-level-agency.gov"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Enter the .gov domain you want without any periods."],
+            [
+                "Enter a domain using only letters, numbers, or hyphens. "
+                "We don’t register subdomains, like blog.example.gov."
+            ],
         )
         form = DotGovDomainForm(data={"requested_domain": ".top-level-agency.gov"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Enter the .gov domain you want without any periods."],
+            [
+                "Enter a domain using only letters, numbers, or hyphens. "
+                "We don’t register subdomains, like blog.example.gov."
+            ],
         )
         form = DotGovDomainForm(data={"requested_domain": "..gov"})
         self.assertEqual(
             form.errors["requested_domain"],
-            ["Enter the .gov domain you want without any periods."],
+            [
+                "Enter a domain using only letters, numbers, or hyphens. "
+                "We don’t register subdomains, like blog.example.gov."
+            ],
         )
 
     @less_console_noise_decorator
@@ -250,6 +289,26 @@ class TestFormValidation(MockEppLib):
         self.assertEqual(
             form.errors["email"],
             ["Enter an email address in the required format, like name@example.com."],
+        )
+
+    @less_console_noise_decorator
+    def test_email_max_length_failure(self):
+        """Test for email address with length over 320 chars"""
+
+        form = PortfolioNewMemberForm(
+            data={
+                "email": "invalidemailtoolonginvalidemailtoolonginvalidemailtoolong"
+                "invalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalid"
+                "emailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailnvalidemailtoolong"
+                "invalidemailnvalidemailtoolonginvalidemailnvalidemailtoolonginvalidemailnvalidemail@email.com"
+            }
+        )
+        self.assertEquals(
+            form.errors["email"],
+            [
+                "Enter an email address in the required format, like name@example.com.",
+                "Email must be no more than 320 characters.",
+            ],
         )
 
     @less_console_noise_decorator

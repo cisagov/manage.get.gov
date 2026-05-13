@@ -18,7 +18,7 @@ on:
           - hotgov
           - meoward
           - backup
-          - ap
+          - ab
           - cw
           - testdb
           - acadia
@@ -31,6 +31,7 @@ on:
           - es
           - nl
           - rh
+          - sm
           - kma
           - dg
 
