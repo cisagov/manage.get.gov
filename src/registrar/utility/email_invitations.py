@@ -59,17 +59,25 @@ def _check_outside_org_membership(email, requestor, is_member_of_different_org):
     if not flag_is_active_for_user(requestor, "multiple_portfolios") and is_member_of_different_org:
         raise OutsideOrgMemberError(email=email)
 
-def _check_user_org_admin(user):
-    """Check to see if the user is an org admin"""
-    is_org_admin = False
+def _check_user_org_admin(requestor) -> bool:
+    """
+    Check to see if the requestor is an org admin
 
-    # Check to see if requesting user is an org admin
-    roles_list = list(user.get_portfolios())
+    Args:
+        requestor (user): The user initiating the invitation.
+
+    Returns:
+        Boolean indicating if user is an Org Admin.
+    """
+
+    #Check to see if the user is an Org Admin
+    roles_list = list(requestor.get_portfolios())
+    if not roles_list:
+        return False
     for role in roles_list:
         if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in role.roles:
-           is_org_admin = True
-
-    return is_org_admin
+           return True
+    return False
 
 
 def _validate_existing_invitation(email, user, domain):
@@ -143,6 +151,7 @@ def send_domain_invitation_email(
     """
     domains = _normalize_domains(domains)
     requestor_email = _get_requestor_email(requestor, domains=domains)
+    #Check to see if the user sending the invitation is an Org Admin
     is_org_admin = _check_user_org_admin(requestor)
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 

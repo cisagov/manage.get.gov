@@ -26,6 +26,7 @@ from registrar.utility.email_invitations import (
     send_domain_renewal_notification_emails,
     send_domain_deleted_email_to_managers_and_admins,
     send_domain_on_hold_admin_email_to_managers_and_admins,
+    _check_user_org_admin
 )
 
 from api.tests.common import less_console_noise_decorator
@@ -41,6 +42,7 @@ class DomainInvitationEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     @patch("registrar.utility.email_invitations._validate_invitation")
+    @patch("registrar.utility.email_invitations._check_user_org_admin")
     @patch("registrar.utility.email_invitations._get_requestor_email")
     @patch("registrar.utility.email_invitations._send_domain_invitation_email")
     @patch("registrar.utility.email_invitations._normalize_domains")
@@ -49,6 +51,7 @@ class DomainInvitationEmail(unittest.TestCase):
         mock_normalize_domains,
         mock_send_invitation_email,
         mock_get_requestor_email,
+        mock_check_user_org_admin,
         mock_validate_invitation,
         mock_user_domain_role_filter,
         mock_send_templated_email,
@@ -70,6 +73,8 @@ class DomainInvitationEmail(unittest.TestCase):
 
         mock_user_domain_role_filter.return_value = [MagicMock(user=mock_user1)]
 
+        mock_check_user_org_admin.return_value = False
+
         email = "invitee@example.com"
         is_member_of_different_org = False
 
@@ -84,6 +89,7 @@ class DomainInvitationEmail(unittest.TestCase):
         # Assertions
         mock_normalize_domains.assert_called_once_with(mock_domain)
         mock_get_requestor_email.assert_called_once_with(mock_requestor, domains=[mock_domain])
+        mock_check_user_org_admin.assert_called_once_with(mock_requestor)
         mock_validate_invitation.assert_called_once_with(
             email, None, [mock_domain], mock_requestor, is_member_of_different_org
         )
@@ -102,6 +108,7 @@ class DomainInvitationEmail(unittest.TestCase):
                 "is_org_admin": False,
             },
         )
+        
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -365,8 +372,10 @@ class DomainInvitationEmail(unittest.TestCase):
         # Mock successful email sending
         mock_send_templated_email.return_value = None  # No exception means success
 
+        mock_is_org_admin = False
+
         # Call function
-        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain, mock_is_org_admin)
 
         # Assertions
         self.assertTrue(result)  # All emails should be successfully sent
@@ -406,8 +415,10 @@ class DomainInvitationEmail(unittest.TestCase):
         # Mock sending email to raise an EmailSendingError
         mock_send_templated_email.side_effect = EmailSendingError("Email sending failed")
 
+        mock_is_org_admin = False
+
         # Call function
-        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain, mock_is_org_admin)
 
         # Assertions
         self.assertFalse(result)  # The result should be False as email sending failed
@@ -439,8 +450,11 @@ class DomainInvitationEmail(unittest.TestCase):
         # Mock no domain managers (empty UserDomainRole queryset)
         mock_filter.return_value = []
 
+
+        mock_is_org_admin = False
+        
         # Call function
-        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain, mock_is_org_admin)
 
         # Assertions
         self.assertTrue(result)  # No emails to send, so it should return True
@@ -470,8 +484,10 @@ class DomainInvitationEmail(unittest.TestCase):
         # Mock first email success and second email failure
         mock_send_templated_email.side_effect = [None, EmailSendingError("Failed to send email")]
 
+        mock_is_org_admin = False
+
         # Call function
-        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain)
+        result = _send_domain_invitation_update_emails_to_domain_managers(mock_email, mock_requestor_email, mock_domain, mock_is_org_admin)
 
         # Assertions
         self.assertFalse(result)  # One email failed, so result should be False
@@ -501,7 +517,6 @@ class DomainInvitationEmail(unittest.TestCase):
                 "is_org_admin": False,
             },
         )
-
 
 class PortfolioInvitationEmailTests(unittest.TestCase):
 
@@ -1167,12 +1182,14 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
         self.domain_manager2.user = self.manager_user2
 
     @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations._check_user_org_admin")
     @patch("registrar.utility.email_invitations.send_templated_email")
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
-    def test_send_email_success(self, mock_filter, mock_send_templated_email):
+    def test_send_email_success(self, mock_filter, mock_send_templated_email, mock_check_user_org_admin):
         """Test successful sending of domain manager removal emails."""
         mock_filter.return_value.exclude.return_value = [self.domain_manager1]
         mock_send_templated_email.return_value = None  # No exception means success
+        mock_check_user_org_admin.return_value = False
 
         result = send_domain_manager_removal_emails_to_domain_managers(
             removed_by_user=self.manager_user1,
@@ -1191,8 +1208,10 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
                 "removed_by": self.manager_user1,
                 "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
+        mock_check_user_org_admin.assert_called_once_with(self.manager_user1)
         self.assertTrue(result)
 
     @less_console_noise_decorator
@@ -1220,6 +1239,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
                 "removed_by": self.manager_user1,
                 "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
         mock_send_templated_email.assert_any_call(
@@ -1231,6 +1251,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
                 "removed_by": self.manager_user1,
                 "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
         self.assertTrue(result)
@@ -1241,6 +1262,8 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
     def test_send_email_failure(self, mock_filter, mock_send_templated_email):
         """Test handling of failure in sending admin removal emails."""
         mock_filter.return_value.exclude.return_value = [self.domain_manager1, self.domain_manager2]
+
+        #mock_check_user_org_admin.return_value = False
 
         result = send_domain_manager_removal_emails_to_domain_managers(
             removed_by_user=self.manager_user1,
@@ -1260,6 +1283,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
                 "removed_by": self.manager_user1,
                 "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
         mock_send_templated_email.assert_any_call(
@@ -1271,8 +1295,10 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
                 "removed_by": self.manager_user1,
                 "manager_removed_email": self.manager_user2.email,
                 "date": date.today(),
+                "is_org_admin": False,
             },
         )
+
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
