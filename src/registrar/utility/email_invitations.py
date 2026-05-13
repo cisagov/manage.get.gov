@@ -59,6 +59,7 @@ def _check_outside_org_membership(email, requestor, is_member_of_different_org):
     if not flag_is_active_for_user(requestor, "multiple_portfolios") and is_member_of_different_org:
         raise OutsideOrgMemberError(email=email)
 
+
 def _check_user_org_admin(requestor) -> bool:
     """
     Check to see if the requestor is an org admin
@@ -70,13 +71,13 @@ def _check_user_org_admin(requestor) -> bool:
         Boolean indicating if user is an Org Admin.
     """
 
-    #Check to see if the user is an Org Admin
+    # Check to see if the user is an Org Admin
     roles_list = list(requestor.get_portfolios())
     if not roles_list:
         return False
     for role in roles_list:
         if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in role.roles:
-           return True
+            return True
     return False
 
 
@@ -109,7 +110,7 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
                 "domains": domains,
                 "requestor_email": requestor_email,
                 "invitee_email_address": email,
-                "requested_user": requested_user
+                "requested_user": requested_user,
             },
         )
     except EmailSendingError as err:
@@ -151,7 +152,7 @@ def send_domain_invitation_email(
     """
     domains = _normalize_domains(domains)
     requestor_email = _get_requestor_email(requestor, domains=domains)
-    #Check to see if the user sending the invitation is an Org Admin
+    # Check to see if the user sending the invitation is an Org Admin
     is_org_admin = _check_user_org_admin(requestor)
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 
@@ -165,7 +166,7 @@ def send_domain_invitation_email(
             requestor_email=requestor_email,
             domain=domain,
             requested_user=requested_user,
-            is_org_admin= is_org_admin
+            is_org_admin=is_org_admin,
         ):
             all_manager_emails_sent = False
 
@@ -173,7 +174,7 @@ def send_domain_invitation_email(
 
 
 def _send_domain_invitation_update_emails_to_domain_managers(
-    email: str, requestor_email, domain: Domain,  is_org_admin: bool, requested_user=None
+    email: str, requestor_email, domain: Domain, is_org_admin: bool, requested_user=None
 ):
     """
     Notifies all domain managers of the provided domain of a change
@@ -200,7 +201,7 @@ def _send_domain_invitation_update_emails_to_domain_managers(
                     "invited_email_address": email,
                     "domain_manager": user,
                     "date": date.today(),
-                    "is_org_admin": is_org_admin
+                    "is_org_admin": is_org_admin,
                 },
             )
         except EmailSendingError as err:
@@ -258,7 +259,7 @@ def send_domain_manager_removal_emails_to_domain_managers(
                     "removed_by": removed_by_user,
                     "manager_removed_email": manager_removed_email,
                     "date": date.today(),
-                    "is_org_admin": is_org_admin
+                    "is_org_admin": is_org_admin,
                 },
             )
         except EmailSendingError as err:
