@@ -1,3 +1,5 @@
+import html as html_module
+import re
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -27,7 +29,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup(domain_manager=self.user)
 
         self.client.force_login(self.user)
 
@@ -601,3 +603,39 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.assertContains(response, "You already entered this DNS record")
             self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_form_renders_content_helptext_span(self):
+        """The add-record form's content field must render the helptext span server-side
+        so the JS handler can update its text when the type is changed (regression for #4954
+        - switching to/from MX or TXT must not strand the helper text)."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="id_content_helptext"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_form_type_config_includes_all_record_types(self):
+        """The type field's data-type-config drives the JS that updates the content
+        label/help text on type change. Regression for #4954: every record type — including
+        MX and TXT — must be present with its expected label and help_text."""
+        import json
+
+        response = self.client.get(self._url())
+        content = response.content.decode()
+
+        # Extract the data-type-config JSON value from the rendered type select
+        match = re.search(r'data-type-config="([^"]+)"', content)
+        self.assertIsNotNone(match, "data-type-config attribute missing from type select")
+        config = json.loads(html_module.unescape(match.group(1)))
+
+        for rt in DNSRecordTypes:
+            with self.subTest(record_type=rt.value):
+                self.assertIn(rt.value, config)
+                self.assertEqual(config[rt.value]["label"], rt.field_label)
+                self.assertEqual(config[rt.value]["help_text"], rt.help_text)
+
+        # MX and TXT are the regression targets — make sure they are explicitly present
+        self.assertIn("MX", config)
+        self.assertIn("TXT", config)
+        self.assertEqual(config["MX"]["help_text"], "Example: mail.example.gov")
