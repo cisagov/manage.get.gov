@@ -173,8 +173,13 @@ node_modules
 # Vim
 *.swp
 
-# VS Code
-.vscode
+# VS Code — ignore personal config, but allow shared workspace defaults
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Claude Code — share team settings, ignore per-user overrides
+.claude/settings.local.json
 
 # Compliance/trestle related
 docs/compliance/.trestle/cache

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(./manage.py *)",
+      "Bash(git status)",
+      "Bash(git status --short)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git branch *)",
+      "Bash(git fetch *)"
+    ],
+    "deny": [
+      "Bash(cf push *)",
+      "Bash(cf delete *)",
+      "Bash(cf env getgov-stable*)",
+      "Bash(cf target *)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)"
+    ]
+  }
+}
