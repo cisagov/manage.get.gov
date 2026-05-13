@@ -458,7 +458,7 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
         validators=[
             MaxLengthValidator(
                 320,
-                message="Response must be less than 320 characters.",
+                message="Email must be no more than 320 characters.",
             )
         ],
         required=True,
