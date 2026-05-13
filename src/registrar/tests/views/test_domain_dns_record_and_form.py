@@ -97,27 +97,30 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_add_record_resets_record_type_alpine_state(self):
-        """Issue #4688: reopening 'Add record' after a submit showed the form body
-        already drawn, like a type had been picked. Closing the form sets showFormId
-        to null, and x-effect clears recordType whenever showFormId is null. This
-        test keeps that wiring in place.
+        """Issue #4688: Add record kept the last picked type drawn after a submit
+        or when switched to from an edit form with errors. The wrapper x-effect
+        clears recordType when showFormId is null or 0, and x-model on the type
+        select keeps the dropdown in sync. This test keeps that wiring in place.
         """
         response = self.client.get(self._url())
 
-        # The wrapper div ties recordType to showFormId so closing the form clears
-        # the type pick.
+        # x-effect clears recordType when the form closes (null) or Add opens (0).
         self.assertContains(
             response,
-            "x-effect=\"showFormId === null ? recordType = '' : null\"",
+            "x-effect=\"showFormId === null || showFormId === 0 ? recordType = '' : null\"",
         )
-        # Closing the form on submit-success drives recordType back to '' via the
-        # x-effect above.
+        # Add record sets showFormId to 0, which fires the x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = 0"')
+        # Cancel sets showFormId to null, which also fires the x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = null"')
+        # Submit success closes the form the same way.
         self.assertContains(
             response,
             '@record-submit-success.camel.window="showFormId = null"',
         )
-        # Cancel closes the form, which clears recordType via x-effect.
-        self.assertContains(response, 'x-on:click="showFormId = null"')
+        # x-model keeps the type dropdown in sync with recordType, so clearing
+        # recordType resets the dropdown to the empty option.
+        self.assertContains(response, 'x-model="recordType"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
