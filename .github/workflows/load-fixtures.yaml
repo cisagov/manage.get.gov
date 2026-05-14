@@ -34,6 +34,9 @@ on:
           - rh
           - sm
 
+permissions:
+  contents: read
+
 jobs:
   load-fixtures:
     runs-on: ubuntu-latest
