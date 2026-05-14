@@ -23,7 +23,6 @@ from registrar.decorators import (
     IS_DOMAIN_MANAGER,
     IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
     IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
-    IS_STAFF,
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
@@ -823,7 +822,7 @@ class DomainDNSView(DomainBaseView):
 
 
 @method_decorator(waffle_flag("dns_hosting"), name="dispatch")  # type: ignore[arg-type]
-@grant_access(IS_DOMAIN_MANAGER, IS_STAFF)
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm

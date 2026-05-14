@@ -32,7 +32,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup(domain_manager=self.user)
 
         self.client.force_login(self.user)
 
@@ -96,6 +96,34 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         page = self.client.get(self._url())
         # Assert we are on the correct page
         self.assertContains(page, "Add record</h3>")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_resets_record_type_alpine_state(self):
+        """Issue #4688: Add record kept the last picked type drawn after a submit
+        or when switched to from an edit form with errors. The wrapper x-effect
+        clears recordType when showFormId is null or 0, and x-model on the type
+        select keeps the dropdown in sync. This test keeps that wiring in place.
+        """
+        response = self.client.get(self._url())
+
+        # x-effect clears recordType when the form closes (null) or Add opens (0).
+        self.assertContains(
+            response,
+            "x-effect=\"showFormId === null || showFormId === 0 ? recordType = '' : null\"",
+        )
+        # Add record sets showFormId to 0, which fires the x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = 0"')
+        # Cancel sets showFormId to null, which also fires the x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = null"')
+        # Submit success closes the form the same way.
+        self.assertContains(
+            response,
+            '@record-submit-success.camel.window="showFormId = null"',
+        )
+        # x-model keeps the type dropdown in sync with recordType, so clearing
+        # recordType resets the dropdown to the empty option.
+        self.assertContains(response, 'x-model="recordType"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
