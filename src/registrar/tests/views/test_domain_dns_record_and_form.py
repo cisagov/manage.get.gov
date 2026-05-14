@@ -646,16 +646,20 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         """Submitting invalid data via the edit form
         and posting a new record clears the error field"""
         # The record being edited
+        record_type = DNSRecordTypes.A
         editing = create_dns_record(
             self.dns_zone,
-            record_type="A",
-            record_name="mail",
-            record_content="192.0.2.20",
+            record_type=record_type,
+            record_name="@",
+            record_content="192.0.2.1",
             ttl=300,
-            x_record_id="x-editing",
+            x_record_id="x-existing-a",
         )
 
-        with patch("registrar.views.domain.DnsHostService"):
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
             response = self.client.post(
                 self._url(),
                 {
@@ -669,20 +673,18 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "Enter a valid IPv4 address using numbers and periods.")
+            self.assertContains(response, DNSRecordTypes(record_type).error_message)
 
-        with patch("registrar.views.domain.DnsHostService"):
-            response = self.client.post(
+            response_too = self.client.post(
                 self._url(),
                 {
                     "id": editing.id,
-                    "type": "A",
                     "name": "@",
-                    "content": "192.0.2.10",
+                    "content": "192.0.2.1",
                     "ttl": 300,
                     "comment": "",
                 },
             )
 
-            self.assertEqual(response.status_code, 200)
-            self.assertNotContains(response, "Enter a valid IPv4 address using numbers and periods.")
+            self.assertEqual(response_too.status_code, 200)
+            self.assertNotContains(response_too, DNSRecordTypes(record_type).error_message)
