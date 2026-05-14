@@ -69,6 +69,7 @@ DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons"
 DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
 DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
 DNS_NAME_HYPHEN_REQUIREMENT = "without using hyphens at the start or end of a label"
+DNS_RECORD_CONTENT_REQUIREMENT = "for this record."
 DNS_NAME_LENGTH_ERROR_MESSAGE = (
     "Labels must be no more than 63 characters. "
     "Full name (including labels, domain, and period) must be no more than 253 characters."
@@ -273,17 +274,22 @@ def validate_txt_content(content: str) -> None:
         raise ValidationError("Content must be no more than 2048 characters.")
 
 def validate_cname_content(content: str) -> None:
-    """Validates a CNAME record's target."""
+    """Validates a CNAME record's target value."""
     from registrar.utility.enums import DNSRecordTypes
     field_type = get_content_type_by_record_type(DNSRecordTypes.CNAME)
 
     _validate_dns_hostname_content(content, field_type)
 
 def validate_mx_content(content: str) -> None:
-    """
-    Validates an MX record's mail server hostname.
-    """
+    """Validates an MX record's mail server hostname value."""
     from registrar.utility.enums import DNSRecordTypes
     field_type = get_content_type_by_record_type(DNSRecordTypes.MX)
+
+    _validate_dns_hostname_content(content, field_type)
+
+def validate_ptr_content(content: str) -> None:
+    """Validates a PTR record's domain name value."""
+    from registrar.utility.enums import DNSRecordTypes
+    field_type = get_content_type_by_record_type(DNSRecordTypes.PTR)
 
     _validate_dns_hostname_content(content, field_type)
