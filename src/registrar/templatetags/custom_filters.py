@@ -207,6 +207,7 @@ def is_domain_subpage(path):
         "domain-users",
         "domain-dns",
         "domain-dns-nameservers",
+        "domain-dns-records",
         "domain-dns-dnssec",
         "domain-dns-dnssec-dsdata",
         "domain-your-contact-information",
@@ -287,25 +288,23 @@ def is_members_subpage(path):
 
 @register.filter(name="display_requesting_entity")
 def display_requesting_entity(domain_request):
-    """Workaround for a newline issue in .txt files (our emails) as if statements
-    count as a newline to the file.
+    """Workaround for a newline issue in .txt files (our emails) because if statements
+    count as a newline to the file and add extra space we don't want in the emails.
     Will output something that looks like:
-    MyOrganizationName
-    Boise, ID
+    Organization (Suborganization)
     """
     display = ""
     if domain_request.sub_organization:
-        display = domain_request.sub_organization
+        display = f"{domain_request.portfolio.organization_name} ({domain_request.sub_organization})"
+    elif domain_request.requesting_entity_is_suborganization() and domain_request.is_feb():
+        display = (
+            f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization}*)\n"
+            f"* This is not an existing suborganization in the registrar. It must be reviewed before being added."
+        )
     elif domain_request.requesting_entity_is_suborganization():
-        display = (
-            f"{domain_request.requested_suborganization}\n"
-            f"{domain_request.suborganization_city}, {domain_request.suborganization_state_territory}"
-        )
+        display = f"{domain_request.portfolio.organization_name} ({domain_request.requested_suborganization})\n"
     elif domain_request.requesting_entity_is_portfolio():
-        display = (
-            f"{domain_request.portfolio.organization_name}\n"
-            f"{domain_request.portfolio.city}, {domain_request.portfolio.state_territory}"
-        )
+        display = f"{domain_request.portfolio.organization_name}"
 
     return display
 
@@ -337,3 +336,17 @@ def contact_text(contact, num_newlines=2):
     text = unescape(text)
     text = text.rstrip("\n")
     return text + "\n" * num_newlines
+
+
+@register.filter
+def remaining_characters_text(char_limit, field_value):
+    final_string = ""
+    if field_value is None:
+        final_string = f"{char_limit} characters allowed"
+    else:
+        char_length = len(field_value)
+        characters_left = abs(char_limit - char_length)
+        pluralize = "" if characters_left == 1 else "s"
+        remaining_text = "over limit" if char_length > char_limit else "left"
+        final_string = f"{characters_left} character{pluralize} {remaining_text}"
+    return final_string

@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi.
+Hi,
 
 {{ requestor_email }} has invited you to {{ portfolio.organization_name }}.
 
