@@ -661,7 +661,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                 {
                     "id": editing.id,
                     "type": "A",
-                    "name": "",
+                    "name": "@",
                     "content": "",
                     "ttl": 300,
                     "comment": "",
@@ -677,7 +677,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                 {
                     "id": editing.id,
                     "type": "A",
-                    "name": "",
+                    "name": "@",
                     "content": "192.0.2.10",
                     "ttl": 300,
                     "comment": "",
