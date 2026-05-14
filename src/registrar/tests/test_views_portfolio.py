@@ -429,11 +429,11 @@ class TestPortfolio(WebTest):
 
         # Domain page should be accessible (they have VIEW_MANAGED_DOMAINS from role)
         domain_page = self.app.get(reverse("domains"))
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
 
         # Domain request page should not be accessible (no domain request permissions)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
-        self.assertEquals(domain_request_page.status_code, 403)
+        self.assertEqual(domain_request_page.status_code, 403)
 
     @override_flag("multiple_portfolios", active=False)
     @less_console_noise_decorator
@@ -486,7 +486,7 @@ class TestPortfolio(WebTest):
 
         # Domain page accessible
         domain_page = self.app.get(reverse("domains"))
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
 
     @less_console_noise_decorator
     def test_accessible_pages_when_user_does_not_have_role(self):
@@ -528,9 +528,9 @@ class TestPortfolio(WebTest):
 
         # Both domain pages should not be accessible
         domain_page = self.app.get(reverse("domains"), expect_errors=True)
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
         domain_request_page = self.app.get(reverse("domain-requests"), expect_errors=True)
-        self.assertEquals(domain_request_page.status_code, 403)
+        self.assertEqual(domain_request_page.status_code, 403)
 
     @less_console_noise_decorator
     def test_portfolio_org_name(self):
@@ -5477,7 +5477,7 @@ class TestMultiplePortfolios(WebTest):
 
         # Domain page accessible
         domain_page = self.app.get(reverse("domains"))
-        self.assertEquals(domain_page.status_code, 200)
+        self.assertEqual(domain_page.status_code, 200)
 
     @override_flag("multiple_portfolios", active=False)
     @less_console_noise_decorator

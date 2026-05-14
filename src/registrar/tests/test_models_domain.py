@@ -59,15 +59,15 @@ class TestDomainCache(MockEppLib):
             domain._get_property("contacts")
             # getter should set the domain cache with a InfoDomain object
             # (see InfoDomainResult)
-            self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
-            self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+            self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
+            self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertEqual(domain._cache["statuses"], status_list)
             self.assertFalse("avail" in domain._cache.keys())
 
             # using a setter should clear the cache
             domain.dnssecdata = []
-            self.assertEquals(domain._cache, {})
+            self.assertEqual(domain._cache, {})
 
             # send should have been called only once
             self.mockedSendFunction.assert_has_calls(
@@ -566,7 +566,7 @@ class TestDomainStatuses(MockEppLib):
             # trigger getter
             _ = domain.statuses
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertEqual(domain._cache["statuses"], status_list)
             # Called in _fetch_cache
             self.mockedSendFunction.assert_has_calls(
                 [
@@ -596,7 +596,7 @@ class TestDomainStatuses(MockEppLib):
 
             with self.assertRaises(KeyError):
                 _ = domain._cache["statuses"]
-            self.assertEquals(_, [])
+            self.assertEqual(_, [])
 
             patcher.stop()
 
@@ -2363,7 +2363,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # Assert that the extension on the update matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithDsData),
             )
@@ -2397,7 +2397,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
     @less_console_noise_decorator
@@ -2483,7 +2483,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
     @less_console_noise_decorator
@@ -2526,7 +2526,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # assert that the extension matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithMultDsData),
             )
@@ -2552,7 +2552,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
             patcher.stop()
 
     # @less_console_noise_decorator
@@ -2609,7 +2609,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # assert that the extension on the update matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(
                     self.dnssecExtensionWithDsData,
@@ -2698,8 +2698,8 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             self.domain.renew_domain()
             test_date = date(2023, 5, 25)
-            self.assertEquals(self.domain._cache["ex_date"], test_date)
-            self.assertEquals(self.domain.expiration_date, test_date)
+            self.assertEqual(self.domain._cache["ex_date"], test_date)
+            self.assertEqual(self.domain.expiration_date, test_date)
 
     def test_renew_domain_error(self):
         """assert that the renew_domain raises an exception when registry raises error"""
@@ -2755,7 +2755,7 @@ class TestExpirationDate(MockEppLib):
             # force fetch_cache to be called
             self.domain.statuses
             test_date = date(2023, 5, 25)
-            self.assertEquals(self.domain.expiration_date, test_date)
+            self.assertEqual(self.domain.expiration_date, test_date)
 
 
 class TestCreationDate(MockEppLib):
@@ -2785,7 +2785,7 @@ class TestCreationDate(MockEppLib):
         """assert that creation date in db is updated on info domain call"""
         # force fetch_cache to be called
         self.domain.statuses
-        self.assertEquals(self.domain.created_at, self.creation_date)
+        self.assertEqual(self.domain.created_at, self.creation_date)
 
 
 class TestAnalystClientHold(MockEppLib):
@@ -2836,7 +2836,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
+            self.assertEqual(self.domain.state, Domain.State.ON_HOLD)
 
     def test_analyst_places_client_hold_idempotent(self):
         """
@@ -2868,7 +2868,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain_on_hold.state, Domain.State.ON_HOLD)
+            self.assertEqual(self.domain_on_hold.state, Domain.State.ON_HOLD)
 
     def test_analyst_removes_client_hold(self):
         """
@@ -2900,7 +2900,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
+            self.assertEqual(self.domain_on_hold.state, Domain.State.READY)
 
     def test_analyst_removes_client_hold_idempotent(self):
         """
@@ -2932,7 +2932,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain.state, Domain.State.READY)
+            self.assertEqual(self.domain.state, Domain.State.READY)
 
     def test_update_is_unsuccessful(self):
         """

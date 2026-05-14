@@ -1065,7 +1065,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         new domain requests"""
         other_contacts_page = self.app.get(reverse("domain-request:other_contacts", kwargs={"domain_request_pk": 0}))
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, None)
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, None)
 
     @less_console_noise_decorator
     def test_yes_no_additional_form_inits_blank_for_new_domain_request(self):
@@ -1077,10 +1077,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         additional_form = additional_details_page.forms[0]
 
         # Check the cisa representative yes/no field
-        self.assertEquals(additional_form["additional_details-has_cisa_representative"].value, None)
+        self.assertEqual(additional_form["additional_details-has_cisa_representative"].value, None)
 
         # Check the anything else yes/no field
-        self.assertEquals(additional_form["additional_details-has_anything_else_text"].value, None)
+        self.assertEqual(additional_form["additional_details-has_anything_else_text"].value, None)
 
     @less_console_noise_decorator
     def test_yes_no_form_inits_yes_for_domain_request_with_other_contacts(self):
@@ -1103,7 +1103,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
     @less_console_noise_decorator
     def test_yes_no_form_inits_yes_for_cisa_representative_and_anything_else(self):
@@ -1135,11 +1135,11 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check the cisa representative yes/no field
         yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
-        self.assertEquals(yes_no_cisa, "True")
+        self.assertEqual(yes_no_cisa, "True")
 
         # Check the anything else yes/no field
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
-        self.assertEquals(yes_no_anything_else, "True")
+        self.assertEqual(yes_no_anything_else, "True")
 
     @less_console_noise_decorator
     def test_yes_no_form_inits_no_for_domain_request_with_no_other_contacts_rationale(self):
@@ -1164,7 +1164,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
 
     @less_console_noise_decorator
     def test_yes_no_form_for_domain_request_with_no_cisa_representative_and_anything_else(self):
@@ -1201,11 +1201,11 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check the cisa representative yes/no field
         yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
-        self.assertEquals(yes_no_cisa, None)
+        self.assertEqual(yes_no_cisa, None)
 
         # Check the anything else yes/no field
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
-        self.assertEquals(yes_no_anything_else, "False")
+        self.assertEqual(yes_no_anything_else, "False")
 
     @less_console_noise_decorator
     def test_submitting_additional_details_deletes_cisa_representative_and_anything_else(self):
@@ -1241,11 +1241,11 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # Check the cisa representative yes/no field
         yes_no_cisa = additional_details_form["additional_details-has_cisa_representative"].value
-        self.assertEquals(yes_no_cisa, "True")
+        self.assertEqual(yes_no_cisa, "True")
 
         # Check the anything else yes/no field
         yes_no_anything_else = additional_details_form["additional_details-has_anything_else_text"].value
-        self.assertEquals(yes_no_anything_else, "True")
+        self.assertEqual(yes_no_anything_else, "True")
 
         # Set fields to false
         additional_details_form["additional_details-has_cisa_representative"] = "False"
@@ -1472,7 +1472,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "False")
 
         other_contacts_form["other_contacts-has_other_contacts"] = "True"
 
@@ -1495,7 +1495,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             1,
         )
 
-        self.assertEquals(
+        self.assertEqual(
             domain_request.no_other_contacts_rationale,
             None,
         )
@@ -1522,7 +1522,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
 
@@ -1540,7 +1540,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             0,
         )
 
-        self.assertEquals(
+        self.assertEqual(
             domain_request.no_other_contacts_rationale,
             "Hello again!",
         )
@@ -1607,7 +1607,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
 
         other_contacts_form = other_contacts_page.forms[0]
-        self.assertEquals(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
+        self.assertEqual(other_contacts_form["other_contacts-has_other_contacts"].value, "True")
 
         other_contacts_form["other_contacts-has_other_contacts"] = "False"
 
@@ -1636,7 +1636,7 @@ class DomainRequestTests(TestWithUser, WebTest):
             "Testy2",
         )
 
-        self.assertEquals(
+        self.assertEqual(
             domain_request.no_other_contacts_rationale,
             "Hello again!",
         )
@@ -1988,8 +1988,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # assert that the Other Contact is updated "in place"
         other_contact = domain_request.other_contacts.all()[0]
-        self.assertEquals(other_contact_pk, other_contact.id)
-        self.assertEquals("Testy3", other_contact.first_name)
+        self.assertEqual(other_contact_pk, other_contact.id)
+        self.assertEqual("Testy3", other_contact.first_name)
 
     @less_console_noise_decorator
     def test_edit_other_contact_creates_new(self):
@@ -2067,10 +2067,10 @@ class DomainRequestTests(TestWithUser, WebTest):
         # is created for the other contact
         other_contact = domain_request.other_contacts.all()[0]
         self.assertNotEquals(other_contact_pk, other_contact.id)
-        self.assertEquals("Testy2", other_contact.first_name)
+        self.assertEqual("Testy2", other_contact.first_name)
         # assert that the senior official is not updated
         senior_official = domain_request.senior_official
-        self.assertEquals("Testy", senior_official.first_name)
+        self.assertEqual("Testy", senior_official.first_name)
 
     @less_console_noise_decorator
     def test_edit_senior_official_in_place(self):
@@ -2136,8 +2136,8 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # assert SO is updated "in place"
         updated_so = domain_request.senior_official
-        self.assertEquals(so_pk, updated_so.id)
-        self.assertEquals("Testy2", updated_so.first_name)
+        self.assertEqual(so_pk, updated_so.id)
+        self.assertEqual("Testy2", updated_so.first_name)
 
     @less_console_noise_decorator
     def test_edit_senior_official_creates_new(self):
@@ -2207,11 +2207,11 @@ class DomainRequestTests(TestWithUser, WebTest):
         # assert that the other contact is not updated
         other_contacts = domain_request.other_contacts.all()
         other_contact = other_contacts[0]
-        self.assertEquals(so_pk, other_contact.id)
-        self.assertEquals("Testy", other_contact.first_name)
+        self.assertEqual(so_pk, other_contact.id)
+        self.assertEqual("Testy", other_contact.first_name)
         # assert that the senior official is updated
         senior_official = domain_request.senior_official
-        self.assertEquals("Testy2", senior_official.first_name)
+        self.assertEqual("Testy2", senior_official.first_name)
 
     @less_console_noise_decorator
     def test_edit_requester_in_place(self):
@@ -2262,8 +2262,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         domain_request.refresh_from_db()
 
         updated_requester = domain_request.requester
-        self.assertEquals(requester_pk, updated_requester.id)
-        self.assertEquals("Testy2", updated_requester.first_name)
+        self.assertEqual(requester_pk, updated_requester.id)
+        self.assertEqual("Testy2", updated_requester.first_name)
 
     @less_console_noise_decorator
     def test_domain_request_about_your_organiztion_interstate(self):
