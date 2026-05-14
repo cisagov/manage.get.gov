@@ -3073,8 +3073,8 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertNotContains(response, '<table class="usa-table">')
 
         # cleanup
-        portfolio.delete()
         UserPortfolioPermission.objects.filter(portfolio=portfolio).delete()
+        portfolio.delete()
 
     @less_console_noise_decorator
     def test_user_no_portfolio_does_not_appear_no_requests_and_no_domains_assoc_with_no_port(self):
