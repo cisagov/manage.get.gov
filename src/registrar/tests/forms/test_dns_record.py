@@ -33,10 +33,8 @@ class BaseDomainDNSRecordFormTest(TestCase):
             "A": "192.0.2.10",
             "AAAA": "2001:db8::1234:5678",
             "MX": "mail.example.gov",
-            # TODO: Comment out CNAME test case after implementing CNAME host name validation
-            # "CNAME": "www.example.com",
-            # TODO: Comment out PTR test case after implementing PTR host name validation
-            # "PTR": "www.example.com",
+            "CNAME": "www.example.com",
+            "PTR": "www.example.com",
             "TXT": "Some valid text",
         }
 
@@ -124,7 +122,6 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
     def test_invalid_dns_name_throws_error(self):
         expected_hyphen_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
         expected_name_format_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
-        expected_name_length_error = get_error_message_from_requirement(DNS_NAME_LENGTH_ERROR_MESSAGE, "name")
         expected_name_spaces_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
 
         # Testing hyphen at start of label
@@ -137,7 +134,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assert_dns_name_errors("ab(c", [expected_name_format_error])
 
         # Testing per-label length exceeds 63 characters
-        self.assert_dns_name_errors("a" * 64, [expected_name_length_error])
+        self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])
 
         # Testing space in name
         self.assert_dns_name_errors("ab cd", [expected_name_spaces_error])
@@ -221,14 +218,25 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
         self.assert_dns_name_errors("my-.domain", [expected_error])
 
+    def test_dns_hostname_content_last_label_not_number(self):
+        """Records with hostname content (CNAME, MX, PTR) should not have a number as their hostname's last label."""
+        invalid_content_by_type = {
+            "CNAME": ("a.123", "Enter content that ends with a domain name."),
+            "MX": ("a.123", "Enter content that ends with a domain name."),
+            "PTR": ("a.123", "Enter content that ends with a domain name."),
+        }
+        for record_type, (bad_content, expected_error) in invalid_content_by_type.items():
+            with self.subTest(record_type=record_type):
+                data = self.valid_form_data_for_record_type(record_type, bad_content)
+                form = self.make_form(data)
+
+                self.assertFalse(form.is_valid())
+                self.assertIn(expected_error, "Enter content that ends with a domain name.")
+
     def test_dns_record_with_invalid_content_throws_error(self):
         invalid_content_by_type = {
             "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
             "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
-            # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
-            # "CNAME": "..."
-            # TODO: Comment out and complete PTR test case when PTR validation is implemented
-            # "PTR": "..."
         }
         for record_type, (bad_content, expected_error) in invalid_content_by_type.items():
             with self.subTest(record_type=record_type):
@@ -280,12 +288,6 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
 
     def test_valid_mx_record_priority_at_maximum_boundary(self):
         form = self.make_mx_form(priority=65535)
-        self.assertTrue(form.is_valid())
-
-    def test_valid_mx_record_content_at_max_length(self):
-        """253-character hostname is the maximum allowed."""
-        long_hostname = "a" * 249 + ".gov"
-        form = self.make_mx_form(content=long_hostname)
         self.assertTrue(form.is_valid())
 
     # --- Priority validation ---

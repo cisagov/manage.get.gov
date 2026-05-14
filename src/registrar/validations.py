@@ -53,7 +53,7 @@ def get_content_type_by_record_type(record_type: str | None):
         DNSRecordTypes.MX: "mail server",
         DNSRecordTypes.PTR: "domain name"
     }
-    return record_type_to_content_dict[record_type]
+    return record_type_to_content_dict.get(record_type, "content")
 
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
@@ -189,7 +189,6 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
     if content == "@":
         return
 
-    print("field type: ", field_type)
     _validate_dns_name_spaces(content, field_type=field_type)
     _validate_dns_hostname_structure(content, field_type=field_type)
     _validate_dns_name_characters(content, field_type=field_type)
