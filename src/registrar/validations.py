@@ -1,5 +1,6 @@
 from django.core.validators import MaxLengthValidator
 from django.core.exceptions import ValidationError
+import re
 
 """
 Centralized character length "buckets" to keep server-side validation and
@@ -85,6 +86,7 @@ DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-655
 DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 
+HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
 DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
 
 
@@ -109,13 +111,16 @@ def _validate_dns_name_structure(name: str) -> None:
         raise ValidationError(error_message)
 
 def _validate_dns_hostname_structure(content: str, field_type: str | None):
-    """Reject empty labels created by consecutive or trailing dots."""
+    """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
     if ".." in content:
         error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
         raise ValidationError(error_message)
     if content.startswith("."):
         error_message = get_error_message_from_requirement(DNS_HOSTNAME_LEADING_DOT_REQUIREMENT, field_type)
         raise ValidationError(error_message)
+    last_label = _get_non_wildcard_dns_name_labels(content)[-1]
+    if last_label.isdigit():
+        raise ValidationError(HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE)
 
 def _validate_dns_name_characters(name: str, field_type="name") -> None:
     """Reject characters explicitly disallowed by the AC (@ ( ) : ;).
