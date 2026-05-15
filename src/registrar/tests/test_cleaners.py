@@ -1,6 +1,7 @@
 from django.test import SimpleTestCase
 from registrar.cleaners import clean_txt_content
 
+
 class TestDnsCleaners(SimpleTestCase):
 
     def test_clean_txt_content(self):
