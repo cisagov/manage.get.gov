@@ -667,3 +667,52 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         self.assertIn("MX", config)
         self.assertIn("TXT", config)
         self.assertEqual(config["MX"]["help_text"], "Example: mail.example.gov")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_error_clears_after_posting_valid_data(self):
+        """Submitting invalid data via the edit form
+        and posting a new record clears the error field"""
+        # The record being edited
+        record_type = DNSRecordTypes.A
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=record_type,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DNSRecordTypes(record_type).error_message)
+
+            response_too = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "name": "@",
+                    "content": "192.0.2.1",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response_too.status_code, 200)
+            self.assertNotContains(response_too, DNSRecordTypes(record_type).error_message)

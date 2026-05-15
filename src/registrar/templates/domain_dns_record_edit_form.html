@@ -2,7 +2,7 @@
 {% load custom_filters %}
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
-<tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders" {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
+<tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders">
     <td colspan="5" class="no-padding-right">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
@@ -11,7 +11,8 @@
                 class="usa-form usa-form--extra-large"
                 novalidate
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
-                hx-swap="none"
+                hx-target="#dnsrecord-edit-form-{{ record_id }}"
+                {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}
             >
                 <h3 class="margin-top-0">Edit record</h3>
                 {% csrf_token %}
