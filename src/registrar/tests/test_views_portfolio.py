@@ -4001,18 +4001,23 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
             # Validate Database Changes
             # Validate that portfolio invitation was created but not retrieved
-            portfolio_invite = PortfolioInvitation.objects.filter(
+            invited_permission = UserPortfolioPermission.objects.filter(
                 email=self.new_member_email, portfolio=self.portfolio
             ).first()
-            self.assertIsNotNone(portfolio_invite)
-            self.assertEqual(portfolio_invite.email, self.new_member_email)
-            self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+            self.assertIsNotNone(invited_permission)
+            self.assertEqual(invited_permission.email, self.new_member_email)
+            self.assertEqual(invited_permission.status, UserPortfolioPermission.Status.INVITED)
+            self.assertIsNone(invited_permission.user)
+            # Validate that no legacy PortfolioInvitation was created
+            self.assertFalse(
+                PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists()
+            )
 
             # Check that an email was sent
             self.assertTrue(mock_client.send_email.called)
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_removed_user(self, mock_send_email):
         """Tests the member invitation flow for an existing member which was previously removed."""
         self.client.force_login(self.user)
@@ -4066,13 +4071,9 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
         # Validate Database Changes
         # Validate that portfolio invitation was created and retrieved
-        self.assertFalse(
-            PortfolioInvitation.objects.filter(
-                email=retrieved_member_email,
-                portfolio=self.portfolio,
-                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-            ).exists()
-        )
+        invited_permission = UserPortfolioPermission.objects.get(user=retrieved_user, portfolio=self.portfolio)
+        self.assertEqual(invited_permission.email, retrieved_member_email)
+        self.assertEqual(invited_permission.status, UserPortfolioPermission.Status.INVITED)
         # at least one retrieved invitation
         self.assertTrue(
             PortfolioInvitation.objects.filter(
@@ -4128,12 +4129,17 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when an Exception occurs.",
             )
+            # assert that UserPortfolioPermission is not created
+            self.assertFalse(
+                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "UserPortfolioPermission should not be created when an Exception occurs.",
+            )
 
             # Check that an email was not sent
             self.assertFalse(mock_client.send_email.called)
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_invited_member_initial_ajax_call_fails(self, mock_send_email):
         """Tests the initial ajax call in the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4165,11 +4171,15 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
 
+        # assert that UserPortfolioPermission is not created
         # assert that send_portfolio_invitation_email is not called
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(email=self.invited_member_email, portfolio=self.portfolio).exists()
+        )
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_email_sending_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises EmailSendingError."""
         mock_send_email.side_effect = EmailSendingError("Failed to send email.")
@@ -4214,9 +4224,14 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when an EmailSendingError occurs.",
             )
+            # assert that UserPortfolioPermission invitation is not created
+            self.assertFalse(
+                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "UserPortfolioPermission should not be created when an EmailSendingError occurs.",
+            )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_missing_email_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises MissingEmailError."""
         mock_send_email.side_effect = MissingEmailError()
@@ -4256,9 +4271,14 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when a MissingEmailError occurs.",
             )
+            # assert that UserPortfolioPermission invitation is not created
+            self.assertFalse(
+                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "UserPortfolioPermission invitation should not be created when a MissingEmailError occurs.",
+            )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_exception(self, mock_send_email):
         """Test when adding a new member and email_send method raises Exception."""
         mock_send_email.side_effect = Exception("Generic exception")
@@ -4303,9 +4323,14 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when an Exception occurs.",
             )
+            # assert that UserPortfolioPermission invitation is not created
+            self.assertFalse(
+                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
+                "UserPortfolioPermission invitation should not be created when an Exception occurs.",
+            )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_invited_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4337,11 +4362,16 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
 
+        # assert that UserPortfolioPermission is not created
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(email=self.invited_member_email, portfolio=self.portfolio).exists()
+        )
+
         # assert that send_portfolio_invitation_email is not called
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4379,7 +4409,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_member_uppercase(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member with a different case."""
         self.client.force_login(self.user)
@@ -4417,7 +4447,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_user_who_is_not_a_member(self, mock_send_email):
         """Tests the member invitation flow for existing user who is not a portfolio member."""
         self.client.force_login(self.user)
@@ -4442,28 +4472,27 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 302)
 
         # Validate Database Changes
-        # Validate that portfolio invitation was created and retrieved
-        portfolio_invite = PortfolioInvitation.objects.filter(
-            email="newuser@example.com", portfolio=self.portfolio
-        ).first()
-        self.assertIsNotNone(portfolio_invite)
-        self.assertEqual(portfolio_invite.email, "newuser@example.com")
-        self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
-        # Validate UserPortfolioPermission
+        # Validate that portfolio invitation was created but not retrieved
         user_portfolio_permission = UserPortfolioPermission.objects.filter(
-            user=new_user, portfolio=self.portfolio
+            user=new_user,
+            email="newuser@example.com",
+            portfolio=self.portfolio,
         ).first()
         self.assertIsNotNone(user_portfolio_permission)
+        self.assertEqual(user_portfolio_permission.status, UserPortfolioPermission.Status.INVITED)
+        # Validate that no legacy PortfolioInvitation was created
+        self.assertFalse(PortfolioInvitation.objects.filter(email="newuser@example.com", portfolio=self.portfolio).exists())
 
         # assert that send_portfolio_invitation_email is called
         mock_send_email.assert_called_once()
         call_args = mock_send_email.call_args.kwargs
         self.assertEqual(call_args["email"], "newuser@example.com")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertIsNone(call_args.get("is_member_of_different_org"))
+        self.assertEqual(call_args["portfolio"], self.portfolio)
+        self.assertFalse(call_args["is_admin_invitation"])
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_admin_invite_for_new_users(self, mock_send_email):
         """Tests the member invitation flow for new admin."""
         self.client.force_login(self.user)
@@ -4491,12 +4520,17 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
         # Validate Database Changes
         # Validate that portfolio invitation was created but not retrieved
-        portfolio_invite = PortfolioInvitation.objects.filter(
+        invited_permission = UserPortfolioPermission.objects.filter(
             email=self.new_member_email, portfolio=self.portfolio
         ).first()
-        self.assertIsNotNone(portfolio_invite)
-        self.assertEqual(portfolio_invite.email, self.new_member_email)
-        self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
+        self.assertIsNotNone(invited_permission)
+        self.assertEqual(invited_permission.email, self.new_member_email)
+        self.assertEqual(invited_permission.status, UserPortfolioPermission.Status.INVITED)
+        self.assertEqual(invited_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        # Validate that no legacy PortfolioInvitation was created
+        self.assertFalse(
+            PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists()
+        )
 
         # Check that an email was sent
         mock_send_email.assert_called()
@@ -4508,6 +4542,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(called_kwargs["email"], self.new_member_email)
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+        self.assertTrue(called_kwargs["is_admin_invitation"])
 
 
 class TestPortfolioMemberEditView(WebTest):

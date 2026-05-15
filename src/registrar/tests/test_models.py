@@ -735,6 +735,47 @@ class TestPortfolioInvitations(TestCase):
         )
 
 
+class TestUserPortfolioPermissionInvitationsOnLogin(TestCase):
+    """Test retrieving new portfolio invitations on login."""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email)
+        self.requestor, _ = User.objects.get_or_create(email="requester@igorville.gov", username="requester")
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.requestor,
+            organization_name="Hotel California",
+        )
+        self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+
+    def tearDown(self):
+        super().tearDown()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_retrieves_new_model_portfolio_invitation_on_login(self):
+        permission = UserPortfolioPermission.objects.create(
+            user=None,
+            email=self.email,
+            portfolio=self.portfolio,
+            roles=[self.portfolio_role_base],
+            additional_permissions=[self.portfolio_permission_1],
+            status=UserPortfolioPermission.Status.INVITED,
+            invited_by=self.requestor,
+        )
+
+        self.user.check_portfolio_invitations_on_login()
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.user)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertIsNotNone(permission.accepted_at)
+
+
 class TestUserPortfolioPermission(TestCase):
     @less_console_noise_decorator
     def setUp(self):
