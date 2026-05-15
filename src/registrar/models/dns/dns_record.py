@@ -50,7 +50,7 @@ class DnsRecord(TimeStampedModel):
 
     ttl = models.PositiveIntegerField(default=1)
 
-    content = models.CharField(blank=True, null=True, max_length=2048)
+    content = models.CharField(blank=True, null=True, max_length=4080)
 
     priority = models.PositiveIntegerField(
         blank=True,
@@ -73,6 +73,12 @@ class DnsRecord(TimeStampedModel):
         # if self.ttl == 1: return self.proxy
         if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
+
+    def _clean_content(self, record_type):
+        """Clean content based on record type."""
+        cleaner = record_type.cleaner
+        if cleaner and self.content:
+            self.content = cleaner(self.content)
 
     def _validate_content(self, record_type, errors):
         """Validate content based on record type."""
@@ -141,6 +147,7 @@ class DnsRecord(TimeStampedModel):
 
         self._validate_ttl(errors)
         record_type = DNSRecordTypes(self.type)
+        self._clean_content(record_type)  # Must clean befor validating
         self._validate_content(record_type, errors)
         self._validate_mx_priority(record_type, errors)
         self._validate_exclusive_names(record_type, errors)
