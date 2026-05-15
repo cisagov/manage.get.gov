@@ -29,6 +29,7 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.services.invitation_service import invite_to_portfolio
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -41,7 +42,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
 )
-from registrar.utility.errors import MissingEmailError
+from registrar.utility.errors import InvitationError, MissingEmailError
 from registrar.utility.enums import DefaultUserValues
 from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
@@ -1231,28 +1232,15 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         portfolio = form.cleaned_data["portfolio"]
-        is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in form.cleaned_data["roles"]
-
-        requested_user = User.objects.filter(email__iexact=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
         try:
-            if not requested_user or not permission_exists:
-                if not send_portfolio_invitation_email(
-                    email=requested_email,
-                    requestor=requestor,
-                    portfolio=portfolio,
-                    is_admin_invitation=is_admin_invitation,
-                ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
-                portfolio_invitation = form.save()
-                # if user exists for email, immediately retrieve portfolio invitation upon creation
-                if requested_user is not None:
-                    portfolio_invitation.retrieve()
-                    portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited to this organization..")
-            else:
-                if permission_exists:
-                    messages.error(self.request, f"{requested_email} is already a member of this organization.")
+            invite_to_portfolio(
+                email=requested_email,
+                portfolio=portfolio,
+                requestor=requestor,
+                roles=form.cleaned_data["roles"],
+                additional_permissions=form.cleaned_data["additional_permissions"],
+            )
+            messages.success(self.request, f"{requested_email} has been invited to this organization..")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
@@ -1279,6 +1267,9 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 "Can't send invitation email. No email is associated with your account.",
                 exc_info=True,
             )
+        elif isinstance(exception, InvitationError):
+            messages.error(self.request, str(exception))
+            logger.warning("Could not create portfolio invitation.", exc_info=True)
         else:
             logger.error("Could not send email invitation (Other Exception)", exc_info=True)
             messages.error(
