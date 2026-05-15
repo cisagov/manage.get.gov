@@ -75,6 +75,8 @@ DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
 DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
 DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
+TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
+TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
 
 
 def _validate_dns_name_structure(name: str) -> None:
@@ -185,26 +187,26 @@ def validate_dns_name_fqdn_length(name: str, zone_name: str | None) -> None:
         raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
 
 
-def check_has_valid_quotes(content: str) -> bool:
+def check_has_invalid_quoted_string(content: str) -> bool:
     double_quote = '"'
-    quote_count = content.count(double_quote)
 
-    # check if string begins and ends with a quote or no quote at all
+    # check if string begins or ends with a quote
+    content = content.strip()
     first_item_char_is_double_quote = content[0] == double_quote
     last_item_is_double_quote = content[len(content) - 1] == double_quote
 
-    return quote_count % 2 != 0 or first_item_char_is_double_quote != last_item_is_double_quote
+    return first_item_char_is_double_quote or last_item_is_double_quote
 
 
 def validate_txt_content(content: str) -> None:
 
-    if check_has_valid_quotes(content):
+    if check_has_invalid_quoted_string(content):
         raise ValidationError(
-            'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'
+            TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE
         )
 
-    if len(content) > 2048:
-        raise ValidationError("Content must be no more than 2048 characters.")
+    if len(content) > 4080:
+        raise ValidationError(TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE)
 
 
 def validate_mx_content(content: str) -> None:

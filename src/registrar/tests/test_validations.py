@@ -8,8 +8,10 @@ from registrar.validations import (
     DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_NAME_SPACES_ERROR_MESSAGE,
+    TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
     validate_dns_name,
     validate_dns_name_fqdn_length,
+    validate_txt_content,
 )
 
 
@@ -102,3 +104,42 @@ class TestValidateDNSNameFQDNLength(SimpleTestCase):
     def test_relative_name_fits_after_append(self):
         # 240 + "." + "example.gov" = 252 chars → ok
         validate_dns_name_fqdn_length("a" * 240, self.ZONE)
+
+
+class TestValidateDNSContent(SimpleTestCase):
+    def assert_all_raise(self, contents: list[str], expected_message: str) -> None:
+        for content in contents:
+            with self.subTest(name=content):
+                with self.assertRaises(ValidationError) as ctx:
+                    validate_txt_content(content)
+
+                self.assertEqual(ctx.exception.messages, expected_message)
+
+    def test_validate_txt_content(self):
+        content_with_invalid_quoting = [
+            "\"starts with double quote",
+            "ends with double quote\"",
+            "\"is surrounded by double quotes\"",
+            "  \"strips surrounding whitespace\"   ",
+        ]
+        self.assert_all_raise(content_with_invalid_quoting, DNS_NAME_SPACES_ERROR_MESSAGE)
+
+        valid_content = [
+            "Internal \"quotes\" are ok",
+            "Single 'quotes' are ok",
+            "Stray \"quote is ok"
+        ]
+
+        for content in valid_content:
+            with self.subTest(name=content):
+                validate_txt_content(content)
+
+    def _test_validate_txt_content_max_length(self):
+
+        max_length = 4080
+        content_longer_than_max = "a" * max_length + "bc"
+
+        with self.assertRaises(ValidationError) as ctx:
+            validate_txt_content(content_longer_than_max)
+
+        self.assertEqual(ctx.exception.messages, TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE)
