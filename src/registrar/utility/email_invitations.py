@@ -65,7 +65,8 @@ def _check_user_org_admin(requestor_email, domains) -> bool:
     Check to see if the requestor is an org admin
 
     Args:
-        requestor (user): The user initiating the invitation.
+        requestor_email (String): The user initiating the invitation's email.
+        domains (list): The list of Domain objects
 
     Returns:
         Boolean indicating if user is an Org Admin.
