@@ -3,8 +3,24 @@ import random
 
 from registrar.config import settings
 from registrar.models.domain import Domain
-from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import APIError, RegistrySystemError
+from registrar.services.cloudflare_service import (
+    CloudflareService,
+    CloudflareDnsSettingsUpdateResponse,
+    CF_CODE_CONFLICTING_HOST,
+    CF_CODE_RECORD_ALREADY_EXISTS,
+    CF_CODE_RECORD_ALREADY_EXISTS_ALT,
+    CF_CODE_TXT_TOO_LONG,
+)
+from registrar.utility.errors import (
+    APIError,
+    CloudflareValidationError,
+    DnsContentLengthExceededError,
+    DnsDuplicateRecordError,
+    DnsHostingError,
+    DnsNameConflictError,
+    DnsValidationError,
+    RegistrySystemError,
+)
 from registrar.models import (
     DnsVendor,
     DnsAccount,
@@ -34,6 +50,61 @@ class DnsHostService:
     def __init__(self, client=None):
         self.client = client or Client()
         self.dns_vendor_service = CloudflareService(self.client)
+
+    def _translate_cf_validation_error(
+        self,
+        e: CloudflareValidationError,
+        form_record_data: dict,
+    ) -> DnsHostingError:
+        """Translate a Cloudflare vendor error into a vendor-agnostic :class:`DnsHostingError`.
+
+        Keeping this translation in the DNS host service (instead of the view) means the view
+        never imports vendor-specific types. Swapping DNS providers only touches this method
+        and the equivalent helper in the new vendor service.
+        """
+        submitted_type = (form_record_data or {}).get("type")
+        for err in e.cf_errors or []:
+            code = err.get("code")
+            raw_message = (err.get("message") or "").lower()
+
+            is_txt_overflow = code == CF_CODE_TXT_TOO_LONG or "8192" in raw_message
+            if is_txt_overflow:
+                return DnsContentLengthExceededError(
+                    err.get("message") or "",
+                    submitted_record_type=submitted_type,
+                    vendor_errors=e.cf_errors,
+                )
+
+            is_duplicate = (
+                code in (CF_CODE_RECORD_ALREADY_EXISTS, CF_CODE_RECORD_ALREADY_EXISTS_ALT)
+                or "identical record already exists" in raw_message
+            )
+            if is_duplicate:
+                return DnsDuplicateRecordError(
+                    err.get("message") or "",
+                    submitted_record_type=submitted_type,
+                    vendor_errors=e.cf_errors,
+                )
+
+            is_host_conflict = code == CF_CODE_CONFLICTING_HOST or (
+                "record with that host already exists" in raw_message
+                or "a, aaaa, or cname record with that host" in raw_message
+            )
+            if is_host_conflict:
+                return DnsNameConflictError(
+                    err.get("message") or "",
+                    submitted_record_type=submitted_type,
+                    vendor_errors=e.cf_errors,
+                )
+
+        # Unknown / unmapped CF error — surface the first vendor message so the view can still
+        # display something actionable.
+        first_message = (e.cf_errors[0].get("message") if e.cf_errors else "") or str(e)
+        return DnsValidationError(
+            first_message,
+            submitted_record_type=submitted_type,
+            vendor_errors=e.cf_errors,
+        )
 
     def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
         """Ensure required Cloudflare DNS settings are applied for an account."""
@@ -211,6 +282,10 @@ class DnsHostService:
         try:
             vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
             logger.info(f"Created DNS record of type {vendor_record_data['result'].get('type')}")
+        except CloudflareValidationError as e:
+            # Translate vendor-specific validation errors into vendor-agnostic domain errors so
+            # the view layer never imports Cloudflare types.
+            raise self._translate_cf_validation_error(e, form_record_data) from e
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Error creating DNS record: {str(e)}")
             raise APIError(str(e)) from e
@@ -251,6 +326,8 @@ class DnsHostService:
             record_name = vendor_record_data["result"].get("name")
             logger.info(f"Successfully updated record {record_name}.")
 
+        except CloudflareValidationError as e:
+            raise self._translate_cf_validation_error(e, form_record_data) from e
         except (APIError, HTTPStatusError) as e:
             logger.error(f"DNS setup failed to update record {record_name}: {str(e)}")
             raise APIError(str(e)) from e

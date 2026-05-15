@@ -1,12 +1,38 @@
 from httpx import RequestError, HTTPStatusError
 from typing import Any
+import json
 import logging
 from dataclasses import dataclass
 from django.conf import settings
 
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, CloudflareValidationError
 
 logger = logging.getLogger(__name__)
+
+
+# Known Cloudflare DNS API error codes. Codes are used by
+# :mod:`registrar.services.dns_host_service` to translate vendor errors into vendor-agnostic
+# :class:`registrar.utility.errors.DnsHostingError` subclasses. CF reuses 81053 for both
+# CNAME-vs-A/AAAA conflicts and duplicate CNAMEs, so callers must also inspect the message.
+CF_CODE_CONFLICTING_HOST = 81053
+# CF uses both 81057 and 81058 for "identical record already exists" — observed 81058 in
+# sandbox during ticket #4672 manual testing; keeping both avoids relying on message-text match.
+CF_CODE_RECORD_ALREADY_EXISTS = 81057
+CF_CODE_RECORD_ALREADY_EXISTS_ALT = 81058
+CF_CODE_TXT_TOO_LONG = 81061
+
+
+def _parse_cf_error_body(response_text: str) -> tuple[list[dict], list[dict]]:
+    """Pull the ``errors`` and ``messages`` arrays out of a Cloudflare error response body.
+
+    Returns (errors, messages) — both are lists of dicts with at least ``code`` and ``message``.
+    Falls back to empty lists if the body isn't JSON (so callers can still raise a generic error).
+    """
+    try:
+        body = json.loads(response_text) if response_text else {}
+    except (ValueError, TypeError):
+        return [], []
+    return body.get("errors") or [], body.get("messages") or []
 
 
 @dataclass(frozen=True)
@@ -164,7 +190,14 @@ class CloudflareService:
         except HTTPStatusError as e:
             error_body = e.response.text
             logger.error(f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {error_body}")
-            raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}")
+            cf_errors, _ = _parse_cf_error_body(error_body)
+            if cf_errors:
+                raise CloudflareValidationError(
+                    f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}",
+                    cf_errors=cf_errors,
+                    status_code=e.response.status_code,
+                ) from e
+            raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}") from e
         return resp.json()
 
     def get_page_accounts(self, page: int, per_page: int):
@@ -260,8 +293,14 @@ class CloudflareService:
             logger.error(f"Failed to update dns record {record_id} for zone {zone_id}: {e}")
             raise
         except HTTPStatusError as e:
-            logger.error(
-                f"Error {e.response.status_code} while updating dns record: {e}\nResponse body: {e.response.text}"
-            )
-            raise APIError(f"Cloudflare update_dns_record failed: {e.response.status_code} {e.response.text}")
+            error_body = e.response.text
+            logger.error(f"Error {e.response.status_code} while updating dns record: {e}\nResponse body: {error_body}")
+            cf_errors, _ = _parse_cf_error_body(error_body)
+            if cf_errors:
+                raise CloudflareValidationError(
+                    f"Cloudflare update_dns_record failed: {e.response.status_code} {error_body}",
+                    cf_errors=cf_errors,
+                    status_code=e.response.status_code,
+                ) from e
+            raise APIError(f"Cloudflare update_dns_record failed: {e.response.status_code} {error_body}") from e
         return resp.json()
