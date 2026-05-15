@@ -1,3 +1,5 @@
+import html as html_module
+import re
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -27,7 +29,7 @@ class TestWithDNSRecordPermissions(TestWithUser):
         self.user.is_staff = True
         self.user.save()
 
-        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup()
+        self.domain, self.dns_account, self.dns_zone = create_initial_dns_setup(domain_manager=self.user)
 
         self.client.force_login(self.user)
 
@@ -91,6 +93,34 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         page = self.client.get(self._url())
         # Assert we are on the correct page
         self.assertContains(page, "Add record</h3>")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_resets_record_type_alpine_state(self):
+        """Issue #4688: Add record kept the last picked type drawn after a submit
+        or when switched to from an edit form with errors. The wrapper x-effect
+        clears recordType when showFormId is null or 0, and x-model on the type
+        select keeps the dropdown in sync. This test keeps that wiring in place.
+        """
+        response = self.client.get(self._url())
+
+        # x-effect clears recordType when the form closes (null) or Add opens (0).
+        self.assertContains(
+            response,
+            "x-effect=\"showFormId === null || showFormId === 0 ? recordType = '' : null\"",
+        )
+        # Add record sets showFormId to 0, which fires the x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = 0"')
+        # Cancel sets showFormId to null, which also fires the x-effect.
+        self.assertContains(response, 'x-on:click="showFormId = null"')
+        # Submit success closes the form the same way.
+        self.assertContains(
+            response,
+            '@record-submit-success.camel.window="showFormId = null"',
+        )
+        # x-model keeps the type dropdown in sync with recordType, so clearing
+        # recordType resets the dropdown to the empty option.
+        self.assertContains(response, 'x-model="recordType"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -601,3 +631,88 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.assertContains(response, "You already entered this DNS record")
             self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_form_renders_content_helptext_span(self):
+        """The add-record form's content field must render the helptext span server-side
+        so the JS handler can update its text when the type is changed (regression for #4954
+        - switching to/from MX or TXT must not strand the helper text)."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="id_content_helptext"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_form_type_config_includes_all_record_types(self):
+        """The type field's data-type-config drives the JS that updates the content
+        label/help text on type change. Regression for #4954: every record type — including
+        MX and TXT — must be present with its expected label and help_text."""
+        import json
+
+        response = self.client.get(self._url())
+        content = response.content.decode()
+
+        # Extract the data-type-config JSON value from the rendered type select
+        match = re.search(r'data-type-config="([^"]+)"', content)
+        self.assertIsNotNone(match, "data-type-config attribute missing from type select")
+        config = json.loads(html_module.unescape(match.group(1)))
+
+        for rt in DNSRecordTypes:
+            with self.subTest(record_type=rt.value):
+                self.assertIn(rt.value, config)
+                self.assertEqual(config[rt.value]["label"], rt.field_label)
+                self.assertEqual(config[rt.value]["help_text"], rt.help_text)
+
+        # MX and TXT are the regression targets — make sure they are explicitly present
+        self.assertIn("MX", config)
+        self.assertIn("TXT", config)
+        self.assertEqual(config["MX"]["help_text"], "Example: mail.example.gov")
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_error_clears_after_posting_valid_data(self):
+        """Submitting invalid data via the edit form
+        and posting a new record clears the error field"""
+        # The record being edited
+        record_type = DNSRecordTypes.A
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=record_type,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, DNSRecordTypes(record_type).error_message)
+
+            response_too = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "name": "@",
+                    "content": "192.0.2.1",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response_too.status_code, 200)
+            self.assertNotContains(response_too, DNSRecordTypes(record_type).error_message)
