@@ -1,7 +1,7 @@
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
     let finalString = "";
-  
+
     if(charLength == 0){
         finalString = `${charLimit} characters allowed`
     }
@@ -11,7 +11,7 @@ function getCharCountText (charLimit, charLength) {
         const characters =`character${charactersLeft === 1 ? '' : 's'}`;
         finalString = `${charactersLeft} ${characters} ${remainingText}`
     }
-    
+
     return finalString;
   };
 
@@ -41,7 +41,7 @@ function createCharacterCountDiv(charLimit, textArea) {
 function switchFromInputToTextArea (element) {
         if(!element) return;
 
-       
+
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
         textArea.className = 'usa-textarea usa-textarea--medium';
@@ -50,7 +50,7 @@ function switchFromInputToTextArea (element) {
         textArea.value = element.value
         element.classList.forEach(cls => textArea.classList.add(cls))
 
-        const charLimit = 2048
+        const charLimit = 4080
         const displayCharCount = createCharacterCountDiv(charLimit, textArea)
 
         element.replaceWith(textArea)
@@ -60,10 +60,10 @@ function switchFromInputToTextArea (element) {
 function clearRecordForm(root){
     const form = root || document.getElementById("dnsrecords-form-container")
     if(!form) return;
-    
-    // remove error styling from inputs and labels 
+
+    // remove error styling from inputs and labels
     const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
-    inputs.forEach(input =>{ 
+    inputs.forEach(input =>{
         input.classList.remove("usa-input--error")
     })
     const labels = form.querySelectorAll('label')
@@ -73,7 +73,7 @@ function clearRecordForm(root){
     form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
     const alertMessagesContainer = document.getElementById('messages-container')
     alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
-    
+
     // Reset the comment field and its character count
     document.getElementById('id_comment').value = ''
     const commentStatus =  document.getElementById('dnsrecords-form-container-comment--status')
@@ -90,10 +90,10 @@ export function editAndCommentButtonListener (){
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
             if(!editBtn && !commentBtn) return;
-            
+
             const recordId = (editBtn || commentBtn).dataset.recordId
             const alpineData = Alpine.$data(table)
-            
+
             if(editBtn){
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
@@ -106,7 +106,7 @@ export function editAndCommentButtonListener (){
                 idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
 
             }
-        
+
         })
 }
 
@@ -290,7 +290,7 @@ export function commentCharacterEventListener(){
 
     let rows = document.querySelectorAll('tr[id^="dnsrecord-edit-row-"]')
     const form = document.getElementById('dnsrecords-form-container')
-   
+
     rows && rows.forEach(row => {
        helperEventListener(row)
     })
@@ -298,7 +298,7 @@ export function commentCharacterEventListener(){
     helperEventListener(form)
 }
 
-export function initDynamicDNSRecordFormFields() { 
+export function initDynamicDNSRecordFormFields() {
     const typeField = document.getElementById('id_type');
 
     if (!typeField) return;
