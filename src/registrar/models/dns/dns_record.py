@@ -50,7 +50,7 @@ class DnsRecord(TimeStampedModel):
 
     ttl = models.PositiveIntegerField(default=1)
 
-    content = models.CharField(blank=True, null=True, max_length=2048)
+    content = models.CharField(blank=True, null=True, max_length=4080)
 
     priority = models.PositiveIntegerField(
         blank=True,
