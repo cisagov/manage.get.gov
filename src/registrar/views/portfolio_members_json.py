@@ -217,7 +217,7 @@ class PortfolioMembersJson(View):
 
         # Ensure domain_info is properly processed for invites -
         # we need to un-concatenate the subquery
-        domain_info_list = item.get("domain_info", [])
+        domain_info_list = item.get("domain_info") or []
         if item_type == "invitedmember" and isinstance(domain_info_list, list) and domain_info_list:
             # Split the first item in the list if it exists
             domain_info_list = domain_info_list[0].split(", ")

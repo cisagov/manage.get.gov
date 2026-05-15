@@ -32,7 +32,7 @@ There are several tools we use locally that you will need to have.
 
 The following tools are optional  but recommended. For DHS devices, these can be requested through the DHS IT portal:
 - [ ] Slack Desktop App**
-- [ ] Python 3.10*
+- [ ] Python 3.14*
 - [ ] NodeJS (latest version available)*
 - [ ] Putty*
 - [ ] Windows Subsystem for Linux*

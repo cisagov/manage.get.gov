@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import Q, Exists, OuterRef
 from django.apps import apps
 
+
 from registrar.models import DomainInformation, UserDomainRole, PortfolioInvitation, UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 
@@ -16,6 +17,7 @@ from .verified_by_staff import VerifiedByStaff
 from .domain import Domain
 from .domain_request import DomainRequest
 from registrar.utility.waffle import flag_is_active_for_user
+from registrar.utility.db_helpers import get_portfolio_from_session
 from waffle.decorators import flag_is_active
 from django.utils import timezone
 from datetime import timedelta
@@ -357,7 +359,7 @@ class User(AbstractUser):
                 # retrieving should not fail because of a missing user, but
                 # if it does fail, log the error so a new user can continue
                 # logging in
-                logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
+                logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
 
     def create_domain_and_invite(self, transition_domain: TransitionDomain):
         transition_domain_name = transition_domain.domain_name
@@ -395,9 +397,11 @@ class User(AbstractUser):
                     # retrieving should not fail because of a missing user, but
                     # if it does fail, log the error so a new user can continue
                     # logging in
-                    logger.warn("Failed to retrieve invitation %s", invitation, exc_info=True)
+                    logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
             else:
-                logger.warn("User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True)
+                logger.warning(
+                    "User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True
+                )
 
     def on_each_login(self):
         """Callback each time the user is authenticated.
@@ -442,7 +446,8 @@ class User(AbstractUser):
             DeprecationWarning,
             stacklevel=2,
         )
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
+
         return portfolio is not None and self.has_view_portfolio_permission(portfolio)
 
     def is_any_org_user(self):
@@ -455,7 +460,7 @@ class User(AbstractUser):
 
     def get_user_domain_ids(self, request):
         """Returns either the domains ids associated with this user on UserDomainRole or Portfolio"""
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
         if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
             return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
         else:
@@ -463,7 +468,7 @@ class User(AbstractUser):
 
     def get_user_domain_request_ids(self, request):
         """Returns either the domain request ids associated with this user on UserDomainRole or Portfolio"""
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
 
         if self.is_org_user(request) and self.has_view_all_domain_requests_portfolio_permission(portfolio):
             return DomainRequest.objects.filter(portfolio=portfolio).values_list("id", flat=True)
@@ -472,10 +477,7 @@ class User(AbstractUser):
 
     def get_active_requests_count_in_portfolio(self, request):
         """Return count of active requests for the portfolio associated with the request."""
-        # Get the portfolio from the session using the existing method
-
-        portfolio = request.session.get("portfolio")
-
+        portfolio = get_portfolio_from_session(request.session)
         if not portfolio:
             return 0  # No portfolio found
 

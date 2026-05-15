@@ -8,6 +8,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from functools import wraps
 from registrar.utility.db_timeouts import pg_timeouts
+from registrar.utility.db_helpers import get_portfolio_from_session
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         return False
 
     portfolio = _resolve_portfolio(request, **kwargs)
-    session_portfolio = request.session.get("portfolio")
+    session_portfolio = get_portfolio_from_session(request.session)
     is_org = bool(portfolio and user.is_org_user_for_portfolio(portfolio))
 
     # Define permission checks
@@ -510,7 +511,7 @@ def _resolve_portfolio(request, **kwargs):
         pid = DI.objects.filter(domain_id=domain_pk).values_list("portfolio_id", flat=True).first()
         return Portfolio.objects.filter(pk=pid).first() if pid else None
 
-    sess_obj = request.session.get("portfolio")
+    sess_obj = get_portfolio_from_session(request.session)
     return sess_obj if getattr(sess_obj, "pk", None) else None
 
 

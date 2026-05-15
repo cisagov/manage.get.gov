@@ -3073,8 +3073,8 @@ class TestMyUserAdmin(MockDbForSharedTests, WebTest):
         self.assertNotContains(response, '<table class="usa-table">')
 
         # cleanup
-        portfolio.delete()
         UserPortfolioPermission.objects.filter(portfolio=portfolio).delete()
+        portfolio.delete()
 
     @less_console_noise_decorator
     def test_user_no_portfolio_does_not_appear_no_requests_and_no_domains_assoc_with_no_port(self):
@@ -4466,7 +4466,7 @@ class TestTransferUser(WebTest):
 
         user_portfolio_permission.refresh_from_db()
 
-        self.assertEquals(user_portfolio_permission.user, self.user1)
+        self.assertEqual(user_portfolio_permission.user, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_user_portfolio_roles_no_error_when_duplicates(self):
@@ -4500,8 +4500,8 @@ class TestTransferUser(WebTest):
         """Assert that domain request fields get transferred"""
         domain_request = completed_domain_request(user=self.user2, name="wasteland.gov", investigator=self.user2)
 
-        self.assertEquals(domain_request.requester, self.user2)
-        self.assertEquals(domain_request.investigator, self.user2)
+        self.assertEqual(domain_request.requester, self.user2)
+        self.assertEqual(domain_request.investigator, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         submit_form = user_transfer_page.forms[1]
@@ -4509,15 +4509,15 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_request.refresh_from_db()
 
-        self.assertEquals(domain_request.requester, self.user1)
-        self.assertEquals(domain_request.investigator, self.user1)
+        self.assertEqual(domain_request.requester, self.user1)
+        self.assertEqual(domain_request.investigator, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_information_requester(self):
         """Assert that domain fields get transferred"""
         domain_information, _ = DomainInformation.objects.get_or_create(requester=self.user2)
 
-        self.assertEquals(domain_information.requester, self.user2)
+        self.assertEqual(domain_information.requester, self.user2)
 
         user_transfer_page = self.app.get(reverse("transfer_user", args=[self.user1.pk]))
         submit_form = user_transfer_page.forms[1]
@@ -4525,7 +4525,7 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         domain_information.refresh_from_db()
 
-        self.assertEquals(domain_information.requester, self.user1)
+        self.assertEqual(domain_information.requester, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_role(self):
@@ -4546,8 +4546,8 @@ class TestTransferUser(WebTest):
         user_domain_role1.refresh_from_db()
         user_domain_role2.refresh_from_db()
 
-        self.assertEquals(user_domain_role1.user, self.user1)
-        self.assertEquals(user_domain_role2.user, self.user1)
+        self.assertEqual(user_domain_role1.user, self.user1)
+        self.assertEqual(user_domain_role2.user, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_transfers_domain_role_no_error_when_duplicate(self):
@@ -4589,7 +4589,7 @@ class TestTransferUser(WebTest):
         submit_form.submit()
         vip.refresh_from_db()
 
-        self.assertEquals(vip.requestor, self.user1)
+        self.assertEqual(vip.requestor, self.user1)
 
     @less_console_noise_decorator
     def test_transfer_user_deletes_old_user(self):

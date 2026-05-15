@@ -377,7 +377,7 @@ class TestDomainDetail(TestDomainOverview):
             )
 
             igorville = Domain.objects.get(name="igorville.gov")
-            self.assertEquals(igorville.state, Domain.State.UNKNOWN)
+            self.assertEqual(igorville.state, Domain.State.UNKNOWN)
             detail_page = self.app.get(f"/domain/{igorville.id}")
             self.assertContains(detail_page, "Expired")
 
@@ -616,7 +616,7 @@ class TestDomainDetailDomainRenewal(TestDomainOverview):
         with patch.object(Domain, "is_expiring", self.custom_is_expiring), patch.object(
             Domain, "is_expired", self.custom_is_expired_false
         ):
-            self.assertEquals(self.domain_to_renew.state, Domain.State.UNKNOWN)
+            self.assertEqual(self.domain_to_renew.state, Domain.State.UNKNOWN)
             detail_page = self.client.get(
                 reverse("domain", kwargs={"domain_pk": self.domain_to_renew.id}),
             )

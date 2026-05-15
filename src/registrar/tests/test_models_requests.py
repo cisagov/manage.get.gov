@@ -1117,18 +1117,18 @@ class TestDomainRequest(TestCase):
         """has_rationale() returns true when a domain request has no_other_contacts_rationale"""
         self.started_domain_request.no_other_contacts_rationale = "You talkin' to me?"
         self.started_domain_request.save()
-        self.assertEquals(self.started_domain_request.has_rationale(), True)
+        self.assertEqual(self.started_domain_request.has_rationale(), True)
 
     @less_console_noise_decorator
     def test_has_rationale_returns_false(self):
         """has_rationale() returns false when a domain request has no no_other_contacts_rationale"""
-        self.assertEquals(self.started_domain_request.has_rationale(), False)
+        self.assertEqual(self.started_domain_request.has_rationale(), False)
 
     @less_console_noise_decorator
     def test_has_other_contacts_returns_true(self):
         """has_other_contacts() returns true when a domain request has other_contacts"""
         # completed_domain_request has other contacts by default
-        self.assertEquals(self.started_domain_request.has_other_contacts(), True)
+        self.assertEqual(self.started_domain_request.has_other_contacts(), True)
 
     @less_console_noise_decorator
     def test_has_other_contacts_returns_false(self):
@@ -1136,7 +1136,7 @@ class TestDomainRequest(TestCase):
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED, name="no-others.gov", has_other_contacts=False
         )
-        self.assertEquals(domain_request.has_other_contacts(), False)
+        self.assertEqual(domain_request.has_other_contacts(), False)
 
     @less_console_noise_decorator
     def test_converted_type(self):
