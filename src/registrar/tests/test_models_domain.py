@@ -8,7 +8,6 @@ from django.test import TestCase, override_settings
 from django.db.utils import IntegrityError
 from unittest.mock import MagicMock, patch, call
 from datetime import datetime, date, timedelta
-from django.utils.timezone import make_aware
 from api.tests.common import less_console_noise_decorator
 from registrar.models import Domain, Host, HostIP
 
@@ -33,7 +32,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
-from .common import MockEppLib, MockSESClient, less_console_noise
+from .common import DEFAULT_EPP_CR_DATE, MockEppLib, MockSESClient, less_console_noise
 import logging
 import boto3_mocking  # type: ignore
 import copy
@@ -2768,9 +2767,8 @@ class TestCreationDate(MockEppLib):
         super().setUp()
         # for the tests, need a domain with a creation date
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
-        # creation_date returned from mockDataInfoDomain with creation date:
-        # cr_date=datetime.datetime(2023, 5, 25, 19, 45, 35)
-        self.creation_date = make_aware(datetime(2023, 5, 25, 19, 45, 35))
+        # creation_date returned from MockEppLib
+        self.creation_date = DEFAULT_EPP_CR_DATE
 
     def tearDown(self):
         Domain.objects.all().delete()
@@ -2786,6 +2784,29 @@ class TestCreationDate(MockEppLib):
         # force fetch_cache to be called
         self.domain.statuses
         self.assertEquals(self.domain.created_at, self.creation_date)
+
+    def test_x_registry_created_at_and_created_at_reference(self):
+        """assert x_registry_created_at is set from EPP and created_at_reference is preserved"""
+        original_created_at = self.domain.created_at
+        # force fetch_cache to be called
+        self.domain.statuses
+        x_registry_created_at, created_at_reference = (
+            Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at_reference").get()
+        )
+        self.assertEquals(x_registry_created_at, self.creation_date)
+        self.assertEquals(created_at_reference, original_created_at)
+
+
+class TestDomainCreatedAtReference(TestCase):
+    def test_created_at_reference_populated_on_create(self):
+        domain = Domain.objects.create(name="created-at-ref.gov")
+        created_at_reference, created_at, x_registry_created_at = (
+            Domain.objects.filter(pk=domain.pk)
+            .values_list("created_at_reference", "created_at", "x_registry_created_at")
+            .get()
+        )
+        self.assertEqual(created_at_reference, created_at)
+        self.assertIsNone(x_registry_created_at)
 
 
 class TestAnalystClientHold(MockEppLib):
