@@ -108,3 +108,18 @@ class TestValidateDNSNameFQDNLength(SimpleTestCase):
     def test_relative_name_fits_after_append(self):
         # 240 + "." + "example.gov" = 252 chars → ok
         validate_dns_name_fqdn_length("a" * 240, self.ZONE)
+
+class TestValidateDNSHostnameContent(SimpleTestCase):
+    """
+    Test validations specific to DNS hostname.
+    Since hostname uses the same validators as record name when relevant, we only test
+    hostname specific validations.
+    """
+    def test_validate_hostname_label_structure(self):
+        invalid_label_content = [
+            ".ab", # hostname cannot start with period
+            "ab.1234",  # last label is a digit
+            "a..b" # no consecutive periods
+        ]
+        self.assert_all_raise(invalid_label_content)
+        self.assert_all_valid("ab.", "ab..", "ab123", "ab.123a")
