@@ -2066,7 +2066,7 @@ class DomainRequestTests(TestWithUser, WebTest):
         # assert that other contact info is updated, and that a new Contact
         # is created for the other contact
         other_contact = domain_request.other_contacts.all()[0]
-        self.assertNotEquals(other_contact_pk, other_contact.id)
+        self.assertNotEqual(other_contact_pk, other_contact.id)
         self.assertEqual("Testy2", other_contact.first_name)
         # assert that the senior official is not updated
         senior_official = domain_request.senior_official

@@ -1128,7 +1128,7 @@ class TestImportTables(TestCase):
         mock_open.return_value.__enter__.return_value.read.return_value = csv_content
 
         # Mock the Dataset class and its load method to return a dataset
-        mock_dataset_instance = MagicMock(spec=tablib.Dataset)
+        mock_dataset_instance = MagicMock()
         with patch(
             "registrar.management.commands.import_tables.tablib.Dataset.load", return_value=mock_dataset_instance
         ):
