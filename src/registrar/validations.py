@@ -191,7 +191,6 @@ def check_has_invalid_quoted_string(content: str) -> bool:
     double_quote = '"'
 
     # check if string begins or ends with a quote
-    content = content.strip()
     first_item_char_is_double_quote = content[0] == double_quote
     last_item_is_double_quote = content[len(content) - 1] == double_quote
 
@@ -200,6 +199,7 @@ def check_has_invalid_quoted_string(content: str) -> bool:
 
 def validate_txt_content(content: str) -> None:
 
+    content = content.strip()
     if check_has_invalid_quoted_string(content):
         raise ValidationError(
             TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE

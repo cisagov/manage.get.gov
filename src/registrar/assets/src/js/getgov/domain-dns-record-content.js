@@ -28,10 +28,11 @@ function createCharacterCountDiv(charLimit, textArea) {
 
 
   textArea.addEventListener('input', function () {
-    displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length);
+    const trimmedValue = textArea.value.trim().length
+    displayCharCount.textContent = getCharCountText(charLimit, trimmedValue);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
-      textArea.value.length > charLimit
+      trimmedValue > charLimit
     );
   });
   textArea.setAttribute('aria-describedby', displayCharCount.id)
