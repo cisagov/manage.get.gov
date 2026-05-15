@@ -60,7 +60,7 @@ def _check_outside_org_membership(email, requestor, is_member_of_different_org):
         raise OutsideOrgMemberError(email=email)
 
 
-def _check_user_org_admin(requestor) -> bool:
+def _check_user_org_admin(requestor_email, domains) -> bool:
     """
     Check to see if the requestor is an org admin
 
@@ -70,14 +70,21 @@ def _check_user_org_admin(requestor) -> bool:
     Returns:
         Boolean indicating if user is an Org Admin.
     """
+    for domain in domains:
+        domain_info = DomainInformation.objects.filter(domain=domain).first()
+        if domain_info and domain_info.portfolio:
+            portfolio_admin_emails = list(
+                UserPortfolioPermission.objects.filter(
+                    portfolio=domain_info.portfolio,
+                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                )
+                .values_list("user__email", flat=True)
+                .distinct()
+            )
+            # Check to see if the user is an Org Admin
+            if requestor_email in portfolio_admin_emails:
+                return True
 
-    # Check to see if the user is an Org Admin
-    roles_list = list(requestor.get_portfolios())
-    if not roles_list:
-        return False
-    for role in roles_list:
-        if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in role.roles:
-            return True
     return False
 
 
@@ -153,7 +160,7 @@ def send_domain_invitation_email(
     domains = _normalize_domains(domains)
     requestor_email = _get_requestor_email(requestor, domains=domains)
     # Check to see if the user sending the invitation is an Org Admin
-    is_org_admin = _check_user_org_admin(requestor)
+    is_org_admin = _check_user_org_admin(requestor.email, domains)
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 
     _send_domain_invitation_email(email, requestor_email, domains, requested_user)
@@ -238,7 +245,8 @@ def send_domain_manager_removal_emails_to_domain_managers(
 
     """
     all_emails_sent = True
-    is_org_admin = _check_user_org_admin(removed_by_user)
+    domains = _normalize_domains(domain)
+    is_org_admin = _check_user_org_admin(removed_by_user.email, domains)
 
     # Get each domain manager from list (exclude pending invitations where user is null)
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
