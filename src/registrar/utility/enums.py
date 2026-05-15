@@ -2,7 +2,7 @@
 
 from enum import Enum
 from registrar.utility import StrEnum
-from registrar.validations import validate_dns_name, validate_mx_content
+from registrar.validations import validate_mx_content, validate_cname_content, validate_ptr_content
 from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from django.db.models import TextChoices
 from registrar.validations import validate_txt_content
@@ -124,7 +124,7 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: " IPv4 address ",
             DNSRecordTypes.AAAA: " IPv6 address ",
-            DNSRecordTypes.CNAME: " Target hostname ",
+            DNSRecordTypes.CNAME: " Target ",
             DNSRecordTypes.MX: " Mail server ",
             DNSRecordTypes.TXT: " Content ",
             DNSRecordTypes.PTR: " Domain name ",
@@ -145,10 +145,10 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: validate_ipv4_address,
             DNSRecordTypes.AAAA: validate_ipv6_address,
-            DNSRecordTypes.CNAME: validate_dns_name,
+            DNSRecordTypes.CNAME: validate_cname_content,
             DNSRecordTypes.MX: validate_mx_content,
             DNSRecordTypes.TXT: validate_txt_content,
-            DNSRecordTypes.PTR: validate_dns_name,
+            DNSRecordTypes.PTR: validate_ptr_content,
         }.get(self)
 
     @property

@@ -2,14 +2,15 @@ from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
 from registrar.validations import (
-    DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
-    DNS_NAME_FORMAT_ERROR_MESSAGE,
-    DNS_NAME_HYPHEN_ERROR_MESSAGE,
-    DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
+    DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
+    DNS_NAME_FORMAT_REQUIREMENT,
+    DNS_NAME_HYPHEN_REQUIREMENT,
+    DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
-    DNS_NAME_SPACES_ERROR_MESSAGE,
+    DNS_NAME_SPACES_REQUIREMENT,
     validate_dns_name,
     validate_dns_name_fqdn_length,
+    get_error_message_from_requirement
 )
 
 
@@ -47,20 +48,25 @@ class TestValidateDNSName(SimpleTestCase):
             "a b c",  # multiple spaces
             "sub.domain name",  # space in a label of a multi-label name
         ]
-        self.assert_all_raise(names_with_spaces, DNS_NAME_SPACES_ERROR_MESSAGE)
+        expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        self.assert_all_raise(names_with_spaces, expected_error)
 
     def test_validate_dns_name_rejects_hyphen_at_label_boundary(self):
-        self.assert_all_raise(["-abc", "abc-", "my.-domain", "my-.domain"], DNS_NAME_HYPHEN_ERROR_MESSAGE)
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        self.assert_all_raise(["-abc", "abc-", "my.-domain", "my-.domain"], expected_error)
 
     def test_validate_dns_name_rejects_consecutive_dots(self):
-        self.assert_dns_name_validation_error("ab..cd", DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
+        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
+        self.assert_dns_name_validation_error("ab..cd", expected_error)
 
     def test_validate_dns_name_rejects_leading_or_trailing_dot(self):
-        self.assert_all_raise([".abc", "abc."], DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE)
+        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        self.assert_all_raise([".abc", "abc."], expected_error)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
         invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";", "@"]]
-        self.assert_all_raise(invalid_names, DNS_NAME_FORMAT_ERROR_MESSAGE)
+        expected_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
+        self.assert_all_raise(invalid_names, expected_error)
 
     def test_validate_dns_name_accepts_characters_not_in_blacklist(self):
         """Characters not in the AC's disallowed list should pass — including ones
@@ -102,3 +108,18 @@ class TestValidateDNSNameFQDNLength(SimpleTestCase):
     def test_relative_name_fits_after_append(self):
         # 240 + "." + "example.gov" = 252 chars → ok
         validate_dns_name_fqdn_length("a" * 240, self.ZONE)
+
+class TestValidateDNSHostnameContent(SimpleTestCase):
+    """
+    Test validations specific to DNS hostname.
+    Since hostname uses the same validators as record name when relevant, we only test
+    hostname specific validations.
+    """
+    def test_validate_hostname_label_structure(self):
+        invalid_label_content = [
+            ".ab", # hostname cannot start with period
+            "ab.1234",  # last label is a digit
+            "a..b" # no consecutive periods
+        ]
+        self.assert_all_raise(invalid_label_content)
+        self.assert_all_valid("ab.", "ab..", "ab123", "ab.123a")

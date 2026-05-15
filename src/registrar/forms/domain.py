@@ -35,7 +35,10 @@ from registrar.validations import (
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_CONTENT_REQUIREMENT,
     validate_dns_name_fqdn_length,
+    get_error_message_from_requirement,
+    get_content_type_by_record_type
 )
 
 import json
@@ -930,8 +933,12 @@ class DomainDNSRecordForm(forms.ModelForm):
 
         # Content is required for all record types
         if not content:
-            # Use the record's error_message if available, otherwise use a generic message
-            error_msg = record.error_message or DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE
+            # Use the record's error_message if available (A, AAAA, and MX)
+            error_msg = record.error_message
+            if not error_msg:
+                 content_type = get_content_type_by_record_type(record_type)
+                 # Specify the expected record content, otherwise use a generic content required message
+                 error_msg = get_error_message_from_requirement(DNS_RECORD_CONTENT_REQUIREMENT, content_type) or DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE
             self.add_error("content", error_msg)
             return
 
@@ -1005,10 +1012,15 @@ class DomainDNSRecordForm(forms.ModelForm):
         self.add_error("name", message)
         self.add_error("content", message)
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
-            self.add_error("priority", message)
+            self.add_error("priority", message)         
 
     def clean(self):
         cleaned_data = super().clean()
+        record_types_with_hostname_content = [
+            DNSRecordTypes.CNAME,
+            DNSRecordTypes.PTR,
+            DNSRecordTypes.MX
+        ]
         record_type = cleaned_data.get("type")
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
