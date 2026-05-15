@@ -198,8 +198,6 @@ def check_has_invalid_quoted_string(content: str) -> bool:
 
 
 def validate_txt_content(content: str) -> None:
-
-    content = content.strip()
     if check_has_invalid_quoted_string(content):
         raise ValidationError(
             TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE

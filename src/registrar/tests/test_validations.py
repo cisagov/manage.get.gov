@@ -121,7 +121,6 @@ class TestValidateDNSContent(SimpleTestCase):
             '"starts with double quote',
             'ends with double quote"',
             '"is surrounded by double quotes"',
-            '  "strips surrounding whitespace"   ',
         ]
         self.assert_all_raise(content_with_invalid_quoting, TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE)
 

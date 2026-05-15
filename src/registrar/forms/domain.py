@@ -852,16 +852,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         # This is to prevent the need for multiple migrations.
         # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
-        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[
-            ("", "- Select -"),
-            ("A", "A"),
-            ("AAAA", "AAAA"),
-            ("CNAME", "CNAME"),
-            ("MX", "MX"),
-            ("PTR", "PTR"),
-            ("TXT", "TXT"),
-        ],
+        choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
         required=True,
         widget=forms.Select(
             attrs={
@@ -923,6 +914,14 @@ class DomainDNSRecordForm(forms.ModelForm):
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
         return bool(value) and field not in self.errors
+
+    def clean_content(self):
+        """Clean the content field based on the record type."""
+        record = DNSRecordTypes(self.cleaned_data.get("type"))
+        content = self.cleaned_data.get("content", "")
+        if record.cleaner:
+            content = record.cleaner(content)
+        return content
 
     def _validate_content(self, record_type, content):
         """Validate content field based on record type."""
