@@ -6,6 +6,7 @@ import logging
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
+    InvitationError,
     MissingEmailError,
     OutsideOrgMemberError,
 )
@@ -71,6 +72,8 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, AlreadyDomainManagerError):
         messages.error(request, str(exception))
     elif isinstance(exception, AlreadyDomainInvitedError):
+        messages.error(request, str(exception))
+    elif isinstance(exception, InvitationError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
         messages.error(request, f"An unexpected error occurred: {email} could not be added to this domain.")

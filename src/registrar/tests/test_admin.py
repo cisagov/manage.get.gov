@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.utils import timezone
-from django.test import TestCase, RequestFactory, Client
+from django.test import TestCase, RequestFactory, Client, override_settings
 from django.contrib.admin.sites import AdminSite
 from registrar import models
 from registrar.utility.constants import BranchChoices
@@ -21,6 +21,7 @@ from registrar.admin import (
     DomainInformationAdmin,
     MyHostAdmin,
     PortfolioInvitationAdmin,
+    UserPortfolioPermissionAdmin,
     UserDomainRoleAdmin,
     UserPortfolioPermissionsForm,
     VerifiedByStaffAdmin,
@@ -1149,6 +1150,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
     def setUp(self):
         """Create a client object"""
         self.client = Client(HTTP_HOST="localhost:8080")
+        self.factory = RequestFactory()
         self.superuser = create_superuser()
         self.testuser = create_test_user()
         self.omb_analyst = create_omb_analyst_user()
@@ -1182,29 +1184,6 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
-    def test_has_change_form_description(self):
-        """Tests if this model has a model description on the change form view"""
-        self.client.force_login(self.superuser)
-
-        user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
-            user=self.superuser, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-        )
-
-        response = self.client.get(
-            "/admin/registrar/userportfoliopermission/{}/change/".format(user_portfolio_permission.pk),
-            follow=True,
-        )
-
-        # Make sure that the page is loaded correctly
-        self.assertEqual(response.status_code, 200)
-
-        # Test for a description snippet
-        self.assertContains(
-            response,
-            "If you add someone to a portfolio here, it won't trigger any email notifications.",
-        )
-
-    @less_console_noise_decorator
     def test_delete_confirmation_page_contains_static_message(self):
         """Ensure the custom message appears in the delete confirmation page."""
         self.client.force_login(self.superuser)
@@ -1218,6 +1197,226 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         # Check if the response contains the expected static message
         expected_message = "If you remove someone from a portfolio here, it won't trigger any email notifications."
         self.assertIn(expected_message, response.content.decode("utf-8"))
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    def test_add_form_includes_invitation_and_permission_controls(self):
+        """User, portfolio, invitation, and permission controls are shown when adding."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userportfoliopermission_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'id="id_portfolio"')
+        self.assertContains(response, "Invitation status")
+        self.assertContains(response, 'id="id_send_email"')
+        self.assertContains(response, 'id="id_role"')
+        self.assertContains(response, 'id="id_domain_permissions"')
+        self.assertContains(response, 'id="id_request_permissions"')
+        self.assertContains(response, 'id="id_member_permissions"')
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=False)
+    def test_add_form_uses_direct_permission_fields_when_invitation_flag_off(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userportfoliopermission_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'id="id_portfolio"')
+        self.assertContains(response, 'id="id_role"')
+        self.assertNotContains(response, 'data-tags="true"')
+        self.assertNotContains(response, 'id="id_send_email"')
+        self.assertNotContains(response, "Invitation status")
+
+    def test_form_accepts_email_and_auto_populates_existing_user(self):
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.email.upper(),
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["user"], self.testuser)
+        self.assertEqual(form.cleaned_data["email"], self.testuser.email.lower())
+
+    def test_form_rerenders_unknown_email_tag_without_user_id_error(self):
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": "new.person@example.gov",
+                "portfolio": self.portfolio.id,
+                "role": "",
+                "send_email": "on",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("new.person@example.gov", str(form["user"]))
+
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @override_settings(IS_PRODUCTION=False)
+    def test_add_view_does_not_show_success_when_invitation_email_is_not_allowed(self):
+        self.client.force_login(self.superuser)
+        blocked_email = "blocked.person@example.gov"
+
+        response = self.client.post(
+            reverse("admin:registrar_userportfoliopermission_add"),
+            data={
+                "user": blocked_email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "send_email": "",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, blocked_email)
+        self.assertContains(response, "does not exist within the allowlist")
+        self.assertNotContains(response, "was added successfully")
+        self.assertFalse(UserPortfolioPermission.objects.filter(email=blocked_email).exists())
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_unknown_email_forces_invitation_email(self, mock_messages_success, mock_send_email):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email="new.person@example.gov")
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": "new.person@example.gov",
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        permission = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, form, False)
+
+        permission.refresh_from_db()
+        self.assertIsNone(permission.user)
+        self.assertEqual(permission.email, "new.person@example.gov")
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
+        self.assertEqual(permission.invited_by, self.superuser)
+        mock_send_email.assert_called_once()
+        mock_messages_success.assert_called_once_with(request, "new.person@example.gov has been invited.")
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_existing_user_without_email_adds_permission(self, mock_messages_success, mock_send_email):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.id,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        permission = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, form, False)
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.testuser)
+        self.assertEqual(permission.email, self.testuser.email.lower())
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertIsNone(permission.invited_by)
+        mock_send_email.assert_not_called()
+        mock_messages_success.assert_called_once_with(
+            request, f"{self.testuser.email.lower()} has been added to {self.portfolio}."
+        )
+
+    @less_console_noise_decorator
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_existing_user_with_email_sends_invitation_email(self, mock_messages_success, mock_send_email):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email=self.testuser.email)
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.id,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "on",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        permission = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, form, False)
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.testuser)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertEqual(permission.invited_by, self.superuser)
+        mock_send_email.assert_called_once()
+        mock_messages_success.assert_called_once_with(
+            request, f"{self.testuser.email.lower()} has been added to {self.portfolio}."
+        )
+
+    @override_flag("user_portfolio_permission_invitations", active=False)
+    @patch("registrar.admin.create_portfolio_permission_or_invitation")
+    def test_save_with_invitation_flag_off_uses_direct_model_save(self, mock_create_permission):
+        admin_instance = UserPortfolioPermissionAdmin(UserPortfolioPermission, admin_site=AdminSite())
+        permission = UserPortfolioPermission(
+            user=self.testuser,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+        request = self.factory.post("/admin/registrar/userportfoliopermission/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, permission, None, False)
+
+        self.assertTrue(UserPortfolioPermission.objects.filter(user=self.testuser, portfolio=self.portfolio).exists())
+        mock_create_permission.assert_not_called()
+
+    def test_delete_invitation_without_user(self):
+        permission = UserPortfolioPermission.objects.create(
+            email="new.person@example.gov",
+            user=None,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            status=UserPortfolioPermission.Status.INVITED,
+        )
+
+        permission.delete()
+
+        self.assertFalse(UserPortfolioPermission.objects.filter(email="new.person@example.gov").exists())
+
+    @patch("registrar.models.user_portfolio_permission.cleanup_after_portfolio_member_deletion")
+    def test_delete_permission_with_user_and_no_email_still_runs_cleanup(self, mock_cleanup):
+        self.testuser.email = ""
+        self.testuser.save()
+        permission = UserPortfolioPermission.objects.create(
+            email="",
+            user=self.testuser,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+
+        permission.delete()
+
+        mock_cleanup.assert_called_once_with(portfolio=self.portfolio, email="", user=self.testuser)
 
 
 class TestPortfolioInvitationAdmin(TestCase):

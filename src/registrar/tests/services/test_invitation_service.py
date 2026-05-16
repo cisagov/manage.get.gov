@@ -9,6 +9,7 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.services.invitation_service import (
+    create_portfolio_permission_or_invitation,
     invite_to_portfolio,
     invite_to_domain,
     invite_to_domains_bulk,
@@ -22,6 +23,8 @@ from registrar.services.invitation_service import (
     check_duplicate_portfolio_invitation,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.utility.email import EmailSendingError
+from registrar.utility.errors import InvitationError
 
 
 class TestInvitationService(TestCase):
@@ -41,6 +44,7 @@ class TestInvitationService(TestCase):
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
     def test_invite_to_portfolio_creates_permission(self, mock_send_email):
         """invite_to_portfolio creates a UserPortfolioPermission."""
+        mock_send_email.return_value = True
         email = "invitee@example.com"
         roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
 
@@ -53,10 +57,121 @@ class TestInvitationService(TestCase):
 
         self.assertIsNotNone(permission)
         self.assertEqual(permission.email, email)
+        self.assertEqual(permission.user, self.user)
         self.assertEqual(permission.portfolio, self.portfolio)
         self.assertEqual(permission.roles, roles)
-        self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertEqual(permission.invited_by, self.requestor)
         mock_send_email.assert_called_once()
+
+    @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
+    def test_create_portfolio_permission_for_existing_user_without_email(self, mock_send_email):
+        """create_portfolio_permission_or_invitation can add existing users without email."""
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+
+        permission, email_was_sent = create_portfolio_permission_or_invitation(
+            email=self.user.email,
+            portfolio=self.portfolio,
+            requestor=self.requestor,
+            roles=roles,
+            send_email=False,
+        )
+
+        self.assertEqual(permission.user, self.user)
+        self.assertEqual(permission.email, self.user.email)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertIsNone(permission.invited_by)
+        self.assertTrue(email_was_sent)
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
+    def test_create_portfolio_invitation_for_unknown_email_forces_email(self, mock_send_email):
+        """create_portfolio_permission_or_invitation always sends email for unknown users."""
+        mock_send_email.return_value = True
+        email = "new-invitee@example.com"
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
+
+        permission, email_was_sent = create_portfolio_permission_or_invitation(
+            email=email,
+            portfolio=self.portfolio,
+            requestor=self.requestor,
+            roles=roles,
+            send_email=False,
+        )
+
+        self.assertIsNone(permission.user)
+        self.assertEqual(permission.email, email)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
+        self.assertEqual(permission.invited_by, self.requestor)
+        self.assertTrue(email_was_sent)
+        mock_send_email.assert_called_once()
+
+    def test_create_portfolio_permission_uses_user_email_before_invitation_email(self):
+        """create_portfolio_permission_or_invitation prefers user email once an invitation has a user."""
+        permission = UserPortfolioPermission(
+            user=self.user,
+            email="old-invitee@example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+
+        saved_permission, email_was_sent = create_portfolio_permission_or_invitation(
+            email=None,
+            portfolio=self.portfolio,
+            requestor=self.requestor,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            send_email=False,
+            permission=permission,
+        )
+
+        self.assertEqual(saved_permission.email, self.user.email)
+        self.assertTrue(email_was_sent)
+
+    @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
+    def test_create_portfolio_invitation_does_not_set_details_when_email_fails(self, mock_send_email):
+        """create_portfolio_permission_or_invitation records invite details only after email succeeds."""
+        mock_send_email.side_effect = EmailSendingError("Could not send email.")
+        permission = UserPortfolioPermission(
+            email="new-invitee@example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            status=UserPortfolioPermission.Status.INVITED,
+        )
+
+        with self.assertRaises(EmailSendingError):
+            create_portfolio_permission_or_invitation(
+                email=None,
+                portfolio=self.portfolio,
+                requestor=self.requestor,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                send_email=True,
+                permission=permission,
+            )
+
+        self.assertIsNone(permission.invited_by)
+        self.assertIsNone(permission.invited_at)
+
+    def test_create_portfolio_permission_duplicate_raises_invitation_error(self):
+        """create_portfolio_permission_or_invitation rejects duplicate portfolio access."""
+        roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            email=self.user.email,
+            portfolio=self.portfolio,
+            roles=roles,
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+
+        with self.assertRaises(InvitationError) as context:
+            create_portfolio_permission_or_invitation(
+                email=self.user.email,
+                portfolio=self.portfolio,
+                requestor=self.requestor,
+                roles=roles,
+            )
+
+        self.assertIn("existing invitation or is already a member", str(context.exception))
 
     @patch("registrar.services.invitation_service." "send_domain_invitation_email")
     def test_invite_to_domain_creates_role(self, mock_send_email):
@@ -102,18 +217,22 @@ class TestInvitationService(TestCase):
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_get_pending_invitations_returns_invitations(self, mock_send_email):
         """get_pending_invitations returns user's invitations."""
+        mock_send_email.return_value = True
+        email = "pending@example.com"
+
         # Create invitation
         invite_to_portfolio(
-            email=self.user.email,
+            email=email,
             portfolio=self.portfolio,
             requestor=self.requestor,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+        pending_user = User.objects.create(username="pending_user", email=email)
 
-        result = get_pending_invitations(self.user)
+        result = get_pending_invitations(pending_user)
 
         self.assertEqual(len(result["portfolio_permissions"]), 1)
-        self.assertEqual(result["portfolio_permissions"][0].email, self.user.email)
+        self.assertEqual(result["portfolio_permissions"][0].email, email)
 
     def test_accept_portfolio_invitation_updates_status(self):
         """accept_portfolio_invitation updates status to ACCEPTED."""
