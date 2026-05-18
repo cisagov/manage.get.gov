@@ -4768,7 +4768,7 @@ class TestPortfolioMemberEditView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
         )
-        print(admin_permission)
+
         mock_send_removal_emails.return_value = True
         mock_send_update_email.return_value = True
 
