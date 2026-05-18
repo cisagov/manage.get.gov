@@ -1,7 +1,21 @@
 # DNS Error Handling — A Developer's Guide
 
 **Last updated** 2026-05-15
+## Intro
 
+For DNS error handling we decided to create an admin table that maps custom error codes (that we maintain) to their corresponding error messages. This is to simplify the complexity associated with hardcoded error messages scattered throughout the code. By centralizing error codes and their messages in a single admin table (the error mapping), we not only keep a centralized record of our error messages, but also make it easier to maintain such that non-devs with access to this table could make error messaging adjustments (which were once only possible by doing a code edit).
+
+**How to use it in the code:** When something goes wrong (Cloudflare is down, a zone doesn't exist, the network times out), raise a typed DnsHostingError subclass from the service layer. Using this architecture, the error code stays attached as you bubble up through the domain layer into the view. The view then catches it, looks up the user-facing message in our error mapping, and returns a consistent JSON envelope with the error code, message, and a request_id for logging and support.
+
+**What's in this doc:**
+
+- **Error Types** — the 8 error codes we handle today, what triggers each, and how to look them up
+- **What Developers Do** — the 4 rules: raise specific errors, catch only in views, include context, test by code not by message
+- **Worked Example** — end-to-end flow of one failed DNS save to show the rules in action
+- **Network Timeouts & Retries** — why we timeout, how long we wait, and when we retry (write operations never retry; read operations do with backoff)
+- **Key Files** — where the error classes, services, views, and logging live
+
+**Maintaining this doc:**  This guide covers what's being built right now. Future phases will add deeper features that will result in this doc requiring an update (including changing the "last updated" date at the top of the doc).
 How DNS errors are handled:
 
 - Typed exception classes for every DNS failure
