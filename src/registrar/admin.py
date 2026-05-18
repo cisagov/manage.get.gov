@@ -546,6 +546,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
         user = cleaned_data.get("user")
         email = self._get_email(user)
 
+        self._set_user(user)
         self._set_email(cleaned_data, email)
         self._set_status_for_new_permission(user, email)
         self._validate_new_invitation(cleaned_data, user, email)
@@ -567,6 +568,10 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
                 email = self.instance.email.lower()
 
         return email
+
+    def _set_user(self, user):
+        if user is not None:
+            self.instance.user = user
 
     def _set_email(self, cleaned_data, email):
         if email:
