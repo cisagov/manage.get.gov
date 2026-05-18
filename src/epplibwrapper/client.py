@@ -1,6 +1,7 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+import os
 from gevent.lock import BoundedSemaphore
 
 try:
@@ -17,6 +18,10 @@ from .cert import Cert, Key
 from .errors import ErrorCode, LoginError, RegistryError
 
 logger = logging.getLogger(__name__)
+
+
+def _worker_tag():
+    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
 
 try:
     # Write cert and key to disk
@@ -101,9 +106,11 @@ class EPPLibWrapper:
         if response.code >= 2000:  # type: ignore
             self._client.close()  # type: ignore
             raise LoginError(response.msg)  # type: ignore
+        logger.info(f"{_worker_tag()} EPP connection established")
 
     def _disconnect(self) -> None:
         """Close the connection. Sends a logout command and closes the connection."""
+        logger.info(f"{_worker_tag()} EPP connection closing")
         self._send_logout_command()
         self._close_client()
 
@@ -130,6 +137,7 @@ class EPPLibWrapper:
             # at app initialization
             if self._client is None:
                 self._initialize_client()
+            logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
             response = self._client.send(command)
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
@@ -137,7 +145,7 @@ class EPPLibWrapper:
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"{_worker_tag()} EPP connection lost. {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             # For linter due to it not liking this line length
