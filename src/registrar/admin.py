@@ -5393,6 +5393,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     change_form_template = "django/admin/suborg_change_form.html"
 
+
     readonly_fields = []
 
     # Even though this is empty, I will leave it as a stub for easy changes in the future
@@ -5466,6 +5467,9 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 )
         return super().has_view_permission(request, obj)
 
+    def delete_view(self, request, object_id, extra_context=None):
+        self.delete_confirmation_template = "django/admin/suborg_delete_confirmation_template.html"
+        return super().delete_view(request, object_id, extra_context=extra_context)
 
 class AllowedEmailAdmin(ListHeaderAdmin):
     class Meta:
