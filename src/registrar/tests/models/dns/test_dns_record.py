@@ -378,3 +378,108 @@ class DnsRecordTest(TestCase):
         DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="www", ttl=3600, content="192.0.2.1")
         matches = DnsRecord.objects.filter(DnsRecord._name_q("www.dns-test.gov", "dns-test.gov"))
         self.assertEqual(matches.count(), 1)
+
+    # --- CNAME name != hostname model-level validation tests ---
+
+    def test_clean_cname_name_matches_content_fqdn_raises(self):
+        """CNAME record whose FQDN name equals its content should fail clean()."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub.dns-test.gov",
+            ttl=3600,
+            content="sub.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_cname_bare_label_expands_to_match_content_raises(self):
+        """CNAME record with a bare label name that expands to match content should fail clean().
+
+        A bare label "sub" in dns-test.gov zone expands to "sub.dns-test.gov"; if content
+        is "sub.dns-test.gov" this should be caught even though the stored name is the label.
+        """
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub",
+            ttl=3600,
+            content="sub.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_cname_at_symbol_expands_to_match_content_raises(self):
+        """CNAME record with '@' (root) that expands to match content should fail clean().
+
+        '@' in dns-test.gov zone expands to "dns-test.gov"; if content is "dns-test.gov"
+        this should be caught even though the stored name is '@'.
+        """
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="@",
+            ttl=3600,
+            content="dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_cname_name_differs_from_content_valid(self):
+        """CNAME record whose name does not resolve to the same value as content should pass."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub.dns-test.gov",
+            ttl=3600,
+            content="other.example.gov",
+        )
+        record.clean()  # should not raise
+
+    def test_clean_cname_no_content_skips_hostname_check(self):
+        """CNAME record with no content should not trigger the hostname check."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub.dns-test.gov",
+            ttl=3600,
+            content=None,
+        )
+        record.clean()  # should not raise
+
+    def test_clean_non_cname_record_skips_hostname_check(self):
+        """Non-CNAME records should not be subject to the name != hostname validation."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="TXT",
+            name="dns-test.gov",
+            ttl=3600,
+            content="dns-test.gov",
+        )
+        record.clean()  # should not raise — TXT records can have name == content
+
+    def test_clean_cname_bare_label_matches_content_case_insensitive_raises(self):
+        """A CNAME whose name and content differ only in letter case should still fail.
+        DNS names are not case-sensitive, so 'www' pointing to 'Www.dns-test.gov' is
+        the same as pointing to itself."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="www",
+            ttl=3600,
+            content="Www.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
