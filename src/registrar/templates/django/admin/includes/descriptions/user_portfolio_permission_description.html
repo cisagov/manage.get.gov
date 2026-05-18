@@ -1,3 +1,5 @@
+{% load waffle_tags %}
+
 <p>
     This table represents the members of each portfolio in the registrar. There are separate records for each member/portfolio combination.
 </p>
@@ -7,5 +9,9 @@
 </p>
 
 <p>
-    Adding a new user portfolio permission send an invitation email if the user doesn't exist, and you have the option to send an email if the user does exist.
+    {% flag "user_portfolio_permission_invitations" %}
+        Adding a new user portfolio permission sends an invitation email if the user doesn't exist, and you have the option to send an email if the user does exist.
+    {% else %}
+        If you add or remove someone to a portfolio by using this table, those actions won’t trigger notification emails.
+    {% endflag %}
 </p>
