@@ -918,25 +918,16 @@ class DomainDNSRecordForm(forms.ModelForm):
         return name.lower() if name else name
 
     def clean_content(self):
-        """Lowercase content for CNAME records, where the content is itself a
-        hostname. Other record types (such as TXT) keep their original case."""
-        content = self.cleaned_data.get("content")
-        record_type = self.cleaned_data.get("type")
-        if content and record_type == DNSRecordTypes.CNAME:
-            return content.lower()
-        return content
-
-    def _field_is_clean(self, field: str, value) -> bool:
-        """True if a field has a non-empty value and no field-level errors yet."""
-        return bool(value) and field not in self.errors
-
-    def clean_content(self):
         """Clean the content field based on the record type."""
         record = DNSRecordTypes(self.cleaned_data.get("type"))
         content = self.cleaned_data.get("content", "")
         if record.cleaner:
             content = record.cleaner(content)
         return content
+
+    def _field_is_clean(self, field: str, value) -> bool:
+        """True if a field has a non-empty value and no field-level errors yet."""
+        return bool(value) and field not in self.errors
 
     def _validate_content(self, record_type, content):
         """Validate content field based on record type."""

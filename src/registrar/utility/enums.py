@@ -6,7 +6,7 @@ from registrar.validations import validate_dns_name, validate_mx_content
 from django.core.validators import validate_ipv4_address, validate_ipv6_address
 from django.db.models import TextChoices
 from registrar.validations import validate_txt_content
-from registrar.cleaners import clean_txt_content
+from registrar.cleaners import clean_cname_content, clean_txt_content
 
 
 class ValidationReturnType(Enum):
@@ -144,6 +144,7 @@ class DNSRecordTypes(TextChoices):
     @property
     def cleaner(self):
         return {
+            DNSRecordTypes.CNAME: clean_cname_content,
             DNSRecordTypes.TXT: clean_txt_content,
         }.get(self)
 
