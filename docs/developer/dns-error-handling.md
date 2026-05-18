@@ -15,7 +15,8 @@ For DNS error handling we decided to create an admin table that maps custom erro
 - **Key Files** — where the error classes, services, views, and logging live
 
 **Maintaining this doc:**  This guide covers what's being built right now. Future phases will add deeper features that will result in this doc requiring an update (including changing the "last updated" date at the top of the doc).
-How DNS errors are handled:
+
+**How DNS errors are handled (summary):**
 
 - Typed exception classes for every DNS failure
 - A consistent JSON error envelope returned to the browser
