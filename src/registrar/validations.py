@@ -74,6 +74,9 @@ DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
 DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
 DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
 DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
+CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE = "Name and target can't be the same."
+CNAME_NAME_INLINE_ERROR_MESSAGE = "Name can't be the same as the target."
+CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name."
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 
 

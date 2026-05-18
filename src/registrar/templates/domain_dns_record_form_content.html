@@ -2,7 +2,7 @@
 {% load custom_filters %}
 
 {% csrf_token %}
-<h2>Add record</h2>
+<h3 class="margin-top-0 margin-bottom-0">Add record</h3>
 
 <div
     class="grid-row grid-gap"
@@ -47,7 +47,7 @@
 
     <button
         type="reset"
-        class="usa-button usa-button--outline"
+        class="usa-button usa-button--outline js-dnsrecord-cancel-button"
         x-on:click="showFormId = null"
     >
         Cancel

@@ -233,7 +233,7 @@ class PortfolioMemberDeleteView(View):
         """
         Return a success response (JSON or redirect with messages).
         """
-        success_message = f"You've removed {member_email} from the organization."
+        success_message = f"{member_email} has been removed from this organization."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
         messages.success(request, success_message)
@@ -312,7 +312,7 @@ class PortfolioMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member role and permission changes have been saved.")
+            messages.success(self.request, "The member's role and permissions have been updated.")
             return redirect("member", member_pk=member_pk) if not removing_admin_role_on_self else redirect("home")
         else:
             return render(
@@ -414,16 +414,20 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         except IntegrityError:
             messages.error(
                 request,
-                "A database error occurred while saving changes. If the issue persists, "
-                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                mark_safe(  # nosec
+                    "A database error occurred while saving changes. Please try again. If the problem persists,"
+                    ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
         except Exception as e:
             messages.error(
                 request,
-                f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                mark_safe(  # nosec
+                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
+                    ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
@@ -618,7 +622,7 @@ class PortfolioInvitedMemberDeleteView(View):
 
         portfolio_invitation.delete()
 
-        success_message = f"You've removed {portfolio_invitation.email} from the organization."
+        success_message = f"{portfolio_invitation.email} has been removed from this organization."
         # From the Members Table page Else the Member Page
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
@@ -686,7 +690,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             except Exception as e:
                 self._handle_exceptions(e)
             form.save()
-            messages.success(self.request, "The member role and permission changes have been saved.")
+            messages.success(self.request, "The member's role and permissions have been updated.")
             return redirect("invitedmember", invitedmember_pk=invitedmember_pk)
 
         return render(
@@ -780,16 +784,20 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         except IntegrityError:
             messages.error(
                 request,
-                "A database error occurred while saving changes. If the issue persists, "
-                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                mark_safe(  # nosec
+                    "A database error occurred while saving changes. Please try again. If the problem persists, "
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                ),
             )
             logger.error("A database error occurred while saving changes.", exc_info=True)
             return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
         except Exception as e:
             messages.error(
                 request,
-                f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                mark_safe(  # nosec
+                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists, "
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                ),
             )
             logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
             return redirect(reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": invitedmember_pk}))
@@ -1059,8 +1067,10 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
             except Exception as e:
                 messages.error(
                     request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                    mark_safe(  # nosec
+                        f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
+                        '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                    ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
@@ -1131,8 +1141,10 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
             except Exception as e:
                 messages.error(
                     request,
-                    f"An unexpected error occurred: {str(e)}. If the issue persists, "
-                    f"please contact {DefaultUserValues.HELP_EMAIL}.",
+                    mark_safe(  # nosec
+                        f"A database error occurred: {str(e)}. Please try again. If the problem persists, "
+                        '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                    ),
                 )
                 logger.error(f"An unexpected error occurred: {str(e)}.", exc_info=True)
                 return None
@@ -1240,10 +1252,10 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited.")
+                messages.success(self.request, f"{requested_email} has been invited to this organization..")
             else:
                 if permission_exists:
-                    messages.warning(self.request, "User is already a member of this portfolio.")
+                    messages.error(self.request, f"{requested_email} is already a member of this organization.")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
@@ -1257,7 +1269,13 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 portfolio,
                 exc_info=True,
             )
-            messages.error(self.request, "Could not send organization invitation email.")
+            messages.error(
+                self.request,
+                mark_safe(  # nosec
+                    f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                ),
+            )
         elif isinstance(exception, MissingEmailError):
             messages.error(self.request, str(exception))
             logger.error(
@@ -1265,8 +1283,14 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 exc_info=True,
             )
         else:
-            logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
-            messages.warning(self.request, "Could not send portfolio email invitation.")
+            logger.error("Could not send email invitation (Other Exception)", exc_info=True)
+            messages.error(
+                self.request,
+                mark_safe(  # nosec
+                    f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
+                    '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                ),
+            )
 
 
 @grant_access(IS_MULTIPLE_PORTFOLIOS_MEMBER, HAS_LEGACY_AND_ORG_USER)
