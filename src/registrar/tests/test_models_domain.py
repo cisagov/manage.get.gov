@@ -2793,8 +2793,8 @@ class TestCreationDate(MockEppLib):
         x_registry_created_at, created_at_reference = (
             Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at_reference").get()
         )
-        self.assertEquals(x_registry_created_at, self.creation_date)
-        self.assertEquals(created_at_reference, original_created_at)
+        self.assertEqual(x_registry_created_at, self.creation_date)
+        self.assertEqual(created_at_reference, original_created_at)
 
 
 class TestDomainCreatedAtReference(TestCase):
