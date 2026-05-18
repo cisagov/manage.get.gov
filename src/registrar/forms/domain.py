@@ -919,10 +919,10 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     def clean_content(self):
         """Clean the content field based on the record type."""
-        record = DNSRecordTypes(self.cleaned_data.get("type"))
+        record_type = self.cleaned_data.get("type")
         content = self.cleaned_data.get("content", "")
-        if record.cleaner:
-            content = record.cleaner(content)
+        if record_type and record_type.cleaner:
+            content = record_type.cleaner(content)
         return content
 
     def _field_is_clean(self, field: str, value) -> bool:
