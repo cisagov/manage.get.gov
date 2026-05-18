@@ -4,12 +4,16 @@ from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
     DNS_NAME_FORMAT_ERROR_MESSAGE,
     DNS_NAME_HYPHEN_ERROR_MESSAGE,
     DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_NAME_SPACES_ERROR_MESSAGE,
+    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     MX_CONTENT_SPACES_ERROR_MESSAGE,
@@ -30,9 +34,8 @@ class BaseDomainDNSRecordFormTest(TestCase):
         self.VALID_CONTENT_BY_TYPE = {
             "A": "192.0.2.10",
             "AAAA": "2001:db8::1234:5678",
+            "CNAME": "www.example.com",
             "MX": "mail.example.gov",
-            # TODO: Comment out CNAME test case after implementing CNAME host name validation
-            # "CNAME": "www.example.com",
             # TODO: Comment out PTR test case after implementing PTR host name validation
             # "PTR": "www.example.com",
             "TXT": "Some valid text",
@@ -50,12 +53,18 @@ class BaseDomainDNSRecordFormTest(TestCase):
             data["priority"] = priority
         return data
 
-    def make_form(self, data):
+    def make_form(self, data, domain_name=None):
+        # Match how DomainDNSRecordsView builds the form at POST time: data +
+        # domain_name are always present; instance is a fresh record (no pk) on
+        # the create path. The edit path — where the view binds an existing
+        # DnsRecord as instance — is covered by view-level tests.
         record = DnsRecord(dns_zone=self.zone)
-        return DomainDNSRecordForm(
-            data=data,
-            instance=record,
-        )
+        kwargs = {
+            "data": data,
+            "instance": record,
+            "domain_name": domain_name or self.domain.name,
+        }
+        return DomainDNSRecordForm(**kwargs)
 
     def assert_dns_name_errors(self, name_value, expected_messages):
         """
@@ -204,8 +213,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
             "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
-            # TODO: Comment out and complete CNAME test case when CNAME validation is implemented
-            # "CNAME": "..."
+            "CNAME": ("invalid..hostname", DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE),
             # TODO: Comment out and complete PTR test case when PTR validation is implemented
             # "PTR": "..."
         }
@@ -338,3 +346,559 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         )
         form = self.make_mx_form(name="www")
         self.assertTrue(form.is_valid())
+
+
+class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
+    """Tests for name field conflict validation in DomainDNSRecordForm."""
+
+    def test_cname_conflicts_with_existing_a_record(self):
+        """Creating a CNAME record with same name as existing A record should throw error."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Try to create a CNAME record with the same name
+        data = self.valid_form_data_for_record_type("CNAME", "example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_cname_conflicts_with_existing_aaaa_record(self):
+        """Creating a CNAME record with same name as existing AAAA record should throw error."""
+        # Create an existing AAAA record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.AAAA,
+            name="www",
+            ttl=3600,
+            content="2001:db8::1",
+        )
+        # Try to create a CNAME record with the same name
+        data = self.valid_form_data_for_record_type("CNAME", "example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_a_record_conflicts_with_existing_cname_record(self):
+        """Creating an A record with same name as existing CNAME record should throw error."""
+        # Create an existing CNAME record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="www",
+            ttl=3600,
+            content="example.com",
+        )
+        # Try to create an A record with the same name
+        data = self.valid_form_data_for_record_type("A", "192.0.2.1")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_aaaa_record_conflicts_with_existing_cname_record(self):
+        """Creating an AAAA record with same name as existing CNAME record should throw error."""
+        # Create an existing CNAME record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="www",
+            ttl=3600,
+            content="example.com",
+        )
+        # Try to create an AAAA record with the same name
+        data = self.valid_form_data_for_record_type("AAAA", "2001:db8::1234:5678")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_multiple_a_records_with_same_name_allowed(self):
+        """Multiple A records with the same name should be allowed."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Create another A record with the same name but different content
+        data = self.valid_form_data_for_record_type("A", "192.0.2.2")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertTrue(form.is_valid())
+
+    def test_mx_record_same_name_as_a_record_allowed(self):
+        """MX records should be allowed with same name as A records."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # MX records are not subject to name uniqueness constraints
+        form = self.make_mx_form(name="www", priority=10)
+        self.assertTrue(form.is_valid())
+
+    def test_editing_cname_with_existing_a_record_name_throws_error(self):
+        """Editing a record to have same name as existing A record should throw error."""
+        # Create an existing A record
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="www",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Create a CNAME record with different name
+        existing_cname = DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="mail",
+            ttl=3600,
+            content="example.com",
+        )
+        # Try to edit it to have the same name as the A record
+        data = self.valid_form_data_for_record_type("CNAME", "example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+        form.instance = existing_cname
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+
+    def test_name_conflict_validation_with_domain_name_lookup(self):
+        """Test name conflict detection when zone is looked up via domain_name (creating new record)."""
+        # Create an existing A record in the zone
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name="api",
+            ttl=3600,
+            content="192.0.2.1",
+        )
+        # Try to create a CNAME with same name, using domain_name lookup instead of instance.dns_zone
+        # This simulates the form being used during new record creation (instance doesn't have dns_zone_id yet)
+        data = self.valid_form_data_for_record_type("CNAME", "api.example.com")
+        data["name"] = "api"
+
+        record = DnsRecord()  # New record without dns_zone set
+        form = DomainDNSRecordForm(
+            data=data,
+            instance=record,
+            domain_name="example.gov",  # Zone will be looked up by domain name
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_cname_conflicts_with_existing_cname_same_name_different_content(self):
+        """Two CNAME records at the same name are not allowed — DNS permits only one CNAME per label."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="www",
+            ttl=3600,
+            content="cdn.example.com",
+        )
+        data = self.valid_form_data_for_record_type("CNAME", "cdn2.example.com")
+        data["name"] = "www"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_editing_cname_to_same_name_not_flagged_as_cname_conflict(self):
+        """Editing a CNAME record and resubmitting the same name must not flag as a conflict with itself."""
+        existing_cname = DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="www",
+            ttl=3600,
+            content="cdn.example.com",
+        )
+        data = self.valid_form_data_for_record_type("CNAME", "cdn.example.com")
+        data["name"] = "www"
+        form = DomainDNSRecordForm(data=data, instance=existing_cname, domain_name=self.domain.name)
+
+        self.assertTrue(form.is_valid())
+
+    def test_cname_conflicts_with_existing_cname_using_fqdn_form(self):
+        """CNAME-CNAME name conflict is detected even when names are stored/submitted in different forms."""
+        # Stored as label form
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="sub",
+            ttl=3600,
+            content="cdn.example.com",
+        )
+        # Submitted as FQDN form
+        data = self.valid_form_data_for_record_type("CNAME", "cdn2.example.com")
+        data["name"] = f"sub.{self.domain.name}"
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+    def test_cname_conflicts_with_existing_cname_at_root(self):
+        """CNAME-CNAME name conflict is detected for root (@) records."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.CNAME,
+            name="@",
+            ttl=3600,
+            content="cdn.example.com",
+        )
+        data = self.valid_form_data_for_record_type("CNAME", "cdn2.example.com")
+        data["name"] = self.domain.name  # Submit as bare domain instead of @
+        form = self.make_form(data)
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+
+
+class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
+    """Tests for full duplicate record detection in DomainDNSRecordForm.
+
+    Per ticket #4779: a record is a duplicate when type + name + content (+ priority for MX)
+    all match an existing record in the same zone. TTL is not part of identity — two records
+    with different TTLs are still duplicates. When a duplicate is detected, the form surfaces
+    a form-level error (banner at top of page) plus inline errors on name, content, and
+    (for MX only) priority. The Type field is intentionally NOT flagged inline.
+    """
+
+    DUPLICATE_MESSAGE = "You already entered this DNS record. DNS records must be unique."
+
+    def make_mx_form(self, content="mail.example.gov", priority=10, name="www", **overrides):
+        data = self.valid_form_data_for_record_type("MX", content, priority=priority)
+        data["name"] = name
+        data.update(overrides)
+        return self.make_form(data)
+
+    def assert_duplicate_errors(self, form, expect_priority=False):
+        self.assertFalse(form.is_valid())
+        # Banner at top of page is rendered from __all__ (non-field) errors
+        self.assertIn(self.DUPLICATE_MESSAGE, form.non_field_errors())
+        self.assertIn(self.DUPLICATE_MESSAGE, form.errors.get("name", []))
+        self.assertIn(self.DUPLICATE_MESSAGE, form.errors.get("content", []))
+        if expect_priority:
+            self.assertIn(self.DUPLICATE_MESSAGE, form.errors.get("priority", []))
+        else:
+            self.assertNotIn("priority", form.errors)
+        # Type is never flagged inline even though it's part of identity
+        self.assertNotIn("type", form.errors)
+
+    def test_duplicate_a_record_flagged(self):
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10")
+        form = self.make_form(self.valid_form_data_for_record_type("A", "192.0.2.10"))
+        self.assert_duplicate_errors(form)
+
+    def test_duplicate_a_record_with_different_ttl_still_flagged(self):
+        """TTL is not part of record identity — a different TTL is still a duplicate."""
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["ttl"] = 300
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_a_record_with_different_content_not_flagged(self):
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10")
+        form = self.make_form(self.valid_form_data_for_record_type("A", "192.0.2.11"))
+        self.assertTrue(form.is_valid())
+
+    def test_duplicate_aaaa_record_flagged(self):
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.AAAA, name="www", ttl=3600, content="2001:db8::1234:5678"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("AAAA", "2001:db8::1234:5678"))
+        self.assert_duplicate_errors(form)
+
+    def test_duplicate_txt_record_flagged(self):
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.TXT, name="www", ttl=3600, content="Some valid text"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("TXT", "Some valid text"))
+        self.assert_duplicate_errors(form)
+
+    def test_same_type_different_name_not_flagged(self):
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = "mail"
+        self.assertTrue(self.make_form(data).is_valid())
+
+    def test_same_name_and_content_different_type_not_flagged(self):
+        """A and TXT records can share name+content — they're different types."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.TXT, name="www", ttl=3600, content="192.0.2.10"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("A", "192.0.2.10"))
+        self.assertTrue(form.is_valid())
+
+    def test_duplicate_mx_record_flagged_with_priority_error(self):
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="www",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=10,
+        )
+        self.assert_duplicate_errors(self.make_mx_form(priority=10), expect_priority=True)
+
+    def test_mx_record_with_different_priority_not_duplicate(self):
+        """Same name+content but different priority is NOT a duplicate for MX."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="www",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=10,
+        )
+        self.assertTrue(self.make_mx_form(priority=20).is_valid())
+
+    def test_duplicate_matching_is_case_insensitive_for_name(self):
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="WWW", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = "www"
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_editing_same_record_not_flagged_as_duplicate(self):
+        """When editing a record in place, the record itself shouldn't count as its own duplicate."""
+        existing = DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10"
+        )
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        form = DomainDNSRecordForm(data=data, instance=existing, domain_name=self.domain.name)
+        self.assertTrue(form.is_valid())
+
+    # --- root / label / FQDN equivalence (regression for root-of-zone dup bypass) ---
+
+    def test_duplicate_root_a_record_flagged_when_stored_as_bare_domain(self):
+        """Records synced from Cloudflare store the root of the zone ('@') as the bare
+        domain name. Submitting '@' with the same content must still be flagged."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.A, name=self.domain.name, ttl=3600, content="192.0.2.10"
+        )
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = "@"
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_root_a_record_flagged_when_stored_as_at_symbol(self):
+        """Reverse of the above: stored as '@', submitted as the bare domain."""
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="@", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = self.domain.name
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_label_record_flagged_when_stored_as_fqdn(self):
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.A,
+            name=f"www.{self.domain.name}",
+            ttl=3600,
+            content="192.0.2.10",
+        )
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = "www"
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_fqdn_record_flagged_when_stored_as_label(self):
+        DnsRecord.objects.create(dns_zone=self.zone, type=DNSRecordTypes.A, name="www", ttl=3600, content="192.0.2.10")
+        data = self.valid_form_data_for_record_type("A", "192.0.2.10")
+        data["name"] = f"www.{self.domain.name}"
+        self.assert_duplicate_errors(self.make_form(data))
+
+    def test_duplicate_mx_record_at_root_flagged_when_submitted_as_at_symbol(self):
+        """Duplicate MX at the zone root is caught when the existing record is stored as '@'."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=1,
+        )
+        data = self.valid_form_data_for_record_type("MX", "mail.example.gov", priority=1)
+        data["name"] = "@"
+        self.assert_duplicate_errors(
+            self.make_mx_form(content="mail.example.gov", priority=1, name="@"), expect_priority=True
+        )
+
+    def test_duplicate_mx_record_at_root_flagged_when_stored_as_at_submitted_as_domain(self):
+        """Duplicate MX is detected when stored as '@' but submitted using the full zone name."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=1,
+        )
+        form = self.make_mx_form(content="mail.example.gov", priority=1, name=self.domain.name)
+        self.assert_duplicate_errors(form, expect_priority=True)
+
+    def test_duplicate_mx_record_at_subdomain_flagged(self):
+        """Duplicate MX at a subdomain is detected regardless of label vs FQDN storage."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="mail",
+            ttl=3600,
+            content="smtp.example.gov",
+            priority=10,
+        )
+        form = self.make_mx_form(content="smtp.example.gov", priority=10, name="mail")
+        self.assert_duplicate_errors(form, expect_priority=True)
+
+    def test_duplicate_mx_record_at_subdomain_flagged_when_stored_as_fqdn(self):
+        """Duplicate MX is detected when the existing record is stored as FQDN."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name=f"mail.{self.domain.name}",
+            ttl=3600,
+            content="smtp.example.gov",
+            priority=10,
+        )
+        form = self.make_mx_form(content="smtp.example.gov", priority=10, name="mail")
+        self.assert_duplicate_errors(form, expect_priority=True)
+
+    def test_mx_records_with_same_name_content_different_priority_not_duplicate(self):
+        """Two MX records that differ only in priority are not duplicates."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="@",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=1,
+        )
+        form = self.make_mx_form(content="mail.example.gov", priority=10, name="@")
+        self.assertTrue(form.is_valid())
+
+    def test_duplicate_cname_shows_duplicate_error_not_name_conflict_error(self):
+        """A CNAME with the same name AND same content as an existing CNAME is a
+        duplicate, not a name conflict. The duplicate check is more specific than
+        the CNAME-vs-CNAME name-uniqueness rule and must take precedence so the
+        user sees the same friendly 'You already entered this DNS record' message
+        that other record types show on duplicate submission."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.CNAME, name="www", ttl=3600, content="example.gov"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("CNAME", "example.gov"))
+        self.assert_duplicate_errors(form)
+        self.assertNotIn(
+            DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+            form.errors.get("name", []),
+        )
+
+    def test_cname_with_different_content_still_flagged_as_name_conflict(self):
+        """Two CNAMEs with the same name but DIFFERENT content are still a name
+        conflict (only one CNAME allowed per name) — the duplicate-first ordering
+        must not break this case."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone, type=DNSRecordTypes.CNAME, name="www", ttl=3600, content="example.gov"
+        )
+        form = self.make_form(self.valid_form_data_for_record_type("CNAME", "other.example.gov"))
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+            form.errors.get("name", []),
+        )
+        self.assertNotIn(self.DUPLICATE_MESSAGE, form.errors.get("name", []))
+
+    def test_duplicate_mx_shows_only_duplicate_error_on_priority_not_required_error(self):
+        """Submitting a duplicate MX record should show only the duplicate message on
+        the priority field — not the 'Enter a priority for this record.' required message.
+        Django's add_error() side-effect removes priority from cleaned_data; without the
+        form-level guard that restores instance.priority before _post_clean, the model's
+        _validate_mx_priority fires on None and injects a spurious second error."""
+        DnsRecord.objects.create(
+            dns_zone=self.zone,
+            type=DNSRecordTypes.MX,
+            name="www",
+            ttl=3600,
+            content="mail.example.gov",
+            priority=10,
+        )
+        form = self.make_mx_form(priority=10)
+        self.assertFalse(form.is_valid())
+        priority_errors = form.errors.get("priority", [])
+        self.assertIn(self.DUPLICATE_MESSAGE, priority_errors)
+        self.assertNotIn(DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE, priority_errors)
+
+
+class DomainCNAMENameHostnameValidationTests(DomainDNSRecordNameConflictTests):
+    """Form-level tests for the CNAME name != hostname constraint.
+
+    Per ticket #4825, when the name and target match the form must show a single
+    banner at the top plus inline errors on both the name and target fields.
+    """
+
+    def assertCNAMESelfReferenceErrors(self, form):
+        """Assert all three messages required by ticket #4825 are present."""
+        self.assertFalse(form.is_valid())
+        self.assertIn(CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE, form.errors.get("__all__", []))
+        self.assertIn(CNAME_NAME_INLINE_ERROR_MESSAGE, form.errors.get("name", []))
+        self.assertIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, form.errors.get("content", []))
+
+    def test_cname_fqdn_name_matches_content_raises_all_three_errors(self):
+        """CNAME where the FQDN name equals the target should fail with banner + two inline errors."""
+        data = self.valid_form_data_for_record_type("CNAME", "sub.example.gov")
+        data["name"] = "sub.example.gov"
+        form = self.make_form(data)
+        self.assertCNAMESelfReferenceErrors(form)
+
+    def test_cname_bare_label_expands_to_match_content_raises_all_three_errors(self):
+        """CNAME with bare label 'sub' expands to 'sub.example.gov'; matching target should fail."""
+        data = self.valid_form_data_for_record_type("CNAME", "sub.example.gov")
+        data["name"] = "sub"
+        form = self.make_form(data)
+        self.assertCNAMESelfReferenceErrors(form)
+
+    def test_cname_at_symbol_expands_to_match_content_raises_all_three_errors(self):
+        """CNAME with '@' expands to 'example.gov'; matching target should fail."""
+        data = self.valid_form_data_for_record_type("CNAME", "example.gov")
+        data["name"] = "@"
+        form = self.make_form(data)
+        self.assertCNAMESelfReferenceErrors(form)
+
+    def test_cname_name_differs_from_content_valid(self):
+        """CNAME where name does not resolve to the same hostname as the target should pass."""
+        data = self.valid_form_data_for_record_type("CNAME", "other.example.gov")
+        data["name"] = "sub"
+        form = self.make_form(data)
+
+        self.assertTrue(form.is_valid())
+
+    def test_cname_bare_label_matches_mixed_case_content_raises_all_three_errors(self):
+        """A CNAME 'www' pointing to 'Www.example.gov' should fail. DNS names are not
+        case-sensitive, so this still amounts to a record pointing at itself.
+        Regression test for a case-sensitive comparison that previously allowed this."""
+        data = self.valid_form_data_for_record_type("CNAME", "Www.example.gov")
+        data["name"] = "www"
+        form = self.make_form(data)
+        self.assertCNAMESelfReferenceErrors(form)

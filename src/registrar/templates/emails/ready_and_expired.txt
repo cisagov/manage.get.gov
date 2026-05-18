@@ -1,0 +1,39 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+Hi, {{ domain.domain_info.organization_name }}. 
+
+On {{ expiration_date }}, the following domain expired: {{ domain }}
+
+You can confirm this by doing a WHOIS search online or at <https://get.gov/domains/whois/?domain={{ domain }}>.
+
+---------------------------------------------------------------- 
+
+HOW TO RENEW A DOMAIN
+We allow an expired domain to be renewed for a limited time before it's deleted. After renewal, the registration will be extended one year from the date of expiration. There is no renewal fee.  
+
+To renew {{ domain }}, one of the following people must complete the renewal process at <https://manage.get.gov> using a Login.gov account tied to one of these email addresses:
+{% for email in domain_manager_emails %}
+* {{ email }}
+{% endfor %}
+
+Learn more about how Login.gov accounts are used at <https://get.gov/help/account-management/#access-the-gov-registrar>.
+
+Learn more about the renewal process at <https://get.gov/help/domain-management/#renew-an-expiring-or-expired-gov-domain>. 
+
+AVOID SERVICE DISRUPTION
+If you still need {{ domain }}, renew it immediately to avoid a disruption in service.
+
+If action isn’t taken on {{ domain }} or we don’t hear from your organization before {{ one_week_after_today }}, we will attempt to contact others who may be able to reach your organization. If we still haven’t reached you, the domain will be placed on hold, removed from the internet, and then finally deleted.
+
+Keep in mind that your DNS hosting provider may stop service if they notice the domain is expired. If that happens, email or websites using the domain won’t be available online.
+
+DOMAIN NOT NEEDED?
+If you no longer need {{ domain }}, you can request that it be deleted. Learn more about deleting a domain at <https://get.gov/help/domain-management/#delete-a-gov-domain>.
+
+----------------------------------------------------------------
+
+The .gov team
+Contact us <https://get.gov/contact/>
+Learn how .gov helps the public identify official, trusted information <https://get.gov>
+
+The .gov registry is a part of the Cybersecurity and Infrastructure Security Agency (CISA) <https://cisa.gov/>
+{% endautoescape %}

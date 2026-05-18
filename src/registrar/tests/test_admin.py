@@ -1571,7 +1571,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request, "james.gordon@gotham.gov has been invited to this organization."
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1611,7 +1613,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         mock_send_email.assert_not_called()
 
         # Assert that a warning message was triggered
-        mock_messages_error.assert_called_once_with(request, "User is already a member of this portfolio.")
+        mock_messages_error.assert_called_once_with(
+            request, "staff@example.com is already a member of this organization."
+        )
 
     @less_console_noise_decorator
     @patch("registrar.admin.send_portfolio_invitation_email")
@@ -1653,7 +1657,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request, "james.gordon@gotham.gov has been invited to this organization."
+        )
 
         # The invitation is not retrieved
         portfolio_invitation_mock_retrieve.assert_called_once()
@@ -1696,7 +1702,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
         # Assert that a warning message was triggered
-        mock_messages_success.assert_called_once_with(request, "james.gordon@gotham.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request, "james.gordon@gotham.gov has been invited to this organization."
+        )
 
         # The invitation is not retrieved
         portfolio_invitation_mock_retrieve.assert_not_called()

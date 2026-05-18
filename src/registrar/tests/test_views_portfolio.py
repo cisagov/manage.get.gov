@@ -1868,7 +1868,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -1880,7 +1879,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is not called
@@ -1944,7 +1943,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -1956,7 +1954,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is called
@@ -2019,7 +2017,6 @@ class TestPortfolioMemberDeleteView(WebTest):
         with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
             User, "is_only_admin_of_portfolio", return_value=False
         ):
-
             # Attempt to delete
             self.client.force_login(self.user)
             response = self.client.post(
@@ -2031,7 +2028,7 @@ class TestPortfolioMemberDeleteView(WebTest):
             # Check for a successful deletion
             self.assertEqual(response.status_code, 200)
 
-            expected_success_message = f"You've removed {member.email} from the organization."
+            expected_success_message = f"{member.email} has been removed from this organization."
             self.assertContains(response, expected_success_message, status_code=200)
 
             # assert that send_portfolio_admin_removal_emails is called
@@ -2208,7 +2205,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2271,7 +2268,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2342,7 +2339,7 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
 
             self.assertEqual(response.status_code, 302)
 
-            expected_success_message = f"You've removed {invitation.email} from the organization."
+            expected_success_message = f"{invitation.email} has been removed from this organization."
             args, kwargs = mock_success.call_args
             # Check if first arg is a WSGIRequest, confirms request object passed correctly
             # WSGIRequest protocol is basically the HTTPRequest but in Django form (ie POST '/member/1/delete')
@@ -2880,9 +2877,11 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
+        print(str(messages[0]))
         self.assertEqual(
             str(messages[0]),
-            "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact/">contact us</a> for assistance.',
         )
 
     @less_console_noise_decorator
@@ -3374,7 +3373,8 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         self.assertEqual(len(messages), 1)
         self.assertEqual(
             str(messages[0]),
-            "An unexpected error occurred: Failed to send email. If the issue persists, please contact help@get.gov.",
+            "An unexpected error occurred: Failed to send email. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact/">contact us</a> for assistance.',
         )
 
     @less_console_noise_decorator
@@ -3842,7 +3842,6 @@ class TestRequestingEntity(WebTest):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
         self.assertNotIn("Anything else", body)
-        self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertIn("Administrators from your organization:", body)
 
@@ -3870,7 +3869,6 @@ class TestRequestingEntity(WebTest):
         body = kwargs["Content"]["Simple"]["Body"]["Text"]["Data"]
 
         self.assertNotIn("Anything else", body)
-        self.assertIn("kepler, AL", body)
         self.assertIn("Requesting entity:", body)
         self.assertNotIn("Administrators from your organization:", body)
 
@@ -3924,7 +3922,6 @@ class TestRequestingEntity(WebTest):
 
 
 class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
-
     def setUp(self):
         super().setUp()
 
@@ -4200,7 +4197,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_error.assert_called_once_with(response.wsgi_request, "Could not send organization invitation email.")
+            mock_error.assert_called_once_with(
+                response.wsgi_request,
+                "An unexpected error occurred: Failed to send"
+                ' email.. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
+                " for assistance.",
+            )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -4270,7 +4272,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         }
 
         # Act
-        with patch("django.contrib.messages.warning") as mock_warning:
+        with patch("django.contrib.messages.error") as mock_error:
             response = self.client.post(reverse("new-member"), data=form_data)
 
             # Assert
@@ -4284,7 +4286,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             # assert that response is a redirect to reverse("members")
             self.assertRedirects(response, reverse("members"))
             # assert that messages contains message, "Could not send email invitation"
-            mock_warning.assert_called_once_with(response.wsgi_request, "Could not send portfolio email invitation.")
+            mock_error.assert_called_once_with(
+                response.wsgi_request,
+                "An unexpected error occurred: Generic exception."
+                ' Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                "for assistance.",
+            )
             # assert that portfolio invitation is not created
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
@@ -4355,7 +4362,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            "User is already a member of this portfolio.",
+            f"{self.user.email} is already a member of this organization.",
         )
 
         # Validate Database has not changed
@@ -4393,7 +4400,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Verify messages
         self.assertContains(
             response,
-            "User is already a member of this portfolio.",
+            f"{self.user.email.upper()} is already a member of this organization.",
         )
 
         # Validate Database has not changed

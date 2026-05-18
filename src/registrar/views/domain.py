@@ -23,7 +23,6 @@ from registrar.decorators import (
     IS_DOMAIN_MANAGER,
     IS_DOMAIN_MANAGER_AND_NOT_PORTFOLIO_MEMBER,
     IS_PORTFOLIO_MEMBER_AND_DOMAIN_MANAGER,
-    IS_STAFF,
     IS_STAFF_MANAGING_DOMAIN,
     grant_access,
 )
@@ -823,7 +822,7 @@ class DomainDNSView(DomainBaseView):
 
 
 @method_decorator(waffle_flag("dns_hosting"), name="dispatch")  # type: ignore[arg-type]
-@grant_access(IS_DOMAIN_MANAGER, IS_STAFF)
+@grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainDNSRecordsView(DomainFormBaseView):
     template_name = "domain_dns_records.html"
     form_class = DomainDNSRecordForm
@@ -882,6 +881,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def get_form_kwargs(self):
         kwargs = super(DomainDNSRecordsView, self).get_form_kwargs()
         kwargs["domain_name"] = self.object.name
+        # On edit POST, bind the existing DnsRecord as the form's instance so that
+        # uniqueness validators (name-conflict, full-duplicate) can exclude the record
+        # being edited via self.instance.pk. get_for_domain scopes the lookup to this
+        # domain's zone so we don't trust arbitrary PKs from the request.
+        record_id = self._parse_dns_record_id(self.request)
+        if record_id and self.object:
+            existing = DnsRecord.get_for_domain(self.object, record_id)
+            if existing:
+                kwargs["instance"] = existing
         return kwargs
 
     def attach_edit_form(self, dns_records):
@@ -995,8 +1003,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
-        errors = self.get_form_errors(form)
-        for error in errors:
+        # If the form set a banner-level (non-field) error, show only that as the banner;
+        # otherwise show each unique field error.
+        non_field_errors = list(form.non_field_errors())
+        errors = non_field_errors if non_field_errors else self.get_form_errors(form)
+        for error in dict.fromkeys(errors):
             messages.error(request, error)
 
         if is_edit:
