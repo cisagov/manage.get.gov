@@ -7,6 +7,7 @@ from ..utility.time_stamped_model import TimeStampedModel
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import (
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
     DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
@@ -88,7 +89,16 @@ class DnsRecord(TimeStampedModel):
         if record_type == DNSRecordTypes.MX and self.priority is None:
             errors["priority"] = [DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE]
 
-    def _validate_exclusive_names(self, record_type, errors):
+    def _resolve_domain_name(self) -> str | None:
+        """Return this record's zone domain name, or None if the zone doesn't exist."""
+        if not self.dns_zone_id:
+            return None
+        try:
+            return DnsZone.objects.get(pk=self.dns_zone_id).domain.name
+        except DnsZone.DoesNotExist:
+            return None
+
+    def _validate_exclusive_names(self, record_type, domain_name, errors):
         """Validate CNAME/A/AAAA records don't share names.
 
         Uses _name_q to handle label/FQDN and @/domain-name equivalences so that
@@ -99,13 +109,6 @@ class DnsRecord(TimeStampedModel):
 
         if record_type not in self.CONFLICTING_RECORD_TYPES:
             return
-
-        # Resolve domain name for matching (e.g. "@" vs "example.gov",
-        # "sub" vs "sub.example.gov").
-        try:
-            domain_name = DnsZone.objects.get(pk=self.dns_zone_id).domain.name
-        except DnsZone.DoesNotExist:
-            domain_name = None
 
         conflict = DnsRecord.objects.filter(
             dns_zone_id=self.dns_zone_id,
@@ -118,32 +121,41 @@ class DnsRecord(TimeStampedModel):
         if conflict.exists():
             errors["name"] = [DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE]
 
-    def _normalize_name(self) -> None:
-        """Lowercase the record name so storage matches DNS case-insensitivity."""
+    def _normalize_fields(self) -> None:
+        """Lowercase the fields that DNS treats as not case-sensitive.
+
+        Names are always lowercased. Content is only lowercased for CNAME
+        records, where the content is itself a hostname. Other record types
+        (such as TXT) keep their content as-is.
+        """
         if self.name:
             self.name = self.name.lower()
+        if self.content and self.type == DNSRecordTypes.CNAME:
+            self.content = self.content.lower()
 
     def full_clean(self, *args, **kwargs):
-        # Normalize before field validators and clean() run so self.name is
-        # consistently lowercased for every downstream check, not just at save-time.
-        self._normalize_name()
+        # Lowercase before validation runs so every check compares values the same way.
+        self._normalize_fields()
         super().full_clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        # Safety net for paths that bypass full_clean (e.g., create_from_vendor_data).
-        self._normalize_name()
+        # Covers paths that skip full_clean (such as create_from_vendor_data).
+        self._normalize_fields()
         super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()
-        self._normalize_name()
+        self._normalize_fields()
         errors = {}
+
+        domain_name = self._resolve_domain_name()
 
         self._validate_ttl(errors)
         record_type = DNSRecordTypes(self.type)
         self._validate_content(record_type, errors)
         self._validate_mx_priority(record_type, errors)
-        self._validate_exclusive_names(record_type, errors)
+        self._validate_exclusive_names(record_type, domain_name, errors)
+        self._validate_cname_name_not_hostname(record_type, domain_name, errors)
 
         if errors:
             raise ValidationError(errors)
@@ -285,17 +297,39 @@ class DnsRecord(TimeStampedModel):
 
         return query.exists()
 
+    def _validate_cname_name_not_hostname(self, record_type, domain_name, errors):
+        """Validate that a CNAME record's name does not resolve to the same hostname as its content.
+
+        Accounts for shorthand forms: "@" expands to the domain name, and a bare label
+        (e.g. "www") expands to "www.<domain>". This mirrors the form-level validation so
+        that records cannot bypass the constraint by being created at the model level.
+        """
+        if record_type != DNSRecordTypes.CNAME or not (self.name and self.content):
+            return
+
+        try:
+            self._validate_cname_record_name_dne_hostname(self.name, self.content, domain_name=domain_name)
+        except ValidationError as e:
+            # Surface on "name" — the user-entered name is the thing that needs changing.
+            errors["name"] = e.messages
+
     @classmethod
-    def _validate_cname_record_name_dne_hostname(self, record_name, hostname, domain_name=None):
-        """Validate that CNAME record name does not match hostname."""
+    def _validate_cname_record_name_dne_hostname(cls, record_name, hostname, domain_name=None):
+        """Block a CNAME that points at itself.
+
+        Callers should pass lowercased values. The form does that in clean_name
+        and clean_content; the model does it in _normalize_fields.
+        """
         cf_record_name = record_name
         if domain_name:
+            # Build the full name so "@" and short names like "www" can be
+            # compared against a full hostname like "www.example.gov".
             if record_name == "@":
                 cf_record_name = domain_name
             elif not record_name.endswith(domain_name):
                 cf_record_name = f"{record_name}.{domain_name}"
         if cf_record_name == hostname:
-            raise ValidationError("CNAME record hostname must not match record name.")
+            raise ValidationError(CNAME_NAME_INLINE_ERROR_MESSAGE)
 
     def get_active_x_record_id(self) -> str | None:
         """Return the active external record id (x_record_id) for this DnsRecord via the join table."""
@@ -379,8 +413,8 @@ class DnsRecord(TimeStampedModel):
                     vendor_dns_record=vendor_dns_record,
                 )
 
-        except Exception as e:
-            logger.error(f"Failed to create and save record to database: {str(e)}.")
+        except Exception:
+            logger.exception("Failed to create and save record to database.")
             raise
 
     @classmethod
@@ -404,6 +438,6 @@ class DnsRecord(TimeStampedModel):
                     if record_field not in excluded_fields:
                         setattr(dns_record, record_field, record_value)
                 dns_record.save()
-        except Exception as e:
-            logger.error(f"Failed to update and save record to database: {str(e)}.")
+        except Exception:
+            logger.exception("Failed to update and save record to database.")
             raise
