@@ -2058,7 +2058,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
 
     def display_error_msgs(self, request, email, permission_exists, invitation_exists):
         if permission_exists:
-            messages.error(request, "User is already a member of this portfolio.")
+            messages.error(request, f"{email} is already a member of this organization.")
         elif invitation_exists:
             messages.error(request, f"{email} has an existing invitation.")
 
@@ -2102,7 +2102,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
                         obj.retrieve()
-                    messages.success(request, f"{requested_email} has been invited.")
+                    messages.success(request, f"{requested_email} has been invited to this organization.")
                 else:
                     return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
             else:  # Handle the case when updating an existing PortfolioInvitation

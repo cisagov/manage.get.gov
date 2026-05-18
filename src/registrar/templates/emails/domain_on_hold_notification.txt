@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, domain managers.
+Hi, domain managers,
 
 We received a request to delete the following domain: {{ domain.name }}
 

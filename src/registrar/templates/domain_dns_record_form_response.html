@@ -48,6 +48,7 @@
         </template>
 
         {% include "domain_dns_record_form_content.html" with form=form %}
+        <p id="dnsrecords-no-records-message" {% if dns_records %} hidden {% endif %} hx-swap-oob="outerHTML"></p>
 
     {% endif %}
 {% else %}

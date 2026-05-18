@@ -1,7 +1,7 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi, OMB.
+Hi, OMB,
 
-The following .gov domain request has been withdrawn and no longer requires OMB review.
+The following .gov domain request has been withdrawn and no longer requires your review.
 
 DOMAIN REQUESTED: {{ domain_request.requested_domain.name }}
 REQUESTED BY: {{ domain_request.requester.email }}

@@ -1,5 +1,5 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
-Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }}.{% endif %}
+Hi,{% if domain_manager and domain_manager.first_name %} {{ domain_manager.first_name }},{% endif %}
 
 A domain manager was invited to {{ domain.name }}.
 
