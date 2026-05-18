@@ -1,6 +1,5 @@
 # DNS Error Handling — A Developer's Guide
 
-**Last updated** 2026-05-15
 ## Intro
 
 For DNS error handling we decided to create an admin table that maps custom error codes (that we maintain) to their corresponding error messages. This is to simplify the complexity associated with hardcoded error messages scattered throughout the code. By centralizing error codes and their messages in a single admin table (the error mapping), we not only keep a centralized record of our error messages, but also make it easier to maintain such that non-devs with access to this table could make error messaging adjustments (which were once only possible by doing a code edit).
