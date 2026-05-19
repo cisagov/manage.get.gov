@@ -870,6 +870,9 @@ class Domain(TimeStampedModel, DomainHelper):
             except Exception as err:
                 logger.info("nameserver setter checked for create state and it did not succeed. Warning: %s" % err)
 
+        # clear self._cache to fetch fresh data from the registry
+        self._invalidate_cache()
+
     @Cache
     def statuses(self) -> list[str]:
         """
@@ -1908,29 +1911,20 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             self._invalidate_cache()
 
-    # def is_dns_needed(self):
-    #     """Commented out and kept in the codebase
-    #     as this call should be made, but adds
-    #     a lot of processing time
-    #     when EPP calling is made more efficient
-    #     this should be added back in
+    def is_dns_needed(self):
+        """ Double check that the nameservers we set are in fact on the registry"""
+        self._invalidate_cache()
+        nameserverList = self.nameservers
+        return len(nameserverList) < 2
 
-    #     The goal is to double check that
-    #     the nameservers we set are in fact
-    #     on the registry
-    #     """
-    #     self._invalidate_cache()
-    #     nameserverList = self.nameservers
-    #     return len(nameserverList) < 2
-
-    # def dns_not_needed(self):
-    #     return not self.is_dns_needed()
+    def dns_not_needed(self):
+        return not self.is_dns_needed()
 
     @transition(
         field="state",
         source=[State.DNS_NEEDED, State.READY],
         target=State.READY,
-        # conditions=[dns_not_needed]
+        conditions=[dns_not_needed]
     )
     def ready(self):
         """Transition to the ready state
@@ -1949,7 +1943,7 @@ class Domain(TimeStampedModel, DomainHelper):
         field="state",
         source=[State.READY],
         target=State.DNS_NEEDED,
-        # conditions=[is_dns_needed]
+        conditions=[is_dns_needed]
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
@@ -2678,6 +2672,14 @@ class Domain(TimeStampedModel, DomainHelper):
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
 
     def delete_with_no_dns(self, *args, **kwargs):
+        # Guard: stop deletion if domain has active nameservers
+        if len(self.nameservers) >= 2:
+            logger.error(
+                f"Domain {self.name} has {len(self.nameservers)} nameservers "
+                f"but is in state {self.state}. Aborting deletion."
+            )
+            return
+        
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()
         # Delete domain
