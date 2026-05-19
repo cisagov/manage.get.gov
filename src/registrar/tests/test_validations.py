@@ -10,9 +10,10 @@ from registrar.validations import (
     DNS_NAME_SPACES_REQUIREMENT,
     validate_dns_name,
     validate_dns_name_fqdn_length,
-    get_error_message_from_requirement
+    get_error_message_from_requirement,
+    _validate_dns_hostname_content
 )
-
+from registrar.utility.enums import DNSRecordTypes
 
 class TestValidateDNSName(SimpleTestCase):
     def assert_dns_name_validation_error(self, name: str, expected_message: str) -> None:
@@ -115,11 +116,25 @@ class TestValidateDNSHostnameContent(SimpleTestCase):
     Since hostname uses the same validators as record name when relevant, we only test
     hostname specific validations.
     """
+
     def test_validate_hostname_label_structure(self):
-        invalid_label_content = [
+        invalid_label_hostnames = [
             ".ab", # hostname cannot start with period
-            "ab.1234",  # last label is a digit
+            "ab.1234", # last label is a digit
             "a..b" # no consecutive periods
         ]
-        self.assert_all_raise(invalid_label_content)
-        self.assert_all_valid("ab.", "ab..", "ab123", "ab.123a")
+        valid_label_hostnames = [
+            "ab.", # hostname can have trailing period
+            "ab..", # hostname can have consecutive periods if trailing
+            "ab123", # hostname can include numbers in label if alongisde non-numerical chars
+            "ab.123a" # hostname can end with label including numbers if alongside non-numerical chars
+        ]
+        
+        for case in invalid_label_hostnames:
+            with self.subTest(name=case):
+                with self.assertRaises(ValidationError):
+                    _validate_dns_hostname_content(case, DNSRecordTypes.MX)
+        
+        for case in valid_label_hostnames:
+            with self.subtest(name=case):
+                _validate_dns_hostname_content(case, DNSRecordTypes.MX)
