@@ -4000,17 +4000,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
             # Validate Database Changes
             # Validate that portfolio invitation was created but not retrieved
-            invited_permission = UserPortfolioPermission.objects.filter(
+            portfolio_invite = PortfolioInvitation.objects.filter(
                 email=self.new_member_email, portfolio=self.portfolio
             ).first()
-            self.assertIsNotNone(invited_permission)
-            self.assertEqual(invited_permission.email, self.new_member_email)
-            self.assertEqual(invited_permission.status, UserPortfolioPermission.Status.INVITED)
-            self.assertIsNone(invited_permission.user)
-            # Validate that no legacy PortfolioInvitation was created
-            self.assertFalse(
-                PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists()
-            )
+            self.assertIsNotNone(portfolio_invite)
+            self.assertEqual(portfolio_invite.email, self.new_member_email)
+            self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
             # Check that an email was sent
             self.assertTrue(mock_client.send_email.called)
@@ -4070,9 +4065,13 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
         # Validate Database Changes
         # Validate that portfolio invitation was created and retrieved
-        invited_permission = UserPortfolioPermission.objects.get(user=retrieved_user, portfolio=self.portfolio)
-        self.assertEqual(invited_permission.email, retrieved_member_email)
-        self.assertEqual(invited_permission.status, UserPortfolioPermission.Status.INVITED)
+        self.assertFalse(
+            PortfolioInvitation.objects.filter(
+                email=retrieved_member_email,
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).exists()
+        )
         # at least one retrieved invitation
         self.assertTrue(
             PortfolioInvitation.objects.filter(
@@ -4128,11 +4127,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when an Exception occurs.",
             )
-            # assert that UserPortfolioPermission is not created
-            self.assertFalse(
-                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "UserPortfolioPermission should not be created when an Exception occurs.",
-            )
 
             # Check that an email was not sent
             self.assertFalse(mock_client.send_email.called)
@@ -4170,11 +4164,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
 
-        # assert that UserPortfolioPermission is not created
         # assert that send_portfolio_invitation_email is not called
-        self.assertFalse(
-            UserPortfolioPermission.objects.filter(email=self.invited_member_email, portfolio=self.portfolio).exists()
-        )
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
@@ -4223,11 +4213,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when an EmailSendingError occurs.",
             )
-            # assert that UserPortfolioPermission invitation is not created
-            self.assertFalse(
-                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "UserPortfolioPermission should not be created when an EmailSendingError occurs.",
-            )
 
     @less_console_noise_decorator
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
@@ -4269,11 +4254,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             self.assertFalse(
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when a MissingEmailError occurs.",
-            )
-            # assert that UserPortfolioPermission invitation is not created
-            self.assertFalse(
-                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "UserPortfolioPermission invitation should not be created when a MissingEmailError occurs.",
             )
 
     @less_console_noise_decorator
@@ -4322,11 +4302,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
                 PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
                 "Portfolio invitation should not be created when an Exception occurs.",
             )
-            # assert that UserPortfolioPermission invitation is not created
-            self.assertFalse(
-                UserPortfolioPermission.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists(),
-                "UserPortfolioPermission invitation should not be created when an Exception occurs.",
-            )
 
     @less_console_noise_decorator
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
@@ -4360,11 +4335,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Validate Database has not changed
         invite_count_after = PortfolioInvitation.objects.count()
         self.assertEqual(invite_count_after, invite_count_before)
-
-        # assert that UserPortfolioPermission is not created
-        self.assertFalse(
-            UserPortfolioPermission.objects.filter(email=self.invited_member_email, portfolio=self.portfolio).exists()
-        )
 
         # assert that send_portfolio_invitation_email is not called
         mock_send_email.assert_not_called()
@@ -4471,18 +4441,19 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 302)
 
         # Validate Database Changes
-        # Validate that portfolio invitation was created but not retrieved
+        # Validate that portfolio invitation was created and retrieved
+        portfolio_invite = PortfolioInvitation.objects.filter(
+            email="newuser@example.com", portfolio=self.portfolio
+        ).first()
+        self.assertIsNotNone(portfolio_invite)
+        self.assertEqual(portfolio_invite.email, "newuser@example.com")
+        self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        # Validate UserPortfolioPermission
         user_portfolio_permission = UserPortfolioPermission.objects.filter(
-            user=new_user,
-            email="newuser@example.com",
-            portfolio=self.portfolio,
+            user=new_user, portfolio=self.portfolio
         ).first()
         self.assertIsNotNone(user_portfolio_permission)
-        self.assertEqual(user_portfolio_permission.status, UserPortfolioPermission.Status.INVITED)
-        # Validate that no legacy PortfolioInvitation was created
-        self.assertFalse(
-            PortfolioInvitation.objects.filter(email="newuser@example.com", portfolio=self.portfolio).exists()
-        )
+        self.assertEqual(user_portfolio_permission.status, UserPortfolioPermission.Status.ACCEPTED)
 
         # assert that send_portfolio_invitation_email is called
         mock_send_email.assert_called_once()
@@ -4521,17 +4492,12 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
 
         # Validate Database Changes
         # Validate that portfolio invitation was created but not retrieved
-        invited_permission = UserPortfolioPermission.objects.filter(
+        portfolio_invite = PortfolioInvitation.objects.filter(
             email=self.new_member_email, portfolio=self.portfolio
         ).first()
-        self.assertIsNotNone(invited_permission)
-        self.assertEqual(invited_permission.email, self.new_member_email)
-        self.assertEqual(invited_permission.status, UserPortfolioPermission.Status.INVITED)
-        self.assertEqual(invited_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
-        # Validate that no legacy PortfolioInvitation was created
-        self.assertFalse(
-            PortfolioInvitation.objects.filter(email=self.new_member_email, portfolio=self.portfolio).exists()
-        )
+        self.assertIsNotNone(portfolio_invite)
+        self.assertEqual(portfolio_invite.email, self.new_member_email)
+        self.assertEqual(portfolio_invite.status, PortfolioInvitation.PortfolioInvitationStatus.INVITED)
 
         # Check that an email was sent
         mock_send_email.assert_called()

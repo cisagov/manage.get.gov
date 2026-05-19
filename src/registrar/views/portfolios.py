@@ -1235,14 +1235,29 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         portfolio = form.cleaned_data["portfolio"]
+        requested_user = User.objects.filter(email__iexact=requested_email).first()
+
+        if requested_user:
+            permission_exists = UserPortfolioPermission.objects.filter(
+                user=requested_user, portfolio=portfolio
+            ).exists()
+            if permission_exists:
+                messages.error(self.request, f"{requested_email} is already a member of this organization.")
+                return redirect(self.get_success_url())
+
         try:
-            invite_to_portfolio(
+            _, admin_notifications_sent = invite_to_portfolio(
                 email=requested_email,
                 portfolio=portfolio,
                 requestor=requestor,
                 roles=form.cleaned_data["roles"],
                 additional_permissions=form.cleaned_data["additional_permissions"],
             )
+            if not admin_notifications_sent:
+                messages.warning(
+                    self.request,
+                    "Could not send follow-up email notification to existing organization admins.",
+                )
             messages.success(self.request, f"{requested_email} has been invited to this organization..")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
