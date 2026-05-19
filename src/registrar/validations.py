@@ -75,7 +75,7 @@ TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
 
 
-def get_content_type_by_record_type(record_type: str | None):
+def get_content_type_by_record_type(record_type):
     from registrar.utility.enums import DNSRecordTypes
 
     record_type_to_content_dict = {
@@ -84,7 +84,6 @@ def get_content_type_by_record_type(record_type: str | None):
         DNSRecordTypes.PTR: "domain name",
     }
     return record_type_to_content_dict.get(record_type, "content")
-
 
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
@@ -118,7 +117,7 @@ def _validate_dns_name_structure(name: str) -> None:
         raise ValidationError(error_message)
 
 
-def _validate_dns_hostname_structure(content: str, field_type: str | None):
+def _validate_dns_hostname_structure(content: str, field_type) -> None:
     """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
     if ".." in content:
         error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
