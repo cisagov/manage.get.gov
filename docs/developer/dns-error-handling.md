@@ -2,7 +2,7 @@
 
 ## Intro
 
-For DNS error handling we decided to create an admin table that maps custom error codes (that we maintain) to their corresponding error messages. This is to simplify the complexity associated with hardcoded error messages scattered throughout the code. By centralizing error codes and their messages in a single admin table (the error mapping), we not only keep a centralized record of our error messages, but also make it easier to maintain such that non-devs with access to this table could make error messaging adjustments (which were once only possible by doing a code edit).
+For DNS error handling we decided to create an admin table that maps custom error codes (that we maintain) to their corresponding error messages. This is to simplify the complexity associated with hardcoded error messages scattered throughout the code. 
 
 **How to use it in the code:** When something goes wrong (Cloudflare is down, a zone doesn't exist, the network times out), raise a typed DnsHostingError subclass from the service layer. Using this architecture, the error code stays attached as you bubble up through the domain layer into the view. The view then catches it, looks up the user-facing message in our error mapping, and returns a consistent JSON envelope with the error code, message, and a request_id for logging and support.
 
