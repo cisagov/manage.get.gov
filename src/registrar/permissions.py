@@ -36,6 +36,7 @@ URL_PERMISSIONS = {
     "domain": [HAS_PORTFOLIO_DOMAINS_VIEW_ALL, IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-dns": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-dns-nameservers": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
+    "domain-dns-records": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-dns-dnssec": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-dns-dnssec-dsdata": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
     "domain-org-name-address": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
@@ -117,8 +118,6 @@ URL_PERMISSIONS = {
     "user-profile": [ALL],
     # Invitation
     "invitation-cancel": [IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN],
-    # DNS Hosting
-    "domain-dns-records": [IS_DOMAIN_MANAGER, IS_STAFF],
     # Domain request wizard
     "start": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],
     "finished": [HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT, IS_DOMAIN_REQUEST_REQUESTER],

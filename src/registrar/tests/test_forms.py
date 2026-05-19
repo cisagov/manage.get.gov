@@ -292,6 +292,26 @@ class TestFormValidation(MockEppLib):
         )
 
     @less_console_noise_decorator
+    def test_email_max_length_failure(self):
+        """Test for email address with length over 320 chars"""
+
+        form = PortfolioNewMemberForm(
+            data={
+                "email": "invalidemailtoolonginvalidemailtoolonginvalidemailtoolong"
+                "invalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalid"
+                "emailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailtoolonginvalidemailnvalidemailtoolong"
+                "invalidemailnvalidemailtoolonginvalidemailnvalidemailtoolonginvalidemailnvalidemail@email.com"
+            }
+        )
+        self.assertEquals(
+            form.errors["email"],
+            [
+                "Enter an email address in the required format, like name@example.com.",
+                "Email must be no more than 320 characters.",
+            ],
+        )
+
+    @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):
         """Response must be no more than 1000 characters."""
         form = PurposeDetailsForm(

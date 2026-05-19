@@ -84,7 +84,12 @@ DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
 DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
 DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
 DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
+CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE = "Name and target can't be the same."
+CNAME_NAME_INLINE_ERROR_MESSAGE = "Name can't be the same as the target."
+CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name."
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
+TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
+TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
 
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
 DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
@@ -100,7 +105,6 @@ def _validate_dns_name_spaces(name: str, field_type="name") -> None:
         error_message = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, field_type)
         raise ValidationError(error_message)
 
-
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name:
@@ -112,7 +116,7 @@ def _validate_dns_name_structure(name: str) -> None:
 
 def _validate_dns_hostname_structure(content: str, field_type: str | None):
     """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
-    if ".." in content:
+    if ".." in content.rstrip("."):
         error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
         raise ValidationError(error_message)
     if content.startswith("."):
@@ -256,26 +260,22 @@ def validate_dns_name_fqdn_length(name: str, zone_name: str | None) -> None:
         raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
 
 
-def check_has_valid_quotes(content: str) -> bool:
+def check_has_invalid_quoted_string(content: str) -> bool:
     double_quote = '"'
-    quote_count = content.count(double_quote)
 
-    # check if string begins and ends with a quote or no quote at all
+    # check if string begins or ends with a quote
     first_item_char_is_double_quote = content[0] == double_quote
     last_item_is_double_quote = content[len(content) - 1] == double_quote
 
-    return quote_count % 2 != 0 or first_item_char_is_double_quote != last_item_is_double_quote
+    return first_item_char_is_double_quote or last_item_is_double_quote
 
 
 def validate_txt_content(content: str) -> None:
+    if check_has_invalid_quoted_string(content):
+        raise ValidationError(TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE)
 
-    if check_has_valid_quotes(content):
-        raise ValidationError(
-            'Record content is not quoted correctly; ensure it begins and ends with double quotes(").'
-        )
-
-    if len(content) > 2048:
-        raise ValidationError("Content must be no more than 2048 characters.")
+    if len(content) > 4080:
+        raise ValidationError(TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE)
 
 def validate_cname_content(content: str) -> None:
     """Validates a CNAME record's target value."""

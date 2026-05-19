@@ -11,7 +11,10 @@ from registrar.validations import (
     validate_dns_name,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
-    _validate_dns_hostname_content
+    _validate_dns_hostname_content,
+    TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
+    TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE,
+    validate_txt_content,
 )
 from registrar.utility.enums import DNSRecordTypes
 
@@ -138,3 +141,36 @@ class TestValidateDNSHostnameContent(SimpleTestCase):
         for case in valid_label_hostnames:
             with self.subTest(name=case):
                 _validate_dns_hostname_content(case, DNSRecordTypes.MX)
+
+class TestValidateDNSContent(SimpleTestCase):
+    def assert_all_raise(self, contents: list[str], expected_message: str) -> None:
+        for content in contents:
+            with self.subTest(name=content):
+                with self.assertRaises(ValidationError) as ctx:
+                    validate_txt_content(content)
+
+                self.assertEqual(ctx.exception.messages, [expected_message])
+
+    def test_validate_txt_content(self):
+        content_with_invalid_quoting = [
+            '"starts with double quote',
+            'ends with double quote"',
+            '"is surrounded by double quotes"',
+        ]
+        self.assert_all_raise(content_with_invalid_quoting, TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE)
+
+        valid_content = ['Internal "quotes" are ok', "Single 'quotes' are ok", 'Stray "quote is ok']
+
+        for content in valid_content:
+            with self.subTest(name=content):
+                validate_txt_content(content)
+
+    def _test_validate_txt_content_max_length(self):
+
+        max_length = 4080
+        content_longer_than_max = "a" * max_length + "bc"
+
+        with self.assertRaises(ValidationError) as ctx:
+            validate_txt_content(content_longer_than_max)
+
+        self.assertEqual(ctx.exception.messages, TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE)
