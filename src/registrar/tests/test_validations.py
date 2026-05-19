@@ -136,5 +136,5 @@ class TestValidateDNSHostnameContent(SimpleTestCase):
                     _validate_dns_hostname_content(case, DNSRecordTypes.MX)
         
         for case in valid_label_hostnames:
-            with self.subtest(name=case):
+            with self.subTest(name=case):
                 _validate_dns_hostname_content(case, DNSRecordTypes.MX)
