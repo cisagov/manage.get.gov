@@ -127,6 +127,16 @@ Analysts are a variant of the admin role with limited permissions. The process f
 
 Do note that if you wish to have both an analyst and admin account, append `-Analyst` to your first and last name, or use a completely different first/last name to avoid confusion. Example: `Bob-Analyst`
 
+## Adding `Standard` Users & what they are
+
+Standard users are non-staff, non-admin test accounts used for user research. Each is pre-loaded with domain requests in every `DomainRequestStatus` and domains in every `Domain.State`.
+
+These users load automatically on sandboxes when `./manage.py load` runs (such as via `reset-db.yml`). They do **not** load locally, as if emails are turned on locally it could interfer with user testing.
+
+To add or update a standard user, edit the `STANDARD_USERS` list in [fixtures_users](../../src/registrar/fixtures/fixtures_users.py). The `username` field must be the UUID from the user's login.gov identity sandbox account.
+
+These users are added to the email whitelist by default.
+
 ## Adding an email address to the email whitelist (sandboxes only)
 On all non-production environments, we use an email whitelist table (called `Allowed emails`). This whitelist is not case sensitive, and it provides an inclusion for +1 emails (like example.person+1@igorville.gov). The content after the `+` can be any _digit_. The whitelist checks for the "base" email (example.person) so even if you only have the +1 email defined, an email will still be sent assuming that it follows those conventions.
 
