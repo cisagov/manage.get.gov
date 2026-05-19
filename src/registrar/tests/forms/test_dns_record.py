@@ -244,7 +244,10 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
             "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
             "TXT": ('"I should not include surrounding double quotes"', TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE),
-            "CNAME": ("invalid..hostname", get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "target")),
+            "CNAME": (
+                "invalid..hostname",
+                get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "target"),
+            ),
             # TODO: Comment out and complete PTR test case when PTR validation is implemented
             # "PTR": "..."
         }

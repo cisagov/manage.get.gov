@@ -18,6 +18,7 @@ from registrar.validations import (
 )
 from registrar.utility.enums import DNSRecordTypes
 
+
 class TestValidateDNSName(SimpleTestCase):
     def assert_dns_name_validation_error(self, name: str, expected_message: str) -> None:
         with self.assertRaises(ValidationError) as ctx:
@@ -113,6 +114,7 @@ class TestValidateDNSNameFQDNLength(SimpleTestCase):
         # 240 + "." + "example.gov" = 252 chars → ok
         validate_dns_name_fqdn_length("a" * 240, self.ZONE)
 
+
 class TestValidateDNSHostnameContent(SimpleTestCase):
     """
     Test validations specific to DNS hostname.
@@ -122,25 +124,26 @@ class TestValidateDNSHostnameContent(SimpleTestCase):
 
     def test_validate_hostname_label_structure(self):
         invalid_label_hostnames = [
-            ".ab", # hostname cannot start with period
-            "ab.1234", # last label is a digit
-            "a..b" # no consecutive periods
+            ".ab",  # hostname cannot start with period
+            "ab.1234",  # last label is a digit
+            "a..b",  # no consecutive periods
         ]
         valid_label_hostnames = [
-            "ab.", # hostname can have trailing period
-            "ab..", # hostname can have consecutive periods if trailing
-            "ab123", # hostname can include numbers in label if alongisde non-numerical chars
-            "ab.123a" # hostname can end with label including numbers if alongside non-numerical chars
+            "ab.",  # hostname can have trailing period
+            "ab..",  # hostname can have consecutive periods if trailing
+            "ab123",  # hostname can include numbers in label if alongisde non-numerical chars
+            "ab.123a",  # hostname can end with label including numbers if alongside non-numerical chars
         ]
-        
+
         for case in invalid_label_hostnames:
             with self.subTest(name=case):
                 with self.assertRaises(ValidationError):
                     _validate_dns_hostname_content(case, DNSRecordTypes.MX)
-        
+
         for case in valid_label_hostnames:
             with self.subTest(name=case):
                 _validate_dns_hostname_content(case, DNSRecordTypes.MX)
+
 
 class TestValidateDNSContent(SimpleTestCase):
     def assert_all_raise(self, contents: list[str], expected_message: str) -> None:

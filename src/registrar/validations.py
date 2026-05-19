@@ -75,14 +75,17 @@ TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks a
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
 
+
 def get_content_type_by_record_type(record_type: str | None):
     from registrar.utility.enums import DNSRecordTypes
+
     record_type_to_content_dict = {
         DNSRecordTypes.CNAME: "target",
         DNSRecordTypes.MX: "mail server",
-        DNSRecordTypes.PTR: "domain name"
+        DNSRecordTypes.PTR: "domain name",
     }
     return record_type_to_content_dict.get(record_type, "content")
+
 
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
@@ -93,15 +96,18 @@ def get_max_length_validator(limit: int) -> MaxLengthValidator:
 def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
 
+
 def get_error_message_from_requirement(requirement: str, field: str) -> str:
     """Returns full error message for a field given a validation requirement."""
     return f"Enter the {field} {requirement}."
+
 
 def _validate_dns_name_spaces(name: str, field_type="name") -> None:
     """Reject values with spaces."""
     if " " in name:
         error_message = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, field_type)
         raise ValidationError(error_message)
+
 
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
@@ -111,6 +117,7 @@ def _validate_dns_name_structure(name: str) -> None:
     if name.startswith(".") or name.endswith("."):
         error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
         raise ValidationError(error_message)
+
 
 def _validate_dns_hostname_structure(content: str, field_type: str | None):
     """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
@@ -123,6 +130,7 @@ def _validate_dns_hostname_structure(content: str, field_type: str | None):
     last_label = _get_non_wildcard_dns_name_labels(content)[-1]
     if last_label.isdigit():
         raise ValidationError(HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE)
+
 
 def _validate_dns_name_characters(name: str, field_type="name") -> None:
     """Reject characters explicitly disallowed by the AC (@ ( ) : ;).
@@ -167,9 +175,10 @@ def _validate_dns_name_labels(name: str) -> None:
     for label in _get_non_wildcard_dns_name_labels(name):
         _validate_dns_name_label(label)
 
+
 def _validate_dns_hostname_content(content: str, field_type: str | None) -> None:
     """
-    Validates a DNS record hostname content for CNAME, PTR, and MX records. 
+    Validates a DNS record hostname content for CNAME, PTR, and MX records.
     Handles fully qualified names (e.g., 'www.example.gov') but not relative names (e.g., 'www').
 
     Normalizes to lowercase and validates:
@@ -202,6 +211,7 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
         _validate_dns_name_length(content)
 
     _validate_dns_name_labels(content)
+
 
 def validate_dns_name(name: str) -> None:
     """
@@ -275,23 +285,29 @@ def validate_txt_content(content: str) -> None:
     if len(content) > 4080:
         raise ValidationError(TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE)
 
+
 def validate_cname_content(content: str) -> None:
     """Validates a CNAME record's target value."""
     from registrar.utility.enums import DNSRecordTypes
+
     field_type = get_content_type_by_record_type(DNSRecordTypes.CNAME)
 
     _validate_dns_hostname_content(content, field_type)
 
+
 def validate_mx_content(content: str) -> None:
     """Validates an MX record's mail server hostname value."""
     from registrar.utility.enums import DNSRecordTypes
+
     field_type = get_content_type_by_record_type(DNSRecordTypes.MX)
 
     _validate_dns_hostname_content(content, field_type)
 
+
 def validate_ptr_content(content: str) -> None:
     """Validates a PTR record's domain name value."""
     from registrar.utility.enums import DNSRecordTypes
+
     field_type = get_content_type_by_record_type(DNSRecordTypes.PTR)
 
     _validate_dns_hostname_content(content, field_type)
