@@ -1,6 +1,5 @@
 from django.core.validators import MaxLengthValidator
 from django.core.exceptions import ValidationError
-import re
 
 """
 Centralized character length "buckets" to keep server-side validation and
@@ -121,7 +120,7 @@ def _validate_dns_name_structure(name: str) -> None:
 
 def _validate_dns_hostname_structure(content: str, field_type: str | None):
     """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
-    if ".." in content.rstrip("."):
+    if ".." in content:
         error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
         raise ValidationError(error_message)
     if content.startswith("."):

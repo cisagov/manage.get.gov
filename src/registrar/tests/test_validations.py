@@ -130,7 +130,6 @@ class TestValidateDNSHostnameContent(SimpleTestCase):
         ]
         valid_label_hostnames = [
             "ab.",  # hostname can have trailing period
-            "ab..",  # hostname can have consecutive periods if trailing
             "ab123",  # hostname can include numbers in label if alongisde non-numerical chars
             "ab.123a",  # hostname can end with label including numbers if alongside non-numerical chars
         ]
