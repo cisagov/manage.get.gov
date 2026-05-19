@@ -45,6 +45,7 @@ from registrar.validations import (
 )
 
 import json
+import re
 
 
 class DomainAddUserForm(forms.Form):
