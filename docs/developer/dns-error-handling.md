@@ -1,4 +1,4 @@
-# DNS Error Handling — A Developer's Guide
+# DNS Error Handling
 
 ## Intro
 
