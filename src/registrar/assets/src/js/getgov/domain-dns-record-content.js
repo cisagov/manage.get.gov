@@ -1,3 +1,4 @@
+import { scrollToElement } from './helpers';
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
     let finalString = "";
@@ -363,4 +364,9 @@ export function initDynamicDNSRecordFormFields() {
         button.addEventListener('click',() => clearRecordForm(formInRow))
         }
     )
+
+    document.querySelectorAll('.js-dnsrecord-submit-button').forEach(button => {
+        button.addEventListener('click', () => scrollToElement('id', 'messages-container'))
+    })
+
 }
