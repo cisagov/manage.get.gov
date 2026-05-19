@@ -60,6 +60,35 @@ def _check_outside_org_membership(email, requestor, is_member_of_different_org):
         raise OutsideOrgMemberError(email=email)
 
 
+def _check_user_org_admin(requestor_email, domains) -> bool:
+    """
+    Check to see if the requestor is an org admin
+
+    Args:
+        requestor_email (String): The user initiating the invitation's email.
+        domains (list): The list of Domain objects
+
+    Returns:
+        Boolean indicating if user is an Org Admin.
+    """
+    for domain in domains:
+        domain_info = DomainInformation.objects.filter(domain=domain).first()
+        if domain_info and domain_info.portfolio:
+            portfolio_admin_emails = list(
+                UserPortfolioPermission.objects.filter(
+                    portfolio=domain_info.portfolio,
+                    roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                )
+                .values_list("user__email", flat=True)
+                .distinct()
+            )
+            # Check to see if the user is an Org Admin
+            if requestor_email in portfolio_admin_emails:
+                return True
+
+    return False
+
+
 def _validate_existing_invitation(email, user, domain):
     """Check for existing invitations and handle their status."""
     try:
@@ -131,7 +160,8 @@ def send_domain_invitation_email(
     """
     domains = _normalize_domains(domains)
     requestor_email = _get_requestor_email(requestor, domains=domains)
-
+    # Check to see if the user sending the invitation is an Org Admin
+    is_org_admin = _check_user_org_admin(requestor.email, domains)
     _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
 
     _send_domain_invitation_email(email, requestor_email, domains, requested_user)
@@ -144,6 +174,7 @@ def send_domain_invitation_email(
             requestor_email=requestor_email,
             domain=domain,
             requested_user=requested_user,
+            is_org_admin=is_org_admin,
         ):
             all_manager_emails_sent = False
 
@@ -151,7 +182,7 @@ def send_domain_invitation_email(
 
 
 def _send_domain_invitation_update_emails_to_domain_managers(
-    email: str, requestor_email, domain: Domain, requested_user=None
+    email: str, requestor_email, domain: Domain, is_org_admin: bool, requested_user=None
 ):
     """
     Notifies all domain managers of the provided domain of a change
@@ -178,6 +209,7 @@ def _send_domain_invitation_update_emails_to_domain_managers(
                     "invited_email_address": email,
                     "domain_manager": user,
                     "date": date.today(),
+                    "is_org_admin": is_org_admin,
                 },
             )
         except EmailSendingError as err:
@@ -214,6 +246,9 @@ def send_domain_manager_removal_emails_to_domain_managers(
 
     """
     all_emails_sent = True
+    domains = _normalize_domains(domain)
+    is_org_admin = _check_user_org_admin(removed_by_user.email, domains)
+
     # Get each domain manager from list (exclude pending invitations where user is null)
     user_domain_roles = UserDomainRole.objects.filter(domain=domain)
     if manager_removed:
@@ -233,6 +268,7 @@ def send_domain_manager_removal_emails_to_domain_managers(
                     "removed_by": removed_by_user,
                     "manager_removed_email": manager_removed_email,
                     "date": date.today(),
+                    "is_org_admin": is_org_admin,
                 },
             )
         except EmailSendingError as err:
