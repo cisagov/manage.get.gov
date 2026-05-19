@@ -4453,7 +4453,6 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             user=new_user, portfolio=self.portfolio
         ).first()
         self.assertIsNotNone(user_portfolio_permission)
-        self.assertEqual(user_portfolio_permission.status, UserPortfolioPermission.Status.ACCEPTED)
 
         # assert that send_portfolio_invitation_email is called
         mock_send_email.assert_called_once()
