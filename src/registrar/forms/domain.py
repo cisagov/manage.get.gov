@@ -45,7 +45,6 @@ from registrar.validations import (
 )
 
 import json
-import re
 
 
 class DomainAddUserForm(forms.Form):
@@ -1031,7 +1030,6 @@ class DomainDNSRecordForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        record_types_with_hostname_content = [DNSRecordTypes.CNAME, DNSRecordTypes.PTR, DNSRecordTypes.MX]
         record_type = cleaned_data.get("type")
         name = cleaned_data.get("name")
         content = cleaned_data.get("content")
