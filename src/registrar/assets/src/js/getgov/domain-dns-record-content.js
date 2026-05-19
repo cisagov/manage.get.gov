@@ -366,7 +366,10 @@ export function initDynamicDNSRecordFormFields() {
     )
 
     document.querySelectorAll('.js-dnsrecord-submit-button').forEach(button => {
-        button.addEventListener('click', () => scrollToElement('id', 'messages-container'))
+        button.addEventListener('click', () => {
+            scrollToElement('id', 'messages-container')
+            document.getElementById('messages-container').focus()
+        })
     })
 
 }
