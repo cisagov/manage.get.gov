@@ -36,7 +36,6 @@ from registrar.utility.email_invitations import (
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
-    send_portfolio_invitation_email,
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
@@ -162,7 +161,8 @@ class PortfolioMemberDeleteView(View):
         if active_requests_count > 0:
             return mark_safe(  # nosec
                 "This member can't be removed from the organization because they have an active domain request. "
-                f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> to remove this member."
+                f"Please <a class='usa-link' href='{support_url}' "
+                "target='_blank'>contact us</a> to remove this member."
             )
         if member.is_only_admin_of_portfolio(portfolio):
             return (
@@ -589,7 +589,10 @@ class PortfolioInvitedMemberDeleteView(View):
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_invitation.email, requestor=request.user, portfolio=portfolio_invitation.portfolio
                 ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
+                    messages.warning(
+                        self.request,
+                        "Could not send email notification to existing organization admins.",
+                    )
             if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
                 messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
 

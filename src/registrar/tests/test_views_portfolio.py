@@ -1444,7 +1444,10 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_delete_domain_request_as_org_user_without_permission_with_deletable_status(self):
-        """Test that an org user without edit permission cant delete their DomainRequest even if status is deletable."""
+        """
+        Test that an org user without edit permission cant delete their
+        DomainRequest even if status is deletable.
+        """
 
         # Assign the user to a portfolio without edit permission
         UserPortfolioPermission.objects.get_or_create(
@@ -3226,7 +3229,9 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         # Check that domain_id=3 was created as INVITED
         self.assertTrue(
             DomainInvitation.objects.filter(
-                domain=self.domain3, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                domain=self.domain3,
+                email="invited@example.com",
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).exists()
         )
 
@@ -4475,7 +4480,9 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertIsNotNone(user_portfolio_permission)
         self.assertEqual(user_portfolio_permission.status, UserPortfolioPermission.Status.INVITED)
         # Validate that no legacy PortfolioInvitation was created
-        self.assertFalse(PortfolioInvitation.objects.filter(email="newuser@example.com", portfolio=self.portfolio).exists())
+        self.assertFalse(
+            PortfolioInvitation.objects.filter(email="newuser@example.com", portfolio=self.portfolio).exists()
+        )
 
         # assert that send_portfolio_invitation_email is called
         mock_send_email.assert_called_once()

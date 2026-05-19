@@ -22,9 +22,16 @@ from registrar.utility.errors import (
     AlreadyDomainManagerError,
     InvitationError,
 )
-from registrar.views.utility.invitation_helper import get_requested_user
 
 logger = logging.getLogger(__name__)
+
+
+def get_requested_user(email):
+    """Retrieve a user by email or return None if the user doesn't exist."""
+    try:
+        return User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        return None
 
 
 def invite_to_portfolio(
