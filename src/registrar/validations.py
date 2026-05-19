@@ -46,6 +46,35 @@ DNS_NAME_MAX_LENGTH = 253
 # Full FQDN max length per RFC 1035
 MX_CONTENT_MAX_LENGTH = 253
 
+DNS_NAME_INVALID_CHARS = frozenset("@():;")
+
+# DNS field requirements, included in error messages when requirements not met.
+DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons"
+DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
+DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
+DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
+DNS_NAME_HYPHEN_REQUIREMENT = "without using hyphens at the start or end of a label"
+DNS_RECORD_CONTENT_REQUIREMENT = "for this record."
+DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
+
+# Error messages for specific record types and fields
+DNS_NAME_LENGTH_ERROR_MESSAGE = (
+    "Labels must be no more than 63 characters. "
+    "Full name (including labels, domain, and period) must be no more than 253 characters."
+)
+DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
+DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
+DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
+DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
+DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
+CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE = "Name and target can't be the same."
+CNAME_NAME_INLINE_ERROR_MESSAGE = "Name can't be the same as the target."
+CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name."
+MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
+TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
+TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
+HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
+
 def get_content_type_by_record_type(record_type: str | None):
     from registrar.utility.enums import DNSRecordTypes
     record_type_to_content_dict = {
@@ -63,37 +92,6 @@ def get_max_length_validator(limit: int) -> MaxLengthValidator:
 # For use by the USWDS framework to display the max length to the user
 def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
-
-
-# For use on DNS record names
-DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons"
-DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
-DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
-DNS_NAME_HYPHEN_REQUIREMENT = "without using hyphens at the start or end of a label"
-DNS_RECORD_CONTENT_REQUIREMENT = "for this record."
-DNS_NAME_LENGTH_ERROR_MESSAGE = (
-    "Labels must be no more than 63 characters. "
-    "Full name (including labels, domain, and period) must be no more than 253 characters."
-)
-DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
-DNS_NAME_INVALID_CHARS = frozenset("@():;")
-
-# For use on DNS record fields outside of name
-DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
-DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
-DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
-DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
-DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
-CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE = "Name and target can't be the same."
-CNAME_NAME_INLINE_ERROR_MESSAGE = "Name can't be the same as the target."
-CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name."
-MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
-TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
-TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
-
-HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
-DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
-
 
 def get_error_message_from_requirement(requirement: str, field: str) -> str:
     """Returns full error message for a field given a validation requirement."""
