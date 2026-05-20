@@ -1,42 +1,8 @@
-{% extends 'admin/delete_confirmation.html' %}
+{% extends 'django/admin/email_clipboard_change_form.html' %}
 {% load i18n static %}
 
-{% block content %}
-
-
-    <h1>
-       The suborganization 
-       <b><a href="{% url 'admin:registrar_suborganization_change' object.id %}">{{object}}</a> </b>
-       will be deleted.
-    </h1>
-    {% if domain_requests %}
-    <p> The following domain requests will have their suborganization removed: </p>
-    <ul>
-        {% for domain_request in domain_requests%}
-        <li>
-            {{ domain_request }}
-        </li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-
-   {% if domain_information  %}
-    <p> The following domains will have their suborganization removed: </p>
-    <ul>
-        {% for domain in domain_information %}
-        <li>
-            {{ domain }}
-        </li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-
-    <form method="POST">
-        {% csrf_token %}
-        <input type="hidden" name="post" value="yes"/>
-        <div class="submit-row">
-            <input type="submit" value="Yes, I'm sure" class="button danger-button"/>
-            <a href="#" class="button cancel-link">No, take me back</a>
-        </div>
-    </form>
+{% block after_related_objects %}
+    <div class="module aligned padding-3">
+     hello
+    </div>
 {% endblock %}
