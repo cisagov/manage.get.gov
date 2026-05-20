@@ -153,6 +153,7 @@ def create_dns_record(zone, **kwargs):
     x_created_at = kwargs.get("record_x_created_at", default_datetime)
     x_updated_at = kwargs.get("record_x_updated_at", default_datetime)
     ttl = kwargs.get("ttl", 300)
+    priority = kwargs.get("priority", None)
     dns_record = DnsRecord.objects.create(
         dns_zone=zone,
         name=record_name,
@@ -160,6 +161,7 @@ def create_dns_record(zone, **kwargs):
         content=record_content,
         comment=record_comment,
         ttl=ttl,
+        priority=priority
     )
     vendor_dns_record = VendorDnsRecord.objects.create(
         x_record_id=x_record_id,

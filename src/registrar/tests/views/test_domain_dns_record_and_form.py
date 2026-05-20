@@ -59,24 +59,31 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
-        # TODO: Uncomment test case after CNAME content validations finalized
-        # {
-        #     "id": "test-cname",
-        #     "name": "www",
-        #     "type": "CNAME",
-        #     "content": "www.example.com",
-        #     "ttl": 300,
-        #     "comment": "Mocked record created",
-        # },
-        # TODO: Uncomment test case after PTR content validations finalized
-        # {
-        #     "id": "test-ptr",
-        #     "name": "www",
-        #     "type": "PTR",
-        #     "content": "www.example.com",
-        #     "ttl": 300,
-        #     "comment": "Mocked record created",
-        # },
+        {
+            "id": "test-cname",
+            "name": "test", # CNAME record must use differnet name than A/AAAA records
+            "type": "CNAME",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test-ptr",
+            "name": "www",
+            "type": "PTR",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test-mx",
+            "name": "www",
+            "type": "MX",
+            "content": "mail.example.com",
+            "ttl": 300,
+            "priority": 5,
+            "comment": "Mocked record created",
+        },
         {
             "id": "test1",
             "name": "www",
@@ -149,15 +156,20 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
                     svc.create_dns_record.side_effect = _create_and_return
 
+                    record_type = data["type"]
+                    request_data = {
+                        "type": data["type"],
+                        "name": data["name"],
+                        "ttl": data["ttl"],
+                        "comment": data["comment"],
+                        "content": data["content"],
+                    }
+                    if record_type == "MX" and data["priority"]:
+                        request_data["priority"] = data["priority"]
+
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": data["type"],
-                            "name": data["name"],
-                            "ttl": data["ttl"],
-                            "comment": data["comment"],
-                            "content": data["content"],
-                        },
+                        request_data,
                     )
 
                     self.assertEqual(response.status_code, 200)
@@ -209,6 +221,9 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         invalid_content_by_type = {
             "A": "not-an-ip",
             "AAAA": "not-an-ip",
+            "CNAME": "invalid.lastlabel.123",
+            "MX": "invalid.lastlabel.123",
+            "PTR": "invalid.lastlabel.123",
             "TXT": '"not valid text"',
         }
 
@@ -216,15 +231,18 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
                 with patch("registrar.views.domain.DnsHostService"):
+                    request_data = {
+                        "type": record_type,
+                        "name": record_case["name"],
+                        "ttl": record_case["ttl"],
+                        "comment": record_case["comment"],
+                        "content": invalid_content_by_type[record_type],
+                    }
+                    if record_type == "MX":
+                        request_data["priority"] = record_case["priority"]
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": record_type,
-                            "name": record_case["name"],
-                            "ttl": record_case["ttl"],
-                            "comment": record_case["comment"],
-                            "content": invalid_content_by_type[record_type],
-                        },
+                        request_data,
                     )
 
                     # Invalid form should re-render the page, not redirect
