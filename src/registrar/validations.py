@@ -85,6 +85,7 @@ def get_content_type_by_record_type(record_type):
     }
     return record_type_to_content_dict.get(record_type, "content")
 
+
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
     return MaxLengthValidator(limit, message=f"Response must be no more than {limit} characters.")

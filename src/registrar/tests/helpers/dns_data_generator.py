@@ -161,7 +161,7 @@ def create_dns_record(zone, **kwargs):
         content=record_content,
         comment=record_comment,
         ttl=ttl,
-        priority=priority
+        priority=priority,
     )
     vendor_dns_record = VendorDnsRecord.objects.create(
         x_record_id=x_record_id,

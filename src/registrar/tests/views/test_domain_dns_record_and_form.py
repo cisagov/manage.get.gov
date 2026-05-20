@@ -61,7 +61,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         },
         {
             "id": "test-cname",
-            "name": "test", # CNAME record must use differnet name than A/AAAA records
+            "name": "test",  # CNAME record must use differnet name than A/AAAA records
             "type": "CNAME",
             "content": "www.example.com",
             "ttl": 300,
