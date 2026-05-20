@@ -52,16 +52,23 @@ class UserProfileForm(forms.ModelForm):
         self.fields["email"].label = "Organization email"
 
         # Set custom error messages
-        self.fields["first_name"].error_messages = {"required": "Enter your first name / given name."}
-        self.fields["last_name"].error_messages = {"required": "Enter your last name / family name."}
-        self.fields["title"].error_messages = {
-            "required": "Enter your title or role in your organization (e.g., Chief Information Officer)"
+        self.fields["first_name"].error_messages = {
+            "required": "Enter your last name / family name.",
+            "max_length": "First name / given name must be no more than 150 characters.",
         }
+        self.fields["last_name"].error_messages = {
+            "required": "Enter your last name / family name.",
+            "max_length": "First name / given name must be no more than 150 characters.",
+        }
+        self.fields["title"].error_messages = {"required": "Enter your title or role in your organization."}
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
         self.fields["email"].widget.attrs["hide_character_count"] = "True"
-        self.fields["phone"].error_messages["required"] = "Enter your phone number."
+        self.fields["phone"].error_messages = {
+            "required": "Enter your phone number.",
+            "invalid": "Enter a valid 10-digit phone number including area code.",
+        }
 
         if self.instance and self.instance.phone:
             self.fields["phone"].initial = self.instance.phone.as_national
