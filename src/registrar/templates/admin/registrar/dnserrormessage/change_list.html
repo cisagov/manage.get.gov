@@ -1,0 +1,15 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <p class="margin-0 padding-0">
+    <a class="usa-button usa-button--secondary"
+       href="{{ dns_log_probe_url }}"
+       target="_blank"
+       rel="noopener"
+       title="Fires one DNS-style log line. Check logs-app* for probe_marker:dns_log_probe.">
+      LOG EXAMPLE
+    </a>
+  </p>
+{% endblock %}

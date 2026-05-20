@@ -4824,6 +4824,19 @@ class DnsErrorMessageAdmin(admin.ModelAdmin):
         text = obj.message or ""
         return text if len(text) <= 80 else text[:77] + "…"
 
+    def get_urls(self):
+        from django.urls import path
+        from registrar.views._dns_log_probe import dns_log_probe
+
+        return [
+            path("dns-log-probe/", self.admin_site.admin_view(dns_log_probe), name="dns_log_probe"),
+        ] + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["dns_log_probe_url"] = "dns-log-probe/"
+        return super().changelist_view(request, extra_context=extra_context)
+
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
         # Non-superusers cannot rename the key; prevents silent drift between
