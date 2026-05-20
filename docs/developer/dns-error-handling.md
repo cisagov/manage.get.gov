@@ -1,14 +1,28 @@
 # DNS Error Handling
 
+**Last updated** 2026-05-20
+
 ## Intro
 
-For DNS error handling we decided to create an admin table that maps custom error codes (that we maintain) to their corresponding error messages. This is to simplify the complexity associated with hardcoded error messages scattered throughout the code. 
+For DNS error handling we introduce typed exception classes paired with a centralized error-code-to-message mapping (`_error_mapping` in `src/registrar/utility/errors.py`). This replaces the hardcoded error strings scattered throughout the code today.
 
-**How to use it in the code:** When something goes wrong (Cloudflare is down, a zone doesn't exist, the network times out), raise a typed DnsHostingError subclass from the service layer. Using this architecture, the error code stays attached as you bubble up through the domain layer into the view. The view then catches it, looks up the user-facing message in our error mapping, and returns a consistent JSON envelope with the error code, message, and a request_id for logging and support.
+**How to use it in the code:** When something goes wrong (Cloudflare is down, a zone doesn't exist, the network times out), raise a typed DnsHostingError subclass from the service layer. Python's exception propagation carries it up the call stack automatically — through `DnsHostService` (which does nothing with it) and into the view's `except DnsHostingError` block. The view then looks up the user-facing message in our error mapping and returns a standardized JSON response with the error code, message, and a request_id the user can share with support.
+
+> **Design decision (and what new callers need to know)**
+>
+> **What we decided:** `CloudflareService` logs the failure once and raises a typed `DnsHostingError`. `DnsHostService` does nothing with it (no try/except). The view catches the typed error on purpose so it can handle the user-facing business logic — which message to show, which HTTP status to return, which template to render. The view does **not** log again.
+>
+> **At the time of writing, only the DNS records form view calls these services.** When we add a new caller (another view, a background job, an admin action, anything) you **must** catch `DnsHostingError` and decide what to render for your caller.
+>
+> **Why we chose this:**
+>
+> - **One place owns the user-facing copy.** Product and Design approve the wording in [#4999](https://github.com/cisagov/manage.get.gov/issues/4999); engineering wires the approved strings into the mapping in [#4950](https://github.com/cisagov/manage.get.gov/issues/4950). The view looks up the message by code and renders it.
+> - **One log line per failure.** Today a single Cloudflare 400 produces *three* nearly-identical ERROR log lines (one in `CloudflareService`, one in `DnsHostService`, one in the view). After this work, the service logs once at the source and nothing duplicates it.
+> - **The service is the safety net.** Logging at the source guarantees the failure is captured no matter who calls the service e.g. a future view, a background job, a management command.
 
 **What's in this doc:**
 
-- **Error Types** — the 8 error codes we handle today, what triggers each, and how to look them up
+- **Error Types** — the error codes we handle today, what triggers each, and how to look them up
 - **What Developers Do** — the 4 rules: raise specific errors, catch only in views, include context, test by code not by message
 - **Worked Example** — end-to-end flow of one failed DNS save to show the rules in action
 - **Network Timeouts & Retries** — why we timeout, how long we wait, and when we retry (write operations never retry; read operations do with backoff)
@@ -19,7 +33,7 @@ For DNS error handling we decided to create an admin table that maps custom erro
 **How DNS errors are handled (summary):**
 
 - Typed exception classes for every DNS failure
-- A consistent JSON error envelope returned to the browser
+- A standardized JSON error response returned to the browser
 - Structured fields on every log line
 - A clear rule for where to raise and where to catch
 
@@ -94,7 +108,7 @@ Log it with a request_id (unique ID for this whole operation)
 Tell user what happened (friendly message + request_id)
 ```
 
-Every request gets a unique `request_id` from `RequestLoggingMiddleware` (#4924). The same ID flows into every log line for the request and into the JSON error envelope returned to the browser, so a user-reported reference ID can be traced back to the exact server-side events.
+Every request gets a unique `request_id` from `RequestLoggingMiddleware` (#4924). The same ID flows into every log line for the request and into the JSON error response returned to the browser, so a user-reported reference ID can be traced back to the exact server-side events.
 
 ---
 
@@ -116,7 +130,9 @@ raise DnsNotFoundError(
 )
 ```
 
-When you have an upstream `HTTPStatusError` and need to figure out which subclass fits based on the status code, use the `_typed_dns_error` helper instead — see the [worked example](#worked-example-full-failure-flow) below. Direct raise for known conditions; helper for "I just got this status code, classify it for me."
+When you have an upstream `HTTPStatusError` and need to figure out which subclass fits based on the status code, use the `_typed_dns_error` helper instead — see the [full example](#full-example-of-the-failure-flow) below. Direct raise for known conditions; helper for "I just got this status code, classify it for me."
+
+Once you raise, you're done. Python's exception propagation walks back up the call stack until something catches the exception. As long as no code in between wraps the call in a `try/except`, the typed error lands in the view's `except DnsHostingError` block (Rule #2). `except DnsHostingError` matches the base class *and* every subclass, so one catch covers all the codes.
 
 ### 2. Catch Errors in Views Only
 
@@ -124,13 +140,28 @@ When you have an upstream `HTTPStatusError` and need to figure out which subclas
 try:
     dns_service.create_record(...)
 except DnsHostingError as exc:
-    # One place handles all DNS errors
+    # The view catches on purpose to handle the user-facing business logic:
+    # which message to show, which HTTP status, which template to render, etc.
+    # No logger call here as the service already logged.
     return dns_error_response(exc)
 ```
 
-Services raise. Views catch.
+Services log and raise. Views catch and render. A DNS failure produces exactly one log line — at the service, where the error is born, with full Cloudflare context.
 
-**What about exceptions that aren't `DnsHostingError`?** Don't add a fallback `except Exception` in the view — that swallows real bugs. Anything that isn't a `DnsHostingError` (a `DatabaseError`, a programming bug, anything unexpected) propagates up to Django's default 500 handling. The user sees the `500.html` page with the `request_id` shown (sub-ticket [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)) and engineers find the full traceback in OpenSearch by that same ID. `APIError` is intentionally not listed here — it's deleted once [#4922](https://github.com/cisagov/manage.get.gov/issues/4922) ships, replaced by the `DnsHostingError` hierarchy.
+`dns_error_response(exc)` reads `exc.code`, looks up the HTTP status in the Severity column of the [Wire-code reference](#wire-code-reference), and sends this JSON response back to the browser. Every DNS endpoint uses the same response:
+
+```json
+{
+  "status": "error",
+  "code": "DNS_ZONE_NOT_FOUND",
+  "message": "We couldn't find the DNS zone for this domain.",
+  "request_id": "1a2b3c4d-..."
+}
+```
+
+Every DNS endpoint returns this same response on failure. HTMX templates (views) read the `code` to render the right inline / page-level message; `request_id` is what the user shares with support, what we will use to track the request.
+
+**What about exceptions that aren't `DnsHostingError`?** Don't add a fallback `except Exception` in the view as that will swallow actual bugs. Anything that isn't a `DnsHostingError` (a `DatabaseError`, a programming bug, anything unexpected) propagates up to Django's default 500 handling. The user sees the `500.html` page with the `request_id` shown (sub-ticket [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)) and engineers find the full traceback in OpenSearch by that same ID. After [#4922](https://github.com/cisagov/manage.get.gov/issues/4922) ships, `APIError` is gone — the `DnsHostingError` hierarchy replaces it, so you won't see it listed alongside `DatabaseError` above.
 
 ### 3. Include Useful Context
 
@@ -158,7 +189,7 @@ def test_my_error_is_picklable(self):
     self.assertEqual(restored.code, exc.code)
 ```
 
-### Worked example: full failure flow
+### Full example of the failure flow
 
 The four rules above in practice. End-to-end example of one failed DNS save once the typed-error work lands.
 
@@ -184,7 +215,11 @@ def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
     status = e.response.status_code
     ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
     exc_cls, code = _STATUS_TO_ERROR.get(status, (DnsHostingError, DnsHostingErrorCodes.UNKNOWN))
-    logger.error("Cloudflare returned %s for DNS request", status, extra={"upstream_status": status, "error_code": code.name, **ctx})
+    logger.exception(
+        "Cloudflare returned %s for DNS request",
+        status,
+        extra={"upstream_status": status, "error_code": code.name, **ctx},
+    )
     return exc_cls(code=code, upstream_status=status, context=ctx)
 
 
@@ -207,14 +242,18 @@ class CloudflareService:
         return resp.json()
 ```
 
-Two failure shapes from `httpx`, two branches:
+Two failure shapes from `httpx`:
 
 - **`HTTPStatusError`** — Cloudflare gave us a response, but it was 4xx/5xx. The helper maps the status code to the right typed subclass.
 - **`RequestError`** — no response came back at all (connect failure, timeout, DNS lookup failed). No status code exists to map, so the service raises `DnsTransportError` directly with `code=UPSTREAM_TIMEOUT`.
 
 Adding a new status code is a line in the `_STATUS_TO_ERROR` dict. The helper is testable on its own — feed it a fake `HTTPStatusError` and assert the returned exception type and code.
 
-**Layer 2 — `DnsHostService` passes the typed exception through unchanged** (sub-ticket [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)). The current try/except around the Cloudflare call is removed.
+The service logs **once** here, at the point of failure, with the raw Cloudflare context (`upstream_status`, `error_code`, `cf_ray`, `zone_id`, etc.). `logger.exception(...)` attaches the full Python traceback. The middleware's ContextVars (`request_id`, `user_email`, `ip_address`, `request_path`) are merged into the same log line by the `JsonFormatter`, so a single log entry has the Cloudflare-side context *and* the request-side context. Nothing downstream needs to log again.
+
+> **Today vs. after #4924:** the `request_id` ContextVar is not wired up in the current code; [#4924](https://github.com/cisagov/manage.get.gov/issues/4924) deliver this. Until then the field stays empty on log lines. Also, `user_email`, `ip_address`, and `request_path` only populate in production environments — non-prod log lines show the `"Anonymous"` / `"Unknown IP"` defaults from `logging_context.py`. That gate stays in place after #4924 for privacy reasons.
+
+**Layer 2 — `DnsHostService` passes the typed exception through unchanged** (sub-ticket [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)). The current try/except around the Cloudflare call is removed. Because Python propagates exceptions up the call stack automatically, removing the `try/except` is all it takes — the typed error from `CloudflareService` flows straight through `DnsHostService` and into the view.
 
 ```python
 # Before (today):
@@ -233,27 +272,47 @@ def create_dns_record(self, x_zone_id, form_record_data):
     ...
 ```
 
-**Layer 3 — the view catches and renders the JSON envelope** (sub-ticket [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)):
+**Layer 3 — the view catches and renders the JSON response** (sub-ticket [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)):
 
 ```python
 try:
     self.dns_host_service.create_dns_record(zone_id, form_record_data)
 except DnsHostingError as exc:
+    # The view handles the user-facing business logic:
+    # look up the message in our error mapping, pick the HTTP status from
+    # the Severity column, decides which to render.
     return dns_error_response(exc, request=request)
 ```
 
-`dns_error_response` reads `exc.code`, picks the right HTTP status from the [Wire-code reference](#wire-code-reference) Severity column, and returns:
+The view does **not** log again. The service's log line already captured everything (Cloudflare-side fields from `extra={}` + middleware-injected fields like `request_id` and `user_email`). `dns_error_response` returns the JSON response shown in [Rule #2](#2-catch-errors-in-views-only).
 
-```json
-{
-  "status": "error",
-  "code": "DNS_ZONE_NOT_FOUND",
-  "message": "We couldn't find the DNS zone for this domain.",
-  "request_id": "1a2b3c4d-..."
-}
+---
+
+## Structured logging in production
+
+The registrar's app logs go to indices matching the pattern `logs-app*`. You can view in cloud.gov logs > Dev Tools via:
+
+```text
+GET logs-app*/_mapping
 ```
 
-Python's `from e` chain preserves the original `HTTPStatusError` in the traceback, so engineers searching by `request_id` in logs can still see Cloudflare's response body, status, and `cf-ray`.
+The path a DNS log line travels from our code to a searchable field in OpenSearch:
+
+1. **Service logs once.** `CloudflareService` (via the `_typed_dns_error` helper) calls `logger.exception(...)` at the point of failure with DNS-specific `extra={"upstream_status": ..., "error_code": ..., ...}` and raises the typed `DnsHostingError`.
+
+2. **`JsonFormatter` emits one JSON document per log line** ([`src/registrar/config/settings.py`](../../src/registrar/config/settings.py)). Beyond Python's defaults (`timestamp`, `level`, `name`, `lineno`, `message`), every line carries:
+    - **DNS fields** from `extra={}` — `upstream_status`, `error_code`, `cf_ray`, `zone_id`, etc.
+    - **Request context** from ContextVars — `user_email`, `ip_address`, `request_path`, `request_id`. `request_id` will be added via [#4924](https://github.com/cisagov/manage.get.gov/issues/4924). `user_email` / `ip_address` default to `"Anonymous"` / `"Unknown IP"` outside production.
+    - `exception` — full traceback, only when `logger.exception(...)` is used on the upstream.
+
+3. **Cloud.gov forwards stdout** into the `logs-app*` OpenSearch indices and wraps our JSON under a top-level `app` object. So `error_code` becomes `app.error_code`, `request_id` becomes `app.request_id`, etc. **OpenSearch queries need the `app.` prefix.**
+
+4. **OpenSearch dynamic mapping** indexes each `app.*` field once received for the first time.
+
+### Caveats
+
+- **Search prefix is `app.*`, not top-level.** Query as `app.error_code:"DNS_ZONE_NOT_FOUND"`, `app.request_id:"..."`
+- **`message` and `exception` stay inside `@message` as text** — cloud.gov's ingester does not promote them to discrete fields under `app.*`. Tracebacks are full-text searchable but not aggregable.
 
 ---
 
@@ -268,9 +327,7 @@ Two rules for `DnsHostingError` and its subclasses:
 
 ## Network Timeouts & Retries
 
-Sub-ticket [#4923](https://github.com/cisagov/manage.get.gov/issues/4923). All values are in **seconds**.
-
-> Addresses [#4893](https://github.com/cisagov/manage.get.gov/issues/4893)'s description item: *"Define a retry strategy for httpx calls (when to fail fast vs. when to retry)."* Not a formal AC checkbox but called out as a consideration in the planning ticket.
+This section describes the timeout and retry policy for the DNS httpx client — all values are in **seconds**. The work addresses a consideration from planning ticket [#4893](https://github.com/cisagov/manage.get.gov/issues/4893) ("Define a retry strategy for httpx calls — when to fail fast vs. when to retry"). Implementation is tracked in [#4923](https://github.com/cisagov/manage.get.gov/issues/4923); production verification in [#5000](https://github.com/cisagov/manage.get.gov/issues/5000).
 
 ### Timeouts
 
@@ -284,13 +341,14 @@ httpx.Timeout(connect=3, read=10, write=10, pool=5)
   - the pool is too small for our actual load, OR
   - something is holding connections longer than expected (a slow Cloudflare day, a connection leak in our code, an unexpected spike).
 
-  We want this to fail fast instead of queuing silently — the timeout fires, `httpx` raises a `PoolTimeout` (a `RequestError`), our service raises `DnsTransportError(code=UPSTREAM_TIMEOUT)`, and the failure shows up in the logs. That's the signal to investigate (increase the pool size, check for a leak, or look at concurrency).
+  We want this to fail fast instead of waiting indefinitely for a free connection from the HTTP connection pool. With the configured pool=5s timeout, if no connection becomes available within 5 seconds, `httpx` raises a `PoolTimeout` (a `RequestError`), our service then raises `DnsTransportError(code=UPSTREAM_TIMEOUT)`, and the failure shows up in the logs. That gives us a clear signal to investigate, such as increase the pool size, check for a connection leak, or look at concurrency.
 
 ### Why timeouts matter
 
 **Today (no timeout):** a hung Cloudflare call can pin a gunicorn worker until the OS-level TCP keepalive gives up (minutes) or gunicorn kills the worker (30s, returns a 502).
 
 **After this ticket:** the worst case is capped.
+
 - **Write calls (POST/PATCH/DELETE — the DNS save path):** no retry. Worst case = one attempt = ~13 seconds (`connect` + `read`).
 - **Read calls (GET/HEAD):** up to 2 attempts + 1 backoff pause ≈ ~27 seconds worst case. Sized to fit comfortably inside gunicorn's 30s worker timeout so we never hand a request over to the worker killer.
 
@@ -324,7 +382,7 @@ Retrying a write that already succeeded but was slow can create a duplicate DNS 
 
 Approved copy is owned by Product/Content under [#4999](https://github.com/cisagov/manage.get.gov/issues/4999). Until that ticket closes, the messages in this section and in the [Error Types](#error-types) table are **TBD** — the one exception is the duplicate-record message, which reuses the existing model-level validation string.
 
-### When it's the user's fault (4xx — shown inline):
+### When it's the user's fault (4xx — shown inline)
 
 > "A record with that name already exists. Names must be unique." (existing model-level validation string)
 
