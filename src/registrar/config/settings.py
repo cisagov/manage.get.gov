@@ -754,7 +754,6 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # See above for the default value if the env variable is missing
 OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
 
-
 OIDC_PROVIDERS = {
     "identity sandbox": {
         "srv_discovery_url": "https://idp.int.identitysandbox.gov",
