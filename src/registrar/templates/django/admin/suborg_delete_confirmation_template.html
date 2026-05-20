@@ -4,11 +4,11 @@
 {% block content %}
 
 
-    <h1>
+    <p>
        The suborganization 
-       <b><a href="{% url 'admin:registrar_suborganization_change' object.id %}">{{object}}</a> </b>
+       <a href="{% url 'admin:registrar_suborganization_change' object.id %}">{{object}}</a>
        will be deleted.
-    </h1>
+    </p>
     {% if domain_requests %}
     <p> The following domain requests will have their suborganization removed: </p>
     <ul>
