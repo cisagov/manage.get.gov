@@ -436,13 +436,13 @@ class MockCloudflareService:
             logger.error(f"Failed to rename record using record's DNS zone: {e}.")
 
     def _get_zone_name_from_request_url(self, request_url):
-            """
-            Get record zone. Used to configure root names to records.
-            """
-            try:
-                zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
-                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
-                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-                return dns_zone.name
-            except Exception as e:
-                logger.error(f"Failed to get record zone name using request URL: {e}.")
+        """
+        Get record zone. Used to configure root names to records.
+        """
+        try:
+            zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
+            vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
+            dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
+            return dns_zone.name
+        except Exception as e:
+            logger.error(f"Failed to get record zone name using request URL: {e}.")
