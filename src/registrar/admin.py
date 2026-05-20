@@ -5392,7 +5392,8 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     search_help_text = "Search by suborganization."
 
     change_form_template = "django/admin/suborg_change_form.html"
-
+    delete_confirmation_template = "django/admin/suborg_delete_confirmation_template.html"
+    delete_selected_confirmation_template = "django/admin/suborg_delete_selected_confirmation_template.html"
 
     readonly_fields = []
 
@@ -5468,8 +5469,13 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return super().has_view_permission(request, obj)
 
     def delete_view(self, request, object_id, extra_context=None):
-        self.delete_confirmation_template = "django/admin/suborg_delete_confirmation_template.html"
+        obj = self.get_object(request, object_id)
+        domain_requests = DomainRequest.objects.filter(sub_organization=obj)
+        domain_information = DomainInformation.objects.filter(sub_organization=obj)
+
+        extra_context = {"domain_requests": domain_requests, "domain_information": domain_information}
         return super().delete_view(request, object_id, extra_context=extra_context)
+
 
 class AllowedEmailAdmin(ListHeaderAdmin):
     class Meta:
