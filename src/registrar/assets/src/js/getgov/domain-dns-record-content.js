@@ -266,6 +266,38 @@ export function initDNSRecordTabOrder() {
     });
 }
 
+// Issue #4629: after an invalid DNS record submit, screen reader and keyboard
+// focus should land on the first error alert at the top of the page (not the
+// page title), and Tab should walk through any remaining error alerts before
+// continuing on to the rest of the page. The htmx flow re-renders the alerts
+// into #messages-container via the `messagesRefresh` trigger, so we wait for
+// that swap to settle and then prep the alerts.
+export function initDNSRecordAlertFocus() {
+    const dnsRecordsContainer = document.getElementById("dnsrecords-form-container");
+    if (!dnsRecordsContainer) return;
+
+    document.body.addEventListener("htmx:afterSettle", (evt) => {
+        // htmx dispatches afterSettle on the swap target. Prefer detail.target
+        // (documented) and fall back to evt.target so we keep working across
+        // htmx versions that change the detail shape.
+        const swapped = evt?.detail?.target || evt?.target;
+        const messagesContainer = swapped?.id === "messages-container"
+            ? swapped
+            : document.getElementById("messages-container");
+        if (!messagesContainer || swapped?.id !== "messages-container") return;
+
+        const errorAlerts = messagesContainer.querySelectorAll(".usa-alert--error");
+        if (errorAlerts.length === 0) return;
+
+        // tabindex=0 puts each alert in the natural tab sequence, so the user
+        // can Tab from one error to the next before falling through to the
+        // form below. Only the first alert is focused; the browser handles
+        // the rest natively.
+        errorAlerts.forEach(alert => alert.setAttribute("tabindex", "0"));
+        errorAlerts[0].focus();
+    });
+}
+
 export function commentCharacterEventListener(){
 
     // event listener to update the char count text
