@@ -493,33 +493,24 @@ class JsonFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
-    def user_prepend(self):
-        context = get_user_log_context()
-        user_email = context["user_email"]
-        ip = context["ip_address"]
-        request_path = context["request_path"]
-        parts = []
-        if user_email:
-            parts.append(f"user: {user_email}")
-        if ip:
-            parts.append(f"ip: {ip}")
-        if request_path:
-            parts.append(f"request_path: {request_path}")
-
-        return " | ".join(parts)
-
     def format(self, record):
+        context = get_user_log_context()
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": f"{self.user_prepend()} | {record.getMessage()}",
+            "message": record.getMessage(),
+            "user_email": context["user_email"],
+            "ip_address": context["ip_address"],
         }
-        # Top-level request_id enables structured querying in OpenSearch.
-        request_id = get_user_log_context().get("request_id")
-        if request_id:
-            log_record["request_id"] = request_id
+        # Optional context fields — only include when set, so log lines emitted
+        # outside an HTTP request (management commands, startup, etc.) don't
+        # pollute the index with empty `request_path` / `request_id` fields.
+        if context.get("request_path"):
+            log_record["request_path"] = context["request_path"]
+        if context.get("request_id"):
+            log_record["request_id"] = context["request_id"]
         # Capture exception info if it exists
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
