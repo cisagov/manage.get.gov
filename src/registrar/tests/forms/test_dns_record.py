@@ -248,8 +248,10 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                 "invalid..hostname",
                 get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "target"),
             ),
-            # TODO: Comment out and complete PTR test case when PTR validation is implemented
-            # "PTR": "..."
+            "PTR": (
+                "invalid..hostname",
+                get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "domain name"),
+            ),
         }
         for record_type, (bad_content, expected_error) in invalid_content_by_type.items():
             with self.subTest(record_type=record_type):

@@ -29,6 +29,7 @@ class MockCloudflareService:
     fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
+    hostname_record_types = ["CNAME", "MX", "PTR"]
 
     def __new__(cls):
         if cls._instance is None:
@@ -300,6 +301,9 @@ class MockCloudflareService:
         priority = request_as_json.get("priority")
         request_url = str(request.url)
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
+        # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
+        if type in self.hostname_record_types and content == "@":
+            content = self._get_zone_name_from_request_url(request_url)
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -361,6 +365,9 @@ class MockCloudflareService:
         # Split string between "/dns_records/ and extract second partition
         record_id = request_url.split("/dns_records/")[1]
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
+        # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
+        if type in self.hostname_record_types and content == "@":
+            content = self._get_zone_name_from_request_url(request_url)
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -419,10 +426,7 @@ class MockCloudflareService:
         Returns None if used outside scope of DNS records page / record name not given.
         """
         try:
-            zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
-            vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
-            dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-            zone_name = dns_zone.name
+            zone_name = self._get_zone_name_from_request_url(request_url)
             if record_name == ("@"):
                 record_name = zone_name
             elif not record_name.endswith(zone_name):
@@ -430,3 +434,15 @@ class MockCloudflareService:
             return record_name
         except Exception as e:
             logger.error(f"Failed to rename record using record's DNS zone: {e}.")
+
+    def _get_zone_name_from_request_url(self, request_url):
+            """
+            Get record zone. Used to configure root names to records.
+            """
+            try:
+                zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
+                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
+                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
+                return dns_zone.name
+            except Exception as e:
+                logger.error(f"Failed to get record zone name using request URL: {e}.")
