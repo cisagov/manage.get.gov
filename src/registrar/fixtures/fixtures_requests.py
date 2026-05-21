@@ -220,7 +220,7 @@ class DomainRequestFixture:
     def _get_federal_agency(cls, request: DomainRequest, request_dict: dict):
         if not request.federal_agency:
             if "federal_agency" in request_dict and request_dict["federal_agency"] is not None:
-                return FederalAgency.objects.get_or_create(name=request_dict["federal_agency"])[0]
+                return FederalAgency.objects.get_or_create(agency=request_dict["federal_agency"])[0]
             return random.choice(FederalAgency.objects.all())  # nosec
         return request.federal_agency
 
@@ -228,7 +228,7 @@ class DomainRequestFixture:
     def _get_portfolio(cls, request: DomainRequest, request_dict: dict):
         if not request.portfolio:
             if "portfolio" in request_dict and request_dict["portfolio"] is not None:
-                return Portfolio.objects.get_or_create(name=request_dict["portfolio"])[0]
+                return Portfolio.objects.get_or_create(organization_name=request_dict["portfolio"])[0]
             return cls._get_random_portfolio()
         return request.portfolio
 
