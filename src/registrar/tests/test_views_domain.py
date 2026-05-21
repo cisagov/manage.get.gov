@@ -948,7 +948,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation(self, mock_send_domain_email, mock_send_portfolio_email):
         """Adding an existing user works and sends portfolio invitation when
@@ -1005,7 +1005,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation_to_new_email(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1055,7 +1055,57 @@ class TestDomainManagers(TestDomainOverview):
 
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_permission_invitation_when_flag_on(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding a new email uses the invitation service when the invitation flag is on."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "uppflaguser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        response = add_page.form.submit()
+
+        self.assertEqual(response.status_code, 302)
+
+        mock_send_portfolio_email.assert_called_once_with(
+            email="uppflaguser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_send_domain_email.assert_called_once()
+
+        self.assertTrue(
+            UserPortfolioPermission.objects.filter(
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+                status=UserPortfolioPermission.Status.INVITED,
+            ).exists()
+        )
+        self.assertTrue(
+            PortfolioInvitation.objects.filter(
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).exists()
+        )
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(
+                user__isnull=False,
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+            ).exists()
+        )
+
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
+    @less_console_noise_decorator
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_fails_to_send_to_some_managers(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1090,7 +1140,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_doesnt_send_portfolio_invitation_if_already_member(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1140,7 +1190,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation_raises_email_sending_error(
         self, mock_send_domain_email, mock_send_portfolio_email
