@@ -56,11 +56,11 @@ DNS_NAME_HYPHEN_REQUIREMENT = "without using hyphens at the start or end of a la
 DNS_RECORD_CONTENT_REQUIREMENT = "for this record."
 DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
 
+# Constants for error message validating fqdn length and label length
+DNS_LABEL_LENGTH_ERROR_MESSAGE = "Labels must be no more than 63 characters."
+DNS_FQDN_LENGTH_ERROR_REQUIREMENT = "(including labels, domain, and period) must be no more than 253 characters."
+
 # Error messages for specific record types and fields
-DNS_NAME_LENGTH_ERROR_MESSAGE = (
-    "Labels must be no more than 63 characters. "
-    "Full name (including labels, domain, and period) must be no more than 253 characters."
-)
 DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
 DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
 DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
@@ -101,6 +101,18 @@ def get_error_message_from_requirement(requirement: str, field: str) -> str:
     return f"Enter the {field} {requirement}."
 
 
+def get_fqdn_error_message(content_type=None) -> str:
+    """Returns fully qualified domain name error message by field that is validated."""
+    # If a field type is not given, default to referring to fqdn as name
+    if not content_type:
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full name {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+    # Custom message for mail server records
+    if content_type == "mail server":
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Mail server {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+    else:
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full {content_type} {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+
+
 def _validate_dns_name_spaces(name: str, field_type="name") -> None:
     """Reject values with spaces."""
     if " " in name:
@@ -139,10 +151,11 @@ def _validate_dns_name_characters(name: str, field_type="name") -> None:
         raise ValidationError(error_message)
 
 
-def _validate_dns_name_length(name: str) -> None:
+def _validate_dns_name_length(name: str, content_type=None) -> None:
     """Enforce the total DNS name length limit."""
     if len(name) > DNS_NAME_MAX_LENGTH:
-        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message(content_type)
+        raise ValidationError(error_message)
 
 
 def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
@@ -150,10 +163,11 @@ def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
     return [label for label in name.split(".") if label != "*"]
 
 
-def _validate_dns_name_label_length(label: str) -> None:
+def _validate_dns_name_label_length(label: str, content_type=None) -> None:
     """Enforce the per-label DNS length limit."""
     if len(label) > DOMAIN_LABEL:
-        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message(content_type)
+        raise ValidationError(error_message)
 
 
 def _validate_dns_name_label_hyphen_placement(label: str) -> None:
@@ -163,16 +177,16 @@ def _validate_dns_name_label_hyphen_placement(label: str) -> None:
         raise ValidationError(error_message)
 
 
-def _validate_dns_name_label(label: str) -> None:
+def _validate_dns_name_label(label: str, content_type=None) -> None:
     """Apply all per-label DNS name validations."""
-    _validate_dns_name_label_length(label)
+    _validate_dns_name_label_length(label, content_type)
     _validate_dns_name_label_hyphen_placement(label)
 
 
-def _validate_dns_name_labels(name: str) -> None:
+def _validate_dns_name_labels(name: str, content_type=None) -> None:
     """Validate each label's length and hyphen placement."""
     for label in _get_non_wildcard_dns_name_labels(name):
-        _validate_dns_name_label(label)
+        _validate_dns_name_label(label, content_type)
 
 
 def _validate_dns_hostname_content(content: str, field_type: str | None) -> None:
@@ -207,9 +221,9 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
     if field_type == "mail server" and len(content) > MX_CONTENT_MAX_LENGTH:
         raise ValidationError("Name must be no more than 253 characters.")
     else:
-        _validate_dns_name_length(content)
+        _validate_dns_name_length(content, content_type=field_type)
 
-    _validate_dns_name_labels(content)
+    _validate_dns_name_labels(content, content_type=field_type)
 
 
 def validate_dns_name(name: str) -> None:
@@ -264,7 +278,8 @@ def validate_dns_name_fqdn_length(name: str, zone_name: str | None) -> None:
         fqdn = f"{name}.{zone_name}"
 
     if len(fqdn) > DNS_NAME_MAX_LENGTH:
-        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message()
+        raise ValidationError(error_message)
 
 
 def check_has_invalid_quoted_string(content: str) -> bool:

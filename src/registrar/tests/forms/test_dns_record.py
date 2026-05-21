@@ -11,7 +11,6 @@ from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
-    DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_NAME_SPACES_REQUIREMENT,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
@@ -20,6 +19,7 @@ from registrar.validations import (
     TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE,
     TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
     get_error_message_from_requirement,
+    get_fqdn_error_message,
 )
 from faker import Faker
 
@@ -140,7 +140,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assert_dns_name_errors("ab(c", [expected_name_format_error])
 
         # Testing per-label length exceeds 63 characters
-        self.assert_dns_name_errors("a" * 64, [DNS_NAME_LENGTH_ERROR_MESSAGE])
+        error_message = get_fqdn_error_message()
+        self.assert_dns_name_errors("a" * 64, [error_message])
 
         # Testing space in name
         self.assert_dns_name_errors("ab cd", [expected_name_spaces_error])
@@ -195,7 +196,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         """Names exceeding 253 characters when fully qualified should be rejected."""
         # Create a name that's 254 characters
         long_name = "a" * 254
-        self.assert_dns_name_errors(long_name, [DNS_NAME_LENGTH_ERROR_MESSAGE])
+        error_message = get_fqdn_error_message()
+        self.assert_dns_name_errors(long_name, [error_message])
 
     def test_dns_name_with_hyphen_in_middle_of_label_valid(self):
         """Hyphens in the middle of labels should be allowed."""

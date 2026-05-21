@@ -6,11 +6,11 @@ from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,
     DNS_NAME_HYPHEN_REQUIREMENT,
     DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
-    DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_NAME_SPACES_REQUIREMENT,
     validate_dns_name,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
+    get_fqdn_error_message,
     _validate_dns_hostname_content,
     TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
     TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE,
@@ -79,10 +79,12 @@ class TestValidateDNSName(SimpleTestCase):
         self.assert_all_valid(["_dmarc", "ab_cd", "ab,cd", "ab$cd", "ab!cd"])
 
     def test_validate_dns_name_rejects_labels_over_63_characters(self):
-        self.assert_dns_name_validation_error("a" * 64, DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message()
+        self.assert_dns_name_validation_error("a" * 64, error_message)
 
     def test_validate_dns_name_rejects_names_over_253_characters(self):
-        self.assert_dns_name_validation_error("a" * 254, DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message()
+        self.assert_dns_name_validation_error("a" * 254, error_message)
 
 
 class TestValidateDNSNameFQDNLength(SimpleTestCase):
@@ -91,7 +93,8 @@ class TestValidateDNSNameFQDNLength(SimpleTestCase):
     def assert_error(self, name: str, zone: str | None) -> None:
         with self.assertRaises(ValidationError) as ctx:
             validate_dns_name_fqdn_length(name, zone)
-        self.assertEqual(ctx.exception.messages, [DNS_NAME_LENGTH_ERROR_MESSAGE])
+        error_message = get_fqdn_error_message()
+        self.assertEqual(ctx.exception.messages, [error_message])
 
     def test_no_error_when_zone_missing(self):
         validate_dns_name_fqdn_length("a" * 300, None)

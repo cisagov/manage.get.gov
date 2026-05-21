@@ -32,7 +32,6 @@ from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
-    DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
@@ -42,6 +41,7 @@ from registrar.validations import (
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
     get_content_type_by_record_type,
+    get_fqdn_error_message,
 )
 
 import json
@@ -849,7 +849,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         error_messages = {
             "name": {
                 "required": DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
-                "max_length": DNS_NAME_LENGTH_ERROR_MESSAGE,
+                "max_length": get_fqdn_error_message(),
             }
         }
 
