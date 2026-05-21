@@ -188,7 +188,7 @@ class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
 
         # Setup session for portfolio views
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @less_console_noise_decorator
@@ -276,7 +276,7 @@ class TestPortfolioDomainViewAccess(MockDbForIndividualTests):
 
         # Setup session for portfolio views
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @less_console_noise_decorator
@@ -324,7 +324,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
         # Setup session for portfolio views
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = self.portfolio.id
         session.save()
 
     @less_console_noise_decorator

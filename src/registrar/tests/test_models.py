@@ -1507,7 +1507,7 @@ class TestUser(TestCase):
     @less_console_noise_decorator
     def test_get_active_requests_count_in_portfolio_returns_count_if_portfolio(self):
         request = self.factory.get("/")
-        request.session = {"portfolio": self.portfolio}
+        request.session = {"portfolio": self.portfolio.id}
 
         # Create active requests
         domain_1, _ = DraftDomain.objects.get_or_create(name="meoward1.gov")

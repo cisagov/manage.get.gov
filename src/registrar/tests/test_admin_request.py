@@ -732,12 +732,15 @@ class TestDomainRequestAdmin(MockEppLib):
         """
         self.client.force_login(self.superuser)
         completed_domain_request()
-        response = self.client.get("/admin/registrar/domainrequest/?generic_org_type__exact=federal")
+        response = self.client.get("/admin/registrar/domainrequest/?converted_generic_orgs=federal")
         # There are 2 template references to Federal (4) and two in the results data
         # of the request
         self.assertContains(response, "Federal", count=6)
         # This may be a bit more robust
-        self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
+        self.assertContains(
+            response,
+            '<a id="genericorganization-filter-federal"' ' href="?converted_generic_orgs=federal">' "Federal</a>",
+        )
         # Now let's make sure the long description does not exist
         self.assertNotContains(response, "Federal: an agency of the U.S. government")
 

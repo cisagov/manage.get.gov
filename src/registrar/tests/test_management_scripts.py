@@ -1,6 +1,7 @@
 import copy
 import boto3_mocking  # type: ignore
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone as dt_timezone
+from django.utils import timezone
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from registrar.models.domain_group import DomainGroup
@@ -10,7 +11,7 @@ from registrar.models.senior_official import SeniorOfficial
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.constants import BranchChoices
-from django.utils import timezone
+
 from django.utils.module_loading import import_string
 import logging
 import pyzipper
@@ -448,7 +449,7 @@ class TestPopulateFirstReady(TestCase):
         # Set a ready_at date for testing purposes
         self.ready_at_date = date(2022, 12, 31)
         _ready_at_datetime = datetime.combine(self.ready_at_date, time.min)
-        self.ready_at_date_tz_aware = timezone.make_aware(_ready_at_datetime, timezone=timezone.utc)
+        self.ready_at_date_tz_aware = _ready_at_datetime.replace(tzinfo=dt_timezone.utc)
 
     def tearDown(self):
         """Deletes all DB objects related to migrations"""

@@ -863,7 +863,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         request.user = self.user
         # Add portfolio to session
         request = GenericTestHelper._mock_user_request_for_factory(request)
-        request.session["portfolio"] = self.portfolio_1
+        request.session["portfolio"] = self.portfolio_1.id
 
         # Create a CSV file in memory
         csv_file = StringIO()
