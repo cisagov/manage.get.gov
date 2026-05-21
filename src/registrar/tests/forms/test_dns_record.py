@@ -126,9 +126,9 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assertEqual(form.errors["name"], [DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE])
 
     def test_invalid_dns_name_throws_error(self):
-        expected_hyphen_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
-        expected_name_format_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
-        expected_name_spaces_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        expected_hyphen_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
+        expected_name_format_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT,)
+        expected_name_spaces_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT)
 
         # Testing hyphen at start of label
         self.assert_dns_name_errors("-abc", [expected_hyphen_error])
@@ -148,23 +148,23 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_name_with_consecutive_dots_throws_error(self):
         """Consecutive dots should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
         self.assert_dns_name_errors("ab..cd", [expected_error])
 
     def test_dns_name_with_leading_dot_throws_error(self):
         """Leading dot should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
         self.assert_dns_name_errors(".abc", [expected_error])
 
     def test_dns_name_with_trailing_dot_throws_error(self):
         """Trailing dot should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
         self.assert_dns_name_errors("abc.", [expected_error])
 
     def test_dns_name_with_invalid_special_characters_throws_error(self):
         """Invalid characters (e.g. @ ( ) : ;) should be rejected."""
         for invalid_char in ["(", ")", ":", ";", "@"]:
-            expected_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
+            expected_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT)
             with self.subTest(invalid_char=invalid_char):
                 self.assert_dns_name_errors(f"ab{invalid_char}cd", [expected_error])
 
@@ -208,22 +208,22 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_name_with_hyphen_at_start_of_label_throws_error(self):
         """Hyphen at start of a label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         self.assert_dns_name_errors("-my-domain", [expected_error])
 
     def test_dns_name_with_hyphen_at_end_of_label_throws_error(self):
         """Hyphen at end of a label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         self.assert_dns_name_errors("my-domain-", [expected_error])
 
     def test_dns_name_with_hyphen_at_start_of_middle_label_throws_error(self):
         """Hyphen at start of any label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         self.assert_dns_name_errors("my.-domain", [expected_error])
 
     def test_dns_name_with_hyphen_at_end_of_middle_label_throws_error(self):
         """Hyphen at end of any label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         self.assert_dns_name_errors("my-.domain", [expected_error])
 
     def test_dns_hostname_content_last_label_not_number(self):
@@ -350,7 +350,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(name="my name")
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT)
         self.assertIn(expected_error, form.errors["name"])
 
     # --- Content validation ---

@@ -53,24 +53,24 @@ class TestValidateDNSName(SimpleTestCase):
             "a b c",  # multiple spaces
             "sub.domain name",  # space in a label of a multi-label name
         ]
-        expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT)
         self.assert_all_raise(names_with_spaces, expected_error)
 
     def test_validate_dns_name_rejects_hyphen_at_label_boundary(self):
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         self.assert_all_raise(["-abc", "abc-", "my.-domain", "my-.domain"], expected_error)
 
     def test_validate_dns_name_rejects_consecutive_dots(self):
-        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
         self.assert_dns_name_validation_error("ab..cd", expected_error)
 
     def test_validate_dns_name_rejects_leading_or_trailing_dot(self):
-        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
         self.assert_all_raise([".abc", "abc."], expected_error)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
         invalid_names = [f"ab{char}cd" for char in ["(", ")", ":", ";", "@"]]
-        expected_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, "name")
+        expected_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT)
         self.assert_all_raise(invalid_names, expected_error)
 
     def test_validate_dns_name_accepts_characters_not_in_blacklist(self):

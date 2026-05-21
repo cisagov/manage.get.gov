@@ -96,9 +96,15 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
 
 
-def get_error_message_from_requirement(requirement: str, field: str) -> str:
-    """Returns full error message for a field given a validation requirement."""
-    return f"Enter the {field} {requirement}."
+def get_error_message_from_requirement(requirement: str, content_field=None) -> str:
+    """
+    Returns full error message for a field given a validation requirement.
+    By default refers to validated field as "name".
+    """
+    # If content field not given, we are validating the name field
+    if not content_field:
+        return f"Enter the name {requirement}."
+    return f"Enter the {content_field} {requirement}."
 
 
 def get_fqdn_error_message(content_type=None) -> str:
@@ -123,10 +129,10 @@ def _validate_dns_name_spaces(name: str, field_type="name") -> None:
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name:
-        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
         raise ValidationError(error_message)
     if name.startswith(".") or name.endswith("."):
-        error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
         raise ValidationError(error_message)
 
 
@@ -173,7 +179,7 @@ def _validate_dns_name_label_length(label: str, content_type=None) -> None:
 def _validate_dns_name_label_hyphen_placement(label: str) -> None:
     """Reject labels that begin or end with a hyphen."""
     if label.startswith("-") or label.endswith("-"):
-        error_message = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT, "name")
+        error_message = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         raise ValidationError(error_message)
 
 
