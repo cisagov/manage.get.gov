@@ -851,20 +851,8 @@ class DomainDNSRecordForm(forms.ModelForm):
         }
 
     type = forms.ChoiceField(
-        # TODO: choices has been temporarily hard-coded for user testing.
-        # This is to prevent the need for multiple migrations.
-        # I have temporarily commented out what the appropriate statement will eventually look like.
         label="Type",
-        # choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
-        choices=[
-            ("", "- Select -"),
-            ("A", "A"),
-            ("AAAA", "AAAA"),
-            ("CNAME", "CNAME"),
-            ("MX", "MX"),
-            ("PTR", "PTR"),
-            ("TXT", "TXT"),
-        ],
+        choices=[("", "- Select -")] + list(DNSRecordTypes.choices),
         required=True,
         widget=forms.Select(
             attrs={
@@ -930,12 +918,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         return name.lower() if name else name
 
     def clean_content(self):
-        """Lowercase content for CNAME records, where the content is itself a
-        hostname. Other record types (such as TXT) keep their original case."""
-        content = self.cleaned_data.get("content")
+        """Clean the content field based on the record type."""
         record_type = self.cleaned_data.get("type")
-        if content and record_type == DNSRecordTypes.CNAME:
-            return content.lower()
+        content = self.cleaned_data.get("content", "")
+        if record_type and DNSRecordTypes(record_type).cleaner:
+            content = DNSRecordTypes(record_type).cleaner(content)
         return content
 
     def _field_is_clean(self, field: str, value) -> bool:

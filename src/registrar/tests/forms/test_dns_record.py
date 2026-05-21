@@ -17,6 +17,8 @@ from registrar.validations import (
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     MX_CONTENT_SPACES_ERROR_MESSAGE,
+    TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE,
+    TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
 )
 from faker import Faker
 
@@ -213,6 +215,7 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         invalid_content_by_type = {
             "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
             "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
+            "TXT": ('"I should not include surrounding double quotes"', TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE),
             "CNAME": ("invalid..hostname", DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE),
             # TODO: Comment out and complete PTR test case when PTR validation is implemented
             # "PTR": "..."
@@ -239,6 +242,13 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
                     self.assertIn(DNSRecordTypes(record_type).error_message, form.errors["content"])
                 else:
                     self.assertIn("content", form.errors)
+
+    def test_txt_record_max_length(self):
+        content = "a" * 4080 + "bc"
+        data = self.valid_form_data_for_record_type("TXT", content)
+        form = self.make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE, form.errors["content"])
 
 
 class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):

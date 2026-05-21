@@ -285,6 +285,56 @@ class UserFixture:
         },
     ]
 
+    STANDARD_USERS = [
+        {
+            "username": "e2201529-6901-44ee-9698-0d08bfe7fb01",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_1",
+            "email": "feedback+1@get.gov",
+        },
+        {
+            "username": "74cca338-21d6-4135-910e-4cf9ce179ea6",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_2",
+            "email": "feedback+2@get.gov",
+        },
+        {
+            "username": "22acf459-79d5-43b3-a73e-a81b30cc693c",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_3",
+            "email": "feedback+3@get.gov",
+        },
+        {
+            "username": "f88283cc-0a1f-4c23-b1a8-0cd31411d852",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_4",
+            "email": "feedback+4@get.gov",
+        },
+        {
+            "username": "c2e02542-8cc4-4d95-b153-fb97706a72f1",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_5",
+            "email": "feedback+5@get.gov",
+        },
+        {
+            "username": "fbb06d6c-c58f-49c0-8845-21f0c77b6497",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_6",
+            "email": "feedback+6@get.gov",
+        },
+        {
+            "username": "9e820a1c-c570-465a-9fc3-979c65f3ab17",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_7",
+            "email": "feedback+7@get.gov",
+        },
+        {
+            "username": "b8194c1a-4dec-4b3e-9cc1-829f3dbf78a7",
+            "first_name": "FAKEY",
+            "last_name": "MCFAKERSON_8",
+            "email": "feedback+8@get.gov",
+        },
+    ]
     # Additional emails to add to the AllowedEmail whitelist.
     ADDITIONAL_ALLOWED_EMAILS: list[str] = []
 
@@ -383,13 +433,14 @@ class UserFixture:
         return existing_usernames, existing_user_ids
 
     @staticmethod
-    def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers):
+    def _prepare_new_users(users, existing_usernames, existing_user_ids, are_superusers, is_staff=True):
         new_users = []
         for i, user_data in enumerate(users):
-            username = user_data.get("username")
             id = user_data.get("id")
             first_name = user_data.get("first_name", "Bob")
             last_name = user_data.get("last_name", "Builder")
+            # If username is not provided, create one (must be unique)
+            username = user_data.get("username", first_name + last_name + str(id))
 
             default_email = f"placeholder.{first_name.lower()}.{last_name.lower()}+{i}@igorville.gov"
             email = user_data.get("email", default_email)
@@ -403,7 +454,7 @@ class UserFixture:
                     title=user_data.get("title", "team member"),
                     phone=user_data.get("phone", "2022222222"),
                     is_active=user_data.get("is_active", True),
-                    is_staff=True,
+                    is_staff=is_staff,
                     is_superuser=are_superusers,
                 )
                 new_users.append(user)
@@ -421,17 +472,20 @@ class UserFixture:
             logger.info("No new users to create.")
 
     @staticmethod
-    def _get_users_to_update(users):
+    def _get_users_to_update(users, is_staff=True):
         users_to_update = []
         for user in users:
             updated = False
-            if not user.title:
+            if not user.title and is_staff:
                 user.title = "Team member"
+                updated = True
+            if not user.title and not is_staff:
+                user.title = "User testing account"
                 updated = True
             if not user.phone:
                 user.phone = "2022222222"
                 updated = True
-            if not user.is_staff:
+            if not user.is_staff and is_staff:
                 user.is_staff = True
                 updated = True
             if updated:
@@ -451,12 +505,35 @@ class UserFixture:
             group.user_set.add(*users_not_in_group)
 
     @classmethod
+    def load_standard_users(cls):
+        """Loads standard (non-staff) test users without assigning an admin group."""
+        logger.info(f"Going to load {len(cls.STANDARD_USERS)} standard users")
+        try:
+            existing_usernames, existing_user_ids = cls._get_existing_users(cls.STANDARD_USERS)
+            new_users = cls._prepare_new_users(
+                cls.STANDARD_USERS,
+                existing_usernames,
+                existing_user_ids,
+                are_superusers=False,
+                is_staff=False,
+            )
+            cls._create_new_users(new_users)
+
+            created_or_existing = User.objects.filter(username__in=[u["username"] for u in cls.STANDARD_USERS])
+            users_to_update = cls._get_users_to_update(created_or_existing, is_staff=False)
+            cls._update_existing_users(users_to_update)
+            logger.info("Standard users loaded.")
+        except Exception as e:
+            logger.warning(e)
+
+    @classmethod
     def load(cls, delete_existing_allowed_emails=False):
         cls.load_users(cls.ADMINS, "full_access_group", are_superusers=True)
         cls.load_users(cls.STAFF, "cisa_analysts_group")
+        cls.load_standard_users()
 
-        # Combine ADMINS and STAFF lists
-        all_users = cls.ADMINS + cls.STAFF
+        # Combine ADMINS, STAFF, and STANDARD_USERS lists
+        all_users = cls.ADMINS + cls.STAFF + cls.STANDARD_USERS
         cls.load_allowed_emails(
             cls,
             all_users,
