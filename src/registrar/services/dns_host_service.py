@@ -413,6 +413,9 @@ class DnsHostService:
             logger.info("Domain already enrolled in DNS hosting")
             return
 
+        if settings.IS_PRODUCTION and domain.name != "igorville.gov":
+            raise Exception("Only igorville.gov can be enrolled in DNS Hosting right now")
+
         domain_name = domain.name
         try:
             with transaction.atomic():
