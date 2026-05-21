@@ -127,7 +127,9 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_invalid_dns_name_throws_error(self):
         expected_hyphen_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
-        expected_name_format_error = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT,)
+        expected_name_format_error = get_error_message_from_requirement(
+            DNS_NAME_FORMAT_REQUIREMENT,
+        )
         expected_name_spaces_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT)
 
         # Testing hyphen at start of label

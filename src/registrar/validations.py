@@ -222,13 +222,7 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
     _validate_dns_name_spaces(content, field_type=field_type)
     _validate_dns_hostname_structure(content, field_type=field_type)
     _validate_dns_name_characters(content, field_type=field_type)
-
-    # TODO: replace this with constants once we verify length validations work for diff cases
-    if field_type == "mail server" and len(content) > MX_CONTENT_MAX_LENGTH:
-        raise ValidationError("Name must be no more than 253 characters.")
-    else:
-        _validate_dns_name_length(content, content_type=field_type)
-
+    _validate_dns_name_length(content, content_type=field_type)
     _validate_dns_name_labels(content, content_type=field_type)
 
 
