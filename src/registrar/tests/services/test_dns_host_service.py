@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from httpx import HTTPStatusError
 import copy
 
-from registrar.config import settings
+from django.conf import settings
 from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models import (
@@ -399,7 +399,6 @@ class TestDnsHostService(TestCase):
 
     @override_settings(IS_LOCAL=False)
     def test_enroll_domain_success(self):
-        print(f"❤️ ❤️ ❤️ ❤️ is local: {settings.IS_LOCAL}")
         domain_name = "test.gov"
         domain = create_domain(**{"domain_name": domain_name})
 
@@ -417,8 +416,7 @@ class TestDnsHostService(TestCase):
 
     @override_settings(IS_PRODUCTION=True)
     def test_enroll_domain_gates_domain_enrollment_in_production(self):
-        print(f"❤️ is production: {settings.IS_PRODUCTION}")
-        allowed_domain = create_domain(**{"name": "igorville.gov"})
+        allowed_domain = create_domain(**{"domain_name": "igorville.gov"})
 
         mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
@@ -426,7 +424,7 @@ class TestDnsHostService(TestCase):
         self.service.dns_zone_setup = Mock()
         self.service.register_nameservers = Mock()
 
-        self.service.enroll_domain(allowed_domain)
+        self.service.enroll_domain(allowed_domain)  # No error means igorville.gov was allowed to enroll
 
         forbidden_domain = create_domain(**{"domain_name": "not-igorville.gov"})
         with self.assertRaises(Exception) as context:

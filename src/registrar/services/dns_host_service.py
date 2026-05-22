@@ -1,7 +1,7 @@
 import logging
 import random
 
-from registrar.config import settings
+from django.conf import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.utility.errors import APIError, RegistrySystemError
