@@ -1,9 +1,11 @@
+from multiprocessing import context
 from unittest.mock import patch, Mock, ANY
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.db import IntegrityError
 from httpx import HTTPStatusError
 import copy
 
+from registrar.config import settings
 from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models import (
@@ -395,6 +397,41 @@ class TestDnsHostService(TestCase):
         with self.assertRaises(HTTPStatusError):
             self.service.update_zone_dns_settings(x_zone_id)
 
+    @override_settings(IS_LOCAL=False)
+    def test_enroll_domain_success(self):
+        print(f"❤️ ❤️ ❤️ ❤️ is local: {settings.IS_LOCAL}")
+        domain_name = "test.gov"
+        domain = create_domain(**{"domain_name": domain_name})
+
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
+        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
+        self.service.dns_account_setup = Mock(return_value="12345")
+        self.service.dns_zone_setup = Mock()
+        self.service.register_nameservers = Mock()
+
+        self.service.enroll_domain(domain)
+
+        self.service.dns_account_setup.assert_called_once_with(domain_name)
+        self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
+        self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.example.gov", "ns2.example.gov"])
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_enroll_domain_gates_domain_enrollment_in_production(self):
+        print(f"❤️ is production: {settings.IS_PRODUCTION}")
+        allowed_domain = create_domain(**{"name": "igorville.gov"})
+
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
+        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
+        self.service.dns_account_setup = Mock(return_value="12345")
+        self.service.dns_zone_setup = Mock()
+        self.service.register_nameservers = Mock()
+
+        self.service.enroll_domain(allowed_domain)
+
+        forbidden_domain = create_domain(**{"domain_name": "not-igorville.gov"})
+        with self.assertRaises(Exception) as context:
+            self.service.enroll_domain(forbidden_domain)
+        self.assertIn("Only igorville.gov can be enrolled in DNS Hosting right now", str(context.exception))
 
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
