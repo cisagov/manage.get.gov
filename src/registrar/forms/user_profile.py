@@ -53,12 +53,12 @@ class UserProfileForm(forms.ModelForm):
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter your last name / family name.",
+            "required": "Enter your first name / given name.",
             "max_length": "First name / given name must be no more than 150 characters.",
         }
         self.fields["last_name"].error_messages = {
             "required": "Enter your last name / family name.",
-            "max_length": "First name / given name must be no more than 150 characters.",
+            "max_length": "Last name / family name must be no more than 150 characters.",
         }
         self.fields["title"].error_messages = {"required": "Enter your title or role in your organization."}
         self.fields["email"].error_messages = {
