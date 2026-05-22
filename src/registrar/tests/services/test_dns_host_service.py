@@ -431,6 +431,7 @@ class TestDnsHostService(TestCase):
             self.service.enroll_domain(forbidden_domain)
         self.assertIn("Only igorville.gov can be enrolled in DNS Hosting right now", str(context.exception))
 
+
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
         self.vendor = DnsVendor.objects.get(name=DnsVendor.CF)
