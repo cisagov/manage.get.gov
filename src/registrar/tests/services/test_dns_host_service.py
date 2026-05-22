@@ -1,11 +1,9 @@
-from multiprocessing import context
 from unittest.mock import patch, Mock, ANY
 from django.test import TestCase, override_settings
 from django.db import IntegrityError
 from httpx import HTTPStatusError
 import copy
 
-from django.conf import settings
 from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models import (
