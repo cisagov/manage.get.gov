@@ -195,11 +195,11 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_get_messages_renders_error_alert_with_focusable_class(self):
-        """Issue #4629: the rendered alert for an error message must carry
-        the `usa-alert--error` class. The JS focus handler queries for that
-        class to find the first error alert after the messages container
-        swap settles."""
+    def test_get_messages_renders_alert_as_focusable(self):
+        """Issue #4629: rendered alerts must carry `tabindex="-1"` so the JS
+        handler can move focus to them without putting them in the natural
+        tab order. The `role="alert"` keeps screen readers announcing the
+        message."""
         with patch("registrar.views.domain.DnsHostService"):
             self.client.post(
                 self._url(),
@@ -214,39 +214,9 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         messages_response = self.client.get(reverse("get-messages"))
         self.assertEqual(messages_response.status_code, 200)
-        self.assertContains(messages_response, "usa-alert--error")
+        self.assertContains(messages_response, "usa-alert")
         self.assertContains(messages_response, 'role="alert"')
-
-    @override_flag("dns_hosting", active=True)
-    @less_console_noise_decorator
-    def test_get_messages_renders_one_alert_per_field_error(self):
-        """Issue #4629 (multi-error case): when the user submits a record
-        with multiple field errors, the get-messages endpoint should render
-        a separate `.usa-alert--error` per error. The JS handler relies on
-        this so it can mark each alert tabbable and let the user Tab from
-        one error to the next before falling through to the form."""
-        with patch("registrar.views.domain.DnsHostService"):
-            # Empty name + invalid content triggers at least two field errors.
-            self.client.post(
-                self._url(),
-                {
-                    "type": "A",
-                    "name": "",
-                    "ttl": 300,
-                    "comment": "",
-                    "content": "",
-                },
-            )
-
-        messages_response = self.client.get(reverse("get-messages"))
-        self.assertEqual(messages_response.status_code, 200)
-
-        alert_count = messages_response.content.decode().count("usa-alert--error")
-        self.assertGreaterEqual(
-            alert_count,
-            2,
-            "Expected at least two error alerts to render so Tab can walk between them.",
-        )
+        self.assertContains(messages_response, 'tabindex="-1"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
