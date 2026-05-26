@@ -41,7 +41,8 @@ from registrar.utility.email_invitations import (
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
 )
-from registrar.utility.errors import InvitationError, MissingEmailError
+from registrar.utility.errors import MissingEmailError
+from registrar.utility.errors import InvitationError
 from registrar.utility.enums import DefaultUserValues
 from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin

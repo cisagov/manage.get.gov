@@ -416,9 +416,9 @@ class User(AbstractUser):
                     accept_portfolio_invitation(self, portfolio)
                 except Exception:
                     # Invitation retrieval should not block the user from logging in.
-                    logger.warn("Failed to retrieve portfolio invitation for %s", portfolio, exc_info=True)
+                    logger.warning("Failed to retrieve portfolio invitation for %s", portfolio, exc_info=True)
             else:
-                logger.warn("User already has a portfolio, did not retrieve invitation for %s", portfolio)
+                logger.warning("User already has a portfolio, did not retrieve invitation for %s", portfolio)
 
     def on_each_login(self):
         """Callback each time the user is authenticated.
@@ -494,7 +494,6 @@ class User(AbstractUser):
     def get_active_requests_count_in_portfolio(self, request):
         """Return count of active requests for the portfolio associated with the request."""
         # Get the portfolio from the session using the existing method
-
         portfolio = request.session.get("portfolio")
 
         if not portfolio:
