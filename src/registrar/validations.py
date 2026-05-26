@@ -202,7 +202,7 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
 
     Normalizes to lowercase and validates:
     - No spaces
-    - Valid characters only (letters, numbers, hyphens, periods, @ for apex)
+    - No invalid characters (exception made for single '@' for root): @ ( ) : ;
     - No consecutive dots
     - No leading dots (but trailing dots accepted)
     - No hyphens at start/end of labels // TODO: Check if this still applies
@@ -233,7 +233,7 @@ def validate_dns_name(name: str) -> None:
 
     Normalizes to lowercase and validates:
     - No spaces
-    - Valid characters only (letters, numbers, hyphens, periods, @ for apex)
+    - No invalid characters (exception made for single '@' for root): @ ( ) : ;
     - No consecutive dots
     - No leading/trailing dots
     - No hyphens at start/end of labels
