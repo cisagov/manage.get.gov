@@ -154,6 +154,14 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])
 
+    def test_mock_delete_dns_record_response(self):
+        # Create initial DNS record
+        zone_id = self.mock_api_service.fake_zone_id
+        record_id = self.mock_api_service.fake_record_id
+        resp = self.service.delete_dns_record(zone_id, record_id)
+        result = resp["result"]
+
+        self.assertEqual(result["id"], record_id)
 
 class TestMockCloudflareServiceEndpointsWithDB(TestCase):
     """
@@ -269,3 +277,4 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+        
