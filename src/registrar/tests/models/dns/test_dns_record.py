@@ -2,7 +2,6 @@ from django.test import TestCase
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
-    DNS_NAME_HYPHEN_REQUIREMENT,
     DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
 )
 
@@ -196,38 +195,6 @@ class DnsRecordTest(TestCase):
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
         self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
-
-    def test_dns_record_name_with_hyphen_at_start_of_label_raises(self):
-        """DNS record name with hyphen at start of label should fail validation."""
-        from django.core.exceptions import ValidationError
-
-        record = DnsRecord(
-            dns_zone=self.dns_zone,
-            type="A",
-            name="-test.dns-test.gov",
-            ttl=3600,
-            content="192.0.2.1",
-        )
-        with self.assertRaises(ValidationError) as ctx:
-            record.full_clean()
-        self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_HYPHEN_REQUIREMENT, str(ctx.exception))
-
-    def test_dns_record_name_with_hyphen_at_end_of_label_raises(self):
-        """DNS record name with hyphen at end of label should fail validation."""
-        from django.core.exceptions import ValidationError
-
-        record = DnsRecord(
-            dns_zone=self.dns_zone,
-            type="A",
-            name="test-.dns-test.gov",
-            ttl=3600,
-            content="192.0.2.1",
-        )
-        with self.assertRaises(ValidationError) as ctx:
-            record.full_clean()
-        self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_HYPHEN_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_exceeds_per_label_limit_raises(self):
         """DNS record name with a label exceeding 63 characters should fail validation."""

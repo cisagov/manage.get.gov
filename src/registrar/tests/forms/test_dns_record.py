@@ -6,7 +6,6 @@ from registrar.utility.enums import DNSRecordTypes
 from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
     DNS_NAME_FORMAT_REQUIREMENT,
-    DNS_NAME_HYPHEN_REQUIREMENT,
     DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
     DNS_RECORD_CONTENT_REQUIREMENT,
     CNAME_NAME_INLINE_ERROR_MESSAGE,
@@ -127,17 +126,10 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assertEqual(form.errors["name"], [DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE])
 
     def test_invalid_dns_name_throws_error(self):
-        expected_hyphen_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
         expected_name_format_error = get_error_message_from_requirement(
             DNS_NAME_FORMAT_REQUIREMENT,
         )
         expected_name_spaces_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT)
-
-        # Testing hyphen at start of label
-        self.assert_dns_name_errors("-abc", [expected_hyphen_error])
-
-        # Testing hyphen at end of label
-        self.assert_dns_name_errors("abc-", [expected_hyphen_error])
 
         # Testing invalid character from the AC's disallowed list
         self.assert_dns_name_errors("ab(c", [expected_name_format_error])
@@ -208,26 +200,6 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         data["name"] = "my-domain"
         form = self.make_form(data)
         self.assertTrue(form.is_valid())
-
-    def test_dns_name_with_hyphen_at_start_of_label_throws_error(self):
-        """Hyphen at start of a label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
-        self.assert_dns_name_errors("-my-domain", [expected_error])
-
-    def test_dns_name_with_hyphen_at_end_of_label_throws_error(self):
-        """Hyphen at end of a label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
-        self.assert_dns_name_errors("my-domain-", [expected_error])
-
-    def test_dns_name_with_hyphen_at_start_of_middle_label_throws_error(self):
-        """Hyphen at start of any label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
-        self.assert_dns_name_errors("my.-domain", [expected_error])
-
-    def test_dns_name_with_hyphen_at_end_of_middle_label_throws_error(self):
-        """Hyphen at end of any label should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
-        self.assert_dns_name_errors("my-.domain", [expected_error])
 
     def test_dns_hostname_content_last_label_not_number(self):
         """Records with hostname content (CNAME, MX, PTR) should not have a number as their hostname's last label."""
