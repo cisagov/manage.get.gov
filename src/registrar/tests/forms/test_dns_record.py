@@ -8,6 +8,7 @@ from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,
     DNS_NAME_HYPHEN_REQUIREMENT,
     DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
+    DNS_RECORD_CONTENT_REQUIREMENT,
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
@@ -373,8 +374,9 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
     def test_mx_record_with_blank_content_throws_error(self):
         form = self.make_mx_form(content="")
         self.assertFalse(form.is_valid())
+        expected_error = get_error_message_from_requirement(DNS_RECORD_CONTENT_REQUIREMENT)
         self.assertIn("content", form.errors)
-        self.assertIn(DNSRecordTypes.MX.error_message, form.errors["content"])
+        self.assertIn(expected_error, form.errors["content"])
 
     # --- Name uniqueness ---
 
