@@ -20,7 +20,8 @@ from registrar.decorators import (
 from registrar.forms import domain_request_wizard as forms
 from registrar.forms import feb
 from registrar.forms.utility.wizard_form_helper import request_step_list
-from registrar.models import DomainRequest
+from registrar.models import DomainRequest, Portfolio
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.models.contact import Contact
 from registrar.models.user import User
 from registrar.views.utility import StepsHelper
@@ -183,7 +184,7 @@ class DomainRequestWizard(TemplateView):
         return PortfolioDomainRequestStep if self.is_portfolio else Step
 
     def requires_feb_questions(self) -> bool:
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio:
             return self.domain_request.is_feb()
         return False
@@ -225,12 +226,13 @@ class DomainRequestWizard(TemplateView):
 
         # If a user is creating a request, we assume that perms are handled upstream
         if self.request.user.is_org_user(self.request):
-            portfolio = self.request.session.get("portfolio")
+            portfolio_id = self.request.session.get("portfolio")
             self._domain_request = DomainRequest.objects.create(
                 requester=self.request.user,
-                portfolio=portfolio,
+                portfolio_id=portfolio_id,
             )
-            if portfolio and not self._domain_request.generic_org_type:
+            if portfolio_id and not self._domain_request.generic_org_type:
+                portfolio = Portfolio.objects.get(pk=portfolio_id)
                 self._domain_request.generic_org_type = portfolio.organization_type
                 self._domain_request.save()
         else:
@@ -1303,7 +1305,7 @@ class DomainRequestStatusViewOnly(DetailView):
         context["purpose_label"] = DomainRequest.FEBPurposeChoices.get_purpose_label(domain_request.feb_purpose_choice)
         context["view_only_mode"] = True
         context["is_portfolio"] = is_portfolio
-        context["portfolio"] = self.request.session.get("portfolio")
+        context["portfolio"] = get_portfolio_from_session(self.request.session)
 
         return context
 

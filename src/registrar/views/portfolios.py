@@ -42,6 +42,7 @@ from registrar.utility.email_invitations import (
     send_portfolio_update_emails_to_portfolio_admins,
 )
 from registrar.utility.errors import MissingEmailError
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.utility.enums import DefaultUserValues
 from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
@@ -932,7 +933,7 @@ class PortfolioNoDomainsView(View):
         """Add additional context data to the template."""
         # We can override the base class. This view only needs this item.
         context = {}
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio:
             admin_ids = UserPortfolioPermission.objects.filter(
                 portfolio=portfolio,
@@ -962,7 +963,7 @@ class PortfolioNoDomainRequestsView(View):
         """Add additional context data to the template."""
         # We can override the base class. This view only needs this item.
         context = {}
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio:
             admin_ids = UserPortfolioPermission.objects.filter(
                 portfolio=portfolio,
@@ -989,7 +990,7 @@ class PortfolioOrganizationView(DetailView):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
         context["organization_type"] = portfolio.get_organization_type_display()
@@ -999,7 +1000,7 @@ class PortfolioOrganizationView(DetailView):
 
     def get_object(self, queryset=None):
         """Get the portfolio object based on the session."""
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio
@@ -1024,7 +1025,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
     def get_context_data(self, **kwargs):
         """Add additional context data to the template."""
         context = super().get_context_data(**kwargs)
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         context["has_edit_portfolio_permission"] = self.request.user.has_edit_portfolio_permission(portfolio)
         context["portfolio_admins"] = portfolio.portfolio_admin_users
         context["organization_type"] = portfolio.get_organization_type_display()
@@ -1034,7 +1035,7 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
 
     def get_object(self, queryset=None):
         """Get the portfolio object based on the session."""
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio
@@ -1057,9 +1058,10 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
         form = self.get_form()
         if form.is_valid():
             user = request.user
+            portfolio = get_portfolio_from_session(self.request.session)
             try:
                 if not send_portfolio_update_emails_to_portfolio_admins(
-                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Organization"
+                    editor=user, portfolio=portfolio, updated_page="Organization"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
             except Exception as e:
@@ -1107,7 +1109,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
 
     def get_object(self, queryset=None):
         """Get the portfolio object based on the session."""
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio is None:
             raise Http404("No organization found for this user")
         return portfolio
@@ -1130,9 +1132,10 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         form = self.get_form()
         if form.is_valid():
             user = request.user
+            portfolio = get_portfolio_from_session(self.request.session)
             try:
                 if not send_portfolio_update_emails_to_portfolio_admins(
-                    editor=user, portfolio=self.request.session.get("portfolio"), updated_page="Senior Official"
+                    editor=user, portfolio=portfolio, updated_page="Senior Official"
                 ):
                     messages.warning(self.request, "Could not send email notification to all organization admins.")
             except Exception as e:
@@ -1197,7 +1200,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         # portfolio not submitted with form, so override the value
         data = request.POST.copy()
         if not data.get("portfolio"):
-            data["portfolio"] = self.request.session.get("portfolio").id
+            data["portfolio"] = self.request.session.get("portfolio")
         # Pass the modified data to the form
         form = portfolioForms.PortfolioNewMemberForm(data)
 
@@ -1394,7 +1397,7 @@ class PortfolioOrganizationSelectView(DetailView, FormMixin):
             return JsonResponse({"error": "User does not have permissions to access this portfolio"}, status=403)
 
         portfolio = get_object_or_404(Portfolio, pk=portfolio.id)
-        request.session["portfolio"] = portfolio
+        request.session["portfolio"] = portfolio.id if portfolio else None
         logger.info(f"Successfully set active portfolio to {portfolio}")
         return self._handle_success_response(request, portfolio)
 
