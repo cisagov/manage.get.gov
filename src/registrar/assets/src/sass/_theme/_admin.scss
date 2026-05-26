@@ -50,9 +50,10 @@ html[data-theme="light"] {
     --darkened-bg: #{$dhs-gray-15}; /* A bit darker than --body-bg */
     --selected-bg: var(--border-color); /* E.g. selected table cells */
     --selected-row: var(--message-warning-bg);
-
-    // --button-fg: #fff;
-    // --button-bg: var(--secondary);
+    
+    --header-bg: #{$theme-color-primary-darkest};
+    --button-fg: #fff;
+    --button-bg:  #{$theme-color-primary};
     --button-hover-bg: #{$theme-color-primary-darker};
     --default-button-bg: #{$theme-color-primary-dark};
     --default-button-hover-bg: #{$theme-color-primary-darkest};
@@ -191,8 +192,11 @@ html[data-theme="dark"] {
 .dashboard h1, .dashboard h2, .dashboard h3,
 .module h2 {
     font-weight: font-weight('bold');
+   
 }
-
+.module h2, .module caption, .inline-group h2 {
+    background:var(--primary)
+}
 div#content > h2 {
     font-size: 1.3rem;
 }
@@ -420,7 +424,8 @@ input.admin-confirm-button {
 // This block resolves some of the issues we're seeing on buttons due to css
 // conflicts between DJ and USWDS
 a.button,
-.usa-button--dja {
+.usa-button--dja,
+.submit-row input[type=submit]:not([class]) {
     display: inline-block;
     padding: 10px 15px;
     font-size: 14px;
@@ -439,13 +444,15 @@ a.button,
 .usa-button--dja.usa-button--unstyled {
     color: var(--link-fg);
 }
-.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary) {
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary),
+submit-row input[type=submit]:not([class]) {
     background: var(--button-bg);
+    color: var(--button-fg);
 }
 .usa-button--dja span {
     font-size: 14px;
 }
-.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover {
+.usa-button--dja:not(.usa-button--unstyled, .usa-button--outline, .usa-modal__close, .usa-button--secondary):hover, .submit-row input[type=submit]:not([class]):hover {
     background: var(--button-hover-bg);
 }
 a.button:active, a.button:focus {
@@ -745,6 +752,9 @@ address.dja-address-contact-list {
             color: var(--link-fg);
         }
     }
+}
+.collapse--dgfieldset.collapsed .form-row {
+    display: none;
 }
 .collapse--dgfieldset.collapsed .collapse-toggle--dgfieldset  {
     display: inline-block!important;
