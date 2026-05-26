@@ -346,7 +346,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
     def test_mx_record_with_blank_content_throws_error(self):
         form = self.make_mx_form(content="")
         self.assertFalse(form.is_valid())
-        expected_error = get_error_message_from_requirement(DNS_RECORD_CONTENT_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_RECORD_CONTENT_REQUIREMENT, "mail server")
         self.assertIn("content", form.errors)
         self.assertIn(expected_error, form.errors["content"])
 
