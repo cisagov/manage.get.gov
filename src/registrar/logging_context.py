@@ -1,5 +1,5 @@
 """This module provides a simple logging context mechanism using Python's contextvars.
-It allows you to set and retrieve user-specific information that can be included in log
+It allows you to set and retrieve user-specific information that can be included
 without having to pass this information explicitly through function parameters."""
 
 from contextvars import ContextVar
