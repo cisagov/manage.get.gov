@@ -53,7 +53,7 @@ DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
 DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
 DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
 DNS_NAME_HYPHEN_REQUIREMENT = "without using hyphens at the start or end of a label"
-DNS_RECORD_CONTENT_REQUIREMENT = "for this record."
+DNS_RECORD_CONTENT_REQUIREMENT = "for this record"
 DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
 
 # Constants for error message validating fqdn length and label length
