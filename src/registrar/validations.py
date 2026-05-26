@@ -205,7 +205,6 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
     - No invalid characters (exception made for single '@' for root): @ ( ) : ;
     - No consecutive dots
     - No leading dots (but trailing dots accepted)
-    - No hyphens at start/end of labels // TODO: Check if this still applies
     - Per-label max 63 characters
     - Total max 253 characters
     """
