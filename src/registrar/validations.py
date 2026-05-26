@@ -108,7 +108,7 @@ def get_error_message_from_requirement(requirement: str, content_field=None) -> 
 
 
 def get_fqdn_error_message(content_type=None) -> str:
-    """Returns fully qualified domain name error message by field that is validated."""
+    """Returns fully qualified domain name (fqdn) error message by field that is validated."""
     # If a field type is not given, default to referring to fqdn as name
     if not content_type:
         return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full name {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
