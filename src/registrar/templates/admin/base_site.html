@@ -53,7 +53,7 @@
   {% endif %}
 
   {# Djando update: this div will change to header #}
-  <div id="header">
+  <div id="header"  style="--header-bg: var(--secondary);">
     <div id="branding">
       {% block branding %}
         <h1 id="site-name"><a href="{% url 'admin:index' %}">.gov admin</a></h1>

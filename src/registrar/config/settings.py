@@ -281,7 +281,8 @@ TEMPLATES = [
 ]
 
 # Stop using table-based default form renderer which is deprecated
-FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# Default is already DjangoTemplates
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
@@ -455,7 +456,8 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
-USE_L10N = True
+# USE_L10N = True
+# COMMENT: Can be removed becuase it's enabled by default now
 
 # make datetimes timezone-aware by default
 USE_TZ = True
@@ -754,7 +756,6 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # See above for the default value if the env variable is missing
 OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
 
-
 OIDC_PROVIDERS = {
     "identity sandbox": {
         "srv_discovery_url": "https://idp.int.identitysandbox.gov",
@@ -978,7 +979,9 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"
+# JSONSerializer is also default
+# FYI everyone will get logged out and will have to re login again
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
