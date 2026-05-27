@@ -1,0 +1,1 @@
+Domain {{ domain.name }} deletion failed

@@ -2678,7 +2678,9 @@ class Domain(TimeStampedModel, DomainHelper):
                 f"Domain {self.name} has {len(self.nameservers)} nameservers "
                 f"but is in state {self.state}. Aborting deletion."
             )
-            return
+            raise ActionNotAllowed(
+                f"Domain {self.name} has active nameservers. Cannot delete."
+            )
         
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()

@@ -1,10 +1,12 @@
 from datetime import timedelta
 from django.core.management import BaseCommand
+from django.conf import settings
 from registrar.models import Domain, UserDomainRole
 import logging
 import argparse
 from django.utils import timezone
 from registrar.utility.email import EmailSendingError, send_templated_email
+from registrar.utility.errors import ActionNotAllowed
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
@@ -83,9 +85,24 @@ class Command(BaseCommand):
         deleted_domains = []
         for domain in domains:
             try:
-                domain.deleteInEpp()
-                domain.save()
+                domain.delete_with_no_dns()
                 deleted_domains.append(domain)
+            except ActionNotAllowed as e:
+                logger.error(f"Failed to delete {domain.name}: {e}")
+                # alert_email = settings.SLACK_DELETION_ALERT_EMAIL_PROD
+                # if not settings.IS_PRODUCTION:
+                #     alert_email = settings.SLACK_DELETION_ALERT_EMAIL_NONPROD
+                try:
+
+                    send_templated_email(
+                        template_name="emails/domain_deletion_failed_body.txt",
+                        subject_template_name="emails/domain_deletion_failed_subject.txt",
+                        # to_addresses=[alert_email],
+                        to_addresses=["abraham.alam@ecstech.com"]
+                        context={"domain": domain.name},
+                    )
+                except Exception as email_err:
+                    logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
             except Exception:
                 logger.error(f"Failed to delete {domain.name}")
 

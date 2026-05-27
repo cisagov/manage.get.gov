@@ -1,0 +1,3 @@
+{% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
+
+Attempted to delete domain {domain} and there were already hosts… did not delete.

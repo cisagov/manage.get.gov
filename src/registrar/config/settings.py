@@ -335,6 +335,10 @@ BOTO_CONFIG = Config(retries={"mode": AWS_RETRY_MODE, "max_attempts": AWS_MAX_AT
 # also used as a default to and bcc email
 DEFAULT_FROM_EMAIL = "help@get.gov <help@get.gov>"
 
+# Slack email addresses, stored as Github secrets
+SLACK_DELETION_ALERT_EMAIL_PROD = env("SLACK_DELETION_ALERT_EMAIL_PROD", default="")
+SLACK_DELETION_ALERT_EMAIL_NONPROD = env("SLACK_DELETION_ALERT_EMAIL_NONPROD", default="")
+
 # OMB email address for FEB withdrawal notifications.
 OMB_EMAIL = "ombdotgov@omb.eop.gov <ombdotgov@omb.eop.gov>"
 
