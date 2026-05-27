@@ -277,4 +277,3 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
-        
