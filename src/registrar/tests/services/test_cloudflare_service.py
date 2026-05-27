@@ -42,6 +42,7 @@ class TestCloudflareService(SimpleTestCase):
         mock_client.post = Mock()
         mock_client.get = Mock()
         mock_client.patch = Mock()
+        mock_client.delete = Mock()
 
         # Set class variable 'headers' to avoid double mocking
         CloudflareService.headers = {
@@ -240,7 +241,7 @@ class TestCloudflareService(SimpleTestCase):
         self.service.create_dns_record(zone_id, created_record_data)
 
         mock_update_response = self._setUpSuccessMockResponse(updated_return_value)
-        self.service.client.patch.return_value = mock_update_response
+        self.service.client.patch.A = mock_update_response
         resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         self.assertEqual(resp["result"]["name"], "updated-record.gov")
         self.assertEqual(resp["result"]["content"], "198.62.211.5")
@@ -305,7 +306,7 @@ class TestCloudflareService(SimpleTestCase):
         self.assertTrue(resp["success"])
         self.assertEqual(resp["result"]["id"], record_id)
         self.assertEqual(resp["errors"], [])
-
+ 
     def test_get_page_accounts_success(self):
         """Test successful get_page_accounts call"""
         return_value = {
