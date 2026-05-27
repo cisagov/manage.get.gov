@@ -1912,7 +1912,7 @@ class Domain(TimeStampedModel, DomainHelper):
             self._invalidate_cache()
 
     def is_dns_needed(self):
-        """ Double check that the nameservers we set are in fact on the registry"""
+        """Double check that the nameservers we set are in fact on the registry"""
         self._invalidate_cache()
         nameserverList = self.nameservers
         return len(nameserverList) < 2
@@ -1920,12 +1920,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def dns_not_needed(self):
         return not self.is_dns_needed()
 
-    @transition(
-        field="state",
-        source=[State.DNS_NEEDED, State.READY],
-        target=State.READY,
-        conditions=[dns_not_needed]
-    )
+    @transition(field="state", source=[State.DNS_NEEDED, State.READY], target=State.READY, conditions=[dns_not_needed])
     def ready(self):
         """Transition to the ready state
         domain should have nameservers and all contacts
@@ -1939,12 +1934,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if self.first_ready is None:
             self.first_ready = timezone.now()
 
-    @transition(
-        field="state",
-        source=[State.READY],
-        target=State.DNS_NEEDED,
-        conditions=[is_dns_needed]
-    )
+    @transition(field="state", source=[State.READY], target=State.DNS_NEEDED, conditions=[is_dns_needed])
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
         domain should NOT have nameservers but
@@ -2678,10 +2668,8 @@ class Domain(TimeStampedModel, DomainHelper):
                 f"Domain {self.name} has {len(self.nameservers)} nameservers "
                 f"but is in state {self.state}. Aborting deletion."
             )
-            raise ActionNotAllowed(
-                f"Domain {self.name} has active nameservers. Cannot delete."
-            )
-        
+            raise ActionNotAllowed(f"Domain {self.name} has active nameservers. Cannot delete.")
+
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()
         # Delete domain
