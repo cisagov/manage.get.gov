@@ -164,7 +164,6 @@ class DNSRecordTypes(TextChoices):
         return {
             DNSRecordTypes.A: "Enter a valid IPv4 address using numbers and periods.",
             DNSRecordTypes.AAAA: "Enter a valid IPv6 address using numbers and colons.",
-            DNSRecordTypes.MX: "Enter a valid mail server hostname.",
         }.get(self, "")
 
 

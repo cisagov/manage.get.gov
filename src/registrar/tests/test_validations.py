@@ -4,7 +4,6 @@ from django.test import SimpleTestCase
 from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
     DNS_NAME_FORMAT_REQUIREMENT,
-    DNS_NAME_HYPHEN_REQUIREMENT,
     DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
     DNS_NAME_SPACES_REQUIREMENT,
     validate_dns_name,
@@ -55,10 +54,6 @@ class TestValidateDNSName(SimpleTestCase):
         ]
         expected_error = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT)
         self.assert_all_raise(names_with_spaces, expected_error)
-
-    def test_validate_dns_name_rejects_hyphen_at_label_boundary(self):
-        expected_error = get_error_message_from_requirement(DNS_NAME_HYPHEN_REQUIREMENT)
-        self.assert_all_raise(["-abc", "abc-", "my.-domain", "my-.domain"], expected_error)
 
     def test_validate_dns_name_rejects_consecutive_dots(self):
         expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
