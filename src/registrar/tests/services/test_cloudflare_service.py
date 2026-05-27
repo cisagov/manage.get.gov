@@ -299,7 +299,7 @@ class TestCloudflareService(SimpleTestCase):
             "messages": [],
         }
         mock_response = self._setUpSuccessMockResponse(return_value)
-        self.service.client.patch.return_value = mock_response
+        self.service.client.delete.return_value = mock_response
 
         resp = self.service.delete_dns_record(zone_id, record_id)
 
