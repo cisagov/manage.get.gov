@@ -1,6 +1,7 @@
 from datetime import timedelta
 from django.core.management import BaseCommand
-from django.conf import settings
+
+# from django.conf import settings
 from registrar.models import Domain, UserDomainRole
 import logging
 import argparse
@@ -98,7 +99,7 @@ class Command(BaseCommand):
                         template_name="emails/domain_deletion_failed_body.txt",
                         subject_template_name="emails/domain_deletion_failed_subject.txt",
                         # to_addresses=[alert_email],
-                        to_addresses=["abraham.alam@ecstech.com"]
+                        to_addresses=["abraham.alam@ecstech.com"],
                         context={"domain": domain.name},
                     )
                 except Exception as email_err:
