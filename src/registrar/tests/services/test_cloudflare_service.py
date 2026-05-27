@@ -306,7 +306,7 @@ class TestCloudflareService(SimpleTestCase):
         self.assertTrue(resp["success"])
         self.assertEqual(resp["result"]["id"], record_id)
         self.assertEqual(resp["errors"], [])
- 
+
     def test_get_page_accounts_success(self):
         """Test successful get_page_accounts call"""
         return_value = {
