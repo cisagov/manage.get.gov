@@ -3598,7 +3598,36 @@ class TestDomainDeletion(TestWithUser):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
+    
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_with_active_nameservers_failure(self):
+        """Deletion should be blocked when the domain has active nameservers"""
+        domain = Domain.objects.create(
+            name="blocked.gov",
+            state=Domain.State.ON_HOLD,
+            expiration_date=timezone.now().date() + timedelta(days=65)
+        )
 
+        Host.objects.create(name="ns1.blocked.gov", domain=domain)
+        Host.objects.create(name="ns2.blocked.gov", domain=domain)
+
+        UserDomainRole.objects.get_or_create(
+            user=self.user,
+            domain=domain,
+            role=UserDomainRole.Roles.MANAGER
+        )
+
+        self.client.force_login(self.user)
+
+        # Attempt deletion via POST
+        response = self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"domain_pk": domain.id},
+            follow=True,
+        )
+
+        # Validate that the domain exists despite trying to delete. 
+        self.assertTrue(Domain.objects.filter(id=domain.id).exists())
 
 class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
     def setUp(self):
