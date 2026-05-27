@@ -127,6 +127,99 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
+    def test_messages_container_wired_for_alert_focus(self):
+        """Issue #4629: the alert focus listener relies on htmx swapping
+        the `#messages-container` div in response to the `messagesRefresh`
+        event. Keep that wiring on the page so screen-reader focus can move
+        to the first error alert after an invalid submission."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="messages-container"')
+        self.assertContains(response, 'hx-trigger="messagesRefresh from:body"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_add_post_triggers_messages_refresh(self):
+        """Issue #4629: an invalid DNS record submission must return the
+        `messagesRefresh` HX-TRIGGER so the alert container reloads. The
+        JS focus handler listens for the resulting `htmx:afterSettle` on
+        the messages container, so without this trigger focus would never
+        move to the alert."""
+        with patch("registrar.views.domain.DnsHostService"):
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_edit_post_triggers_messages_refresh(self):
+        """Issue #4629: invalid edit submissions must also fire
+        `messagesRefresh` so the alert at the top of the page reloads and
+        the JS focus handler can pull focus to it."""
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=DNSRecordTypes.A,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_messages_renders_alert_as_focusable(self):
+        """Issue #4629: rendered alerts must carry `tabindex="-1"` so the JS
+        handler can move focus to them without putting them in the natural
+        tab order. The `role="alert"` keeps screen readers announcing the
+        message."""
+        with patch("registrar.views.domain.DnsHostService"):
+            self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        messages_response = self.client.get(reverse("get-messages"))
+        self.assertEqual(messages_response.status_code, 200)
+        self.assertContains(messages_response, "usa-alert")
+        self.assertContains(messages_response, 'role="alert"')
+        self.assertContains(messages_response, 'tabindex="-1"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
     def test_post_valid_forms_create_dns_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
