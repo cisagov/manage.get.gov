@@ -40,7 +40,7 @@ from registrar.validations import (
     DNS_RECORD_CONTENT_REQUIREMENT,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
-    get_content_type_by_record_type,
+    get_content_type_label_by_record_type,
     get_fqdn_error_message,
 )
 
@@ -941,7 +941,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             # Use the record's error_message if available (A, AAAA, and MX)
             error_msg = record.error_message
             if not error_msg:
-                content_type = get_content_type_by_record_type(record_type)
+                content_type = get_content_type_label_by_record_type(record_type)
                 # Specify the expected record content, otherwise use a generic content required message
                 error_msg = (
                     get_error_message_from_requirement(DNS_RECORD_CONTENT_REQUIREMENT, content_type)

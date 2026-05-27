@@ -74,7 +74,7 @@ TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
 
 
-def get_content_type_by_record_type(record_type):
+def get_content_type_label_by_record_type(record_type):
     from registrar.utility.enums import DNSRecordTypes
 
     record_type_to_content_dict = {
@@ -106,16 +106,16 @@ def get_error_message_from_requirement(requirement: str, content_field=None) -> 
     return f"Enter the {content_field} {requirement}."
 
 
-def get_fqdn_error_message(content_type=None) -> str:
+def get_fqdn_error_message(content_type_label=None) -> str:
     """Returns fully qualified domain name (fqdn) error message by field that is validated."""
     # If a field type is not given, default to referring to fqdn as name
-    if not content_type:
+    if not content_type_label:
         return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full name {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
     # Custom message for mail server records
-    if content_type == "mail server":
+    if content_type_label == "mail server":
         return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Mail server {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
     else:
-        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full {content_type} {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full {content_type_label} {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
 
 
 def _validate_dns_name_spaces(name: str, field_type="name") -> None:
@@ -156,10 +156,10 @@ def _validate_dns_name_characters(name: str, field_type="name") -> None:
         raise ValidationError(error_message)
 
 
-def _validate_dns_name_length(name: str, content_type=None) -> None:
+def _validate_dns_name_length(name: str, content_type_label=None) -> None:
     """Enforce the total DNS name length limit."""
     if len(name) > DNS_NAME_MAX_LENGTH:
-        error_message = get_fqdn_error_message(content_type)
+        error_message = get_fqdn_error_message(content_type_label)
         raise ValidationError(error_message)
 
 
@@ -168,17 +168,17 @@ def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
     return [label for label in name.split(".") if label != "*"]
 
 
-def _validate_dns_name_label_length(label: str, content_type=None) -> None:
+def _validate_dns_name_label_length(label: str, content_type_label=None) -> None:
     """Enforce the per-label DNS length limit."""
     if len(label) > DOMAIN_LABEL:
-        error_message = get_fqdn_error_message(content_type)
+        error_message = get_fqdn_error_message(content_type_label)
         raise ValidationError(error_message)
 
 
-def _validate_dns_name_labels(name: str, content_type=None) -> None:
+def _validate_dns_name_labels(name: str, content_type_label=None) -> None:
     """Validate each label's length and hyphen placement."""
     for label in _get_non_wildcard_dns_name_labels(name):
-        _validate_dns_name_label_length(label, content_type)
+        _validate_dns_name_label_length(label, content_type_label)
 
 
 def _validate_dns_hostname_content(content: str, field_type: str | None) -> None:
@@ -207,8 +207,8 @@ def _validate_dns_hostname_content(content: str, field_type: str | None) -> None
     _validate_dns_name_spaces(content, field_type=field_type)
     _validate_dns_hostname_structure(content, field_type=field_type)
     _validate_dns_name_characters(content, field_type=field_type)
-    _validate_dns_name_length(content, content_type=field_type)
-    _validate_dns_name_labels(content, content_type=field_type)
+    _validate_dns_name_length(content, content_type_label=field_type)
+    _validate_dns_name_labels(content, content_type_label=field_type)
 
 
 def validate_dns_name(name: str) -> None:
@@ -289,7 +289,7 @@ def validate_cname_content(content: str) -> None:
     """Validates a CNAME record's target value."""
     from registrar.utility.enums import DNSRecordTypes
 
-    field_type = get_content_type_by_record_type(DNSRecordTypes.CNAME)
+    field_type = get_content_type_label_by_record_type(DNSRecordTypes.CNAME)
 
     _validate_dns_hostname_content(content, field_type)
 
@@ -298,7 +298,7 @@ def validate_mx_content(content: str) -> None:
     """Validates an MX record's mail server hostname value."""
     from registrar.utility.enums import DNSRecordTypes
 
-    field_type = get_content_type_by_record_type(DNSRecordTypes.MX)
+    field_type = get_content_type_label_by_record_type(DNSRecordTypes.MX)
 
     _validate_dns_hostname_content(content, field_type)
 
@@ -307,6 +307,6 @@ def validate_ptr_content(content: str) -> None:
     """Validates a PTR record's domain name value."""
     from registrar.utility.enums import DNSRecordTypes
 
-    field_type = get_content_type_by_record_type(DNSRecordTypes.PTR)
+    field_type = get_content_type_label_by_record_type(DNSRecordTypes.PTR)
 
     _validate_dns_hostname_content(content, field_type)

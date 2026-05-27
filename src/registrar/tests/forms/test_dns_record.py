@@ -340,7 +340,7 @@ class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(content="a" * 254)
         self.assertFalse(form.is_valid())
         self.assertIn("content", form.errors)
-        error_message = get_fqdn_error_message(content_type="mail server")
+        error_message = get_fqdn_error_message(content_type_label="mail server")
         self.assertIn(error_message, form.errors["content"])
 
     def test_mx_record_with_blank_content_throws_error(self):
