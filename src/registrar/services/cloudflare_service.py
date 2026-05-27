@@ -265,7 +265,7 @@ class CloudflareService:
             )
             raise APIError(f"Cloudflare update_dns_record failed: {e.response.status_code} {e.response.text}")
         return resp.json()
-    
+
     def delete_dns_record(self, zone_id: str, record_id: str):
         """Delete record given a zone id and record id. Returns result with id of deleted record."""
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
@@ -282,4 +282,3 @@ class CloudflareService:
             )
             raise APIError(f"Cloudflare delete_dns_record failed: {e.response.status_code} {e.response.text}")
         return resp.json()
-

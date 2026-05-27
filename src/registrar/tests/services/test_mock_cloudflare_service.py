@@ -163,6 +163,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         self.assertEqual(result["id"], record_id)
 
+
 class TestMockCloudflareServiceEndpointsWithDB(TestCase):
     """
     Test that mocked endpoints that query DB return correct data.
