@@ -296,6 +296,9 @@ class Command(BaseCommand):
 
         # check that the given e-mail is valid
         if domain_email is not None and domain_email != "":
+            # If domain hasn't been saved yet, no invitation can exist for it
+            if associated_domain.pk is None:
+                return DomainInvitation(email=domain_email.lower(), domain=associated_domain)
             # check that a domain invitation doesn't already
             # exist for this e-mail / Domain pair
             domain_email_already_in_domain_invites = DomainInvitation.objects.filter(
@@ -459,7 +462,7 @@ class Command(BaseCommand):
         # Get associated domain
         domain_data = Domain.objects.filter(name=transition_domain.domain_name)
         if not domain_data.exists():
-            logger.warn(
+            logger.warning(
                 f"{TerminalColors.FAIL}"
                 f"WARNING: No Domain exists for:"
                 f"{transition_domain_name}"

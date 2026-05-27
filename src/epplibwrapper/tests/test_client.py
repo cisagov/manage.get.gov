@@ -170,12 +170,12 @@ class TestClient(TestCase):
         wrapper.send("InfoDomainCommand", cleaned=True)
         # two connect() calls should be made, the initial failed connect()
         # and the successful connect() during retry()
-        self.assertEquals(mock_connect.call_count, 2)
+        self.assertEqual(mock_connect.call_count, 2)
         # close() should only be called once, during retry()
         mock_close.assert_called_once()
         # send called 4 times: failed send("InfoDomainCommand"), passed send(logout),
         # passed send(login), passed send("InfoDomainCommand")
-        self.assertEquals(mock_send.call_count, 4)
+        self.assertEqual(mock_send.call_count, 4)
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
@@ -215,12 +215,12 @@ class TestClient(TestCase):
             wrapper.send("InfoDomainCommand", cleaned=True)
         # connect() should be called twice, once during initialization, second time
         # during retry
-        self.assertEquals(mock_connect.call_count, 2)
+        self.assertEqual(mock_connect.call_count, 2)
         # close() is called once during retry
         mock_close.assert_called_once()
         # send() is called 5 times: send(login), send(command) fails, send(logout)
         # send(login), send(command)
-        self.assertEquals(mock_send.call_count, 5)
+        self.assertEqual(mock_send.call_count, 5)
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
@@ -258,11 +258,11 @@ class TestClient(TestCase):
         wrapper = EPPLibWrapper()
         wrapper.send("InfoDomainCommand", cleaned=True)
         # connect() is called twice, once during initialization of app, once during retry
-        self.assertEquals(mock_connect.call_count, 2)
+        self.assertEqual(mock_connect.call_count, 2)
         # close() is called once, during retry
         mock_close.assert_called_once()
         # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
-        self.assertEquals(mock_send.call_count, 5)
+        self.assertEqual(mock_send.call_count, 5)
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
@@ -305,11 +305,11 @@ class TestClient(TestCase):
         wrapper = EPPLibWrapper()
         wrapper.send(mock_command, cleaned=True)
         # connect() is called twice, once during initialization of app, once during retry
-        self.assertEquals(mock_connect.call_count, 2)
+        self.assertEqual(mock_connect.call_count, 2)
         # close() is called once, during retry
         mock_close.assert_called_once()
         # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
-        self.assertEquals(mock_send.call_count, 5)
+        self.assertEqual(mock_send.call_count, 5)
         # Assertion proper logging; note that the
         mock_logger.info.assert_any_call(
             "InfoDomainCommand failed and will be retried Error: Registrar is not logged in."
