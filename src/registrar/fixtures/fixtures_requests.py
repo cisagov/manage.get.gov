@@ -183,6 +183,8 @@ class DomainRequestFixture:
     @classmethod
     def _set_foreign_key_fields(cls, request: DomainRequest, request_dict: dict, user: User):
         """Helper method used by `load`."""
+        if not user.is_staff:
+            user = random.choice(User.objects.filter(is_staff=True))  # nosec
         request.investigator = cls._get_investigator(request, request_dict, user)
         request.senior_official = cls._get_senior_official(request, request_dict)
         request.requested_domain = cls._get_requested_domain(request, request_dict)
@@ -218,7 +220,7 @@ class DomainRequestFixture:
     def _get_federal_agency(cls, request: DomainRequest, request_dict: dict):
         if not request.federal_agency:
             if "federal_agency" in request_dict and request_dict["federal_agency"] is not None:
-                return FederalAgency.objects.get_or_create(name=request_dict["federal_agency"])[0]
+                return FederalAgency.objects.get_or_create(agency=request_dict["federal_agency"])[0]
             return random.choice(FederalAgency.objects.all())  # nosec
         return request.federal_agency
 
@@ -226,7 +228,7 @@ class DomainRequestFixture:
     def _get_portfolio(cls, request: DomainRequest, request_dict: dict):
         if not request.portfolio:
             if "portfolio" in request_dict and request_dict["portfolio"] is not None:
-                return Portfolio.objects.get_or_create(name=request_dict["portfolio"])[0]
+                return Portfolio.objects.get_or_create(organization_name=request_dict["portfolio"])[0]
             return cls._get_random_portfolio()
         return request.portfolio
 

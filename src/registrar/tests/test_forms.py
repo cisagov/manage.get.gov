@@ -303,7 +303,7 @@ class TestFormValidation(MockEppLib):
                 "invalidemailnvalidemailtoolonginvalidemailnvalidemailtoolonginvalidemailnvalidemail@email.com"
             }
         )
-        self.assertEquals(
+        self.assertEqual(
             form.errors["email"],
             [
                 "Enter an email address in the required format, like name@example.com.",
