@@ -285,6 +285,27 @@ class TestCloudflareService(SimpleTestCase):
                     str(context.exception),
                 )
 
+    def test_delete_dns_record(self):
+        """Test successful delete_dns_record call."""
+        zone_id = "54321"
+        record_id = "6789"
+        return_value = {
+            "success": True,
+            "result": {
+                "id": record_id,
+            },
+            "errors": [],
+            "messages": [],
+        }
+        mock_response = self._setUpSuccessMockResponse(return_value)
+        self.service.client.patch.return_value = mock_response
+
+        resp = self.service.delete_dns_record(zone_id, record_id)
+
+        self.assertTrue(resp["success"])
+        self.assertEqual(resp["result"]["id"], record_id)
+        self.assertEqual(resp["errors"], [])
+
     def test_get_page_accounts_success(self):
         """Test successful get_page_accounts call"""
         return_value = {
