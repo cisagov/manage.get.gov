@@ -426,7 +426,7 @@ class TestDnsHostService(TestCase):
 
         create_domain(**{"domain_name": "not-igorville.gov"})
         self.service.dns_account_setup.assert_not_called()
-  
+
 
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
