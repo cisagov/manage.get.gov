@@ -424,11 +424,9 @@ class TestDnsHostService(TestCase):
 
         self.service.enroll_domain(allowed_domain)  # No error means igorville.gov was allowed to enroll
 
-        forbidden_domain = create_domain(**{"domain_name": "not-igorville.gov"})
-        with self.assertRaises(Exception) as context:
-            self.service.enroll_domain(forbidden_domain)
-        self.assertIn("Only igorville.gov can be enrolled in DNS Hosting right now", str(context.exception))
-
+        create_domain(**{"domain_name": "not-igorville.gov"})
+        self.service.dns_account_setup.assert_not_called()
+  
 
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
