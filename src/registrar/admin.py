@@ -5921,7 +5921,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return super().delete_view(request, object_id, extra_context=extra_context)
 
     def _log_related_objects(self, user, affected_domain_and_domain_requests, suborg):
-        for obj in affected_domain_and_domain_requests,:
+        for obj in affected_domain_and_domain_requests:
             LogEntry.objects.log_create(
                 instance=obj,
                 actor=user,
