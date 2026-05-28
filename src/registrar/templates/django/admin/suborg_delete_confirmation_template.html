@@ -10,7 +10,7 @@
        will be deleted.
     </p>
     {% if domain_requests %}
-    <p> The following domain requests will have their suborganization removed: </p>
+    <p> The following domain requests will no longer be linked to a suborganization, though we'll keep a record of the suborganization that was included with the request.</p>
     <ul>
         {% for domain_request in domain_requests%}
         <li>
@@ -21,7 +21,7 @@
     {% endif %}
 
    {% if domain_information  %}
-    <p> The following domains will have their suborganization removed: </p>
+    <p> The following domains will no longer be linked to a suborganization, though we'll keep a record of the suborganization that was included with the domain. </p>
     <ul>
         {% for domain in domain_information %}
         <li>

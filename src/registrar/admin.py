@@ -5920,6 +5920,33 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         extra_context = {"domain_requests": domain_requests, "domain_information": domain_information}
         return super().delete_view(request, object_id, extra_context=extra_context)
 
+    def _log_related_objects(self, user, affected_domain_and_domain_requests, suborg):
+        for obj in affected_domain_and_domain_requests,:
+            LogEntry.objects.log_create(
+                instance=obj,
+                actor=user,
+                action=LogEntry.Action.UPDATE,
+                changes={"suborganization": [str(suborg), None]},
+            )
+            print("ITSCREATED")
+
+    def delete_model(self, request, obj):
+        domain_requests = list(DomainRequest.objects.filter(sub_organization=obj))
+        domains = list(DomainInformation.objects.filter(sub_organization=obj))
+        super().delete_model(request, obj)
+
+        self._log_related_objects(request.user, domain_requests, obj)
+
+        self._log_related_objects(request.user, domains, obj)
+
+    def delete_queryset(self, request, queryset):
+        sub_orgs = list(queryset.prefetch_related("request_sub_organization", "information_sub_organization"))
+        super().delete_queryset(request, queryset)
+
+        for sub_org in sub_orgs:
+            self._log_related_objects(request.user, sub_org.request_sub_organization.all(), sub_org)
+            self._log_related_objects(request.user, sub_org.information_sub_organization.all(), sub_org)
+
 
 class AllowedEmailAdmin(ListHeaderAdmin):
     class Meta:
