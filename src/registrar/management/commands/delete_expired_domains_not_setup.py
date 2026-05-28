@@ -85,18 +85,21 @@ class Command(BaseCommand):
         return domains_in_expired_state
 
     def delete_domains_and_send_notif_emails(self, domains):
+        print("in function delete_domains_and_send_notif_emails")
         deleted_domains = []
         for domain in domains:
             try:
                 domain.delete_with_no_dns()
+                print("delete_with_no_dns successful")
                 deleted_domains.append(domain)
             except ActionNotAllowed as e:
+                print("ActionNotAllowed exception raised")
                 logger.error(f"Failed to delete {domain.name}: {e}")
                 # alert_email = settings.SLACK_DELETION_ALERT_EMAIL_PROD
                 # if not settings.IS_PRODUCTION:
                 #     alert_email = settings.SLACK_DELETION_ALERT_EMAIL_NONPROD
                 try:
-
+                    print("email sent?")
                     send_templated_email(
                         template_name="emails/domain_deletion_failed_body.txt",
                         subject_template_name="emails/domain_deletion_failed_subject.txt",
@@ -104,9 +107,12 @@ class Command(BaseCommand):
                         to_addresses=["abraham.alam@ecstech.com"],
                         context={"domain": domain.name},
                     )
+                    print("email sent")
                 except Exception as email_err:
+                    print("not ActionNotAllowed exception raised")
                     logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
             except Exception:
+                print("delete_with_no_dns failed")
                 logger.error(f"Failed to delete {domain.name}")
 
         if len(deleted_domains) > 0:
