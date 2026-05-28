@@ -5,6 +5,7 @@ Contains middleware used in settings.py
 import logging
 import time
 import re
+import uuid
 from urllib.parse import parse_qs
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -357,6 +358,9 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        request_id = request.META.get("HTTP_X_REQUEST_ID") or str(uuid.uuid4())
+        set_user_log_context(request_id=request_id)
+
         # Only log in production (stable)
         if getattr(settings, "IS_PRODUCTION", False):
             # Get user email (if authenticated), else None
@@ -374,7 +378,10 @@ class RequestLoggingMiddleware:
             set_user_log_context(user_email, remote_ip, request_path)
             # Log user information
             logger.info("Router log")
-        return self.get_response(request)
+
+        response = self.get_response(request)
+        response["X-Request-ID"] = request_id
+        return response
 
 
 class DatabaseConnectionMiddleware:
@@ -390,7 +397,6 @@ class DatabaseConnectionMiddleware:
         request._db_start_time = time.time()
         request._db_queries_start = len(connections["default"].queries)
 
-        # Log connection state
         connection = connections["default"]
         logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
@@ -399,11 +405,8 @@ class DatabaseConnectionMiddleware:
             query_count = len(connection.queries) - request._db_queries_start
             duration = time.time() - request._db_start_time
 
-            # Get request ID for correlation
-            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
             logger.info(
-                f"DB_CONN_END: req_id={request_id}, "
-                f"queries={query_count}, "
+                f"DB_CONN_END: queries={query_count}, "
                 f"duration={duration:.3f}s, "
                 f"total_queries={len(connection.queries)}, "
                 f"status={response.status_code}, "

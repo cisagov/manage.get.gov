@@ -518,6 +518,11 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
             "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
+        # Surface request_id as a top-level field so OpenSearch can group every
+        # log line for a single request without parsing the message string.
+        request_id = get_user_log_context().get("request_id")
+        if request_id:
+            log_record["request_id"] = request_id
         # Capture exception info if it exists
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
