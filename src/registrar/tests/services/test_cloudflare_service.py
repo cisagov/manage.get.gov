@@ -241,7 +241,7 @@ class TestCloudflareService(SimpleTestCase):
         self.service.create_dns_record(zone_id, created_record_data)
 
         mock_update_response = self._setUpSuccessMockResponse(updated_return_value)
-        self.service.client.patch.A = mock_update_response
+        self.service.client.patch.return_value = mock_update_response
         resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         self.assertEqual(resp["result"]["name"], "updated-record.gov")
         self.assertEqual(resp["result"]["content"], "198.62.211.5")
