@@ -45,30 +45,21 @@ DNS_NAME_MAX_LENGTH = 253
 # Full FQDN max length per RFC 1035
 MX_CONTENT_MAX_LENGTH = 253
 
-
-# For system level validation
-def get_max_length_validator(limit: int) -> MaxLengthValidator:
-    return MaxLengthValidator(limit, message=f"Response must be no more than {limit} characters.")
-
-
-# For use by the USWDS framework to display the max length to the user
-def get_max_length_attrs(limit: int) -> dict[str, str]:
-    return {"maxlength": str(limit)}
-
-
-# For use on DNS record names
-DNS_NAME_FORMAT_ERROR_MESSAGE = "Enter the name without using parentheses, colons, or semicolons."
-DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE = "Enter the name without using consecutive periods."
-DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE = "Enter the name without using consecutive periods."
-DNS_NAME_HYPHEN_ERROR_MESSAGE = "Enter the name without using hyphens at the start or end of a label."
-DNS_NAME_LENGTH_ERROR_MESSAGE = (
-    "Labels must be no more than 63 characters. "
-    "Full name (including labels, domain, and period) must be no more than 253 characters."
-)
-DNS_NAME_SPACES_ERROR_MESSAGE = "Enter the DNS name without any spaces."
 DNS_NAME_INVALID_CHARS = frozenset("@():;")
 
-# For use on DNS record fields outside of name
+# DNS field requirements, included in error messages when requirements not met.
+DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons"
+DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
+DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
+DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
+DNS_RECORD_CONTENT_REQUIREMENT = "for this record"
+DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
+
+# Constants for error message validating fqdn length and label length
+DNS_LABEL_LENGTH_ERROR_MESSAGE = "Labels must be no more than 63 characters."
+DNS_FQDN_LENGTH_ERROR_REQUIREMENT = "(including labels, domain, and period) must be no more than 253 characters."
+
+# Error messages for specific record types and fields
 DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE = "Enter the name of this record."
 DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
 DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
@@ -80,27 +71,96 @@ CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
+HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
+
+
+def get_content_type_label_by_record_type(record_type):
+    from registrar.utility.enums import DNSRecordTypes
+
+    record_type_to_content_dict = {
+        DNSRecordTypes.CNAME: "target",
+        DNSRecordTypes.MX: "mail server",
+        DNSRecordTypes.PTR: "domain name",
+    }
+    return record_type_to_content_dict.get(record_type, "content")
+
+
+# For system level validation
+def get_max_length_validator(limit: int) -> MaxLengthValidator:
+    return MaxLengthValidator(limit, message=f"Response must be no more than {limit} characters.")
+
+
+# For use by the USWDS framework to display the max length to the user
+def get_max_length_attrs(limit: int) -> dict[str, str]:
+    return {"maxlength": str(limit)}
+
+
+def get_error_message_from_requirement(requirement: str, content_field=None) -> str:
+    """
+    Returns full error message for a field given a validation requirement.
+    By default refers to validated field as "name".
+    """
+    # If content field not given, we are validating the name field
+    if not content_field:
+        return f"Enter the name {requirement}."
+    return f"Enter the {content_field} {requirement}."
+
+
+def get_fqdn_error_message(content_type_label=None) -> str:
+    """Returns fully qualified domain name (fqdn) error message by field that is validated."""
+    # If a field type is not given, default to referring to fqdn as name
+    if not content_type_label:
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full name {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+    # Custom message for mail server records
+    if content_type_label == "mail server":
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Mail server {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+    else:
+        return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full {content_type_label} {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
+
+
+def _validate_dns_name_spaces(name: str, field_type="name") -> None:
+    """Reject values with spaces."""
+    if " " in name:
+        error_message = get_error_message_from_requirement(DNS_NAME_SPACES_REQUIREMENT, field_type)
+        raise ValidationError(error_message)
 
 
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
     if ".." in name:
-        raise ValidationError(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE)
+        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
+        raise ValidationError(error_message)
     if name.startswith(".") or name.endswith("."):
-        raise ValidationError(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE)
+        error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+        raise ValidationError(error_message)
 
 
-def _validate_dns_name_characters(name: str) -> None:
+def _validate_dns_hostname_structure(content: str, field_type) -> None:
+    """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
+    if ".." in content:
+        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
+        raise ValidationError(error_message)
+    if content.startswith("."):
+        error_message = get_error_message_from_requirement(DNS_HOSTNAME_LEADING_DOT_REQUIREMENT, field_type)
+        raise ValidationError(error_message)
+    last_label = _get_non_wildcard_dns_name_labels(content)[-1]
+    if last_label.isdigit():
+        raise ValidationError(HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE)
+
+
+def _validate_dns_name_characters(name: str, field_type="name") -> None:
     """Reject characters explicitly disallowed by the AC (@ ( ) : ;).
     The apex '@' is handled earlier in validate_dns_name; any remaining '@' is invalid."""
     if any(ch in DNS_NAME_INVALID_CHARS for ch in name):
-        raise ValidationError(DNS_NAME_FORMAT_ERROR_MESSAGE)
+        error_message = get_error_message_from_requirement(DNS_NAME_FORMAT_REQUIREMENT, field_type)
+        raise ValidationError(error_message)
 
 
-def _validate_dns_name_length(name: str) -> None:
+def _validate_dns_name_length(name: str, content_type_label=None) -> None:
     """Enforce the total DNS name length limit."""
     if len(name) > DNS_NAME_MAX_LENGTH:
-        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message(content_type_label)
+        raise ValidationError(error_message)
 
 
 def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
@@ -108,28 +168,47 @@ def _get_non_wildcard_dns_name_labels(name: str) -> list[str]:
     return [label for label in name.split(".") if label != "*"]
 
 
-def _validate_dns_name_label_length(label: str) -> None:
+def _validate_dns_name_label_length(label: str, content_type_label=None) -> None:
     """Enforce the per-label DNS length limit."""
     if len(label) > DOMAIN_LABEL:
-        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message(content_type_label)
+        raise ValidationError(error_message)
 
 
-def _validate_dns_name_label_hyphen_placement(label: str) -> None:
-    """Reject labels that begin or end with a hyphen."""
-    if label.startswith("-") or label.endswith("-"):
-        raise ValidationError(DNS_NAME_HYPHEN_ERROR_MESSAGE)
-
-
-def _validate_dns_name_label(label: str) -> None:
-    """Apply all per-label DNS name validations."""
-    _validate_dns_name_label_length(label)
-    _validate_dns_name_label_hyphen_placement(label)
-
-
-def _validate_dns_name_labels(name: str) -> None:
+def _validate_dns_name_labels(name: str, content_type_label=None) -> None:
     """Validate each label's length and hyphen placement."""
     for label in _get_non_wildcard_dns_name_labels(name):
-        _validate_dns_name_label(label)
+        _validate_dns_name_label_length(label, content_type_label)
+
+
+def _validate_dns_hostname_content(content: str, field_type: str | None) -> None:
+    """
+    Validates a DNS record hostname content for CNAME, PTR, and MX records.
+    Handles fully qualified names (e.g., 'www.example.gov') but not relative names (e.g., 'www').
+
+    Normalizes to lowercase and validates:
+    - No spaces
+    - No invalid characters (exception made for single '@' for root): @ ( ) : ;
+    - No consecutive dots
+    - No leading dots (but trailing dots accepted)
+    - Per-label max 63 characters
+    - Total max 253 characters
+    """
+    if not content:
+        return
+
+    # Normalize to lowercase
+    content = content.lower()
+
+    # Special case: @ is valid (zone apex)
+    if content == "@":
+        return
+
+    _validate_dns_name_spaces(content, field_type=field_type)
+    _validate_dns_hostname_structure(content, field_type=field_type)
+    _validate_dns_name_characters(content, field_type=field_type)
+    _validate_dns_name_length(content, content_type_label=field_type)
+    _validate_dns_name_labels(content, content_type_label=field_type)
 
 
 def validate_dns_name(name: str) -> None:
@@ -139,7 +218,7 @@ def validate_dns_name(name: str) -> None:
 
     Normalizes to lowercase and validates:
     - No spaces
-    - Valid characters only (letters, numbers, hyphens, periods, @ for apex)
+    - No invalid characters (exception made for single '@' for root): @ ( ) : ;
     - No consecutive dots
     - No leading/trailing dots
     - No hyphens at start/end of labels
@@ -156,10 +235,7 @@ def validate_dns_name(name: str) -> None:
     if name == "@":
         return
 
-    # Check for spaces
-    if " " in name:
-        raise ValidationError(DNS_NAME_SPACES_ERROR_MESSAGE)
-
+    _validate_dns_name_spaces(name)
     _validate_dns_name_structure(name)
     _validate_dns_name_characters(name)
     _validate_dns_name_length(name)
@@ -187,7 +263,8 @@ def validate_dns_name_fqdn_length(name: str, zone_name: str | None) -> None:
         fqdn = f"{name}.{zone_name}"
 
     if len(fqdn) > DNS_NAME_MAX_LENGTH:
-        raise ValidationError(DNS_NAME_LENGTH_ERROR_MESSAGE)
+        error_message = get_fqdn_error_message()
+        raise ValidationError(error_message)
 
 
 def check_has_invalid_quoted_string(content: str) -> bool:
@@ -208,12 +285,28 @@ def validate_txt_content(content: str) -> None:
         raise ValidationError(TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE)
 
 
-def validate_mx_content(content: str) -> None:
-    """
-    Validates an MX record's mail server hostname.
-    """
-    if " " in content:
-        raise ValidationError(MX_CONTENT_SPACES_ERROR_MESSAGE)
+def validate_cname_content(content: str) -> None:
+    """Validates a CNAME record's target value."""
+    from registrar.utility.enums import DNSRecordTypes
 
-    if len(content) > MX_CONTENT_MAX_LENGTH:
-        raise ValidationError("Name must be no more than 253 characters.")
+    field_type = get_content_type_label_by_record_type(DNSRecordTypes.CNAME)
+
+    _validate_dns_hostname_content(content, field_type)
+
+
+def validate_mx_content(content: str) -> None:
+    """Validates an MX record's mail server hostname value."""
+    from registrar.utility.enums import DNSRecordTypes
+
+    field_type = get_content_type_label_by_record_type(DNSRecordTypes.MX)
+
+    _validate_dns_hostname_content(content, field_type)
+
+
+def validate_ptr_content(content: str) -> None:
+    """Validates a PTR record's domain name value."""
+    from registrar.utility.enums import DNSRecordTypes
+
+    field_type = get_content_type_label_by_record_type(DNSRecordTypes.PTR)
+
+    _validate_dns_hostname_content(content, field_type)
