@@ -4615,8 +4615,16 @@ class TestPortfolioMemberEditView(WebTest):
         )
 
         # View only user (can see members but not edit)
-        self.view_only_user = create_test_user()
-        UserPortfolioPermission.objects.create(
+        self.view_only_user = User.objects.create(
+            username="test_user_member_view_only",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003111234",
+            title="View Only",
+        )
+
+        self.view_only_permission = UserPortfolioPermission.objects.create(
             user=self.view_only_user,
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
