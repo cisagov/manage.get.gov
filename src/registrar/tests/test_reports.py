@@ -1036,6 +1036,7 @@ class MemberExportNoneDomainInfoTest(SimpleTestCase):
         row = MemberExport.parse_row(self.columns, model)
         self.assertEqual(row, ["a@example.gov", 0, ""])
 
+
 class HelperFunctions(MockDbForSharedTests):
     """This asserts that 1=1. Its limited usefulness lies in making sure the helper methods stay healthy."""
 
