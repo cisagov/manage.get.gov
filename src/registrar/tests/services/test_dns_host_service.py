@@ -395,7 +395,7 @@ class TestDnsHostService(TestCase):
         with self.assertRaises(HTTPStatusError):
             self.service.update_zone_dns_settings(x_zone_id)
 
-    @override_settings(IS_LOCAL=False)
+    @override_settings(IS_LOCAL=False, IS_PRODUCTION=False)
     def test_enroll_domain_success(self):
         domain_name = "test.gov"
         domain = create_domain(**{"domain_name": domain_name})

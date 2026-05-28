@@ -408,8 +408,9 @@ class DnsHostService:
 
         The enrollment flag is only set if the entire operation succeeds.
         """
-        if settings.IS_PRODUCTION and domain.name != "igorville.gov":
-            raise Exception("Only igorville.gov can be enrolled in DNS Hosting right now")
+        if settings.IS_PRODUCTION and domain.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
+            logger.warning("Only igorville.gov can be enrolled in DNS Hosting right now")
+            return
 
         if domain.is_enrolled_in_dns_hosting:
             logger.info("Domain already enrolled in DNS hosting")

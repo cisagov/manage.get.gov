@@ -313,5 +313,12 @@ class SecurityEmailError(Exception):
 
 class APIError(Exception):
     """Custom exception for API-related errors"""
+    pass
 
+class DnsHostingError(Exception):
+    """Base class for DNS hosting errors."""
+    pass
+
+class EnrollmentNotAllowedError(DnsHostingError):
+    """Raised when a domain isn't permitted to enroll in DNS hosting (e.g. production gating)."""
     pass
