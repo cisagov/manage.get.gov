@@ -2401,6 +2401,16 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
             title="No Permissions",
         )
 
+        # Create view only user (can see members but not edit)
+        cls.user_view_only = User.objects.create(
+            username="test_user_view_only",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003112345",
+            title="View Only",
+        )
+
         # Create Portfolio
         cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
@@ -2421,6 +2431,15 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        cls.view_only_permission = UserPortfolioPermission.objects.create(
+            user=cls.user_view_only,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -2472,6 +2491,28 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_own_member_domains(self):
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)."""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_other_member_domains(self):
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)."""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
 
 
 class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
@@ -3943,6 +3984,16 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             ],
         )
 
+        # View only user (can see members but not edit them)
+        self.view_only_user = User.objects.create(
+            username="view_only_user",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003111234",
+            title="View Only",
+        )
+
         self.new_member_email = "newmember@example.com"
 
         AllowedEmail.objects.get_or_create(email=self.new_member_email)
@@ -3955,6 +4006,15 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -4505,6 +4565,24 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
 
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    def test_view_only_user_cannot_invite_new_member(self, mock_send_email):
+        """Test user with only VIEW_MEMBERS cannot add a new member"""
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "email": "someone@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # Assert no email triggered
+        mock_send_email.assert_not_called()
+
 
 class TestPortfolioMemberEditView(WebTest):
     """Tests for the edit member page on portfolios"""
@@ -4533,6 +4611,17 @@ class TestPortfolioMemberEditView(WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # View only user (can see members but not edit)
+        self.view_only_user = create_test_user()
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -4600,6 +4689,34 @@ class TestPortfolioMemberEditView(WebTest):
         # Assert the update notification email content
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["permissions"], basic_permission)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_own_member_permissions(self):
+        """User with only VIEW_MEMBERS cannot edit their own permissions"""
+        view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": view_only_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_other_member_permissions(self):
+        """User with only VIEW_MEMBERS cannot edit another members permissions either"""
+        other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": other_member_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        other_member_permission.refresh_from_db()
+        self.assertEqual(other_member_permission.roles, ["organization_admin"])
 
     @less_console_noise_decorator
     @patch("django.contrib.messages.warning")
