@@ -35,6 +35,7 @@ from django.db.models import (
 from django.utils import timezone
 from django.db.models.functions import Concat, Coalesce, Cast
 from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
@@ -377,12 +378,15 @@ class MemberExport(BaseExport):
                     default=Value(""),
                     output_field=CharField(),
                 ),
-                domain_info=ArrayAgg(
-                    F("user__permissions__domain__name"),
-                    distinct=True,
-                    # only include domains in portfolio
-                    filter=Q(user__permissions__domain__isnull=False)
-                    & Q(user__permissions__domain__domain_info__portfolio=portfolio),
+                domain_info=Coalesce(
+                    ArrayAgg(
+                        F("user__permissions__domain__name"),
+                        distinct=True,
+                        # only include domains in portfolio
+                        filter=Q(user__permissions__domain__isnull=False)
+                        & Q(user__permissions__domain__domain_info__portfolio=portfolio),
+                    ),
+                    Value([], output_field=ArrayField(CharField())),
                 ),
                 type=Value("member", output_field=CharField()),
                 joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
@@ -413,8 +417,7 @@ class MemberExport(BaseExport):
                 last_active=Value("Invited", output_field=CharField()),
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
-                # Use ArrayRemove to return an empty list when no domain invitations are found
-                domain_info=domain_invitations,
+                domain_info=Coalesce(domain_invitations, Value([], output_field=ArrayField(CharField()))),
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
                 invited_by_user=cls.get_invited_by_query(
@@ -509,7 +512,7 @@ class MemberExport(BaseExport):
         """
         roles = model.get("roles", [])
         permissions = model.get("additional_permissions_display")
-        user_managed_domains = model.get("domain_info", [])
+        user_managed_domains = model.get("domain_info") or []
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
