@@ -2664,7 +2664,11 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def delete_with_no_dns(self, *args, **kwargs):
         # Guard: stop deletion if domain has active nameservers
-        if len(self.nameservers) >= 2:
+        print("bruh " + len(self.nameservers))
+        print("broski " + self.host.all().count())
+        print("nameservers ot&e " + self.nameservers)
+        print("nameservers db " + self.host.all())
+        if len(self.nameservers) >= 2 or self.host.all().count() >= 2:
             logger.error(
                 f"Domain {self.name} has {len(self.nameservers)} nameservers "
                 f"but is in state {self.state}. Aborting deletion."
