@@ -111,8 +111,8 @@ class Command(BaseCommand):
                 except Exception as email_err:
                     print("not ActionNotAllowed exception raised")
                     logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
-            except Exception:
-                print("delete_with_no_dns failed")
+            except Exception as bruh:
+                print("delete_with_no_dns failed ", bruh)
                 logger.error(f"Failed to delete {domain.name}")
 
         if len(deleted_domains) > 0:
