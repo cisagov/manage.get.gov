@@ -67,7 +67,8 @@ class Command(BaseCommand):
             .order_by("id")
         )
 
-        print(domains_in_expired_state, "chill bro")
+        print(domains_in_expired_state)
+        print("chill bro")
 
         for domain in domains_in_expired_state:
             if domain.expiration_date is None:
@@ -114,7 +115,7 @@ class Command(BaseCommand):
             except Exception as bruh:
                 print("delete_with_no_dns failed ")
                 print(bruh)
-                logger.error(f"Failed to delete {domain.name}")
+                logger.error(f"Failed to delete {domain.name} bruh")
 
         if len(deleted_domains) > 0:
             self.send_domain_notifications_emails(deleted_domains)
