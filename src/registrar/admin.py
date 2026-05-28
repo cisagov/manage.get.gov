@@ -5928,7 +5928,6 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 action=LogEntry.Action.UPDATE,
                 changes={"suborganization": [str(suborg), None]},
             )
-            print("ITSCREATED")
 
     def delete_model(self, request, obj):
         domain_requests = list(DomainRequest.objects.filter(sub_organization=obj))
