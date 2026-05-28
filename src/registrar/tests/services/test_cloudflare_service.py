@@ -307,6 +307,24 @@ class TestCloudflareService(SimpleTestCase):
         self.assertEqual(resp["result"]["id"], record_id)
         self.assertEqual(resp["errors"], [])
 
+    def test_delete_dns_record_failure(self):
+        """Test failed delete_dns_record call."""
+        zone_id = "54321"
+        record_id = "6789"
+        mock_response = Mock()
+        mock_response.status_code = 400
+        http_error = HTTPStatusError(
+            request="something", response="400 Server Error", message="Error deleting record"
+        )
+        http_error.response = mock_response
+        self.service.client.delete.return_value = mock_response
+        mock_response.raise_for_status.side_effect = http_error
+
+        with self.assertRaises(APIError) as context:
+            self.service.delete_dns_record(zone_id, record_id)
+
+        self.assertIn("Cloudflare delete_dns_record failed", str(context.exception))
+
     def test_get_page_accounts_success(self):
         """Test successful get_page_accounts call"""
         return_value = {
