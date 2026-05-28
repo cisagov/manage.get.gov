@@ -286,7 +286,7 @@ class TestCloudflareService(SimpleTestCase):
                     str(context.exception),
                 )
 
-    def test_delete_dns_record(self):
+    def test_delete_dns_record_success(self):
         """Test successful delete_dns_record call."""
         zone_id = "54321"
         record_id = "6789"
