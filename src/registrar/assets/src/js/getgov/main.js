@@ -20,7 +20,7 @@ import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 import { initButtonLinks } from '../getgov-admin/button-utils.js';
 import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
-import { initDynamicDNSRecordFormFields, editAndCommentButtonListener, commentCharacterEventListener, initDNSRecordTabOrder } from './domain-dns-record-content.js';
+import { initDynamicDNSRecordFormFields, editAndCommentButtonListener, commentCharacterEventListener, initDNSRecordTabOrder, initDNSRecordAlertFocus } from './domain-dns-record-content.js';
 
 initDomainValidators();
 
@@ -76,6 +76,7 @@ initDynamicDNSRecordFormFields();
 commentCharacterEventListener()
 editAndCommentButtonListener()
 initDNSRecordTabOrder()
+initDNSRecordAlertFocus()
 
 document.addEventListener('htmx:afterSettle', (evt) => {
     initDynamicDNSRecordFormFields();

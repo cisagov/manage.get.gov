@@ -11,10 +11,10 @@ from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
+    DNS_NAME_FORMAT_REQUIREMENT,
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
-    DNS_NAME_FORMAT_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
 )
@@ -59,24 +59,31 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
-        # TODO: Uncomment test case after CNAME content validations finalized
-        # {
-        #     "id": "test-cname",
-        #     "name": "www",
-        #     "type": "CNAME",
-        #     "content": "www.example.com",
-        #     "ttl": 300,
-        #     "comment": "Mocked record created",
-        # },
-        # TODO: Uncomment test case after PTR content validations finalized
-        # {
-        #     "id": "test-ptr",
-        #     "name": "www",
-        #     "type": "PTR",
-        #     "content": "www.example.com",
-        #     "ttl": 300,
-        #     "comment": "Mocked record created",
-        # },
+        {
+            "id": "test-cname",
+            "name": "test",  # CNAME record must use different name than A/AAAA records
+            "type": "CNAME",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test-ptr",
+            "name": "www",
+            "type": "PTR",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test-mx",
+            "name": "www",
+            "type": "MX",
+            "content": "mail.example.com",
+            "ttl": 300,
+            "priority": 5,
+            "comment": "Mocked record created",
+        },
         {
             "id": "test1",
             "name": "www",
@@ -127,6 +134,99 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
+    def test_messages_container_wired_for_alert_focus(self):
+        """Issue #4629: the alert focus listener relies on htmx swapping
+        the `#messages-container` div in response to the `messagesRefresh`
+        event. Keep that wiring on the page so screen-reader focus can move
+        to the first error alert after an invalid submission."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="messages-container"')
+        self.assertContains(response, 'hx-trigger="messagesRefresh from:body"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_add_post_triggers_messages_refresh(self):
+        """Issue #4629: an invalid DNS record submission must return the
+        `messagesRefresh` HX-TRIGGER so the alert container reloads. The
+        JS focus handler listens for the resulting `htmx:afterSettle` on
+        the messages container, so without this trigger focus would never
+        move to the alert."""
+        with patch("registrar.views.domain.DnsHostService"):
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_edit_post_triggers_messages_refresh(self):
+        """Issue #4629: invalid edit submissions must also fire
+        `messagesRefresh` so the alert at the top of the page reloads and
+        the JS focus handler can pull focus to it."""
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=DNSRecordTypes.A,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_messages_renders_alert_as_focusable(self):
+        """Issue #4629: rendered alerts must carry `tabindex="-1"` so the JS
+        handler can move focus to them without putting them in the natural
+        tab order. The `role="alert"` keeps screen readers announcing the
+        message."""
+        with patch("registrar.views.domain.DnsHostService"):
+            self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        messages_response = self.client.get(reverse("get-messages"))
+        self.assertEqual(messages_response.status_code, 200)
+        self.assertContains(messages_response, "usa-alert")
+        self.assertContains(messages_response, 'role="alert"')
+        self.assertContains(messages_response, 'tabindex="-1"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
     def test_post_valid_forms_create_dns_records_success(self):
         for data in self.RECORD_TEST_CASES:
             with self.subTest(record_type=data["type"]):
@@ -149,15 +249,20 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
                     svc.create_dns_record.side_effect = _create_and_return
 
+                    record_type = data["type"]
+                    request_data = {
+                        "type": data["type"],
+                        "name": data["name"],
+                        "ttl": data["ttl"],
+                        "comment": data["comment"],
+                        "content": data["content"],
+                    }
+                    if record_type == "MX" and data["priority"]:
+                        request_data["priority"] = data["priority"]
+
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": data["type"],
-                            "name": data["name"],
-                            "ttl": data["ttl"],
-                            "comment": data["comment"],
-                            "content": data["content"],
-                        },
+                        request_data,
                     )
 
                     self.assertEqual(response.status_code, 200)
@@ -209,6 +314,9 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         invalid_content_by_type = {
             "A": "not-an-ip",
             "AAAA": "not-an-ip",
+            "CNAME": "invalid.lastlabel.123",
+            "MX": "invalid.lastlabel.123",
+            "PTR": "invalid.lastlabel.123",
             "TXT": '"not valid text"',
         }
 
@@ -216,15 +324,18 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
                 with patch("registrar.views.domain.DnsHostService"):
+                    request_data = {
+                        "type": record_type,
+                        "name": record_case["name"],
+                        "ttl": record_case["ttl"],
+                        "comment": record_case["comment"],
+                        "content": invalid_content_by_type[record_type],
+                    }
+                    if record_type == "MX":
+                        request_data["priority"] = record_case["priority"]
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": record_type,
-                            "name": record_case["name"],
-                            "ttl": record_case["ttl"],
-                            "comment": record_case["comment"],
-                            "content": invalid_content_by_type[record_type],
-                        },
+                        request_data,
                     )
 
                     # Invalid form should re-render the page, not redirect
@@ -252,7 +363,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    self.assertContains(response, DNS_NAME_FORMAT_ERROR_MESSAGE)
+                    self.assertContains(response, DNS_NAME_FORMAT_REQUIREMENT)
 
                     # Ensures appropriate label exists
                     self.assertContains(response, DNSRecordTypes(record_type).field_label)
