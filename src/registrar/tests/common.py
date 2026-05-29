@@ -1979,7 +1979,7 @@ class MockEppLib(TestCase):
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversdomain.gov": (
-                self.infoDomainNoHost if self.mockedSendFunction.call_count >= 8 else self.infoDomainThreeHosts, 
+                self.infoDomainNoHost if self.mockedSendFunction.call_count >= 8 else self.infoDomainThreeHosts,
                 None,
             ),
             "fournameserversdomain.gov": (self.infoDomainFourHosts, None),

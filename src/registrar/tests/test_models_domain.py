@@ -617,6 +617,7 @@ class TestDomainStatuses(MockEppLib):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
             self.assertEqual(domain.first_ready, None)
+            self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
             domain.ready()
             # check that status is READY
             self.assertTrue(domain.is_active())
