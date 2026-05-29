@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.core.management import BaseCommand
 
-# from django.conf import settings
+from django.conf import settings
 from registrar.models import Domain, UserDomainRole
 import logging
 import argparse
@@ -86,36 +86,27 @@ class Command(BaseCommand):
         return domains_in_expired_state
 
     def delete_domains_and_send_notif_emails(self, domains):
-        print("in function delete_domains_and_send_notif_emails")
         deleted_domains = []
         for domain in domains:
             try:
                 domain.delete_with_no_dns()
-                print("delete_with_no_dns successful")
                 deleted_domains.append(domain)
-            except ActionNotAllowed as e:
-                print("ActionNotAllowed exception raised")
-                logger.error(f"Failed to delete {domain.name}: {e}")
-                # alert_email = settings.SLACK_DELETION_ALERT_EMAIL_PROD
-                # if not settings.IS_PRODUCTION:
-                #     alert_email = settings.SLACK_DELETION_ALERT_EMAIL_NONPROD
+            except ActionNotAllowed as action_not_allowed_msg:
+                logger.error(f"Failed to delete {domain.name}: {action_not_allowed_msg}")
+                alert_email = settings.SLACK_DELETION_ALERT_EMAIL_PROD
+                if not settings.IS_PRODUCTION:
+                    alert_email = settings.SLACK_DELETION_ALERT_EMAIL_NONPROD
                 try:
-                    print("email sent?")
                     send_templated_email(
                         template_name="emails/domain_deletion_failed_body.txt",
                         subject_template_name="emails/domain_deletion_failed_subject.txt",
-                        # to_addresses=[alert_email],
-                        to_addresses=["abraham.alam@ecstech.com"],
+                        to_addresses=[alert_email],
                         context={"domain": domain.name},
                     )
-                    print("email sent")
                 except Exception as email_err:
-                    print("not ActionNotAllowed exception raised")
                     logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
-            except Exception as bruh:
-                print("delete_with_no_dns failed ")
-                print(bruh)
-                logger.error(f"Failed to delete {domain.name} bruh")
+            except Exception as e:
+                logger.error(f"Failed to delete {domain.name}: {e}")
 
         if len(deleted_domains) > 0:
             self.send_domain_notifications_emails(deleted_domains)
