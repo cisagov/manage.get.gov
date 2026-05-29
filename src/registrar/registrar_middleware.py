@@ -16,6 +16,7 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
+from registrar.utility.db_helpers import get_portfolio_from_session
 from .logging_context import set_user_log_context
 
 logger = logging.getLogger(__name__)
@@ -191,13 +192,14 @@ class CheckPortfolioMiddleware:
 
         # Set if feature off and user has any portfolio OR user has exactly one portfolio
         if (not multiple and first_portfolio) or (user.get_num_portfolios() == 1 and not user.has_legacy_domain()):
-            request.session["portfolio"] = first_portfolio
+            request.session["portfolio"] = first_portfolio.id if first_portfolio else None
             return
 
         # Clear if session portfolio is not valid anymore
         # IMPORTANT: only do this on get requests to avoid disrupting POST/PUT/DELETE operations
         if request.method in ("GET", "HEAD"):
-            if request.session.get("portfolio") and not user.is_org_user(request):
+            portfolio_id = request.session.get("portfolio")
+            if portfolio_id and not user.is_org_user(request):
                 request.session.pop("portfolio", None)
 
     def _maybe_redirect_to_org_select(self, request):
@@ -252,7 +254,7 @@ class CheckPortfolioMiddleware:
 
         # Portfolio domain redirects when multi-portfolio flag is off
         # (single org users / legacy should still get redirected to their portfolio pages)
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
         has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
             request
         )

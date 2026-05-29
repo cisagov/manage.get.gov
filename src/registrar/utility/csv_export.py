@@ -3,6 +3,7 @@ from collections import defaultdict
 import csv
 import logging
 from datetime import datetime
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.models import (
     Domain,
     DomainInvitation,
@@ -325,7 +326,7 @@ class MemberExport(BaseExport):
         - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
         - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
         """
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
         if not portfolio:
             return {}
 
@@ -2255,6 +2256,7 @@ class DomainRequestDataFull(DomainRequestExport):
                         "other_contacts__last_name",
                         Value(" "),
                         "other_contacts__email",
+                        output_field=CharField(),
                     ),
                     delimiter=delimiter,
                     distinct=True,
