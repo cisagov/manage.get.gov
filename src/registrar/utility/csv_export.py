@@ -2248,9 +2248,12 @@ class DomainRequestDataFull(DomainRequestExport):
             {
                 "requester_approved_domains_count": cls.get_requester_approved_domains_count_query(),
                 "requester_active_requests_count": cls.get_requester_active_requests_count_query(),
-                "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
+                # default="" keeps the pre-Django-5.0 empty-string result when there are no rows
+                "all_current_websites": StringAgg(
+                    "current_websites__website", delimiter=delimiter, distinct=True, default=Value("")
+                ),
                 "all_alternative_domains": StringAgg(
-                    "alternative_domains__website", delimiter=delimiter, distinct=True
+                    "alternative_domains__website", delimiter=delimiter, distinct=True, default=Value("")
                 ),
                 # Coerce the other contacts object to "{first_name} {last_name} {email}"
                 "all_other_contacts": StringAgg(
@@ -2264,6 +2267,7 @@ class DomainRequestDataFull(DomainRequestExport):
                     ),
                     delimiter=delimiter,
                     distinct=True,
+                    default=Value(""),
                 ),
             }
         )
