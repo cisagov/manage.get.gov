@@ -76,6 +76,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
+from auditlog.models import LogEntry
 
 import logging
 
@@ -4894,3 +4895,75 @@ class TestDomainAdminState(TestCase):
         response = self.client.get(url)
         self.assertContains(response, "Unknown")
         self.assertNotContains(response, "dns needed")
+
+
+class SuborganizationAdmin(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.site = AdminSite()
+        self.admin = PortfolioAdmin(model=Suborganization, admin_site=self.site)
+
+        self.portfolio = Portfolio.objects.create(organization_name="test portfolio", requester=self.superuser)
+
+        self.sub_orgs = [
+            Suborganization.objects.create(name="test_sub_org1", portfolio=self.portfolio),
+            Suborganization.objects.create(name="test_sub_org2", portfolio=self.portfolio),
+        ]
+
+        self.domains = [Domain.objects.create(name="test_suborg.gov"), Domain.objects.create(name="test_suborg2.gov")]
+
+        draft_domain_1 = DraftDomain.objects.create(name="testdomainrequest1.gov")
+        draft_domain_2 = DraftDomain.objects.create(name="testdomainrequest2.gov")
+
+        self.domain_reqs = [
+            DomainRequest.objects.create(
+                requester=self.superuser,
+                requested_domain=draft_domain_1,
+                status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            ),
+            DomainRequest.objects.create(
+                requester=self.superuser,
+                requested_domain=draft_domain_2,
+                status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            ),
+        ]
+
+    def test_delete_suborg_with_a_single_domain_request(self):
+        request = self.factory.post("/")
+        request.user = self.superuser
+        self.domain_req = self.domain_reqs[1]
+
+        self.domain_req.sub_organization = self.sub_orgs[0]
+        self.domain_req.save()
+
+        self.admin.delete_model(request, self.sub_orgs[0])
+
+        log = LogEntry.objects.filter(object_pk=str(self.domain_req.id))
+        self.assertIsNotNone(log)
+
+    def test_delete_suborg_with_multiple_domains_and_domain_requests(self):
+        request = self.factory.post("/")
+        request.user = self.superuser
+
+        self.domain_reqs[0].sub_organization = self.sub_orgs[1]
+        self.domain_reqs[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_reqs[0].save()
+        self.domain_reqs[1].save()
+
+        self.domains[0].sub_organization = self.sub_orgs[1]
+        self.domains[1].sub_organization = self.sub_orgs[1]
+
+        self.domains[0].save()
+        self.domains[1].save()
+
+        #   check if all domains and domain requests were logged
+
+        for domain, domain_req in zip(self.domains, self.domain_reqs):
+            domain_log_entry = LogEntry.objects.filter(object_pk=str(domain.id))
+            domain_req_log_entry = LogEntry.objects.filter(object_pk=str(domain_req.id))
+            self.assertIsNotNone(domain_log_entry)
+            self.assertIsNotNone(domain_req_log_entry)
