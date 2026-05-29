@@ -5932,7 +5932,7 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     actor=user,
                     action=LogEntry.Action.UPDATE,
                     changes={"sub_organization": [str(suborg), None]},
-                    object_pk=str(obj.id)
+                    object_pk=str(obj.id),
                 )
             )
         LogEntry.objects.bulk_create(log_entry_list)

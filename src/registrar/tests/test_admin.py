@@ -33,7 +33,7 @@ from registrar.admin import (
     TransitionDomainAdmin,
     UserGroupAdmin,
     PortfolioAdmin,
-    SuborganizationAdmin
+    SuborganizationAdmin,
 )
 from registrar.models import (
     Domain,
@@ -4933,7 +4933,7 @@ class TestSuborganizationAdmin(TestCase):
         ]
 
     def test_delete_suborg_with_a_single_domain_request(self):
-        request = self.factory.get('/')
+        request = self.factory.get("/")
         request.user = self.superuser
         self.domain_req = self.domain_reqs[1]
 
@@ -4943,10 +4943,10 @@ class TestSuborganizationAdmin(TestCase):
         self.admin.delete_model(request, self.sub_orgs[0])
 
         self.domain_req.refresh_from_db()
-     
+
         log = LogEntry.objects.filter(object_pk=str(self.domain_req.id)).first()
-      
-        self.assertEqual(log.changes,  {'sub_organization': ['test_sub_org1', None]})
+
+        self.assertEqual(log.changes, {"sub_organization": ["test_sub_org1", None]})
         self.assertEqual(self.domain_req.sub_organization, None)
 
     def test_delete_suborg_with_multiple_domains_and_domain_requests(self):
@@ -4971,4 +4971,4 @@ class TestSuborganizationAdmin(TestCase):
 
         for obj in self.domains + self.domain_reqs:
             log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
-            self.assertEqual(log.changes,  {'sub_organization': ['test_sub_org2', None]})
+            self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
