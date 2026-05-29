@@ -4,16 +4,14 @@ Hi, domain managers,
 Your domain request for {{ domain.name }} was approved, but the domain is not yet online. You’ll need to complete the following actions before your .gov domain is active:
 
 ADD DOMAIN NAME SERVER INFORMATION
-
 Before your .gov domain can be used, you’ll first need to connect it to a Domain Name System (DNS) hosting service. After you’ve set up hosting, you’ll need to enter your name server information on the .gov registrar.
 
 COMING IN LATE 2026: DNS HOSTING
-
 Reply to this email if you're interested in using our upcoming DNS hosting service. We're looking for volunteers who can contribute feedback and participate in user research.
 
 Learn more about: 
 
-- Finding a DNS hosting service <https://get.gov/domains/moving/#find-dns-hosting-services>
+- Set up DNS hosting services <https://get.gov/domains/moving/#set-up-dns-hosting-services>
 - Adding name servers <https://get.gov/help/domain-management/#manage-dns-name-servers>.
 
 ----------------------------------------------------------------
