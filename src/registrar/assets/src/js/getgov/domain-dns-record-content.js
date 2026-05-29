@@ -266,6 +266,22 @@ export function initDNSRecordTabOrder() {
     });
 }
 
+// Issue #4629: after a DNS record submit, move focus to the first alert in
+// #messages-container once htmx finishes swapping it in. Alerts carry
+// tabindex="-1" in form_messages.html so they're focusable but not tabbable.
+export function initDNSRecordAlertFocus() {
+    const dnsRecordsContainer = document.getElementById("dnsrecords-form-container");
+    if (!dnsRecordsContainer) return;
+
+    document.body.addEventListener("htmx:afterSettle", (evt) => {
+        const swapped = evt?.detail?.target || evt?.target;
+        if (swapped?.id !== "messages-container") return;
+
+        const firstAlert = swapped.querySelector(".usa-alert");
+        if (firstAlert) firstAlert.focus();
+    });
+}
+
 export function commentCharacterEventListener(){
 
     // event listener to update the char count text
