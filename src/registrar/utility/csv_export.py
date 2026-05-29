@@ -417,7 +417,7 @@ class MemberExport(BaseExport):
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
                 # when a member has no invitations / null,
-                # Coalesce normalizes to empty list for parse_row. 
+                # Coalesce normalizes to empty list for parse_row.
                 domain_info=Coalesce(domain_invitations, Value([], output_field=ArrayField(CharField()))),
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
