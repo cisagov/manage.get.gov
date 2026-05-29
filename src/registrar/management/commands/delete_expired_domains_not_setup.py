@@ -67,9 +67,6 @@ class Command(BaseCommand):
             .order_by("id")
         )
 
-        print(domains_in_expired_state)
-        print("chill bro")
-
         for domain in domains_in_expired_state:
             if domain.expiration_date is None:
                 logger.warning(
