@@ -33,6 +33,7 @@ from registrar.admin import (
     TransitionDomainAdmin,
     UserGroupAdmin,
     PortfolioAdmin,
+    SuborganizationAdmin
 )
 from registrar.models import (
     Domain,
@@ -4897,14 +4898,14 @@ class TestDomainAdminState(TestCase):
         self.assertNotContains(response, "dns needed")
 
 
-class SuborganizationAdmin(TestCase):
+class TestSuborganizationAdmin(TestCase):
 
     def setUp(self):
         super().setUp()
         self.factory = RequestFactory()
         self.superuser = create_superuser()
         self.site = AdminSite()
-        self.admin = PortfolioAdmin(model=Suborganization, admin_site=self.site)
+        self.admin = SuborganizationAdmin(model=Suborganization, admin_site=self.site)
 
         self.portfolio = Portfolio.objects.create(organization_name="test portfolio", requester=self.superuser)
 
@@ -4932,7 +4933,7 @@ class SuborganizationAdmin(TestCase):
         ]
 
     def test_delete_suborg_with_a_single_domain_request(self):
-        request = self.factory.post("/")
+        request = self.factory.get('/')
         request.user = self.superuser
         self.domain_req = self.domain_reqs[1]
 
@@ -4941,8 +4942,12 @@ class SuborganizationAdmin(TestCase):
 
         self.admin.delete_model(request, self.sub_orgs[0])
 
-        log = LogEntry.objects.filter(object_pk=str(self.domain_req.id))
-        self.assertIsNotNone(log)
+        self.domain_req.refresh_from_db()
+     
+        log = LogEntry.objects.filter(object_pk=str(self.domain_req.id)).first()
+      
+        self.assertEqual(log.changes,  {'sub_organization': ['test_sub_org1', None]})
+        self.assertEqual(self.domain_req.sub_organization, None)
 
     def test_delete_suborg_with_multiple_domains_and_domain_requests(self):
         request = self.factory.post("/")
@@ -4960,10 +4965,10 @@ class SuborganizationAdmin(TestCase):
         self.domains[0].save()
         self.domains[1].save()
 
+        self.admin.delete_model(request, self.sub_orgs[1])
+
         #   check if all domains and domain requests were logged
 
-        for domain, domain_req in zip(self.domains, self.domain_reqs):
-            domain_log_entry = LogEntry.objects.filter(object_pk=str(domain.id))
-            domain_req_log_entry = LogEntry.objects.filter(object_pk=str(domain_req.id))
-            self.assertIsNotNone(domain_log_entry)
-            self.assertIsNotNone(domain_req_log_entry)
+        for obj in self.domains + self.domain_reqs:
+            log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
+            self.assertEqual(log.changes,  {'sub_organization': ['test_sub_org2', None]})

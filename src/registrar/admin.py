@@ -5925,15 +5925,16 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         for obj in affected_domain_and_domain_requests:
             content_type = ContentType.objects.get_for_model(obj)
+
             log_entry_list.append(
                 LogEntry(
                     content_type=content_type,
                     actor=user,
                     action=LogEntry.Action.UPDATE,
                     changes={"sub_organization": [str(suborg), None]},
+                    object_pk=str(obj.id)
                 )
             )
-
         LogEntry.objects.bulk_create(log_entry_list)
 
     def delete_model(self, request, obj):
