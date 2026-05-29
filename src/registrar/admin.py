@@ -5921,13 +5921,20 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return super().delete_view(request, object_id, extra_context=extra_context)
 
     def _log_related_objects(self, user, affected_domain_and_domain_requests, suborg):
+        log_entry_list = []
+
         for obj in affected_domain_and_domain_requests:
-            LogEntry.objects.log_create(
-                instance=obj,
-                actor=user,
-                action=LogEntry.Action.UPDATE,
-                changes={"suborganization": [str(suborg), None]},
+            content_type = ContentType.objects.get_for_model(obj)
+            log_entry_list.append(
+                LogEntry(
+                    content_type=content_type,
+                    actor=user,
+                    action=LogEntry.Action.UPDATE,
+                    changes={"sub_organization": [str(suborg), None]},
+                )
             )
+
+        LogEntry.objects.bulk_create(log_entry_list)
 
     def delete_model(self, request, obj):
         domain_requests = list(DomainRequest.objects.filter(sub_organization=obj))
