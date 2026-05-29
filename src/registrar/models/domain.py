@@ -1911,13 +1911,13 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             self._invalidate_cache()
 
-    def is_dns_needed(self):
+    def is_dns_needed(self) -> bool:
         """Double check that the nameservers we set are in fact on the registry"""
         self._invalidate_cache()
         nameserverList = self.nameservers
         return len(nameserverList) < 2
 
-    def dns_not_needed(self):
+    def dns_not_needed(self) -> bool:
         return not self.is_dns_needed()
 
     @transition(field="state", source=[State.DNS_NEEDED, State.READY], target=State.READY, conditions=[dns_not_needed])
