@@ -392,7 +392,7 @@ class DnsHostingError(Exception):
         return self.message
 
     def __reduce__(self):
-        # Default Exception pickling only preserves self.args, so we need to explicitly 
+        # Default Exception pickling only preserves self.args, so we need to explicitly
         # copy our custom attributes into the args tuple and rebuild them.
         return (
             _rebuild_dns_hosting_error,
@@ -470,3 +470,11 @@ class DnsUpstreamError(DnsHostingError):
             upstream_status=upstream_status,
             context=context,
         )
+
+
+class EnrollmentNotAllowedError(DnsHostingError):
+    """Raised when a domain isn't permitted to enroll in DNS hosting (e.g. production gating)."""
+
+    def __init__(self, message=None, **kwargs):
+        # Accept positional message for backward compatibility with existing callsites.
+        super().__init__(message=message, **kwargs)
