@@ -114,6 +114,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+DNS_HOSTING_PROD_ALLOWLIST = ["igorville.gov"]
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 

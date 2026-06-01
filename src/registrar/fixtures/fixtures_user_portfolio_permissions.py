@@ -4,7 +4,7 @@ from faker import Faker
 
 from registrar.fixtures.fixtures_portfolios import PortfolioFixture
 from registrar.fixtures.fixtures_users import UserFixture
-from registrar.models import User
+from registrar.models import PortfolioInvitation, User
 from registrar.models.portfolio import Portfolio
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -75,6 +75,7 @@ class UserPortfolioPermissionFixture:
         # Bulk create permissions
         cls._bulk_create_permissions(user_portfolio_permissions_to_create)
         cls.load_standard_user_permissions()
+        cls.load_empty_member_states()
 
     @classmethod
     def load_standard_user_permissions(cls):
@@ -122,6 +123,39 @@ class UserPortfolioPermissionFixture:
 
         # Bulk create permissions for standard users
         cls._bulk_create_permissions(permissions_to_create)
+
+    @classmethod
+    def load_empty_member_states(cls):
+        """Seed a portfolio member and invitation with no domain assignments."""
+        portfolio = Portfolio.objects.filter(organization_name__isnull=False).order_by("organization_name").first()
+        if not portfolio:
+            logger.warning("No seed portfolio found; skipping empty-state fixture.")
+            return
+
+        ghost, _ = User.objects.get_or_create(
+            username="ghost-member",
+            defaults={
+                "email": "ghost@example.com",
+                "first_name": "Ghost",
+                "last_name": "Member",
+            },
+        )
+        UserPortfolioPermission.objects.get_or_create(
+            user=ghost,
+            portfolio=portfolio,
+            defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+        )
+
+        PortfolioInvitation.objects.get_or_create(
+            email="no-domains@example.com",
+            portfolio=portfolio,
+            defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+        )
+
+        logger.info(
+            f"Loaded empty-domain-info member states on portfolio "
+            f"'{portfolio.organization_name}' (id={portfolio.id})."
+        )
 
     @classmethod
     def _bulk_create_permissions(cls, user_portfolio_permissions_to_create):
