@@ -112,14 +112,19 @@ class MockCloudflareService:
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
         self._mock_context.get(url__regex=r"/zones/[\w-]+").mock(side_effect=self._mock_get_cf_zone_response)
 
-        # Mock the api with any zone id
+        # Mock the create api with any zone id
         self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
 
-        # Mock the api with any record id
+        # Mock the update api with any record id
         self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
             side_effect=self._mock_update_dns_record_response
+        )
+
+        # Mock the delete api with any zone and record id
+        self._mock_context.delete(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
+            side_effect=self._mock_delete_dns_record_response
         )
 
         # PATCH account dns_settings
@@ -352,7 +357,7 @@ class MockCloudflareService:
         # Update response shape must match the create response — see the field inventory
         # in _mock_create_dns_record_response. The only difference is that the record id
         # comes from the request URL rather than being newly generated.
-        logger.debug("🐟 mocking dns A record update")
+        logger.debug("🐟 mocking dns record update")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
         content = request_as_json["content"]
@@ -407,6 +412,26 @@ class MockCloudflareService:
                     "priority": priority,
                     "created_on": datetime.now(timezone.utc).isoformat(),
                     "modified_on": datetime.now(timezone.utc).isoformat(),
+                },
+                "errors": [],
+                "messages": [],
+            },
+        )
+
+    def _mock_delete_dns_record_response(self, request) -> httpx.Response:
+        """Response result returns only record id so we return the record id from the request."""
+        logger.debug("🐟 mocking dns record delete")
+        # Get record id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        record_id = request_url.split("/dns_records/")[1]
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": record_id,
                 },
                 "errors": [],
                 "messages": [],
