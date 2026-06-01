@@ -4914,7 +4914,13 @@ class TestSuborganizationAdmin(TestCase):
             Suborganization.objects.create(name="test_sub_org2", portfolio=self.portfolio),
         ]
 
-        self.domains = [Domain.objects.create(name="test_suborg.gov"), Domain.objects.create(name="test_suborg2.gov")]
+        domain_1 = Domain.objects.create(name="test_suborg.gov")
+        domain_2 = Domain.objects.create(name="test_suborg2.gov")
+
+        self.domain_infos = [
+            DomainInformation.objects.create(domain=domain_1, requester=self.superuser),
+            DomainInformation.objects.create(domain=domain_2, requester=self.superuser),
+        ]
 
         draft_domain_1 = DraftDomain.objects.create(name="testdomainrequest1.gov")
         draft_domain_2 = DraftDomain.objects.create(name="testdomainrequest2.gov")
@@ -4931,6 +4937,9 @@ class TestSuborganizationAdmin(TestCase):
                 status=DomainRequest.DomainRequestStatus.SUBMITTED,
             ),
         ]
+
+    def tearDown(self):
+        LogEntry.objects.all().delete()
 
     def test_delete_suborg_with_a_single_domain_request(self):
         request = self.factory.get("/")
@@ -4950,7 +4959,7 @@ class TestSuborganizationAdmin(TestCase):
         self.assertEqual(self.domain_req.sub_organization, None)
 
     def test_delete_suborg_with_multiple_domains_and_domain_requests(self):
-        request = self.factory.post("/")
+        request = self.factory.get("/")
         request.user = self.superuser
 
         self.domain_reqs[0].sub_organization = self.sub_orgs[1]
@@ -4959,16 +4968,18 @@ class TestSuborganizationAdmin(TestCase):
         self.domain_reqs[0].save()
         self.domain_reqs[1].save()
 
-        self.domains[0].sub_organization = self.sub_orgs[1]
-        self.domains[1].sub_organization = self.sub_orgs[1]
+        self.domain_infos[0].sub_organization = self.sub_orgs[1]
+        self.domain_infos[1].sub_organization = self.sub_orgs[1]
 
-        self.domains[0].save()
-        self.domains[1].save()
+        self.domain_infos[0].save()
+        self.domain_infos[1].save()
 
         self.admin.delete_model(request, self.sub_orgs[1])
 
-        #   check if all domains and domain requests were logged
+        # get fresh copy of domain_info and domains requests
+        all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
 
-        for obj in self.domains + self.domain_reqs:
+        for obj in all_domain_and_domain_requests:
             log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
             self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
+            self.assertEqual(obj.sub_organization, None)
