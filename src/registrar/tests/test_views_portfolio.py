@@ -2743,7 +2743,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"member_pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
         expected_domains = [self.domain1, self.domain2, self.domain3]
         # assert that send_domain_manager_removal_emails_to_domain_managers is not called
@@ -2782,7 +2782,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"member_pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
         # assert that send_domain_invitation_email is not called
         mock_send_domain_email.assert_not_called()
         # assert that send_domain_manager_removal_emails_to_domain_managers is called twice
@@ -2856,7 +2856,7 @@ class TestPortfolioMemberDomainsEditView(TestWithUser, WebTest):
         self.assertRedirects(response, reverse("member-domains", kwargs={"member_pk": self.portfolio_permission.pk}))
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_domain_invitation_email")
@@ -3181,7 +3181,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
         expected_domains = [self.domain1, self.domain2, self.domain3]
         # Verify that the invitation email was sent
@@ -3345,7 +3345,7 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         )
         messages = list(response.wsgi_request._messages)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "The domain assignment changes have been saved.")
+        self.assertEqual(str(messages[0]), "The domain assignments for this member have been updated.")
 
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_domain_invitation_email")

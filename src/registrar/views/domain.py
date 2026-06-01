@@ -1712,7 +1712,7 @@ class DomainAddUserView(DomainFormBaseView):
                     defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
                 )
 
-        messages.success(self.request, f"Added user {email}.")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1732,7 +1732,7 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
+            messages.error(request, "This invitation can't be canceled because it has already been retrieved.")
             return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
@@ -1779,9 +1779,9 @@ class DomainDeleteUserView(DeleteView):
         # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
         if self.delete_self:
-            message = f"You are no longer managing the domain {self.object.domain}."
+            message = "You've been removed from this domain."
         else:
-            message = f"Removed {email_or_name} as a manager for this domain."
+            message = f"{email_or_name} has been removed from this domain."
 
         return message
 
@@ -1816,8 +1816,8 @@ class DomainDeleteUserView(DeleteView):
             if self.delete_self:
                 messages.error(
                     request,
-                    "Domains must have at least one domain manager. "
-                    "To remove yourself, the domain needs another domain manager.",
+                    "You can’t remove yourself because you’re the only domain manager. " \
+                    "To remove yourself, you’ll need to add another domain manager.",
                 )
             else:
                 messages.error(request, "Domains must have at least one domain manager.")

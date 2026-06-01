@@ -1491,7 +1491,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+        self.assertContains(response, "This invitation can't be canceled because it has already been retrieved.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
@@ -1567,7 +1567,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": new_user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
+        self.assertContains(response, f"{email_address} has been removed from this domain.")
         # Assert that the second user is displayed
         self.assertContains(response, f"{email_address_2}")
         # Assert that the UserDomainRole is deleted
@@ -1581,7 +1581,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, "Domains must have at least one domain manager.")
+        self.assertContains(response, "You can’t remove yourself because you’re the only domain manager. ")
         # Assert that the user is still displayed
         self.assertContains(response, f"{self.user.email}")
         # Assert that the UserDomainRole still exists
@@ -1598,7 +1598,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
+        self.assertContains(response, "You've been removed from this domain.")
         # Assert that the UserDomainRole no longer exists
         self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
