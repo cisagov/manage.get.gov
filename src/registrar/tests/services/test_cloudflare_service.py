@@ -313,9 +313,7 @@ class TestCloudflareService(SimpleTestCase):
         record_id = "6789"
         mock_response = Mock()
         mock_response.status_code = 400
-        http_error = HTTPStatusError(
-            request="something", response="400 Server Error", message="Error deleting record"
-        )
+        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error deleting record")
         http_error.response = mock_response
         self.service.client.delete.return_value = mock_response
         mock_response.raise_for_status.side_effect = http_error
