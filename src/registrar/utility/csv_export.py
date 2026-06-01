@@ -35,6 +35,7 @@ from django.db.models import (
 from django.utils import timezone
 from django.db.models.functions import Concat, Coalesce, Cast
 from django.contrib.postgres.aggregates import ArrayAgg, StringAgg
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.admin.models import LogEntry, ADDITION
 from django.contrib.contenttypes.models import ContentType
 from registrar.models.utility.generic_helper import convert_queryset_to_dict
@@ -383,6 +384,8 @@ class MemberExport(BaseExport):
                     # only include domains in portfolio
                     filter=Q(user__permissions__domain__isnull=False)
                     & Q(user__permissions__domain__domain_info__portfolio=portfolio),
+                    # Django v5.0+ an empty ArrayAgg returns NULL rather than [];
+                    default=Value([], output_field=ArrayField(CharField())),
                 ),
                 type=Value("member", output_field=CharField()),
                 joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
@@ -413,8 +416,9 @@ class MemberExport(BaseExport):
                 last_active=Value("Invited", output_field=CharField()),
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
-                # Use ArrayRemove to return an empty list when no domain invitations are found
-                domain_info=domain_invitations,
+                # when a member has no invitations / null,
+                # Coalesce normalizes to empty list for parse_row.
+                domain_info=Coalesce(domain_invitations, Value([], output_field=ArrayField(CharField()))),
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
                 invited_by_user=cls.get_invited_by_query(
@@ -509,7 +513,7 @@ class MemberExport(BaseExport):
         """
         roles = model.get("roles", [])
         permissions = model.get("additional_permissions_display")
-        user_managed_domains = model.get("domain_info", [])
+        user_managed_domains = model.get("domain_info") or []
         length_user_managed_domains = len(user_managed_domains)
         FIELDS = {
             "Email": model.get("email_display"),
@@ -2244,9 +2248,12 @@ class DomainRequestDataFull(DomainRequestExport):
             {
                 "requester_approved_domains_count": cls.get_requester_approved_domains_count_query(),
                 "requester_active_requests_count": cls.get_requester_active_requests_count_query(),
-                "all_current_websites": StringAgg("current_websites__website", delimiter=delimiter, distinct=True),
+                # default="" keeps the pre-Django-5.0 empty-string result when there are no rows
+                "all_current_websites": StringAgg(
+                    "current_websites__website", delimiter=delimiter, distinct=True, default=Value("")
+                ),
                 "all_alternative_domains": StringAgg(
-                    "alternative_domains__website", delimiter=delimiter, distinct=True
+                    "alternative_domains__website", delimiter=delimiter, distinct=True, default=Value("")
                 ),
                 # Coerce the other contacts object to "{first_name} {last_name} {email}"
                 "all_other_contacts": StringAgg(
@@ -2260,6 +2267,7 @@ class DomainRequestDataFull(DomainRequestExport):
                     ),
                     delimiter=delimiter,
                     distinct=True,
+                    default=Value(""),
                 ),
             }
         )
