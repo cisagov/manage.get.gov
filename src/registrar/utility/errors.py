@@ -2,6 +2,8 @@ import logging
 
 from enum import IntEnum
 
+from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
+
 logger = logging.getLogger(__name__)
 
 
@@ -315,3 +317,156 @@ class APIError(Exception):
     """Custom exception for API-related errors"""
 
     pass
+
+
+class DnsHostingErrorCodes(IntEnum):
+    """Error codes for DNS-hosting failures."""
+
+    ZONE_NOT_FOUND = 1
+    RECORD_CONFLICT = 2
+    VALIDATION_FAILED = 3
+    RATE_LIMIT_EXCEEDED = 4
+    AUTH_FAILED = 5
+    UPSTREAM_TIMEOUT = 6
+    UPSTREAM_ERROR = 7
+    UNKNOWN = 8
+
+
+_DNS_WIRE_CODES = {
+    DnsHostingErrorCodes.ZONE_NOT_FOUND: "DNS_ZONE_NOT_FOUND",
+    DnsHostingErrorCodes.RECORD_CONFLICT: "DNS_RECORD_CONFLICT",
+    DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
+    DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
+    DnsHostingErrorCodes.AUTH_FAILED: "DNS_AUTH_FAILED",
+    DnsHostingErrorCodes.UPSTREAM_TIMEOUT: "DNS_UPSTREAM_TIMEOUT",
+    DnsHostingErrorCodes.UPSTREAM_ERROR: "DNS_UPSTREAM_ERROR",
+    DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
+}
+
+
+def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
+    # Module-level rebuilder so __reduce__ stays picklable by name.
+    return cls(code=code, message=explicit_message, upstream_status=upstream_status, context=context)
+
+
+class DnsHostingError(Exception):
+    """Typed base exception for DNS-hosting failures."""
+
+    _error_mapping = {
+        DnsHostingErrorCodes.ZONE_NOT_FOUND: (
+            "We couldn’t find the DNS zone for this domain. It may not be enrolled in DNS hosting yet."
+        ),
+        DnsHostingErrorCodes.RECORD_CONFLICT: DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+        DnsHostingErrorCodes.VALIDATION_FAILED: (
+            "The DNS record couldn’t be saved because one of its fields wasn’t valid."
+        ),
+        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
+            "You’re making changes too quickly. Please wait a moment and try again."
+        ),
+        DnsHostingErrorCodes.AUTH_FAILED: ("We couldn’t reach our DNS provider. Please try again in a moment."),
+        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
+        DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
+        DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
+    }
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
+        self._explicit_message = message
+        self.upstream_status = upstream_status
+        self.context = dict(context) if context else {}
+        super().__init__(self.message)
+
+    @property
+    def message(self):
+        """User-facing text: explicit caller message, else the code-level default."""
+        if self._explicit_message:
+            return self._explicit_message
+        return self._error_mapping.get(self.code) or "DNS operation failed."
+
+    @property
+    def wire_code(self):
+        """Stable wire name for this error's code (e.g. 'DNS_ZONE_NOT_FOUND')."""
+        return _DNS_WIRE_CODES.get(self.code, "DNS_UNKNOWN")
+
+    def __str__(self):
+        return self.message
+
+    def __reduce__(self):
+        # Default Exception pickling only preserves self.args, so we need to explicitly 
+        # copy our custom attributes into the args tuple and rebuild them.
+        return (
+            _rebuild_dns_hosting_error,
+            (type(self), self.code, self._explicit_message, self.upstream_status, self.context),
+        )
+
+
+class DnsNotFoundError(DnsHostingError):
+    """Upstream returned 404 for a zone or record."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.ZONE_NOT_FOUND,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsValidationError(DnsHostingError):
+    """Upstream rejected the record as invalid (400) or conflicting (409)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.VALIDATION_FAILED,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsRateLimitError(DnsHostingError):
+    """Upstream returned 429 (too many requests)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsAuthError(DnsHostingError):
+    """Upstream returned 401 / 403 (invalid auth token or scope)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.AUTH_FAILED,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsTransportError(DnsHostingError):
+    """No HTTP response came back (connect failure, timeout, DNS lookup failed)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
+
+
+class DnsUpstreamError(DnsHostingError):
+    """Upstream returned a 5xx (provider outage)."""
+
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+        super().__init__(
+            code=code or DnsHostingErrorCodes.UPSTREAM_ERROR,
+            message=message,
+            upstream_status=upstream_status,
+            context=context,
+        )
