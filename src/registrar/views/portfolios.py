@@ -223,9 +223,7 @@ class PortfolioMemberDeleteView(View):
                     manager_removed_email=portfolio_member_permission.user.email,
                     domain=domain,
                 ):
-                    messages.warning(
-                        request, "Could not send email notification to existing domain managers"
-                    )
+                    messages.warning(request, "Could not send email notification to existing domain managers")
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -521,9 +519,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                     manager_removed_email=member.email,
                     domain=domain,
                 ):
-                    messages.warning(
-                        self.request, "Could not send email notification to existing domain managers"
-                    )
+                    messages.warning(self.request, "Could not send email notification to existing domain managers")
             # Delete UserDomainRole instances for removed domains
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
@@ -614,9 +610,7 @@ class PortfolioInvitedMemberDeleteView(View):
                     manager_removed_email=portfolio_invitation.email,
                     domain=domain,
                 ):
-                    messages.warning(
-                        request, "Could not send email notification to existing domain managers"
-                    )
+                    messages.warning(request, "Could not send email notification to existing domain managers")
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -905,9 +899,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 manager_removed_email=email,
                 domain=domain,
             ):
-                messages.warning(
-                    self.request, "Could not send email notification to existing domain managers"
-                )
+                messages.warning(self.request, "Could not send email notification to existing domain managers")
 
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(

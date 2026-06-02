@@ -77,25 +77,30 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, InvitationError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.error(request, mark_safe(  # nosec
-                        'A database error occurred while saving changes. Please try again.'
-                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
-                        'for assistance.'
-                    ))
+        messages.error(
+            request,
+            mark_safe(  # nosec
+                "A database error occurred while saving changes. Please try again."
+                'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                "for assistance."
+            ),
+        )
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
         messages.error(
-            request, mark_safe(  # nosec
-                        'A database error occurred while saving changes. Please try again.'
-                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
-                        'for assistance.'
-                    )
+            request,
+            mark_safe(  # nosec
+                "A database error occurred while saving changes. Please try again."
+                'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                "for assistance."
+            ),
         )
 
 
 def with_contact_link(error_message: str, contact_url: str = "https://get.gov/contact") -> str:
     return format_html(
-        '{} Please try again. If the problem persists, <a href="{}" class="usa-link" target="_blank">contact us</a> for assistance.',
+        "{} Please try again. If the problem persists, "
+        '<a href="{}" class="usa-link" target="_blank">contact us</a> for assistance.',
         error_message,
         contact_url,
     )

@@ -1816,7 +1816,7 @@ class DomainDeleteUserView(DeleteView):
             if self.delete_self:
                 messages.error(
                     request,
-                    "You can’t remove yourself because you’re the only domain manager. " \
+                    "You can’t remove yourself because you’re the only domain manager. "
                     "To remove yourself, you’ll need to add another domain manager.",
                 )
             else:
