@@ -77,6 +77,7 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
+from auditlog.models import LogEntry
 
 import logging
 
@@ -4937,6 +4938,9 @@ class TestSuborganizationAdmin(TestCase):
             ),
         ]
 
+    def tearDown(self):
+        LogEntry.objects.all().delete()
+
     def test_delete_suborg_with_a_single_domain_request(self):
         request = self.factory.get("/")
         request.user = self.superuser
@@ -4949,6 +4953,9 @@ class TestSuborganizationAdmin(TestCase):
 
         self.domain_req.refresh_from_db()
 
+        log = LogEntry.objects.filter(object_pk=str(self.domain_req.id)).first()
+
+        self.assertEqual(log.changes, {"sub_organization": ["test_sub_org1", None]})
         self.assertEqual(self.domain_req.sub_organization, None)
 
     def test_delete_suborg_with_multiple_domains_and_domain_requests(self):
@@ -4973,4 +4980,6 @@ class TestSuborganizationAdmin(TestCase):
         all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
 
         for obj in all_domain_and_domain_requests:
+            log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
+            self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
             self.assertEqual(obj.sub_organization, None)
