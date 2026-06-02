@@ -1,4 +1,4 @@
-import pickle
+import pickle  # nosec B403  # test-only: round-trips our own exception, never untrusted data
 
 from django.test import TestCase
 
@@ -80,7 +80,7 @@ class TestDnsHostingError(TestCase):
                 context = {"zone_id": "abc123", "attempt": 2}
                 exc = exc_cls(upstream_status=upstream_status, context=context)
 
-                restored = pickle.loads(pickle.dumps(exc))
+                restored = pickle.loads(pickle.dumps(exc))  # nosec B301  # round-trips our own exception
 
                 self.assertIs(type(restored), exc_cls)
                 self.assertEqual(restored.code, default_code)
@@ -93,6 +93,6 @@ class TestDnsHostingError(TestCase):
     def test_explicit_message_survives_pickling(self):
         """A caller-supplied message round-trips through pickle unchanged."""
         exc = DnsUpstreamError(message="provider on fire", upstream_status=503)
-        restored = pickle.loads(pickle.dumps(exc))
+        restored = pickle.loads(pickle.dumps(exc))  # nosec B301  # round-trips our own exception
         self.assertEqual(restored.message, "provider on fire")
         self.assertEqual(restored.upstream_status, 503)
