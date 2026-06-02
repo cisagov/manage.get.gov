@@ -63,7 +63,6 @@ from registrar.utility.constants import BranchChoices
 from registrar.utility.errors import (
     EnrollmentNotAllowedError,
     FSMDomainRequestError,
-    FSMDomainRequestError,
     FSMErrorCodes,
 )
 from registrar.utility.waffle import flag_is_active_for_user
