@@ -18,11 +18,12 @@ class Command(BaseCommand):
     are marked "DELETED" in the registrar and deleted in the registry."""
 
     def handle(self, *args, **options):
+        alert_email=options.get("alert_email")
         domains_to_be_deleted = self.get_domains()
         dry_run = options.get("dry_run", False)
 
         if not dry_run:
-            deleted_domains = self.delete_domains_and_send_notif_emails(domains_to_be_deleted)
+            deleted_domains = self.delete_domains_and_send_notif_emails(domains_to_be_deleted, alert_email)
             self.logging_message(dry_run, deleted_domains)
         else:
             self.logging_message(dry_run, domains_to_be_deleted)
@@ -46,6 +47,11 @@ class Command(BaseCommand):
             "--dry-run",
             action=argparse.BooleanOptionalAction,
             help="Show what would be changed without making any database modifications.",
+        )
+
+        parser.add_argument(
+            "--alert-email", 
+            help="Email address to send deletion alert notifications to.",
         )
         return super().add_arguments(parser)
 
@@ -82,7 +88,7 @@ class Command(BaseCommand):
 
         return domains_in_expired_state
 
-    def delete_domains_and_send_notif_emails(self, domains):
+    def delete_domains_and_send_notif_emails(self, domains, alert_email=None):
         deleted_domains = []
         for domain in domains:
             try:
@@ -90,18 +96,16 @@ class Command(BaseCommand):
                 deleted_domains.append(domain)
             except ActionNotAllowed as action_not_allowed_msg:
                 logger.error(f"Failed to delete {domain.name}: {action_not_allowed_msg}")
-                alert_email = settings.SLACK_DELETION_ALERT_EMAIL_PROD
-                if not settings.IS_PRODUCTION:
-                    alert_email = settings.SLACK_DELETION_ALERT_EMAIL_NONPROD
-                try:
-                    send_templated_email(
-                        template_name="emails/domain_deletion_failed_body.txt",
-                        subject_template_name="emails/domain_deletion_failed_subject.txt",
-                        to_addresses=[alert_email],
-                        context={"domain": domain.name},
-                    )
-                except Exception as email_err:
-                    logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
+                if alert_email:
+                    try:
+                        send_templated_email(
+                            template_name="emails/domain_deletion_failed_body.txt",
+                            subject_template_name="emails/domain_deletion_failed_subject.txt",
+                            to_addresses=[alert_email],
+                            context={"domain": domain.name},
+                        )
+                    except Exception as email_err:
+                        logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
             except Exception as e:
                 logger.error(f"Failed to delete {domain.name}: {e}")
 
