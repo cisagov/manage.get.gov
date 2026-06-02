@@ -19,6 +19,9 @@ env:
   SOURCE_ENVIRONMENT: stable
   
 
+permissions:
+  contents: read
+
 jobs:
   clone-database:
     runs-on: ubuntu-24.04
