@@ -80,7 +80,7 @@ def handle_invitation_exceptions(request, exception, email):
         messages.error(
             request,
             mark_safe(  # nosec
-                "A database error occurred while saving changes. Please try again."
+                "A database error occurred while saving changes. Please try again. "
                 'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
                 "for assistance."
             ),
@@ -90,7 +90,7 @@ def handle_invitation_exceptions(request, exception, email):
         messages.error(
             request,
             mark_safe(  # nosec
-                "A database error occurred while saving changes. Please try again."
+                "A database error occurred while saving changes. Please try again. "
                 'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
                 "for assistance."
             ),

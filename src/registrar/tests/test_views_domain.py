@@ -1491,7 +1491,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, "This invitation can't be canceled because it has already been retrieved.")
+        #Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "be canceled because it has already been retrieved.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
@@ -1598,7 +1599,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, "You've been removed from this domain.")
+        #Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "been removed from this domain.")
         # Assert that the UserDomainRole no longer exists
         self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
