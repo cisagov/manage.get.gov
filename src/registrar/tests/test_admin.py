@@ -4961,6 +4961,8 @@ class TestSuborganizationAdmin(TestCase):
 
         self.assertEqual(log.changes, {"sub_organization": ["test_sub_org1", None]})
         self.assertEqual(self.domain_req.sub_organization, None)
+        self.assertEqual(log.object_id, self.domain_req.id)
+        self.assertEqual(log.object_repr, str(self.domain_req))
 
     def test_logs_delete_suborg_with_multiple_domains_and_domain_requests(self):
         """
@@ -4990,6 +4992,8 @@ class TestSuborganizationAdmin(TestCase):
         for obj in all_domain_and_domain_requests:
             log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
             self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
+            self.assertEqual(log.object_id, obj.id)
+            self.assertEqual(log.object_repr, str(obj))
 
     def test_delete_queryset_with_multiple_domains_and_domain_Rrequests(self):
         """
@@ -5024,3 +5028,5 @@ class TestSuborganizationAdmin(TestCase):
             was_sub_org_deleted_log = log.changes == sub_org_1_log or log.changes == sub_org_2_log
 
             self.assertEqual(was_sub_org_deleted_log, True)
+            self.assertEqual(log.object_id, obj.id)
+            self.assertEqual(log.object_repr, str(obj))
