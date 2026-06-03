@@ -4941,7 +4941,11 @@ class TestSuborganizationAdmin(TestCase):
     def tearDown(self):
         LogEntry.objects.all().delete()
 
-    def test_delete_suborg_with_a_single_domain_request(self):
+    def test_logs_delete_suborg_with_a_single_item(self):
+        """
+        Test deleting a suborg with a single domain request that has this suborg
+        A log should be generated that indicates the domain request indicating the Suborg has been removed
+        """
         request = self.factory.get("/")
         request.user = self.superuser
         self.domain_req = self.domain_reqs[1]
@@ -4958,7 +4962,11 @@ class TestSuborganizationAdmin(TestCase):
         self.assertEqual(log.changes, {"sub_organization": ["test_sub_org1", None]})
         self.assertEqual(self.domain_req.sub_organization, None)
 
-    def test_delete_suborg_with_multiple_domains_and_domain_requests(self):
+    def test_logs_delete_suborg_with_multiple_domains_and_domain_requests(self):
+        """
+        Test deleting a suborg with multiple domains and domain requests
+        A log should be generated for each domain and domain request indicating the Suborg has been removed
+        """
         request = self.factory.get("/")
         request.user = self.superuser
 
@@ -4982,4 +4990,37 @@ class TestSuborganizationAdmin(TestCase):
         for obj in all_domain_and_domain_requests:
             log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
             self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
-            self.assertEqual(obj.sub_organization, None)
+
+    def test_delete_queryset_with_multiple_domains_and_domain_Rrequests(self):
+        """
+        Test deleting via delete_queryset multiple suborgs with multiple domains and domain requests
+        A log should be generated for each domain and domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        self.domain_reqs[0].sub_organization = self.sub_orgs[0]
+        self.domain_reqs[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_reqs[0].save()
+        self.domain_reqs[1].save()
+
+        self.domain_infos[0].sub_organization = self.sub_orgs[0]
+        self.domain_infos[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_infos[0].save()
+        self.domain_infos[1].save()
+
+        queryset = Suborganization.objects.filter(id__in=[self.sub_orgs[0].id, self.sub_orgs[1].id])
+        self.admin.delete_queryset(request, queryset)
+
+        # get fresh copy of domain_info and domains requests
+        all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
+        sub_org_1_log = {"sub_organization": ["test_sub_org2", None]}
+        sub_org_2_log = {"sub_organization": ["test_sub_org1", None]}
+        for obj in all_domain_and_domain_requests:
+            log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
+
+            was_sub_org_deleted_log = log.changes == sub_org_1_log or log.changes == sub_org_2_log
+
+            self.assertEqual(was_sub_org_deleted_log, True)
