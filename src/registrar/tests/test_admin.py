@@ -4964,7 +4964,7 @@ class TestSuborganizationAdmin(TestCase):
 
     def test_logs_delete_suborg_with_multiple_domains_and_domain_requests(self):
         """
-        Test deleting a suborg with multiple domains and domain requests
+        Test deleting a single suborg with multiple domains and domain requests
         A log should be generated for each domain and domain request indicating the Suborg has been removed
         """
         request = self.factory.get("/")
