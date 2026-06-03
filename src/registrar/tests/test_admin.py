@@ -4995,7 +4995,7 @@ class TestSuborganizationAdmin(TestCase):
             self.assertEqual(log.object_id, obj.id)
             self.assertEqual(log.object_repr, str(obj))
 
-    def test_delete_queryset_with_multiple_domains_and_domain_Rrequests(self):
+    def test_logs_delete_queryset_with_multiple_domains_and_domain_requests(self):
         """
         Test deleting via delete_queryset multiple suborgs with multiple domains and domain requests
         A log should be generated for each domain and domain request indicating the Suborg has been removed
