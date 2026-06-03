@@ -5027,7 +5027,7 @@ class TestSuborganizationAdmin(TestCase):
             log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
 
             was_sub_org_deleted_log = log.changes == sub_org_1_log or log.changes == sub_org_2_log
-
+            self.assertEqual(obj.sub_organization, None)
             self.assertEqual(was_sub_org_deleted_log, True)
             self.assertEqual(log.object_id, obj.id)
             self.assertEqual(log.object_repr, str(obj))
