@@ -6,6 +6,9 @@ run-name: Build and deploy developer sandbox for branch ${{ github.head_ref }}
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   variables: 
     if: | 
