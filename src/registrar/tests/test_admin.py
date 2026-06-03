@@ -4992,6 +4992,7 @@ class TestSuborganizationAdmin(TestCase):
         for obj in all_domain_and_domain_requests:
             log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
             self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
+            self.assertEqual(obj.sub_organization, None)
             self.assertEqual(log.object_id, obj.id)
             self.assertEqual(log.object_repr, str(obj))
 
