@@ -1,7 +1,15 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+import os
+import gevent
 from gevent.lock import BoundedSemaphore
+from django.conf import settings
+from .cert import Cert, Key
+from .errors import ErrorCode, LoginError, RegistryError
+
+# Set > 0 to simulate a slow registry for 499 reproduction. 0 = disabled.
+EPP_TEST_DELAY_SECONDS = 5
 
 try:
     from epplib.client import Client
@@ -11,12 +19,13 @@ try:
 except ImportError:
     pass
 
-from django.conf import settings
-
-from .cert import Cert, Key
-from .errors import ErrorCode, LoginError, RegistryError
 
 logger = logging.getLogger(__name__)
+
+
+def _worker_tag():
+    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
+
 
 try:
     # Write cert and key to disk
@@ -101,9 +110,11 @@ class EPPLibWrapper:
         if response.code >= 2000:  # type: ignore
             self._client.close()  # type: ignore
             raise LoginError(response.msg)  # type: ignore
+        logger.info(f"{_worker_tag()} EPP connection established")
 
     def _disconnect(self) -> None:
         """Close the connection. Sends a logout command and closes the connection."""
+        logger.info(f"{_worker_tag()} EPP connection closing")
         self._send_logout_command()
         self._close_client()
 
@@ -125,11 +136,16 @@ class EPPLibWrapper:
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
 
+        if EPP_TEST_DELAY_SECONDS > 0:
+            logger.warning(f"{_worker_tag()} TEST DELAY {EPP_TEST_DELAY_SECONDS}s before {cmd_type}")
+            gevent.sleep(EPP_TEST_DELAY_SECONDS)
+
         try:
             # check for the condition that the _client was not initialized properly
             # at app initialization
             if self._client is None:
                 self._initialize_client()
+            logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
             response = self._client.send(command)
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
@@ -137,17 +153,17 @@ class EPPLibWrapper:
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()} EPP connection lost. {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}")
             raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}")
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
@@ -184,7 +200,7 @@ class EPPLibWrapper:
                 or err.should_retry()
             ):
                 message = f"{cmd_type} failed and will be retried"
-                logger.info(f"{message} Error: {err}")
+                logger.info(f"{_worker_tag()}: About to retry msg: {message} error was {err}")
                 return self._retry(command)
             else:
                 raise err
@@ -195,6 +211,6 @@ class EPPLibWrapper:
 try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
-    logger.info("registry client initialized")
+    logger.info(f"{_worker_tag()}: registry client initialized")
 except Exception:
-    logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+    logger.warning(f"{_worker_tag()}: Unable to configure epplib. Registrar cannot contact registry.")
