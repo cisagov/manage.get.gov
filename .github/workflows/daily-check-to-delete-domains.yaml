@@ -22,9 +22,6 @@ jobs:
     env:
       CF_USERNAME: CF_${{ secrets.CF_NOTIFICATIONS_ENV }}_USERNAME
       CF_PASSWORD: CF_${{ secrets.CF_NOTIFICATIONS_ENV }}_PASSWORD
-      # TODO: Add Github secrets for these once Slack channel emails have been confirmed
-      SLACK_DELETION_ALERT_EMAIL_PROD: ${{ secrets.SLACK_DELETION_ALERT_EMAIL }}
-      SLACK_DELETION_ALERT_EMAIL_NONPROD: ${{ secrets.SLACK_DELETION_ALERT_EMAIL_NONPROD }}
     steps:
       - name:  Delete domains 7 days past expiration with dns status dns needed or unknown
         uses: cloud-gov/cg-cli-tools@main
@@ -32,4 +29,4 @@ jobs:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
-          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py delete_expired_domains_not_setup --alert-email ${{ secrets.SLACK_DELETION_ALERT_EMAIL_PROD}}'"
+          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py delete_expired_domains_not_setup --alert-email ${{ secrets.SLACK_DELETION_ALERT_EMAIL}}'"

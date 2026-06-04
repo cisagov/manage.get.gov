@@ -617,7 +617,6 @@ class TestDomainStatuses(MockEppLib):
         with less_console_noise():
             domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
             self.assertEqual(domain.first_ready, None)
-            self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
             domain.ready()
             # check that status is READY
             self.assertTrue(domain.is_active())
@@ -625,11 +624,9 @@ class TestDomainStatuses(MockEppLib):
             # Capture the value of first_ready
             first_ready = domain.first_ready
             # change domain status
-            self.mockDataInfoDomain.hosts = ["fake.host.com"]
             domain.dns_needed()
             self.assertFalse(domain.is_active())
             # change  back to READY
-            self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
             domain.ready()
             self.assertTrue(domain.is_active())
             # assert that the value of first_ready has not changed
@@ -1756,8 +1753,7 @@ class TestRegistrantNameservers(MockEppLib):
                 call(update_domain_with_created, cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            # 4 calls expected above, plus 3 more for is_dns_needed transitions
-            self.assertEqual(7, self.mockedSendFunction.call_count)
+            self.assertEqual(4, self.mockedSendFunction.call_count)
             # check that status is READY
             self.assertTrue(self.domain.is_active())
             self.assertNotEqual(self.domain.first_ready, None)
@@ -2055,8 +2051,7 @@ class TestRegistrantNameservers(MockEppLib):
                 call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            # Needs 8 calls since we make a second EPP call in is_dns_needed
-            self.assertEqual(self.mockedSendFunction.call_count, 8)
+            self.assertEqual(self.mockedSendFunction.call_count, 4)
 
     def test_is_subdomain_with_no_ip(self):
         with less_console_noise():

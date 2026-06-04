@@ -1,7 +1,5 @@
 from datetime import timedelta
 from django.core.management import BaseCommand
-
-from django.conf import settings
 from registrar.models import Domain, UserDomainRole
 import logging
 import argparse
@@ -18,7 +16,7 @@ class Command(BaseCommand):
     are marked "DELETED" in the registrar and deleted in the registry."""
 
     def handle(self, *args, **options):
-        alert_email=options.get("alert_email")
+        alert_email = options.get("alert_email")
         domains_to_be_deleted = self.get_domains()
         dry_run = options.get("dry_run", False)
 
@@ -50,7 +48,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--alert-email", 
+            "--alert-email",
             help="Email address to send deletion alert notifications to.",
         )
         return super().add_arguments(parser)

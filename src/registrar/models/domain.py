@@ -1913,7 +1913,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def is_dns_needed(self) -> bool:
         """Double check that the nameservers we set are in fact on the registry"""
-        self._invalidate_cache()
         nameserverList = self.nameservers
         return len(nameserverList) < 2
 
