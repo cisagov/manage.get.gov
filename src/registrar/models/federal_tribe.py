@@ -28,6 +28,7 @@ class FederalTribe(TimeStampedModel):
         blank=True,
         verbose_name="tribe alternate name",
     )
+    # Tribal contact information
     first_name = models.CharField(
         null=True,
         blank=True,
@@ -43,6 +44,7 @@ class FederalTribe(TimeStampedModel):
         blank=True,
         help_text="Name suffix (ie jr, sr, III)",
     )
+    # Preferred name or nickname of contact (Also Known As)
     aka = models.CharField(
         null=True,
         blank=True,
