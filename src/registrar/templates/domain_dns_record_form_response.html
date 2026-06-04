@@ -40,14 +40,6 @@
                 </tr>
             </thead>
             {% endif %}
-        
-        <caption id="dns-record-sr-table-caption" class="sr-only" hx-swap-oob="true">
-          {% if dns_record %}
-           Your DNS records
-              {% else %}
-            You currently have no DNS records.
-         {% endif %}
-        </caption>
 
             <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
                 {% include "domain_dns_record_row.html" with record_id=record_id dns_record=dns_record %}
