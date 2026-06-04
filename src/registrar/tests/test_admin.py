@@ -78,6 +78,7 @@ from django.contrib import messages
 from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
 from auditlog.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
 
 import logging
 
@@ -4990,7 +4991,8 @@ class TestSuborganizationAdmin(TestCase):
         all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
 
         for obj in all_domain_and_domain_requests:
-            log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
+            ct = ContentType.objects.get_for_model(obj)
+            log = LogEntry.objects.filter(object_pk=str(obj.id), content_type=ct).first()
             self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
             self.assertEqual(obj.sub_organization, None)
             self.assertEqual(log.object_id, obj.id)
@@ -5024,7 +5026,8 @@ class TestSuborganizationAdmin(TestCase):
         sub_org_1_log = {"sub_organization": ["test_sub_org2", None]}
         sub_org_2_log = {"sub_organization": ["test_sub_org1", None]}
         for obj in all_domain_and_domain_requests:
-            log = LogEntry.objects.filter(object_pk=str(obj.id)).first()
+            ct = ContentType.objects.get_for_model(obj)
+            log = LogEntry.objects.filter(object_pk=str(obj.id), content_type=ct).first()
 
             was_sub_org_deleted_log = log.changes == sub_org_1_log or log.changes == sub_org_2_log
             self.assertEqual(obj.sub_organization, None)
