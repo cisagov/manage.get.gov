@@ -28,6 +28,11 @@
 
         </template>
     {% else %}
+    
+        <caption id="dns-record-sr-table-caption" class="sr-only" hx-swap-oob="true">
+           Your DNS records
+        </caption>
+
         <template>
             {% if is_first_record %}
             <thead id="dnsrecords-table-head" hx-swap-oob="outerHTML">
@@ -40,7 +45,6 @@
                 </tr>
             </thead>
             {% endif %}
-
             <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
                 {% include "domain_dns_record_row.html" with record_id=record_id dns_record=dns_record %}
                 {% include "domain_dns_record_edit_form.html" with record_id=record_id dns_record=dns_record %}
