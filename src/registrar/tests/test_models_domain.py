@@ -609,28 +609,49 @@ class TestDomainStatuses(MockEppLib):
         """Domain 'revert_client_hold' method causes the registry to change statuses"""
         raise
 
+    @less_console_noise_decorator
     def test_first_ready(self):
         """
         first_ready is set when a domain is first transitioned to READY. It does not get overwritten
         in case the domain gets out of and back into READY.
         """
-        with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
-            self.assertEqual(domain.first_ready, None)
-            domain.ready()
-            # check that status is READY
-            self.assertTrue(domain.is_active())
-            self.assertNotEqual(domain.first_ready, None)
-            # Capture the value of first_ready
-            first_ready = domain.first_ready
-            # change domain status
-            domain.dns_needed()
-            self.assertFalse(domain.is_active())
-            # change  back to READY
-            domain.ready()
-            self.assertTrue(domain.is_active())
-            # assert that the value of first_ready has not changed
-            self.assertEqual(domain.first_ready, first_ready)
+        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
+        self.assertEqual(domain.first_ready, None)
+
+        # Set mock EPP hosts so is_dns_needed condition returns False and transition succeeds            
+        self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        domain.ready()
+
+        # check that status is READY
+        self.assertTrue(domain.is_active())
+        self.assertNotEqual(domain.first_ready, None)
+        
+        # Capture the value of first_ready
+        first_ready = domain.first_ready
+        
+        # change mock EPP hosts and then domain status 
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+        domain._invalidate_cache()
+        print("WHOA")
+        print(domain.nameservers)
+        domain.dns_needed()
+        print("--WHOA2--")
+        print(domain.nameservers)
+        self.assertFalse(domain.is_active())
+        
+        # change back to READY
+        self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        domain._invalidate_cache()
+        domain.ready()
+        self.assertTrue(domain.is_active())
+
+        # assert that the value of first_ready has not changed
+        self.assertEqual(domain.first_ready, first_ready)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+        domain._invalidate_cache()
+        # _ = domain.nameservers
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
@@ -1732,6 +1753,9 @@ class TestRegistrantNameservers(MockEppLib):
             And domain.first_ready is not null
         """
         with less_console_noise():
+            # update mock EPP with same data as what I want new nameservers to be
+            self.mockDataInfoDomain.hosts = [self.nameserver1, self.nameserver2]
+            
             # set 2 nameservers
             self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
             # when you create a host, you also have to update at same time
@@ -1753,10 +1777,16 @@ class TestRegistrantNameservers(MockEppLib):
                 call(update_domain_with_created, cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertEqual(4, self.mockedSendFunction.call_count)
+            # Extra EPP calls due to _invalidate_cache() in the namserver setter
+            # 1. InfoDomain; 2. InfoHost (nameserver1); 3. InfoHost (nameserver2)
+            # The other four calls are above in expected_calls.
+            self.assertEqual(7, self.mockedSendFunction.call_count)
             # check that status is READY
             self.assertTrue(self.domain.is_active())
             self.assertNotEqual(self.domain.first_ready, None)
+
+            # reset to avoid test pollution
+            self.mockDataInfoDomain.hosts = ["fake.host.com"]
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -2051,7 +2081,10 @@ class TestRegistrantNameservers(MockEppLib):
                 call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertEqual(self.mockedSendFunction.call_count, 4)
+            
+            # Four additional EPP calls (InfoDomain and InfoHost x3) due to
+            # _invalidate_cache() in the nameservers setter. 
+            self.assertEqual(self.mockedSendFunction.call_count, 8)
 
     def test_is_subdomain_with_no_ip(self):
         with less_console_noise():

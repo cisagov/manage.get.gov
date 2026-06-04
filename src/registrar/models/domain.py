@@ -851,6 +851,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
+        # clear self._cache to fetch fresh data from the registry
+        self._invalidate_cache()
+
         if successTotalNameservers < 2:
             try:
                 self.dns_needed()
@@ -863,9 +866,6 @@ class Domain(TimeStampedModel, DomainHelper):
                 self.save()
             except Exception as err:
                 logger.info("nameserver setter checked for create state and it did not succeed. Warning: %s" % err)
-
-        # clear self._cache to fetch fresh data from the registry
-        self._invalidate_cache()
 
     @Cache
     def statuses(self) -> list[str]:
