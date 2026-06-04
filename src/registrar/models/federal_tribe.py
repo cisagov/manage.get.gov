@@ -4,6 +4,7 @@ from django.db import models
 
 from .utility.time_stamped_model import TimeStampedModel
 from .domain_request import DomainRequest
+from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,7 @@ class FederalTribe(TimeStampedModel):
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
     tribe_full_name = models.CharField(
-        null=True,
-        blank=True,
+        unique=True,
         verbose_name="Tribe full name",
         help_text="Full official name of the federally recognized tribe",
     )
@@ -87,24 +87,26 @@ class FederalTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    phone = models.CharField(
+    phone = PhoneNumberField(
         null=True,
         blank=True,
     )
     email = models.CharField(
+        max_length=320,
         null=True,
         blank=True,
     )
     website = models.CharField(
+        max_length=255,
         null=True,
         blank=True,
     )
-    date_elected = models.CharField(
+    date_elected = models.DateField(
         null=True,
         blank=True,
         verbose_name="Date elected",
     )
-    next_election = models.CharField(
+    next_election = models.DateField(
         null=True,
         blank=True,
         verbose_name="Next election",
