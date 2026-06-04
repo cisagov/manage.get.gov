@@ -8,10 +8,10 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
-    DNS_NAME_LENGTH_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     validate_dns_name,
+    get_fqdn_error_message,
 )
 from registrar.utility.enums import DNSRecordTypes, format_dns_ttl
 from registrar.models.dns.dns_record_vendor_dns_record import DnsRecord_VendorDnsRecord as RecordsJoin
@@ -46,7 +46,7 @@ class DnsRecord(TimeStampedModel):
         blank=False,
         null=False,
         validators=[validate_dns_name],
-        error_messages={"max_length": DNS_NAME_LENGTH_ERROR_MESSAGE},
+        error_messages={"max_length": get_fqdn_error_message()},
     )
 
     ttl = models.PositiveIntegerField(default=1)
