@@ -1,13 +1,10 @@
 <table class="usa-table usa-table--borderless usa-table--stacked dotgov-table dotgov-table--stacked" id="dnsrecords-table">
-  
-    <caption id="dns-record-sr-table-caption"" class="sr-only">
     {% if dns_records %}
-           Your DNS records
+    <caption class="sr-only">Your DNS records</caption>
     {% else %}
-        You currently have no DNS records.
+    <caption class="sr-only">You currently have no DNS records.</caption>
     {% endif %}
-    </caption>
-    
+
     {# Always render thead/tbody so htmx OOB swaps have stable targets. Hide thead when empty. #}
     <thead id="dnsrecords-table-head">
         <tr>
