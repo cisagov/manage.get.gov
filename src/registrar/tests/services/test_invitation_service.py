@@ -5,6 +5,7 @@ from waffle.testutils import override_flag
 from registrar.models import (
     Domain,
     Portfolio,
+    PortfolioInvitation,
     User,
     UserDomainRole,
     UserPortfolioPermission,
@@ -65,6 +66,29 @@ class TestInvitationService(TestCase):
         self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
         self.assertEqual(permission.invited_by, self.requestor)
         self.assertTrue(admin_notifications_sent)
+        mock_send_email.assert_called_once()
+
+    @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=False)
+    def test_invite_to_portfolio_preserves_legacy_invitation_flow(self, mock_send_email):
+        """invite_to_portfolio still creates legacy portfolio invitations when the flag is off."""
+        mock_send_email.return_value = True
+
+        invitation, portfolio_admin_notifications_sent = invite_to_portfolio(
+            email=self.user.email,
+            portfolio=self.portfolio,
+            requestor=self.requestor,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        self.assertIsInstance(invitation, PortfolioInvitation)
+        self.assertEqual(invitation.email, self.user.email)
+        self.assertEqual(invitation.portfolio, self.portfolio)
+        self.assertEqual(invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        self.assertTrue(portfolio_admin_notifications_sent)
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(portfolio=self.portfolio, email=self.user.email).exists()
+        )
         mock_send_email.assert_called_once()
 
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")

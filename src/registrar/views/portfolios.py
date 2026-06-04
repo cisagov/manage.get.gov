@@ -1250,19 +1250,19 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 return redirect(self.get_success_url())
 
         try:
-            _, admin_notifications_sent = invite_to_portfolio(
+            _, portfolio_admin_notifications_sent = invite_to_portfolio(
                 email=requested_email,
                 portfolio=portfolio,
                 requestor=requestor,
                 roles=form.cleaned_data["roles"],
                 additional_permissions=form.cleaned_data["additional_permissions"],
             )
-            if not admin_notifications_sent:
+            if not portfolio_admin_notifications_sent:
                 messages.warning(
                     self.request,
                     "Could not send follow-up email notification to existing organization admins.",
                 )
-            messages.success(self.request, f"{requested_email} has been invited to this organization..")
+            messages.success(self.request, f"{requested_email} has been invited to this organization.")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())

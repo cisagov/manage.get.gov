@@ -46,6 +46,8 @@ def invite_to_portfolio(
     Invite a user to a portfolio.
     Uses the invitation backend selected by the
     `user_portfolio_permission_invitations` waffle flag.
+    While the new backend is active, a legacy PortfolioInvitation is
+    still created for compatibility.
 
     Args:
         email: Email address of the invitee
@@ -55,8 +57,8 @@ def invite_to_portfolio(
         additional_permissions: Optional list of additional permissions
 
     Returns:
-        Tuple of the saved invitation object and whether admin
-        notification emails were sent
+        Tuple of the saved invitation object and whether follow-up
+        notifications to existing portfolio admins were sent
 
     Raises:
         InvitationError: If invitation cannot be created
@@ -91,9 +93,11 @@ def create_portfolio_permission_or_invitation(
 ):
     """
     Create a UserPortfolioPermission for an existing user or an invitation with a new email.
+    While the compatibility path exists, this also mirrors a legacy
+    PortfolioInvitation record.
 
-    Returns the saved permission and whether admin notification emails
-    were sent.
+    Returns the saved permission and whether follow-up notifications
+    to existing portfolio admins were sent.
     """
     email = _get_portfolio_permission_email(email, permission)
     requested_user = _get_portfolio_permission_user(email, permission)
@@ -116,7 +120,7 @@ def create_portfolio_permission_or_invitation(
                 roles=roles,
                 additional_permissions=additional_permissions,
             )
-            # Temporary support for legacy invitations
+            # Temporary support for legacy email invitation flows.
             _save_legacy_portfolio_invitation(
                 email=email,
                 portfolio=portfolio,
@@ -125,9 +129,9 @@ def create_portfolio_permission_or_invitation(
                 additional_permissions=additional_permissions,
             )
             send_invitation_email = _must_send_portfolio_permission_email(requested_user, send_email)
-            admin_notifications_sent = True
+            portfolio_admin_notifications_sent = True
             if send_invitation_email:
-                admin_notifications_sent = _send_portfolio_permission_email(
+                portfolio_admin_notifications_sent = _send_portfolio_permission_email(
                     email=email,
                     requestor=requestor,
                     portfolio=portfolio,
@@ -136,7 +140,7 @@ def create_portfolio_permission_or_invitation(
                 _set_portfolio_invitation_details(permission, requestor)
 
             logger.info(f"Created portfolio permission or invitation for {email} to portfolio {portfolio.id}")
-            return permission, admin_notifications_sent
+            return permission, portfolio_admin_notifications_sent
 
     except Exception as e:
         logger.error(
@@ -241,7 +245,7 @@ def _create_legacy_portfolio_invitation(
     additional_permissions,
 ):
     requested_user = get_requested_user(email)
-    admin_notifications_sent = send_portfolio_invitation_email(
+    portfolio_admin_notifications_sent = send_portfolio_invitation_email(
         email=email,
         requestor=requestor,
         portfolio=portfolio,
@@ -254,7 +258,7 @@ def _create_legacy_portfolio_invitation(
         roles=roles,
         additional_permissions=additional_permissions,
     )
-    return legacy_invitation, admin_notifications_sent
+    return legacy_invitation, portfolio_admin_notifications_sent
 
 
 def get_portfolio_permission_status(user):
