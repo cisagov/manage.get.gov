@@ -9,7 +9,7 @@ from .cert import Cert, Key
 from .errors import ErrorCode, LoginError, RegistryError
 
 # Set > 0 to simulate a slow registry for 499 reproduction. 0 = disabled.
-EPP_TEST_DELAY_SECONDS = 0
+EPP_TEST_DELAY_SECONDS = 5
 
 try:
     from epplib.client import Client
