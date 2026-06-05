@@ -63,7 +63,7 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.errors import EnrollmentNotAllowedError, FSMDomainRequestError, FSMErrorCodes
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -5536,6 +5536,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
+        except EnrollmentNotAllowedError as e:
+            logger.warning("DNS enrollment blocked: %s", e)
+            self.message_user(request, str(e), messages.WARNING)
         except Exception as e:
             logger.exception(e)
             self.message_user(
