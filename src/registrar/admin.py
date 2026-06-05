@@ -2516,23 +2516,35 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         ):
             return member_of_a_different_org
 
-        send_portfolio_invitation_email(
-            email=requested_email,
-            requestor=request.user,
-            portfolio=domain_org,
-            is_admin_invitation=False,
-        )
-        portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-            email=requested_email,
-            portfolio=domain_org,
-            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-        )
-        if requested_user is not None:
-            portfolio_invitation.retrieve()
-            portfolio_invitation.save()
+        if self._use_portfolio_permission_invitation_admin(request):
+            create_portfolio_permission_or_invitation(
+                email=requested_email,
+                portfolio=domain_org,
+                requestor=request.user,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                send_email=True,
+            )
+        else:
+            send_portfolio_invitation_email(
+                email=requested_email,
+                requestor=request.user,
+                portfolio=domain_org,
+                is_admin_invitation=False,
+            )
+            portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+                email=requested_email,
+                portfolio=domain_org,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            )
+            if requested_user is not None:
+                portfolio_invitation.retrieve()
+                portfolio_invitation.save()
         messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
         return member_of_a_different_org
+
+    def _use_portfolio_permission_invitation_admin(self, request):
+        return flag_is_active(request, "user_portfolio_permission_invitations")
 
     def _should_send_portfolio_membership_email(
         self,
