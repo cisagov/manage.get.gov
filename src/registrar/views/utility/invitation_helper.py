@@ -2,7 +2,6 @@ from django.contrib import messages
 from django.db import IntegrityError
 from registrar.models import PortfolioInvitation, User, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
-from django.utils.safestring import mark_safe
 import logging
 from registrar.utility.errors import (
     AlreadyDomainInvitedError,
@@ -77,23 +76,12 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, InvitationError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.error(
-            request,
-            mark_safe(  # nosec
-                "A database error occurred while saving changes. Please try again. "
-                'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
-                "for assistance."
-            ),
-        )
+        messages.error(request, with_contact_link("A database error occurred while saving changes.")),
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
         messages.error(
             request,
-            mark_safe(  # nosec
-                "A database error occurred while saving changes. Please try again. "
-                'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
-                "for assistance."
-            ),
+            with_contact_link(f"An unexpected error occurred: {email} could not be added to this domain."),
         )
 
 
