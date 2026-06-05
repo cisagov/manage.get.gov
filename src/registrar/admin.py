@@ -675,8 +675,7 @@ class UserDomainRoleForm(forms.ModelForm):
         initial=True,
         label="Send invitation email",
         help_text=(
-            "Existing users can be added without sending an email. "
-            "New users are always sent an invitation email."
+            "Existing users can be added without sending an email. " "New users are always sent an invitation email."
         ),
     )
 
@@ -2397,14 +2396,10 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     },
                 ),
             )
-        return (
-            (None, {"fields": ("user", "domain", "invitation_status", "send_email")}),
-        )
+        return ((None, {"fields": ("user", "domain", "invitation_status", "send_email")}),)
 
     def _get_direct_role_fieldsets(self):
-        return (
-            (None, {"fields": ("user", "domain", "role")}),
-        )
+        return ((None, {"fields": ("user", "domain", "role")}),)
 
     def save_model(self, request, obj, form, change):
         if change or not self._use_invitation_admin(request):
