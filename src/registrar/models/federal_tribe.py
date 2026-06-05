@@ -55,15 +55,15 @@ class FederalTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    physical_address_line1 = models.CharField(
+    address_line1 = models.CharField(
         null=True,
         blank=True,
-        verbose_name="physical address line 1",
+        verbose_name="address line 1",
     )
-    physical_address_line2 = models.CharField(
+    address_line2 = models.CharField(
         null=True,
         blank=True,
-        verbose_name="physical address line 2",
+        verbose_name="address line 2",
     )
     city = models.CharField(
         null=True,
