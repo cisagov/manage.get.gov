@@ -4573,8 +4573,8 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertTrue(called_kwargs["is_admin_invitation"])
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
-    def test_view_only_user_cannot_invite_new_member(self, mock_send_email):
+    @patch("registrar.views.portfolios.invite_to_portfolio")
+    def test_view_only_user_cannot_invite_new_member(self, mock_invite_to_portfolio):
         """Test user with only VIEW_MEMBERS cannot add a new member"""
         self.client.force_login(self.view_only_user)
         response = self.client.post(
@@ -4588,7 +4588,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 403)
 
         # Assert no email triggered
-        mock_send_email.assert_not_called()
+        mock_invite_to_portfolio.assert_not_called()
 
 
 class TestPortfolioMemberEditView(WebTest):
