@@ -12,11 +12,13 @@ from registrar.models import (
     DnsRecord,
     VendorDnsAccount,
     VendorDnsZone,
+    VendorDnsRecord,
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
+from functools import partial
 from registrar.services.utility.dns_helper import make_dns_account_name
 from httpx import Client, HTTPStatusError
 
@@ -262,6 +264,60 @@ class DnsHostService:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
         return vendor_record_data
+
+    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
+        """Look up the record by pk and delete it via the vendor service.
+
+        Returns the deleted DnsRecord's vendor id.
+        Raises ValueError if the record or its vendor id cannot be resolved.
+        """
+        try:
+            dns_record = DnsRecord.objects.get(pk=record_id)
+        except DnsRecord.DoesNotExist:
+            raise ValueError("Could not find the DNS record to delete.")
+
+        x_record_id = dns_record.get_active_x_record_id()
+        if not x_record_id:
+            raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
+
+        self.delete_and_save_dns_record(x_zone_id, x_record_id)
+        return dns_record
+
+    def delete_and_save_dns_record(self, x_zone_id: str, x_record_id: str) -> str:
+        """Delete DNS record in vendor service and persist the changes in the local database."""
+        def delete_dns_record_in_vendor_service(self, x_zone_id, x_record_id) -> None:
+            """Delete DNS record in vendor service."""
+            # Delete record in vendor service
+            try:
+                vendor_record_id = self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+                logger.info(f"Successfully deleted record {vendor_record_id}.")
+            except (APIError, HTTPStatusError) as e:
+                logger.error(f"DNS setup failed to update record {vendor_record_id}: {str(e)}")
+                raise APIError(str(e)) from e
+            except Exception as e:
+                logger.error(f"Failed to save record {x_record_id} in database: {str(e)}.")
+                raise
+
+        # Delete record in db
+        try:
+            with transaction.atomic():
+                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)  
+                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
+                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
+                dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
+
+                # DnsRecordVendorDnsRecord object are deleted on cascade
+                dns_record.delete()
+                vendor_dns_record.delete()
+                # Create an inner atomic block as a savepoint. 
+                # Call delete_dns_record_in_vendor_service after outer transaction (db deletion) succeeds. 
+                with transaction.atomic():
+                    # Delete record in vendor service if transaction is committed
+                    transaction.on_commit(partial(delete_dns_record_in_vendor_service, x_zone_id=x_zone_id, x_record_id=x_record_id))
+        except Exception as e:
+            logger.error(f"Failed to delete record {x_record_id} in database: {str(e)}.")
+            raise
+        return x_record_id
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         try:
