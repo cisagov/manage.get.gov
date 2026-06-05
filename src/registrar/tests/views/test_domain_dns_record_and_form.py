@@ -121,8 +121,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         )
         # Add record sets showFormId to 0, which fires the x-effect.
         self.assertContains(response, 'x-on:click="showFormId = 0"')
-        # Cancel sets showFormId to null, which also fires the x-effect.
-        self.assertContains(response, 'x-on:click="showFormId = null"')
+        # Cancel now opens the confirmation modal
+        self.assertContains(response, "js-dnsrecord-add-cancel")
         # Submit success closes the form the same way.
         self.assertContains(
             response,
@@ -131,6 +131,35 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         # x-model keeps the type dropdown in sync with recordType, so clearing
         # recordType resets the dropdown to the empty option.
         self.assertContains(response, 'x-model="recordType"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_cancel_confirmation_modal_renders(self):
+        """#4664: Cancel on the Add record form opens an "are you sure" modal so the user
+        confirms before discarding unsaved entries. USWDS relocates the modal to the page
+        body and Alpine runs in CSP mode, so the flow is driven by USWDS data attributes
+        plus JS. Verify the template wires up the modal, its trigger, and the Cancel button.
+        """
+        response = self.client.get(self._url())
+
+        # The confirmation modal with its prompt
+        self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, "Are you sure you want to cancel your changes?")
+        self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')
+        self.assertContains(response, "Yes, cancel")
+        self.assertContains(response, "Go back")
+        self.assertContains(response, 'id="open-cancel-add-dnsrecord-modal"')
+        self.assertContains(response, 'aria-controls="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, "data-open-modal")
+
+        # Cancel button is JS-wired
+        self.assertContains(response, "js-dnsrecord-add-cancel")
+        self.assertContains(response, 'id="dnsrecord-add-cancel-button"')
+
+        # No data-force-action on the modal, so clicking the overlay closes it.
+        modal_open_tag = re.search(r'<div[^>]*id="toggle-cancel-add-dnsrecord"[^>]*>', response.content.decode())
+        self.assertIsNotNone(modal_open_tag)
+        self.assertNotIn("data-force-action", modal_open_tag.group(0))
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -462,15 +491,35 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_dns_record_edit_form_cancel_button_has_focus_routing_hooks(self):
-        """The Cancel button must carry data-action='form-cancel' so the tab-order JS can
-        return focus to the Edit button when the form closes — otherwise focus is stranded
-        inside the hidden form row and Tab walks past the kebab to the next record."""
+        """#4664: cancelling an edit goes through the confirm modal, which returns focus to
+        that row's Edit button on close (via the modal's data-opener). The Edit button needs
+        a stable id for that, and the Cancel button needs its record-scoped hooks."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
 
-        self.assertContains(response, 'data-action="form-cancel"')
+        # Edit button is the focus-return target after the edit form closes.
+        self.assertContains(response, f'id="dnsrecord-edit-button-{record.id}"')
+        # Cancel button opens the modal and is the focus target while it's open.
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record.id}"')
         self.assertContains(response, f'data-record-id="{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_record_cancel_opens_confirmation_modal(self):
+        """#4664: the Edit form's Cancel routes through the same confirm modal as Add. The
+        row reset is deferred to a cancelConfirmed event so it only fires once confirmed."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        # Cancel defers its row reset to the cancelConfirmed event
+        self.assertContains(response, 'hx-trigger="cancelConfirmed"')
+        self.assertContains(response, f'hx-select="#dnsrecord-edit-form-{record.id}"')
+        # The confirm modal it opens is the shared one
+        self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator

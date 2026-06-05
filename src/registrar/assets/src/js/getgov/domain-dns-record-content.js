@@ -49,6 +49,7 @@ function switchFromInputToTextArea (element) {
         textArea.required = true
         textArea.id = element.id
         textArea.value = element.value
+        textArea.defaultValue = element.value
         element.classList.forEach(cls => textArea.classList.add(cls))
 
         const charLimit = 4080
@@ -81,6 +82,85 @@ function clearRecordForm(root){
     commentStatus.classList.remove("usa-character-count__status--invalid")
      // Character count is hardcoded for now if/when the model is updated with the current maxlength
     commentStatus.textContent = getCharCountText(100, 0)
+}
+
+// Cancel confirms via the modal only when the form has unsaved changes; otherwise it closes
+// straight away. On modal close USWDS focuses the element in data-opener, which we point at
+// where focus should land. One modal serves the Add form and every Edit row.
+let pendingCancel = null;
+
+function openCancelModal(opener){
+    document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
+    document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
+}
+
+// Unsaved changes = an editable field differs from its server-rendered value. The type
+// dropdown is excluded since picking a type alone isn't data worth confirming.
+function formIsDirty(form){
+    if(!form) return false;
+    return Array.from(form.querySelectorAll('input:not([type="hidden"]), textarea, select')).some(el => {
+        if(el.id === "id_type") return false;
+        if(el.tagName === "SELECT") return Array.from(el.options).some(o => o.selected !== o.defaultSelected);
+        // Django renders <textarea> with a leading newline that the browser drops from .value but
+        // keep in .defaultValue, so normalize it out before comparing.
+        const original = el.tagName === "TEXTAREA" ? el.defaultValue.replace(/^\n/, "") : el.defaultValue;
+        return el.value !== original;
+    });
+}
+
+export function initDNSRecordCancelModal(){
+    const container = document.getElementById("dnsrecords-form-container");
+    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    if(!container || !confirmButton) return;
+
+    const focusTargetId = (p) => p.type === "edit" ? `dnsrecord-edit-button-${p.recordId}` : "add-dnsrecord-button";
+
+    const teardownForm = (p) => {
+        if(p.type === "edit"){
+            // Re-fetch the row to discard edits — only needed when something actually changed.
+            if(p.dirty) window.htmx?.trigger(p.button, "cancelConfirmed");
+        } else {
+            const typeField = document.getElementById("id_type");
+            if(typeField) typeField.value = "";
+            clearRecordForm(document.getElementById("form-container"));
+        }
+        try { Alpine.$data(container).showFormId = null; } catch(e) {}
+    };
+
+    const onCancel = (p, form, cancelButtonId) => {
+        p.dirty = formIsDirty(form);
+        if(p.dirty){
+            pendingCancel = p;
+            openCancelModal(cancelButtonId);
+        } else {
+            teardownForm(p);
+            document.getElementById(focusTargetId(p))?.focus();
+        }
+    };
+
+    container.addEventListener("click", (e) => {
+        if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
+        onCancel({ type: "add" }, document.getElementById("form-container"), "dnsrecord-add-cancel-button");
+    });
+
+    // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
+    document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
+        const btn = e.target.closest(".js-dnsrecord-edit-cancel");
+        if(!btn) return;
+        const id = btn.dataset.recordId;
+        onCancel({ type: "edit", recordId: id, button: btn },
+            document.getElementById(`dnsrecord-edit-form-${id}`),
+            `dnsrecord-edit-cancel-button-${id}`);
+    });
+
+    confirmButton.addEventListener("click", () => {
+        if(!pendingCancel) return;
+        teardownForm(pendingCancel);
+        const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+        modalEl?.setAttribute("data-opener", focusTargetId(pendingCancel));
+        modalEl?.querySelector("[data-close-modal]")?.click();
+        pendingCancel = null;
+    });
 }
 
 export function editAndCommentButtonListener (){
@@ -372,11 +452,4 @@ export function initDynamicDNSRecordFormFields() {
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
-
-    // clearForm when a user hits the cancel button on the dns record form and table
-    document.querySelectorAll(".js-dnsrecord-cancel-button").forEach( button => {
-        const formInRow = button.closest('form')
-        button.addEventListener('click',() => clearRecordForm(formInRow))
-        }
-    )
 }
