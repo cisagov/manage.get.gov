@@ -1807,9 +1807,9 @@ class TestPortfolioInvitationAdmin(TestCase):
         admin_instance.save_model(request, portfolio_invitation, None, None)
 
         msg = (
-            "A database error occurred while saving changes. Please try again. "
-            'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
-            "for assistance."
+            "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
+            "Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message
