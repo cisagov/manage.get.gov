@@ -1930,7 +1930,7 @@ class Domain(TimeStampedModel, DomainHelper):
         # domain was READY, then not READY, then is READY again.
         # We do not want to overwrite first_ready.
         if self.first_ready is None:
-            self.first_ready = timezone.now()
+            self.first_ready = date.today()
 
     @transition(
         field="state",
@@ -2648,8 +2648,8 @@ class Domain(TimeStampedModel, DomainHelper):
         NOTE: The "on hold date" property is a one off addition - we want to
         make sure that when there is state change we delete the on hold date as well."""
         self._cache = {}
-        logging.info(f"Delete hold date on {self.name}")
-        delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
+        logging.info(f"Cache is empty for domain: {self.name}")
+        # delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""

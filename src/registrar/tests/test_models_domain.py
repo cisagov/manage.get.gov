@@ -454,9 +454,14 @@ class TestDomainCreation(MockEppLib):
         """
         with less_console_noise():
             domain = Domain.objects.create(name="beef-tongue.gov")
+            self.mockDataInfoDomain.hosts = ["ns1.beef-tongue.gov"]
+            print("STATE")
+            print(domain.state)
             # trigger getter
             _ = domain.statuses
-
+            print("STATE2")
+            print(domain.nameservers)
+            print(domain.state)
             # contacts = PublicContact.objects.filter(domain=domain,
             # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
 
@@ -548,6 +553,7 @@ class TestDomainCreation(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
@@ -618,9 +624,14 @@ class TestDomainStatuses(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
         self.assertEqual(domain.first_ready, None)
 
+        print("HOSTS")
+        print(self.mockDataInfoDomain.hosts)
+
         # Set mock EPP hosts so is_dns_needed condition returns False and transition succeeds            
         self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
         domain.ready()
+        print("ANOTHER STATE")
+        print(domain.state)
 
         # check that status is READY
         self.assertTrue(domain.is_active())
@@ -631,30 +642,48 @@ class TestDomainStatuses(MockEppLib):
         
         # change mock EPP hosts and then domain status 
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
-        domain._invalidate_cache()
+        # domain._invalidate_cache()
         print("WHOA")
+        domain.save()
+        domain = Domain.objects.get(name="pig-knuckles.gov")
+        print("FIRST READY")
+        print(domain.first_ready)
         print(domain.nameservers)
+        print(domain.state)
         domain.dns_needed()
         print("--WHOA2--")
         print(domain.nameservers)
+        print(domain.state)
         self.assertFalse(domain.is_active())
         
         # change back to READY
         self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
-        domain._invalidate_cache()
+        # domain._invalidate_cache()
+        # domain.ready()
+        print("WHOA3")
+        print(self.mockDataInfoDomain.hosts)
+        print(domain.nameservers)
+        print(domain.state)
+        domain.nameservers = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        print("WHOA4")
+        print(self.mockDataInfoDomain.hosts)
+        print(domain.nameservers)
+        print(domain.state)
         domain.ready()
+        print(domain.state)
         self.assertTrue(domain.is_active())
 
         # assert that the value of first_ready has not changed
         self.assertEqual(domain.first_ready, first_ready)
 
         # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com"]
-        domain._invalidate_cache()
-        # _ = domain.nameservers
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+        # domain._invalidate_cache()
+        domain = Domain.objects.get(name="pig-knuckles.gov")
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
@@ -1786,7 +1815,7 @@ class TestRegistrantNameservers(MockEppLib):
             self.assertNotEqual(self.domain.first_ready, None)
 
             # reset to avoid test pollution
-            self.mockDataInfoDomain.hosts = ["fake.host.com"]
+            self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -2469,6 +2498,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
+            self.mockDataInfoDomain.hosts = ["fake.host.com"]
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
             # set the dnssecdata once
             domain.dnssecdata = self.dnssecExtensionWithDsData
@@ -3310,7 +3340,7 @@ class TestAnalystDelete(MockEppLib):
         self.assertEqual(domain.state, Domain.State.DELETED)
 
         # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     def test_delete_related_objects_cleans_database(self):
         """
