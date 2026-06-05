@@ -44,9 +44,19 @@ def _get_requestor_email(requestor, domains=None, portfolio=None):
     return requestor.email
 
 
-def _validate_invitation(email, user, domains, requestor, is_member_of_different_org):
+def _validate_invitation(
+    email,
+    user,
+    domains,
+    requestor,
+    is_member_of_different_org,
+    skip_existing_invitation_check=False,
+):
     """Validate the invitation conditions."""
     _check_outside_org_membership(email, requestor, is_member_of_different_org)
+
+    if skip_existing_invitation_check:
+        return
 
     for domain in domains:
         _validate_existing_invitation(email, user, domain)
@@ -136,7 +146,12 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
 
 
 def send_domain_invitation_email(
-    email: str, requestor, domains: Domain | list[Domain], is_member_of_different_org, requested_user=None
+    email: str,
+    requestor,
+    domains: Domain | list[Domain],
+    is_member_of_different_org,
+    requested_user=None,
+    skip_existing_invitation_check=False,
 ):
     """
     Sends a domain invitation email to the specified address.
@@ -147,6 +162,8 @@ def send_domain_invitation_email(
         domains (Domain or list of Domain): The domain objects for which the invitation is being sent.
         is_member_of_different_org (bool): if an email belongs to a different org
         requested_user (User | None): The recipient if the email belongs to a user in the registrar
+        skip_existing_invitation_check (bool): Skip duplicate checks when the caller already
+            validated invitation uniqueness before invoking this helper.
 
     Returns:
         Boolean indicating if all messages were sent successfully.
@@ -162,7 +179,14 @@ def send_domain_invitation_email(
     requestor_email = _get_requestor_email(requestor, domains=domains)
     # Check to see if the user sending the invitation is an Org Admin
     is_org_admin = _check_user_org_admin(requestor.email, domains)
-    _validate_invitation(email, requested_user, domains, requestor, is_member_of_different_org)
+    _validate_invitation(
+        email,
+        requested_user,
+        domains,
+        requestor,
+        is_member_of_different_org,
+        skip_existing_invitation_check=skip_existing_invitation_check,
+    )
 
     _send_domain_invitation_email(email, requestor_email, domains, requested_user)
 

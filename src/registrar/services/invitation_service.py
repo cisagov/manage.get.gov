@@ -453,6 +453,9 @@ def _send_domain_role_email(email, requestor, domain, is_member_of_different_org
         domains=domain,
         is_member_of_different_org=is_member_of_different_org,
         requested_user=requested_user,
+        # TODO: Remove this once the legacy DomainInvitation path is
+        # removed and UserDomainRole invitations are the permanent admin flow.
+        skip_existing_invitation_check=True,
     )
 
 

@@ -2402,7 +2402,54 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return ((None, {"fields": ("user", "domain", "role")}),)
 
     def response_add(self, request, obj, post_url_continue=None):
-        return BaseInvitationAdmin.response_add(self, request, obj, post_url_continue)
+        storage = get_messages(request)
+        has_errors = any(message.level_tag in ["error"] for message in storage)
+
+        if has_errors:
+            ModelForm = self.get_form(request, obj=obj)
+            form = ModelForm(instance=obj)
+            admin_form = AdminForm(
+                form,
+                list(self.get_fieldsets(request, obj)),
+                self.get_prepopulated_fields(request, obj),
+                self.get_readonly_fields(request, obj),
+                model_admin=self,
+            )
+            media = self.media + form.media
+
+            opts = obj._meta
+            change_form_context = {
+                **self.admin_site.each_context(request),
+                "title": f"Add {opts.verbose_name}",
+                "opts": opts,
+                "original": obj,
+                "save_as": self.save_as,
+                "has_change_permission": self.has_change_permission(request, obj),
+                "add": True,
+                "change": False,
+                "is_popup": False,
+                "inline_admin_formsets": [],
+                "save_on_top": self.save_on_top,
+                "show_delete": self.has_delete_permission(request, obj),
+                "obj": obj,
+                "adminform": admin_form,
+                "media": media,
+                "errors": None,
+            }
+            return self.render_change_form(
+                request,
+                context=change_form_context,
+                add=True,
+                change=False,
+                obj=obj,
+            )
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        for message in storage:
+            messages.add_message(request, message.level, message.message)
+
+        return response
 
     def save_model(self, request, obj, form, change):
         if change or not self._use_invitation_admin(request):
