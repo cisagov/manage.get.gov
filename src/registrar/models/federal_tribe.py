@@ -26,18 +26,15 @@ class FederalTribe(TimeStampedModel):
     tribe_alternate_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="tribe alternate name",
     )
     # Tribal contact information
     first_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="first name",
     )
     last_name = models.CharField(
         null=True,
         blank=True,
-        verbose_name="last name",
     )
     suffix = models.CharField(
         null=True,
@@ -61,12 +58,12 @@ class FederalTribe(TimeStampedModel):
     physical_address_line1 = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Physical Address Line 1",
+        verbose_name="physical address line 1",
     )
     physical_address_line2 = models.CharField(
         null=True,
         blank=True,
-        verbose_name="Physical Address Line 2",
+        verbose_name="physical address line 2",
     )
     city = models.CharField(
         null=True,
