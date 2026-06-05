@@ -276,8 +276,21 @@ def create_domain_role_or_invitation(
     requested_user = _get_domain_role_user(email, domain_role)
 
     _check_existing_domain_invitation(email, domain, requested_user)
+    send_invitation_email = _must_send_domain_role_email(requested_user, send_email)
+    email_sent = True
 
     try:
+        if send_invitation_email:
+            # Send before saving either invitation model so legacy duplicate
+            # validation does not reject the invitation we are creating here.
+            email_sent = _send_domain_role_email(
+                email=email,
+                requestor=requestor,
+                domain=domain,
+                is_member_of_different_org=is_member_of_different_org,
+                requested_user=requested_user,
+            )
+
         with transaction.atomic():
             domain_role = _save_domain_role(
                 domain_role=domain_role,
@@ -292,16 +305,7 @@ def create_domain_role_or_invitation(
                 domain=domain,
                 user=requested_user,
             )
-            send_invitation_email = _must_send_domain_role_email(requested_user, send_email)
-            email_sent = True
             if send_invitation_email:
-                email_sent = _send_domain_role_email(
-                    email=email,
-                    requestor=requestor,
-                    domain=domain,
-                    is_member_of_different_org=is_member_of_different_org,
-                    requested_user=requested_user,
-                )
                 _set_domain_invitation_details(domain_role, requestor)
 
             logger.info(f"Created domain role or invitation for {email} to domain {domain.id}")

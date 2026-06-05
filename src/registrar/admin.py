@@ -2401,6 +2401,9 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def _get_direct_role_fieldsets(self):
         return ((None, {"fields": ("user", "domain", "role")}),)
 
+    def response_add(self, request, obj, post_url_continue=None):
+        return BaseInvitationAdmin.response_add(self, request, obj, post_url_continue)
+
     def save_model(self, request, obj, form, change):
         if change or not self._use_invitation_admin(request):
             super().save_model(request, obj, form, change)
