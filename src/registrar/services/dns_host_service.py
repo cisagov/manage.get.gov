@@ -285,37 +285,20 @@ class DnsHostService:
 
     def delete_and_save_dns_record(self, x_zone_id: str, x_record_id: str) -> str:
         """Delete DNS record in vendor service and persist the changes in the local database."""
-        def delete_dns_record_in_vendor_service(self, x_zone_id, x_record_id) -> None:
-            """Delete DNS record in vendor service."""
-            # Delete record in vendor service
-            try:
-                vendor_record_id = self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
-                logger.info(f"Successfully deleted record {vendor_record_id}.")
-            except (APIError, HTTPStatusError) as e:
-                logger.error(f"DNS setup failed to update record {vendor_record_id}: {str(e)}")
-                raise APIError(str(e)) from e
-            except Exception as e:
-                logger.error(f"Failed to save record {x_record_id} in database: {str(e)}.")
-                raise
-
-        # Delete record in db
         try:
-            with transaction.atomic():
-                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)  
-                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
-                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-                dns_record = DnsRecord.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
-
-                # DnsRecordVendorDnsRecord object are deleted on cascade
-                dns_record.delete()
-                vendor_dns_record.delete()
-                # Create an inner atomic block as a savepoint. 
-                # Call delete_dns_record_in_vendor_service after outer transaction (db deletion) succeeds. 
-                with transaction.atomic():
-                    # Delete record in vendor service if transaction is committed
-                    transaction.on_commit(partial(delete_dns_record_in_vendor_service, x_zone_id=x_zone_id, x_record_id=x_record_id))
+            vendor_record_id = self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+            logger.info(f"Successfully deleted record {vendor_record_id} in vendor service.")
+        except (APIError, HTTPStatusError) as e:
+            logger.error(f"Failed to delete record {vendor_record_id}: {str(e)}")
+            raise APIError(str(e)) from e
         except Exception as e:
             logger.error(f"Failed to delete record {x_record_id} in database: {str(e)}.")
+            raise
+
+        try:
+            DnsRecord.delete_record_from_x_record_id(x_zone_id=x_zone_id, x_record_id=x_record_id)
+        except Exception as e:
+            logger.exception("Failed to delete record {x_record_id} in database: {e}.")
             raise
         return x_record_id
 
