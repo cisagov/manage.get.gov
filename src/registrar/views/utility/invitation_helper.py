@@ -11,7 +11,6 @@ from registrar.utility.errors import (
     OutsideOrgMemberError,
 )
 from django.utils.html import format_html
-from registrar.services.invitation_service import get_requested_user
 
 logger = logging.getLogger(__name__)
 
