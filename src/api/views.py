@@ -8,12 +8,14 @@ from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
 
 import requests
+import logging
 
 from login_required import login_not_required
 
 from cachetools.func import ttl_cache
 
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
+logger = logging.getLogger(__name__)
 
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
@@ -61,6 +63,7 @@ def available(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
 
+    logger.error("available called", extra={"domain_name": domain})
     _, json_response = Domain.validate_and_handle_errors(
         domain=domain,
         return_type=ValidationReturnType.JSON_RESPONSE,
