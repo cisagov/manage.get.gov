@@ -90,7 +90,7 @@ class FederalTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    email = models.CharField(
+    email = models.EmailField(
         max_length=320,
         null=True,
         blank=True,
