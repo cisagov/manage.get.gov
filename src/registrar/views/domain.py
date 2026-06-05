@@ -55,10 +55,9 @@ from registrar.utility.waffle import flag_is_active_for_user
 from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
-from registrar.services.invitation_service import invite_to_portfolio
+from registrar.services.invitation_service import get_requested_user, invite_to_portfolio
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
