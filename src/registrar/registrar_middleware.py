@@ -358,7 +358,7 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # if the request has an x-request-id header, use that, otherwise generate a new uuid. 
+        # if the request has an x-request-id header, use that, otherwise generate a new uuid.
         # This allows us to track requests across services if they all use the same header.
         request_id = request.META.get("HTTP_X_REQUEST_ID") or str(uuid.uuid4())
         set_user_log_context(request_id=request_id)
