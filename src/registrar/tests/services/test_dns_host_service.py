@@ -958,7 +958,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(response["result"], updated_zone_data)
 
     def test_delete_db_record_success(self):
-        """delete_record_from_x_record_id successfully deletes DnsRecord, VendorDnsRecord, 
+        """delete_record_from_x_record_id successfully deletes DnsRecord, VendorDnsRecord,
         and DnsRecordVendorDnsRecord from database."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
         x_record_id = self.vendor_record_data["result"].get("id")
