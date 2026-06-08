@@ -198,10 +198,7 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             HAS_PORTFOLIO_MEMBERS_EDIT,
             lambda: is_org
-            and (
-                user.has_view_members_portfolio_permission(portfolio)
-                or user.has_edit_members_portfolio_permission(portfolio)
-            )
+            and user.has_edit_members_portfolio_permission(portfolio)
             and _member_checks(portfolio, kwargs),
         ),
         (
