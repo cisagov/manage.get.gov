@@ -3133,6 +3133,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
 
+        # reset to match expected form structure
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
         nameservers_page = self.app.get(
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id})
         )
@@ -3150,6 +3153,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
 
 class TestDomainRenewal(TestWithUser):

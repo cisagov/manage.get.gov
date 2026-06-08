@@ -455,13 +455,8 @@ class TestDomainCreation(MockEppLib):
         with less_console_noise():
             domain = Domain.objects.create(name="beef-tongue.gov")
             self.mockDataInfoDomain.hosts = ["ns1.beef-tongue.gov"]
-            print("STATE")
-            print(domain.state)
             # trigger getter
             _ = domain.statuses
-            print("STATE2")
-            print(domain.nameservers)
-            print(domain.state)
             # contacts = PublicContact.objects.filter(domain=domain,
             # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
 
@@ -624,53 +619,31 @@ class TestDomainStatuses(MockEppLib):
         domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
         self.assertEqual(domain.first_ready, None)
 
-        print("HOSTS")
-        print(self.mockDataInfoDomain.hosts)
-
-        # Set mock EPP hosts so is_dns_needed condition returns False and transition succeeds            
+        # Set mock EPP hosts so is_dns_needed condition returns False and transition succeeds
         self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
         domain.ready()
-        print("ANOTHER STATE")
-        print(domain.state)
 
         # check that status is READY
         self.assertTrue(domain.is_active())
         self.assertNotEqual(domain.first_ready, None)
-        
+
         # Capture the value of first_ready
         first_ready = domain.first_ready
-        
-        # change mock EPP hosts and then domain status 
+
+        # change mock EPP hosts and then domain status
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
         # domain._invalidate_cache()
-        print("WHOA")
         domain.save()
         domain = Domain.objects.get(name="pig-knuckles.gov")
-        print("FIRST READY")
-        print(domain.first_ready)
-        print(domain.nameservers)
-        print(domain.state)
         domain.dns_needed()
-        print("--WHOA2--")
-        print(domain.nameservers)
-        print(domain.state)
         self.assertFalse(domain.is_active())
-        
+
         # change back to READY
         self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
         # domain._invalidate_cache()
         # domain.ready()
-        print("WHOA3")
-        print(self.mockDataInfoDomain.hosts)
-        print(domain.nameservers)
-        print(domain.state)
         domain.nameservers = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
-        print("WHOA4")
-        print(self.mockDataInfoDomain.hosts)
-        print(domain.nameservers)
-        print(domain.state)
         domain.ready()
-        print(domain.state)
         self.assertTrue(domain.is_active())
 
         # assert that the value of first_ready has not changed
@@ -1784,7 +1757,7 @@ class TestRegistrantNameservers(MockEppLib):
         with less_console_noise():
             # update mock EPP with same data as what I want new nameservers to be
             self.mockDataInfoDomain.hosts = [self.nameserver1, self.nameserver2]
-            
+
             # set 2 nameservers
             self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
             # when you create a host, you also have to update at same time
@@ -1806,7 +1779,7 @@ class TestRegistrantNameservers(MockEppLib):
                 call(update_domain_with_created, cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            # Extra EPP calls due to _invalidate_cache() in the namserver setter
+            # Extra EPP calls due to _invalidate_cache() in the nameserver setter
             # 1. InfoDomain; 2. InfoHost (nameserver1); 3. InfoHost (nameserver2)
             # The other four calls are above in expected_calls.
             self.assertEqual(7, self.mockedSendFunction.call_count)
@@ -2110,9 +2083,9 @@ class TestRegistrantNameservers(MockEppLib):
                 call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            
+
             # Four additional EPP calls (InfoDomain and InfoHost x3) due to
-            # _invalidate_cache() in the nameservers setter. 
+            # _invalidate_cache() in the nameservers setter.
             self.assertEqual(self.mockedSendFunction.call_count, 8)
 
     def test_is_subdomain_with_no_ip(self):
