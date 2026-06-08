@@ -273,6 +273,7 @@ class DnsHostService:
         """
         try:
             dns_record = DnsRecord.objects.get(pk=record_id)
+            record_name = dns_record.name
         except DnsRecord.DoesNotExist:
             raise ValueError("Could not find the DNS record in registrar db to delete.")
 
@@ -280,25 +281,25 @@ class DnsHostService:
         if not x_record_id:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
 
-        self.delete_and_save_dns_record(x_zone_id, x_record_id)
+        self.delete_and_save_dns_record(x_zone_id, x_record_id, record_name)
         return dns_record
 
-    def delete_and_save_dns_record(self, x_zone_id: str, x_record_id: str) -> str:
+    def delete_and_save_dns_record(self, x_zone_id: str, x_record_id: str, record_name: str) -> str:
         """Delete DNS record in vendor service and persist the changes in the local database."""
         try:
             vendor_record_id = self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
-            logger.info(f"Successfully deleted record {vendor_record_id} in vendor service.")
+            logger.info(f"Successfully deleted record {record_name} in vendor service.")
         except (APIError, HTTPStatusError) as e:
-            logger.error(f"Failed to delete record {vendor_record_id}: {str(e)}")
+            logger.error(f"Failed to delete record {record_name}: {str(e)}")
             raise APIError(str(e)) from e
         except Exception as e:
-            logger.error(f"Failed to delete record {x_record_id} in database: {str(e)}.")
+            logger.error(f"Failed to delete record {record_name} in database: {str(e)}.")
             raise
 
         try:
             DnsRecord.delete_record_from_x_record_id(x_zone_id=x_zone_id, x_record_id=x_record_id)
         except Exception as e:
-            logger.exception("Failed to delete record {x_record_id} in database: {e}.")
+            logger.exception(f"Failed to delete record {record_name} in database: {e}.")
             raise
         return x_record_id
 
