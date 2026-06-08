@@ -263,7 +263,7 @@ class DnsHostService:
             raise
         return vendor_record_data
 
-    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
+    def delete_dns_record(self, x_zone_id: str, record_id: int) -> DnsRecord:
         """Look up the record by pk and delete it via the vendor service.
 
         Returns the deleted DnsRecord's vendor id.
