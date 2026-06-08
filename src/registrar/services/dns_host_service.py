@@ -12,13 +12,11 @@ from registrar.models import (
     DnsRecord,
     VendorDnsAccount,
     VendorDnsZone,
-    VendorDnsRecord,
     DnsAccount_VendorDnsAccount as AccountsJoin,
     DnsZone_VendorDnsZone as ZonesJoin,
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
-from functools import partial
 from registrar.services.utility.dns_helper import make_dns_account_name
 from httpx import Client, HTTPStatusError
 
@@ -287,7 +285,7 @@ class DnsHostService:
     def delete_and_save_dns_record(self, x_zone_id: str, x_record_id: str, record_name: str) -> str:
         """Delete DNS record in vendor service and persist the changes in the local database."""
         try:
-            vendor_record_id = self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+            self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
             logger.info(f"Successfully deleted record {record_name} in vendor service.")
         except (APIError, HTTPStatusError) as e:
             logger.error(f"Failed to delete record {record_name}: {str(e)}")
