@@ -96,7 +96,7 @@ function openCancelModal(opener){
 
 // Unsaved changes = an editable field differs from its server-rendered value. The type
 // dropdown is excluded since picking a type alone isn't data worth confirming.
-function formIsDirty(form){
+function formHasUnsavedChanges(form){
     if(!form) return false;
     return Array.from(form.querySelectorAll('input:not([type="hidden"]), textarea, select')).some(el => {
         if(el.id === "id_type") return false;
@@ -118,7 +118,7 @@ export function initDNSRecordCancelModal(){
     const teardownForm = (p) => {
         if(p.type === "edit"){
             // Re-fetch the row to discard edits — only needed when something actually changed.
-            if(p.dirty) window.htmx?.trigger(p.button, "cancelConfirmed");
+            if(p.hasUnsavedChanges) window.htmx?.trigger(p.button, "cancelConfirmed");
         } else {
             const typeField = document.getElementById("id_type");
             if(typeField) typeField.value = "";
@@ -128,8 +128,8 @@ export function initDNSRecordCancelModal(){
     };
 
     const onCancel = (p, form, cancelButtonId) => {
-        p.dirty = formIsDirty(form);
-        if(p.dirty){
+        p.hasUnsavedChanges = formHasUnsavedChanges(form);
+        if(p.hasUnsavedChanges){
             pendingCancel = p;
             openCancelModal(cancelButtonId);
         } else {
