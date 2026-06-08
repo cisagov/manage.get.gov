@@ -5816,8 +5816,6 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     ]
     search_help_text = "Search by tribe name, email address, or official name."
 
-    ordering = ["tribe_full_name"]
-
 
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
