@@ -42,6 +42,10 @@ class TestGroups(TestCase):
             "add_federalagency",
             "change_federalagency",
             "delete_federalagency",
+            "add_federaltribe",
+            "change_federaltribe",
+            "delete_federaltribe",
+            "view_federaltribe",
             "add_portfolio",
             "change_portfolio",
             "delete_portfolio",
@@ -63,10 +67,6 @@ class TestGroups(TestCase):
             "add_verifiedbystaff",
             "change_verifiedbystaff",
             "delete_verifiedbystaff",
-            "add_federaltribe",
-            "change_federaltribe",
-            "delete_federaltribe",
-            "view_federaltribe",
         ]
 
         # Get the codenames of actual permissions associated with the group
