@@ -450,7 +450,7 @@ class DnsRecord(TimeStampedModel):
             raise
 
     @classmethod
-    def delete_record_from_x_record_id(cls, x_zone_id: str, x_record_id: str) -> str:
+    def delete_record_from_x_record_id(cls, x_zone_id: str, x_record_id: str):
         """Delete an existing DnsRecord and its associated DnsVendorRecord and DnsRecordVendorDnsRecord."""
         try:
             with transaction.atomic():
