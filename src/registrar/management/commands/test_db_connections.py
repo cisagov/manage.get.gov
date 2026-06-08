@@ -40,25 +40,25 @@ class Command(BaseCommand):
             agency = agencies[i % len(agencies)]
             iteration_start = time.time()
             queries_before = len(connection.queries)
-
-            logger.info(f"DB_CONN_START: iteration={i}, queries={queries_before}")
+            # revert me - removed bc this bloats the logs
+            #logger.info(f"DB_CONN_START: iteration={i}, queries={queries_before}")
 
             self._run_portfolio_script(agency, i)
 
             duration = time.time() - iteration_start
             durations.append(duration)
             queries_after = len(connection.queries)
-            new_queries = queries_after - queries_before
+            # new_queries = queries_after - queries_before
+            # revert me - removed bc this bloats the logs
+            # log_msg = (
+            #     f"Test {i+1}: duration={duration:.3f}s, "
+            #     f"queries={new_queries}, agency='{agency}', "
+            #     f"total_queries={queries_after}"
+            # )
 
-            log_msg = (
-                f"Test {i+1}: duration={duration:.3f}s, "
-                f"queries={new_queries}, agency='{agency}', "
-                f"total_queries={queries_after}"
-            )
-
-            logger.info(f"DB_CONN_END: iteration={i}, new_queries={new_queries}, total_queries={queries_after}")
-            logger.info(f"DB_CONNECTION_TEST: {log_msg}")
-            self.stdout.write(f"  {log_msg}")
+            # logger.info(f"DB_CONN_END: iteration={i}, new_queries={new_queries}, total_queries={queries_after}")
+            # logger.info(f"DB_CONNECTION_TEST: {log_msg}")
+            # self.stdout.write(f"  {log_msg}")
 
             if delay > 0 and i < iterations - 1:
                 time.sleep(delay)
