@@ -454,7 +454,7 @@ class DnsRecord(TimeStampedModel):
         """Delete an existing DnsRecord and its associated DnsVendorRecord and DnsRecordVendorDnsRecord."""
         try:
             with transaction.atomic():
-                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)  
+                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
                 vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
                 dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
                 dns_record = cls.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)

@@ -274,7 +274,7 @@ class DnsHostService:
         try:
             dns_record = DnsRecord.objects.get(pk=record_id)
         except DnsRecord.DoesNotExist:
-            raise ValueError("Could not find the DNS record to delete.")
+            raise ValueError("Could not find the DNS record in registrar db to delete.")
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:

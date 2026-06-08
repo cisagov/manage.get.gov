@@ -974,7 +974,9 @@ class TestDnsHostServiceDB(TestCase):
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
-        self.assertFalse(RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists())
+        self.assertFalse(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+        )
 
     def test_delete_db_record_with_error_fails(self):
         """Preserve original DnsRecord with delete fails."""
@@ -989,12 +991,12 @@ class TestDnsHostServiceDB(TestCase):
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
 
         with patch("registrar.models.DnsRecord.delete", side_effect=IntegrityError("simulated failure")):
-                with self.assertRaises(IntegrityError):
-                     DnsRecord.delete_record_from_x_record_id(x_zone_id, x_record_id)
+            with self.assertRaises(IntegrityError):
+                DnsRecord.delete_record_from_x_record_id(x_zone_id, x_record_id)
 
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertTrue(DnsRecord.objects.filter(id=record_db_id).exists())
-        self.assertTrue(RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists())
-
-        
+        self.assertTrue(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+        )
