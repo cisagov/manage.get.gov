@@ -279,6 +279,19 @@ All non-production environments use an **email allowlist** (`AllowedEmail` model
 
 ---
 
+## Errors encountered during cloud-agent onboarding
+
+These were observed while validating this repository from a fresh cloud-agent environment:
+
+| Error encountered | Context | Work-around used |
+|---|---|---|
+| `docker compose run --rm app python manage.py test` stalled while `db Pulling` | Baseline test run in sandbox where image/network pulls can be slow or blocked | Re-ran with `--no-deps` to avoid dependency pull for this run: `docker compose run --rm --no-deps app python manage.py test ...` |
+| `Got an error creating the test database: database "test_app" already exists` followed by interactive prompt | Running Django tests in a reused container/database state | Responded `yes` to allow cleanup; for non-interactive runs prefer `--noinput` to avoid blocking on prompt |
+| `Got an error recreating the test database: database "test_app" does not exist` after accepting cleanup | Stale/partial test DB state during reset | Re-run tests in a clean container lifecycle (`docker compose down` then `docker compose up -d`) or use a consistent `exec` workflow against a running stack |
+| `epplibwrapper ... Connection refused` and `RSA key format is not supported` Login.gov/OIDC errors in logs | Local/sandbox runs without fully configured external registry/OIDC secrets | Expected for local development; proceed with lint/unit-test tasks unless task specifically requires live registry or OIDC integration |
+
+---
+
 ## Secrets
 
 Never commit secrets. Secrets required locally:
