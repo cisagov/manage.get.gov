@@ -455,11 +455,9 @@ class DnsRecord(TimeStampedModel):
         try:
             with transaction.atomic():
                 vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-                vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=x_zone_id)
-                dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-                dns_record = cls.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
+                dns_record = cls.get_by_x_record_id(x_record_id)
 
-                # DnsRecordVendorDnsRecord object are deleted on cascade
+                # DnsRecordVendorDnsRecord object is deleted on cascade
                 dns_record.delete()
                 vendor_dns_record.delete()
         except Exception:
