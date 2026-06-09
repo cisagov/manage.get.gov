@@ -279,10 +279,10 @@ class DnsHostService:
         if not x_record_id:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
 
-        self.delete_and_save_dns_record(x_zone_id, x_record_id, record_name)
+        self.delete_and_remove_dns_record(x_zone_id, x_record_id, record_name)
         return dns_record
 
-    def delete_and_save_dns_record(self, x_zone_id: str, x_record_id: str, record_name: str) -> str:
+    def delete_and_remove_dns_record(self, x_zone_id: str, x_record_id: str, record_name: str) -> str:
         """Delete DNS record in vendor service and persist the changes in the local database."""
         try:
             self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
