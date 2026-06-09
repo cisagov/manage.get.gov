@@ -21,6 +21,7 @@ from registrar.services.invitation_service import (
     create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
     get_domain_role_status,
+    get_requested_user,
     get_portfolio_permission_status,
     validate_domain_role_or_invitation,
     validate_portfolio_permission_or_invitation,
@@ -48,7 +49,6 @@ from registrar.utility.email_invitations import (
 )
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
 from waffle.decorators import flag_is_active
@@ -63,7 +63,11 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import EnrollmentNotAllowedError, FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.errors import (
+    EnrollmentNotAllowedError,
+    FSMDomainRequestError,
+    FSMErrorCodes,
+)
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -6302,6 +6306,8 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     search_help_text = "Search by suborganization."
 
     change_form_template = "django/admin/suborg_change_form.html"
+    delete_confirmation_template = "django/admin/suborg_delete_confirmation_template.html"
+    delete_selected_confirmation_template = "django/admin/suborg_delete_selected_confirmation_template.html"
 
     readonly_fields = []
 
@@ -6375,6 +6381,43 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     and obj.portfolio.federal_agency.federal_type == BranchChoices.EXECUTIVE
                 )
         return super().has_view_permission(request, obj)
+
+    def delete_view(self, request, object_id, extra_context=None):
+        obj = self.get_object(request, object_id)
+        domain_requests = DomainRequest.objects.filter(sub_organization=obj)
+        domain_information = DomainInformation.objects.filter(sub_organization=obj)
+
+        extra_context = {"domain_requests": domain_requests, "domain_information": domain_information}
+        return super().delete_view(request, object_id, extra_context=extra_context)
+
+    def _log_related_objects(self, user, affected_domain_and_domain_requests, suborg):
+
+        for obj in affected_domain_and_domain_requests:
+
+            LogEntry.objects.log_create(
+                instance=obj,
+                actor=user,
+                action=LogEntry.Action.UPDATE,
+                changes={"sub_organization": [str(suborg), None]},
+                object_pk=str(obj.id),
+            )
+
+    def delete_model(self, request, obj):
+        domain_requests = list(DomainRequest.objects.filter(sub_organization=obj))
+        domains = list(DomainInformation.objects.filter(sub_organization=obj))
+        super().delete_model(request, obj)
+
+        self._log_related_objects(request.user, domain_requests, obj)
+
+        self._log_related_objects(request.user, domains, obj)
+
+    def delete_queryset(self, request, queryset):
+        sub_orgs = list(queryset.prefetch_related("request_sub_organization", "information_sub_organization"))
+        super().delete_queryset(request, queryset)
+
+        for sub_org in sub_orgs:
+            self._log_related_objects(request.user, sub_org.request_sub_organization.all(), sub_org)
+            self._log_related_objects(request.user, sub_org.information_sub_organization.all(), sub_org)
 
 
 class AllowedEmailAdmin(ListHeaderAdmin):

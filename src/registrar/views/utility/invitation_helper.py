@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.db import IntegrityError
-from registrar.models import PortfolioInvitation, User, UserPortfolioPermission
+from registrar.models import PortfolioInvitation, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
 import logging
 from registrar.utility.errors import (
@@ -51,14 +51,6 @@ def get_org_membership(org, email, user):
     )
 
     return member_of_a_different_org, member_of_this_org
-
-
-def get_requested_user(email):
-    """Retrieve a user by email or return None if the user doesn't exist."""
-    try:
-        return User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
-        return None
 
 
 def handle_invitation_exceptions(request, exception, email):

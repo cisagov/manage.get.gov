@@ -488,7 +488,9 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
         is_admin_invitation (boolean): boolean indicating if the invitation is an admin invitation
 
     Returns:
-        Boolean indicating if all messages were sent successfully.
+        Boolean indicating whether follow-up notifications to existing
+        portfolio admins were sent successfully. The invitation email
+        itself raises on failure.
 
     Raises:
         MissingEmailError: If the requestor has no email associated with their account.
