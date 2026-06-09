@@ -19,6 +19,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.invitation_service import (
     create_portfolio_permission_or_invitation,
+    get_requested_user,
     get_portfolio_permission_status,
     validate_portfolio_permission_or_invitation,
 )
@@ -45,7 +46,6 @@ from registrar.utility.email_invitations import (
 )
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
 from waffle.decorators import flag_is_active
