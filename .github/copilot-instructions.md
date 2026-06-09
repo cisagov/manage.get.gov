@@ -2,7 +2,7 @@
 
 ## Project overview
 
-This repository is the **.gov domain registrar** — the Django web application through which U.S. government organizations request and manage `.gov` domains. It is a Django 4.2 app deployed on Cloud.gov (Cloud Foundry), backed by PostgreSQL, authenticating via Login.gov (OIDC), and communicating with a `.gov` EPP registry (fred-epplib).
+This repository is the **.gov domain registrar** — the Django web application through which U.S. government organizations request and manage `.gov` domains. It is a Django 5.2 app deployed on Cloud.gov (Cloud Foundry), backed by PostgreSQL, authenticating via Login.gov (OIDC), and communicating with a `.gov` EPP registry (fred-epplib).
 
 All application source code lives under `src/`. Documentation lives under `docs/`.
 
@@ -21,7 +21,7 @@ src/               All application code (working directory for all commands)
   api/             Lightweight public REST endpoints (available, rdap, reports)
   manage.py        Django management entry point
   docker-compose.yml  Local dev: app (8080) + db (5432) + node + pa11y + owasp
-  Dockerfile       Python 3.10 app image
+  Dockerfile       Python 3.14 app image
   node.Dockerfile  Node image for USWDS Sass compilation
   Pipfile / Pipfile.lock  Python deps — always keep in sync with requirements.txt
   requirements.txt Pinned Python deps (keep in sync with Pipfile)
@@ -39,8 +39,8 @@ src/               All application code (working directory for all commands)
 
 | Layer | Technology |
 |---|---|
-| Language | Python 3.10 |
-| Framework | Django 4.2 |
+| Language | Python 3.14 |
+| Framework | Django 5.2 |
 | Database | PostgreSQL (psycopg2) |
 | Authentication | Login.gov via OIDC (`src/djangooidc/`) |
 | State machines | django-fsm on `Domain` and `DomainRequest` |
