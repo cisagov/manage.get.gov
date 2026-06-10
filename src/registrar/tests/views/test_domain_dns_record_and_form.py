@@ -167,7 +167,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @less_console_noise_decorator
     def test_added_record_edit_form_has_cancel_wiring(self):
         """A record added without a page refresh gets its Edit form inserted via
-        htmx. That new Edit form must carry the Cancel hooks from the JS and 
+        htmx. That new Edit form must carry the Cancel hooks from the JS and
         the Edit button id the modal returns focus to on close."""
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
