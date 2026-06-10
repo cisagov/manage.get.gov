@@ -151,6 +151,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         self.assertContains(response, 'id="open-cancel-add-dnsrecord-modal"')
         self.assertContains(response, 'aria-controls="toggle-cancel-add-dnsrecord"')
         self.assertContains(response, "data-open-modal")
+        self.assertContains(response, 'id="cancel-add-dnsrecord-heading"')
+        self.assertContains(response, 'id="cancel-add-dnsrecord-description"')
 
         # Cancel button is JS-wired
         self.assertContains(response, "js-dnsrecord-add-cancel")
@@ -160,6 +162,43 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         modal_open_tag = re.search(r'<div[^>]*id="toggle-cancel-add-dnsrecord"[^>]*>', response.content.decode())
         self.assertIsNotNone(modal_open_tag)
         self.assertNotIn("data-force-action", modal_open_tag.group(0))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_added_record_edit_form_has_cancel_wiring(self):
+        """A record added without a page refresh gets its Edit form inserted via
+        htmx. That new Edit form must carry the Cancel hooks from the JS and 
+        the Edit button id the modal returns focus to on close."""
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            created = {}
+
+            def _create_and_return(*_args, **_kwargs):
+                created["record"] = create_dns_record(
+                    self.dns_zone,
+                    record_name="www",
+                    record_type="A",
+                    record_content="192.0.2.10",
+                    ttl=300,
+                    x_record_id="x-create-a",
+                )
+                return created["record"]
+
+            svc.create_dns_record.side_effect = _create_and_return
+
+            response = self.client.post(
+                self._url(),
+                {"type": "A", "name": "www", "ttl": 300, "comment": "", "content": "192.0.2.10"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        record_id = created["record"].id
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, 'hx-trigger="cancelConfirmed"')
+        self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record_id}"')
+        self.assertContains(response, f'id="dnsrecord-edit-button-{record_id}"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator

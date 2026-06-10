@@ -78,9 +78,10 @@
         aria-labelledby="cancel-add-dnsrecord-heading"
         aria-describedby="cancel-add-dnsrecord-description"
     >
-        {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
+        {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
     </div>
 
+    {# Hidden USWDS opener for the modal. The JS clicks this vs anything htmx would re-render / swap #}
     <a
         id="open-cancel-add-dnsrecord-modal"
         href="#toggle-cancel-add-dnsrecord"

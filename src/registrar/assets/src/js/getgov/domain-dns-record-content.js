@@ -94,15 +94,16 @@ function openCancelModal(opener){
     document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
 }
 
-// Unsaved changes = an editable field differs from its server-rendered value. The type
-// dropdown is excluded since picking a type alone isn't data worth confirming.
-function formHasUnsavedChanges(form){
+// Add form o any non-empty field means unsaved data, type dropdown is excluded
+// Edit form compares each field to its original
+function formHasUnsavedChanges(form, isEditForm){
     if(!form) return false;
     return Array.from(form.querySelectorAll('input:not([type="hidden"]), textarea, select')).some(el => {
         if(el.id === "id_type") return false;
         if(el.tagName === "SELECT") return Array.from(el.options).some(o => o.selected !== o.defaultSelected);
-        // Django renders <textarea> with a leading newline that the browser drops from .value but
-        // keep in .defaultValue, so normalize it out before comparing.
+        if(!isEditForm) return el.value.trim() !== "";
+        // Django renders <textarea> with a leading newline that the browser drops from .value
+        // but keeps in .defaultValue, so normalize it before comparing
         const original = el.tagName === "TEXTAREA" ? el.defaultValue.replace(/^\n/, "") : el.defaultValue;
         return el.value !== original;
     });
@@ -113,12 +114,13 @@ export function initDNSRecordCancelModal(){
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
     if(!container || !confirmButton) return;
 
-    const focusTargetId = (p) => p.type === "edit" ? `dnsrecord-edit-button-${p.recordId}` : "add-dnsrecord-button";
+    const focusTargetId = (cancelRequest) =>
+        cancelRequest.type === "edit" ? `dnsrecord-edit-button-${cancelRequest.recordId}` : "add-dnsrecord-button";
 
-    const teardownForm = (p) => {
-        if(p.type === "edit"){
+    const teardownForm = (cancelRequest) => {
+        if(cancelRequest.type === "edit"){
             // Re-fetch the row to discard edits — only needed when something actually changed.
-            if(p.hasUnsavedChanges) window.htmx?.trigger(p.button, "cancelConfirmed");
+            if(cancelRequest.hasUnsavedChanges) window.htmx?.trigger(cancelRequest.button, "cancelConfirmed");
         } else {
             const typeField = document.getElementById("id_type");
             if(typeField) typeField.value = "";
@@ -127,20 +129,22 @@ export function initDNSRecordCancelModal(){
         try { Alpine.$data(container).showFormId = null; } catch(e) {}
     };
 
-    const onCancel = (p, form, cancelButtonId) => {
-        p.hasUnsavedChanges = formHasUnsavedChanges(form);
-        if(p.hasUnsavedChanges){
-            pendingCancel = p;
-            openCancelModal(cancelButtonId);
+    const onCancel = (cancelRequest, form) => {
+        cancelRequest.hasUnsavedChanges = formHasUnsavedChanges(form, cancelRequest.type === "edit");
+        if(cancelRequest.hasUnsavedChanges){
+            pendingCancel = cancelRequest;
+            openCancelModal(cancelRequest.type === "edit"
+                ? `dnsrecord-edit-cancel-button-${cancelRequest.recordId}`
+                : "dnsrecord-add-cancel-button");
         } else {
-            teardownForm(p);
-            document.getElementById(focusTargetId(p))?.focus();
+            teardownForm(cancelRequest);
+            document.getElementById(focusTargetId(cancelRequest))?.focus();
         }
     };
 
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        onCancel({ type: "add" }, document.getElementById("form-container"), "dnsrecord-add-cancel-button");
+        onCancel({ type: "add" }, document.getElementById("form-container"));
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
@@ -148,9 +152,7 @@ export function initDNSRecordCancelModal(){
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
         const id = btn.dataset.recordId;
-        onCancel({ type: "edit", recordId: id, button: btn },
-            document.getElementById(`dnsrecord-edit-form-${id}`),
-            `dnsrecord-edit-cancel-button-${id}`);
+        onCancel({ type: "edit", recordId: id, button: btn }, document.getElementById(`dnsrecord-edit-form-${id}`));
     });
 
     confirmButton.addEventListener("click", () => {
