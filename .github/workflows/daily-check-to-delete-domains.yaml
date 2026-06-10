@@ -16,6 +16,9 @@ on:
     # Runs daily at 14:30 UTC
     - cron: "30 14 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   upload-reports:
     runs-on: ubuntu-latest

@@ -17,7 +17,9 @@ env:
   DESTINATION_ENVIRONMENT: staging
 # sandbox we are cloning 
   SOURCE_ENVIRONMENT: stable
-  
+
+permissions:
+  contents: read
 
 jobs:
   clone-database:
