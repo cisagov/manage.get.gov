@@ -29,7 +29,7 @@
                     <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
                     {{ 100|remaining_characters_text:dns_record.form.comment.value }}
                     </div>
-                    
+
                 </div>
                 <button
                     type="button"
@@ -50,18 +50,28 @@
                 </button>
 
                 <a
+                    id="dnsrecord-delete-button-{{ record_id }}"
                     class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                    aria-controls="delete-dns-record-modal"
                     role="button"
                     tabindex="0"
                     data-action="form-delete"
                     data-record-id="{{ record_id }}"
-                    aria-label="Delete DNS record from Cloudflare"
+                    data-open-modal
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
                     <span class="font-sans-sm">Delete</span>
                 </a>
+                <div
+                    class="usa-modal"
+                    id="delete-dns-record-modal"
+                    aria-labelledby="delete-dns-record-heading"
+                >
+                {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
+                </div>
+                <div class="margin-y-3">
             </form>
         </div>
     </td>
@@ -74,7 +84,7 @@
              <span id="dns-comment-{{record_id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
                 {{ dns_record.comment }}
-             </span>   
+             </span>
           </div>
     </td>
 </tr>
