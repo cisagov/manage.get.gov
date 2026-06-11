@@ -50,19 +50,28 @@ class Command(BaseCommand):
  
     def handle(self, *args, **options):
         logger.debug("Running missing registrants update script")
+        #Get all contacts
         all_contacts = PublicContact.objects.all()
+        #Filter out just the administrative contacts
         administrative_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE)
+        #Filter out the existing registrant contacts
         registrant_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.REGISTRANT)
-        domain_set = set()
+        
+        registratnt_domain_set = set()
 
+        #Add all domains with registrant contacts to the set
         for registrant in registrant_contacts:
-            domain_set.add(registrant.domain)
-
-        for admin in administrative_contacts:
-            if admin.domain not in domain_set:
+            registratnt_domain_set.add(registrant.domain)
+        
+        #Loop thru the administrative contacts
+        for contact in administrative_contacts:
+            #If the contact domain is not part of the registrant domain set, then create a new registrant contact
+            if contact.domain not in registratnt_domain_set:
                 logger.info("No Registrant info found...creating")
-                logger.info(f"Retrieving domain object for {admin.domain}")
-                domain = Domain.objects.get(name=admin.domain)
+                logger.info(f"Retrieving domain object for {contact.domain}")
+                #Get the domain object so we can call the addRegistrant method
+                domain = Domain.objects.get(name=contact.domain)
+                #Add the registrant
                 domain.addRegistrant()
 
 
