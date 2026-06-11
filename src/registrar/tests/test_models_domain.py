@@ -457,7 +457,7 @@ class TestDomainCreation(MockEppLib):
             self.mockDataInfoDomain.hosts = ["ns1.beef-tongue.gov"]
             # trigger getter
             _ = domain.statuses
-            
+
             # contacts = PublicContact.objects.filter(domain=domain,
             # type=PublicContact.ContactTypeChoices.REGISTRANT).get()
 
