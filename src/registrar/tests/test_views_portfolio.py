@@ -1446,7 +1446,10 @@ class TestPortfolio(WebTest):
 
     @less_console_noise_decorator
     def test_delete_domain_request_as_org_user_without_permission_with_deletable_status(self):
-        """Test that an org user without edit permission cant delete their DomainRequest even if status is deletable."""
+        """
+        Test that an org user without edit permission cant delete their
+        DomainRequest even if status is deletable.
+        """
 
         # Assign the user to a portfolio without edit permission
         UserPortfolioPermission.objects.get_or_create(
@@ -2401,6 +2404,16 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
             title="No Permissions",
         )
 
+        # Create view only user (can see members but not edit)
+        cls.user_view_only = User.objects.create(
+            username="test_user_view_only",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003112345",
+            title="View Only",
+        )
+
         # Create Portfolio
         cls.portfolio = Portfolio.objects.create(requester=cls.user, organization_name="Test Portfolio")
 
@@ -2421,6 +2434,15 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        cls.view_only_permission = UserPortfolioPermission.objects.create(
+            user=cls.user_view_only,
+            portfolio=cls.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -2472,6 +2494,28 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
         # Make sure the response is not found
         self.assertEqual(response.status_code, 404)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_own_member_domains(self):
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)."""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_other_member_domains(self):
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)."""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
 
 
 class TestPortfolioInvitedMemberDomainsView(TestWithUser, WebTest):
@@ -3228,7 +3272,9 @@ class TestPortfolioInvitedMemberEditDomainsView(TestWithUser, WebTest):
         # Check that domain_id=3 was created as INVITED
         self.assertTrue(
             DomainInvitation.objects.filter(
-                domain=self.domain3, email="invited@example.com", status=DomainInvitation.DomainInvitationStatus.INVITED
+                domain=self.domain3,
+                email="invited@example.com",
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
             ).exists()
         )
 
@@ -3943,6 +3989,16 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             ],
         )
 
+        # View only user (can see members but not edit them)
+        self.view_only_user = User.objects.create(
+            username="view_only_user",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003111234",
+            title="View Only",
+        )
+
         self.new_member_email = "newmember@example.com"
 
         AllowedEmail.objects.get_or_create(email=self.new_member_email)
@@ -3955,6 +4011,15 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -4008,7 +4073,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             self.assertTrue(mock_client.send_email.called)
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_removed_user(self, mock_send_email):
         """Tests the member invitation flow for an existing member which was previously removed."""
         self.client.force_login(self.user)
@@ -4129,7 +4194,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             self.assertFalse(mock_client.send_email.called)
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_invited_member_initial_ajax_call_fails(self, mock_send_email):
         """Tests the initial ajax call in the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4165,7 +4230,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_email_sending_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises EmailSendingError."""
         mock_send_email.side_effect = EmailSendingError("Failed to send email.")
@@ -4212,7 +4277,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_missing_email_error(self, mock_send_email):
         """Test when adding a new member and email_send method raises MissingEmailError."""
         mock_send_email.side_effect = MissingEmailError()
@@ -4254,7 +4319,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_submit_new_member_raises_exception(self, mock_send_email):
         """Test when adding a new member and email_send method raises Exception."""
         mock_send_email.side_effect = Exception("Generic exception")
@@ -4301,7 +4366,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             )
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_previously_invited_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4337,7 +4402,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_member(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member."""
         self.client.force_login(self.user)
@@ -4375,7 +4440,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_member_uppercase(self, mock_send_email):
         """Tests the member invitation flow for existing portfolio member with a different case."""
         self.client.force_login(self.user)
@@ -4413,7 +4478,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_member_invite_for_existing_user_who_is_not_a_member(self, mock_send_email):
         """Tests the member invitation flow for existing user who is not a portfolio member."""
         self.client.force_login(self.user)
@@ -4456,10 +4521,11 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         call_args = mock_send_email.call_args.kwargs
         self.assertEqual(call_args["email"], "newuser@example.com")
         self.assertEqual(call_args["requestor"], self.user)
-        self.assertIsNone(call_args.get("is_member_of_different_org"))
+        self.assertEqual(call_args["portfolio"], self.portfolio)
+        self.assertFalse(call_args["is_admin_invitation"])
 
     @less_console_noise_decorator
-    @patch("registrar.views.portfolios.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     def test_admin_invite_for_new_users(self, mock_send_email):
         """Tests the member invitation flow for new admin."""
         self.client.force_login(self.user)
@@ -4504,6 +4570,25 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         self.assertEqual(called_kwargs["email"], self.new_member_email)
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["portfolio"], self.portfolio)
+        self.assertTrue(called_kwargs["is_admin_invitation"])
+
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.invite_to_portfolio")
+    def test_view_only_user_cannot_invite_new_member(self, mock_invite_to_portfolio):
+        """Test user with only VIEW_MEMBERS cannot add a new member"""
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "email": "someone@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # Assert no email triggered
+        mock_invite_to_portfolio.assert_not_called()
 
 
 class TestPortfolioMemberEditView(WebTest):
@@ -4533,6 +4618,25 @@ class TestPortfolioMemberEditView(WebTest):
             additional_permissions=[
                 UserPortfolioPermissionChoices.VIEW_MEMBERS,
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # View only user (can see members but not edit)
+        self.view_only_user = User.objects.create(
+            username="test_user_member_view_only",
+            first_name="View",
+            last_name="Only",
+            email="view_only@example.com",
+            phone="8003111234",
+            title="View Only",
+        )
+
+        self.view_only_permission = UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
             ],
         )
 
@@ -4600,6 +4704,34 @@ class TestPortfolioMemberEditView(WebTest):
         # Assert the update notification email content
         self.assertEqual(called_kwargs["requestor"], self.user)
         self.assertEqual(called_kwargs["permissions"], basic_permission)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_own_member_permissions(self):
+        """User with only VIEW_MEMBERS cannot edit their own permissions"""
+        view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": view_only_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_view_only_user_cannot_edit_other_member_permissions(self):
+        """User with only VIEW_MEMBERS cannot edit another members permissions either"""
+        other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": other_member_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        other_member_permission.refresh_from_db()
+        self.assertEqual(other_member_permission.roles, ["organization_admin"])
 
     @less_console_noise_decorator
     @patch("django.contrib.messages.warning")
