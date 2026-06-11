@@ -19,6 +19,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.invitation_service import (
     create_portfolio_permission_or_invitation,
+    get_requested_user,
     get_portfolio_permission_status,
     validate_portfolio_permission_or_invitation,
 )
@@ -45,7 +46,6 @@ from registrar.utility.email_invitations import (
 )
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
 from waffle.decorators import flag_is_active
@@ -60,7 +60,11 @@ from waffle.admin import FlagAdmin
 from waffle.models import Sample, Switch
 from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import FSMDomainRequestError, FSMErrorCodes
+from registrar.utility.errors import (
+    EnrollmentNotAllowedError,
+    FSMDomainRequestError,
+    FSMErrorCodes,
+)
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
 from django.contrib.admin.views.main import ORDER_VAR
@@ -5135,6 +5139,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
+        except EnrollmentNotAllowedError as e:
+            logger.warning("DNS enrollment blocked: %s", e)
+            self.message_user(request, str(e), messages.WARNING)
         except Exception as e:
             logger.exception(e)
             self.message_user(
@@ -5774,6 +5781,42 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return readonly_fields
 
 
+class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
+    """Admin for FederalTribe"""
+
+    list_display = [
+        "tribe_full_name",
+        "tribe",
+        "tribe_alternate_name",
+        "email",
+        "first_name",
+        "last_name",
+        "suffix",
+        "aka",
+        "job_title",
+        "organization",
+        "phone",
+        "address_line1",
+        "address_line2",
+        "city",
+        "state_territory",
+        "zipcode",
+        "urbanization",
+        "website",
+        "date_elected",
+        "next_election",
+        "notes",
+    ]
+
+    search_fields = [
+        "tribe_full_name",
+        "email",
+        "first_name",
+        "last_name",
+    ]
+    search_help_text = "Search by tribe name, email address, or official name."
+
+
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
 
@@ -5836,6 +5879,8 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     search_help_text = "Search by suborganization."
 
     change_form_template = "django/admin/suborg_change_form.html"
+    delete_confirmation_template = "django/admin/suborg_delete_confirmation_template.html"
+    delete_selected_confirmation_template = "django/admin/suborg_delete_selected_confirmation_template.html"
 
     readonly_fields = []
 
@@ -5910,6 +5955,43 @@ class SuborganizationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 )
         return super().has_view_permission(request, obj)
 
+    def delete_view(self, request, object_id, extra_context=None):
+        obj = self.get_object(request, object_id)
+        domain_requests = DomainRequest.objects.filter(sub_organization=obj)
+        domain_information = DomainInformation.objects.filter(sub_organization=obj)
+
+        extra_context = {"domain_requests": domain_requests, "domain_information": domain_information}
+        return super().delete_view(request, object_id, extra_context=extra_context)
+
+    def _log_related_objects(self, user, affected_domain_and_domain_requests, suborg):
+
+        for obj in affected_domain_and_domain_requests:
+
+            LogEntry.objects.log_create(
+                instance=obj,
+                actor=user,
+                action=LogEntry.Action.UPDATE,
+                changes={"sub_organization": [str(suborg), None]},
+                object_pk=str(obj.id),
+            )
+
+    def delete_model(self, request, obj):
+        domain_requests = list(DomainRequest.objects.filter(sub_organization=obj))
+        domains = list(DomainInformation.objects.filter(sub_organization=obj))
+        super().delete_model(request, obj)
+
+        self._log_related_objects(request.user, domain_requests, obj)
+
+        self._log_related_objects(request.user, domains, obj)
+
+    def delete_queryset(self, request, queryset):
+        sub_orgs = list(queryset.prefetch_related("request_sub_organization", "information_sub_organization"))
+        super().delete_queryset(request, queryset)
+
+        for sub_org in sub_orgs:
+            self._log_related_objects(request.user, sub_org.request_sub_organization.all(), sub_org)
+            self._log_related_objects(request.user, sub_org.information_sub_organization.all(), sub_org)
+
 
 class AllowedEmailAdmin(ListHeaderAdmin):
     class Meta:
@@ -5936,6 +6018,7 @@ admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.FederalAgency, FederalAgencyAdmin)
+admin.site.register(models.FederalTribe, FederalTribeAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.HostIP, HostIpAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
