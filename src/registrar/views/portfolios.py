@@ -29,19 +29,20 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.services.invitation_service import invite_to_portfolio
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
     send_portfolio_admin_addition_emails,
     send_portfolio_admin_removal_emails,
-    send_portfolio_invitation_email,
     send_portfolio_invitation_remove_email,
     send_portfolio_member_permission_remove_email,
     send_portfolio_member_permission_update_email,
     send_portfolio_update_emails_to_portfolio_admins,
 )
 from registrar.utility.errors import MissingEmailError
+from registrar.utility.errors import InvitationError
 from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.utility.enums import DefaultUserValues
 from django.views.generic import View, DetailView, ListView
@@ -162,7 +163,8 @@ class PortfolioMemberDeleteView(View):
         if active_requests_count > 0:
             return mark_safe(  # nosec
                 "This member can't be removed from the organization because they have an active domain request. "
-                f"Please <a class='usa-link' href='{support_url}' target='_blank'>contact us</a> to remove this member."
+                f"Please <a class='usa-link' href='{support_url}' "
+                "target='_blank'>contact us</a> to remove this member."
             )
         if member.is_only_admin_of_portfolio(portfolio):
             return (
@@ -585,7 +587,10 @@ class PortfolioInvitedMemberDeleteView(View):
                 if not send_portfolio_admin_removal_emails(
                     email=portfolio_invitation.email, requestor=request.user, portfolio=portfolio_invitation.portfolio
                 ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
+                    messages.warning(
+                        self.request,
+                        "Could not send email notification to existing organization admins.",
+                    )
             if not send_portfolio_invitation_remove_email(requestor=request.user, invitation=portfolio_invitation):
                 messages.warning(request, f"Could not send email notification to {portfolio_invitation.email}")
 
@@ -1226,28 +1231,30 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
         portfolio = form.cleaned_data["portfolio"]
-        is_admin_invitation = UserPortfolioRoleChoices.ORGANIZATION_ADMIN in form.cleaned_data["roles"]
-
         requested_user = User.objects.filter(email__iexact=requested_email).first()
-        permission_exists = UserPortfolioPermission.objects.filter(user=requested_user, portfolio=portfolio).exists()
+
+        if requested_user:
+            permission_exists = UserPortfolioPermission.objects.filter(
+                user=requested_user, portfolio=portfolio
+            ).exists()
+            if permission_exists:
+                messages.error(self.request, f"{requested_email} is already a member of this organization.")
+                return redirect(self.get_success_url())
+
         try:
-            if not requested_user or not permission_exists:
-                if not send_portfolio_invitation_email(
-                    email=requested_email,
-                    requestor=requestor,
-                    portfolio=portfolio,
-                    is_admin_invitation=is_admin_invitation,
-                ):
-                    messages.warning(self.request, "Could not send email notification to existing organization admins.")
-                portfolio_invitation = form.save()
-                # if user exists for email, immediately retrieve portfolio invitation upon creation
-                if requested_user is not None:
-                    portfolio_invitation.retrieve()
-                    portfolio_invitation.save()
-                messages.success(self.request, f"{requested_email} has been invited to this organization..")
-            else:
-                if permission_exists:
-                    messages.error(self.request, f"{requested_email} is already a member of this organization.")
+            _, portfolio_admin_notifications_sent = invite_to_portfolio(
+                email=requested_email,
+                portfolio=portfolio,
+                requestor=requestor,
+                roles=form.cleaned_data["roles"],
+                additional_permissions=form.cleaned_data["additional_permissions"],
+            )
+            if not portfolio_admin_notifications_sent:
+                messages.warning(
+                    self.request,
+                    "Could not send follow-up email notification to existing organization admins.",
+                )
+            messages.success(self.request, f"{requested_email} has been invited to this organization.")
         except Exception as e:
             self._handle_exceptions(e, portfolio, requested_email)
         return redirect(self.get_success_url())
@@ -1274,6 +1281,9 @@ class PortfolioAddMemberView(DetailView, FormMixin):
                 "Can't send invitation email. No email is associated with your account.",
                 exc_info=True,
             )
+        elif isinstance(exception, InvitationError):
+            messages.error(self.request, str(exception))
+            logger.warning("Could not create portfolio invitation.", exc_info=True)
         else:
             logger.error("Could not send email invitation (Other Exception)", exc_info=True)
             messages.error(
