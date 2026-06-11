@@ -1636,9 +1636,7 @@ class DomainAddUserView(DomainFormBaseView):
                 if requested_user is not None:
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
-                    messages.success(
-                        self.request, f"{requested_email} has been invited to become a member of {domain_org}"
-                    )
+                    
             # if user is not part of the domain
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
@@ -1740,7 +1738,7 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
         return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
-        return f"Canceled invitation to {self.object.email}."
+        return f"The invitation for {self.object.email} has been canceled."
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
