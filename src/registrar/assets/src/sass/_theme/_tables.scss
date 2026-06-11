@@ -72,11 +72,9 @@ th {
     border-top: none;
   }
 
-  //No border for very bottom element
-  tbody tr:last-of-type {
-    td, th {
-      border-bottom: 0;
-    }
+  //No border for very bottom row
+  tbody tr:last-child {
+    border-bottom: 0;
   }
 
   td, th {
