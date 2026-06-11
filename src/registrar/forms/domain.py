@@ -884,7 +884,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         required=False,
         min_value=0,
         max_value=65535,
-        help_text="0 - 65535",
+        help_text="0–65535",
         error_messages={
             "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
             "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
