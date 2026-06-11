@@ -19,6 +19,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.invitation_service import (
     create_portfolio_permission_or_invitation,
+    get_requested_user,
     get_portfolio_permission_status,
     validate_portfolio_permission_or_invitation,
 )
@@ -45,7 +46,6 @@ from registrar.utility.email_invitations import (
 )
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
 from waffle.decorators import flag_is_active
@@ -5774,6 +5774,42 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return readonly_fields
 
 
+class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
+    """Admin for FederalTribe"""
+
+    list_display = [
+        "tribe_full_name",
+        "tribe",
+        "tribe_alternate_name",
+        "email",
+        "first_name",
+        "last_name",
+        "suffix",
+        "aka",
+        "job_title",
+        "organization",
+        "phone",
+        "address_line1",
+        "address_line2",
+        "city",
+        "state_territory",
+        "zipcode",
+        "urbanization",
+        "website",
+        "date_elected",
+        "next_election",
+        "notes",
+    ]
+
+    search_fields = [
+        "tribe_full_name",
+        "email",
+        "first_name",
+        "last_name",
+    ]
+    search_help_text = "Search by tribe name, email address, or official name."
+
+
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
 
@@ -5936,6 +5972,7 @@ admin.site.register(models.DomainInformation, DomainInformationAdmin)
 admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.FederalAgency, FederalAgencyAdmin)
+admin.site.register(models.FederalTribe, FederalTribeAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.HostIP, HostIpAdmin)
 admin.site.register(models.Website, WebsiteAdmin)

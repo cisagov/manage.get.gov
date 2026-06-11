@@ -55,9 +55,9 @@ from registrar.utility.waffle import flag_is_active_for_user
 from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
+from registrar.services.invitation_service import get_requested_user, invite_to_portfolio
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
@@ -84,7 +84,6 @@ from ..utility.email import send_templated_email, EmailSendingError
 from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
-    send_portfolio_invitation_email,
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
@@ -1621,22 +1620,12 @@ class DomainAddUserView(DomainFormBaseView):
             #   create portfolio invitation
             #   create message to view
             if domain_org and requestor_can_update_portfolio and not member_of_this_org:
-                send_portfolio_invitation_email(
+                invite_to_portfolio(
                     email=requested_email,
+                    portfolio=domain_org,
                     requestor=requestor,
-                    portfolio=domain_org,
-                    is_admin_invitation=False,
-                )
-                portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-                    email=requested_email,
-                    portfolio=domain_org,
                     roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
-                # if user exists for email, immediately retrieve portfolio invitation upon creation
-                if requested_user is not None:
-                    portfolio_invitation.retrieve()
-                    portfolio_invitation.save()
-
                 messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
 
             if requested_user is None:
