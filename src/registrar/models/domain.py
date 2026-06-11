@@ -2649,7 +2649,7 @@ class Domain(TimeStampedModel, DomainHelper):
         make sure that when there is state change we delete the on hold date as well."""
         self._cache = {}
         logging.info(f"Cache is empty for domain: {self.name}")
-        # delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
+        delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
 
     def _get_property(self, property):
         """Get some piece of info about a domain."""

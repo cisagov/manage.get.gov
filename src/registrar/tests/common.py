@@ -1979,6 +1979,8 @@ class MockEppLib(TestCase):
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
             "threenameserversdomain.gov": (
+                # This is a temporary fix to simulate the registry after UpdateDomain removes nameservers
+                # The conditional is needed to pass the test, test_user_removes_too_many_nameservers
                 self.infoDomainNoHost if self.mockedSendFunction.call_count >= 8 else self.infoDomainThreeHosts,
                 None,
             ),

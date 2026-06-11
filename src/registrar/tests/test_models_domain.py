@@ -2084,8 +2084,8 @@ class TestRegistrantNameservers(MockEppLib):
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
 
-            # Four additional EPP calls (InfoDomain and InfoHost x3) due to
-            # _invalidate_cache() in the nameservers setter.
+            # Four extra EPP calls from _invalidate_cache() in the nameserver setter.
+            # See PR #5052 for full explanation if needed
             self.assertEqual(self.mockedSendFunction.call_count, 8)
 
     def test_is_subdomain_with_no_ip(self):

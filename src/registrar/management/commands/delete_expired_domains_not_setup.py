@@ -102,8 +102,12 @@ class Command(BaseCommand):
                             to_addresses=[alert_email],
                             context={"domain": domain.name},
                         )
-                    except Exception as email_err:
+                    except EmailSendingError as email_err:
                         logger.error(f"Failed to send deletion alert email for {domain.name}: {email_err}")
+                else:
+                    logger.warning(
+                        f"alert_email not configured, no Slack notification for failed deletion of {domain.name}"
+                    )
             except Exception as e:
                 logger.error(f"Failed to delete {domain.name}: {e}")
 
