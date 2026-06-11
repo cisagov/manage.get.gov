@@ -734,7 +734,7 @@ class TestDomainRequestAdmin(MockEppLib):
         completed_domain_request()
         response = self.client.get("/admin/registrar/domainrequest/?converted_generic_orgs=federal")
         # There are 2 template references to Federal (4) and two in the results data
-        # of the request
+        # of the request including "add federal agency", "add federal tribe"
         self.assertContains(response, "Federal", count=8)
         # This may be a bit more robust
         self.assertContains(
