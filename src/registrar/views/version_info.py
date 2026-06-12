@@ -1,4 +1,3 @@
-from login_required import login_not_required
 from django.shortcuts import render
 import os
 from django.db import transaction
