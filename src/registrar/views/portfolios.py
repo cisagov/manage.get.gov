@@ -426,7 +426,8 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                 messages.error(
                     request,
                     mark_safe(  # nosec
-                        "A database error occurred while saving changes. Please try again. If the problem persists,"
+                        f"An unexpected error occurred: {member.email} could not be removed from this domain."
+                        "Please try again. If the problem persists,"
                         ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
                     ),
                 )
