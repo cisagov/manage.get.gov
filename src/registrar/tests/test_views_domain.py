@@ -1632,7 +1632,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, "You can’t remove yourself because you’re the only domain manager. ")
+        self.assertContains(response, "You can’t remove yourself because you’re the only domain manager.")
         # Assert that the user is still displayed
         self.assertContains(response, f"{self.user.email}")
         # Assert that the UserDomainRole still exists
