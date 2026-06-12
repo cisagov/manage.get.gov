@@ -135,7 +135,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_add_record_cancel_confirmation_modal_renders(self):
-        """#4664: Cancel on the Add record form opens an "are you sure" modal so the user
+        """Cancel on the Add record form opens an "are you sure" modal so the user
         confirms before discarding unsaved entries. USWDS relocates the modal to the page
         body and Alpine runs in CSP mode, so the flow is driven by USWDS data attributes
         plus JS. Verify the template wires up the modal, its trigger, and the Cancel button.
