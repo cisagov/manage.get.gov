@@ -380,3 +380,20 @@ export function initDynamicDNSRecordFormFields() {
         }
     )
 }
+
+export function initDeleteDnsRecord() {
+    const container = document.getElementById("dnsrecords-form-container");
+
+    // listen for click of delete button
+    container?.addEventListener("click", (e) => {
+        const deleteBtn = e.target.closest(".js-dnsrecord-delete");
+        if(!deleteBtn) return;
+        openDeleteModal();
+    });
+
+    // click the ghost trigger element to open modal
+    // (located outside htmx swapped response so listener can still find it)
+    const openDeleteModal = () => {
+        document.getElementById("delete-dns-record-modal-trigger")?.click();
+    }
+}

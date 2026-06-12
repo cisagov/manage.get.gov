@@ -49,29 +49,21 @@
                     Save
                 </button>
 
-                <a
+                <button
                     id="dnsrecord-delete-button-{{ record_id }}"
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete"
                     aria-controls="delete-dns-record-modal"
+                    type="button"
                     role="button"
                     tabindex="0"
                     data-action="form-delete"
                     data-record-id="{{ record_id }}"
-                    data-open-modal
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
                     <span class="font-sans-sm">Delete</span>
-                </a>
-                <div
-                    class="usa-modal"
-                    id="delete-dns-record-modal"
-                    aria-labelledby="delete-dns-record-heading"
-                >
-                {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
-                </div>
-                <div class="margin-y-3">
+                </button>
             </form>
         </div>
     </td>
