@@ -2670,6 +2670,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(self.nameservers) >= 2 or self.host.all().count() >= 2:
             logger.error(
                 f"Domain {self.name} has {len(self.nameservers)} nameservers "
+                f"and {len(self.host.all().count())} hosts "
                 f"but is in state {self.state}. Aborting deletion."
             )
             raise ActionNotAllowed(f"Domain {self.name} has active nameservers. Cannot delete.")
