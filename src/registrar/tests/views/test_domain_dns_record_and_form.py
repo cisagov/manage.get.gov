@@ -196,7 +196,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         self.assertEqual(response.status_code, 200)
         record_id = created["record"].id
         self.assertContains(response, "js-dnsrecord-edit-cancel")
-        self.assertContains(response, 'hx-trigger="cancelConfirmed"')
         self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record_id}"')
         self.assertContains(response, f'id="dnsrecord-edit-button-{record_id}"')
 
@@ -547,15 +546,14 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_edit_record_cancel_opens_confirmation_modal(self):
-        """#4664: the Edit form's Cancel routes through the same confirm modal as Add. The
-        row reset is deferred to a cancelConfirmed event so it only fires once confirmed."""
+        """The Edit form's Cancel routes through the same confirm modal as Add. On
+        confirm the JS resets the form back to its saved values."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
 
-        # Cancel defers its row reset to the cancelConfirmed event
-        self.assertContains(response, 'hx-trigger="cancelConfirmed"')
-        self.assertContains(response, f'hx-select="#dnsrecord-edit-form-{record.id}"')
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-form-{record.id}"')
         # The confirm modal it opens is the shared one
         self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
         self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')

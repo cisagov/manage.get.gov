@@ -59,22 +59,21 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
-function clearRecordForm(root){
-    const form = root || document.getElementById("dnsrecords-form-container")
+// Validation errors produces an inline error and a top-level error banner, Clear both. 
+function clearRecordErrors(scope){
+    if(scope){
+        scope.querySelectorAll(".usa-error-message").forEach(el => el.remove());
+        scope.querySelectorAll(".usa-input--error").forEach(el => el.classList.remove("usa-input--error"));
+        scope.querySelectorAll(".usa-label--error").forEach(el => el.classList.remove("usa-label--error"));
+    }
+    document.getElementById("messages-container")?.querySelectorAll(".usa-alert--error").forEach(el => el.remove());
+}
+
+function clearRecordForm(scope){
+    const form = scope || document.getElementById("dnsrecords-form-container")
     if(!form) return;
 
-    // remove error styling from inputs and labels
-    const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
-    inputs.forEach(input =>{
-        input.classList.remove("usa-input--error")
-    })
-    const labels = form.querySelectorAll('label')
-    labels.forEach( label => label.classList.remove("usa-label--error"))
-
-    // remove error messages in line and top-level error messages
-    form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
-    const alertMessagesContainer = document.getElementById('messages-container')
-    alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
+    clearRecordErrors(form)
 
     // Reset the comment field and its character count
     document.getElementById('id_comment').value = ''
@@ -84,26 +83,42 @@ function clearRecordForm(root){
     commentStatus.textContent = getCharCountText(100, 0)
 }
 
-// Cancel confirms via the modal only when the form has unsaved changes; otherwise it closes
-// straight away. On modal close USWDS focuses the element in data-opener, which we point at
-// where focus should land. One modal serves the Add form and every Edit row.
+// One shared modal for the Add form and every Edit row; shown only when there are unsaved
+// changes. data-opener tells USWDS where to return focus on close.
 let pendingCancel = null;
+
+// DOM ids/selectors for a cancel target, keyed off the add vs edit row id
+const refsFor = (req) => req.type === "edit"
+    ? {
+        form: `#dnsrecord-edit-form-${req.recordId}`,
+        cancelButtonId: `dnsrecord-edit-cancel-button-${req.recordId}`,
+        focusId: `dnsrecord-edit-button-${req.recordId}`,
+      }
+    : { form: "#form-container", cancelButtonId: "dnsrecord-add-cancel-button", focusId: "add-dnsrecord-button" };
+
+// Replace with a fresh server copy, removes client-side edits and errors
+const refreshForm = (selector, url) =>
+    window.htmx?.ajax("GET", url, { target: selector, select: selector, swap: "outerHTML" });
 
 function openCancelModal(opener){
     document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
     document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
 }
 
-// Add form o any non-empty field means unsaved data, type dropdown is excluded
-// Edit form compares each field to its original
+// fields, reused for both Add and Edit forms. 
+const FIELD_SELECTOR = 'input:not([type="hidden"]), textarea';
+
+// Add: any non-empty field (type dropdown excluded) is unsaved. Edit: any field differing from its original.
 function formHasUnsavedChanges(form, isEditForm){
     if(!form) return false;
-    return Array.from(form.querySelectorAll('input:not([type="hidden"]), textarea, select')).some(el => {
+    // A failed save uses the rejected values as the fields, so treat a visible error 
+    // as unsaved so cancel still confirms and resets.
+    if(form.querySelector(".usa-error-message")) return true;
+    return Array.from(form.querySelectorAll(`${FIELD_SELECTOR}, select`)).some(el => {
         if(el.id === "id_type") return false;
         if(el.tagName === "SELECT") return Array.from(el.options).some(o => o.selected !== o.defaultSelected);
         if(!isEditForm) return el.value.trim() !== "";
-        // Django renders <textarea> with a leading newline that the browser drops from .value
-        // but keeps in .defaultValue, so normalize it before comparing
+        // Django prepends a newline to <textarea> that .value drops but .defaultValue keeps; strip it before comparing.
         const original = el.tagName === "TEXTAREA" ? el.defaultValue.replace(/^\n/, "") : el.defaultValue;
         return el.value !== original;
     });
@@ -114,52 +129,66 @@ export function initDNSRecordCancelModal(){
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
     if(!container || !confirmButton) return;
 
-    const focusTargetId = (cancelRequest) =>
-        cancelRequest.type === "edit" ? `dnsrecord-edit-button-${cancelRequest.recordId}` : "add-dnsrecord-button";
-
-    const teardownForm = (cancelRequest) => {
-        if(cancelRequest.type === "edit"){
-            // Re-fetch the row to discard edits — only needed when something actually changed.
-            if(cancelRequest.hasUnsavedChanges) window.htmx?.trigger(cancelRequest.button, "cancelConfirmed");
+    const teardownForm = (req) => {
+        const refs = refsFor(req);
+        const form = document.querySelector(refs.form);
+        if(req.type === "edit"){
+            if(form){
+                // After a failed save the row holds the rejected values; clear both errors inline and top,
+                // then re-fetch the row for the real saved values.
+                if(form.querySelector(".usa-error-message")){
+                    clearRecordErrors(form);
+                    refreshForm(refs.form, form.getAttribute("hx-post"));
+                } else if(req.hasUnsavedChanges){
+                    form.reset();
+                }
+            }
         } else {
-            const typeField = document.getElementById("id_type");
-            if(typeField) typeField.value = "";
-            clearRecordForm(document.getElementById("form-container"));
+            // A reopened Add form must be blank. Capture hadError before clearRecordForm strips it,
+            // then re-fetch a clean form on error, otherwise blank the live fields in place.
+            const hadError = !!form?.querySelector(".usa-error-message");
+            clearRecordForm(form);
+            if(hadError){
+                refreshForm(refs.form, form.getAttribute("hx-post"));
+            } else {
+                form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
+                const typeField = document.getElementById("id_type");
+                if(typeField) typeField.value = "";
+            }
         }
-        try { Alpine.$data(container).showFormId = null; } catch(e) {}
+        Alpine.$data(container).showFormId = null;
     };
 
-    const onCancel = (cancelRequest, form) => {
-        cancelRequest.hasUnsavedChanges = formHasUnsavedChanges(form, cancelRequest.type === "edit");
-        if(cancelRequest.hasUnsavedChanges){
-            pendingCancel = cancelRequest;
-            openCancelModal(cancelRequest.type === "edit"
-                ? `dnsrecord-edit-cancel-button-${cancelRequest.recordId}`
-                : "dnsrecord-add-cancel-button");
+    const onCancel = (req) => {
+        const refs = refsFor(req);
+        const form = document.querySelector(refs.form);
+        req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
+        if(req.hasUnsavedChanges){
+            pendingCancel = req;
+            openCancelModal(refs.cancelButtonId);
         } else {
-            teardownForm(cancelRequest);
-            document.getElementById(focusTargetId(cancelRequest))?.focus();
+            teardownForm(req);
+            document.getElementById(refs.focusId)?.focus();
         }
     };
 
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        onCancel({ type: "add" }, document.getElementById("form-container"));
+        onCancel({ type: "add" });
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
     document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
-        const id = btn.dataset.recordId;
-        onCancel({ type: "edit", recordId: id, button: btn }, document.getElementById(`dnsrecord-edit-form-${id}`));
+        onCancel({ type: "edit", recordId: btn.dataset.recordId });
     });
 
     confirmButton.addEventListener("click", () => {
         if(!pendingCancel) return;
         teardownForm(pendingCancel);
         const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-        modalEl?.setAttribute("data-opener", focusTargetId(pendingCancel));
+        modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
         modalEl?.querySelector("[data-close-modal]")?.click();
         pendingCancel = null;
     });

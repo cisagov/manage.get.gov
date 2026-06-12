@@ -31,17 +31,12 @@
                     </div>
                     
                 </div>
-                {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS fires the cancelConfirmed event, which re-fetches this row to discard the edits. #}
+                {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <button
                     type="button"
                     id="dnsrecord-edit-cancel-button-{{ record_id }}"
                     class="usa-button usa-button--outline js-dnsrecord-edit-cancel"
                     data-record-id="{{ record_id }}"
-                    hx-get="{% url 'domain-dns-records' domain.pk %}"
-                    hx-select="#dnsrecord-edit-form-{{ record_id }}"
-                    hx-target="#dnsrecord-edit-form-{{ record_id }}"
-                    hx-swap="outerHTML"
-                    hx-trigger="cancelConfirmed"
                 >
                     Cancel
                 </button>
