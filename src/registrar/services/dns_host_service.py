@@ -18,7 +18,7 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
-from httpx import Client, HTTPStatusError
+from httpx import Client, HTTPStatusError, RequestError
 
 logger = logging.getLogger(__name__)
 
@@ -262,6 +262,35 @@ class DnsHostService:
             logger.error(f"Failed to save record {form_record_data} in database: {str(e)}.")
             raise
         return vendor_record_data
+
+    def delete_dns_record(self, x_zone_id: str, record_id: int) -> DnsRecord:
+        """Look up the record by pk and delete it via the vendor service.
+
+        Returns the deleted DnsRecord's vendor id.
+        Raises ValueError if the record or its vendor id cannot be resolved.
+        """
+        try:
+            dns_record = DnsRecord.objects.get(pk=record_id)
+            record_name = dns_record.name
+        except DnsRecord.DoesNotExist:
+            raise ValueError("Could not find the DNS record in registrar db to delete.")
+
+        x_record_id = dns_record.get_active_x_record_id()
+        if not x_record_id:
+            raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
+
+        try:
+            with transaction.atomic():
+                DnsRecord.delete_by_x_record_id(x_zone_id=x_zone_id, x_record_id=x_record_id)
+                self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+                logger.info(f"Successfully deleted record {record_name} in vendor service.")
+        except (APIError, HTTPStatusError) as e:
+            logger.error(f"Failed to delete record {record_name} in vendor service: {str(e)}")
+            raise APIError(str(e)) from e
+        except Exception as e:
+            logger.error(f"Failed to delete record {record_name}: {str(e)}.")
+            raise
+        return dns_record
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         try:

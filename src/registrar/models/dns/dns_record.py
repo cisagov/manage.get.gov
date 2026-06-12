@@ -448,3 +448,18 @@ class DnsRecord(TimeStampedModel):
         except Exception:
             logger.exception("Failed to update and save record to database.")
             raise
+
+    @classmethod
+    def delete_by_x_record_id(cls, x_record_id: str):
+        """Delete an existing DnsRecord and its associated VendorRecord and DnsRecordVendorDnsRecord."""
+        try:
+            with transaction.atomic():
+                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+                dns_record = cls.get_by_x_record_id(x_record_id)
+
+                # DnsRecordVendorDnsRecord object is deleted on cascade
+                dns_record.delete()
+                vendor_dns_record.delete()
+        except Exception:
+            logger.exception("Failed to delete record objects in database.")
+            raise
