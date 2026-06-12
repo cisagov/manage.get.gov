@@ -281,7 +281,7 @@ class DnsHostService:
 
         try:
             with transaction.atomic():
-                DnsRecord.delete_record_from_x_record_id(x_zone_id=x_zone_id, x_record_id=x_record_id)
+                DnsRecord.delete_by_x_record_id(x_zone_id=x_zone_id, x_record_id=x_record_id)
                 self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
                 logger.info(f"Successfully deleted record {record_name} in vendor service.")
         except (APIError, HTTPStatusError) as e:

@@ -1013,13 +1013,10 @@ class TestDnsHostServiceDB(TestCase):
         DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
         record_db_id = DnsRecord.get_by_x_record_id(x_record_id).id 
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
+        self.service.dns_vendor_service.delete_dns_record = Mock(side_effect=APIError("simulated error"))
 
-        with patch(
-            "registrar.services.dns_host_service.CloudflareService.delete_dns_record", 
-            return_value=APIError("simulated failure")
-        ):
-            with self.assertRaises(APIError):
-                self.service.delete_dns_record(x_zone_id, record_db_id)
+        with self.assertRaises(APIError):
+            self.service.delete_dns_record(x_zone_id, record_db_id)
 
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
