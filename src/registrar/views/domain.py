@@ -57,7 +57,7 @@ from registrar.views.utility.invitation_helper import (
     get_org_membership,
     handle_invitation_exceptions,
 )
-from registrar.services.invitation_service import get_requested_user, invite_to_portfolio
+from registrar.services.invitation_service import get_requested_user
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
@@ -84,6 +84,7 @@ from ..utility.email import send_templated_email, EmailSendingError
 from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
+    send_portfolio_invitation_email,
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
@@ -1077,7 +1078,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     f"Create/update dns record called for domain {self.object.name}. "
                     "Only igorville.gov is allowed in production right now."
                 )
-
             form_record_data = self._build_dns_record_form_data(form)
             x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if not x_zone_id:
@@ -1623,14 +1623,23 @@ class DomainAddUserView(DomainFormBaseView):
             #   create portfolio invitation
             #   create message to view
             if domain_org and requestor_can_update_portfolio and not member_of_this_org:
-                invite_to_portfolio(
+                send_portfolio_invitation_email(
+                    email=requested_email,
+                    requestor=requestor,
+                    portfolio=domain_org,
+                    is_admin_invitation=False,
+                )
+                portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                     email=requested_email,
                     portfolio=domain_org,
-                    requestor=requestor,
                     roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
                 )
-                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
+                # if user exists for email, immediately retrieve portfolio invitation upon creation
+                if requested_user is not None:
+                    portfolio_invitation.retrieve()
+                    portfolio_invitation.save()
 
+            # if user is not part of the domain
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
@@ -1704,7 +1713,7 @@ class DomainAddUserView(DomainFormBaseView):
                     defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
                 )
 
-        messages.success(self.request, f"Added user {email}.")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1724,14 +1733,14 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
+            messages.error(request, "This invitation can't be canceled because it has already been retrieved.")
             return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
-        return f"Canceled invitation to {self.object.email}."
+        return f"The invitation for {self.object.email} has been canceled."
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1771,9 +1780,9 @@ class DomainDeleteUserView(DeleteView):
         # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
         if self.delete_self:
-            message = f"You are no longer managing the domain {self.object.domain}."
+            message = "You've been removed from this domain."
         else:
-            message = f"Removed {email_or_name} as a manager for this domain."
+            message = f"{email_or_name} has been removed from this domain."
 
         return message
 
@@ -1808,8 +1817,8 @@ class DomainDeleteUserView(DeleteView):
             if self.delete_self:
                 messages.error(
                     request,
-                    "Domains must have at least one domain manager. "
-                    "To remove yourself, the domain needs another domain manager.",
+                    "You can’t remove yourself because you’re the only domain manager. "
+                    "To remove yourself, you’ll need to add another domain manager.",
                 )
             else:
                 messages.error(request, "Domains must have at least one domain manager.")
