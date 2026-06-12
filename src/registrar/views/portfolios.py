@@ -422,13 +422,22 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             logger.error("A database error occurred while saving changes.", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
         except Exception as e:
-            messages.error(
-                request,
-                mark_safe(  # nosec
-                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
-                    ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
-                ),
-            )
+            if removed_domain_ids:
+                messages.error(
+                    request,
+                    mark_safe(  # nosec
+                        "A database error occurred while saving changes. Please try again. If the problem persists,"
+                        ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                    ),
+                )
+            else:
+                messages.error(
+                    request,
+                    mark_safe(  # nosec
+                        f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
+                        ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                    ),
+                )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
 

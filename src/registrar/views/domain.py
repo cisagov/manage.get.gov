@@ -17,7 +17,7 @@ from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, EnrollmentNotAllowedError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -1073,9 +1073,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
         record_id = None
 
         try:
-            if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
-                raise Exception(f"create/update dns record called for domain {self.object.name}")
-
+            if settings.IS_PRODUCTION and self.object.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
+                raise EnrollmentNotAllowedError(
+                    f"Create/update dns record called for domain {self.object.name}. "
+                    "Only igorville.gov is allowed in production right now."
+                )
             form_record_data = self._build_dns_record_form_data(form)
             x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if not x_zone_id:
