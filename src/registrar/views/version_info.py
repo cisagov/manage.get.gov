@@ -1,10 +1,10 @@
 from django.shortcuts import render
 import os
 from django.db import transaction
-from registrar.decorators import grant_access, IS_AUTHENTICATED
+from registrar.decorators import grant_access, IS_STAFF
 
 
-@grant_access(IS_AUTHENTICATED)
+@grant_access(IS_STAFF)
 @transaction.non_atomic_requests
 def version_info(request):
     context = {

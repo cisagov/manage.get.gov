@@ -62,6 +62,8 @@ class TestVersionPageView(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = create_test_user()
+        cls.user.is_staff = True
+        cls.user.save()
 
     def setUp(self):
         self.client = Client()
