@@ -529,7 +529,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_dns_record_edit_form_cancel_button_has_focus_routing_hooks(self):
-        """#4664: cancelling an edit goes through the confirm modal, which returns focus to
+        """Cancelling an edit goes through the confirm modal, which returns focus to
         that row's Edit button on close (via the modal's data-opener). The Edit button needs
         a stable id for that, and the Cancel button needs its record-scoped hooks."""
         record = create_dns_record(self.dns_zone)
