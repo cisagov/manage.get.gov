@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 # Constants for clarity
 ALL = "all"
 IS_STAFF = "is_staff"
+IS_AUTHENTICATED = "is_authenticated"
 IS_CISA_ANALYST = "is_cisa_analyst"
 IS_OMB_ANALYST = "is_omb_analyst"
 IS_FULL_ACCESS = "is_full_access"
@@ -118,6 +119,7 @@ def _user_has_permission(user, request, rules, **kwargs):
 
     # Define permission checks
     permission_checks = [
+        (IS_AUTHENTICATED, lambda: user.is_authenticated),
         (IS_STAFF, lambda: user.is_staff),
         (IS_CISA_ANALYST, lambda: user.has_perm("registrar.analyst_access_permission")),
         (IS_OMB_ANALYST, lambda: user.groups.filter(name="omb_analysts_group").exists()),
