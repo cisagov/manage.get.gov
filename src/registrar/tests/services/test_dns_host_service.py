@@ -958,7 +958,7 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(response["result"], updated_zone_data)
 
     def test_delete_db_record_success(self):
-        """delete_record_from_x_record_id successfully deletes DnsRecord, VendorDnsRecord, 
+        """delete_record_from_x_record_id successfully deletes DnsRecord, VendorDnsRecord,
         and DnsRecordVendorDnsRecord from database."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
         x_record_id = self.vendor_record_data["result"].get("id")
@@ -1011,7 +1011,7 @@ class TestDnsHostServiceDB(TestCase):
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
         DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
-        record_db_id = DnsRecord.get_by_x_record_id(x_record_id).id 
+        record_db_id = DnsRecord.get_by_x_record_id(x_record_id).id
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
         self.service.dns_vendor_service.delete_dns_record = Mock(side_effect=APIError("simulated error"))
 
