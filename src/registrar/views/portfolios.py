@@ -226,7 +226,7 @@ class PortfolioMemberDeleteView(View):
                     domain=domain,
                 ):
                     messages.warning(
-                        request, "Could not send email notification to existing domain managers for %s", domain
+                        request, f"Could not send email notification to existing domain managers for {domain}."
                     )
         except Exception as e:
             self._handle_exceptions(e)
@@ -524,7 +524,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                     domain=domain,
                 ):
                     messages.warning(
-                        self.request, "Could not send email notification to existing domain managers for %s", domain
+                        self.request, f"Could not send email notification to existing domain managers for {domain}."
                     )
             # Delete UserDomainRole instances for removed domains
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
@@ -620,7 +620,7 @@ class PortfolioInvitedMemberDeleteView(View):
                     domain=domain,
                 ):
                     messages.warning(
-                        request, "Could not send email notification to existing domain managers for %s", domain
+                        request, f"Could not send email notification to existing domain managers for {domain}."
                     )
         except Exception as e:
             self._handle_exceptions(e)
@@ -911,7 +911,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 domain=domain,
             ):
                 messages.warning(
-                    self.request, "Could not send email notification to existing domain managers for %s", domain
+                    self.request, f"Could not send email notification to existing domain managers for {domain}."
                 )
 
         # Update invitations from INVITED to CANCELED
