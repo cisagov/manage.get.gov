@@ -1915,6 +1915,61 @@ class TestPortfolioMemberDeleteView(WebTest):
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
     @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
+    @patch("registrar.views.portfolios.send_domain_manager_removal_emails_to_domain_managers")
+    def test_portfolio_member_table_delete_member_domain_manager_email_failure_warns_with_domain(
+        self, send_domain_manager_removal_emails, send_member_removal, mock_send_removal_emails
+    ):
+        """When the domain-manager removal notification fails to send, the warning shown to the
+        user should name the domain rather than a literal "%s". See #5024."""
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
+
+        # A member who manages self.domain
+        member, _ = User.objects.get_or_create(email="deleteable_member@example.com")
+        upp, _ = UserPortfolioPermission.objects.get_or_create(
+            user=member,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserDomainRole.objects.get_or_create(user=member, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
+
+        # The member removal email succeeds, but the domain-manager notification fails
+        send_member_removal.return_value = True
+        send_domain_manager_removal_emails.return_value = False
+
+        with patch.object(User, "get_active_requests_count_in_portfolio", return_value=0), patch.object(
+            User, "is_only_admin_of_portfolio", return_value=False
+        ), patch("django.contrib.messages.warning") as mock_warning:
+            self.client.force_login(self.user)
+            response = self.client.post(
+                reverse("member-delete", kwargs={"member_pk": upp.pk}),
+                HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            )
+
+            self.assertEqual(response.status_code, 200)
+
+            # The domain has to be interpolated into the message. Passing it as a positional arg
+            # to messages.warning() made it the extra_tags value, so users saw a literal "%s".
+            mock_warning.assert_called_once()
+            args, _ = mock_warning.call_args
+            self.assertIsInstance(args[0], WSGIRequest)
+            self.assertEqual(
+                args[1],
+                f"Could not send email notification to existing domain managers for {self.domain}.",
+            )
+            self.assertEqual(len(args), 2)
+
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
+    @patch("registrar.views.portfolios.send_portfolio_member_permission_remove_email")
     def test_portfolio_member_table_delete_admin_success(self, send_member_removal, mock_send_removal_emails):
         """Success state with deleting on Members Table page bc no active request AND
         not only admin. Because admin, removal emails are sent."""
