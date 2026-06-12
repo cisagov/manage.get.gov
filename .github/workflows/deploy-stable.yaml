@@ -13,6 +13,9 @@ on:
     tags:
       - v*
 
+permissions:
+  contents: read
+
 jobs:
   deploy-stable:
     if: ${{ github.ref_type == 'tag' }}
