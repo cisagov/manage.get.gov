@@ -380,3 +380,40 @@ export function initDynamicDNSRecordFormFields() {
         }
     )
 }
+
+export function initDeleteDnsRecord() {
+    const table = document.getElementById("dnsrecords-table");
+    let focusElement = null
+
+    table?.addEventListener("click", (e) => {
+        const deleteBtn = e.target.closest(".js-dnsrecord-delete");
+        if(!deleteBtn) return;
+
+        const recordId = deleteBtn.dataset.recordId
+        e.preventDefault()
+        focusElement = document.getElementById(`dnsrecord-edit-form-${ recordId }`) || deleteBtn;
+
+        const modal = document.getElementById("delete-dns-record-modal");
+        const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
+        openModal(modalTrigger, modal, focusElement);
+    });
+
+    const openModal = (modalTrigger, modal, focusElement) => {
+            // Listen for when the modal closes
+        if (modal) {
+            const closeButtons = modal.querySelectorAll("[data-close-modal]")
+
+            // targets the "X" and "Cancel" and moves focus to the focusElement after closing the modal
+            closeButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    // Defer focus restoration to after modal closes
+                    focusElement?.focus()
+                    setTimeout(() => {
+                        focusElement?.focus();
+                    }, 50);
+                }, { once: true });
+            });
+        }
+        modalTrigger?.click()
+    }
+}

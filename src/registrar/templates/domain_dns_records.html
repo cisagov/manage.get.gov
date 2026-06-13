@@ -25,7 +25,7 @@
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
         <h1>DNS records</h1>
-    
+
         <div class="grid-row">
             <div class="grid-col-12">
                 <p class="measure-none margin-top-0">
@@ -37,7 +37,7 @@
                 <div class="display-flex flex-align-center margin-top-4 margin-bottom-1">
                     <div class="grid-col">
                         <h2 class="margin-top-0 margin-bottom-0">Manage DNS records</h2>
-                    </div>        
+                    </div>
                     <div class="grid-col-auto">
                         <button
                             class="usa-button"
@@ -52,9 +52,9 @@
 
                 <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
-                
+
                     <section class="border radius-lg border-base-lighter padding-3">
-                    <form 
+                    <form
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
                         hx-swap="innerHTML show:top"
@@ -71,7 +71,24 @@
              </div>
         </div>
     </div>
-    
+{% comment %} DNS record delete modal {% endcomment %}
+    {% comment %} Delete modal trigger with js listener
+    (needed outside of edit form b/c htmx swap of row removes listener when on delete button) {% endcomment %}
+    <a
+    id="delete-dns-record-modal-trigger"
+    href="#delete-dns-record-modal"
+    class="usa-button usa-button--outline margin-top-1 display-none"
+    aria-controls="delete-dns-record-modal"
+    data-open-modal
+    >Trigger delete dns record modal</a>
+    <div
+        class="usa-modal"
+        id="delete-dns-record-modal"
+        aria-labelledby="delete-dns-record-heading"
+    >
+        {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
+    </div>
+
     <div id="dns-records-table-container">
         {% include "domain_dns_records_table.html" %}
     </div>

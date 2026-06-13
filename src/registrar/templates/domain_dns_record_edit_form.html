@@ -9,6 +9,7 @@
                 id="dnsrecord-edit-form-{{ record_id }}"
                 method="post"
                 class="usa-form usa-form--extra-large"
+                tabindex="-1"
                 novalidate
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
                 hx-target="#dnsrecord-edit-form-{{ record_id }}"
@@ -29,7 +30,7 @@
                     <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
                     {{ 100|remaining_characters_text:dns_record.form.comment.value }}
                     </div>
-                    
+
                 </div>
                 <button
                     type="button"
@@ -49,19 +50,20 @@
                     Save
                 </button>
 
-                <a
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                <button
+                    id="dnsrecord-delete-button-{{ record_id }}"
+                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete"
+                    type="button"
                     role="button"
                     tabindex="0"
                     data-action="form-delete"
                     data-record-id="{{ record_id }}"
-                    aria-label="Delete DNS record from Cloudflare"
                 >
                     <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
                     <span class="font-sans-sm">Delete</span>
-                </a>
+                </button>
             </form>
         </div>
     </td>
@@ -74,7 +76,7 @@
              <span id="dns-comment-{{record_id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
                 {{ dns_record.comment }}
-             </span>   
+             </span>
           </div>
     </td>
 </tr>
