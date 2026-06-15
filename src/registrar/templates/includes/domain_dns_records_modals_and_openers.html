@@ -1,0 +1,39 @@
+{% load static url_helpers %}
+{# This file includes hidden USWDS modal openers and their respective modals.  The user clicks a button which triggers JS to click the opener vs anything htmx would re-render / swap. USWDS relocates it to the page body on init, so it's driven by data attributes + JS #}
+
+{# DELETE modal opener #}
+<a
+id="delete-dns-record-modal-trigger"
+href="#delete-dns-record-modal"
+class="usa-button usa-button--outline margin-top-1 display-none"
+aria-controls="delete-dns-record-modal"
+data-open-modal
+>Trigger delete dns record modal</a>
+
+{# DELETE modal #}
+<div
+    class="usa-modal"
+    id="delete-dns-record-modal"
+    aria-labelledby="delete-dns-record-heading"
+>
+    {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
+</div>
+
+{# CANCEL modal opener #}
+<a
+    id="open-cancel-add-dnsrecord-modal"
+    href="#toggle-cancel-add-dnsrecord"
+    class="display-none"
+    aria-controls="toggle-cancel-add-dnsrecord"
+    data-open-modal
+>Open cancel confirmation modal</a>
+
+{# Shared CANCEL modal for Add and Edit #}
+<div
+    class="usa-modal"
+    id="toggle-cancel-add-dnsrecord"
+    aria-labelledby="cancel-add-dnsrecord-heading"
+    aria-describedby="cancel-add-dnsrecord-description"
+>
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
+</div>
