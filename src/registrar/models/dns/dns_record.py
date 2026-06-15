@@ -458,8 +458,8 @@ class DnsRecord(TimeStampedModel):
                 dns_record = cls.get_by_x_record_id(x_record_id)
 
                 # DnsRecordVendorDnsRecord object is deleted on cascade
-                dns_record.delete() # type: ignore
-                vendor_dns_record.delete() # type: ignore
+                dns_record.delete()  # type: ignore
+                vendor_dns_record.delete()  # type: ignore
         except Exception:
             logger.exception("Failed to delete record objects in database.")
             raise
