@@ -3,7 +3,7 @@
 
 <div class="usa-modal__content">
     <div class="usa-modal__main">
-        <h2 class="usa-modal__heading">
+        <h2 class="usa-modal__heading"{% if modal_heading_id %} id="{{ modal_heading_id }}"{% endif %}>
             {{ modal_heading }}
             {%if domain_name_modal is not None %}
                 <span class="string-wrap">           
@@ -17,7 +17,7 @@
             {% endif %}
         </h2>
         <div class="usa-prose">
-            <p>
+            <p{% if modal_description_id %} id="{{ modal_description_id }}"{% endif %}>
                 {{ modal_description }}
             </p>
         </div>
