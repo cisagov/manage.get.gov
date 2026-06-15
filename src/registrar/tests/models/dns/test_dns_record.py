@@ -1,5 +1,3 @@
-from unittest.mock import patch, Mock
-from django.db import IntegrityError
 from django.test import TestCase
 from registrar.models import (
     Domain,
