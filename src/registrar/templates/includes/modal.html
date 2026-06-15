@@ -5,7 +5,7 @@ This includes the content of the modal. Template needs to be wrapped in a <div c
 {% endcomment %}
 <div class="usa-modal__content">
     <div class="usa-modal__main">
-        <h2 class="usa-modal__heading" id={{modal_heading_id}}>
+        <h2 class="usa-modal__heading"{% if modal_heading_id %} id="{{ modal_heading_id }}"{% endif %}>
             {{ modal_heading }}
             {%if domain_name_modal is not None %}
                 <span class="string-wrap">
@@ -19,7 +19,7 @@ This includes the content of the modal. Template needs to be wrapped in a <div c
             {% endif %}
         </h2>
         <div class="usa-prose">
-            <p>
+            <p{% if modal_description_id %} id="{{ modal_description_id }}"{% endif %}>
                 {{ modal_description }}
             </p>
         </div>

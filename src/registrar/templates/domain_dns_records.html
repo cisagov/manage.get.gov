@@ -14,9 +14,8 @@
 
 
 {% block domain_content %}
-<!-- showFormId tracks which form is open so only one shows at a time.
-     x-effect clears recordType when the form closes (null) or opens to Add (0),
-     so Add record always starts on a fresh type dropdown. -->
+<!-- showFormId = which form is open (null = none, 0 = Add, record-id = edit row).
+     x-effect resets recordType whenever the Add form closes/reopens, so it starts clean. -->
 <div
     x-data="{ showFormId: null, recordType: '', openComments: []}"
     x-effect="showFormId === null || showFormId === 0 ? recordType = '' : null"
@@ -71,9 +70,7 @@
              </div>
         </div>
     </div>
-{% comment %} DNS record delete modal {% endcomment %}
-    {% comment %} Delete modal trigger with js listener
-    (needed outside of edit form b/c htmx swap of row removes listener when on delete button) {% endcomment %}
+    {# Delete modal trigger with js listener (needed outside of edit form b/c htmx swap of row removes listener when on delete button) #}
     <a
     id="delete-dns-record-modal-trigger"
     href="#delete-dns-record-modal"
@@ -81,6 +78,8 @@
     aria-controls="delete-dns-record-modal"
     data-open-modal
     >Trigger delete dns record modal</a>
+    
+    {# DNS record delete modal #}
     <div
         class="usa-modal"
         id="delete-dns-record-modal"
@@ -88,6 +87,26 @@
     >
         {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
     </div>
+
+
+    {# Shared modal for Add and Edit. USWDS relocates it to the page body on init, so it's driven by data attributes + JS (initDNSRecordCancelModal)#}
+    <div
+        class="usa-modal"
+        id="toggle-cancel-add-dnsrecord"
+        aria-labelledby="cancel-add-dnsrecord-heading"
+        aria-describedby="cancel-add-dnsrecord-description"
+    >
+        {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
+    </div>
+
+    {# Hidden USWDS opener for the modal. The JS clicks this vs anything htmx would re-render / swap #}
+    <a
+        id="open-cancel-add-dnsrecord-modal"
+        href="#toggle-cancel-add-dnsrecord"
+        class="display-none"
+        aria-controls="toggle-cancel-add-dnsrecord"
+        data-open-modal
+    >Open cancel confirmation modal</a>
 
     <div id="dns-records-table-container">
         {% include "domain_dns_records_table.html" %}
