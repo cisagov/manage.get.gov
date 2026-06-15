@@ -263,7 +263,7 @@ class DnsHostService:
             raise
         return vendor_record_data
 
-    def delete_dns_record(self, x_zone_id: str, record_id: int) -> DnsRecord:
+    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
         """Look up the record by pk and delete it via the vendor service.
 
         Returns the deleted DnsRecord's vendor id.
@@ -290,7 +290,7 @@ class DnsHostService:
         except Exception as e:
             logger.error(f"Failed to delete record {record_name}: {str(e)}.")
             raise
-        return dns_record
+        return x_record_id
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         try:
