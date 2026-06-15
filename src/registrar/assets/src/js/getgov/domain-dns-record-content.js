@@ -59,7 +59,7 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
-// Validation errors produces an inline error and a top-level error banner, Clear both. 
+// Validation errors produces an inline error and a top-level error banner, Clear both.
 function clearRecordErrors(scope){
     if(scope){
         scope.querySelectorAll(".usa-error-message").forEach(el => el.remove());
@@ -105,13 +105,13 @@ function openCancelModal(opener){
     document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
 }
 
-// fields, reused for both Add and Edit forms. 
+// fields, reused for both Add and Edit forms.
 const FIELD_SELECTOR = 'input:not([type="hidden"]), textarea';
 
 // Add: any non-empty field (type dropdown excluded) is unsaved. Edit: any field differing from its original.
 function formHasUnsavedChanges(form, isEditForm){
     if(!form) return false;
-    // A failed save uses the rejected values as the fields, so treat a visible error 
+    // A failed save uses the rejected values as the fields, so treat a visible error
     // as unsaved so cancel still confirms and resets.
     if(form.querySelector(".usa-error-message")) return true;
     return Array.from(form.querySelectorAll(`${FIELD_SELECTOR}, select`)).some(el => {
@@ -487,7 +487,6 @@ export function initDynamicDNSRecordFormFields() {
 
 export function initDeleteDnsRecord() {
     const table = document.getElementById("dnsrecords-table");
-    let focusElement = null
 
     table?.addEventListener("click", (e) => {
         const deleteBtn = e.target.closest(".js-dnsrecord-delete");
@@ -495,8 +494,8 @@ export function initDeleteDnsRecord() {
 
         const recordId = deleteBtn.dataset.recordId
         e.preventDefault()
-        focusElement = document.getElementById(`dnsrecord-edit-form-${ recordId }`) || deleteBtn;
-
+        
+        const focusElement = deleteBtn;
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
         openModal(modalTrigger, modal, focusElement);
