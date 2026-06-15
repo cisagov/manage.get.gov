@@ -1,5 +1,14 @@
+from unittest.mock import patch, Mock
+from django.db import IntegrityError
 from django.test import TestCase
-from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
+from registrar.models import (
+    Domain,
+    DnsAccount,
+    DnsZone,
+    DnsRecord,
+    VendorDnsRecord,
+    DnsRecord_VendorDnsRecord as RecordsJoin,
+)
 from registrar.validations import (
     DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
     DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
@@ -450,3 +459,34 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.clean()
         self.assertIn("name", ctx.exception.message_dict)
+
+    def test_delete_by_x_record_id_success(self):
+        """delete_by_x_record_id deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
+        x_record_id = "1234"
+        vendor_dns_record = VendorDnsRecord.objects.create(
+            x_record_id=x_record_id,
+            x_created_at="2025-10-17 19:57:53.157055+00",
+            x_updated_at="2025-10-17 19:57:53.157055+00",
+        )
+        record = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="www",
+            ttl=3600,
+            content="Www.dns-test.gov",
+        )
+        vendor_record_db_id = vendor_dns_record.id
+        record_db_id = record.id
+        RecordsJoin.objects.create(
+            dns_record=record,
+            vendor_dns_record=vendor_dns_record,
+            is_active=True,
+        )
+
+        DnsRecord.delete_by_x_record_id(x_record_id)
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
+        self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
+        self.assertFalse(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+        )
