@@ -403,7 +403,7 @@ export function initDeleteDnsRecord() {
         if (modal) {
             const closeButtons = modal.querySelectorAll("[data-close-modal]")
 
-            // targets the "X" and "Cancel" and moves focus to the focusElement after closing the modal
+            // targets the "X" and "Cancel" or "Go back" and moves focus to the focusElement after closing the modal
             closeButtons.forEach(btn => {
                 btn.addEventListener("click", () => {
                     // Defer focus restoration to after modal closes
