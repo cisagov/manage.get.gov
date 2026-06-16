@@ -256,7 +256,7 @@ class Command(BaseCommand):
         logger.info(f"{color}{prefix}{action.lower()} '{tribe_name}'{detail}{TerminalColors.ENDC}")
 
     def _print_summary(self, dry_run, created, updated, skipped, errors):
-        """Print a summary of what was (or will be) applied"""
+        """Print a summary of what was/will be applied"""
         prefix = "[DRY RUN] Would have applied" if dry_run else "Completed."
         summary = (
             f"\n{TerminalColors.OKBLUE}{prefix} import summary:{TerminalColors.ENDC}\n"
