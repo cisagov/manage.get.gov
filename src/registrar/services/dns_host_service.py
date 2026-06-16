@@ -18,7 +18,8 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
-from httpx import Client, HTTPStatusError
+from registrar.services.dns_http_client import build_dns_client
+from httpx import HTTPStatusError
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class DnsHostService:
     """
 
     def __init__(self, client=None):
-        self.client = client or Client()
+        self.client = client or build_dns_client()
         self.dns_vendor_service = CloudflareService(self.client)
 
     def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
