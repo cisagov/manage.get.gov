@@ -67,67 +67,70 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR("Failed to load CSV. Aborting."))
             return
 
-        created_count = 0
-        updated_count = 0
-        skipped_count = 0
-        error_count = 0
+        # Tally counters, updated in place by _process_row via the counts dict
+        counts = {"created": 0, "updated": 0, "skipped": 0, "errors": 0}
 
-        """
-        1. We are using the tribe's full name as the unique id here and match it to the row
-        for existing db records. If it's missing, we skip
-        2. Convert the raw CSV into a dictionary with cleaned up values (_map_row)
-        3. Check for if the record/tribe full name already exists
-        4. Depending on if dry run or not, we either showcase that 
-        we're going to create it or actually create it
-        5. If record already exists, figure out what's diff between db and CSV
-        6. If the record matches (no diff), then skip and note that it's skipped
-        7. If there are differences, we either log what's changed in dry run or apply the values and save 
-        8. If something goes wrong for that row, we log it and keep going (so we don't crash the whole thing)
-        9. Do all the tallying 
-        """
         for row in rows:
-            tribe_full_name = row.get("Tribe Full Name", "").strip()
+            self._process_row(row, dry_run, counts)
 
-            if not tribe_full_name:
-                logger.warning("Skipping row with missing Tribe Full Name.")
-                skipped_count += 1
-                continue
-
-            mapped = self._map_row(row)
-
-            try:
-                existing = FederalTribe.objects.filter(tribe_full_name=tribe_full_name).first()
-
-                if not existing:
-                    self._log_action(dry_run, "Created", tribe_full_name)
-                    if not dry_run:
-                        FederalTribe.objects.create(**mapped)
-                    created_count += 1
-                    continue
-
-                changes = self._get_changes(existing, mapped)
-
-                if not changes:
-                    logger.debug(f"No changes for '{tribe_full_name}', skipping.")
-                    skipped_count += 1
-                    continue
-
-                self._log_action(dry_run, "Updated", tribe_full_name, changes)
-                if not dry_run:
-                    for field, value in mapped.items():
-                        setattr(existing, field, value)
-                    existing.save()
-                updated_count += 1
-
-            except Exception as e:
-                logger.error(
-                    f"{TerminalColors.FAIL}Error processing '{tribe_full_name}': {e}{TerminalColors.ENDC}",
-                    exc_info=True,
-                )
-                error_count += 1
-
-        self._print_summary(dry_run, created_count, updated_count, skipped_count, error_count)
+        self._print_summary(dry_run, counts["created"], counts["updated"], counts["skipped"], counts["errors"])
         self._print_warnings()
+
+    def _process_row(self, row, dry_run, counts):
+        """Process a single CSV row: validate, map, then create/update/skip
+        the corresponding FederalTribe record + updates `counts` in place"""
+        tribe_full_name = row.get("Tribe Full Name", "").strip()
+
+        if not tribe_full_name:
+            logger.warning("Skipping row with missing Tribe Full Name.")
+            counts["skipped"] += 1
+            return
+
+        mapped = self._map_row(row)
+
+        try:
+            existing = FederalTribe.objects.filter(tribe_full_name=tribe_full_name).first()
+
+            if not existing:
+                self._create_tribe(tribe_full_name, mapped, dry_run, counts)
+                return
+
+            self._update_tribe(existing, tribe_full_name, mapped, dry_run, counts)
+
+        except Exception as e:
+            logger.error(
+                f"{TerminalColors.FAIL}Error processing '{tribe_full_name}': {e}{TerminalColors.ENDC}",
+                exc_info=True,
+            )
+            counts["errors"] += 1
+
+    def _create_tribe(self, tribe_full_name, mapped, dry_run, counts):
+        """Handles case where no record exists yet
+        If dry run - log the action
+        If not dry run - create the new FederalTribe record"""
+        self._log_action(dry_run, "Created", tribe_full_name)
+        if not dry_run:
+            FederalTribe.objects.create(**mapped)
+        counts["created"] += 1
+
+    def _update_tribe(self, existing, tribe_full_name, mapped, dry_run, counts):
+        """Handles case where a record already exists - computes the diff
+        against the CSV data
+        If no diff - skip
+        If diff - log (dry run) or apply update (not dry run)"""
+        changes = self._get_changes(existing, mapped)
+
+        if not changes:
+            logger.debug(f"No changes for '{tribe_full_name}', skipping.")
+            counts["skipped"] += 1
+            return
+
+        self._log_action(dry_run, "Updated", tribe_full_name, changes)
+        if not dry_run:
+            for field, value in mapped.items():
+                setattr(existing, field, value)
+            existing.save()
+        counts["updated"] += 1
 
     def _load_csv(self):
         """Load rows rom CSV with a 30 sec timeout and make sure download succeeded
