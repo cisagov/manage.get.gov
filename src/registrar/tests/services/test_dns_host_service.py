@@ -958,8 +958,8 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(response["result"], updated_zone_data)
 
     def test_delete_db_record_success(self):
-        """delete_record_from_x_record_id successfully deletes DnsRecord, VendorDnsRecord,
-        and DnsRecordVendorDnsRecord from database."""
+        """DnsHostService delete_dns_record successfully deletes DnsRecord,
+        VendorDnsRecord, and DnsRecordVendorDnsRecord from database."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
         x_record_id = self.vendor_record_data["result"].get("id")
         _, _, zone = create_initial_dns_setup(
@@ -992,10 +992,13 @@ class TestDnsHostServiceDB(TestCase):
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
 
         with patch("registrar.models.DnsRecord.delete", side_effect=IntegrityError("simulated failure")):
+            self.service.dns_vendor_service.delete_dns_record = Mock(return_value="1234")
             with self.assertRaises(Exception):
                 self.service.delete_dns_record(x_zone_id, record_db_id)
+            # Vendor service deletion not called on database deletion failure
+            self.service.dns_vendor_service.delete_dns_record.assert_not_called()
 
-        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord preserved
         self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertTrue(DnsRecord.objects.filter(id=record_db_id).exists())
         self.assertTrue(
@@ -1018,7 +1021,7 @@ class TestDnsHostServiceDB(TestCase):
         with self.assertRaises(APIError):
             self.service.delete_dns_record(x_zone_id, record_db_id)
 
-        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord preserved
         self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertTrue(DnsRecord.objects.filter(id=record_db_id).exists())
         self.assertTrue(
