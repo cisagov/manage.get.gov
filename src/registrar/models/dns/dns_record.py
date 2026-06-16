@@ -10,6 +10,8 @@ from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     validate_dns_name,
     get_fqdn_error_message,
 )
@@ -125,7 +127,7 @@ class DnsRecord(TimeStampedModel):
             conflict = conflict.exclude(pk=self.pk)
 
         if conflict.exists():
-            errors["name"] = [DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE]
+            errors["name"] = DnsRecord.get_conflict_error_message(record_type, conflict)
 
     def _normalize_fields(self) -> None:
         """Lowercase the fields that DNS treats as not case-sensitive.
@@ -260,7 +262,16 @@ class DnsRecord(TimeStampedModel):
             query = query.exclude(pk=exclude_record_id)
 
         return query.exists()
-
+   
+    @classmethod
+    def get_conflict_error_message(cls, record_type, query):
+        if  record_type == DNSRecordTypes.CNAME and query.filter(type=record_type):
+            return DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
+        elif record_type == DNSRecordTypes.A or record_type == DNSRecordTypes.AAAA:
+            return DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE
+        elif record_type == DNSRecordTypes.CNAME:
+            return DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE
+            
     @classmethod
     def has_name_conflict(
         cls,
@@ -302,7 +313,7 @@ class DnsRecord(TimeStampedModel):
         if exclude_record_id:
             query = query.exclude(pk=exclude_record_id)
 
-        return query.exists()
+        return query
 
     def _validate_cname_name_not_hostname(self, record_type, domain_name, errors):
         """Validate that a CNAME record's name does not resolve to the same hostname as its content.

@@ -16,6 +16,7 @@ from registrar.validations import (
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
 )
 
@@ -637,7 +638,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+            self.assertContains(response, DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)

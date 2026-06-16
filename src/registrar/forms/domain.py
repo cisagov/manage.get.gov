@@ -997,13 +997,16 @@ class DomainDNSRecordForm(forms.ModelForm):
         records are allowed to share names with other types (standard practice: e.g.
         MX at the root alongside A, or SPF/DKIM TXT alongside A).
         """
-        if DnsRecord.has_name_conflict(
+        conflict_query = DnsRecord.has_name_conflict(
             domain_name=self.domain_name,
             record_type=record_type,
             name=name,
             exclude_record_id=self.instance.pk,
-        ):
-            self.add_error("name", DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+        )
+
+        if conflict_query:
+            error_message = DnsRecord.get_conflict_error_message(record_type, conflict_query)
+            self.add_error("name", error_message)
 
     def _validate_duplicate_record(self, record_type, name, content, priority):
         """Flag when the submitted record matches an existing record in the zone.
