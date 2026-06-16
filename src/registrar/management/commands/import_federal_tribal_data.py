@@ -243,7 +243,7 @@ class Command(BaseCommand):
         return changes
 
     def _warn(self, tribe_name, message):
-        """Log warning and store it for the summary at teh end"""
+        """Log warning and store it for the summary at the end"""
         full_message = f"[{tribe_name}] {message}"
         logger.warning(full_message)
         self.warnings.append(full_message)
