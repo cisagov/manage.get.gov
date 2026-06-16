@@ -9,7 +9,6 @@
                 id="dnsrecord-edit-form-{{ record_id }}"
                 method="post"
                 class="usa-form usa-form--extra-large"
-                tabindex="-1"
                 novalidate
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
                 hx-target="#dnsrecord-edit-form-{{ record_id }}"
