@@ -51,8 +51,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """
         How to run:
-            ./manage.py import_tribal_data
-            ./manage.py import_tribal_data --dry-run
+            ./manage.py import_federal_tribal_data
+            ./manage.py import_federal_tribal_data --dry-run
         """
         dry_run = options.get("dry_run", False)
         self.warnings = []  # collect warnings across all rows
@@ -196,8 +196,8 @@ class Command(BaseCommand):
         return None
 
     def _parse_phone(self, value, tribe_name):
-        """Strip the phone number of any other invalid info (\D) and grab only the
-        valid 10 digit US phone number"""
+        """Strip the phone number of any other invalid info with the slash D
+        and grab only the valid 10 digit US phone number"""
         digits_only = re.sub(r"\D", "", value)
 
         if len(digits_only) >= 10:
