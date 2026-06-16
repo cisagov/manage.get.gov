@@ -4,7 +4,7 @@ applications:
   buildpacks:
     - python_buildpack
   path: ../../src
-  instances: 2
+  instances: 1
   memory: 512M
   stack: cflinuxfs4
   timeout: 180
