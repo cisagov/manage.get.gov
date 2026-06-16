@@ -57,7 +57,7 @@ class TestViews(TestCase):
 
 
 class TestVersionPageView(TestCase):
-   
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
