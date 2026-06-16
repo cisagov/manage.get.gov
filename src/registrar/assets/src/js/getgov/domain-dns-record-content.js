@@ -494,7 +494,7 @@ export function initDeleteDnsRecord() {
 
         const recordId = deleteBtn.dataset.recordId
         e.preventDefault()
-        
+
         const focusElement = deleteBtn;
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
@@ -516,6 +516,18 @@ export function initDeleteDnsRecord() {
                     }, 50);
                 }, { once: true });
             });
+
+            // Handle ESC key press to close modal --> move focus to focusElement
+            const handleEscKey = (e) => {
+                if (e.key === "Escape") {
+                    setTimeout(() => {
+                        focusElement?.focus();
+                    }, 50);
+                    document.removeEventListener("keydown", handleEscKey);
+                }
+            };
+
+            document.addEventListener("keydown", handleEscKey);
         }
         modalTrigger?.click()
     }
