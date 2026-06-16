@@ -8,8 +8,8 @@ from unittest.mock import patch
 
 from .common import create_user, MockEppLib
 
-
 logger = logging.getLogger(__name__)
+
 
 class TestUpdateMissingRegistrantContacts(MockEppLib):
     def setUp(self):
@@ -98,21 +98,18 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
         self.contactOne.save(skip_epp_save=True)
         self.contactTwo.save(skip_epp_save=True)
 
-    
     def test_command_update_missing_registrant_contacts_dry_run(self):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
-            call_command(
-                "update_missing_registrant_contacts",
-                dry_run = True
+            call_command("update_missing_registrant_contacts", dry_run=True)
+            self.assertEqual(
+                PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE).count(), 2
             )
-            self.assertEqual(PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE).count(), 2)
             self.assertEqual(update_mock.call_count, 0)
 
     def test_command_update_missing_registrant_contacts_no_dry_run(self):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
-            call_command(
-                "update_missing_registrant_contacts",
-                dry_run = False
+            call_command("update_missing_registrant_contacts", dry_run=False)
+            self.assertEqual(
+                PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE).count(), 2
             )
-            self.assertEqual(PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE).count(), 2)
             self.assertEqual(update_mock.call_count, 2)
