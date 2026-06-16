@@ -1,12 +1,14 @@
 {% load static form_helpers url_helpers %}
 {% load custom_filters %}
-
+{% comment %}
+This includes the content of the modal. Template needs to be wrapped in a <div class="usa-modal" id="my-modal-id" </div>
+{% endcomment %}
 <div class="usa-modal__content">
     <div class="usa-modal__main">
         <h2 class="usa-modal__heading"{% if modal_heading_id %} id="{{ modal_heading_id }}"{% endif %}>
             {{ modal_heading }}
             {%if domain_name_modal is not None %}
-                <span class="string-wrap">           
+                <span class="string-wrap">
                     {{ domain_name_modal }}
                 </span>
             {%endif%}
