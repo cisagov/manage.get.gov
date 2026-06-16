@@ -4,9 +4,42 @@ import logging
 from dataclasses import dataclass
 from django.conf import settings
 
-from registrar.utility.errors import APIError
+from registrar.utility.errors import (
+    APIError,
+    DnsHostingError,
+    DnsHostingErrorCodes,
+    DnsValidationError,
+    DnsAuthError,
+    DnsNotFoundError,
+    DnsValidationError,
+    DnsRateLimitError,
+    DnsTransportError,
+    EnrollmentNotAllowedError
+)
 
 logger = logging.getLogger(__name__)
+
+_STATUS_TO_ERROR = {
+    400: (DnsValidationError, DnsHostingErrorCodes.VALIDATION_FAILED),
+    401: (DnsAuthError, DnsHostingErrorCodes.AUTH_FAILED),
+    403: (DnsAuthError, DnsHostingErrorCodes.AUTH_FAILED),
+    404: (DnsNotFoundError, DnsHostingErrorCodes.ZONE_NOT_FOUND),
+    409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
+    429: (DnsRateLimitError, DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
+}
+
+
+def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
+    """Map a Cloudflare HTTP error to the right DnsHostingError subclass and log once."""
+    status = e.response.status_code
+    ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
+    exc_cls, code = _STATUS_TO_ERROR.get(status, (DnsHostingError, DnsHostingErrorCodes.UNKNOWN))
+    logger.exception(
+        "Cloudflare returned %s for DNS request",
+        status,
+        extra={"upstream_status": status, "error_code": code.name, **ctx},
+    )
+    return exc_cls(code=code, upstream_status=status, context=ctx)
 
 
 @dataclass(frozen=True)
@@ -52,12 +85,13 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Created host account {account_name}")
         except RequestError as e:
-            logger.error(f"Failed to create account for {account_name}: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"account_name": account_name, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while creating account: {e}")
-            raise
-
+            # Cloudflare returned a 4xx or 5xx — map the status code to a typed error.
+            raise _typed_dns_error(e, account_name=account_name) from e
         return resp.json()
 
     def update_account_dns_settings(
@@ -93,8 +127,10 @@ class CloudflareService:
                 nameservers_type,
             )
         except RequestError as e:
-            logger.error(f"Failed to update dns settings for account {account_id}: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"x_account_id": account_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
             logger.error(f"Error {e.response.status_code} while updating dns settings: {e}")
             raise
@@ -109,13 +145,12 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Created zone {zone_name}")
         except RequestError as e:
-            logger.error(f"Failed to create zone {zone_name} for account {x_account_id}: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"zone_name": zone_name, "account_id": x_account_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(
-                f"Error {e.response.status_code} while creating zone {zone_name}: {e}\nResponse body: {e.response.text}"
-            )
-            raise
+            raise _typed_dns_error(e, account_id=x_account_id, zone_name=zone_name) from e
         return resp.json()
 
     def update_zone_dns_settings(
