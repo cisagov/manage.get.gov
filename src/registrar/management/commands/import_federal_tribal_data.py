@@ -109,7 +109,7 @@ class Command(BaseCommand):
         """Handles case where no record exists yet
         If dry run - log the action
         If not dry run - create the new FederalTribe record"""
-        self._log_action(dry_run, "Created", tribe_full_name)
+        self._log_action(dry_run, "Created", tribe_full_name, mapped)
         if not dry_run:
             FederalTribe.objects.create(**mapped)
         counts["created"] += 1
@@ -167,7 +167,7 @@ class Command(BaseCommand):
 
     def _parse_state(self, value, tribe_name):
         """Convert a full state name to its 2 letter abbreviation using
-        StateTerritoryChoices. If already a 2-letter code, return as-is."""
+        StateTerritoryChoices. If already a 2-letter code, return as is"""
         if len(value) == 2:
             return value.upper()
 
@@ -221,11 +221,17 @@ class Command(BaseCommand):
         logger.warning(full_message)
         self.warnings.append(full_message)
 
-    def _log_action(self, dry_run, action, tribe_name, changes=None):
-        """Log a create action, prefixed with [DRY RUN] if applied"""
+    def _log_action(self, dry_run, action, tribe_name, fields=None):
+        """Log a create action, prefixed with [DRY RUN] if applied.
+        In a dry run we print out field deets"""
         prefix = "[DRY RUN] Would have " if dry_run else ""
         color = TerminalColors.YELLOW if dry_run else TerminalColors.OKGREEN
-        detail = f": {changes}" if changes else ""
+
+        detail = ""
+        if dry_run and fields:
+            field_lines = "\n".join(f"  {key}: {value}" for key, value in fields.items())
+            detail = f":\n{field_lines}"
+
         logger.info(f"{color}{prefix}{action.lower()} '{tribe_name}'{detail}{TerminalColors.ENDC}")
 
     def _print_summary(self, dry_run, created, skipped, errors):
