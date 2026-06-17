@@ -14,21 +14,21 @@ logger = logging.getLogger(__name__)
 class TestUpdateMissingRegistrantContacts(MockEppLib):
     def setUp(self):
         super().setUp()
-        self.userOne = create_user(username="testuser", email="testuser@example.gov")
-        self.domainOne = Domain.objects.create(name="example.gov")
-        self.domain_infoOne = DomainInformation.objects.create(
-            requester=self.userOne,
-            domain=self.domainOne,
+        self.user_one = create_user(username="testuser", email="testuser@example.gov")
+        self.domain_one = Domain.objects.create(name="example.gov")
+        self.domain_info_one = DomainInformation.objects.create(
+            requester=self.user_one,
+            domain=self.domain_one,
             organization_name="Cybersecurity and Infrastructure Security Agency",
             address_line1="1110 N. Glebe Rd",
             city="Arlington",
             state_territory="VA",
             zipcode="22201",
         )
-        self.domainTwo = Domain.objects.create(name="exampletwo.gov")
-        self.domain_infoTwo = DomainInformation.objects.create(
-            requester=self.userOne,
-            domain=self.domainTwo,
+        self.domain_two = Domain.objects.create(name="exampletwo.gov")
+        self.domain_info_two = DomainInformation.objects.create(
+            requester=self.user_one,
+            domain=self.domain_two,
             organization_name="Cybersecurity and Infrastructure Security Agency",
             address_line1="1110 N. Glebe Rd",
             city="Arlington",
@@ -36,48 +36,19 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             zipcode="22201",
         )
 
-        self.contactOne = PublicContact(
-            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
-            name="Registrant CSD/CB – Attn: .gov TLD",
-            org="Cybersecurity and Infrastructure Security Agency",
-            street1="1110 N. Glebe Rd",
+        self.domain_three = Domain.objects.create(name="examplethree.gov")
+        self.domain_info_three = DomainInformation.objects.create(
+            requester=self.user_one,
+            domain=self.domain_three,
+            organization_name="Cybersecurity and Infrastructure Security Agency",
+            address_line1="1110 N. Glebe Rd",
             city="Arlington",
-            sp="VA",
-            pc="22201",
-            cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
-            voice="+1.8882820870",
-            pw="thisisnotapassword",
-        )
-        self.contactTwo = PublicContact(
-            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
-            name="Registrant CSD/CB – Attn: .gov TLD",
-            org="Cybersecurity and Infrastructure Security Agency",
-            street1="1110 N. Glebe Rd",
-            city="Arlington",
-            sp="VA",
-            pc="22201",
-            cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
-            voice="+1.8882820870",
-            pw="thisisnotapassword",
-        )
-        self.contactThree = PublicContact(
-            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
-            name="Registrant CSD/CB – Attn: .gov TLD",
-            org="Cybersecurity and Infrastructure Security Agency",
-            street1="1110 N. Glebe Rd",
-            city="Arlington",
-            sp="VA",
-            pc="22201",
-            cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
-            voice="+1.8882820870",
-            pw="thisisnotapassword",
+            state_territory="VA",
+            zipcode="22201",
         )
 
-        self.contactFour = PublicContact(
-            contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
+        self.contact_one = PublicContact(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
             name="Registrant CSD/CB – Attn: .gov TLD",
             org="Cybersecurity and Infrastructure Security Agency",
             street1="1110 N. Glebe Rd",
@@ -89,20 +60,17 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
-        self.contactOne.registry_id = "contact"
-        self.contactOne.domain = self.domainOne
+        
+        self.contact_one.registry_id = "contact"
+        self.contact_one.domain = self.domain_one
 
-        self.contactTwo.registry_id = "contact"
-        self.contactTwo.domain = self.domainTwo
-
-        self.contactOne.save(skip_epp_save=True)
-        self.contactTwo.save(skip_epp_save=True)
+        self.contact_one.save(skip_epp_save=True)
 
     def test_command_update_missing_registrant_contacts_dry_run(self):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
             call_command("update_missing_registrant_contacts", dry_run=True)
             self.assertEqual(
-                PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE).count(), 2
+                Domain.objects.all().count(), 3
             )
             self.assertEqual(update_mock.call_count, 0)
 
@@ -110,6 +78,51 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
             call_command("update_missing_registrant_contacts", dry_run=False)
             self.assertEqual(
-                PublicContact.objects.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE).count(), 2
+                Domain.objects.all().count(), 3
             )
             self.assertEqual(update_mock.call_count, 2)
+    
+    def test_command_update_missing_registrant_contacts_none_found(self):
+        self.contact_two = PublicContact(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            name="Registrant CSD/CB – Attn: .gov TLD",
+            org="Cybersecurity and Infrastructure Security Agency",
+            street1="1110 N. Glebe Rd",
+            city="Arlington",
+            sp="VA",
+            pc="22201",
+            cc="US",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+            voice="+1.8882820870",
+            pw="thisisnotapassword",
+        )
+        
+        self.contact_two.registry_id = "contact"
+        self.contact_two.domain = self.domain_two
+
+        self.contact_two.save(skip_epp_save=True)
+
+        self.contact_three = PublicContact(
+            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+            name="Registrant CSD/CB – Attn: .gov TLD",
+            org="Cybersecurity and Infrastructure Security Agency",
+            street1="1110 N. Glebe Rd",
+            city="Arlington",
+            sp="VA",
+            pc="22201",
+            cc="US",
+            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
+            voice="+1.8882820870",
+            pw="thisisnotapassword",
+        )
+    
+        self.contact_three.registry_id = "contact"
+        self.contact_three.domain = self.domain_three
+
+        self.contact_three.save(skip_epp_save=True)
+
+    
+        update_count = call_command("update_missing_registrant_contacts", dry_run=True)
+
+        self.assertEqual(update_count, 0)
+        

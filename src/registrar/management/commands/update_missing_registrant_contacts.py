@@ -3,9 +3,7 @@
 This command is intended to fill in the missing registrant contact info and sync that data with the registry
 
 - In dry-run mode (default), only logs what would be changed
-- With --no-dry-run, sends registry updates via Domain._update_epp_contact
-- Use --target-domain to only update an existing domain
-- Omit --target-domain to run against all registrant contacts
+- With --no-dry-run, sends registry updates via Domain.addRegistrant()
 """
 
 import logging
@@ -18,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = "Updates registrant contact info for any domains which are missing the info"
-    RECOVERY_LOGFILE = "update_missing_registrant_contacts_log.txt"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -37,29 +34,29 @@ class Command(BaseCommand):
         dry_run = bool(options.get("dry_run", True))
         # Get all contacts
         all_contacts = PublicContact.objects.all()
-        # Filter out just the administrative contacts
-        administrative_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.ADMINISTRATIVE)
+        # Get all domains
+        all_domains = Domain.objects.all()
         # Filter out the existing registrant contacts
         registrant_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.REGISTRANT)
 
-        if administrative_contacts.count() == registrant_contacts.count():
-            logger.info("No missing registrants found")
-            return
-
         registrant_domain_set = set()
+
+        update_record_count = 0
 
         # Add all domains with registrant contacts to the set
         for registrant in registrant_contacts:
-            registrant_domain_set.add(registrant.domain)
+            registrant_domain_set.add(registrant.domain.name)
 
-        # Loop thru the administrative contacts
-        for contact in administrative_contacts:
-            # If the contact domain is not part of the registrant domain set, then create a new registrant contact
-            if contact.domain not in registrant_domain_set:
+        # If the counts match up, every domain has a registrant contact
+        if all_domains.count() == len(registrant_domain_set):
+            logger.info("No missing registrants found")
+            return 0
+
+        # Loop thru the domains
+        for domain in all_domains:
+            # If the domain is not part of the registrant domain set, then create a new registrant contact
+            if domain.name not in registrant_domain_set:
                 logger.info("No Registrant info found...creating")
-                logger.info(f"Retrieving domain object for {contact.domain}")
-                # Get the domain object so we can call the addRegistrant method
-                domain = Domain.objects.get(name=contact.domain)
                 # If this is a dry run, just output the domain for tracking purposes
                 if dry_run:
                     logger.info(f"Dry run enabled...skipping adding registrant for {domain.name}")
