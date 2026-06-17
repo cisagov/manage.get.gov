@@ -443,24 +443,34 @@ class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
         fields = ["roles", "additional_permissions"]
 
 
+class MaxLengthFirstEmailField(forms.EmailField):
+    """Email field that returns max-length errors before format errors."""
+
+    def __init__(self, *args, email_max_length=320, email_max_length_message=None, **kwargs):
+        self.email_max_length_validator = MaxLengthValidator(
+            email_max_length,
+            message=email_max_length_message or f"Email must be no more than {email_max_length} characters.",
+        )
+        super().__init__(*args, **kwargs)
+
+    def run_validators(self, value):
+        self.email_max_length_validator(value)
+        super().run_validators(value)
+
+
 class PortfolioNewMemberForm(BasePortfolioMemberForm):
     """
     Form for adding a portfolio invited member.
     """
 
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
-        max_length=None,
+        email_max_length=320,
+        email_max_length_message="Email must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Email must be no more than 320 characters.",
-            )
-        ],
         required=True,
     )
 
