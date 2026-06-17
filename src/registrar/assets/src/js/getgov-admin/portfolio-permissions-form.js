@@ -1,5 +1,35 @@
 import { hideElement, showElement } from './helpers-admin.js';
 
+function isSelectedUserIdValue(value) {
+    const normalizedValue = String(value ?? "");
+    return normalizedValue !== "" && Number.isInteger(Number(normalizedValue));
+}
+
+function setUpSendEmailAvailability(userField, sendEmailCheckbox) {
+    function updateSendEmailAvailability() {
+        if (!sendEmailCheckbox) {
+            return;
+        }
+
+        if (isSelectedUserIdValue(userField?.value)) {
+            sendEmailCheckbox.disabled = false;
+        } else {
+            // Typed emails always send an invitation email, so keep the
+            // checkbox checked while disabling it.
+            sendEmailCheckbox.checked = true;
+            sendEmailCheckbox.disabled = true;
+        }
+    }
+
+    if (userField && typeof django !== "undefined" && django.jQuery) {
+        django.jQuery(userField).on("change select2:select select2:clear", function() {
+            updateSendEmailAvailability();
+        });
+    }
+
+    updateSendEmailAvailability();
+}
+
 /**
  * A function for dynamically changing fields on the UserPortfolioPermissions
  * and PortfolioInvitation admin forms
@@ -41,27 +71,6 @@ function handlePortfolioPermissionFields(){
         }
     }
 
-    function isSelectedUserIdValue(value) {
-        const normalizedValue = String(value ?? "");
-        return normalizedValue !== "" && Number.isInteger(Number(normalizedValue));
-    }
-
-    function updateSendEmailAvailability() {
-        if (!sendEmailCheckbox) {
-            return;
-        }
-
-        if (isSelectedUserIdValue(userField?.value)) {
-            sendEmailCheckbox.disabled = false;
-        } else {
-            // Typed emails always send an invitation email, so keep the
-            // checkbox checked while disabling it.
-            sendEmailCheckbox.checked = true;
-            sendEmailCheckbox.disabled = true;
-        }
-    }
-
-
     /**
      * Sets event listeners for key UI elements.
      */
@@ -72,27 +81,31 @@ function handlePortfolioPermissionFields(){
             })
         }
 
-        if (userField) {
-            if (typeof django !== "undefined" && django.jQuery) {
-                django.jQuery(userField).on("change select2:select select2:clear", function() {
-                    updateSendEmailAvailability();
-                });
-            }
-        }
     }
 
     // Run initial setup functions
     updatePortfolioPermissionsFormVisibility();
-    updateSendEmailAvailability();
+    setUpSendEmailAvailability(userField, sendEmailCheckbox);
     setEventListeners();
+}
+
+function handleDomainRoleFields() {
+    const userField = document.getElementById("id_user");
+    const sendEmailCheckbox = document.getElementById("id_send_email");
+
+    setUpSendEmailAvailability(userField, sendEmailCheckbox);
 }
 
 export function initDynamicPortfolioPermissionFields() {
     document.addEventListener('DOMContentLoaded', function() {
         let isPortfolioPermissionPage = document.getElementById("userportfoliopermission_form");
-        let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form")
+        let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form");
+        let isDomainRolePage = document.getElementById("userdomainrole_form");
         if (isPortfolioPermissionPage || isPortfolioInvitationPage) {
             handlePortfolioPermissionFields();
+        }
+        if (isDomainRolePage) {
+            handleDomainRoleFields();
         }
     });
 }
