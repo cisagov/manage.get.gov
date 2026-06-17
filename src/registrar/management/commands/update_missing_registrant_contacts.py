@@ -41,8 +41,6 @@ class Command(BaseCommand):
 
         registrant_domain_set = set()
 
-        update_record_count = 0
-
         # Add all domains with registrant contacts to the set
         for registrant in registrant_contacts:
             registrant_domain_set.add(registrant.domain.name)

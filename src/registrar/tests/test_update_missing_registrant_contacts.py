@@ -60,7 +60,7 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
-        
+
         self.contact_one.registry_id = "contact"
         self.contact_one.domain = self.domain_one
 
@@ -69,19 +69,15 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
     def test_command_update_missing_registrant_contacts_dry_run(self):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
             call_command("update_missing_registrant_contacts", dry_run=True)
-            self.assertEqual(
-                Domain.objects.all().count(), 3
-            )
+            self.assertEqual(Domain.objects.all().count(), 3)
             self.assertEqual(update_mock.call_count, 0)
 
     def test_command_update_missing_registrant_contacts_no_dry_run(self):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
             call_command("update_missing_registrant_contacts", dry_run=False)
-            self.assertEqual(
-                Domain.objects.all().count(), 3
-            )
+            self.assertEqual(Domain.objects.all().count(), 3)
             self.assertEqual(update_mock.call_count, 2)
-    
+
     def test_command_update_missing_registrant_contacts_none_found(self):
         self.contact_two = PublicContact(
             contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
@@ -96,7 +92,7 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
-        
+
         self.contact_two.registry_id = "contact"
         self.contact_two.domain = self.domain_two
 
@@ -115,14 +111,12 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             voice="+1.8882820870",
             pw="thisisnotapassword",
         )
-    
+
         self.contact_three.registry_id = "contact"
         self.contact_three.domain = self.domain_three
 
         self.contact_three.save(skip_epp_save=True)
 
-    
         update_count = call_command("update_missing_registrant_contacts", dry_run=True)
 
         self.assertEqual(update_count, 0)
-        
