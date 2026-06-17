@@ -387,7 +387,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertEqual(form.errors["name"][0], DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_cname_conflicts_with_existing_aaaa_record(self):
         """Creating a CNAME record with same name as existing AAAA record should throw error."""
@@ -406,7 +406,7 @@ class DomainDNSRecordNameConflictTests(DomainMXRecordFormTests):
 
         self.assertFalse(form.is_valid())
         self.assertIn("name", form.errors)
-        self.assertEqual(form.errors["name"][0], DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE)
+        self.assertEqual(form.errors["name"][0], DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE)
 
     def test_a_record_conflicts_with_existing_cname_record(self):
         """Creating an A record with same name as existing CNAME record should throw error."""
