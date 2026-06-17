@@ -24,7 +24,7 @@
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
         <h1>DNS records</h1>
-    
+
         <div class="grid-row">
             <div class="grid-col-12">
                 <p class="measure-none margin-top-0">
@@ -36,7 +36,7 @@
                 <div class="display-flex flex-align-center margin-top-4 margin-bottom-1">
                     <div class="grid-col">
                         <h2 class="margin-top-0 margin-bottom-0">Manage DNS records</h2>
-                    </div>        
+                    </div>
                     <div class="grid-col-auto">
                         <button
                             class="usa-button"
@@ -51,9 +51,9 @@
 
                 <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
-                
+
                     <section class="border radius-lg border-base-lighter padding-3">
-                    <form 
+                    <form
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
                         hx-swap="innerHTML show:top"
@@ -70,25 +70,8 @@
              </div>
         </div>
     </div>
-    
-    {# Shared modal for Add and Edit. USWDS relocates it to the page body on init, so it's driven by data attributes + JS (initDNSRecordCancelModal)#}
-    <div
-        class="usa-modal"
-        id="toggle-cancel-add-dnsrecord"
-        aria-labelledby="cancel-add-dnsrecord-heading"
-        aria-describedby="cancel-add-dnsrecord-description"
-    >
-        {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
-    </div>
 
-    {# Hidden USWDS opener for the modal. The JS clicks this vs anything htmx would re-render / swap #}
-    <a
-        id="open-cancel-add-dnsrecord-modal"
-        href="#toggle-cancel-add-dnsrecord"
-        class="display-none"
-        aria-controls="toggle-cancel-add-dnsrecord"
-        data-open-modal
-    >Open cancel confirmation modal</a>
+    {% include 'includes/domain_dns_records_modals_and_openers.html' %}
 
     <div id="dns-records-table-container">
         {% include "domain_dns_records_table.html" %}
