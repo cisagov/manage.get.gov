@@ -68,17 +68,17 @@ class Command(BaseCommand):
             return
 
         # Tally counters, updated in place by _process_row via the counts dict
-        counts = {"created": 0, "updated": 0, "skipped": 0, "errors": 0}
+        counts = {"created": 0, "skipped": 0, "errors": 0}
 
         for row in rows:
             self._process_row(row, dry_run, counts)
 
-        self._print_summary(dry_run, counts["created"], counts["updated"], counts["skipped"], counts["errors"])
+        self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
         self._print_warnings()
 
     def _process_row(self, row, dry_run, counts):
-        """Process a single CSV row: validate, map, then create/update/skip
-        the corresponding FederalTribe record + updates `counts` in place"""
+        """Process a single CSV row: validate, map, then create/skip
+        the corresponding FederalTribe record + updates counts in place"""
         tribe_full_name = row.get("Tribe Full Name", "").strip()
 
         if not tribe_full_name:
@@ -91,11 +91,12 @@ class Command(BaseCommand):
         try:
             existing = FederalTribe.objects.filter(tribe_full_name=tribe_full_name).first()
 
-            if not existing:
-                self._create_tribe(tribe_full_name, mapped, dry_run, counts)
+            if existing:
+                logger.debug(f"'{tribe_full_name}' already exists, skipping.")
+                counts["skipped"] += 1
                 return
 
-            self._update_tribe(existing, tribe_full_name, mapped, dry_run, counts)
+            self._create_tribe(tribe_full_name, mapped, dry_run, counts)
 
         except Exception as e:
             logger.error(
@@ -112,25 +113,6 @@ class Command(BaseCommand):
         if not dry_run:
             FederalTribe.objects.create(**mapped)
         counts["created"] += 1
-
-    def _update_tribe(self, existing, tribe_full_name, mapped, dry_run, counts):
-        """Handles case where a record already exists - computes the diff
-        against the CSV data
-        If no diff - skip
-        If diff - log (dry run) or apply update (not dry run)"""
-        changes = self._get_changes(existing, mapped)
-
-        if not changes:
-            logger.debug(f"No changes for '{tribe_full_name}', skipping.")
-            counts["skipped"] += 1
-            return
-
-        self._log_action(dry_run, "Updated", tribe_full_name, changes)
-        if not dry_run:
-            for field, value in mapped.items():
-                setattr(existing, field, value)
-            existing.save()
-        counts["updated"] += 1
 
     def _load_csv(self):
         """Load rows rom CSV with a 30 sec timeout and make sure download succeeded
@@ -233,15 +215,6 @@ class Command(BaseCommand):
 
         return ", ".join(valid)
 
-    def _get_changes(self, existing, mapped):
-        """Return a dict of fields that diff between the existing record and mapped CSV data"""
-        changes = {}
-        for field, new_value in mapped.items():
-            old_value = getattr(existing, field, None)
-            if str(old_value) != str(new_value):
-                changes[field] = {"from": old_value, "to": new_value}
-        return changes
-
     def _warn(self, tribe_name, message):
         """Log warning and store it for the summary at the end"""
         full_message = f"[{tribe_name}] {message}"
@@ -249,19 +222,18 @@ class Command(BaseCommand):
         self.warnings.append(full_message)
 
     def _log_action(self, dry_run, action, tribe_name, changes=None):
-        """Log a create/update action, prefixed with [DRY RUN] if applied"""
+        """Log a create action, prefixed with [DRY RUN] if applied"""
         prefix = "[DRY RUN] Would have " if dry_run else ""
         color = TerminalColors.YELLOW if dry_run else TerminalColors.OKGREEN
         detail = f": {changes}" if changes else ""
         logger.info(f"{color}{prefix}{action.lower()} '{tribe_name}'{detail}{TerminalColors.ENDC}")
 
-    def _print_summary(self, dry_run, created, updated, skipped, errors):
+    def _print_summary(self, dry_run, created, skipped, errors):
         """Print a summary of what was/will be applied"""
         prefix = "[DRY RUN] Would have applied" if dry_run else "Completed."
         summary = (
             f"\n{TerminalColors.OKBLUE}{prefix} import summary:{TerminalColors.ENDC}\n"
             f"  {TerminalColors.OKGREEN}Created : {created}{TerminalColors.ENDC}\n"
-            f"  {TerminalColors.YELLOW}Updated : {updated}{TerminalColors.ENDC}\n"
             f"  Skipped : {skipped}\n"
             f"  {TerminalColors.FAIL}Errors  : {errors}{TerminalColors.ENDC}"
         )
