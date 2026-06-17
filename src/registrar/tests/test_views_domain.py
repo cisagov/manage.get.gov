@@ -1541,7 +1541,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+        # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "be canceled because it has already been retrieved.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
@@ -1617,7 +1618,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": new_user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
+        self.assertContains(response, f"{email_address} has been removed from this domain.")
         # Assert that the second user is displayed
         self.assertContains(response, f"{email_address_2}")
         # Assert that the UserDomainRole is deleted
@@ -1631,7 +1632,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, "Domains must have at least one domain manager.")
+        self.assertContains(response, "You can’t remove yourself because you’re the only domain manager.")
         # Assert that the user is still displayed
         self.assertContains(response, f"{self.user.email}")
         # Assert that the UserDomainRole still exists
@@ -1648,7 +1649,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
+        # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "been removed from this domain.")
         # Assert that the UserDomainRole no longer exists
         self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
@@ -3183,6 +3185,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
 
+        # reset to match expected form structure
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
         nameservers_page = self.app.get(
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id})
         )
@@ -3200,6 +3205,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
 
 class TestDomainRenewal(TestWithUser):
@@ -3648,6 +3656,30 @@ class TestDomainDeletion(TestWithUser):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_with_active_nameservers_failure(self):
+        """Deletion should be blocked when the domain has active nameservers"""
+        domain = Domain.objects.create(
+            name="blocked.gov", state=Domain.State.ON_HOLD, expiration_date=timezone.now().date() + timedelta(days=65)
+        )
+
+        Host.objects.create(name="ns1.blocked.gov", domain=domain)
+        Host.objects.create(name="ns2.blocked.gov", domain=domain)
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        self.client.force_login(self.user)
+
+        # Attempt deletion via POST
+        self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"domain_pk": domain.id},
+            follow=True,
+        )
+
+        # Validate that the domain exists despite trying to delete.
+        self.assertTrue(Domain.objects.filter(id=domain.id).exists())
 
 
 class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
