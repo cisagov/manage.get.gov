@@ -86,6 +86,7 @@ function clearRecordForm(scope){
 // One shared modal for the Add form and every Edit row; shown only when there are unsaved
 // changes. data-opener tells USWDS where to return focus on close.
 let pendingCancel = null;
+let isAddButton = null;
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
 const refsFor = (req) => req.type === "edit"
@@ -173,12 +174,21 @@ const onCancel = (req, container) => {
         } else {
             teardownForm(req, container);
             document.getElementById(refs.focusId)?.focus();
+            if(isAddButton){
+                Alpine.$data(container).showFormId = 0
+            }
+            else{
+                Alpine.$data(container).showFormId = Alpine.$data(container).showFormId === req.recordId ? null : req.recordId;
+            }
         }
 };
+
+
 
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    const alpineData = Alpine.$data(container)
     if(!container || !confirmButton) return;
 
 
@@ -201,20 +211,27 @@ export function initDNSRecordCancelModal(){
         modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
         modalEl?.querySelector("[data-close-modal]")?.click();
         pendingCancel = null;
+        if(isAddButton){
+            alpineData.showFormId = 0
+        }
     });
 
     // add record
 
     const addRecordButton = document.getElementById("add-dnsrecord-button")
-    const alpineData = Alpine.$data(container)
     addRecordButton.addEventListener("click", (e)=>{
         if(alpineData.showFormId != null){
             //only edit forms will have a show form id besides the add record form 
-            let req = {
+        let req = {
                 type: "edit",
                 recordId: alpineData.showFormId
             }
+           isAddButton = true
            onCancel(req, container)
+        }
+        else{
+            alpineData.showFormId = 0;
+            isAddButton = false
         }
     })
 }
@@ -239,8 +256,13 @@ export function editAndCommentButtonListener (){
                 // add logic here
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
-                alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
-
+                let req = {
+                type: "add",
+                recordId: recordId
+                }
+                isAddButton = false
+                onCancel(req, table)
+             
             }
 
             if(commentBtn){
