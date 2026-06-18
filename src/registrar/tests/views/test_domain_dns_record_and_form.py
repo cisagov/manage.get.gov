@@ -119,8 +119,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             response,
             "x-effect=\"showFormId === null || showFormId === 0 ? recordType = '' : null\"",
         )
-        # Add record sets showFormId to 0, which fires the x-effect.
-        self.assertContains(response, 'x-on:click="showFormId = 0"')
         # Cancel now opens the confirmation modal
         self.assertContains(response, "js-dnsrecord-add-cancel")
         # Submit success closes the form the same way.

@@ -124,12 +124,7 @@ function formHasUnsavedChanges(form, isEditForm){
     });
 }
 
-export function initDNSRecordCancelModal(){
-    const container = document.getElementById("dnsrecords-form-container");
-    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    if(!container || !confirmButton) return;
-
-    const teardownForm = (req) => {
+const teardownForm = (req, container) => {
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
         if(req.type === "edit"){
@@ -156,10 +151,19 @@ export function initDNSRecordCancelModal(){
                 if(typeField) typeField.value = "";
             }
         }
+        // how do you set the edit form show id to 0 ,
+        //  scenario 1 
+        //  hit add record, edit form open
+        //  showform id is some number
+        // scenario 2
+        // hit edit form, while edit form is open
+        // capture clicked edit form
+        // scenario 3 
         Alpine.$data(container).showFormId = null;
-    };
+};
 
-    const onCancel = (req) => {
+
+const onCancel = (req, container) => {
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
@@ -167,34 +171,59 @@ export function initDNSRecordCancelModal(){
             pendingCancel = req;
             openCancelModal(refs.cancelButtonId);
         } else {
-            teardownForm(req);
+            teardownForm(req, container);
             document.getElementById(refs.focusId)?.focus();
         }
-    };
+};
+
+export function initDNSRecordCancelModal(){
+    const container = document.getElementById("dnsrecords-form-container");
+    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    if(!container || !confirmButton) return;
+
 
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        onCancel({ type: "add" });
+        onCancel({ type: "add" }, container);
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
     document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
-        onCancel({ type: "edit", recordId: btn.dataset.recordId });
+        onCancel({ type: "edit", recordId: btn.dataset.recordId }, container);
     });
 
     confirmButton.addEventListener("click", () => {
         if(!pendingCancel) return;
-        teardownForm(pendingCancel);
+        teardownForm(pendingCancel,container);
         const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
         modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
         modalEl?.querySelector("[data-close-modal]")?.click();
         pendingCancel = null;
     });
+
+    // add record
+
+    const addRecordButton = document.getElementById("add-dnsrecord-button")
+    const alpineData = Alpine.$data(container)
+    addRecordButton.addEventListener("click", (e)=>{
+        if(alpineData.showFormId != null){
+            //only edit forms will have a show form id besides the add record form 
+            let req = {
+                type: "edit",
+                recordId: alpineData.showFormId
+            }
+           onCancel(req, container)
+        }
+    })
 }
 
+
+
+
 export function editAndCommentButtonListener (){
+    // add a add record listener too
         const table = document.querySelector("#dnsrecords-table");
         if(!table) return;
 
@@ -207,9 +236,11 @@ export function editAndCommentButtonListener (){
             const alpineData = Alpine.$data(table)
 
             if(editBtn){
+                // add logic here
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
                 alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
+
             }
 
             if(commentBtn){
