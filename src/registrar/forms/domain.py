@@ -33,7 +33,7 @@ from registrar.validations import (
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
-    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
@@ -1025,12 +1025,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         ):
             return
 
-        message = "You already entered this DNS record. DNS records must be unique."
-        self.add_error(None, message)
-        self.add_error("name", message)
-        self.add_error("content", message)
+        self.add_error(None, DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
+        self.add_error("name", DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
+        self.add_error("content", DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
-            self.add_error("priority", message)
+            self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
 
     def clean(self):
         cleaned_data = super().clean()

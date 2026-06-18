@@ -74,6 +74,7 @@ MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
+DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "You already entered this DNS record. DNS records must be unique."
 
 
 def get_content_type_label_by_record_type(record_type):
