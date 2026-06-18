@@ -149,7 +149,7 @@ class CloudflareService:
                 context={"zone_name": zone_name, "account_id": x_account_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, account_id=x_account_id, zone_name=zone_name) from e
+            raise _typed_dns_error(e, account_id=x_account_id, zone_name=zone_name)from e
         return resp.json()
 
     def update_zone_dns_settings(
@@ -193,12 +193,12 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Created dns record for zone {zone_id}")
         except RequestError as e:
-            logger.error(f"Failed to create dns record for zone {zone_id}: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"zone_id": zone_id, "record_data": record_data, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            error_body = e.response.text
-            logger.error(f"Error {e.response.status_code} while creating dns record: {e}\nResponse body: {error_body}")
-            raise APIError(f"Cloudflare create_dns_record failed: {e.response.status_code} {error_body}")
+            raise _typed_dns_error(e, zone_id=zone_id, record_data=record_data) from e
         return resp.json()
 
     def get_page_accounts(self, page: int, per_page: int):

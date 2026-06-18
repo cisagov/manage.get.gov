@@ -58,9 +58,9 @@ class TestCloudflareService(SimpleTestCase):
     dns_record_failure_cases = [
         {
             "test_name": "HTTPStatusError",
-            "error": {"exception": APIError, "response": "400 Server Error", "message": "Error doing the thing"},
+            "error": {"exception": APIError, "response": "400 Server Error", "raised_error": APIError},
         },
-        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}},
+        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "There was an error getting a response", "raised_error": DnsTransportError, "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT}},
     ]
 
     @classmethod
@@ -191,7 +191,7 @@ class TestCloudflareService(SimpleTestCase):
 
                 self.service.client.post.return_value = mock_response
 
-                with self.assertRaises(case["error"]["raised_error"]) as context:
+                with self.assertRaises(error["raised_error"]) as context:
                     self.service.create_cf_account(account_name)
 
                 exc = context.exception
@@ -281,7 +281,7 @@ class TestCloudflareService(SimpleTestCase):
         )
 
     def test_create_dns_record_failure(self):
-        """Test create_cf_zone with API failure"""
+        """Test create_dns_record with API failure"""
         zone_id = "54321"
         record_data_missing_content = {
             "name": "democracy.gov",
@@ -291,19 +291,24 @@ class TestCloudflareService(SimpleTestCase):
             "ttl": 3600,
         }
 
-        for case in self.dns_record_failure_cases:
+        for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
-                mock_response = self._setUpFailureMockResponse(error)
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
 
                 self.service.client.post.return_value = mock_response
 
-                with self.assertRaises(error["exception"]) as context:
+                with self.assertRaises(error["raised_error"]) as context:
                     self.service.create_dns_record(zone_id, record_data_missing_content)
-                self.assertIn(
-                    error["message"],
-                    str(context.exception),
-                )
+
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self.assertEqual(exc.context["zone_id"], zone_id)
+                    self.assertEqual(exc.context["record_data"], record_data_missing_content)
 
     def test_update_dns_record_success(self):
         """Test successful update_dns_record call"""
