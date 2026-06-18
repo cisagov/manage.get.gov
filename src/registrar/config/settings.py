@@ -714,7 +714,7 @@ LOGGING = {
         # DB info
         "django.db.backends": {
             "handlers": django_handlers,
-            "level": "INFO",
+            "level": "DEBUG",
             "propagate": False,
         },
         "django.db.backends.schema": {
@@ -1031,14 +1031,14 @@ if DEBUG and not RUNNING_TESTS:
         {"model": "admin.LogEntry", "field": "user"},
     ]
 
-    # insert the amazing django-debug-toolbar
-    INSTALLED_APPS += ("debug_toolbar",)
-    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+    # # insert the amazing django-debug-toolbar
+    # INSTALLED_APPS += ("debug_toolbar",)
+    # MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
-    DEBUG_TOOLBAR_CONFIG = {
-        # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
-        "SHOW_TOOLBAR_CALLBACK": lambda _: True,
-    }
+    # DEBUG_TOOLBAR_CONFIG = {
+    #     # due to Docker, bypass Debug Toolbar's check on INTERNAL_IPS
+    #     "SHOW_TOOLBAR_CALLBACK": lambda _: True,
+    # }
 
 # From https://django-auditlog.readthedocs.io/en/latest/upgrade.html
 # Run:

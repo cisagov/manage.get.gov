@@ -47,7 +47,6 @@ respx = "*"
 pillow = "*"
 
 [dev-packages]
-django-debug-toolbar = "*"
 nplusone = "*"
 bandit = "*"
 black = "*"
