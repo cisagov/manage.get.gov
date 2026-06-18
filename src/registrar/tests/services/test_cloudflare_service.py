@@ -182,12 +182,15 @@ class TestCloudflareService(SimpleTestCase):
     def test_create_cf_account_failure(self):
         """Test create_cf_account with API failure"""
         account_name = "My get.gov"
+
         for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 account_name = case["test_name"]
                 error = case["error"]
                 mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+
                 self.service.client.post.return_value = mock_response
+
                 with self.assertRaises(case["error"]["raised_error"]) as context:
                     self.service.create_cf_account(account_name)
 
@@ -223,16 +226,21 @@ class TestCloudflareService(SimpleTestCase):
         for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
-                mock_response = self._setUpFailureMockResponse(error)
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
 
                 self.service.client.post.return_value = mock_response
 
-                with self.assertRaises(error["exception"]) as context:
+                with self.assertRaises(error["raised_error"]) as context:
                     self.service.create_cf_zone(zone_name, account_id)
-                self.assertIn(
-                    error["message"],
-                    str(context.exception),
-                )
+
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self.assertEqual(exc.context["zone_name"], zone_name)
+                    self.assertEqual(exc.context["account_id"], account_id)
 
     def test_create_dns_record_success(self):
         """Test successful create_dns_record call"""

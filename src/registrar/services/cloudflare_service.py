@@ -226,11 +226,16 @@ class CloudflareService:
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
         except RequestError as e:
-            logger.error(f"Failed to get tenant account by name: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"account_name": account_name, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
             logger.error(f"Error {e.response.status_code} while fetching tenant account by name: {e}")
-            raise
+            raise DnsNotFoundError(
+                code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+                context={"zone_id": zone_id, "exc_class": type(e).__name__},
+            ) from e
         data = resp.json()
         results = data.get("result", [])
         return results[0] if results else None
@@ -260,11 +265,15 @@ class CloudflareService:
             resp = self.client.get(appended_url)
             resp.raise_for_status()
         except RequestError as e:
-            logger.error(f"Failed to get zone from zone id: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"zone_id": x_zone_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while fetching zone: {e}")
-            raise
+            raise DnsNotFoundError(
+                code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+                context={"zone_id": x_zone_id, "exc_class": type(e).__name__},
+            ) from e
         logger.info(f"Retrieved zone: {resp}")
         return resp.json()
 
