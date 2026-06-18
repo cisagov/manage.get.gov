@@ -1025,11 +1025,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         ):
             return
 
-        self.add_error(None, DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
-        self.add_error("name", DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
-        self.add_error("content", DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
+        self.add_error(None, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        self.add_error("name", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        self.add_error("content", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
-            self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE )
+            self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
 
     def clean(self):
         cleaned_data = super().clean()

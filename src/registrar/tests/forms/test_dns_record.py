@@ -619,11 +619,11 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
     def assert_duplicate_errors(self, form, expect_priority=False):
         self.assertFalse(form.is_valid())
         # Banner at top of page is rendered from __all__ (non-field) errors
-        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE , form.non_field_errors())
-        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE , form.errors.get("name", []))
-        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE , form.errors.get("content", []))
+        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE, form.non_field_errors())
+        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE, form.errors.get("name", []))
+        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE, form.errors.get("content", []))
         if expect_priority:
-            self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE , form.errors.get("priority", []))
+            self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE, form.errors.get("priority", []))
         else:
             self.assertNotIn("priority", form.errors)
         # Type is never flagged inline even though it's part of identity
@@ -846,7 +846,7 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
             DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
             form.errors.get("name", []),
         )
-        self.assertNotIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE , form.errors.get("name", []))
+        self.assertNotIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE, form.errors.get("name", []))
 
     def test_duplicate_mx_shows_only_duplicate_error_on_priority_not_required_error(self):
         """Submitting a duplicate MX record should show only the duplicate message on
@@ -865,7 +865,7 @@ class DomainDNSRecordDuplicateTests(BaseDomainDNSRecordFormTest):
         form = self.make_mx_form(priority=10)
         self.assertFalse(form.is_valid())
         priority_errors = form.errors.get("priority", [])
-        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE , priority_errors)
+        self.assertIn(DUPLICATE_DNS_RECORD_ERROR_MESSAGE, priority_errors)
         self.assertNotIn(DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE, priority_errors)
 
 
