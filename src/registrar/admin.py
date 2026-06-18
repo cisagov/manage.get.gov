@@ -18,9 +18,12 @@ from django.http import HttpResponseRedirect
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.invitation_service import (
+    create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
+    get_domain_role_status,
     get_requested_user,
     get_portfolio_permission_status,
+    validate_domain_role_or_invitation,
     validate_portfolio_permission_or_invitation,
 )
 from registrar.services.dns_host_service import DnsHostService
@@ -609,6 +612,174 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
             validate_portfolio_permission_or_invitation(
                 email=email,
                 portfolio=portfolio,
+            )
+        except ValidationError as error:
+            self.add_error("user", error)
+
+    def _validate_invitation_email_can_be_sent(self, cleaned_data, user, email):
+        if settings.IS_PRODUCTION:
+            return
+
+        if not self._will_send_invitation_email(cleaned_data, user):
+            return
+
+        if not email:
+            return
+
+        if models.AllowedEmail.is_allowed_email(email):
+            return
+
+        self.add_error("user", f"Could not send email. The email '{email}' does not exist within the allowlist.")
+
+    def _will_send_invitation_email(self, cleaned_data, user):
+        if user is None:
+            return True
+
+        if cleaned_data.get("send_email"):
+            return True
+
+        return False
+
+
+class UserDomainRoleLegacyForm(forms.ModelForm):
+    """Original UserDomainRole admin form for direct user assignments."""
+
+    class Meta:
+        model = models.UserDomainRole
+        fields = [
+            "user",
+            "domain",
+            "role",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "user" in self.fields:
+            self.fields["user"].required = True
+
+
+class UserDomainRoleForm(forms.ModelForm):
+    """Invitation-aware UserDomainRole admin form."""
+
+    user = UserOrEmailChoiceField(
+        queryset=models.User.objects.all(),
+        label="User",
+        widget=UserOrEmailAutocompleteSelect(
+            models.UserDomainRole._meta.get_field("user"),
+            admin.site,
+            attrs={
+                "data-placeholder": "Search for a user by email address (or send an invitation to a new user)",
+                "data-tags": "true",
+            },
+        ),
+    )
+
+    send_email = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Send invitation email",
+        help_text=(
+            "Existing users can be added without sending an email. " "New users are always sent an invitation email."
+        ),
+    )
+
+    class Meta:
+        model = models.UserDomainRole
+        fields = [
+            "user",
+            "domain",
+            "send_email",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._allow_empty_user_for_pending_invitation()
+
+    def _allow_empty_user_for_pending_invitation(self):
+        if not self.instance.pk:
+            return
+
+        if self.instance.status != UserDomainRole.Status.INVITED:
+            return
+
+        if self.instance.user_id:
+            return
+
+        if "user" not in self.fields:
+            return
+
+        self.fields["user"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        user = cleaned_data.get("user")
+        email = self._get_email(user)
+
+        self._set_user(user)
+        self._set_email(cleaned_data, email)
+        self._set_role(cleaned_data)
+        self._set_status_for_new_role(user, email)
+        self._validate_new_invitation(cleaned_data, email)
+        self._validate_invitation_email_can_be_sent(cleaned_data, user, email)
+
+        return cleaned_data
+
+    def _get_email(self, user):
+        user_field = self.fields.get("user")
+        email = getattr(user_field, "resolved_email", None)
+
+        if not email:
+            if user:
+                if user.email:
+                    email = user.email.lower()
+
+        if not email:
+            if self.instance.email:
+                email = self.instance.email.lower()
+
+        return email
+
+    def _set_user(self, user):
+        if user is not None:
+            self.instance.user = user
+
+    def _set_email(self, cleaned_data, email):
+        if email:
+            self.instance.email = email
+            cleaned_data["email"] = email
+
+    def _set_role(self, cleaned_data):
+        self.instance.role = UserDomainRole.Roles.MANAGER
+        cleaned_data["role"] = self.instance.role
+
+    def _set_status_for_new_role(self, user, email):
+        if self.instance.pk:
+            return
+
+        # Model validation requires a user for accepted roles, so the form sets
+        # the invitation status before model clean runs.
+        if user is None:
+            if not email:
+                return
+
+        self.instance.status = get_domain_role_status(user)
+
+    def _validate_new_invitation(self, cleaned_data, email):
+        if self.instance.pk:
+            return
+
+        domain = cleaned_data.get("domain")
+        if not domain:
+            return
+
+        if not email:
+            return
+
+        try:
+            validate_domain_role_or_invitation(
+                email=email,
+                domain=domain,
             )
         except ValidationError as error:
             self.add_error("user", error)
@@ -2122,6 +2293,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
 class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Custom user domain role admin class."""
 
+    form = UserDomainRoleLegacyForm
+    invitation_form = UserDomainRoleForm
     resource_classes = [UserDomainRoleResource]
 
     class Meta:
@@ -2134,14 +2307,14 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     # Columns
     list_display = [
-        "user",
+        "user_or_email",
         "domain",
         "role",
+        "status",
     ]
 
     orderable_fk_fields = [
         ("domain", "name"),
-        ("user", ["first_name", "last_name", "email"]),
     ]
 
     # Search
@@ -2149,10 +2322,12 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "user__first_name",
         "user__last_name",
         "user__email",
+        "email",
         "domain__name",
         "role",
     ]
     search_help_text = "Search by first name, last name, email, or domain."
+    list_filter = ("status",)
 
     autocomplete_fields = ["user", "domain"]
 
@@ -2160,6 +2335,294 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     # Override for the delete confirmation page on the domain table (bulk delete action)
     delete_selected_confirmation_template = "django/admin/user_domain_role_delete_selected_confirmation.html"
+
+    @admin.display(description="User")
+    def user_or_email(self, obj):
+        if obj.user:
+            return obj.user
+        return obj.email
+
+    user_or_email.admin_order_field = ["user__first_name", "user__last_name", "user__email"]  # type: ignore
+
+    def _use_invitation_admin(self, request):
+        return flag_is_active(request, "user_domain_role_invitations")
+
+    def get_form(self, request, obj=None, **kwargs):
+        if self._use_invitation_admin(request):
+            kwargs["form"] = self.invitation_form
+
+        return super().get_form(request, obj, **kwargs)
+
+    @admin.display(description="Invitation status")
+    def invitation_status(self, obj):
+        if not obj:
+            return "Set on save"
+
+        if obj.status:
+            return obj.get_status_display()
+
+        return "Set on save"
+
+    def get_readonly_fields(self, request, obj=None):
+        if not self._use_invitation_admin(request):
+            return super().get_readonly_fields(request, obj)
+
+        if obj:
+            return [
+                "email",
+                "role",
+                "status",
+                "invited_by",
+                "invited_at",
+                "accepted_at",
+                "revoked_at",
+                "revocation_reason",
+            ]
+        return ["invitation_status"]
+
+    def get_fieldsets(self, request, obj=None):
+        if not self._use_invitation_admin(request):
+            return self._get_direct_role_fieldsets()
+
+        if obj:
+            return (
+                (None, {"fields": ("user", "email", "domain", "role", "status")}),
+                (
+                    "Invitation details",
+                    {
+                        "fields": (
+                            "invited_by",
+                            "invited_at",
+                            "accepted_at",
+                            "revoked_at",
+                            "revocation_reason",
+                        )
+                    },
+                ),
+            )
+        return ((None, {"fields": ("user", "domain", "invitation_status", "send_email")}),)
+
+    def _get_direct_role_fieldsets(self):
+        return ((None, {"fields": ("user", "domain", "role")}),)
+
+    def response_add(self, request, obj, post_url_continue=None):
+        storage = get_messages(request)
+        has_errors = any(message.level_tag in ["error"] for message in storage)
+
+        if has_errors:
+            ModelForm = self.get_form(request, obj=obj)
+            form = ModelForm(instance=obj)
+            admin_form = AdminForm(
+                form,
+                list(self.get_fieldsets(request, obj)),
+                self.get_prepopulated_fields(request, obj),
+                self.get_readonly_fields(request, obj),
+                model_admin=self,
+            )
+            media = self.media + form.media
+
+            opts = obj._meta
+            change_form_context = {
+                **self.admin_site.each_context(request),
+                "title": f"Add {opts.verbose_name}",
+                "opts": opts,
+                "original": obj,
+                "save_as": self.save_as,
+                "has_change_permission": self.has_change_permission(request, obj),
+                "add": True,
+                "change": False,
+                "is_popup": False,
+                "inline_admin_formsets": [],
+                "save_on_top": self.save_on_top,
+                "show_delete": self.has_delete_permission(request, obj),
+                "obj": obj,
+                "adminform": admin_form,
+                "media": media,
+                "errors": None,
+            }
+            return self.render_change_form(
+                request,
+                context=change_form_context,
+                add=True,
+                change=False,
+                obj=obj,
+            )
+
+        response = super().response_add(request, obj, post_url_continue)
+
+        for message in storage:
+            messages.add_message(request, message.level, message.message)
+
+        return response
+
+    def save_model(self, request, obj, form, change):
+        if change or not self._use_invitation_admin(request):
+            super().save_model(request, obj, form, change)
+            return
+
+        created_role_and_email_status = self._create_new_role(request, obj, form)
+        if created_role_and_email_status is None:
+            return
+
+        role, email_was_sent = created_role_and_email_status
+        self._show_domain_email_warning(request, email_was_sent)
+        self._add_new_role_success_message(request, role)
+
+    def _create_new_role(self, request, obj, form):
+        requested_email = self._get_requested_email(obj, form)
+        requested_user = get_requested_user(requested_email) if requested_email else None
+
+        try:
+            member_of_a_different_org = self._save_portfolio_membership_invitation(
+                request,
+                obj.domain,
+                requested_email,
+                requested_user,
+                form,
+            )
+
+            return create_domain_role_or_invitation(
+                email=requested_email,
+                domain=obj.domain,
+                requestor=request.user,
+                role=obj.role,
+                send_email=self._should_send_invitation_email(form),
+                is_member_of_different_org=member_of_a_different_org,
+                domain_role=obj,
+            )
+        except Exception as e:
+            handle_invitation_exceptions(request, e, requested_email)
+
+        return None
+
+    def _save_portfolio_membership_invitation(self, request, domain, requested_email, requested_user, form):
+        try:
+            domain_org = getattr(domain.domain_info, "portfolio", None)
+        except ObjectDoesNotExist:
+            domain_org = None
+        member_of_a_different_org = None
+        member_of_this_org = None
+
+        if domain_org is not None:
+            member_of_a_different_org, member_of_this_org = get_org_membership(
+                domain_org,
+                requested_email,
+                requested_user,
+            )
+
+        if not self._should_send_portfolio_membership_email(
+            request,
+            domain_org,
+            member_of_a_different_org,
+            member_of_this_org,
+            form,
+            requested_user,
+        ):
+            return member_of_a_different_org
+
+        if self._use_portfolio_permission_invitation_admin(request):
+            create_portfolio_permission_or_invitation(
+                email=requested_email,
+                portfolio=domain_org,
+                requestor=request.user,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                send_email=True,
+            )
+        else:
+            send_portfolio_invitation_email(
+                email=requested_email,
+                requestor=request.user,
+                portfolio=domain_org,
+                is_admin_invitation=False,
+            )
+            portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
+                email=requested_email,
+                portfolio=domain_org,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            )
+            if requested_user is not None:
+                portfolio_invitation.retrieve()
+                portfolio_invitation.save()
+        messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
+
+        return member_of_a_different_org
+
+    def _use_portfolio_permission_invitation_admin(self, request):
+        return flag_is_active(request, "user_portfolio_permission_invitations")
+
+    def _should_send_portfolio_membership_email(
+        self,
+        request,
+        domain_org,
+        member_of_a_different_org,
+        member_of_this_org,
+        form,
+        requested_user,
+    ):
+        if not self._will_send_invitation_email(form, requested_user):
+            return False
+
+        if not request.user.is_org_user(request):
+            return False
+
+        if flag_is_active(request, "multiple_portfolios"):
+            return False
+
+        if domain_org is None:
+            return False
+
+        if member_of_this_org:
+            return False
+
+        if member_of_a_different_org:
+            return False
+
+        return True
+
+    def _get_requested_email(self, obj, form):
+        requested_email = None
+
+        if form:
+            requested_email = form.cleaned_data.get("email")
+
+        if not requested_email:
+            if obj.user:
+                if obj.user.email:
+                    requested_email = obj.user.email
+
+        if requested_email:
+            requested_email = requested_email.lower()
+
+        return requested_email
+
+    def _should_send_invitation_email(self, form):
+        if not form:
+            return False
+
+        return bool(form.cleaned_data.get("send_email"))
+
+    def _will_send_invitation_email(self, form, user):
+        if user is None:
+            return True
+
+        return self._should_send_invitation_email(form)
+
+    def _show_domain_email_warning(self, request, email_was_sent):
+        if email_was_sent:
+            return
+
+        messages.warning(request, "Could not send email notification to existing domain managers.")
+
+    def _add_new_role_success_message(self, request, obj):
+        if not obj.email:
+            return
+
+        email = obj.email.lower()
+
+        if obj.status == UserDomainRole.Status.INVITED:
+            messages.success(request, f"{email} has been invited to the domain: {obj.domain}")
+        else:
+            messages.success(request, f"{email} has been added to the domain: {obj.domain}")
 
     # Fixes a bug where non-superusers are redirected to the main page
     def delete_view(self, request, object_id, extra_context=None):
@@ -2182,7 +2645,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         if object_id:
             obj = self.get_object(request, object_id)
             if obj:
-                email = obj.user.email
+                email = obj.user.email if obj.user else obj.email
                 domain_name = obj.domain.name
                 extra_context["subtitle"] = f"Domain manager {email} on {domain_name}"
 
