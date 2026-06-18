@@ -1,3 +1,4 @@
+import httpx
 import os
 from unittest import mock
 from unittest.mock import Mock
@@ -5,7 +6,7 @@ from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsTransportError, DnsHostingErrorCodes, DnsValidationError, DnsNotFoundError, DnsRateLimitError, DnsAuthError, DnsTransportError, DnsUpstreamError
 
 
 class TestCloudflareService(SimpleTestCase):
@@ -13,10 +14,43 @@ class TestCloudflareService(SimpleTestCase):
 
     failure_cases = [
         {
-            "test_name": "HTTPStatusError",
-            "error": {"exception": HTTPStatusError, "response": "400 Server Error", "message": "Error doing the thing"},
+            "test_name": "400ValidationError",
+            "status_code": 400,
+            "error": {"exception": HTTPStatusError, "raised_error": DnsValidationError, "code": DnsHostingErrorCodes.VALIDATION_FAILED},
+            "cf_ray": "135",
+
         },
-        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "Unknown error"}},
+        {
+            "test_name": "409ValidationError",
+            "status_code": 409,
+            "error": {"exception": HTTPStatusError,  "raised_error": DnsValidationError, "code": DnsHostingErrorCodes.RECORD_CONFLICT},
+            "cf_ray": "246",
+        },
+        {
+            "test_name": "DnsNotFoundError",
+            "status_code": 404,
+            "error": {"exception": HTTPStatusError, "raised_error": DnsNotFoundError, "code": DnsHostingErrorCodes.ZONE_NOT_FOUND},
+            "cf_ray":"579"
+        },
+        {
+            "test_name": "401DnsAuthError",
+            "status_code": 401,
+            "error": {"exception": HTTPStatusError, "raised_error": DnsAuthError, "code": DnsHostingErrorCodes.AUTH_FAILED},
+            "cf_ray": "K9"
+        },
+        {
+            "test_name": "403DnsAuthError",
+            "status_code": 403,
+            "error": {"exception": HTTPStatusError, "raised_error": DnsAuthError, "code": DnsHostingErrorCodes.AUTH_FAILED},
+            "cf_ray": "KRS1"
+        },
+        {
+            "test_name": "DnsRateLimitError",
+            "status_code": 429,
+            "error": {"exception": HTTPStatusError, "raised_error": DnsRateLimitError, "code": DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED},
+            "cf_ray": "R2D2"
+        },
+        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "There was an error getting a response", "raised_error": DnsTransportError, "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT}},
     ]
 
     # create_dns_record and update_dns_record wrap HTTPStatusError in APIError,
@@ -59,18 +93,82 @@ class TestCloudflareService(SimpleTestCase):
         mock_response.raise_for_status.return_value = raise_value
         return mock_response
 
-    def _setUpFailureMockResponse(self, error, status_code=400):
-        mock_response = Mock()
-        mock_response.status_code = status_code
-        mock_response.text = error.get("message", "error response")
+    def _setUpFailureMockResponse(self, error, status_code=None):
+        mock_api_response = Mock()
+        mock_api_response.status_code = status_code
+        mock_api_response.text = error.get("message", "error response")
         http_error = None
         if error["exception"] in (APIError, HTTPStatusError):
-            http_error = HTTPStatusError(request="something", response=error["response"], message=error["message"])
+            match status_code:
+                case 400:
+                   mock_response = httpx.Response(
+                            400,
+                            headers={"cf-ray": "135"},
+
+                        )
+                   http_error = HTTPStatusError(
+                       request="something",
+                       response=mock_response,
+                        message="other thing"
+                    )
+                case 409:
+                    mock_response = httpx.Response(
+                            409,
+                            headers={"cf-ray": "246"},
+                        )
+                    http_error = HTTPStatusError(
+                        request="something",
+                        response=mock_response,
+                        message="other thing"
+                )
+                case 404:
+                    mock_response = httpx.Response(
+                            404,
+                            headers={"cf-ray": "579"},
+                        )
+                    http_error = HTTPStatusError(
+                        request="something",
+                        response=mock_response,
+                        message="other thing"
+                )
+                case 429:
+                    mock_response = httpx.Response(
+                            429,
+                            headers={"cf-ray": "R2D2"},
+                        )
+                    http_error = HTTPStatusError(
+                        request="something",
+                        response=mock_response,
+                        message="other thing"
+                )
+                case 401:
+                    mock_response = httpx.Response(
+                            401,
+                            headers={"cf-ray": "K9"},
+                        )
+                    http_error = HTTPStatusError(
+                        request="something",
+                        response=mock_response,
+                        message="other thing"
+                )
+                case 403:
+                    mock_response = httpx.Response(
+                            403,
+                            headers={"cf-ray": "KRS1"},
+                        )
+                    http_error = HTTPStatusError(
+                        request="something",
+                        response=mock_response,
+                        message="other thing"
+                )
+                # case 500:
+
         if error["exception"] == RequestError:
-            http_error = RequestError(request="something", message=error["message"])
-        http_error.response = mock_response
-        mock_response.raise_for_status.side_effect = http_error
-        return mock_response
+            http_error = RequestError(
+                request="something",
+                message="last thing")
+        mock_api_response.raise_for_status.side_effect = http_error
+        return mock_api_response
 
     def test_create_cf_account_success(self):
         """Test successful create_cf_account call"""
@@ -88,14 +186,18 @@ class TestCloudflareService(SimpleTestCase):
             with self.subTest(msg=case["test_name"], **case):
                 account_name = case["test_name"]
                 error = case["error"]
-
-                mock_response = self._setUpFailureMockResponse(error)
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
                 self.service.client.post.return_value = mock_response
-
-                with self.assertRaises(case["error"]["exception"]) as context:
+                with self.assertRaises(case["error"]["raised_error"]) as context:
                     self.service.create_cf_account(account_name)
 
-                self.assertIn(case["error"]["message"], str(context.exception))
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self.assertEqual(exc.context["account_name"], account_name)
 
     def test_create_cf_zone_success(self):
         """Test successful create_cf_zone call"""

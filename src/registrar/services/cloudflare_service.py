@@ -30,12 +30,12 @@ _STATUS_TO_ERROR = {
 
 
 def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
-    """Map a Cloudflare HTTP error to the right DnsHostingError subclass and log once."""
+    """Map an HTTP error to the right DnsHostingError subclass and log once."""
     status = e.response.status_code
     ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
     exc_cls, code = _STATUS_TO_ERROR.get(status, (DnsHostingError, DnsHostingErrorCodes.UNKNOWN))
     logger.exception(
-        "Cloudflare returned %s for DNS request",
+        "Dns provider returned %s for DNS request",
         status,
         extra={"upstream_status": status, "error_code": code.name, **ctx},
     )
@@ -90,7 +90,6 @@ class CloudflareService:
                 context={"account_name": account_name, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            # Cloudflare returned a 4xx or 5xx — map the status code to a typed error.
             raise _typed_dns_error(e, account_name=account_name) from e
         return resp.json()
 
