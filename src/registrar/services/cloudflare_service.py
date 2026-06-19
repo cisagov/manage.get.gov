@@ -131,8 +131,7 @@ class CloudflareService:
                 context={"x_account_id": account_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while updating dns settings: {e}")
-            raise
+            raise _typed_dns_error(e, account_id=account_id)from e
 
         return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
@@ -178,11 +177,12 @@ class CloudflareService:
                 ns_set,
             )
         except RequestError as e:
-            logger.error(f"Failed to update dns settings for zone {zone_id}: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"zone_id": zone_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while updating dns settings: {e}")
-            raise
+            raise _typed_dns_error(e, zone_id=zone_id)from e
 
         return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
