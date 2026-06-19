@@ -14,7 +14,7 @@ from registrar.utility.errors import (
     DnsValidationError,
     DnsRateLimitError,
     DnsTransportError,
-    EnrollmentNotAllowedError
+    DnsUpstreamError,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ _STATUS_TO_ERROR = {
     404: (DnsNotFoundError, DnsHostingErrorCodes.ZONE_NOT_FOUND),
     409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
     429: (DnsRateLimitError, DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
+    500: (DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR)
 }
 
 

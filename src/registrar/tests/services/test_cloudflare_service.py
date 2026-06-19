@@ -161,7 +161,16 @@ class TestCloudflareService(SimpleTestCase):
                         response=mock_response,
                         message="other thing"
                 )
-                # case 500:
+                case 500:
+                    mock_response = httpx.Response(
+                            500,
+                            headers={"cf-ray": "3CPO"},
+                        )
+                    http_error = HTTPStatusError(
+                        request="something",
+                        response=mock_response,
+                        message="other thing"
+                )
 
         if error["exception"] == RequestError:
             http_error = RequestError(
