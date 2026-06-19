@@ -446,13 +446,6 @@ class TestCloudflareService(SimpleTestCase):
         """Test failed delete_dns_record call."""
         zone_id = "54321"
         record_id = "6789"
-        # mock_response = Mock()
-        # mock_response.status_code = 400
-        # http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error deleting record")
-        # http_error.response = mock_response
-        # self.service.client.delete.return_value = mock_response
-        # mock_response.raise_for_status.side_effect = http_error
-
 
         failure_cases = self._get_failure_cases([400, 409])
         for case in failure_cases:
