@@ -396,19 +396,25 @@ class TestCloudflareService(SimpleTestCase):
             "ttl": 3600,
         }
 
-        for case in self.dns_record_failure_cases:
+        for case in self.failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
-                mock_response = self._setUpFailureMockResponse(error)
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
 
                 self.service.client.patch.return_value = mock_response
 
-                with self.assertRaises(error["exception"]) as context:
+                with self.assertRaises(error["raised_error"]) as context:
                     self.service.update_dns_record(zone_id, record_id, record_data_invalid_content)
-                self.assertIn(
-                    error["message"],
-                    str(context.exception),
-                )
+
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self.assertEqual(exc.context["zone_id"], zone_id)
+                    self.assertEqual(exc.context["record_id"], record_id)
+                    self.assertEqual(exc.context["record_data"], record_data_invalid_content)
 
     def test_delete_dns_record_success(self):
         """Test successful delete_dns_record call."""
