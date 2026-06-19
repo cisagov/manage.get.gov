@@ -1275,6 +1275,16 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
+    def _delete_dnsdata(self):
+        """
+        Delete DNS objects associated with this domain from database.
+        Includes:
+        - DnsAccount, VendorDnsAccount, DnsAccountVendorDnsAccount
+        - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
+        - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
+        """
+        
+
     def _delete_related_objects_from_db(self):
         """
         Deletes related Host/HostIP records, and non-registrant contacts
