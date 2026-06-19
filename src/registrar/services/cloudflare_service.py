@@ -320,11 +320,11 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Deleted dns record {record_id} in zone {zone_id}.")
         except RequestError as e:
-            logger.error(f"Failed to delete dns record {record_id} in zone {zone_id}: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"zone_id": zone_id, "record_id": record_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(
-                f"Error {e.response.status_code} while deleting dns record: {e}\nResponse body: {e.response.text}"
-            )
-            raise APIError(f"Cloudflare delete_dns_record failed: {e.response.status_code} {e.response.text}")
+            # formerly raised APIError
+            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id)from e
         return resp.json()
