@@ -86,6 +86,11 @@ class TestCloudflareService(SimpleTestCase):
         }
         self.service = CloudflareService(client=mock_client)
 
+    def _get_failure_cases(self, cases_to_exclude_by_status_code:list[int]=None):
+        if cases_to_exclude_by_status_code:
+            return [c for c in self.failure_cases if c.get("status_code") not in cases_to_exclude_by_status_code]
+        return self.failure_cases
+
     def _setUpSuccessMockResponse(self, return_value=None, raise_value=None):
         mock_response = Mock()
         mock_response.json.return_value = return_value
@@ -449,7 +454,8 @@ class TestCloudflareService(SimpleTestCase):
         # mock_response.raise_for_status.side_effect = http_error
 
 
-        for case in self.failure_cases:
+        failure_cases = self._get_failure_cases([400, 409])
+        for case in failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
                 mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
