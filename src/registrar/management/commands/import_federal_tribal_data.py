@@ -166,11 +166,8 @@ class Command(BaseCommand):
         return None
 
     def _parse_state(self, value, tribe_name):
-        """Convert a full state name to its 2 letter abbreviation using
-        StateTerritoryChoices. If already a 2-letter code, return as is"""
-        if len(value) == 2:
-            return value.upper()
-
+        """Convert a full state name to its 2 letter abbrev using
+        StateTerritoryChoices"""
         for choice_value, choice_label in FederalTribe.StateTerritoryChoices.choices:
             # ie "Alabama (AL)", extract just "Alabama"
             plain_name = choice_label.split(" (")[0]
