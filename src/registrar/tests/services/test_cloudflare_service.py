@@ -467,45 +467,6 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.context["zone_id"], zone_id)
                     self.assertEqual(exc.context["record_id"], record_id)
 
-    def test_get_page_accounts_success(self):
-        """Test successful get_page_accounts call"""
-        return_value = {
-            "result": [
-                {"id": 1, "name": "test acct 1"},
-                {"id": 2, "name": "test acct 2"},
-            ]
-        }
-        mock_response = self._setUpSuccessMockResponse(return_value)
-        self.service.client.get.return_value = mock_response
-
-        resp = self.service.get_page_accounts(1, 10)
-        self.assertEqual(
-            resp,
-            {
-                "result": [
-                    {"id": 1, "name": "test acct 1"},
-                    {"id": 2, "name": "test acct 2"},
-                ]
-            },
-        )
-
-    def test_get_page_accounts_failure(self):
-        """Test get_all_accounts with API failure"""
-
-        mock_response = Mock()
-        mock_response.status_code = 400
-        http_error = HTTPStatusError(
-            request="something", response="400 Server Error", message="Error fetching accounts"
-        )
-        http_error.response = mock_response
-        self.service.client.get.return_value = mock_response
-        mock_response.raise_for_status.side_effect = http_error
-
-        with self.assertRaises(HTTPStatusError) as context:
-            self.service.get_page_accounts(1, 10)
-
-        self.assertIn("Error fetching accounts", str(context.exception))
-
     def test_get_account_zones_success(self):
         """Test successful get_account_zones call"""
         account_id = "55555"
@@ -534,17 +495,22 @@ class TestCloudflareService(SimpleTestCase):
         """Test get_account_zones with API failure"""
 
         account_id = "44444"
-        mock_response = Mock()
-        mock_response.status_code = 400
-        http_error = HTTPStatusError(request="something", response="400 Server Error", message="Error fetching zone")
-        http_error.response = mock_response
-        self.service.client.get.return_value = mock_response
-        mock_response.raise_for_status.side_effect = http_error
 
-        with self.assertRaises(HTTPStatusError) as context:
-            self.service.get_account_zones(account_id)
+        failure_cases = self._get_failure_cases([400, 409, 404])
+        for case in failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+                self.service.client.get.return_value = mock_response
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.get_account_zones(account_id)
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
 
-        self.assertIn("Error fetching zone", str(context.exception))
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+
 
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""

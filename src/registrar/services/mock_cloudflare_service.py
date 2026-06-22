@@ -76,9 +76,7 @@ class MockCloudflareService:
 
     def _register_account_mocks(self):
         tenant_id = CloudflareService.tenant_id
-        self._mock_context.get(f"/tenants/{tenant_id}/accounts", params={"page": 1, "per_page": 50}).mock(
-            side_effect=self._mock_get_page_accounts_response
-        )
+
         self._mock_context.get(f"/tenants/{tenant_id}/accounts", params__contains={"per_page": 1}).mock(
             side_effect=self._mock_get_account_by_name_response
         )
@@ -143,20 +141,6 @@ class MockCloudflareService:
                 "success": True,
                 "errors": [],
                 "messages": [],
-            },
-        )
-
-    def _mock_get_page_accounts_response(self, request) -> httpx.Response:
-        logger.debug("😎 Mocking accounts GET")
-        # use exists.gov domain to simulate an account that already exists
-        return httpx.Response(
-            200,
-            json={
-                "errors": [],
-                "messages": [],
-                "success": True,
-                "result": self.accounts,
-                "result_info": self.accounts_results_info,
             },
         )
 

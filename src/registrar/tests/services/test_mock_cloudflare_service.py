@@ -78,32 +78,12 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         client = Client()
         self.service = CloudflareService(client)
 
-    def test_mock_get_page_accounts_response(self):
-        resp = self.service.get_page_accounts(1, 50)
-        result = resp["result"]
-        self.assertEqual(len(result), 3)
-        self.assertEqual(result[2]["account_pubname"], make_dns_account_name("exists.gov"))
-
     def test_mock_get_account_zones_response(self):
         existing_account_id = self.mock_api_service.existing_account_id
         resp = self.service.get_account_zones(existing_account_id)
         result = resp["result"]
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].get("name"), "exists.gov")
-
-    def test_mock_create_cf_account_response(self):
-        account_name = make_dns_account_name("equity.gov")
-
-        resp = self.service.create_cf_account(account_name)
-        result = resp["result"]
-
-        self.assertEqual(result["name"], account_name)
-
-        # check if new account was added to the get accounts mock
-        resp = self.service.get_page_accounts(1, 50)
-        result = resp["result"]
-        self.assertEqual(len(result), 4)
-        self.assertEqual(result[3]["account_pubname"], account_name)
 
     def test_mock_get_cf_zone_by_id_response(self):
         zone_name = "test.gov"

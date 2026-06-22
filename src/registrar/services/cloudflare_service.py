@@ -203,22 +203,6 @@ class CloudflareService:
             raise _typed_dns_error(e, zone_id=zone_id, record_data=record_data) from e
         return resp.json()
 
-    def get_page_accounts(self, page: int, per_page: int):
-        """Gets all accounts under specified tenant. Must include pagination parameters."""
-        appended_url = f"/tenants/{self.tenant_id}/accounts"
-        params = {"page": page, "per_page": per_page}
-        try:
-            logger.info(f"Getting all tenant accounts on page {page}")
-            resp = self.client.get(appended_url, params=params)
-            resp.raise_for_status()
-        except RequestError as e:
-            logger.error(f"Failed to get tenant accounts: {e}")
-            raise
-        except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while fetching tenant accounts: {e}")
-            raise
-        return resp.json()
-
     def get_account_by_name(self, account_name: str):
         """Fetches a single tenant account by name. Returns the first match or None."""
         appended_url = f"/tenants/{self.tenant_id}/accounts"
@@ -251,12 +235,12 @@ class CloudflareService:
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
         except RequestError as e:
-            logger.error(f"Failed to get account zones: {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"account_id": x_account_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while fetching account zones: {e}")
-            raise
-        logger.info(f"Retrieved all zones: {resp}")
+            raise _typed_dns_error(e, account_id=x_account_id)from e
         return resp.json()
 
     def get_zone_by_id(self, x_zone_id: str):
