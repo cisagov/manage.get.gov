@@ -396,22 +396,23 @@ class DatabaseConnectionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        request._db_start_time = time.time()
-        request._db_queries_start = len(connections["default"].queries)
-
         connection = connections["default"]
-        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
-        response = self.get_response(request)
-        if hasattr(request, "_db_start_time"):
-            connection = connections["default"]
-            query_count = len(connection.queries) - request._db_queries_start
-            duration = time.time() - request._db_start_time
+        start_time = time.time()
+        queries_start = len(connection.queries)
+        was_connected = connection.connection is not None
 
-            logger.info(
-                f"DB_CONN_END: queries={query_count}, "
-                f"duration={duration:.3f}s, "
-                f"total_queries={len(connection.queries)}, "
-                f"status={response.status_code}, "
-                f"path={request.path}"
-            )
+        response = self.get_response(request)
+
+        opened_new = (not was_connected) and connection.connection is not None
+        query_count = len(connection.queries) - queries_start
+        duration = time.time() - start_time
+
+        logger.info(
+            f"opened new conn={opened_new}, "
+            f"reused existing conn={was_connected}, "
+            f"queries={query_count}, "
+            f"duration={duration:.3f}s, "
+            f"status={response.status_code}, "
+            f"path={request.path}"
+        )
         return response
