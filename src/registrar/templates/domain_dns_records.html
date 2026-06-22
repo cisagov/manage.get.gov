@@ -19,8 +19,7 @@
 <div
     x-data="{ showFormId: null, recordType: '', openComments: []}"
     x-effect="showFormId === null || showFormId === 0 ? recordType = '' : null"
-    @record-submit-success.camel.window="showFormId = null"
-    >
+    @record-submit-success.camel.window="showFormId = null">
 
     {% include "includes/form_errors.html" with form=form %}
     <div id="dnsrecords-form-container">
