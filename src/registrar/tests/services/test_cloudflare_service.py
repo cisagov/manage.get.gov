@@ -557,8 +557,40 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.upstream_status, case["status_code"])
 
 
-    def test_get_zone_by_id(self):
-        self.skipTest
+    def test_get_zone_by_id_success(self):
+        zone_id = "87678"
+        return_value = {
+            "result": {
+                "id": zone_id,
+            }
+        }
+
+        mock_response = self._setUpSuccessMockResponse(return_value)
+        self.service.client.get.return_value = mock_response
+
+        result = self.service.get_zone_by_id(zone_id)
+
+        self.assertEqual(result, return_value)
+
+    def test_get_zone_by_id_failure(self):
+        zone_id = "876543"
+
+        failure_cases = self._get_failure_cases([400, 409])
+        for case in failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+                self.service.client.get.return_value = mock_response
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.get_zone_by_id(zone_id)
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self.assertEqual(exc.context["zone_id"], zone_id)
+
 
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""
@@ -593,6 +625,7 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
+                    self.assertEqual(exc.context["zone_id"], record_id)
 
     def test_update_account_dns_settings_success(self):
         """Test successful update_account_dns_settings call"""

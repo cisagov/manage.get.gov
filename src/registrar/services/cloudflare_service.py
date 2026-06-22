@@ -252,10 +252,7 @@ class CloudflareService:
                 context={"zone_id": x_zone_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise DnsNotFoundError(
-                code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
-                context={"zone_id": x_zone_id, "exc_class": type(e).__name__},
-            ) from e
+            raise _typed_dns_error(e, zone_id=x_zone_id)from e
         logger.info(f"Retrieved zone: {resp}")
         return resp.json()
 
