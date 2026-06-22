@@ -32,6 +32,7 @@ class UserDomainRole(TimeStampedModel):
     user = models.ForeignKey(
         "registrar.User",
         null=True,
+        blank=True,
         on_delete=models.CASCADE,  # when a user is deleted, permissions are too
         related_name="permissions",
     )
@@ -78,8 +79,20 @@ class UserDomainRole(TimeStampedModel):
 
     # End Invitation fields
 
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return "User {} is {} on domain {}".format(self.user, self.role, self.domain)
+        identity = "Unknown user"
+        if self.user:
+            identity = self.user
+        elif self.email:
+            identity = f"Invite to {self.email.lower()}"
+
+        return f"User {identity} is {self.role} on domain {self.domain}"
 
     def clean(self):
         # Ensure user is present for any non-invited status
