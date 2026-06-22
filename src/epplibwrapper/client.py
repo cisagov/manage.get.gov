@@ -15,7 +15,7 @@ try:
     from epplib.client import Client
     from epplib import commands
     from epplib.exceptions import TransportError, ParsingError
-    from epplib.transport import SocketTransport
+    from .socket import TimeoutSocketTransport
 except ImportError:
     pass
 
@@ -81,7 +81,7 @@ class EPPLibWrapper:
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
         self._client = Client(  # type: ignore
-            SocketTransport(
+            TimeoutSocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
                 key_file=KEY.filename,
