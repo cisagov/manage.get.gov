@@ -6,7 +6,17 @@ from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import APIError, DnsTransportError, DnsHostingErrorCodes, DnsValidationError, DnsNotFoundError, DnsRateLimitError, DnsAuthError, DnsTransportError, DnsUpstreamError
+from registrar.utility.errors import (
+    APIError,
+    DnsTransportError,
+    DnsHostingErrorCodes,
+    DnsValidationError,
+    DnsNotFoundError,
+    DnsRateLimitError,
+    DnsAuthError,
+    DnsTransportError,
+    DnsUpstreamError,
+)
 
 
 class TestCloudflareService(SimpleTestCase):
@@ -16,41 +26,72 @@ class TestCloudflareService(SimpleTestCase):
         {
             "test_name": "400ValidationError",
             "status_code": 400,
-            "error": {"exception": HTTPStatusError, "raised_error": DnsValidationError, "code": DnsHostingErrorCodes.VALIDATION_FAILED},
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsValidationError,
+                "code": DnsHostingErrorCodes.VALIDATION_FAILED,
+            },
             "cf_ray": "135",
-
         },
         {
             "test_name": "409ValidationError",
             "status_code": 409,
-            "error": {"exception": HTTPStatusError,  "raised_error": DnsValidationError, "code": DnsHostingErrorCodes.RECORD_CONFLICT},
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsValidationError,
+                "code": DnsHostingErrorCodes.RECORD_CONFLICT,
+            },
             "cf_ray": "246",
         },
         {
             "test_name": "DnsNotFoundError",
             "status_code": 404,
-            "error": {"exception": HTTPStatusError, "raised_error": DnsNotFoundError, "code": DnsHostingErrorCodes.ZONE_NOT_FOUND},
-            "cf_ray":"579"
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsNotFoundError,
+                "code": DnsHostingErrorCodes.ZONE_NOT_FOUND,
+            },
+            "cf_ray": "579",
         },
         {
             "test_name": "401DnsAuthError",
             "status_code": 401,
-            "error": {"exception": HTTPStatusError, "raised_error": DnsAuthError, "code": DnsHostingErrorCodes.AUTH_FAILED},
-            "cf_ray": "K9"
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsAuthError,
+                "code": DnsHostingErrorCodes.AUTH_FAILED,
+            },
+            "cf_ray": "K9",
         },
         {
             "test_name": "403DnsAuthError",
             "status_code": 403,
-            "error": {"exception": HTTPStatusError, "raised_error": DnsAuthError, "code": DnsHostingErrorCodes.AUTH_FAILED},
-            "cf_ray": "KRS1"
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsAuthError,
+                "code": DnsHostingErrorCodes.AUTH_FAILED,
+            },
+            "cf_ray": "KRS1",
         },
         {
             "test_name": "DnsRateLimitError",
             "status_code": 429,
-            "error": {"exception": HTTPStatusError, "raised_error": DnsRateLimitError, "code": DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED},
-            "cf_ray": "R2D2"
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsRateLimitError,
+                "code": DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED,
+            },
+            "cf_ray": "R2D2",
         },
-        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "There was an error getting a response", "raised_error": DnsTransportError, "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT}},
+        {
+            "test_name": "RequestError",
+            "error": {
+                "exception": RequestError,
+                "message": "There was an error getting a response",
+                "raised_error": DnsTransportError,
+                "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+            },
+        },
     ]
 
     # create_dns_record and update_dns_record wrap HTTPStatusError in APIError,
@@ -60,7 +101,15 @@ class TestCloudflareService(SimpleTestCase):
             "test_name": "HTTPStatusError",
             "error": {"exception": APIError, "response": "400 Server Error", "raised_error": APIError},
         },
-        {"test_name": "RequestError", "error": {"exception": RequestError, "message": "There was an error getting a response", "raised_error": DnsTransportError, "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT}},
+        {
+            "test_name": "RequestError",
+            "error": {
+                "exception": RequestError,
+                "message": "There was an error getting a response",
+                "raised_error": DnsTransportError,
+                "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+            },
+        },
     ]
 
     @classmethod
@@ -86,7 +135,7 @@ class TestCloudflareService(SimpleTestCase):
         }
         self.service = CloudflareService(client=mock_client)
 
-    def _get_failure_cases(self, cases_to_exclude_by_status_code:list[int]=None):
+    def _get_failure_cases(self, cases_to_exclude_by_status_code: list[int] = None):
         if cases_to_exclude_by_status_code:
             return [c for c in self.failure_cases if c.get("status_code") not in cases_to_exclude_by_status_code]
         return self.failure_cases
@@ -106,81 +155,50 @@ class TestCloudflareService(SimpleTestCase):
         if error["exception"] in (APIError, HTTPStatusError):
             match status_code:
                 case 400:
-                   mock_response = httpx.Response(
-                            400,
-                            headers={"cf-ray": "135"},
-
-                        )
-                   http_error = HTTPStatusError(
-                       request="something",
-                       response=mock_response,
-                        message="other thing"
+                    mock_response = httpx.Response(
+                        400,
+                        headers={"cf-ray": "135"},
                     )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 409:
                     mock_response = httpx.Response(
-                            409,
-                            headers={"cf-ray": "246"},
-                        )
-                    http_error = HTTPStatusError(
-                        request="something",
-                        response=mock_response,
-                        message="other thing"
-                )
+                        409,
+                        headers={"cf-ray": "246"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 404:
                     mock_response = httpx.Response(
-                            404,
-                            headers={"cf-ray": "579"},
-                        )
-                    http_error = HTTPStatusError(
-                        request="something",
-                        response=mock_response,
-                        message="other thing"
-                )
+                        404,
+                        headers={"cf-ray": "579"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 429:
                     mock_response = httpx.Response(
-                            429,
-                            headers={"cf-ray": "R2D2"},
-                        )
-                    http_error = HTTPStatusError(
-                        request="something",
-                        response=mock_response,
-                        message="other thing"
-                )
+                        429,
+                        headers={"cf-ray": "R2D2"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 401:
                     mock_response = httpx.Response(
-                            401,
-                            headers={"cf-ray": "K9"},
-                        )
-                    http_error = HTTPStatusError(
-                        request="something",
-                        response=mock_response,
-                        message="other thing"
-                )
+                        401,
+                        headers={"cf-ray": "K9"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 403:
                     mock_response = httpx.Response(
-                            403,
-                            headers={"cf-ray": "KRS1"},
-                        )
-                    http_error = HTTPStatusError(
-                        request="something",
-                        response=mock_response,
-                        message="other thing"
-                )
+                        403,
+                        headers={"cf-ray": "KRS1"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 500:
                     mock_response = httpx.Response(
-                            500,
-                            headers={"cf-ray": "3CPO"},
-                        )
-                    http_error = HTTPStatusError(
-                        request="something",
-                        response=mock_response,
-                        message="other thing"
-                )
+                        500,
+                        headers={"cf-ray": "3CPO"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
 
         if error["exception"] == RequestError:
-            http_error = RequestError(
-                request="something",
-                message="last thing")
+            http_error = RequestError(request="something", message="last thing")
         mock_api_response.raise_for_status.side_effect = http_error
         return mock_api_response
 
@@ -481,18 +499,12 @@ class TestCloudflareService(SimpleTestCase):
                     "created_on": "2026-06-09T18:25:46.427351Z",
                 }
             ],
-            "result_info": {
-                "count": 1,
-                "page": 1,
-                "per_page": 1,
-                "total_count": 1
-            }
+            "result_info": {"count": 1, "page": 1, "per_page": 1, "total_count": 1},
         }
         mock_response = self._setUpSuccessMockResponse(return_value)
         self.service.client.get.return_value = mock_response
         result = self.service.get_account_by_name(account_name)
         self.assertEqual(result, return_value["result"][0])
-
 
     def test_get_account_by_name_failure(self):
         account_name = "Account for pride.gov"
@@ -556,7 +568,6 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
 
-
     def test_get_zone_by_id_success(self):
         zone_id = "87678"
         return_value = {
@@ -591,7 +602,6 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.upstream_status, case["status_code"])
                     self.assertEqual(exc.context["zone_id"], zone_id)
 
-
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""
         zone_id = "1234"
@@ -625,7 +635,8 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], record_id)
+                    self.assertEqual(exc.context["zone_id"], zone_id)
+                    self.assertEqual(exc.context["record_id"], record_id)
 
     def test_update_account_dns_settings_success(self):
         """Test successful update_account_dns_settings call"""

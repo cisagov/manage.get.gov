@@ -26,7 +26,7 @@ _STATUS_TO_ERROR = {
     404: (DnsNotFoundError, DnsHostingErrorCodes.ZONE_NOT_FOUND),
     409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
     429: (DnsRateLimitError, DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
-    500: (DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR)
+    500: (DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR),
 }
 
 
@@ -132,7 +132,7 @@ class CloudflareService:
                 context={"x_account_id": account_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, account_id=account_id)from e
+            raise _typed_dns_error(e, account_id=account_id) from e
 
         return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
@@ -149,7 +149,7 @@ class CloudflareService:
                 context={"zone_name": zone_name, "account_id": x_account_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, account_id=x_account_id, zone_name=zone_name)from e
+            raise _typed_dns_error(e, account_id=x_account_id, zone_name=zone_name) from e
         return resp.json()
 
     def update_zone_dns_settings(
@@ -183,7 +183,7 @@ class CloudflareService:
                 context={"zone_id": zone_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, zone_id=zone_id)from e
+            raise _typed_dns_error(e, zone_id=zone_id) from e
 
         return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
@@ -236,7 +236,7 @@ class CloudflareService:
                 context={"account_id": x_account_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, account_id=x_account_id)from e
+            raise _typed_dns_error(e, account_id=x_account_id) from e
         return resp.json()
 
     def get_zone_by_id(self, x_zone_id: str):
@@ -252,7 +252,7 @@ class CloudflareService:
                 context={"zone_id": x_zone_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, zone_id=x_zone_id)from e
+            raise _typed_dns_error(e, zone_id=x_zone_id) from e
         logger.info(f"Retrieved zone: {resp}")
         return resp.json()
 
@@ -268,7 +268,7 @@ class CloudflareService:
                 context={"zone_id": zone_id, "record_id": record_id, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id)from e
+            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id) from e
 
         return resp.json()
 
@@ -281,11 +281,16 @@ class CloudflareService:
         except RequestError as e:
             raise DnsTransportError(
                 code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"zone_id": zone_id, "record_id": record_id, "record_data": record_data, "exc_class": type(e).__name__},
+                context={
+                    "zone_id": zone_id,
+                    "record_id": record_id,
+                    "record_data": record_data,
+                    "exc_class": type(e).__name__,
+                },
             ) from e
         except HTTPStatusError as e:
             # formerly raised APIError
-            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id, record_data=record_data)from e
+            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id, record_data=record_data) from e
 
         return resp.json()
 
@@ -303,5 +308,5 @@ class CloudflareService:
             ) from e
         except HTTPStatusError as e:
             # formerly raised APIError
-            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id)from e
+            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id) from e
         return resp.json()
