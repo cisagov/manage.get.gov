@@ -467,6 +467,51 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.context["zone_id"], zone_id)
                     self.assertEqual(exc.context["record_id"], record_id)
 
+    def test_get_account_by_name_success(self):
+        account_name = "Account for pride.gov"
+        return_value = {
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {
+                    "account_tag": "54345",
+                    "account_pubname": account_name,
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                }
+            ],
+            "result_info": {
+                "count": 1,
+                "page": 1,
+                "per_page": 1,
+                "total_count": 1
+            }
+        }
+        mock_response = self._setUpSuccessMockResponse(return_value)
+        self.service.client.get.return_value = mock_response
+        result = self.service.get_account_by_name(account_name)
+        self.assertEqual(result, return_value["result"][0])
+
+
+    def test_get_account_by_name_failure(self):
+        account_name = "Account for pride.gov"
+
+        failure_cases = self._get_failure_cases([400, 409])
+        for case in failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+                self.service.client.get.return_value = mock_response
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.get_account_by_name(account_name)
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
+
     def test_get_account_zones_success(self):
         """Test successful get_account_zones call"""
         account_id = "55555"
@@ -511,6 +556,9 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
 
+
+    def test_get_zone_by_id(self):
+        self.skipTest
 
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""

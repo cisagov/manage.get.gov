@@ -217,11 +217,7 @@ class CloudflareService:
                 context={"account_name": account_name, "exc_class": type(e).__name__},
             ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while fetching tenant account by name: {e}")
-            raise DnsNotFoundError(
-                code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
-                context={"account_name": account_name, "exc_class": type(e).__name__},
-            ) from e
+            raise _typed_dns_error(e, account_name=account_name) from e
         data = resp.json()
         results = data.get("result", [])
         return results[0] if results else None
