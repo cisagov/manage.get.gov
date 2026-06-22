@@ -270,12 +270,12 @@ class CloudflareService:
             logger.info("Fetching dns record. . .")
             resp.raise_for_status()
         except RequestError as e:
-            logger.error(f"Failed to get dns record {e}")
-            raise
+            raise DnsTransportError(
+                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                context={"zone_id": zone_id, "record_id": record_id, "exc_class": type(e).__name__},
+            ) from e
         except HTTPStatusError as e:
-            logger.error(f"Error {e.response.status_code} while fetching dns record: {e}")
-            raise
-        logger.info(f"Retrieved record {record_id} from {zone_id}: {resp}")
+            raise _typed_dns_error(e, zone_id=zone_id, record_id=record_id)from e
 
         return resp.json()
 

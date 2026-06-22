@@ -531,19 +531,20 @@ class TestCloudflareService(SimpleTestCase):
         zone_id = "1"
         record_id = "45454"
 
-        for case in self.failure_cases:
+        failure_cases = self._get_failure_cases([400, 409])
+        for case in failure_cases:
             with self.subTest(msg=case["test_name"], **case):
                 error = case["error"]
-                mock_response = self._setUpFailureMockResponse(error)
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
                 self.service.client.get.return_value = mock_response
-
-                with self.assertRaises(error["exception"]) as context:
+                with self.assertRaises(error["raised_error"]) as context:
                     self.service.get_dns_record(zone_id, record_id)
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
 
-                self.assertIn(
-                    error["message"],
-                    str(context.exception),
-                )
+                if case["error"]["exception"] == HTTPStatusError:
+                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
+                    self.assertEqual(exc.upstream_status, case["status_code"])
 
     def test_update_account_dns_settings_success(self):
         """Test successful update_account_dns_settings call"""
