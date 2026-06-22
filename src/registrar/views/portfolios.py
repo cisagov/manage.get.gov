@@ -225,9 +225,7 @@ class PortfolioMemberDeleteView(View):
                     manager_removed_email=portfolio_member_permission.user.email,
                     domain=domain,
                 ):
-                    messages.warning(
-                        request, "Could not send email notification to existing domain managers for %s", domain
-                    )
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -403,13 +401,13 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         if not (added_domain_ids or removed_domain_ids):
-            messages.success(request, "The domain assignment changes have been saved.")
+            messages.success(request, "The domain assignments for this member have been updated.")
             return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
 
         try:
             self._process_added_domains(added_domain_ids, member, request.user, portfolio)
             self._process_removed_domains(removed_domain_ids, member, portfolio)
-            messages.success(request, "The domain assignment changes have been saved.")
+            messages.success(request, "The domain assignments for this member have been updated.")
             return redirect(reverse("member-domains", kwargs={"member_pk": member_pk}))
         except PermissionDenied:
             raise
@@ -424,13 +422,23 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             logger.error("A database error occurred while saving changes.", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
         except Exception as e:
-            messages.error(
-                request,
-                mark_safe(  # nosec
-                    f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
-                    ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
-                ),
-            )
+            if removed_domain_ids:
+                messages.error(
+                    request,
+                    mark_safe(  # nosec
+                        f"An unexpected error occurred: {member.email} could not be removed from this domain."
+                        "Please try again. If the problem persists,"
+                        ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                    ),
+                )
+            else:
+                messages.error(
+                    request,
+                    mark_safe(  # nosec
+                        f"An unexpected error occurred: {str(e)}. Please try again. If the problem persists,"
+                        ' <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                    ),
+                )
             logger.error(f"An unexpected error occurred: {str(e)}", exc_info=True)
             return redirect(reverse("member-domains-edit", kwargs={"member_pk": member_pk}))
 
@@ -523,9 +531,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
                     manager_removed_email=member.email,
                     domain=domain,
                 ):
-                    messages.warning(
-                        self.request, "Could not send email notification to existing domain managers for %s", domain
-                    )
+                    messages.warning(self.request, "Could not send email notification to existing domain managers.")
             # Delete UserDomainRole instances for removed domains
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
@@ -619,9 +625,7 @@ class PortfolioInvitedMemberDeleteView(View):
                     manager_removed_email=portfolio_invitation.email,
                     domain=domain,
                 ):
-                    messages.warning(
-                        request, "Could not send email notification to existing domain managers for %s", domain
-                    )
+                    messages.warning(request, "Could not send email notification to existing domain managers.")
         except Exception as e:
             self._handle_exceptions(e)
 
@@ -776,13 +780,13 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
             return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         if not (added_domain_ids or removed_domain_ids):
-            messages.success(request, "The domain assignment changes have been saved.")
+            messages.success(request, "The domain assignments for this member have been updated.")
             return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
 
         try:
             self._process_added_domains(added_domain_ids, email, request.user, portfolio)
             self._process_removed_domains(removed_domain_ids, email, portfolio)
-            messages.success(request, "The domain assignment changes have been saved.")
+            messages.success(request, "The domain assignments for this member have been updated.")
             return redirect(reverse("invitedmember-domains", kwargs={"invitedmember_pk": invitedmember_pk}))
         except PermissionDenied:
             raise
@@ -910,9 +914,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 manager_removed_email=email,
                 domain=domain,
             ):
-                messages.warning(
-                    self.request, "Could not send email notification to existing domain managers for %s", domain
-                )
+                messages.warning(self.request, "Could not send email notification to existing domain managers.")
 
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(
