@@ -6280,6 +6280,40 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     search_help_text = "Search by tribe name, email address, or official name."
 
 
+class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
+    """Admin for StateTribe"""
+
+    list_display = [
+        "tribe_name",
+        "recognized_state",
+        "authorizing_legislation",
+        "tribal_leader_first_name",
+        "tribal_leader_last_name",
+        "suffix",
+        "evidence_of_tribal_leader_designation",
+        "email",
+        "phone",
+        "website",
+        "address_line1",
+        "address_line2",
+        "city",
+        "state_territory",
+        "zipcode",
+        "urbanization",
+        "date_of_recognition",
+        "additional_sources",
+        "notes",
+    ]
+
+    search_fields = [
+        "tribe_name",
+        "tribal_leader_first_name",
+        "tribal_leader_last_name",
+        "email",
+    ]
+    search_help_text = "Search by tribe name, email address, or tribe leader name."
+
+
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
 
@@ -6482,6 +6516,7 @@ admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 admin.site.register(models.FederalTribe, FederalTribeAdmin)
+admin.site.register(models.StateTribe, StateTribeAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.HostIP, HostIpAdmin)
 admin.site.register(models.Website, WebsiteAdmin)

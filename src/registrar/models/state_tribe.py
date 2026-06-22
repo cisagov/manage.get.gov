@@ -13,19 +13,20 @@ class StateTribe(TimeStampedModel):
 
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
-    tribe_full_name = models.CharField(
+    tribe_name = models.CharField(
         unique=True,
-        verbose_name="Tribe full name",
-        help_text="Full official name of the state recognized tribe",
     )
     recognized_state = models.CharField(
         max_length=2,
         choices=StateTerritoryChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
-        verbose_name="State, Territory, or Military Post",
+        verbose_name="Recognized State",
     )
-    authorizing_legislation = models.URLField(
+    # NOTE: Current made up of URLs except one (pdf link)
+    # I was thinking URLField, but TextField might be better to be more generic?
+    # Open to discussion here
+    authorizing_legislation = models.TextField(
         max_length=255,
         null=True,
         blank=True,
@@ -43,7 +44,8 @@ class StateTribe(TimeStampedModel):
         blank=True,
         help_text="Name suffix (ie jr, sr, III)",
     )
-    evidence_of_tribal_leader_designation = models.URLField(
+    # TODO: It's URLs but maybe leaving this as textfield too if theres multiple
+    evidence_of_tribal_leader_designation = models.TextField(
         max_length=255,
         null=True,
         blank=True,
@@ -52,7 +54,6 @@ class StateTribe(TimeStampedModel):
         max_length=320,
         null=True,
         blank=True,
-        help_text="Email address for the tribal leader or designated contact",
     )
     phone = PhoneNumberField(
         null=True,
@@ -100,13 +101,11 @@ class StateTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    # TODO: Because this one has multiple URLs, thought it'd be easier to go with TextField on this
+    # NOTE: Bc this one has multiple URLs, thought it'd be easier to go with TextField on this
     additional_sources = models.TextField(
         null=True,
         blank=True,
-        help_text="Comma separated list of additional source URLs",
     )
-
     notes = models.TextField(
         null=True,
         blank=True,
@@ -115,7 +114,7 @@ class StateTribe(TimeStampedModel):
     class Meta:
         verbose_name = "State tribe"
         verbose_name_plural = "State tribes"
-        ordering = ["tribe_full_name"]
+        ordering = ["tribe_name"]
 
     def __str__(self):
-        return self.tribe_full_name or ""
+        return self.tribe_name or ""
