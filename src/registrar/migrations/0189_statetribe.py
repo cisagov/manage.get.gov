@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("registrar", "0187_alter_userdomainrole_user"),
+        ("registrar", "0188_alter_federaltribe_options"),
     ]
 
     operations = [
