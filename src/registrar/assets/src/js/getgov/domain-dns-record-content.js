@@ -83,10 +83,6 @@ function clearRecordForm(scope){
     commentStatus.textContent = getCharCountText(100, 0)
 }
 
-// One shared modal for the Add form and every Edit row; shown only when there are unsaved
-// changes. data-opener tells USWDS where to return focus on close.
-let pendingCancel = null;
-let isAddButton = null;
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
 const refsFor = (req) => req.type === "edit"
@@ -125,7 +121,7 @@ function formHasUnsavedChanges(form, isEditForm){
     });
 }
 
-const teardownForm = (req, container) => {
+const teardownForm = (req, container, state) => {
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
         if(req.type === "edit"){
@@ -160,91 +156,58 @@ const teardownForm = (req, container) => {
         // hit edit form, while edit form is open
         // capture clicked edit form
         // scenario 3 
-        Alpine.$data(container).showFormId = null;
+        
+        // edit form can collapse, this is to ensure that it closes the form by setting the showFormId to null if it is the same target. 
+        // this also applies to the Add Record if the button is clicked twice
+        const openCloseSameForm =  Alpine.$data(container).showFormId == state.pendingChangeId;
+        Alpine.$data(container).showFormId = openCloseSameForm ? null : state.pendingChangeId;
+        state.pendingCancel = null;
+        state.pendingChangeId = null;
 };
 
 
-const onCancel = (req, container) => {
+const onCancel = (req, container, state) => {
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
-        req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
+        let type = state.pendingChangeId == 0 ? "add" : "edit"; 
+        req.hasUnsavedChanges = formHasUnsavedChanges(form, type);
         if(req.hasUnsavedChanges){
-            pendingCancel = req;
+            state.pendingCancel = req;
             openCancelModal(refs.cancelButtonId);
         } else {
-            teardownForm(req, container);
+            teardownForm(req, container,state);
             document.getElementById(refs.focusId)?.focus();
-            if(isAddButton){
-                Alpine.$data(container).showFormId = 0
-            }
-            else{
-                Alpine.$data(container).showFormId = Alpine.$data(container).showFormId === req.recordId ? null : req.recordId;
-            }
         }
 };
 
 
-
-export function initDNSRecordCancelModal(){
-    const container = document.getElementById("dnsrecords-form-container");
-    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    const alpineData = Alpine.$data(container)
-    if(!container || !confirmButton) return;
-
-
-    container.addEventListener("click", (e) => {
-        if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        onCancel({ type: "add" }, container);
-    });
-
-    // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
-    document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
-        const btn = e.target.closest(".js-dnsrecord-edit-cancel");
-        if(!btn) return;
-        onCancel({ type: "edit", recordId: btn.dataset.recordId }, container);
-    });
-
-    confirmButton.addEventListener("click", () => {
-        if(!pendingCancel) return;
-        teardownForm(pendingCancel,container);
-        const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-        modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
-        modalEl?.querySelector("[data-close-modal]")?.click();
-        pendingCancel = null;
-        if(isAddButton){
-            alpineData.showFormId = 0
-        }
-    });
-
-    // add record
-
+const addRecordButtonEventListener = (alpineData, state, container) => {
+    // grabs add record button and adds an event listener
     const addRecordButton = document.getElementById("add-dnsrecord-button")
+
     addRecordButton.addEventListener("click", (e)=>{
+        // initial showformId is null
+        // showFormId == null, open form by setting showFormId to 0
+        // if not null, go through with checking if the modal is needed
         if(alpineData.showFormId != null){
-            //only edit forms will have a show form id besides the add record form 
-        let req = {
+            let req = {
                 type: "edit",
                 recordId: alpineData.showFormId
             }
-           isAddButton = true
-           onCancel(req, container)
+           state.pendingChangeId = 0
+           onCancel(req, container, state)
         }
         else{
             alpineData.showFormId = 0;
-            isAddButton = false
         }
     })
 }
 
-
-
-
-export function editAndCommentButtonListener (){
-    // add a add record listener too
-        const table = document.querySelector("#dnsrecords-table");
-        if(!table) return;
-
-        table.addEventListener('click', function(e) {
+const editButtonEventListener = (alpineData, state)=>{
+    const table = document.querySelector("#dnsrecords-table");
+    if(!table) return;
+    
+    table.addEventListener('click', function(e) {
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
             if(!editBtn && !commentBtn) return;
@@ -253,15 +216,20 @@ export function editAndCommentButtonListener (){
             const alpineData = Alpine.$data(table)
 
             if(editBtn){
-                // add logic here
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
-                let req = {
-                type: "add",
-                recordId: recordId
+                if(alpineData.showFormId == null){
+                  alpineData.showFormId = recordId;
                 }
-                isAddButton = false
-                onCancel(req, table)
+                else{
+                    state.pendingChangeId = recordId;
+                    let type = alpineData.showFormId == 0 ? "add" : "edit";
+                    let req = {
+                        type: type,
+                        recordId: alpineData.showFormId
+                    }
+                    onCancel(req, table, state)
+              }
              
             }
 
@@ -269,11 +237,56 @@ export function editAndCommentButtonListener (){
                 if(alpineData.showFormId === recordId) alpineData.showFormId = null;
                 const idx = alpineData.openComments.indexOf(recordId);
                 idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
-
             }
 
-        })
+        }
+    )
 }
+
+
+export function initDNSRecordCancelModal(){
+    const container = document.getElementById("dnsrecords-form-container");
+    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    const alpineData = Alpine.$data(container)
+    const initialState = {
+        pendingChangeId: null,
+        pendingCancel: null,
+    }
+
+    if(!container || !confirmButton) return;
+    container.addEventListener("click", (e) => {
+        if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
+        console.log(alpineData)
+        onCancel({ type: "add" }, container, initialState);
+    });
+
+    // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
+    document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
+        const btn = e.target.closest(".js-dnsrecord-edit-cancel");
+        if(!btn) return;
+        onCancel({ type: "edit", recordId: btn.dataset.recordId }, container, initialState);
+    });
+
+    confirmButton.addEventListener("click", (e) => {
+        let pendingCancel = initialState.pendingCancel
+        if(!pendingCancel) return;
+        teardownForm(pendingCancel,container, initialState);  
+        const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+        modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
+        modalEl?.querySelector("[data-close-modal]")?.click();
+        initialState.pendingCancel = null;
+        initialState.pendingChangeId = null;
+    });
+
+    // add record
+    addRecordButtonEventListener(alpineData, initialState, container)
+
+    // add edit button event listener
+    editButtonEventListener(alpineData, initialState)
+    
+}
+
+
 
 // Tab-order routing for the DNS records table (#4804).
 // When a form is open, route Tab to walk:

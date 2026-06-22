@@ -74,7 +74,6 @@ initOrganizationsNavDropdown();
 // Init the dynamic DNS content labels and fields and ensure HTMX re-runs after POST
 initDynamicDNSRecordFormFields();
 commentCharacterEventListener()
-editAndCommentButtonListener()
 initDNSRecordTabOrder()
 initDNSRecordAlertFocus()
 // Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
