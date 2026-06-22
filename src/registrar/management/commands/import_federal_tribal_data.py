@@ -113,7 +113,7 @@ class Command(BaseCommand):
 
     def _create_tribe(self, tribe_full_name, mapped, dry_run, counts):
         """Handles case where no record exists yet
-        If dry run - log the action
+        If dry run - log the action and list out what will be created
         If not dry run - create the new FederalTribe record"""
         if dry_run:
             logger.info(f"Dry run ENABLED -- skipping creating FederalTribe for '{tribe_full_name}'")
