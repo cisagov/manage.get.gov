@@ -266,7 +266,7 @@ class DnsRecord(TimeStampedModel):
 
     @classmethod
     def get_conflict_error_message(cls, record_type: str, query: QuerySet[DnsRecord]) -> str:
-        if record_type == DNSRecordTypes.CNAME and query.filter(type=record_type).exists() == False:
+        if record_type == DNSRecordTypes.CNAME and not query.filter(type=record_type).exists():
             return DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE
         elif record_type in (DNSRecordTypes.A, DNSRecordTypes.AAAA):
             return DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE
