@@ -1,3 +1,4 @@
+import argparse
 import csv
 import logging
 import re
@@ -44,17 +45,22 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--dry-run",
-            action="store_true",
-            help="Show what would be changed without making any db modifications.",
+            "--dry_run",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+            help=(
+                "When enabled (which is the default), does NOT write to the db, only shows what would be created. "
+                "Disable with --no-dry-run to perform the import."
+            ),
         )
 
     def handle(self, *args, **options):
         """
         How to run:
-            ./manage.py import_federal_tribal_data
-            ./manage.py import_federal_tribal_data --dry-run
+            ./manage.py import_federal_tribal_data --no-dry-run
+            ./manage.py import_federal_tribal_data (dry run is ON by default)
         """
-        dry_run = options.get("dry_run", False)
+        dry_run = options.get("dry_run", True)
         self.warnings = []  # collect warnings across all rows
 
         if dry_run:
@@ -109,8 +115,11 @@ class Command(BaseCommand):
         """Handles case where no record exists yet
         If dry run - log the action
         If not dry run - create the new FederalTribe record"""
-        self._log_action(dry_run, "Created", tribe_full_name, mapped)
-        if not dry_run:
+        if dry_run:
+            logger.info(f"Dry run ENABLED -- skipping creating FederalTribe for '{tribe_full_name}'")
+            self._log_action(dry_run, "Created", tribe_full_name, mapped)
+        else:
+            logger.info(f"Creating FederalTribe record for '{tribe_full_name}'")
             FederalTribe.objects.create(**mapped)
         counts["created"] += 1
 
