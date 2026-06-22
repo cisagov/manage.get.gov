@@ -1003,7 +1003,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             name=name,
             exclude_record_id=self.instance.pk,
         )
-
         if conflict_query:
             error_message = DnsRecord.get_conflict_error_message(record_type, conflict_query)
             self.add_error("name", error_message)
