@@ -4,6 +4,7 @@ from unittest import mock
 from unittest.mock import Mock
 from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
+from typing import Any
 
 from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.errors import (
@@ -14,15 +15,13 @@ from registrar.utility.errors import (
     DnsNotFoundError,
     DnsRateLimitError,
     DnsAuthError,
-    DnsTransportError,
-    DnsUpstreamError,
 )
 
 
 class TestCloudflareService(SimpleTestCase):
     """Test cases for the CloudflareService class"""
 
-    failure_cases = [
+    failure_cases: list[dict[str, Any]] = [
         {
             "test_name": "400ValidationError",
             "status_code": 400,
@@ -138,6 +137,7 @@ class TestCloudflareService(SimpleTestCase):
     def _get_failure_cases(self, cases_to_exclude_by_status_code: list[int] = None):
         if cases_to_exclude_by_status_code:
             return [c for c in self.failure_cases if c.get("status_code") not in cases_to_exclude_by_status_code]
+
         return self.failure_cases
 
     def _setUpSuccessMockResponse(self, return_value=None, raise_value=None):

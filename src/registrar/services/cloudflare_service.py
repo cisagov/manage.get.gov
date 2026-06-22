@@ -5,13 +5,11 @@ from dataclasses import dataclass
 from django.conf import settings
 
 from registrar.utility.errors import (
-    APIError,
     DnsHostingError,
     DnsHostingErrorCodes,
     DnsValidationError,
     DnsAuthError,
     DnsNotFoundError,
-    DnsValidationError,
     DnsRateLimitError,
     DnsTransportError,
     DnsUpstreamError,

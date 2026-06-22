@@ -3,7 +3,6 @@ from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.errors import APIError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 

@@ -368,7 +368,9 @@ class DnsHostingError(Exception):
         DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
         DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
         DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
-        DnsHostingErrorCodes.SERVER_ERROR: ("An unexpected error occurred. Please try again. If the problem persists, contact us for assistance.")
+        DnsHostingErrorCodes.SERVER_ERROR: (
+            "An unexpected error occurred. Please try again. If the problem persists, contact us for assistance."
+        ),
     }
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
