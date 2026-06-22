@@ -24,7 +24,7 @@ def create_groups(apps, schema_editor) -> Any:
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("registrar", "0188_statetribe"),
+        ("registrar", "0189_statetribe"),
     ]
 
     operations = [
