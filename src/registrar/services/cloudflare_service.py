@@ -170,7 +170,7 @@ class CloudflareService:
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
             logger.info(
-                "Updated zone DNS settings for zone_id=%s (zone_mode=%s, nameservers.type=%s, namservers.ns_set=%s)",
+                "Updated zone DNS settings for zone_id=%s (nameservers.type=%s, namservers.ns_set=%s)",
                 zone_id,
                 nameservers_type,
                 ns_set,

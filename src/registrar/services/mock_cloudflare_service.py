@@ -48,6 +48,7 @@ class MockCloudflareService:
         self.accounts_results_info = copy.deepcopy(CF_ACCOUNTS_RESULT_INFO)
         self.account_zones = copy.deepcopy(CF_ACCOUNT_ZONES)
         self.account_zones_result_info = copy.deepcopy(CF_ACCOUNT_ZONES_RESULT_INFO)
+        self.new_account_id = self._mock_create_cf_id()
 
     def start(self):
         """Start mocking external APIs"""

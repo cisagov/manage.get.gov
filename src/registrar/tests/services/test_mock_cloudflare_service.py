@@ -3,7 +3,7 @@ from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsAuthError, DnsValidationError, DnsUpstreamError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
 
@@ -198,21 +198,21 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsAuthError) as context:
             self.service.create_dns_record(zone_id, error_403_record_data)
-        self.assertTrue("403" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 403)
 
         error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsValidationError) as context:
             self.service.create_dns_record(zone_id, error_400_record_data)
-        self.assertTrue("400" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 400)
 
         error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsUpstreamError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
-        self.assertTrue("500" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 500)
 
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
@@ -242,18 +242,18 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "55.66.77.88"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsAuthError) as context:
             self.service.create_dns_record(zone_id, error_403_record_data)
-        self.assertTrue("403" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 403)
 
         error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsValidationError) as context:
             self.service.create_dns_record(zone_id, error_400_record_data)
-        self.assertTrue("400" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 400)
 
         error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsUpstreamError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
-        self.assertTrue("500" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 500)
