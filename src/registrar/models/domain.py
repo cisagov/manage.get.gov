@@ -1192,6 +1192,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_dnssecdata()
 
+        self._delete_dns_data()
+
         # Check if the domain can be deleted
         if not self._domain_can_be_deleted():
             note = "Domain has associated objects that prevent deletion."
@@ -1275,7 +1277,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
-    def _delete_dnsdata(self):
+    def _delete_dns_data(self):
         """
         Delete DNS objects associated with this domain from database.
         Includes:
@@ -1283,7 +1285,35 @@ class Domain(TimeStampedModel, DomainHelper):
         - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
         - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
         """
-        
+        from registrar.models import (
+            DnsAccount,
+            DnsZone,
+            DnsRecord
+        )
+        if self.is_enrolled_in_dns_hosting:
+            logger.debug("Deleting DNS data for %s.", self.name)
+            try:
+                with transaction.atomic():
+                    logger.info("Removing db DNS accounts for %s.", self.name)
+                    dns_zone = DnsZone.objects.get(domain_id=self.id)
+                    dns_account = dns_zone.dns_account
+                    dns_account.delete()
+                    logger.info("Removed db DNS account for domain %s.", self.name)
+                    logger.info("Removing db DNS records for %s.", self.name)
+                    records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                    records.delete()
+                    logger.info(
+                        "Removed db DNS records associated with zone for domain %s: %s.",
+                        self.name, 
+                        str(records)
+                    )
+                    logger.info("Removing db DNS zone for domain %s.", self.name)
+                    dns_zone.delete()
+                    logger.info("Removed db DNS zone for domain %s.", self.name)
+
+            except Exception as e:
+                logger.error("Error deleting DNS data for %s: %s", self.name, e)
+                raise e
 
     def _delete_related_objects_from_db(self):
         """
