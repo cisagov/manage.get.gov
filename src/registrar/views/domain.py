@@ -49,6 +49,7 @@ from registrar.utility.errors import (
     DsDataErrorCodes,
     SecurityEmailError,
     SecurityEmailErrorCodes,
+    DnsHostingError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
@@ -987,6 +988,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
             dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
+
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
@@ -1091,6 +1093,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
+        except DnsHostingError as e:
+            # temp log to show these values are available. Remove in #4892
+            logger.error(f"💕 wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
+            messages.error(request, e.message)
         except (APIError, RequestError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")
             messages.error(request, "Failed to save DNS record.")
