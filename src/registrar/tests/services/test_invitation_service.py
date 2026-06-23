@@ -1,14 +1,18 @@
 from django.test import TestCase
 from unittest.mock import patch
+from waffle.testutils import override_flag
 
 from registrar.models import (
     Domain,
+    DomainInvitation,
     Portfolio,
+    PortfolioInvitation,
     User,
     UserDomainRole,
     UserPortfolioPermission,
 )
 from registrar.services.invitation_service import (
+    create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
     invite_to_portfolio,
     invite_to_domain,
@@ -42,13 +46,14 @@ class TestInvitationService(TestCase):
         self.domain = Domain.objects.create(name="test.gov")
 
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=True)
     def test_invite_to_portfolio_creates_permission(self, mock_send_email):
         """invite_to_portfolio creates a UserPortfolioPermission."""
         mock_send_email.return_value = True
         email = "invitee@example.com"
         roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
 
-        permission = invite_to_portfolio(
+        permission, admin_notifications_sent = invite_to_portfolio(
             email=email,
             portfolio=self.portfolio,
             requestor=self.requestor,
@@ -62,6 +67,30 @@ class TestInvitationService(TestCase):
         self.assertEqual(permission.roles, roles)
         self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
         self.assertEqual(permission.invited_by, self.requestor)
+        self.assertTrue(admin_notifications_sent)
+        mock_send_email.assert_called_once()
+
+    @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=False)
+    def test_invite_to_portfolio_preserves_legacy_invitation_flow(self, mock_send_email):
+        """invite_to_portfolio still creates legacy portfolio invitations when the flag is off."""
+        mock_send_email.return_value = True
+
+        invitation, portfolio_admin_notifications_sent = invite_to_portfolio(
+            email=self.user.email,
+            portfolio=self.portfolio,
+            requestor=self.requestor,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        self.assertIsInstance(invitation, PortfolioInvitation)
+        self.assertEqual(invitation.email, self.user.email)
+        self.assertEqual(invitation.portfolio, self.portfolio)
+        self.assertEqual(invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+        self.assertTrue(portfolio_admin_notifications_sent)
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(portfolio=self.portfolio, email=self.user.email).exists()
+        )
         mock_send_email.assert_called_once()
 
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
@@ -69,7 +98,7 @@ class TestInvitationService(TestCase):
         """create_portfolio_permission_or_invitation can add existing users without email."""
         roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
 
-        permission, email_was_sent = create_portfolio_permission_or_invitation(
+        permission, admin_notifications_sent = create_portfolio_permission_or_invitation(
             email=self.user.email,
             portfolio=self.portfolio,
             requestor=self.requestor,
@@ -81,7 +110,7 @@ class TestInvitationService(TestCase):
         self.assertEqual(permission.email, self.user.email)
         self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
         self.assertIsNone(permission.invited_by)
-        self.assertTrue(email_was_sent)
+        self.assertTrue(admin_notifications_sent)
         mock_send_email.assert_not_called()
 
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
@@ -91,7 +120,7 @@ class TestInvitationService(TestCase):
         email = "new-invitee@example.com"
         roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
 
-        permission, email_was_sent = create_portfolio_permission_or_invitation(
+        permission, admin_notifications_sent = create_portfolio_permission_or_invitation(
             email=email,
             portfolio=self.portfolio,
             requestor=self.requestor,
@@ -103,7 +132,7 @@ class TestInvitationService(TestCase):
         self.assertEqual(permission.email, email)
         self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
         self.assertEqual(permission.invited_by, self.requestor)
-        self.assertTrue(email_was_sent)
+        self.assertTrue(admin_notifications_sent)
         mock_send_email.assert_called_once()
 
     def test_create_portfolio_permission_uses_user_email_before_invitation_email(self):
@@ -116,7 +145,7 @@ class TestInvitationService(TestCase):
             status=UserPortfolioPermission.Status.ACCEPTED,
         )
 
-        saved_permission, email_was_sent = create_portfolio_permission_or_invitation(
+        saved_permission, admin_notifications_sent = create_portfolio_permission_or_invitation(
             email=None,
             portfolio=self.portfolio,
             requestor=self.requestor,
@@ -126,7 +155,7 @@ class TestInvitationService(TestCase):
         )
 
         self.assertEqual(saved_permission.email, self.user.email)
-        self.assertTrue(email_was_sent)
+        self.assertTrue(admin_notifications_sent)
 
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
     def test_create_portfolio_invitation_does_not_set_details_when_email_fails(self, mock_send_email):
@@ -188,10 +217,56 @@ class TestInvitationService(TestCase):
 
         self.assertIsNotNone(domain_role)
         self.assertEqual(domain_role.email, email)
+        self.assertEqual(domain_role.user, self.user)
         self.assertEqual(domain_role.domain, self.domain)
         self.assertEqual(domain_role.role, role)
-        self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(domain_role.invited_by, self.requestor)
         mock_send_email.assert_called_once()
+
+    @patch("registrar.services.invitation_service." "send_domain_invitation_email")
+    def test_create_domain_role_for_existing_user_without_email(self, mock_send_email):
+        """create_domain_role_or_invitation can add existing users without email."""
+        domain_role, email_was_sent = create_domain_role_or_invitation(
+            email=self.user.email,
+            domain=self.domain,
+            requestor=self.requestor,
+            role=UserDomainRole.Roles.MANAGER,
+            send_email=False,
+        )
+
+        self.assertEqual(domain_role.user, self.user)
+        self.assertEqual(domain_role.email, self.user.email)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertIsNone(domain_role.invited_by)
+        self.assertTrue(email_was_sent)
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.utility.email_invitations._send_domain_invitation_update_emails_to_domain_managers")
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_create_domain_invitation_for_unknown_email_forces_email(
+        self, mock_send_templated_email, mock_send_manager_updates
+    ):
+        """create_domain_role_or_invitation always sends email for unknown users."""
+        mock_send_manager_updates.return_value = True
+        email = "new-invitee@example.com"
+
+        domain_role, email_was_sent = create_domain_role_or_invitation(
+            email=email,
+            domain=self.domain,
+            requestor=self.requestor,
+            role=UserDomainRole.Roles.MANAGER,
+            send_email=False,
+        )
+
+        self.assertIsNone(domain_role.user)
+        self.assertEqual(domain_role.email, email)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(domain_role.invited_by, self.requestor)
+        self.assertTrue(email_was_sent)
+        self.assertTrue(DomainInvitation.objects.filter(email=email, domain=self.domain).exists())
+        mock_send_templated_email.assert_called_once()
+        mock_send_manager_updates.assert_called_once()
 
     @patch("registrar.services.invitation_service." "send_domain_invitation_email")
     def test_invite_to_domains_bulk_creates_multiple_roles(self, mock_send_email):
@@ -215,6 +290,7 @@ class TestInvitationService(TestCase):
         mock_send_email.assert_called_once()
 
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=True)
     def test_get_pending_invitations_returns_invitations(self, mock_send_email):
         """get_pending_invitations returns user's invitations."""
         mock_send_email.return_value = True

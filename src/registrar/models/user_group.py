@@ -98,6 +98,11 @@ class UserGroup(Group):
                     "view_portfolioinvitation",
                 ],
             },
+            {
+                "app_label": "registrar",
+                "model": "federaltribe",
+                "permissions": ["add_federaltribe", "change_federaltribe", "delete_federaltribe", "view_federaltribe"],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end

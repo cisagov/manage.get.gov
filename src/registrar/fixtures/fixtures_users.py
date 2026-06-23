@@ -42,13 +42,6 @@ class UserFixture:
             "title": "Grove keeper",
         },
         {
-            "username": "47b9668b-6764-4818-a8cd-3505494093a6",
-            "first_name": "Natalie",
-            "last_name": "Wong",
-            "email": "Wai-wan.wong@ecstech.com",
-            "title": "Designer",
-        },
-        {
             "username": "70488e0a-e937-4894-a28c-16f5949effd4",
             "first_name": "Gaby",
             "last_name": "DiSarli",
@@ -195,12 +188,6 @@ class UserFixture:
             "first_name": "Nicolle-Analyst",
             "last_name": "LeClair-Analyst",
             "email": "nicolle.leclair.gov@ecstech.com",
-        },
-        {
-            "username": "106632de-8681-43db-85dd-83857c55660f",
-            "first_name": "Natalie-Analyst",
-            "last_name": "Wong-Analyst",
-            "email": "wai-wan.wong@associates.cisa.dhs.gov",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",

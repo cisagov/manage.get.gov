@@ -263,6 +263,35 @@ class DnsHostService:
             raise
         return vendor_record_data
 
+    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
+        """Look up the record by pk and delete it via the vendor service.
+
+        Returns the deleted DnsRecord's vendor id.
+        Raises ValueError if the record or its vendor id cannot be resolved.
+        """
+        try:
+            dns_record = DnsRecord.objects.get(pk=record_id)
+            record_name = dns_record.name
+        except DnsRecord.DoesNotExist:
+            raise ValueError("Could not find the DNS record in registrar db to delete.")
+
+        x_record_id = dns_record.get_active_x_record_id()
+        if not x_record_id:
+            raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
+
+        try:
+            with transaction.atomic():
+                DnsRecord.delete_by_x_record_id(x_record_id=x_record_id)
+                self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+                logger.info(f"Successfully deleted record {record_name} in vendor service.")
+        except (APIError, HTTPStatusError) as e:
+            logger.error(f"Failed to delete record {record_name} in vendor service: {str(e)}")
+            raise APIError(str(e)) from e
+        except Exception as e:
+            logger.error(f"Failed to delete record {record_name}: {str(e)}.")
+            raise
+        return x_record_id
+
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         try:
             return self.dns_vendor_service.get_account_by_name(account_name)
