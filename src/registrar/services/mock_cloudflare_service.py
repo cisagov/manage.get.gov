@@ -306,10 +306,13 @@ class MockCloudflareService:
                         "errors": [{"code": 9005, "message": "Bad request for dns record."}],
                         "messages": [],
                     },
+                    headers={"cf-ray": "ZXY321"}
                 )
             if record_name.startswith("error-403"):
                 return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
+                    403,
+                    json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
+                    headers={"cf-ray": "ABC123"}
                 )
             return httpx.Response(500)
 
@@ -370,10 +373,13 @@ class MockCloudflareService:
                         "errors": [{"code": 9005, "message": "Bad request for dns record."}],
                         "messages": [],
                     },
+                    headers={"cf-ray": "R2D2"},
                 )
             if record_name.startswith("error-403"):
                 return httpx.Response(
-                    403, json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
+                    403,
+                    json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
+                    headers={"cf-ray": "C3PO"},
                 )
             return httpx.Response(500)
 
