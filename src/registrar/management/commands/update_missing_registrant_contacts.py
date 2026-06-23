@@ -25,7 +25,9 @@ class Command(BaseCommand):
             default=True,
             help=(
                 "When enabled (which is the default), does not call the registry; only reports what would be updated. "
-                "Disable with --no-dry-run to perform updates."
+                "Disable with --no-dry-run to perform updates." 
+                "For dry run: ./manage.py update_missing_registrant_contacts"
+                "For not dry run: ./manage.py update_missing_registrant_contacts --no-dry-run"
             ),
         )
 
@@ -49,7 +51,8 @@ class Command(BaseCommand):
         if all_domains.count() == len(registrant_domain_set):
             logger.info("No missing registrants found")
             return 0
-
+        add_count = 0
+        fail_count = 0
         # Loop thru the domains
         for domain in all_domains:
             # If the domain is not part of the registrant domain set, then create a new registrant contact
@@ -57,11 +60,17 @@ class Command(BaseCommand):
                 logger.info("No Registrant info found...creating")
                 # If this is a dry run, just output the domain for tracking purposes
                 if dry_run:
+                    add_count +=1
                     logger.info(f"Dry run enabled...skipping adding registrant for {domain.name}")
                 # Add the registrant
                 else:
                     logger.info(f"Creating Registrant Public Contact for {domain.name}")
                     try:
                         domain.addRegistrant()
+                        add_count += 1
                     except Exception as e:
                         logger.error(f"Error adding domain registrant {domain.name}: {e}")
+                        fail_count +=1
+        logger.info("DRYRUN SUMMARY:" if dry_run else "SUMMARY:")
+        logger.info(f"Added {add_count} Registrant Contacts")
+        logger.info(f"Failed to add {fail_count} Registrant Contacts")                
