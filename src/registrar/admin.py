@@ -5608,7 +5608,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             self.message_user(request, str(e), messages.WARNING)
         except DnsHostingError as e:
             logger.exception(e)
-            logger.error(f"Failed to enroll domain in DNS hosting. wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
             self.message_user(
                 request,
                 f"Failed to enroll domain in DNS hosting. {str(e)}",

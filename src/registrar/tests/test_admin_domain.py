@@ -21,7 +21,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import APIError
+from registrar.utility.errors import DnsHostingError, DnsHostingErrorCodes
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -1413,22 +1413,22 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         form = response.forms["domain_form"]
 
+        msg = "Authentication failed"
         with patch(
             "registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf", return_value=None
         ), patch(
             "registrar.services.dns_host_service.DnsHostService.create_and_save_account",
-            side_effect=APIError("Cloudflare account setup failed"),
+            side_effect=DnsHostingError(code=DnsHostingErrorCodes.AUTH_FAILED, message=msg, upstream_status="404"),
         ), patch.object(
             DomainAdmin, "message_user"
         ) as mock_message_user:
 
             response = form.submit("_enroll_dns_hosting")
             response = response.follow()
-
         # Ensure an error message was sent to the user
         mock_message_user.assert_called_once_with(
             ANY,
-            "Failed to enroll domain in DNS hosting.",
+            f"Failed to enroll domain in DNS hosting. {msg}",
             messages.ERROR,
         )
 
