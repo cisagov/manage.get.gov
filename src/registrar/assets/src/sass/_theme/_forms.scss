@@ -63,8 +63,8 @@
   margin-top: unset;
 }
 
-@media (min-width: 35em) {
-  .usa-form--largest {
+@media (min-width: 30em) {
+  .usa-form--largest, .usa-form--large {
       max-width: 72ex;
   }
 }
