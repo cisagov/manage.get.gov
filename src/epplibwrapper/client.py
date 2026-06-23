@@ -170,7 +170,14 @@ class EPPLibWrapper:
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
 
-        self.connection_lock.acquire()
+        # Wait at most this many seconds for our turn on the connection.
+        # Without a bound, a slow registry could make callers wait indefinitely.
+        # TODO: if we keep this change update timeout to be a variable
+        if not self.connection_lock.acquire(timeout=30):
+            message = f"{cmd_type} failed to acquire the connection lock in time (semaphore lock error)."
+            logger.error(message)
+            # Error code isn't set because a none error code will ensure the generic error message is shown to user
+            raise RegistryError(message)
         try:
             return self._send(command)
         except RegistryError as err:
