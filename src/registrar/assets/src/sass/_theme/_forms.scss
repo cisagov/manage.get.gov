@@ -65,7 +65,7 @@
 
 @media (min-width: 35em) {
   .usa-form--largest {
-      max-width: 35rem;
+      max-width: 72ex;
   }
 }
 
@@ -105,4 +105,8 @@ legend.float-left-tablet + button.float-right-tablet {
     position: relative;
     top: 2px;
   }
+}
+
+.usa-combo-box {
+  max-width: 72ex;
 }
