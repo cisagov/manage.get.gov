@@ -4,6 +4,7 @@ from waffle.testutils import override_flag
 
 from registrar.models import (
     Domain,
+    DomainInvitation,
     Portfolio,
     PortfolioInvitation,
     User,
@@ -11,6 +12,7 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.services.invitation_service import (
+    create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
     invite_to_portfolio,
     invite_to_domain,
@@ -215,10 +217,56 @@ class TestInvitationService(TestCase):
 
         self.assertIsNotNone(domain_role)
         self.assertEqual(domain_role.email, email)
+        self.assertEqual(domain_role.user, self.user)
         self.assertEqual(domain_role.domain, self.domain)
         self.assertEqual(domain_role.role, role)
-        self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(domain_role.invited_by, self.requestor)
         mock_send_email.assert_called_once()
+
+    @patch("registrar.services.invitation_service." "send_domain_invitation_email")
+    def test_create_domain_role_for_existing_user_without_email(self, mock_send_email):
+        """create_domain_role_or_invitation can add existing users without email."""
+        domain_role, email_was_sent = create_domain_role_or_invitation(
+            email=self.user.email,
+            domain=self.domain,
+            requestor=self.requestor,
+            role=UserDomainRole.Roles.MANAGER,
+            send_email=False,
+        )
+
+        self.assertEqual(domain_role.user, self.user)
+        self.assertEqual(domain_role.email, self.user.email)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertIsNone(domain_role.invited_by)
+        self.assertTrue(email_was_sent)
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.utility.email_invitations._send_domain_invitation_update_emails_to_domain_managers")
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_create_domain_invitation_for_unknown_email_forces_email(
+        self, mock_send_templated_email, mock_send_manager_updates
+    ):
+        """create_domain_role_or_invitation always sends email for unknown users."""
+        mock_send_manager_updates.return_value = True
+        email = "new-invitee@example.com"
+
+        domain_role, email_was_sent = create_domain_role_or_invitation(
+            email=email,
+            domain=self.domain,
+            requestor=self.requestor,
+            role=UserDomainRole.Roles.MANAGER,
+            send_email=False,
+        )
+
+        self.assertIsNone(domain_role.user)
+        self.assertEqual(domain_role.email, email)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(domain_role.invited_by, self.requestor)
+        self.assertTrue(email_was_sent)
+        self.assertTrue(DomainInvitation.objects.filter(email=email, domain=self.domain).exists())
+        mock_send_templated_email.assert_called_once()
+        mock_send_manager_updates.assert_called_once()
 
     @patch("registrar.services.invitation_service." "send_domain_invitation_email")
     def test_invite_to_domains_bulk_creates_multiple_roles(self, mock_send_email):
