@@ -59,7 +59,7 @@ function switchFromInputToTextArea (element) {
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
-// Validation errors produces an inline error and a top-level error banner, Clear both. 
+// Validation errors produces an inline error and a top-level error banner, Clear both.
 function clearRecordErrors(scope){
     if(scope){
         scope.querySelectorAll(".usa-error-message").forEach(el => el.remove());
@@ -105,13 +105,13 @@ function openCancelModal(opener){
     document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
 }
 
-// fields, reused for both Add and Edit forms. 
+// fields, reused for both Add and Edit forms.
 const FIELD_SELECTOR = 'input:not([type="hidden"]), textarea';
 
 // Add: any non-empty field (type dropdown excluded) is unsaved. Edit: any field differing from its original.
 function formHasUnsavedChanges(form, isEditForm){
     if(!form) return false;
-    // A failed save uses the rejected values as the fields, so treat a visible error 
+    // A failed save uses the rejected values as the fields, so treat a visible error
     // as unsaved so cancel still confirms and resets.
     if(form.querySelector(".usa-error-message")) return true;
     return Array.from(form.querySelectorAll(`${FIELD_SELECTOR}, select`)).some(el => {
@@ -482,5 +482,53 @@ export function initDynamicDNSRecordFormFields() {
     // Defensive edge case, if type is pre-selected (ex: submitting with errors)
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
+    }
+}
+
+export function initDeleteDnsRecord() {
+    const table = document.getElementById("dnsrecords-table");
+
+    table?.addEventListener("click", (e) => {
+        const deleteBtn = e.target.closest(".js-dnsrecord-delete");
+        if(!deleteBtn) return;
+
+        const recordId = deleteBtn.dataset.recordId
+        e.preventDefault()
+
+        const focusElement = deleteBtn;
+        const modal = document.getElementById("delete-dns-record-modal");
+        const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
+        openModal(modalTrigger, modal, focusElement);
+    });
+
+    const openModal = (modalTrigger, modal, focusElement) => {
+            // Listen for when the modal closes
+        if (modal) {
+            const closeButtons = modal.querySelectorAll("[data-close-modal]")
+
+            // targets the "X" and "Cancel" or "Go back" and moves focus to the focusElement after closing the modal
+            closeButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    // Defer focus restoration to after modal closes
+                    focusElement?.focus()
+                    setTimeout(() => {
+                        focusElement?.focus();
+                    }, 50);
+                }, { once: true });
+            });
+
+            // Handle ESC key press to close modal --> move focus to focusElement
+            const handleEscKey = (e) => {
+                if (e.key === "Escape") {
+                    setTimeout(() => {
+                        focusElement?.focus();
+                    }, 50);
+                    document.removeEventListener("keydown", handleEscKey);
+                }
+            };
+
+            document.addEventListener("keydown", handleEscKey);
+        }
+        modalTrigger?.click()
     }
 }

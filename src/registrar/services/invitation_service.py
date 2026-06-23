@@ -305,6 +305,104 @@ def _is_portfolio_admin_invitation(roles):
     return False
 
 
+def create_domain_role_or_invitation(
+    email: str,
+    domain: Domain,
+    requestor: User,
+    role: str,
+    send_email: bool = True,
+    is_member_of_different_org: bool = False,
+    domain_role: UserDomainRole = None,
+):
+    """
+    Create a UserDomainRole for an existing user or an invitation with a new email.
+
+    Returns the saved domain role and whether emails were sent.
+    """
+    email = _get_domain_role_email(email, domain_role)
+    requested_user = _get_domain_role_user(email, domain_role)
+
+    _check_existing_domain_invitation(email, domain, requested_user)
+    send_invitation_email = _must_send_domain_role_email(requested_user, send_email)
+    email_sent = True
+
+    try:
+        if send_invitation_email:
+            # Send before saving either invitation model so legacy duplicate
+            # validation does not reject the invitation we are creating here.
+            email_sent = _send_domain_role_email(
+                email=email,
+                requestor=requestor,
+                domain=domain,
+                is_member_of_different_org=is_member_of_different_org,
+                requested_user=requested_user,
+            )
+
+        with transaction.atomic():
+            domain_role = _save_domain_role(
+                domain_role=domain_role,
+                email=email,
+                domain=domain,
+                user=requested_user,
+                role=role,
+            )
+            # Temporary support for legacy invitations
+            _save_legacy_domain_invitation(
+                email=email,
+                domain=domain,
+                user=requested_user,
+            )
+            if send_invitation_email:
+                _set_domain_invitation_details(domain_role, requestor)
+
+            logger.info(f"Created domain role or invitation for {email} to domain {domain.id}")
+            return domain_role, email_sent
+
+    except Exception as e:
+        logger.error(
+            f"Failed to create domain role or invitation for {email}: {e}",
+            exc_info=True,
+        )
+        raise
+
+
+def _get_domain_role_email(email, domain_role):
+    requested_email = None
+
+    # Once an invitation is accepted, always prefer the user record.
+    if domain_role:
+        if domain_role.user:
+            if domain_role.user.email:
+                requested_email = domain_role.user.email
+
+    if not requested_email:
+        if email:
+            requested_email = email
+
+    if not requested_email:
+        if domain_role:
+            if domain_role.email:
+                requested_email = domain_role.email
+
+    if not requested_email:
+        raise InvitationError("An email address is required.")
+
+    return requested_email.lower()
+
+
+def _get_domain_role_user(email, domain_role):
+    # If the email belongs to a current user, the role should point at that user.
+    requested_user = get_requested_user(email)
+    if requested_user:
+        return requested_user
+
+    if domain_role:
+        if domain_role.user:
+            return domain_role.user
+
+    return None
+
+
 def _check_existing_domain_invitation(email: str, domain: Domain, requested_user):
     """
     Check for existing domain invitations or roles.
@@ -334,6 +432,90 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
         pass
 
 
+def validate_domain_role_or_invitation(email, domain):
+    requested_user = get_requested_user(email)
+    try:
+        _check_existing_domain_invitation(email, domain, requested_user)
+    except (AlreadyDomainManagerError, AlreadyDomainInvitedError) as error:
+        raise ValidationError(str(error)) from error
+
+
+def _save_domain_role(
+    domain_role,
+    email,
+    domain,
+    user,
+    role,
+):
+    if domain_role is None:
+        domain_role = UserDomainRole()
+
+    domain_role.email = email
+    domain_role.domain = domain
+    domain_role.user = user
+    domain_role.role = role
+    domain_role.status = get_domain_role_status(user)
+    domain_role.save()
+
+    return domain_role
+
+
+def _save_legacy_domain_invitation(
+    email,
+    domain,
+    user,
+):
+    legacy_invitation = DomainInvitation(
+        email=email,
+        domain=domain,
+    )
+    legacy_invitation.save()
+
+    if user:
+        legacy_invitation.retrieve()
+        legacy_invitation.save()
+
+    return legacy_invitation
+
+
+def get_domain_role_status(user):
+    if user is None:
+        return UserDomainRole.Status.INVITED
+
+    return UserDomainRole.Status.ACCEPTED
+
+
+def _set_domain_invitation_details(domain_role, requestor):
+    # invited_by and invited_at mean the invitation email path completed without
+    # raising an exception.
+    domain_role.invited_by = requestor
+    domain_role.invited_at = timezone.now()
+    domain_role.save(update_fields=["invited_by", "invited_at"])
+
+
+def _send_domain_role_email(email, requestor, domain, is_member_of_different_org, requested_user):
+    return send_domain_invitation_email(
+        email=email,
+        requestor=requestor,
+        domains=domain,
+        is_member_of_different_org=is_member_of_different_org,
+        requested_user=requested_user,
+        # TODO: Remove this once the legacy DomainInvitation path is
+        # removed and UserDomainRole invitations are the permanent admin flow.
+        skip_existing_invitation_check=True,
+    )
+
+
+def _must_send_domain_role_email(user, send_email):
+    if user is None:
+        return True
+
+    if send_email:
+        return True
+
+    return False
+
+
 def invite_to_domain(
     email: str,
     domain: Domain,
@@ -359,54 +541,15 @@ def invite_to_domain(
         AlreadyDomainManagerError: If user is already a domain manager
         AlreadyDomainInvitedError: If user has already been invited
     """
-    email = email.lower()
-    requested_user = get_requested_user(email)
-
-    _check_existing_domain_invitation(email, domain, requested_user)
-
-    try:
-        with transaction.atomic():
-            if requested_user:
-                # User exists - create UserDomainRole directly
-                domain_role = UserDomainRole.objects.create(
-                    user=requested_user,
-                    domain=domain,
-                    role=role,
-                    status=UserDomainRole.Status.INVITED,
-                    email=email,
-                    invited_by=requestor,
-                    invited_at=timezone.now(),
-                )
-            else:
-                # User doesn't exist - create invitation in UserDomainRole
-                domain_role = UserDomainRole.objects.create(
-                    user=None,
-                    domain=domain,
-                    role=role,
-                    status=UserDomainRole.Status.INVITED,
-                    email=email,
-                    invited_by=requestor,
-                    invited_at=timezone.now(),
-                )
-
-            # Send invitation email
-            send_domain_invitation_email(
-                email=email,
-                requestor=requestor,
-                domains=domain,
-                is_member_of_different_org=is_member_of_different_org,
-                requested_user=requested_user,
-            )
-
-            logger.info(f"Created domain invitation for {email} " f"to domain {domain.id}")
-            return domain_role
-
-    except Exception as e:
-        logger.error(
-            f"Failed to create domain invitation for {email}: {e}",
-            exc_info=True,
-        )
-        raise
+    domain_role_and_email_status = create_domain_role_or_invitation(
+        email=email,
+        domain=domain,
+        requestor=requestor,
+        role=role,
+        send_email=True,
+        is_member_of_different_org=is_member_of_different_org,
+    )
+    return domain_role_and_email_status[0]
 
 
 def invite_to_domains_bulk(
