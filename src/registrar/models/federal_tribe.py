@@ -116,8 +116,8 @@ class FederalTribe(TimeStampedModel):
     )
 
     class Meta:
-        verbose_name = "Federal Tribe"
-        verbose_name_plural = "Federal Tribes"
+        verbose_name = "Federal tribe"
+        verbose_name_plural = "Federal tribes"
         ordering = ["tribe_full_name"]
 
     def __str__(self):
