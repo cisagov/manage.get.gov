@@ -61,4 +61,8 @@ class Command(BaseCommand):
                 # Add the registrant
                 else:
                     logger.info(f"Creating Registrant Public Contact for {domain.name}")
-                    domain.addRegistrant()
+                    try:
+                        domain.addRegistrant()
+                    except Exception as e:
+                        logger.error(f"Error adding domain registrant {domain.name}: {e}")
+                        
