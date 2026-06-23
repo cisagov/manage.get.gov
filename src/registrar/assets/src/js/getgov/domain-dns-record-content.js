@@ -148,14 +148,6 @@ const teardownForm = (req, container, state) => {
                 if(typeField) typeField.value = "";
             }
         }
-        // how do you set the edit form show id to 0 ,
-        //  scenario 1 
-        //  hit add record, edit form open
-        //  showform id is some number
-        // scenario 2
-        // hit edit form, while edit form is open
-        // capture clicked edit form
-        // scenario 3 
         
         // edit form can collapse, this is to ensure that it closes the form by setting the showFormId to null if it is the same target. 
         // this also applies to the Add Record if the button is clicked twice
