@@ -65,4 +65,3 @@ class Command(BaseCommand):
                         domain.addRegistrant()
                     except Exception as e:
                         logger.error(f"Error adding domain registrant {domain.name}: {e}")
-                        
