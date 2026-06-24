@@ -72,6 +72,11 @@ class EPPLibWrapper:
             logger.warning("Unable to configure the connection to the registry.")
         finally:
             self.connection_lock.release()
+        
+        # based off what the old connection pool did
+        # Spawn a background greenlet that periodically pings the registry to keep
+        # the connection warm and detect a dead connection.
+        self._heartbeat_greenlet = gevent.spawn(self._heartbeat_loop)
 
     def _initialize_client(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
@@ -170,6 +175,31 @@ class EPPLibWrapper:
                 raise RegistryError(response.msg, code=response.code, response=response)
             else:
                 return response
+
+    def _heartbeat(self):
+        """Send a Hello() to the registry to keep the connection warm and detect a
+        dead connection. Logs and attempts to recover if the heartbeat fails."""
+        self.connection_lock.acquire()
+        try:
+            if self._client is None:
+                self._initialize_client()
+            self._client.send(commands.Hello())  # type: ignore
+            logger.info(f"{_worker_tag()} EPP heartbeat ok")
+        except Exception as err:
+            logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat failed: {err}")
+            # Try to recover the connection so the next real command has a live client.
+            try:
+                self._initialize_client()
+            except Exception as reconnect_err:
+                logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat reconnect failed: {reconnect_err}")
+        finally:
+            self.connection_lock.release()
+
+    def _heartbeat_loop(self):
+        """Run the heartbeat on a background greenlet on a fixed interval."""
+        while True:
+            gevent.sleep(settings.EPP_HEARTBEAT_INTERVAL)
+            self._heartbeat()
 
     def _retry(self, command):
         """Retry sending a command through EPP by re-initializing the client
