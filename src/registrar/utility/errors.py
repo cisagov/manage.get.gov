@@ -3,6 +3,7 @@ import logging
 from enum import IntEnum
 
 from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
+from django.utils.safestring import mark_safe
 
 logger = logging.getLogger(__name__)
 
@@ -103,10 +104,10 @@ class GenericError(Exception):
     """
 
     _error_mapping = {
-        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "We’re experiencing a system error. Please wait a few minutes "
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: mark_safe(  # nosec
+            "We’re experiencing a connection error. Please wait a few minutes "
             "and try again. If you continue to get this error, "
-            "contact help@get.gov."
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us.</a>"
         ),
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }

@@ -356,7 +356,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["purpose"],
-            ["Response must be no more than 1000 characters."],
+            ["Purpose must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
@@ -452,7 +452,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["about_your_organization"],
-            ["Response must be no more than 1000 characters."],
+            ["Description must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator

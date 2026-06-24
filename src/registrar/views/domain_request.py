@@ -852,15 +852,18 @@ class Purpose(DomainRequestWizard):
             option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
             if option == "new":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on why a new domain is required."
+                    "required": "Provide details on why a new domain is required.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             elif option == "redirect":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on why a redirect is necessary."
+                    "required": "Provide details on why a redirect is necessary.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             elif option == "other":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on how this domain will be used."
+                    "required": "Provide details on how this domain will be used.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             # If somehow none of these are true use the default error message
         else:

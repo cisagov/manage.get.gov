@@ -3822,7 +3822,7 @@ class TestRequestingEntity(WebTest):
         form_data = [(key, value) for key, value in form_data if key != "portfolio_requesting_entity-sub_organization"]
         response = self.app.post(form_action, dict(form_data))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.assertContains(response, "Suborganization is required.", status_code=200)
+        self.assertContains(response, "Select the suborganization who will use the domain.", status_code=200)
 
         # Test missing custom suborganization details
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
