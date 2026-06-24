@@ -701,7 +701,10 @@ class OtherContactsYesNoForm(BaseYesNoForm):
 
     form_choices = ((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)"))
     field_name = "has_other_contacts"
-    required_error_message = "Select “Yes” if your organization has other officials we can contact. Select “No” if your organization doesn\’t have other officials we can contact."
+    required_error_message = (
+        "Select “Yes” if your organization has other officials we can contact. "
+        "Select “No” if your organization doesn’t have other officials we can contact."
+    )
 
     @property
     def form_is_checked(self):
@@ -955,7 +958,10 @@ class CisaRepresentativeYesNoForm(BaseYesNoForm):
     form_is_checked = property(lambda self: self.domain_request.has_cisa_representative)  # type: ignore
     field_name = "has_cisa_representative"
     aria_labelledby = "cisa-representative-heading"
-    required_error_message = "Select “Yes” if you’re working with a CISA regional representative on this request. Select “No” if you’re not working with a CISA regional representative."
+    required_error_message = (
+        "Select “Yes” if you’re working with a CISA regional representative on this request. "
+        "Select “No” if you’re not working with a CISA regional representative."
+    )
 
 
 class AnythingElseForm(BaseDeletableRegistrarForm):
