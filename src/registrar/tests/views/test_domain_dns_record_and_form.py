@@ -520,7 +520,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         content = response.content.decode()
 
         # All three markers must appear together on the form's Delete link.
-        self.assertContains(response, 'aria-label="Delete DNS record from Cloudflare"')
+        self.assertContains(response, 'aria-label="Delete DNS record"')
         self.assertContains(response, 'data-action="form-delete"')
         self.assertContains(response, f'data-record-id="{record.id}"')
         self.assertIn('role="button"', content)

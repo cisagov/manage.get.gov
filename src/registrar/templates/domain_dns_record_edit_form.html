@@ -29,7 +29,7 @@
                     <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
                     {{ 100|remaining_characters_text:dns_record.form.comment.value }}
                     </div>
-                    
+
                 </div>
                 {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <button
@@ -45,19 +45,20 @@
                     Save
                 </button>
 
-                <a
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                <button
+                    id="dnsrecord-delete-button-{{ record_id }}"
+                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center"
+                    type="button"
                     role="button"
                     tabindex="0"
                     data-action="form-delete"
                     data-record-id="{{ record_id }}"
-                    aria-label="Delete DNS record from Cloudflare"
                 >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <svg class="usa-icon margin-right-05" aria-hidden="true" focusable="false" role="img">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
                     <span class="font-sans-sm">Delete</span>
-                </a>
+                </button>
             </form>
         </div>
     </td>
@@ -70,7 +71,7 @@
              <span id="dns-comment-{{record_id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
                 {{ dns_record.comment }}
-             </span>   
+             </span>
           </div>
     </td>
 </tr>
