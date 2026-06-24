@@ -15,6 +15,7 @@ from registrar.utility.errors import (
     DnsNotFoundError,
     DnsRateLimitError,
     DnsAuthError,
+    DnsHostingError,
 )
 
 
@@ -81,6 +82,16 @@ class TestCloudflareService(SimpleTestCase):
                 "code": DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED,
             },
             "cf_ray": "R2D2",
+        },
+        {
+            "test_name": "UnmappedError",
+            "status_code": 418,
+            "error": {
+                "exception": HTTPStatusError,
+                "raised_error": DnsHostingError,
+                "code": DnsHostingErrorCodes.UNKNOWN,
+            },
+            "cf_ray": "TEAPOT",
         },
         {
             "test_name": "RequestError",
@@ -188,6 +199,12 @@ class TestCloudflareService(SimpleTestCase):
                     mock_response = httpx.Response(
                         403,
                         headers={"cf-ray": "KRS1"},
+                    )
+                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
+                case 418:
+                    mock_response = httpx.Response(
+                        418,
+                        headers={"cf-ray": "TEAPOT"},
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 500:

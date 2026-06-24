@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from httpx import RequestError, HTTPStatusError
 from typing import Any
 import logging
@@ -32,11 +34,19 @@ def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
     """Map an HTTP error to the right DnsHostingError subclass and log once."""
     status = e.response.status_code
     ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
-    exc_cls, code = _STATUS_TO_ERROR.get(status, (DnsHostingError, DnsHostingErrorCodes.UNKNOWN))
-    logger.exception(
+    exc_cls, code = _STATUS_TO_ERROR.get(status, (None, None))
+
+    if exc_cls is None and 500 <= status <= 599:
+        exc_cls, code = DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR
+    if exc_cls is None:  # Represents 400s we didn't map to a specific status code
+        exc_cls, code = DnsHostingError, DnsHostingErrorCodes.UNKNOWN
+
+    unexpected_code = code == DnsHostingErrorCodes.UNKNOWN
+    logger.error(
         "Dns provider returned %s for DNS request",
         status,
-        extra={"upstream_status": status, "error_code": code.name, **ctx},
+        extra={"upstream_status": status, "error_code": code.name, "response_body": e.response.text, **ctx},
+        exc_info=unexpected_code,
     )
     return exc_cls(code=code, upstream_status=status, context=ctx)
 
@@ -76,20 +86,28 @@ class CloudflareService:
         client.headers = self.headers
         self.client = client
 
-    def create_cf_account(self, account_name: str):
-        appended_url = "/accounts"
-        data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
+    @contextmanager
+    def _dns_call(self, **context):
+        """Context manager to catch HTTPX-related errors and convert them into
+            appropriate typed DnsHostingErrors."""
         try:
-            resp = self.client.post(appended_url, json=data)
-            resp.raise_for_status()
-            logger.info(f"Created host account {account_name}")
+            yield
+        except HTTPStatusError as e:
+            raise _typed_dns_error(e, **context) from e  # note: `from e` to keep context
         except RequestError as e:
             raise DnsTransportError(
                 code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"account_name": account_name, "exc_class": type(e).__name__},
+                context={**context, "exc_class": type(e).__name__},
             ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, account_name=account_name) from e
+
+    def create_cf_account(self, account_name: str):
+        appended_url = "/accounts"
+        data = {"name": account_name, "type": "enterprise", "unit": {"id": self.tenant_id}}
+        with self._dns_call(account_name=account_name):
+            resp = self.client.post(appended_url, json=data)
+            resp.raise_for_status()
+            logger.info(f"Created host account {account_name}")
+
         return resp.json()
 
     def update_account_dns_settings(
