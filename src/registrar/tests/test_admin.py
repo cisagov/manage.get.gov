@@ -23,6 +23,7 @@ from registrar.admin import (
     PortfolioInvitationAdmin,
     UserPortfolioPermissionAdmin,
     UserDomainRoleAdmin,
+    UserDomainRoleForm,
     UserPortfolioPermissionsForm,
     VerifiedByStaffAdmin,
     FsmModelResource,
@@ -1422,6 +1423,96 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         mock_cleanup.assert_called_once_with(portfolio=self.portfolio, email="", user=self.testuser)
 
 
+class TestUserDomainRoleInvitationAdmin(TestCase):
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.testuser = create_test_user()
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
+        self.domain = Domain.objects.create(name="test.gov")
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.domain,
+            portfolio=self.portfolio,
+            requester=self.superuser,
+        )
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    def test_add_form_includes_invitation_controls(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'id="id_domain"')
+        self.assertContains(response, "Invitation status")
+        self.assertContains(response, 'id="id_send_email"')
+        self.assertNotContains(response, 'id="id_role"')
+
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_unknown_email_forces_invitation_email(self, mock_messages_success, mock_send_email):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email="new.person@example.gov")
+        form = UserDomainRoleForm(
+            data={
+                "user": "new.person@example.gov",
+                "domain": self.domain.id,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = self.superuser
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        self.assertIsNone(role.user)
+        self.assertEqual(role.email, "new.person@example.gov")
+        self.assertEqual(role.role, UserDomainRole.Roles.MANAGER)
+        self.assertEqual(role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(role.invited_by, self.superuser)
+        mock_send_email.assert_called_once()
+        mock_messages_success.assert_called_once_with(
+            request, "new.person@example.gov has been invited to the domain: test.gov"
+        )
+
+    @override_flag("user_domain_role_invitations", active=False)
+    @patch("registrar.admin.create_domain_role_or_invitation")
+    def test_save_with_invitation_flag_off_uses_direct_model_save(self, mock_create_role):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        role = UserDomainRole(
+            user=self.testuser,
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, role, None, False)
+
+        self.assertTrue(UserDomainRole.objects.filter(user=self.testuser, domain=self.domain).exists())
+        mock_create_role.assert_not_called()
+
+
 class TestPortfolioInvitationAdmin(TestCase):
     """Tests for the PortfolioInvitationAdmin class as super user
 
@@ -1739,8 +1830,8 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
         msg = (
-            "Email service unavailable. Try again, and if the problem persists, "
-            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
+            "Email service unavailable. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message
@@ -1811,8 +1902,8 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         msg = (
             "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
-            'Try again, and if the problem persists, <a href="https://get.gov/contact" '
-            'class="usa-link" target="_blank">contact us</a>.'
+            "Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message

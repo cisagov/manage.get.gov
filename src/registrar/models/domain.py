@@ -851,6 +851,9 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_hosts_if_not_used(hostsToDelete=deleted_values)
 
+        # clear self._cache to fetch fresh data from the registry
+        self._invalidate_cache()
+
         if successTotalNameservers < 2:
             try:
                 self.dns_needed()
@@ -1902,29 +1905,19 @@ class Domain(TimeStampedModel, DomainHelper):
         else:
             self._invalidate_cache()
 
-    # def is_dns_needed(self):
-    #     """Commented out and kept in the codebase
-    #     as this call should be made, but adds
-    #     a lot of processing time
-    #     when EPP calling is made more efficient
-    #     this should be added back in
+    def is_dns_needed(self) -> bool:
+        """Double check that the nameservers we set are in fact on the registry"""
+        nameserverList = self.nameservers
+        return len(nameserverList) < 2
 
-    #     The goal is to double check that
-    #     the nameservers we set are in fact
-    #     on the registry
-    #     """
-    #     self._invalidate_cache()
-    #     nameserverList = self.nameservers
-    #     return len(nameserverList) < 2
-
-    # def dns_not_needed(self):
-    #     return not self.is_dns_needed()
+    def dns_not_needed(self) -> bool:
+        return not self.is_dns_needed()
 
     @transition(
         field="state",
         source=[State.DNS_NEEDED, State.READY],
         target=State.READY,
-        # conditions=[dns_not_needed]
+        conditions=[dns_not_needed],  # type: ignore[list-item]
     )
     def ready(self):
         """Transition to the ready state
@@ -1937,13 +1930,13 @@ class Domain(TimeStampedModel, DomainHelper):
         # domain was READY, then not READY, then is READY again.
         # We do not want to overwrite first_ready.
         if self.first_ready is None:
-            self.first_ready = timezone.now()
+            self.first_ready = date.today()
 
     @transition(
         field="state",
         source=[State.READY],
         target=State.DNS_NEEDED,
-        # conditions=[is_dns_needed]
+        conditions=[is_dns_needed],  # type: ignore[list-item]
     )
     def dns_needed(self):
         """Transition to the DNS_NEEDED state
@@ -2655,7 +2648,7 @@ class Domain(TimeStampedModel, DomainHelper):
         NOTE: The "on hold date" property is a one off addition - we want to
         make sure that when there is state change we delete the on hold date as well."""
         self._cache = {}
-        logging.info(f"Delete hold date on {self.name}")
+        logging.info(f"Cache is empty for domain: {self.name}")
         delattr(self, "on_hold_date") if hasattr(self, "on_hold_date") else None
 
     def _get_property(self, property):
@@ -2672,6 +2665,16 @@ class Domain(TimeStampedModel, DomainHelper):
             raise KeyError("Requested key %s was not found in registry cache." % str(property))
 
     def delete_with_no_dns(self, *args, **kwargs):
+        # Guard: stop deletion if domain has active nameservers
+        # self.nameservers checks the registry, self.host.all() checks our db
+        if len(self.nameservers) >= 2 or self.host.all().count() >= 2:
+            logger.error(
+                f"Domain {self.name} has {len(self.nameservers)} nameservers "
+                f"and {len(self.host.all().count())} hosts "
+                f"but is in state {self.state}. Aborting deletion."
+            )
+            raise ActionNotAllowed(f"Domain {self.name} has active nameservers. Cannot delete.")
+
         # Delete a domain with associated PublicContacts
         PublicContact.objects.filter(domain=self).delete()
         # Delete domain
