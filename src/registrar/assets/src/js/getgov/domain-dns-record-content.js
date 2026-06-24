@@ -227,7 +227,6 @@ export function editAndCommentButtonListener (){
 //   Edit → form fields → Delete → kebab → next row's Edit
 // Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
-    console.log("in init too")
     const table = document.querySelector("#dnsrecords-table");
     if (!table) return;
 
@@ -336,10 +335,7 @@ export function initDNSRecordTabOrder() {
         const elems = getRecordElements(recordId);
         if (!elems) return;
 
-        const kebabMenu = elems.kebab
-            ? document.getElementById(elems.kebab.getAttribute('aria-controls'))
-            : null;
-        const isKebabFocus = elems.kebab && (t === elems.kebab || kebabMenu?.contains(t));
+        const isRowDeleteFocus = elems.rowDelete && (t === elems.rowDelete);
         const nextRecordEntry = nextRecordEntryAfter(recordId);
 
         // First form field -> Edit (Shift+Tab backward)
@@ -348,27 +344,27 @@ export function initDNSRecordTabOrder() {
             elems.editBtn.focus();
             return;
         }
-        // Form Delete -> kebab "More options" (Tab forward)
+        // Form Delete -> row delete (Tab forward)
         if (!e.shiftKey && elems.formDelete && t === elems.formDelete) {
             e.preventDefault();
-            elems.kebab?.focus();
+            elems.rowDelete?.focus();
             return;
         }
-        // Kebab -> Form Delete (Shift+Tab backward, form open)
-        if (e.shiftKey && isKebabFocus) {
+        // Row delete -> Form Delete (Shift+Tab backward, form open)
+        if (e.shiftKey && isRowDeleteFocus) {
             e.preventDefault();
             elems.formDelete?.focus();
             return;
         }
-        // Next record's Edit -> kebab (Shift+Tab backward, form open)
-        if (e.shiftKey && elems.kebab && t === nextRecordEntry) {
+        // Next record's Edit -> Row delete (Shift+Tab backward, form open)
+        if (e.shiftKey && elems.rowDelete && t === nextRecordEntry) {
             e.preventDefault();
-            elems.kebab.focus();
+            elems.rowDelete.focus();
             return;
         }
-        // Kebab -> next record's Edit / out of table (Tab forward, form open — skip the
+        // Row delete -> next record's Edit / out of table (Tab forward, form open — skip the
         // visible form row that would otherwise be next in DOM order).
-        if (!e.shiftKey && isKebabFocus) {
+        if (!e.shiftKey && isRowDeleteFocus) {
             const destination = nextRecordEntry || nextFocusableAfterElement(table);
             if (!destination) return;
             e.preventDefault();
