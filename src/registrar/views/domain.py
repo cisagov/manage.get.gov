@@ -1095,7 +1095,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         except DnsHostingError as e:
             # temp log to show these values are available. Remove in #4892
-            logger.error(f"💕 wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
+            logger.error(f"wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
             messages.error(request, e.message)
         except (APIError, RequestError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")

@@ -272,7 +272,7 @@ class TestCloudflareService(SimpleTestCase):
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
                     self.assertEqual(exc.context["zone_name"], zone_name)
-                    self.assertEqual(exc.context["account_id"], account_id)
+                    self.assertEqual(exc.context["x_account_id"], account_id)
 
     def test_create_dns_record_success(self):
         """Test successful create_dns_record call"""
@@ -339,7 +339,7 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], zone_id)
+                    self.assertEqual(exc.context["x_zone_id"], zone_id)
                     self.assertEqual(exc.context["record_data"], record_data_missing_content)
 
     def test_update_dns_record_success(self):
@@ -435,8 +435,8 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], zone_id)
-                    self.assertEqual(exc.context["record_id"], record_id)
+                    self.assertEqual(exc.context["x_zone_id"], zone_id)
+                    self.assertEqual(exc.context["x_record_id"], record_id)
                     self.assertEqual(exc.context["record_data"], record_data_invalid_content)
 
     def test_delete_dns_record_success(self):
@@ -482,8 +482,8 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], zone_id)
-                    self.assertEqual(exc.context["record_id"], record_id)
+                    self.assertEqual(exc.context["x_zone_id"], zone_id)
+                    self.assertEqual(exc.context["x_record_id"], record_id)
 
     def test_get_account_by_name_success(self):
         account_name = "Account for pride.gov"
@@ -600,7 +600,7 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], zone_id)
+                    self.assertEqual(exc.context["x_zone_id"], zone_id)
 
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""
@@ -635,8 +635,8 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], zone_id)
-                    self.assertEqual(exc.context["record_id"], record_id)
+                    self.assertEqual(exc.context["x_zone_id"], zone_id)
+                    self.assertEqual(exc.context["x_record_id"], record_id)
 
     def test_update_account_dns_settings_success(self):
         """Test successful update_account_dns_settings call"""
@@ -681,7 +681,7 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["account_id"], account_id)
+                    self.assertEqual(exc.context["x_account_id"], account_id)
 
     def test_update_zone_dns_settings_success(self):
         """Test successful update_zone_dns_settings call"""
@@ -725,4 +725,4 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
                     self.assertEqual(exc.upstream_status, case["status_code"])
-                    self.assertEqual(exc.context["zone_id"], zone_id)
+                    self.assertEqual(exc.context["x_zone_id"], zone_id)
