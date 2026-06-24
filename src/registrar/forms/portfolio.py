@@ -6,6 +6,7 @@ from django.core.validators import RegexValidator
 from django.core.validators import MaxLengthValidator
 
 from registrar.forms.utility.combobox import ComboboxWidget
+from registrar.validations import EMAIL_MAX
 from registrar.models import (
     PortfolioInvitation,
     UserPortfolioPermission,
@@ -446,7 +447,7 @@ class PortfolioInvitedMemberForm(BasePortfolioMemberForm):
 class MaxLengthFirstEmailField(forms.EmailField):
     """Email field that returns max-length errors before format errors."""
 
-    def __init__(self, *args, email_max_length=320, email_max_length_message=None, **kwargs):
+    def __init__(self, *args, email_max_length=EMAIL_MAX, email_max_length_message=None, **kwargs):
         self.email_max_length_validator = MaxLengthValidator(
             email_max_length,
             message=email_max_length_message or f"Email must be no more than {email_max_length} characters.",
@@ -465,8 +466,6 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
 
     email = MaxLengthFirstEmailField(
         label="Email",
-        email_max_length=320,
-        email_max_length_message="Email must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
