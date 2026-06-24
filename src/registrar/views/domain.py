@@ -1,7 +1,7 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import Client, RequestError
+from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -17,7 +17,7 @@ from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError, EnrollmentNotAllowedError
+from registrar.utility.errors import APIError, DnsHostingError, EnrollmentNotAllowedError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -830,8 +830,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def __init__(self):
         self.dns_record = None
-        self.client = Client()
-        self.dns_host_service = DnsHostService(client=self.client)
+        self.dns_host_service = DnsHostService()
 
     def _get_domain(self, request):
         """
@@ -1091,7 +1090,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
-        except (APIError, RequestError) as e:
+        except (APIError, RequestError, DnsHostingError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")
             messages.error(request, "Failed to save DNS record.")
             self.dns_record = None
@@ -1099,7 +1098,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except GenericError:
             return self._error_response(request, status=400)
         finally:
-            self.client.close()
+            self.dns_host_service.client.close()
 
         return TemplateResponse(
             request,
