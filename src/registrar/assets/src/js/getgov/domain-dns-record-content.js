@@ -227,6 +227,7 @@ export function editAndCommentButtonListener (){
 //   Edit → form fields → Delete → kebab → next row's Edit
 // Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
+    console.log("in init too")
     const table = document.querySelector("#dnsrecords-table");
     if (!table) return;
 
@@ -241,15 +242,15 @@ export function initDNSRecordTabOrder() {
             `button[data-action="edit"][data-record-id="${recordId}"]`
         );
         const formRow = document.getElementById(`dnsrecord-edit-row-${recordId}`);
-        const kebab = table.querySelector(
-            `button[aria-controls="more-actions-dnsrecord-${recordId}"]`
+        const rowDelete = table.querySelector(
+            `button[id="row-delete-button-${recordId}"]`
         );
         if (!editBtn || !formRow) return null;
         const formFirst = formRow.querySelector(
             'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
         );
         const formDelete = formRow.querySelector('[data-action="form-delete"]');
-        return { editBtn, formRow, kebab, formFirst, formDelete };
+        return { editBtn, formRow, rowDelete, formFirst, formDelete };
     }
 
     // Find the next record row's Edit button, skipping edit/comment rows between records.
@@ -316,14 +317,14 @@ export function initDNSRecordTabOrder() {
         // form state, regardless of whether any other form is open.
         const editBtn = t.closest?.('[data-action="edit"]');
         if (editBtn === t) {
-            const rid = editBtn.dataset.recordId;
-            const r = getRecordElements(rid);
+            const recordId = editBtn.dataset.recordId;
+            const r = getRecordElements(recordId);
             if (!r) return;
-            const isOpen = getOpenRecordId() === rid;
+            const isOpen = getOpenRecordId() === recordId;
             if (!e.shiftKey) {
-                // Edit -> first form field (open) | kebab (closed)
+                // Edit -> first form field (open) | rowDelete
                 e.preventDefault();
-                (isOpen ? r.formFirst : r.kebab)?.focus();
+                (isOpen ? r.formFirst : r.rowDelete)?.focus();
             }
             // Shift+Tab from Edit: let natural DOM order go to the previous focusable.
             return;
