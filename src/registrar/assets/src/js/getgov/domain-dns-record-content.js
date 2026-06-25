@@ -239,16 +239,15 @@ const editButtonEventListener = (alpineData, state)=>{
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    if(!container || !confirmButton) return;
+    
     const alpineData = Alpine.$data(container)
     const initialState = {
         pendingChangeId: null,
         pendingCancel: null,
     }
-
-    if(!container || !confirmButton) return;
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        console.log(alpineData)
         onCancel({ type: "add" }, container, initialState);
     });
 
