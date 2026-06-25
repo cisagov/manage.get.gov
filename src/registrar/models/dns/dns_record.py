@@ -281,7 +281,7 @@ class DnsRecord(TimeStampedModel):
         name: str,
         exclude_record_id: int | None = None,
     ) -> QuerySet:
-        """Return True if the record's name collides with an incompatible type in the zone.
+        """Return Queryset with conflicting records if the record's name collides with an incompatible type in the zone.
 
         Per RFC 1034 Section 3.6.2, only CNAME/A/AAAA records have name conflicts.
         Handles both label and FQDN input formats with case-insensitive matching.
