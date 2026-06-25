@@ -1,6 +1,6 @@
 # DNS Error Handling
 
-**Last updated** 2026-05-20
+**Last updated** 2026-06-16
 
 ## Intro
 
@@ -376,6 +376,14 @@ Cap at **2 total attempts** in all cases. We deliberately stay under 30 seconds 
 
 Retrying a write that already succeeded but was slow can create a duplicate DNS record. Writes fail fast; the user sees the error with a `request_id` and can decide whether to try again.
 
+### Where this lives
+
+The policy is implemented in `src/registrar/services/dns_http_client.py`. `build_dns_client()` returns the shared `httpx.Client` (timeout + connect retries via `HTTPTransport`), and `RetryTransport` adds the app-level read retries and converts a network failure into `DnsTransportError`. `DnsHostService` and the DNS records view both use this client.
+
+### Reproducing a hung response in dev
+
+With `DNS_MOCK_EXTERNAL_APIS` on, save a DNS record whose name starts with `timeout-` (e.g. `timeout-test`). `MockCloudflareService` raises a connect timeout for that prefix, which surfaces as a `DnsTransportError`. Use an `error-500` / `error-400` / `error-403` prefix to exercise the matching HTTP error responses.
+
 ---
 
 ## User-Facing Error Messages
@@ -397,6 +405,7 @@ Approved copy is owned by Product/Content under [#4999](https://github.com/cisag
 ## Key Files
 
 - **Error types:** `src/registrar/utility/errors.py`
+- **DNS http client (timeout + retry policy):** `src/registrar/services/dns_http_client.py`
 - **Cloudflare service:** `src/registrar/services/cloudflare_service.py`
 - **DNS service:** `src/registrar/services/dns_host_service.py`
 - **View layer:** `src/registrar/views/domain.py`

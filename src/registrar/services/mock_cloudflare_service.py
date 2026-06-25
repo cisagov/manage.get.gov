@@ -310,6 +310,10 @@ class MockCloudflareService:
         if type in self.hostname_record_types and content == "@":
             content = self._get_zone_name_from_request_url(request_url)
 
+        # A record name starting with "timeout-" simulates a hung Cloudflare connection.
+        if record_name.startswith("timeout-"):
+            raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
+
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
             if record_name.startswith("error-400"):
@@ -373,6 +377,10 @@ class MockCloudflareService:
         # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
         if type in self.hostname_record_types and content == "@":
             content = self._get_zone_name_from_request_url(request_url)
+
+        # A record name starting with "timeout-" simulates a hung Cloudflare connection.
+        if record_name.startswith("timeout-"):
+            raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
