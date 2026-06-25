@@ -129,7 +129,13 @@ class EPPLibWrapper:
                     # out. Close it and raise a transport error so the pool
                     # drops and replaces it, rather than returning the socket
                     # to the pool where another greenlet could reuse it.
-                    connection.close()
+                    # Guard close() so a transport error is always what
+                    # propagates: any other exception here would take the pool's
+                    # "return to pool" path instead of the drop path.
+                    try:
+                        connection.close()
+                    except Exception:
+                        pass
                     raise TransportError("EPP command timed out") from send_timeout
         except Timeout as t:
             # If more than one pool exists,

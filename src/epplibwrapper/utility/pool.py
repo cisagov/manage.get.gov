@@ -69,10 +69,15 @@ class EPPConnectionPool(ConnectionPool):
             return socket.connect()
         except Exception as err:
             logger.error(f"Failed to create a new pooled connection: {err}", exc_info=True)
-            # Close the socket and return None so _addOne retries. Returning
-            # falsy keeps the pool's semaphore balanced; raising here would
-            # leave the connection's permit permanently unreleased.
-            socket.disconnect()
+            # Close the transport directly (not socket.disconnect(), which tries
+            # to send Logout first and skips close() if that send fails on a
+            # half-open connection). Return None so _addOne retries; returning
+            # falsy keeps the pool's semaphore balanced rather than orphaning a
+            # permit.
+            try:
+                client.close()
+            except Exception:
+                pass
             return None
 
     def _keepalive(self, c):
