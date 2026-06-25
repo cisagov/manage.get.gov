@@ -506,7 +506,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         response = self.client.get(self._url())
 
-        self.assertContains(response, f'id="row-delete-button-{ record.id }"')
+        self.assertContains(response, f'id="row-delete-button-{record.id}"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator

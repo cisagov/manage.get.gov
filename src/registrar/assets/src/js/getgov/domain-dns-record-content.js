@@ -311,11 +311,12 @@ export function initDNSRecordTabOrder() {
         if (e.key !== 'Tab') return;
 
         const t = e.target;
-
+        const recordId = getOpenRecordId();
+        const nextRecordEntry = recordId ? nextRecordEntryAfter(recordId) : null;
         // Tab/Shift+Tab from any record's Edit button: route based on that record's
         // form state, regardless of whether any other form is open.
         const editBtn = t.closest?.('[data-action="edit"]');
-        if (editBtn === t) {
+        if (editBtn === t && editBtn !== nextRecordEntry) {
             const recordId = editBtn.dataset.recordId;
             const r = getRecordElements(recordId);
             if (!r) return;
@@ -330,13 +331,11 @@ export function initDNSRecordTabOrder() {
         }
 
         // The remaining rules apply only while a form is open.
-        const recordId = getOpenRecordId();
         if (!recordId) return;
         const elems = getRecordElements(recordId);
         if (!elems) return;
 
         const isRowDeleteFocus = elems.rowDelete && (t === elems.rowDelete);
-        const nextRecordEntry = nextRecordEntryAfter(recordId);
 
         // First form field -> Edit (Shift+Tab backward)
         if (e.shiftKey && t === elems.formFirst) {
