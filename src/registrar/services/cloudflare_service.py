@@ -89,7 +89,7 @@ class CloudflareService:
     @contextmanager
     def _dns_call(self, **context):
         """Context manager to catch HTTPX-related errors and convert them into
-            appropriate typed DnsHostingErrors."""
+        appropriate typed DnsHostingErrors."""
         try:
             yield
         except HTTPStatusError as e:
@@ -133,7 +133,7 @@ class CloudflareService:
             }
         }
 
-        try:
+        with self._dns_call(x_account_id=account_id, zone_mode=zone_mode, nameservers_type=nameservers_type):
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
             logger.info(
@@ -142,30 +142,16 @@ class CloudflareService:
                 zone_mode,
                 nameservers_type,
             )
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_account_id": account_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, x_account_id=account_id) from e
 
         return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
     def create_cf_zone(self, zone_name: str, x_account_id: str):
         appended_url = "/zones"
         data = {"name": zone_name, "account": {"id": x_account_id}}
-        try:
+        with self._dns_call(x_account_id=x_account_id, zone_name=zone_name):
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
             logger.info(f"Created zone {zone_name}")
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"zone_name": zone_name, "x_account_id": x_account_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, x_account_id=x_account_id, zone_name=zone_name) from e
         return resp.json()
 
     def update_zone_dns_settings(
@@ -183,8 +169,7 @@ class CloudflareService:
         data = {
             "nameservers": {"ns_set": ns_set, "type": nameservers_type},
         }
-
-        try:
+        with self._dns_call(x_zone_id=zone_id):
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
             logger.info(
@@ -193,47 +178,27 @@ class CloudflareService:
                 nameservers_type,
                 ns_set,
             )
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_zone_id": zone_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, x_zone_id=zone_id) from e
 
         return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
     def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
-        try:
+        with self._dns_call(x_zone_id=zone_id, record_data=record_data):
             resp = self.client.post(appended_url, json=record_data)
             resp.raise_for_status()
             logger.info(f"Created dns record for zone {zone_id}")
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_zone_id": zone_id, "record_data": record_data, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            # formerly APIError
-            raise _typed_dns_error(e, x_zone_id=zone_id, record_data=record_data) from e
+
         return resp.json()
 
     def get_account_by_name(self, account_name: str):
         """Fetches a single tenant account by name. Returns the first match or None."""
         appended_url = f"/tenants/{self.tenant_id}/accounts"
         params = {"name": account_name, "page": 1, "per_page": 1}
-        try:
+        with self._dns_call(account_name=account_name):
             logger.info(f"Looking up tenant account by name: {account_name}")
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"account_name": account_name, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, account_name=account_name) from e
+
         data = resp.json()
         results = data.get("result", [])
         return results[0] if results else None
@@ -242,87 +207,48 @@ class CloudflareService:
         """Gets all zones under a particular account"""
         appended_url = "/zones"
         params = f"account.id={x_account_id}"
-        try:
+        with self._dns_call(x_account_id=x_account_id):
             logger.info("Getting all of the account's zones")
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_account_id": x_account_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, x_account_id=x_account_id) from e
+
         return resp.json()
 
     def get_zone_by_id(self, x_zone_id: str):
         """Get zone data given a Clouflare zone id"""
         appended_url = f"/zones/{x_zone_id}"
-        try:
+        with self._dns_call(x_zone_id=x_zone_id):
             logger.info(f"Getting zone data from zone id: {x_zone_id}")
             resp = self.client.get(appended_url)
             resp.raise_for_status()
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_zone_id": x_zone_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, x_zone_id=x_zone_id) from e
+
         logger.info(f"Retrieved zone: {resp}")
         return resp.json()
 
     def get_dns_record(self, zone_id: str, record_id: str):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
-        try:
+        with self._dns_call(x_zone_id=zone_id, x_record_id=record_id):
             resp = self.client.get(appended_url, headers=self.headers)
             logger.info("Fetching dns record. . .")
             resp.raise_for_status()
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_zone_id": zone_id, "x_record_id": record_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            raise _typed_dns_error(e, x_zone_id=zone_id, x_record_id=record_id) from e
 
         return resp.json()
 
     def update_dns_record(self, zone_id: str, record_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
-        try:
+        with self._dns_call(x_zone_id=zone_id, x_record_id=record_id, record_data=record_data):
             resp = self.client.patch(appended_url, headers=self.headers, json=record_data)
             resp.raise_for_status()
             logger.info(f"Updated dns record {record_id} in zone {zone_id}.")
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={
-                    "x_zone_id": zone_id,
-                    "x_record_id": record_id,
-                    "record_data": record_data,
-                    "exc_class": type(e).__name__,
-                },
-            ) from e
-        except HTTPStatusError as e:
-            # formerly raised APIError
-            raise _typed_dns_error(e, x_zone_id=zone_id, x_record_id=record_id, record_data=record_data) from e
 
         return resp.json()
 
     def delete_dns_record(self, zone_id: str, record_id: str):
         """Delete record given a zone id and record id. Returns result with id of deleted record."""
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
-        try:
+        with self._dns_call(x_zone_id=zone_id, x_record_id=record_id):
             resp = self.client.delete(appended_url, headers=self.headers)
             resp.raise_for_status()
             logger.info(f"Deleted dns record {record_id} in zone {zone_id}.")
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"x_zone_id": zone_id, "x_record_id": record_id, "exc_class": type(e).__name__},
-            ) from e
-        except HTTPStatusError as e:
-            # formerly raised APIError
-            raise _typed_dns_error(e, x_zone_id=zone_id, x_record_id=record_id) from e
+
         return resp.json()
