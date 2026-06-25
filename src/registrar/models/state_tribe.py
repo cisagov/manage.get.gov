@@ -23,10 +23,7 @@ class StateTribe(TimeStampedModel):
         blank=True,
         verbose_name="Recognized State",
     )
-    # NOTE: Current made up of URLs except one (pdf link)
-    # I was thinking URLField, but TextField might be better to be more generic?
-    # Open to discussion here
-    authorizing_legislation = models.TextField(
+    authorizing_legislation = models.URLField(
         max_length=255,
         null=True,
         blank=True,
@@ -44,7 +41,6 @@ class StateTribe(TimeStampedModel):
         blank=True,
         help_text="Name suffix (ie jr, sr, III)",
     )
-    # TODO: It's URLs but maybe leaving this as textfield too if theres multiple
     evidence_of_tribal_leader_designation = models.TextField(
         max_length=255,
         null=True,
@@ -101,7 +97,6 @@ class StateTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    # NOTE: Bc this one has multiple URLs, thought it'd be easier to go with TextField on this
     additional_sources = models.TextField(
         null=True,
         blank=True,
