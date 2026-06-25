@@ -42,7 +42,6 @@ class StateTribe(TimeStampedModel):
         help_text="Name suffix (ie jr, sr, III)",
     )
     evidence_of_tribal_leader_designation = models.TextField(
-        max_length=255,
         null=True,
         blank=True,
     )
@@ -57,7 +56,7 @@ class StateTribe(TimeStampedModel):
         help_text="Phone number for the tribal leader or designated contact",
     )
     website = models.URLField(
-        max_length=500,
+        max_length=255,
         null=True,
         blank=True,
         help_text="Tribe's official website",
