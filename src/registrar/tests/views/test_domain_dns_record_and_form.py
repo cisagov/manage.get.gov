@@ -499,14 +499,14 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_dns_record_row_exposes_kebab_with_aria_controls(self):
-        """The 'More options' kebab must declare aria-controls so the tab-order JS can
+    def test_dns_record_row_exposes_delete_button_id(self):
+        """The row's trash can delete icon must declare so the tab-order JS can
         locate it per record."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
 
-        self.assertContains(response, f'aria-controls="more-actions-dnsrecord-{record.id}"')
+        self.assertContains(response, f'id="row-delete-button-{ record.id }"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
