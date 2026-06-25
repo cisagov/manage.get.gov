@@ -17,7 +17,6 @@ from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError, DnsHostingError, EnrollmentNotAllowedError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -50,6 +49,8 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
     DnsHostingError,
+    APIError,
+    EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
@@ -81,7 +82,7 @@ from epplibwrapper import (
     RegistryError,
 )
 
-from ..utility.email import send_templated_email, EmailSendingError 
+from ..utility.email import send_templated_email, EmailSendingError
 from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,

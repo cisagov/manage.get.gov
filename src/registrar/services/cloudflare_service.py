@@ -45,7 +45,7 @@ def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
     logger.error(
         "Dns provider returned %s for DNS request",
         status,
-        extra={"upstream_status": status, "error_code": code.name, "response_body": e.response.text, **ctx},
+        extra={"upstream_status": status, "error_code": code, "response_body": e.response.text, **ctx},
         exc_info=unexpected_code,
     )
     return exc_cls(code=code, upstream_status=status, context=ctx)
