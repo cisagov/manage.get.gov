@@ -1,7 +1,7 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import Client, RequestError
+from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -17,7 +17,7 @@ from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsHostingError, EnrollmentNotAllowedError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -52,11 +52,12 @@ from registrar.utility.errors import (
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
+from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
 )
+from registrar.services.invitation_service import get_requested_user
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
@@ -108,7 +109,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         return self.render_to_response(context)
 
     def get_portfolio(self):
-        return self.request.session.get("portfolio")
+        return get_portfolio_from_session(self.request.session)
 
     def in_portfolio_context(self) -> bool:
         return bool(self.get_portfolio())
@@ -124,10 +125,10 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         # domain:private_key is the session key to use for
         # caching the domain in the session
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        cached_domain = self.session.get(domain_pk)
+        cached_domain_id = self.session.get(domain_pk)
 
-        if cached_domain:
-            self.object = cached_domain
+        if cached_domain_id:
+            self.object = Domain.objects.get(id=cached_domain_id)
         else:
             self.object = self.get_object()
         self._update_session_with_domain()
@@ -137,7 +138,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         update domain in the session cache
         """
         domain_pk = "domain:" + str(self.kwargs.get("domain_pk"))
-        self.session[domain_pk] = self.object
+        self.session[domain_pk] = self.object.id
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -466,7 +467,7 @@ class DomainView(DomainBaseView):
         context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
-            user=self.request.user, portfolio=self.request.session.get("portfolio")
+            user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
 
         if self.object.state != self.object.State.DELETED:
@@ -481,7 +482,7 @@ class DomainView(DomainBaseView):
         """Most views should not allow permission to portfolio users.
         If particular views allow permissions, they will need to override
         this function."""
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if self.request.user.has_any_domains_portfolio_permission(portfolio):
             if Domain.objects.filter(id=pk).exists():
                 domain = Domain.objects.get(id=pk)
@@ -684,7 +685,7 @@ class DomainOrgNameAddressView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio and is_org_user:
             return False
         else:
@@ -708,7 +709,7 @@ class DomainSubOrganizationView(DomainFormBaseView):
 
         # non-org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio and is_org_user:
             return super().has_permission()
         else:
@@ -795,7 +796,7 @@ class DomainSeniorOfficialView(DomainFormBaseView):
 
         # Org users shouldn't have access to this page
         is_org_user = self.request.user.is_org_user(self.request)
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
         if portfolio and is_org_user:
             return False
         else:
@@ -829,8 +830,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def __init__(self):
         self.dns_record = None
-        self.client = Client()
-        self.dns_host_service = DnsHostService(client=self.client)
+        self.dns_host_service = DnsHostService()
 
     def _get_domain(self, request):
         """
@@ -1003,10 +1003,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
-        # Duplicate-record errors attach the same message to multiple fields (name, content,
-        # priority) plus a form-level error, so we dedupe by text before queuing.
-        # dict.fromkeys preserves insertion order and dedupes in one pass.
-        for error in dict.fromkeys(self.get_form_errors(form)):
+        # If the form set a banner-level (non-field) error, show only that as the banner;
+        # otherwise show each unique field error.
+        non_field_errors = list(form.non_field_errors())
+        errors = non_field_errors if non_field_errors else self.get_form_errors(form)
+        for error in dict.fromkeys(errors):
             messages.error(request, error)
 
         if is_edit:
@@ -1071,9 +1072,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
         record_id = None
 
         try:
-            if settings.IS_PRODUCTION and self.object.name != "igorville.gov":
-                raise Exception(f"create/update dns record called for domain {self.object.name}")
-
+            if settings.IS_PRODUCTION and self.object.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
+                raise EnrollmentNotAllowedError(
+                    f"Create/update dns record called for domain {self.object.name}. "
+                    "Only igorville.gov is allowed in production right now."
+                )
             form_record_data = self._build_dns_record_form_data(form)
             x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if not x_zone_id:
@@ -1087,7 +1090,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
-        except (APIError, RequestError) as e:
+        except (APIError, RequestError, DnsHostingError) as e:
             logger.error(f"DNS record create/update failed, API error in view {e}")
             messages.error(request, "Failed to save DNS record.")
             self.dns_record = None
@@ -1095,7 +1098,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except GenericError:
             return self._error_response(request, status=400)
         finally:
-            self.client.close()
+            self.dns_host_service.client.close()
 
         return TemplateResponse(
             request,
@@ -1207,7 +1210,7 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
-        self.request.session["nameservers_form_domain"] = self.object
+        self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
         # Set the nameservers from the formset
@@ -1499,7 +1502,7 @@ class DomainUsersView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         # Get portfolio from session (if set)
-        portfolio = self.request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(self.request.session)
 
         # Add domain manager roles separately in order to also pass admin status
         context = self._add_domain_manager_roles_to_context(context, portfolio)
@@ -1635,8 +1638,7 @@ class DomainAddUserView(DomainFormBaseView):
                     portfolio_invitation.retrieve()
                     portfolio_invitation.save()
 
-                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
-
+            # if user is not part of the domain
             if requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
@@ -1710,7 +1712,7 @@ class DomainAddUserView(DomainFormBaseView):
                     defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
                 )
 
-        messages.success(self.request, f"Added user {email}.")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1730,14 +1732,14 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
             return self.form_valid(form)
         else:
             # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
+            messages.error(request, "This invitation can't be canceled because it has already been retrieved.")
             return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
-        return f"Canceled invitation to {self.object.email}."
+        return f"The invitation for {self.object.email} has been canceled."
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1777,9 +1779,9 @@ class DomainDeleteUserView(DeleteView):
         # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
         if self.delete_self:
-            message = f"You are no longer managing the domain {self.object.domain}."
+            message = "You've been removed from this domain."
         else:
-            message = f"Removed {email_or_name} as a manager for this domain."
+            message = f"{email_or_name} has been removed from this domain."
 
         return message
 
@@ -1814,8 +1816,8 @@ class DomainDeleteUserView(DeleteView):
             if self.delete_self:
                 messages.error(
                     request,
-                    "Domains must have at least one domain manager. "
-                    "To remove yourself, the domain needs another domain manager.",
+                    "You can’t remove yourself because you’re the only domain manager. "
+                    "To remove yourself, you’ll need to add another domain manager.",
                 )
             else:
                 messages.error(request, "Domains must have at least one domain manager.")

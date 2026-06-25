@@ -120,7 +120,17 @@ class EPPLibWrapper:
                 raise LoginError("Couldn't connect to the registry after three attempts")
             with self._pool.get() as connection:
                 logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
-                response = connection.send(command)
+                try:
+                    response = connection.send(command)
+                except Timeout as send_timeout:
+                    if send_timeout is not timeout:
+                        raise
+                    # The command timed out while this connection was checked
+                    # out. Close it and raise a transport error so the pool
+                    # drops and replaces it, rather than returning the socket
+                    # to the pool where another greenlet could reuse it.
+                    connection.close()
+                    raise TransportError("EPP command timed out") from send_timeout
         except Timeout as t:
             # If more than one pool exists,
             # multiple timeouts can be floating around.

@@ -66,15 +66,14 @@ class EPPConnectionPool(ConnectionPool):
         client = self._client_factory()
         socket = self._create_socket(client, self._login)
         try:
-            connection = socket.connect()
-            return connection
+            return socket.connect()
         except Exception as err:
-            message = f"Failed to execute due to a registry error: {err}"
-            logger.error(message, exc_info=True)
-            # We want to raise a pool error rather than a LoginError here
-            # because if this occurs internally, we should handle this
-            # differently than we otherwise would for LoginError.
-            raise PoolError(code=PoolErrorCodes.NEW_CONNECTION_FAILED) from err
+            logger.error(f"Failed to create a new pooled connection: {err}", exc_info=True)
+            # Close the socket and return None so _addOne retries. Returning
+            # falsy keeps the pool's semaphore balanced; raising here would
+            # leave the connection's permit permanently unreleased.
+            socket.disconnect()
+            return None
 
     def _keepalive(self, c):
         """Sends a command to the server to keep the connection alive."""

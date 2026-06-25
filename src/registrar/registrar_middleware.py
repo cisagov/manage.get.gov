@@ -5,6 +5,7 @@ Contains middleware used in settings.py
 import logging
 import time
 import re
+import uuid
 from urllib.parse import parse_qs
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -16,6 +17,7 @@ from registrar.models import User
 from waffle.decorators import flag_is_active
 
 from registrar.models.utility.generic_helper import replace_url_queryparams
+from registrar.utility.db_helpers import get_portfolio_from_session
 from .logging_context import set_user_log_context
 
 logger = logging.getLogger(__name__)
@@ -191,13 +193,14 @@ class CheckPortfolioMiddleware:
 
         # Set if feature off and user has any portfolio OR user has exactly one portfolio
         if (not multiple and first_portfolio) or (user.get_num_portfolios() == 1 and not user.has_legacy_domain()):
-            request.session["portfolio"] = first_portfolio
+            request.session["portfolio"] = first_portfolio.id if first_portfolio else None
             return
 
         # Clear if session portfolio is not valid anymore
         # IMPORTANT: only do this on get requests to avoid disrupting POST/PUT/DELETE operations
         if request.method in ("GET", "HEAD"):
-            if request.session.get("portfolio") and not user.is_org_user(request):
+            portfolio_id = request.session.get("portfolio")
+            if portfolio_id and not user.is_org_user(request):
                 request.session.pop("portfolio", None)
 
     def _maybe_redirect_to_org_select(self, request):
@@ -252,7 +255,7 @@ class CheckPortfolioMiddleware:
 
         # Portfolio domain redirects when multi-portfolio flag is off
         # (single org users / legacy should still get redirected to their portfolio pages)
-        portfolio = request.session.get("portfolio")
+        portfolio = get_portfolio_from_session(request.session)
         has_portfolio_domains = (flag_is_active(request, "multiple_portfolios") and any_org) or user.is_org_user(
             request
         )
@@ -355,6 +358,11 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # if the request has an x-request-id header, use that, otherwise generate a new uuid.
+        # This allows us to track requests across services if they all use the same header.
+        request_id = request.META.get("HTTP_X_REQUEST_ID") or str(uuid.uuid4())
+        set_user_log_context(request_id=request_id)
+
         # Only log in production (stable)
         if getattr(settings, "IS_PRODUCTION", False):
             # Get user email (if authenticated), else None
@@ -372,7 +380,10 @@ class RequestLoggingMiddleware:
             set_user_log_context(user_email, remote_ip, request_path)
             # Log user information
             logger.info("Router log")
-        return self.get_response(request)
+
+        response = self.get_response(request)
+        response["X-Request-ID"] = request_id
+        return response
 
 
 class DatabaseConnectionMiddleware:
@@ -388,21 +399,17 @@ class DatabaseConnectionMiddleware:
         request._db_start_time = time.time()
         request._db_queries_start = len(connections["default"].queries)
 
-        # Log connection state
         connection = connections["default"]
         #logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
         if hasattr(request, "_db_start_time"):
             connection = connections["default"]
-            query_count = len(connection.queries) - request._db_queries_start
-            duration = time.time() - request._db_start_time
+            #ADD BACK IN!! This is just to read logs better
+            # query_count = len(connection.queries) - request._db_queries_start
+            # duration = time.time() - request._db_start_time
 
-            # Get request ID for correlation
-            request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
-            # revert me - removed bc this bloats the logs
             # logger.info(
-            #     f"DB_CONN_END: req_id={request_id}, "
-            #     f"queries={query_count}, "
+            #     f"DB_CONN_END: queries={query_count}, "
             #     f"duration={duration:.3f}s, "
             #     f"total_queries={len(connection.queries)}, "
             #     f"status={response.status_code}, "

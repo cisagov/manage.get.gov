@@ -6,6 +6,9 @@ on:
     - cron: "18 6 * * *"
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   clear-sessions:
     runs-on: ubuntu-latest

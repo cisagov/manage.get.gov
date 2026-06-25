@@ -20,7 +20,7 @@ import { domain_purpose_choice_callbacks } from './domain-purpose-form.js';
 import { initButtonLinks } from '../getgov-admin/button-utils.js';
 import { initOrganizationsNavDropdown } from './organizations-dropdown.js';
 import { domainDeletionEventListener } from './domain-deletion-form.js';
-import { initDynamicDNSRecordFormFields, editAndCommentButtonListener, commentCharacterEventListener, initDNSRecordTabOrder } from './domain-dns-record-content.js';
+import { initDynamicDNSRecordFormFields, editAndCommentButtonListener, commentCharacterEventListener, initDNSRecordTabOrder, initDNSRecordAlertFocus, initDNSRecordCancelModal, initDeleteDnsRecord } from './domain-dns-record-content.js';
 
 initDomainValidators();
 
@@ -76,11 +76,14 @@ initDynamicDNSRecordFormFields();
 commentCharacterEventListener()
 editAndCommentButtonListener()
 initDNSRecordTabOrder()
+initDNSRecordAlertFocus()
+// Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
+initDNSRecordCancelModal()
 
 document.addEventListener('htmx:afterSettle', (evt) => {
     initDynamicDNSRecordFormFields();
     commentCharacterEventListener()
 });
 
-
-
+// Init modals
+initDeleteDnsRecord();

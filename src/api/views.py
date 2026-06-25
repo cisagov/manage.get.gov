@@ -10,6 +10,7 @@ from django.http import HttpResponse, JsonResponse
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
+from django.db import transaction
 
 import requests
 
@@ -61,6 +62,7 @@ def check_domain_available(domain):
         return Domain.available(domain + ".gov")
 
 
+@transaction.non_atomic_requests
 @require_http_methods(["GET"])
 @login_not_required
 def available(request, domain=""):

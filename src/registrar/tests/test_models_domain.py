@@ -58,15 +58,15 @@ class TestDomainCache(MockEppLib):
             domain._get_property("contacts")
             # getter should set the domain cache with a InfoDomain object
             # (see InfoDomainResult)
-            self.assertEquals(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
-            self.assertEquals(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
+            self.assertEqual(domain._cache["auth_info"], self.mockDataInfoDomain.auth_info)
+            self.assertEqual(domain._cache["cr_date"], self.mockDataInfoDomain.cr_date)
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertEqual(domain._cache["statuses"], status_list)
             self.assertFalse("avail" in domain._cache.keys())
 
             # using a setter should clear the cache
             domain.dnssecdata = []
-            self.assertEquals(domain._cache, {})
+            self.assertEqual(domain._cache, {})
 
             # send should have been called only once
             self.mockedSendFunction.assert_has_calls(
@@ -454,6 +454,7 @@ class TestDomainCreation(MockEppLib):
         """
         with less_console_noise():
             domain = Domain.objects.create(name="beef-tongue.gov")
+            self.mockDataInfoDomain.hosts = ["ns1.beef-tongue.gov"]
             # trigger getter
             _ = domain.statuses
 
@@ -548,6 +549,7 @@ class TestDomainCreation(MockEppLib):
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
         User.objects.all().delete()
@@ -565,7 +567,7 @@ class TestDomainStatuses(MockEppLib):
             # trigger getter
             _ = domain.statuses
             status_list = [status.state for status in self.mockDataInfoDomain.statuses]
-            self.assertEquals(domain._cache["statuses"], status_list)
+            self.assertEqual(domain._cache["statuses"], status_list)
             # Called in _fetch_cache
             self.mockedSendFunction.assert_has_calls(
                 [
@@ -595,7 +597,7 @@ class TestDomainStatuses(MockEppLib):
 
             with self.assertRaises(KeyError):
                 _ = domain._cache["statuses"]
-            self.assertEquals(_, [])
+            self.assertEqual(_, [])
 
             patcher.stop()
 
@@ -609,31 +611,53 @@ class TestDomainStatuses(MockEppLib):
         """Domain 'revert_client_hold' method causes the registry to change statuses"""
         raise
 
+    @less_console_noise_decorator
     def test_first_ready(self):
         """
         first_ready is set when a domain is first transitioned to READY. It does not get overwritten
         in case the domain gets out of and back into READY.
         """
-        with less_console_noise():
-            domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
-            self.assertEqual(domain.first_ready, None)
-            domain.ready()
-            # check that status is READY
-            self.assertTrue(domain.is_active())
-            self.assertNotEqual(domain.first_ready, None)
-            # Capture the value of first_ready
-            first_ready = domain.first_ready
-            # change domain status
-            domain.dns_needed()
-            self.assertFalse(domain.is_active())
-            # change  back to READY
-            domain.ready()
-            self.assertTrue(domain.is_active())
-            # assert that the value of first_ready has not changed
-            self.assertEqual(domain.first_ready, first_ready)
+        domain, _ = Domain.objects.get_or_create(name="pig-knuckles.gov", state=Domain.State.DNS_NEEDED)
+        self.assertEqual(domain.first_ready, None)
+
+        # Set mock EPP hosts so is_dns_needed condition returns False and transition succeeds
+        self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        domain.ready()
+
+        # check that status is READY
+        self.assertTrue(domain.is_active())
+        self.assertNotEqual(domain.first_ready, None)
+
+        # Capture the value of first_ready
+        first_ready = domain.first_ready
+
+        # change mock EPP hosts and then domain status
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+        # domain._invalidate_cache()
+        domain.save()
+        domain = Domain.objects.get(name="pig-knuckles.gov")
+        domain.dns_needed()
+        self.assertFalse(domain.is_active())
+
+        # change back to READY
+        self.mockDataInfoDomain.hosts = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        # domain._invalidate_cache()
+        # domain.ready()
+        domain.nameservers = ["ns1.pig-knuckles.gov", "ns2.pig-knuckles.gov"]
+        domain.ready()
+        self.assertTrue(domain.is_active())
+
+        # assert that the value of first_ready has not changed
+        self.assertEqual(domain.first_ready, first_ready)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+        # domain._invalidate_cache()
+        domain = Domain.objects.get(name="pig-knuckles.gov")
 
     def tearDown(self) -> None:
         PublicContact.objects.all().delete()
+        HostIP.objects.all().delete()
         Host.objects.all().delete()
         Domain.objects.all().delete()
         super().tearDown()
@@ -1732,6 +1756,9 @@ class TestRegistrantNameservers(MockEppLib):
             And domain.first_ready is not null
         """
         with less_console_noise():
+            # update mock EPP with same data as what I want new nameservers to be
+            self.mockDataInfoDomain.hosts = [self.nameserver1, self.nameserver2]
+
             # set 2 nameservers
             self.domain.nameservers = [(self.nameserver1,), (self.nameserver2,)]
             # when you create a host, you also have to update at same time
@@ -1753,10 +1780,16 @@ class TestRegistrantNameservers(MockEppLib):
                 call(update_domain_with_created, cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertEqual(4, self.mockedSendFunction.call_count)
+            # Extra EPP calls due to _invalidate_cache() in the nameserver setter
+            # 1. InfoDomain; 2. InfoHost (nameserver1); 3. InfoHost (nameserver2)
+            # The other four calls are above in expected_calls.
+            self.assertEqual(7, self.mockedSendFunction.call_count)
             # check that status is READY
             self.assertTrue(self.domain.is_active())
             self.assertNotEqual(self.domain.first_ready, None)
+
+            # reset to avoid test pollution
+            self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     def test_user_adds_too_many_nameservers(self):
         """
@@ -2051,7 +2084,10 @@ class TestRegistrantNameservers(MockEppLib):
                 call(commands.InfoHost(name="ns1.cats-are-superior3.com"), cleaned=True),
             ]
             self.mockedSendFunction.assert_has_calls(expectedCalls, any_order=True)
-            self.assertEqual(self.mockedSendFunction.call_count, 4)
+
+            # Four extra EPP calls from _invalidate_cache() in the nameserver setter.
+            # See PR #5052 for full explanation if needed
+            self.assertEqual(self.mockedSendFunction.call_count, 8)
 
     def test_is_subdomain_with_no_ip(self):
         with less_console_noise():
@@ -2362,7 +2398,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # Assert that the extension on the update matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithDsData),
             )
@@ -2396,7 +2432,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
     @less_console_noise_decorator
@@ -2436,6 +2472,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             patcher = patch("registrar.models.domain.registry.send")
             mocked_send = patcher.start()
             mocked_send.side_effect = side_effect
+            self.mockDataInfoDomain.hosts = ["fake.host.com"]
             domain, _ = Domain.objects.get_or_create(name="dnssec-dsdata.gov")
             # set the dnssecdata once
             domain.dnssecdata = self.dnssecExtensionWithDsData
@@ -2482,7 +2519,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithDsData.dsData)
             patcher.stop()
 
     @less_console_noise_decorator
@@ -2525,7 +2562,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # assert that the extension matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(self.dnssecExtensionWithMultDsData),
             )
@@ -2551,7 +2588,7 @@ class TestRegistrantDNSSEC(MockEppLib):
                     ),
                 ]
             )
-            self.assertEquals(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
+            self.assertEqual(dnssecdata_get.dsData, self.dnssecExtensionWithMultDsData.dsData)
             patcher.stop()
 
     # @less_console_noise_decorator
@@ -2608,7 +2645,7 @@ class TestRegistrantDNSSEC(MockEppLib):
             # args[0] is the _request sent to registry
             args, _ = mocked_send.call_args
             # assert that the extension on the update matches
-            self.assertEquals(
+            self.assertEqual(
                 args[0].extensions[0],
                 self.createUpdateExtension(
                     self.dnssecExtensionWithDsData,
@@ -2697,8 +2734,8 @@ class TestExpirationDate(MockEppLib):
         with less_console_noise():
             self.domain.renew_domain()
             test_date = date(2023, 5, 25)
-            self.assertEquals(self.domain._cache["ex_date"], test_date)
-            self.assertEquals(self.domain.expiration_date, test_date)
+            self.assertEqual(self.domain._cache["ex_date"], test_date)
+            self.assertEqual(self.domain.expiration_date, test_date)
 
     def test_renew_domain_error(self):
         """assert that the renew_domain raises an exception when registry raises error"""
@@ -2754,7 +2791,7 @@ class TestExpirationDate(MockEppLib):
             # force fetch_cache to be called
             self.domain.statuses
             test_date = date(2023, 5, 25)
-            self.assertEquals(self.domain.expiration_date, test_date)
+            self.assertEqual(self.domain.expiration_date, test_date)
 
 
 class TestCreationDate(MockEppLib):
@@ -2783,7 +2820,7 @@ class TestCreationDate(MockEppLib):
         """assert that creation date in db is updated on info domain call"""
         # force fetch_cache to be called
         self.domain.statuses
-        self.assertEquals(self.domain.created_at, self.creation_date)
+        self.assertEqual(self.domain.created_at, self.creation_date)
 
     def test_x_registry_created_at_and_created_at_reference(self):
         """assert x_registry_created_at is set from EPP and created_at_reference is preserved"""
@@ -2793,8 +2830,8 @@ class TestCreationDate(MockEppLib):
         x_registry_created_at, created_at_reference = (
             Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at_reference").get()
         )
-        self.assertEquals(x_registry_created_at, self.creation_date)
-        self.assertEquals(created_at_reference, original_created_at)
+        self.assertEqual(x_registry_created_at, self.creation_date)
+        self.assertEqual(created_at_reference, original_created_at)
 
 
 class TestDomainCreatedAtReference(TestCase):
@@ -2857,7 +2894,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain.state, Domain.State.ON_HOLD)
+            self.assertEqual(self.domain.state, Domain.State.ON_HOLD)
 
     def test_analyst_places_client_hold_idempotent(self):
         """
@@ -2889,7 +2926,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain_on_hold.state, Domain.State.ON_HOLD)
+            self.assertEqual(self.domain_on_hold.state, Domain.State.ON_HOLD)
 
     def test_analyst_removes_client_hold(self):
         """
@@ -2921,7 +2958,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain_on_hold.state, Domain.State.READY)
+            self.assertEqual(self.domain_on_hold.state, Domain.State.READY)
 
     def test_analyst_removes_client_hold_idempotent(self):
         """
@@ -2953,7 +2990,7 @@ class TestAnalystClientHold(MockEppLib):
                     )
                 ]
             )
-            self.assertEquals(self.domain.state, Domain.State.READY)
+            self.assertEqual(self.domain.state, Domain.State.READY)
 
     def test_update_is_unsuccessful(self):
         """
@@ -3277,7 +3314,7 @@ class TestAnalystDelete(MockEppLib):
         self.assertEqual(domain.state, Domain.State.DELETED)
 
         # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     def test_delete_related_objects_cleans_database(self):
         """

@@ -47,7 +47,7 @@ class DnsZoneTest(TestCase):
         )
 
         returned_x_zone_id = self.dns_zone.get_active_x_zone_id()
-        self.assertEquals(returned_x_zone_id, x_zone_id)
+        self.assertEqual(returned_x_zone_id, x_zone_id)
 
     def test_get_active_x_zone_id_returns_none(self):
         x_zone_id = "56789abc"
