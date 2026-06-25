@@ -3,7 +3,7 @@ from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
-from registrar.utility.errors import DnsAuthError, DnsValidationError, DnsUpstreamError
+from registrar.utility.errors import DnsAuthError, DnsValidationError, DnsUpstreamError, DnsTransportError
 from registrar.services.dns_http_client import build_dns_client
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
