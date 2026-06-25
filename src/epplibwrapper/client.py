@@ -56,14 +56,7 @@ class EPPLibWrapper:
         )
 
         # establish a client object with a TCP socket transport
-        self._client = Client(
-            SocketTransport(
-                settings.SECRET_REGISTRY_HOSTNAME,
-                cert_file=CERT.filename,
-                key_file=KEY.filename,
-                password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
-            )
-        )
+        self._client = self._create_client()
 
         self.pool_options = {
             # Pool size
@@ -84,6 +77,20 @@ class EPPLibWrapper:
 
         if start_connection_pool:
             self.start_connection_pool()
+
+    def _create_client(self):
+        """Builds a fresh epplib client with its own TCP socket transport.
+
+        Each pooled connection must own a separate client/transport/socket so
+        that connections in the pool are independent of one another."""
+        return Client(
+            SocketTransport(
+                settings.SECRET_REGISTRY_HOSTNAME,
+                cert_file=CERT.filename,
+                key_file=KEY.filename,
+                password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
+            )
+        )
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -174,10 +181,10 @@ class EPPLibWrapper:
         """Get the current pool instance"""
         return self._pool
 
-    def _create_pool(self, client, login, options):
+    def _create_pool(self, client_factory, login, options):
         """Creates and returns new pool instance"""
         logger.info("New pool was created")
-        return EPPConnectionPool(client, login, options)
+        return EPPConnectionPool(client_factory, login, options)
 
     def start_connection_pool(self, restart_pool_if_exists=True):
         """Starts a connection pool for the registry.
@@ -202,7 +209,7 @@ class EPPLibWrapper:
                 self.kill_pool()
                 logger.info("Old pool killed")
 
-            self._pool = self._create_pool(self._client, self._login, self.pool_options)
+            self._pool = self._create_pool(self._create_client, self._login, self.pool_options)
 
             self.pool_status.pool_running = True
             self.pool_status.pool_hanging = False

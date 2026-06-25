@@ -6,7 +6,7 @@ from epplibwrapper.socket import Socket
 from epplibwrapper.utility.pool_error import PoolError, PoolErrorCodes
 
 try:
-    from epplib.commands import Hello
+    from epplib.commands import Hello, Logout
     from epplib.exceptions import TransportError
 except ImportError:
     pass
@@ -21,15 +21,15 @@ class EPPConnectionPool(ConnectionPool):
     """A connection pool for EPPLib.
 
     Args:
-        client (Client): The client
+        client_factory (callable): Builds a fresh client per connection
         login (commands.Login): Login creds
         options (dict): Options for the ConnectionPool
         base class
     """
 
-    def __init__(self, client, login, options: dict):
-        # For storing shared credentials
-        self._client = client
+    def __init__(self, client_factory, login, options: dict):
+        # Factory that builds a fresh, independent client per connection
+        self._client_factory = client_factory
         self._login = login
 
         # Keep track of each greenlet
@@ -63,7 +63,8 @@ class EPPConnectionPool(ConnectionPool):
         self.populate_all_connections()
 
     def _new_connection(self):
-        socket = self._create_socket(self._client, self._login)
+        client = self._client_factory()
+        socket = self._create_socket(client, self._login)
         try:
             connection = socket.connect()
             return connection
@@ -84,6 +85,16 @@ class EPPConnectionPool(ConnectionPool):
             message = "Failed to keep the connection alive."
             logger.error(message, exc_info=True)
             raise PoolError(code=PoolErrorCodes.KEEP_ALIVE_FAILED) from err
+
+    def _disconnect(self, connection):
+        """Gracefully logs out and closes a pooled connection."""
+        try:
+            connection.send(Logout())
+        except Exception as err:
+            logger.warning("Connection to registry was not cleanly closed.")
+            logger.error(err)
+        finally:
+            connection.close()
 
     def _keepalive_periodic(self):
         """Overriding _keepalive_periodic from geventconnpool so that PoolErrors
@@ -118,7 +129,7 @@ class EPPConnectionPool(ConnectionPool):
 
                 self.greenlets.clear()
                 for connection in self.conn:
-                    connection.disconnect()
+                    self._disconnect(connection)
                 self.conn.clear()
 
                 # Clear the semaphore
