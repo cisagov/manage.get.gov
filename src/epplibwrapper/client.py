@@ -1,7 +1,9 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+import os
 
+import gevent
 from time import sleep
 from gevent import Timeout
 from epplibwrapper.utility.pool_status import PoolStatus
@@ -23,6 +25,15 @@ from .utility.pool import EPPConnectionPool
 
 logger = logging.getLogger(__name__)
 
+
+def _worker_tag():
+    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
+
+
+# Optional delay (in seconds) applied before sending an EPP command.
+# Used only for local/sandbox latency testing. 0 = disabled.
+EPP_TEST_DELAY_SECONDS = 5
+
 try:
     # Write cert and key to disk
     CERT = Cert()
@@ -31,7 +42,7 @@ except Exception:
     CERT = None  # type: ignore
     KEY = None  # type: ignore
     logger.warning(
-        "Problem with client certificate. Registrar cannot contact registry.",
+        f"{_worker_tag()}: Problem with client certificate. Registrar cannot contact registry.",
         exc_info=True,
     )
 
@@ -96,6 +107,10 @@ class EPPLibWrapper:
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
 
+        if EPP_TEST_DELAY_SECONDS > 0:
+            logger.warning(f"{_worker_tag()} TEST DELAY {EPP_TEST_DELAY_SECONDS}s before {cmd_type}")
+            gevent.sleep(EPP_TEST_DELAY_SECONDS)
+
         # Start a timeout to check if the pool is hanging
         timeout = Timeout(settings.POOL_TIMEOUT)
         timeout.start()
@@ -104,6 +119,7 @@ class EPPLibWrapper:
             if not self.pool_status.connection_success:
                 raise LoginError("Couldn't connect to the registry after three attempts")
             with self._pool.get() as connection:
+                logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
                 response = connection.send(command)
         except Timeout as t:
             # If more than one pool exists,
@@ -121,17 +137,17 @@ class EPPLibWrapper:
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}", exc_info=True)
+            logger.error(f"EPP ERROR {_worker_tag()} EPP connection lost. {message} Error: {err}", exc_info=True)
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(f"{message} Error: {err}", exc_info=True)
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(f"{message} Error: {err}", exc_info=True)
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
@@ -171,7 +187,7 @@ class EPPLibWrapper:
                 return self._send(command)
             except RegistryError as err:
                 if counter < 3 and (err.should_retry() or err.is_transport_error()):
-                    logger.info(f"Retrying transport error. Attempt #{counter+1} of 3.")
+                    logger.info(f"{_worker_tag()} Retrying transport error. Attempt #{counter+1} of 3.")
                     counter += 1
                     sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
                 else:  # don't try again
@@ -183,7 +199,7 @@ class EPPLibWrapper:
 
     def _create_pool(self, client_factory, login, options):
         """Creates and returns new pool instance"""
-        logger.info("New pool was created")
+        logger.info(f"{_worker_tag()}: New pool was created")
         return EPPConnectionPool(client_factory, login, options)
 
     def start_connection_pool(self, restart_pool_if_exists=True):
@@ -197,7 +213,7 @@ class EPPLibWrapper:
         # Since we reuse the same creds for each pool, we can test on
         # one socket, and if successful, then we know we can connect.
         if not self._test_registry_connection_success():
-            logger.warning("start_connection_pool() -> Cannot contact the Registry")
+            logger.warning(f"{_worker_tag()}: start_connection_pool() -> Cannot contact the Registry")
             self.pool_status.connection_success = False
         else:
             self.pool_status.connection_success = True
@@ -205,16 +221,16 @@ class EPPLibWrapper:
             # If this function is reinvoked, then ensure
             # that we don't have duplicate data sitting around.
             if self._pool is not None and restart_pool_if_exists:
-                logger.info("Connection pool restarting...")
+                logger.info(f"{_worker_tag()}: Connection pool restarting...")
                 self.kill_pool()
-                logger.info("Old pool killed")
+                logger.info(f"{_worker_tag()}: Old pool killed")
 
             self._pool = self._create_pool(self._create_client, self._login, self.pool_options)
 
             self.pool_status.pool_running = True
             self.pool_status.pool_hanging = False
 
-            logger.info("Connection pool started")
+            logger.info(f"{_worker_tag()}:  Connection pool started")
 
     def kill_pool(self):
         """Kills the existing pool. Use this instead
@@ -225,7 +241,7 @@ class EPPLibWrapper:
             self._pool = None
             self.pool_status.pool_running = False
             return None
-        logger.info("kill_pool() was invoked but there was no pool to delete")
+        logger.info(f"{_worker_tag()}: kill_pool() was invoked but there was no pool to delete")
 
     def _test_registry_connection_success(self):
         """Check that determines if our login
@@ -246,7 +262,7 @@ class EPPLibWrapper:
 try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
-    logger.info("registry client initialized")
+    logger.info(f"{_worker_tag()}: registry client initialized")
 except Exception:
     CLIENT = None  # type: ignore
-    logger.warning("Unable to configure epplib. Registrar cannot contact registry.", exc_info=True)
+    logger.warning(f"{_worker_tag()}: Unable to configure epplib. Registrar cannot contact registry.", exc_info=True)

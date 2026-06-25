@@ -1,4 +1,5 @@
 import logging
+import os
 from time import sleep
 
 try:
@@ -11,6 +12,10 @@ from .errors import LoginError
 
 
 logger = logging.getLogger(__name__)
+
+
+def _worker_tag():
+    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
 
 
 class Socket:
@@ -31,7 +36,7 @@ class Socket:
 
     def connect(self):
         """Use epplib to connect."""
-        logger.info("Opening socket on connection pool")
+        logger.info(f"{_worker_tag()} Opening socket on connection pool")
         self.client.connect()
         response = self.client.send(self.login)
         if self.is_login_error(response.code):
@@ -41,7 +46,7 @@ class Socket:
 
     def disconnect(self):
         """Close the connection."""
-        logger.info("Closing socket on connection pool")
+        logger.info(f"{_worker_tag()} Closing socket on connection pool")
         try:
             self.client.send(commands.Logout())
             self.client.close()
