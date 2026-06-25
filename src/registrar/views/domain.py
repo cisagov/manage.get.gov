@@ -1,7 +1,7 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import Client, RequestError
+from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -17,7 +17,7 @@ from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError, EnrollmentNotAllowedError
+from registrar.utility.errors import APIError, DnsHostingError, EnrollmentNotAllowedError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -81,7 +81,7 @@ from epplibwrapper import (
     RegistryError,
 )
 
-from ..utility.email import send_templated_email, EmailSendingError
+from ..utility.email import send_templated_email, EmailSendingError 
 from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
@@ -831,8 +831,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def __init__(self):
         self.dns_record = None
-        self.client = Client()
-        self.dns_host_service = DnsHostService(client=self.client)
+        self.dns_host_service = DnsHostService()
 
     def _get_domain(self, request):
         """
@@ -1105,7 +1104,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except GenericError:
             return self._error_response(request, status=400)
         finally:
-            self.client.close()
+            self.dns_host_service.client.close()
 
         return TemplateResponse(
             request,
