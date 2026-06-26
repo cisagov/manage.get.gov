@@ -3,8 +3,9 @@ from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.dns_http_client import build_dns_client
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsTransportError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
 
@@ -234,6 +235,27 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+
+    def test_mock_create_dns_record_timeout_trigger(self):
+        """A timeout- record name simulates a hung Cloudflare connection and raises DnsTransportError."""
+        zone_id = self.mock_api_service.fake_zone_id
+        self.vendor_dns_zone = VendorDnsZone.objects.create(
+            x_zone_id=zone_id,
+            x_created_at="2026-02-16 14:57:53.157055+00",
+            x_updated_at="2026-02-16 14:57:53.157055+00",
+        )
+        DnsZone_VendorDnsZone.objects.create(
+            dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
+        )
+        timeout_record_data = {"type": "A", "name": "timeout-test", "content": "11.22.33.44"}
+
+        retry_client = build_dns_client()
+        service = CloudflareService(retry_client)
+        try:
+            with self.assertRaises(DnsTransportError):
+                service.create_dns_record(zone_id, timeout_record_data)
+        finally:
+            retry_client.close()
 
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
