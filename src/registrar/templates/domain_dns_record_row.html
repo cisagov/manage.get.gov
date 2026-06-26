@@ -27,7 +27,7 @@
             <button
             type="button"
             id="dnsrecord-edit-button-{{ record_id }}"
-            class="usa-button usa-button--unstyled margin-right-2"
+            class="usa-button usa-button--unstyled"
             aria-expanded="false"
             :aria-expanded="showFormId == '{{ record_id }}' ? 'true' : 'false'"
             aria-controls="dnsrecord-edit-row-{{ record_id }}"
@@ -54,11 +54,11 @@
             <button
                     type="button"
                     id="row-delete-button-{{ record_id }}"
-                    class="usa-button usa-button--unstyled usa-button--with-icon margin-top-2px js-dnsrecord-delete"
+                    class="usa-button usa-button--unstyled usa-button--with-icon margin-top-2px text-secondary js-dnsrecord-delete"
                     "aria-label="Delete {{ dns_record.name }}""
                     data-record-id="{{ record_id }}"
                 >
-                    <svg class="usa-icon text-red" aria-hidden="true" focusable="false" role="img" width="24">
+                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
 
                     <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
