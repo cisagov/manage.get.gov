@@ -65,7 +65,7 @@ class PortfolioOrgAddressForm(forms.ModelForm):
             # "urbanization",
         ]
         error_messages = {
-            "address_line1": {"required": "Enter the street address of your organization."},
+            "address_line1": {"required": "Enter the address where your organization is located."},
             "city": {"required": "Enter the city where your organization is located."},
             "zipcode": {"required": "Enter a 5-digit or 9-digit zip code, like 12345 or 12345-6789."},
         }

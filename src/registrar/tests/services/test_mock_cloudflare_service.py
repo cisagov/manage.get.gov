@@ -3,8 +3,9 @@ from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.dns_http_client import build_dns_client
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, DnsTransportError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
 
@@ -89,7 +90,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         resp = self.service.get_account_zones(existing_account_id)
         result = resp["result"]
         self.assertEqual(len(result), 1)
-        self.assertEquals(result[0].get("name"), "exists.gov")
+        self.assertEqual(result[0].get("name"), "exists.gov")
 
     def test_mock_create_cf_account_response(self):
         account_name = make_dns_account_name("equity.gov")
@@ -97,7 +98,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         resp = self.service.create_cf_account(account_name)
         result = resp["result"]
 
-        self.assertEquals(result["name"], account_name)
+        self.assertEqual(result["name"], account_name)
 
         # check if new account was added to the get accounts mock
         resp = self.service.get_page_accounts(1, 50)
@@ -114,7 +115,7 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         resp = self.service.get_zone_by_id(zone_id)
         result = resp["result"]
-        self.assertEquals(result, zone_data)
+        self.assertEqual(result, zone_data)
 
     def test_mock_create_cf_zone_response(self):
         zone_name = "peace.gov"
@@ -122,14 +123,14 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
 
         resp = self.service.create_cf_zone(zone_name, account_id)
         result = resp["result"]
-        self.assertEquals(result["account"]["id"], account_id)
-        self.assertEquals(result["name"], zone_name)
+        self.assertEqual(result["account"]["id"], account_id)
+        self.assertEqual(result["name"], zone_name)
 
         # check if new zone was added to the get zones mock
         resp = self.service.get_account_zones(account_id)
         result = resp["result"]
         self.assertEqual(len(result), 2)
-        self.assertEquals(result[1].get("name"), zone_name)
+        self.assertEqual(result[1].get("name"), zone_name)
 
     def test_mock_update_account_dns_settings_response(self):
         account_id = self.mock_api_service.new_account_id
@@ -153,6 +154,15 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         self.assertEqual(resp.result["nameservers"]["type"], "custom.tenant")
         self.assertEqual(resp.errors, [])
         self.assertEqual(resp.messages, [])
+
+    def test_mock_delete_dns_record_response(self):
+        # Create initial DNS record
+        zone_id = self.mock_api_service.fake_zone_id
+        record_id = self.mock_api_service.fake_record_id
+        resp = self.service.delete_dns_record(zone_id, record_id)
+        result = resp["result"]
+
+        self.assertEqual(result["id"], record_id)
 
 
 class TestMockCloudflareServiceEndpointsWithDB(TestCase):
@@ -204,9 +214,9 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         resp = self.service.create_dns_record(zone_id, record_data)
         result = resp["result"]
 
-        self.assertEquals(result["name"], expected_cf_record_name)
-        self.assertEquals(result["type"], record_data["type"])
-        self.assertEquals(result["content"], record_data["content"])
+        self.assertEqual(result["name"], expected_cf_record_name)
+        self.assertEqual(result["type"], record_data["type"])
+        self.assertEqual(result["content"], record_data["content"])
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "11.22.33.44"}
 
@@ -225,6 +235,27 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         with self.assertRaises(APIError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
         self.assertTrue("500" in str(context.exception))
+
+    def test_mock_create_dns_record_timeout_trigger(self):
+        """A timeout- record name simulates a hung Cloudflare connection and raises DnsTransportError."""
+        zone_id = self.mock_api_service.fake_zone_id
+        self.vendor_dns_zone = VendorDnsZone.objects.create(
+            x_zone_id=zone_id,
+            x_created_at="2026-02-16 14:57:53.157055+00",
+            x_updated_at="2026-02-16 14:57:53.157055+00",
+        )
+        DnsZone_VendorDnsZone.objects.create(
+            dns_zone=self.dns_zone, vendor_dns_zone=self.vendor_dns_zone, is_active=True
+        )
+        timeout_record_data = {"type": "A", "name": "timeout-test", "content": "11.22.33.44"}
+
+        retry_client = build_dns_client()
+        service = CloudflareService(retry_client)
+        try:
+            with self.assertRaises(DnsTransportError):
+                service.create_dns_record(zone_id, timeout_record_data)
+        finally:
+            retry_client.close()
 
     def test_mock_update_dns_record_response(self):
         # Create initial DNS record
@@ -248,9 +279,9 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
         resp = self.service.update_dns_record(zone_id, record_id, updated_record_data)
         result = resp["result"]
 
-        self.assertEquals(result["name"], expected_cf_record_name)
-        self.assertEquals(result["content"], updated_record_data["content"])
-        self.assertEquals(result["type"], updated_record_data["type"])
+        self.assertEqual(result["name"], expected_cf_record_name)
+        self.assertEqual(result["content"], updated_record_data["content"])
+        self.assertEqual(result["type"], updated_record_data["type"])
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "55.66.77.88"}
 

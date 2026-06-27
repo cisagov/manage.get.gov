@@ -4,18 +4,14 @@
             <span>
                 {{dns_record.type}}
             </span>
-           
+
          {% if dns_record.comment %}
             <span class="margin-left-auto">
             {% include "dns_record_forms/dns_record_comment.html" with dns_record=dns_record %}
                 </span>
         {% endif %}
-
-     
-
-       
         </div>
-      
+
     </td>
     <td id="dns-name-{{ record_id }}" data-label="Name">
         {{dns_record.name}}
@@ -28,8 +24,9 @@
     </td>
     <td class="padding-right-0" data-label="Action">
         <div class="tablet:display-flex tablet:flex-row">
-            <button 
+            <button
             type="button"
+            id="dnsrecord-edit-button-{{ record_id }}"
             class="usa-button usa-button--unstyled margin-right-2"
             aria-expanded="false"
             :aria-expanded="showFormId == '{{ record_id }}' ? 'true' : 'false'"
@@ -41,18 +38,18 @@
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
                 <use xlink:href="/public/img/sprite.svg#edit"></use>
                 </svg>
-                Edit 
+                Edit
                 <span class="usa-sr-only">{{ dns_record.type }} record for {{ dns_record.name }}</span>
                     <svg
-                        class="usa-icon margin-top-05" 
-                        aria-hidden="true" 
-                        focusable="false" 
+                        class="usa-icon margin-top-05"
+                        aria-hidden="true"
+                        focusable="false"
                         role="img"
                        >
                         <use x-show="showFormId !='{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_more" ></use>
                         <use x-show="showFormId == '{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
-            
+
             </button>
             <a
                 role="button"
@@ -84,7 +81,7 @@
                 <button
                     type="button"
                     class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-                    aria-label="Delete DNS record from Cloudflare"
+                    aria-label="Delete DNS record"
                 >
                     Delete
                 </button>

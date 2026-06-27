@@ -1,9 +1,15 @@
 from django.test import TestCase
-from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
+from registrar.models import (
+    Domain,
+    DnsAccount,
+    DnsZone,
+    DnsRecord,
+    VendorDnsRecord,
+    DnsRecord_VendorDnsRecord as RecordsJoin,
+)
 from registrar.validations import (
-    DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE,
-    DNS_NAME_HYPHEN_ERROR_MESSAGE,
-    DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE,
+    DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
+    DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
 )
 
 
@@ -163,7 +169,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_CONSECUTIVE_DOTS_ERROR_MESSAGE, str(ctx.exception))
+        self.assertIn(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_with_leading_dot_raises(self):
         """DNS record name with leading dot should fail validation."""
@@ -179,7 +185,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE, str(ctx.exception))
+        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_with_trailing_dot_raises(self):
         """DNS record name with trailing dot should fail validation."""
@@ -195,39 +201,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_ERROR_MESSAGE, str(ctx.exception))
-
-    def test_dns_record_name_with_hyphen_at_start_of_label_raises(self):
-        """DNS record name with hyphen at start of label should fail validation."""
-        from django.core.exceptions import ValidationError
-
-        record = DnsRecord(
-            dns_zone=self.dns_zone,
-            type="A",
-            name="-test.dns-test.gov",
-            ttl=3600,
-            content="192.0.2.1",
-        )
-        with self.assertRaises(ValidationError) as ctx:
-            record.full_clean()
-        self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_HYPHEN_ERROR_MESSAGE, str(ctx.exception))
-
-    def test_dns_record_name_with_hyphen_at_end_of_label_raises(self):
-        """DNS record name with hyphen at end of label should fail validation."""
-        from django.core.exceptions import ValidationError
-
-        record = DnsRecord(
-            dns_zone=self.dns_zone,
-            type="A",
-            name="test-.dns-test.gov",
-            ttl=3600,
-            content="192.0.2.1",
-        )
-        with self.assertRaises(ValidationError) as ctx:
-            record.full_clean()
-        self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_HYPHEN_ERROR_MESSAGE, str(ctx.exception))
+        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_exceeds_per_label_limit_raises(self):
         """DNS record name with a label exceeding 63 characters should fail validation."""
@@ -378,3 +352,139 @@ class DnsRecordTest(TestCase):
         DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="www", ttl=3600, content="192.0.2.1")
         matches = DnsRecord.objects.filter(DnsRecord._name_q("www.dns-test.gov", "dns-test.gov"))
         self.assertEqual(matches.count(), 1)
+
+    # --- CNAME name != hostname model-level validation tests ---
+
+    def test_clean_cname_name_matches_content_fqdn_raises(self):
+        """CNAME record whose FQDN name equals its content should fail clean()."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub.dns-test.gov",
+            ttl=3600,
+            content="sub.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_cname_bare_label_expands_to_match_content_raises(self):
+        """CNAME record with a bare label name that expands to match content should fail clean().
+
+        A bare label "sub" in dns-test.gov zone expands to "sub.dns-test.gov"; if content
+        is "sub.dns-test.gov" this should be caught even though the stored name is the label.
+        """
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub",
+            ttl=3600,
+            content="sub.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_cname_at_symbol_expands_to_match_content_raises(self):
+        """CNAME record with '@' (root) that expands to match content should fail clean().
+
+        '@' in dns-test.gov zone expands to "dns-test.gov"; if content is "dns-test.gov"
+        this should be caught even though the stored name is '@'.
+        """
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="@",
+            ttl=3600,
+            content="dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_clean_cname_name_differs_from_content_valid(self):
+        """CNAME record whose name does not resolve to the same value as content should pass."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub.dns-test.gov",
+            ttl=3600,
+            content="other.example.gov",
+        )
+        record.clean()  # should not raise
+
+    def test_clean_cname_no_content_skips_hostname_check(self):
+        """CNAME record with no content should not trigger the hostname check."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="sub.dns-test.gov",
+            ttl=3600,
+            content=None,
+        )
+        record.clean()  # should not raise
+
+    def test_clean_non_cname_record_skips_hostname_check(self):
+        """Non-CNAME records should not be subject to the name != hostname validation."""
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="TXT",
+            name="dns-test.gov",
+            ttl=3600,
+            content="dns-test.gov",
+        )
+        record.clean()  # should not raise — TXT records can have name == content
+
+    def test_clean_cname_bare_label_matches_content_case_insensitive_raises(self):
+        """A CNAME whose name and content differ only in letter case should still fail.
+        DNS names are not case-sensitive, so 'www' pointing to 'Www.dns-test.gov' is
+        the same as pointing to itself."""
+        from django.core.exceptions import ValidationError
+
+        record = DnsRecord(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="www",
+            ttl=3600,
+            content="Www.dns-test.gov",
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            record.clean()
+        self.assertIn("name", ctx.exception.message_dict)
+
+    def test_delete_by_x_record_id_success(self):
+        """delete_by_x_record_id deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
+        x_record_id = "1234"
+        vendor_dns_record = VendorDnsRecord.objects.create(
+            x_record_id=x_record_id,
+            x_created_at="2025-10-17 19:57:53.157055+00",
+            x_updated_at="2025-10-17 19:57:53.157055+00",
+        )
+        record = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="CNAME",
+            name="www",
+            ttl=3600,
+            content="Www.dns-test.gov",
+        )
+        vendor_record_db_id = vendor_dns_record.id
+        record_db_id = record.id
+        RecordsJoin.objects.create(
+            dns_record=record,
+            vendor_dns_record=vendor_dns_record,
+            is_active=True,
+        )
+
+        DnsRecord.delete_by_x_record_id(x_record_id)
+        # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
+        self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
+        self.assertFalse(
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+        )

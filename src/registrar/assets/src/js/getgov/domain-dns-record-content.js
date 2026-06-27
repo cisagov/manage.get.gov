@@ -1,7 +1,7 @@
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
     let finalString = "";
-  
+
     if(charLength == 0){
         finalString = `${charLimit} characters allowed`
     }
@@ -11,7 +11,7 @@ function getCharCountText (charLimit, charLength) {
         const characters =`character${charactersLeft === 1 ? '' : 's'}`;
         finalString = `${charactersLeft} ${characters} ${remainingText}`
     }
-    
+
     return finalString;
   };
 
@@ -28,10 +28,11 @@ function createCharacterCountDiv(charLimit, textArea) {
 
 
   textArea.addEventListener('input', function () {
-    displayCharCount.textContent = getCharCountText(charLimit, textArea.value.length);
+    const trimmedValue = textArea.value.trim().length
+    displayCharCount.textContent = getCharCountText(charLimit, trimmedValue);
     displayCharCount.classList.toggle(
       'usa-character-count__status--invalid',
-      textArea.value.length > charLimit
+      trimmedValue > charLimit
     );
   });
   textArea.setAttribute('aria-describedby', displayCharCount.id)
@@ -41,45 +42,156 @@ function createCharacterCountDiv(charLimit, textArea) {
 function switchFromInputToTextArea (element) {
         if(!element) return;
 
-       
+
         const textArea = document.createElement('textarea');
         textArea.name = element.name;
         textArea.className = 'usa-textarea usa-textarea--medium';
         textArea.required = true
         textArea.id = element.id
         textArea.value = element.value
+        textArea.defaultValue = element.value
         element.classList.forEach(cls => textArea.classList.add(cls))
 
-        const charLimit = 2048
+        const charLimit = 4080
         const displayCharCount = createCharacterCountDiv(charLimit, textArea)
 
         element.replaceWith(textArea)
         textArea.insertAdjacentElement('afterend', displayCharCount)
 }
 
-function clearRecordForm(root){
-    const form = root || document.getElementById("dnsrecords-form-container")
-    if(!form) return;
-    
-    // remove error styling from inputs and labels 
-    const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea')
-    inputs.forEach(input =>{ 
-        input.classList.remove("usa-input--error")
-    })
-    const labels = form.querySelectorAll('label')
-    labels.forEach( label => label.classList.remove("usa-label--error"))
+// Validation errors produces an inline error and a top-level error banner, Clear both.
+function clearRecordErrors(scope){
+    if(scope){
+        scope.querySelectorAll(".usa-error-message").forEach(el => el.remove());
+        scope.querySelectorAll(".usa-input--error").forEach(el => el.classList.remove("usa-input--error"));
+        scope.querySelectorAll(".usa-label--error").forEach(el => el.classList.remove("usa-label--error"));
+    }
+    document.getElementById("messages-container")?.querySelectorAll(".usa-alert--error").forEach(el => el.remove());
+}
 
-    // remove error messages in line and top-level error messages
-    form.querySelectorAll('.usa-error-message').forEach( el =>{ el.remove()})
-    const alertMessagesContainer = document.getElementById('messages-container')
-    alertMessagesContainer.querySelectorAll('.usa-alert').forEach(el => el.remove())
-    
+function clearRecordForm(scope){
+    const form = scope || document.getElementById("dnsrecords-form-container")
+    if(!form) return;
+
+    clearRecordErrors(form)
+
     // Reset the comment field and its character count
     document.getElementById('id_comment').value = ''
     const commentStatus =  document.getElementById('dnsrecords-form-container-comment--status')
     commentStatus.classList.remove("usa-character-count__status--invalid")
      // Character count is hardcoded for now if/when the model is updated with the current maxlength
     commentStatus.textContent = getCharCountText(100, 0)
+}
+
+// One shared modal for the Add form and every Edit row; shown only when there are unsaved
+// changes. data-opener tells USWDS where to return focus on close.
+let pendingCancel = null;
+
+// DOM ids/selectors for a cancel target, keyed off the add vs edit row id
+const refsFor = (req) => req.type === "edit"
+    ? {
+        form: `#dnsrecord-edit-form-${req.recordId}`,
+        cancelButtonId: `dnsrecord-edit-cancel-button-${req.recordId}`,
+        focusId: `dnsrecord-edit-button-${req.recordId}`,
+      }
+    : { form: "#form-container", cancelButtonId: "dnsrecord-add-cancel-button", focusId: "add-dnsrecord-button" };
+
+// Replace with a fresh server copy, removes client-side edits and errors
+const refreshForm = (selector, url) =>
+    window.htmx?.ajax("GET", url, { target: selector, select: selector, swap: "outerHTML" });
+
+function openCancelModal(opener){
+    document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
+    document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
+}
+
+// fields, reused for both Add and Edit forms.
+const FIELD_SELECTOR = 'input:not([type="hidden"]), textarea';
+
+// Add: any non-empty field (type dropdown excluded) is unsaved. Edit: any field differing from its original.
+function formHasUnsavedChanges(form, isEditForm){
+    if(!form) return false;
+    // A failed save uses the rejected values as the fields, so treat a visible error
+    // as unsaved so cancel still confirms and resets.
+    if(form.querySelector(".usa-error-message")) return true;
+    return Array.from(form.querySelectorAll(`${FIELD_SELECTOR}, select`)).some(el => {
+        if(el.id === "id_type") return false;
+        if(el.tagName === "SELECT") return Array.from(el.options).some(o => o.selected !== o.defaultSelected);
+        if(!isEditForm) return el.value.trim() !== "";
+        // Django prepends a newline to <textarea> that .value drops but .defaultValue keeps; strip it before comparing.
+        const original = el.tagName === "TEXTAREA" ? el.defaultValue.replace(/^\n/, "") : el.defaultValue;
+        return el.value !== original;
+    });
+}
+
+export function initDNSRecordCancelModal(){
+    const container = document.getElementById("dnsrecords-form-container");
+    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    if(!container || !confirmButton) return;
+
+    const teardownForm = (req) => {
+        const refs = refsFor(req);
+        const form = document.querySelector(refs.form);
+        if(req.type === "edit"){
+            if(form){
+                // After a failed save the row holds the rejected values; clear both errors inline and top,
+                // then re-fetch the row for the real saved values.
+                if(form.querySelector(".usa-error-message")){
+                    clearRecordErrors(form);
+                    refreshForm(refs.form, form.getAttribute("hx-post"));
+                } else if(req.hasUnsavedChanges){
+                    form.reset();
+                }
+            }
+        } else {
+            // A reopened Add form must be blank. Capture hadError before clearRecordForm strips it,
+            // then re-fetch a clean form on error, otherwise blank the live fields in place.
+            const hadError = !!form?.querySelector(".usa-error-message");
+            clearRecordForm(form);
+            if(hadError){
+                refreshForm(refs.form, form.getAttribute("hx-post"));
+            } else {
+                form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
+                const typeField = document.getElementById("id_type");
+                if(typeField) typeField.value = "";
+            }
+        }
+        Alpine.$data(container).showFormId = null;
+    };
+
+    const onCancel = (req) => {
+        const refs = refsFor(req);
+        const form = document.querySelector(refs.form);
+        req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
+        if(req.hasUnsavedChanges){
+            pendingCancel = req;
+            openCancelModal(refs.cancelButtonId);
+        } else {
+            teardownForm(req);
+            document.getElementById(refs.focusId)?.focus();
+        }
+    };
+
+    container.addEventListener("click", (e) => {
+        if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
+        onCancel({ type: "add" });
+    });
+
+    // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
+    document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
+        const btn = e.target.closest(".js-dnsrecord-edit-cancel");
+        if(!btn) return;
+        onCancel({ type: "edit", recordId: btn.dataset.recordId });
+    });
+
+    confirmButton.addEventListener("click", () => {
+        if(!pendingCancel) return;
+        teardownForm(pendingCancel);
+        const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+        modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
+        modalEl?.querySelector("[data-close-modal]")?.click();
+        pendingCancel = null;
+    });
 }
 
 export function editAndCommentButtonListener (){
@@ -90,10 +202,10 @@ export function editAndCommentButtonListener (){
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
             if(!editBtn && !commentBtn) return;
-            
+
             const recordId = (editBtn || commentBtn).dataset.recordId
             const alpineData = Alpine.$data(table)
-            
+
             if(editBtn){
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
@@ -106,7 +218,7 @@ export function editAndCommentButtonListener (){
                 idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
 
             }
-        
+
         })
 }
 
@@ -265,6 +377,22 @@ export function initDNSRecordTabOrder() {
     });
 }
 
+// Issue #4629: after a DNS record submit, move focus to the first alert in
+// #messages-container once htmx finishes swapping it in. Alerts carry
+// tabindex="-1" in form_messages.html so they're focusable but not tabbable.
+export function initDNSRecordAlertFocus() {
+    const dnsRecordsContainer = document.getElementById("dnsrecords-form-container");
+    if (!dnsRecordsContainer) return;
+
+    document.body.addEventListener("htmx:afterSettle", (evt) => {
+        const swapped = evt?.detail?.target || evt?.target;
+        if (swapped?.id !== "messages-container") return;
+
+        const firstAlert = swapped.querySelector(".usa-alert");
+        if (firstAlert) firstAlert.focus();
+    });
+}
+
 export function commentCharacterEventListener(){
 
     // event listener to update the char count text
@@ -290,7 +418,7 @@ export function commentCharacterEventListener(){
 
     let rows = document.querySelectorAll('tr[id^="dnsrecord-edit-row-"]')
     const form = document.getElementById('dnsrecords-form-container')
-   
+
     rows && rows.forEach(row => {
        helperEventListener(row)
     })
@@ -298,7 +426,7 @@ export function commentCharacterEventListener(){
     helperEventListener(form)
 }
 
-export function initDynamicDNSRecordFormFields() { 
+export function initDynamicDNSRecordFormFields() {
     const typeField = document.getElementById('id_type');
 
     if (!typeField) return;
@@ -355,11 +483,52 @@ export function initDynamicDNSRecordFormFields() {
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
+}
 
-    // clearForm when a user hits the cancel button on the dns record form and table
-    document.querySelectorAll(".js-dnsrecord-cancel-button").forEach( button => {
-        const formInRow = button.closest('form')
-        button.addEventListener('click',() => clearRecordForm(formInRow))
+export function initDeleteDnsRecord() {
+    const table = document.getElementById("dnsrecords-table");
+
+    table?.addEventListener("click", (e) => {
+        const deleteBtn = e.target.closest(".js-dnsrecord-delete");
+        if(!deleteBtn) return;
+
+        const recordId = deleteBtn.dataset.recordId
+        e.preventDefault()
+
+        const focusElement = deleteBtn;
+        const modal = document.getElementById("delete-dns-record-modal");
+        const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
+        openModal(modalTrigger, modal, focusElement);
+    });
+
+    const openModal = (modalTrigger, modal, focusElement) => {
+            // Listen for when the modal closes
+        if (modal) {
+            const closeButtons = modal.querySelectorAll("[data-close-modal]")
+
+            // targets the "X" and "Cancel" or "Go back" and moves focus to the focusElement after closing the modal
+            closeButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    // Defer focus restoration to after modal closes
+                    focusElement?.focus()
+                    setTimeout(() => {
+                        focusElement?.focus();
+                    }, 50);
+                }, { once: true });
+            });
+
+            // Handle ESC key press to close modal --> move focus to focusElement
+            const handleEscKey = (e) => {
+                if (e.key === "Escape") {
+                    setTimeout(() => {
+                        focusElement?.focus();
+                    }, 50);
+                    document.removeEventListener("keydown", handleEscKey);
+                }
+            };
+
+            document.addEventListener("keydown", handleEscKey);
         }
-    )
+        modalTrigger?.click()
+    }
 }

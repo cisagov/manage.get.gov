@@ -1,6 +1,5 @@
 import io
-from unittest import skip
-from django.test import Client, RequestFactory
+from django.test import Client, RequestFactory, SimpleTestCase
 from io import StringIO
 from registrar.decorators import allow_slow_queries
 from registrar.models import (
@@ -809,7 +808,6 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         super().setUp()
         self.factory = RequestFactory()
 
-    @skip("flaky test that needs to be refactored")
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""
@@ -863,7 +861,7 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         request.user = self.user
         # Add portfolio to session
         request = GenericTestHelper._mock_user_request_for_factory(request)
-        request.session["portfolio"] = self.portfolio_1
+        request.session["portfolio"] = self.portfolio_1.id
 
         # Create a CSV file in memory
         csv_file = StringIO()
@@ -872,39 +870,171 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         # Reset the CSV file's position to the beginning
         csv_file.seek(0)
         # Read the content into a variable
-        csv_content = csv_file.read()
-        expected_content = (
-            # Header
-            "Email,Member role,Invited by,Joined date,Last active,Domain requests,"
-            "Members,Domains,Number domains assigned,Domain assignments\n"
-            # Content
-            "big_lebowski@dude.co,False,help@get.gov,2022-04-01,Invalid date,None,"
-            "Viewer,True,1,cdomain1.gov\n"
-            "cozy_staffuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
-            "Viewer Requester,Manager,False,0,\n"
-            "icy_superuser@igorville.gov,True,help@get.gov,2022-04-01,2024-02-01,"
-            "Viewer Requester,Manager,False,0,\n"
-            "meoward@rocks.com,False,big_lebowski@dude.co,2022-04-01,Invalid date,None,"
-            'Manager,True,2,"adomain2.gov,cdomain1.gov"\n'
-            "nonexistentmember_1@igorville.gov,False,help@get.gov,Unretrieved,Invited,"
-            "None,Manager,False,0,\n"
-            "nonexistentmember_2@igorville.gov,False,help@get.gov,Unretrieved,Invited,"
-            "None,Viewer,False,0,\n"
-            "nonexistentmember_3@igorville.gov,False,help@get.gov,Unretrieved,Invited,"
-            "Viewer,None,False,0,\n"
-            "nonexistentmember_4@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
-            "Viewer Requester,Manager,False,0,\n"
-            "nonexistentmember_5@igorville.gov,True,help@get.gov,Unretrieved,Invited,"
-            "Viewer Requester,Manager,False,0,\n"
-            "tired_sleepy@igorville.gov,False,System,2022-04-01,Invalid date,Viewer,"
-            "None,False,0,\n"
-        )
-        # Normalize line endings and remove commas,
-        # spaces and leading/trailing whitespace
-        csv_content = csv_content.replace(",,", "").replace(",", "").replace(" ", "").replace("\r\n", "\n").strip()
-        expected_content = expected_content.replace(",,", "").replace(",", "").replace(" ", "").strip()
+        reader = csv.reader(csv_file)
+        header, *data_rows = list(reader)
+        data_rows.sort(key=lambda r: r[0])
+
+        expected_header = [
+            "Email",
+            "Member role",
+            "Invited by",
+            "Joined date",
+            "Last active",
+            "Domain requests",
+            "Members",
+            "Domains",
+            "Number domains assigned",
+            "Domain assignments",
+        ]
+        # Content
+
+        expected_rows = [
+            [
+                "big_lebowski@dude.co",
+                "Basic",
+                "help@get.gov",
+                "2022-04-01",
+                "Invalid date",
+                "No access",
+                "Viewer",
+                "Viewer, limited",
+                "1",
+                "cdomain1.gov",
+            ],
+            [
+                "cozy_staffuser@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "2022-04-01",
+                "2024-02-01",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "icy_superuser@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "2022-04-01",
+                "2024-02-01",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "meoward@rocks.com",
+                "Basic",
+                "big_lebowski@dude.co",
+                "2022-04-01",
+                "Invalid date",
+                "No access",
+                "Manager",
+                "Viewer, limited",
+                "2",
+                "adomain2.gov, cdomain1.gov",
+            ],
+            [
+                "nonexistentmember_1@igorville.gov",
+                "Basic",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "No access",
+                "Manager",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_2@igorville.gov",
+                "Basic",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "No access",
+                "Viewer",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_3@igorville.gov",
+                "Basic",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "Viewer",
+                "No access",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_4@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "nonexistentmember_5@igorville.gov",
+                "Organization admin",
+                "help@get.gov",
+                "Unretrieved",
+                "Invited",
+                "Requester",
+                "Manager",
+                "Viewer",
+                "0",
+                "",
+            ],
+            [
+                "tired_sleepy@igorville.gov",
+                "Basic",
+                "System",
+                "2022-04-01",
+                "Invalid date",
+                "Viewer",
+                "No access",
+                "Viewer, limited",
+                "0",
+                "",
+            ],
+        ]
+
         self.maxDiff = None
-        self.assertEqual(csv_content, expected_content)
+        self.assertEqual(header, expected_header)
+        self.assertEqual(data_rows, expected_rows)
+
+
+class MemberExportNoneDomainInfoTest(SimpleTestCase):
+    """parse_row and write_csv when domain_info=None and unexpected errors."""
+
+    columns = [
+        "Email",
+        "Number domains assigned",
+        "Domain assignments",
+    ]
+
+    @less_console_noise_decorator
+    def test_parse_row_handles_none_domain_info(self):
+        model = {
+            "email_display": "a@example.gov",
+            "roles": [],
+            "additional_permissions_display": None,
+            "domain_info": None,
+        }
+        row = MemberExport.parse_row(self.columns, model)
+        self.assertEqual(row, ["a@example.gov", 0, ""])
 
 
 class HelperFunctions(MockDbForSharedTests):

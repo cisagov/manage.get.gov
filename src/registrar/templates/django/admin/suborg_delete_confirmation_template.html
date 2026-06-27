@@ -1,0 +1,42 @@
+{% extends 'admin/delete_confirmation.html' %}
+{% load i18n static %}
+
+{% block content %}
+
+
+    <p>
+       The suborganization 
+       <a href="{% url 'admin:registrar_suborganization_change' object.id %}">{{object}}</a>
+       will be deleted.
+    </p>
+    {% if domain_requests %}
+    <p> The following domain requests will no longer be linked to a suborganization, though we'll keep a record of the suborganization that was included with the request.</p>
+    <ul>
+        {% for domain_request in domain_requests%}
+        <li>
+            {{ domain_request }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+   {% if domain_information  %}
+    <p> The following domains will no longer be linked to a suborganization.</p>
+    <ul>
+        {% for domain in domain_information %}
+        <li>
+            {{ domain }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="post" value="yes"/>
+        <div class="submit-row">
+            <input type="submit" value="Yes, I'm sure" class="button danger-button"/>
+            <a href="#" class="button cancel-link">No, take me back</a>
+        </div>
+    </form>
+{% endblock %}

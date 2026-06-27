@@ -297,7 +297,7 @@ class TestPortfolioInvitations(TestCase):
         test_permission_list.update([self.portfolio_permission_1, self.portfolio_permission_2])
         perm_list = list(test_permission_list)
         # Verify
-        self.assertEquals(self.invitation.get_portfolio_permissions(), perm_list)
+        self.assertEqual(self.invitation.get_portfolio_permissions(), perm_list)
 
     @less_console_noise_decorator
     @override_flag("multiple_portfolios", active=False)
@@ -733,6 +733,47 @@ class TestPortfolioInvitations(TestCase):
                 domain=domain_not_in_portfolio_2,
             ).exists()
         )
+
+
+class TestUserPortfolioPermissionInvitationsOnLogin(TestCase):
+    """Test retrieving new portfolio invitations on login."""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        self.email = "mayor@igorville.gov"
+        self.user, _ = User.objects.get_or_create(email=self.email)
+        self.requestor, _ = User.objects.get_or_create(email="requester@igorville.gov", username="requester")
+        self.portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.requestor,
+            organization_name="Hotel California",
+        )
+        self.portfolio_role_base = UserPortfolioRoleChoices.ORGANIZATION_MEMBER
+        self.portfolio_permission_1 = UserPortfolioPermissionChoices.VIEW_ALL_REQUESTS
+
+    def tearDown(self):
+        super().tearDown()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    def test_retrieves_new_model_portfolio_invitation_on_login(self):
+        permission = UserPortfolioPermission.objects.create(
+            user=None,
+            email=self.email,
+            portfolio=self.portfolio,
+            roles=[self.portfolio_role_base],
+            additional_permissions=[self.portfolio_permission_1],
+            status=UserPortfolioPermission.Status.INVITED,
+            invited_by=self.requestor,
+        )
+
+        self.user.check_portfolio_invitations_on_login()
+
+        permission.refresh_from_db()
+        self.assertEqual(permission.user, self.user)
+        self.assertEqual(permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        self.assertIsNotNone(permission.accepted_at)
 
 
 class TestUserPortfolioPermission(TestCase):
@@ -1305,83 +1346,100 @@ class TestUser(TestCase):
             save_mock.assert_called_once()
 
     @less_console_noise_decorator
+    def test_check_domain_invitations_on_login_accepts_user_domain_role_invitation(self):
+        """A pending UserDomainRole invitation should be accepted on login."""
+        domain_role = UserDomainRole.objects.create(
+            email="MAYOR@igorville.gov",
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        self.user.check_domain_invitations_on_login()
+
+        domain_role.refresh_from_db()
+        self.assertEqual(domain_role.user, self.user)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertIsNotNone(domain_role.accepted_at)
+
+    @less_console_noise_decorator
     def test_approved_domains_count(self):
         """Test that the correct approved domain count is returned for a user"""
         # with no associated approved domains, expect this to return 0
-        self.assertEquals(self.user.get_approved_domains_count(), 0)
+        self.assertEqual(self.user.get_approved_domains_count(), 0)
         # with one approved domain, expect this to return 1
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 1)
+        self.assertEqual(self.user.get_approved_domains_count(), 1)
         # with one approved domain, expect this to return 1 (domain2 is deleted, so not considered approved)
         domain2, _ = Domain.objects.get_or_create(name="igorville2.gov", state=Domain.State.DELETED)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain2, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 1)
+        self.assertEqual(self.user.get_approved_domains_count(), 1)
         # with two approved domains, expect this to return 2
         domain3, _ = Domain.objects.get_or_create(name="igorville3.gov", state=Domain.State.DNS_NEEDED)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain3, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 2)
+        self.assertEqual(self.user.get_approved_domains_count(), 2)
         # with three approved domains, expect this to return 3
         domain4, _ = Domain.objects.get_or_create(name="igorville4.gov", state=Domain.State.ON_HOLD)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain4, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 3)
+        self.assertEqual(self.user.get_approved_domains_count(), 3)
         # with four approved domains, expect this to return 4
         domain5, _ = Domain.objects.get_or_create(name="igorville5.gov", state=Domain.State.READY)
         UserDomainRole.objects.get_or_create(user=self.user, domain=domain5, role=UserDomainRole.Roles.MANAGER)
-        self.assertEquals(self.user.get_approved_domains_count(), 4)
+        self.assertEqual(self.user.get_approved_domains_count(), 4)
 
     @less_console_noise_decorator
     def test_active_requests_count(self):
         """Test that the correct active domain requests count is returned for a user"""
         # with no associated active requests, expect this to return 0
-        self.assertEquals(self.user.get_active_requests_count(), 0)
+        self.assertEqual(self.user.get_active_requests_count(), 0)
         # with one active request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.SUBMITTED
         )
-        self.assertEquals(self.user.get_active_requests_count(), 1)
+        self.assertEqual(self.user.get_active_requests_count(), 1)
         # with two active requests, expect this to return 2
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville2.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.IN_REVIEW
         )
-        self.assertEquals(self.user.get_active_requests_count(), 2)
+        self.assertEqual(self.user.get_active_requests_count(), 2)
         # with three active requests, expect this to return 3
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville3.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.ACTION_NEEDED
         )
-        self.assertEquals(self.user.get_active_requests_count(), 3)
+        self.assertEqual(self.user.get_active_requests_count(), 3)
         # with three active requests, expect this to return 3 (STARTED is not considered active)
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville4.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.STARTED
         )
-        self.assertEquals(self.user.get_active_requests_count(), 3)
+        self.assertEqual(self.user.get_active_requests_count(), 3)
 
     @less_console_noise_decorator
     def test_rejected_requests_count(self):
         """Test that the correct rejected domain requests count is returned for a user"""
         # with no associated rejected requests, expect this to return 0
-        self.assertEquals(self.user.get_rejected_requests_count(), 0)
+        self.assertEqual(self.user.get_rejected_requests_count(), 0)
         # with one rejected request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.REJECTED
         )
-        self.assertEquals(self.user.get_rejected_requests_count(), 1)
+        self.assertEqual(self.user.get_rejected_requests_count(), 1)
 
     @less_console_noise_decorator
     def test_ineligible_requests_count(self):
         """Test that the correct ineligible domain requests count is returned for a user"""
         # with no associated ineligible requests, expect this to return 0
-        self.assertEquals(self.user.get_ineligible_requests_count(), 0)
+        self.assertEqual(self.user.get_ineligible_requests_count(), 0)
         # with one ineligible request, expect this to return 1
         draft_domain, _ = DraftDomain.objects.get_or_create(name="igorville1.gov")
         DomainRequest.objects.create(
             requester=self.user, requested_domain=draft_domain, status=DomainRequest.DomainRequestStatus.INELIGIBLE
         )
-        self.assertEquals(self.user.get_ineligible_requests_count(), 1)
+        self.assertEqual(self.user.get_ineligible_requests_count(), 1)
 
     @less_console_noise_decorator
     def test_has_contact_info(self):
@@ -1507,7 +1565,7 @@ class TestUser(TestCase):
     @less_console_noise_decorator
     def test_get_active_requests_count_in_portfolio_returns_count_if_portfolio(self):
         request = self.factory.get("/")
-        request.session = {"portfolio": self.portfolio}
+        request.session = {"portfolio": self.portfolio.id}
 
         # Create active requests
         domain_1, _ = DraftDomain.objects.get_or_create(name="meoward1.gov")

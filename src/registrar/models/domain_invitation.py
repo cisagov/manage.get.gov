@@ -72,7 +72,7 @@ class DomainInvitation(TimeStampedModel):
         if not created:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
-            logger.warn("Invitation %s was retrieved for a role that already exists.", self)
+            logger.warning("Invitation %s was retrieved for a role that already exists.", self)
 
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
