@@ -2076,6 +2076,8 @@ class UserDomainRoleResource(resources.ModelResource):
 class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     form = UserPortfolioPermissionsLegacyForm
     invitation_form = UserPortfolioPermissionsForm
+    MEMBER_TYPE_ADMIN = "admin"
+    MEMBER_TYPE_BASIC = "basic"
 
     class Meta:
         """Contains meta information about this class"""
@@ -2113,6 +2115,22 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         return ", ".join(readable_roles)
 
     get_roles.short_description = "Member role"  # type: ignore
+
+    def get_queryset(self, request):
+        """Support hidden portfolio/member filters used by related admin links."""
+        qs = super().get_queryset(request)
+
+        portfolio_id = request.GET.get("portfolio")
+        if portfolio_id:
+            qs = qs.filter(portfolio=portfolio_id)
+
+        member_type = request.GET.get("member_type")
+        if member_type == self.MEMBER_TYPE_ADMIN:
+            qs = qs.filter(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+        elif member_type == self.MEMBER_TYPE_BASIC:
+            qs = qs.exclude(roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN])
+
+        return qs
 
     def _use_invitation_admin(self, request):
         return flag_is_active(request, "user_portfolio_permission_invitations")
@@ -6026,13 +6044,18 @@ class PortfolioAdmin(ListHeaderAdmin):
 
     domain_requests.short_description = "Domain requests"  # type: ignore
 
+    def _get_portfolio_member_changelist_url(self, obj, member_type):
+        return reverse("admin:registrar_userportfoliopermission_changelist") + (
+            f"?portfolio={obj.id}&member_type={member_type}"
+        )
+
     def display_admins(self, obj):
         """Returns the number of administrators for this portfolio"""
         admin_count = len(self.get_user_portfolio_permission_admins(obj))
         if admin_count > 0:
             if self.is_omb_analyst:
                 return format_html(f"{admin_count} administrators")
-            url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
+            url = self._get_portfolio_member_changelist_url(obj, UserPortfolioPermissionAdmin.MEMBER_TYPE_ADMIN)
             # Create a clickable link with the count
             return format_html(f'<a href="{url}">{admin_count} admins</a>')
         return "No admins found."
@@ -6045,7 +6068,7 @@ class PortfolioAdmin(ListHeaderAdmin):
         if member_count > 0:
             if self.is_omb_analyst:
                 return format_html(f"{member_count} members")
-            url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={obj.id}"
+            url = self._get_portfolio_member_changelist_url(obj, UserPortfolioPermissionAdmin.MEMBER_TYPE_BASIC)
             # Create a clickable link with the count
             return format_html(f'<a href="{url}">{member_count} basic members</a>')
         return "No basic members found."
