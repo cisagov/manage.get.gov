@@ -144,7 +144,7 @@ class DomainFixture(DomainRequestFixture):
                     x_zone_id = fake.uuid4().replace("-", "")
                     ns = fake.random_number()
                     ns2 = ns + 1
-                    create_initial_dns_setup(domain.name, x_account_id=x_account_id, x_zone_id=x_zone_id, vanity_nameservers=[f"n{ns}.rainbow.gov", f"n{ns2}.rainbow.gov"])
+                    create_initial_dns_setup(domain, x_account_id=x_account_id, x_zone_id=x_zone_id, vanity_nameservers=[f"n{ns}.rainbow.gov", f"n{ns2}.rainbow.gov"])
 
         # Perform bulk update for the domains
         cls._bulk_update_domains(domains_to_update)
