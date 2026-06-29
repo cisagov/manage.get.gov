@@ -274,7 +274,9 @@ export function initDNSRecordTabOrder() {
         const candidates = document.querySelectorAll(selector);
         let past = false;
         for (const el of candidates) {
-            if (past && el.offsetParent !== null) return el;
+            if (past && el.offsetParent !== null){
+                if (!table.contains(el)) return el;
+            }
             if (node === el || node.contains(el)) past = true;
         }
         return null;
