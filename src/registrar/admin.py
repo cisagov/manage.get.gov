@@ -1129,17 +1129,16 @@ class MultiFieldSortableChangeList(ChangeList):
 
     def get_filters_params(self, params=None):
         """
-        Add portfolio to ignored params to allow the portfolio filter while not
-        listing it as a filter option on the right side of Change List on the
-        portfolio list.
+        Add hidden admin link params to ignored params so they can be applied in
+        the model admin queryset without displaying as filter options or causing
+        invalid lookup redirects on the changelist.
         """
         params = params or self.filter_params
         lookup_params = params.copy()  # a dictionary of the query string
         # Remove all the parameters that are globally and systematically
         # ignored.
-        # Remove portfolio so that it does not error as an invalid
-        # filter parameter.
-        ignored_params = list(IGNORED_PARAMS) + ["portfolio"]
+        # Remove hidden params so they do not error as invalid filter params.
+        ignored_params = list(IGNORED_PARAMS) + ["portfolio", "member_type"]
         for ignored in ignored_params:
             if ignored in lookup_params:
                 del lookup_params[ignored]
