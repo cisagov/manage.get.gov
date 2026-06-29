@@ -47,7 +47,7 @@ When Cloudflare says "no," here's what it means:
 
 | What went wrong | Error name | User sees |
 |---|---|---|
-| Zone doesn't exist | `DNS_ZONE_NOT_FOUND` | TBD |
+| Resource doesn't exist | `DNS_NOT_FOUND` | TBD |
 | Record already exists | `DNS_RECORD_CONFLICT` | "A record with that name already exists. Names must be unique." (reuses the existing model-level validation string) |
 | Bad data | `DNS_VALIDATION_FAILED` | TBD |
 | Too many requests | `DNS_RATE_LIMIT_EXCEEDED` | TBD |
@@ -66,7 +66,7 @@ Use this when wiring up the exception in code or asserting on it in tests.
 
 | Wire code | Enum | Subclass | Upstream status | Severity |
 |---|---|---|---|---|
-| `DNS_ZONE_NOT_FOUND` | `ZONE_NOT_FOUND` | `DnsNotFoundError` | 404 | 4xx |
+| `DNS_NOT_FOUND` | `NOT_FOUND` | `DnsNotFoundError` | 404 | 4xx |
 | `DNS_RECORD_CONFLICT` | `RECORD_CONFLICT` | `DnsValidationError` | 409 | 4xx |
 | `DNS_VALIDATION_FAILED` | `VALIDATION_FAILED` | `DnsValidationError` | 400 | 4xx |
 | `DNS_RATE_LIMIT_EXCEEDED` | `RATE_LIMIT_EXCEEDED` | `DnsRateLimitError` | 429 | 4xx (retryable) |
@@ -83,7 +83,7 @@ The reference for every DNS failure condition we know about today. Update when a
 
 | Source | Trigger | Code | User surface | Log level |
 |---|---|---|---|---|
-| Cloudflare 404 on POST `/zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_ZONE_NOT_FOUND` | Inline; TBD copy (see #4999) | warning |
+| Cloudflare 404 on POST `/zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_NOT_FOUND` | Inline; TBD copy (see #4999) | warning |
 | Cloudflare 409 | Duplicate record (same name+type). Rare — the local model validation at `dns_record.py` should catch most duplicates first; this fires only on races / vendor-side duplicates. | `DNS_RECORD_CONFLICT` | Inline field error using the existing model validation string ("A record with that name already exists. Names must be unique.") | warning |
 | Cloudflare 400 | Invalid record content | `DNS_VALIDATION_FAILED` | Inline field error (reuse Cloudflare's reason when safe) | warning |
 | Cloudflare 429 | Rate limit | `DNS_RATE_LIMIT_EXCEEDED` | Inline; TBD copy (see #4999) | warning |
@@ -153,7 +153,7 @@ Services log and raise. Views catch and render. A DNS failure produces exactly o
 ```json
 {
   "status": "error",
-  "code": "DNS_ZONE_NOT_FOUND",
+  "code": "DNS_NOT_FOUND",
   "message": "We couldn't find the DNS zone for this domain.",
   "request_id": "1a2b3c4d-..."
 }
@@ -311,7 +311,7 @@ The path a DNS log line travels from our code to a searchable field in OpenSearc
 
 ### Caveats
 
-- **Search prefix is `app.*`, not top-level.** Query as `app.error_code:"DNS_ZONE_NOT_FOUND"`, `app.request_id:"..."`
+- **Search prefix is `app.*`, not top-level.** Query as `app.error_code:"DNS_NOT_FOUND"`, `app.request_id:"..."`
 - **`message` and `exception` stay inside `@message` as text** — cloud.gov's ingester does not promote them to discrete fields under `app.*`. Tracebacks are full-text searchable but not aggregable.
 
 ---
@@ -394,7 +394,7 @@ Approved copy is owned by Product/Content under [#4999](https://github.com/cisag
 
 > "A record with that name already exists. Names must be unique." (existing model-level validation string)
 
-> *The other 4xx messages — `DNS_ZONE_NOT_FOUND`, `DNS_VALIDATION_FAILED`, `DNS_RATE_LIMIT_EXCEEDED` — are **TBD** in #4999.*
+> *The other 4xx messages — `DNS_NOT_FOUND`, `DNS_VALIDATION_FAILED`, `DNS_RATE_LIMIT_EXCEEDED` — are **TBD** in #4999.*
 
 ### When it's our fault (5xx — shown at page level)
 

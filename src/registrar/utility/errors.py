@@ -331,12 +331,10 @@ class DnsHostingErrorCodes(IntEnum):
     UPSTREAM_ERROR = 7
     UNKNOWN = 8
     SERVER_ERROR = 9
-    ZONE_NOT_FOUND = 10
 
 
 _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.NOT_FOUND: "DNS_NOT_FOUND",
-    DnsHostingErrorCodes.ZONE_NOT_FOUND: "DNS_ZONE_NOT_FOUND",
     DnsHostingErrorCodes.RECORD_CONFLICT: "DNS_RECORD_CONFLICT",
     DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
     DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
@@ -358,9 +356,6 @@ class DnsHostingError(Exception):
     _error_mapping = {
         DnsHostingErrorCodes.NOT_FOUND: (
             "A resource was not found. Please try again. If the problem persists, contact us for assistance."
-        ),
-        DnsHostingErrorCodes.ZONE_NOT_FOUND: (
-            "We couldn’t find the DNS zone for this domain. It may not be enrolled in DNS hosting yet."
         ),
         DnsHostingErrorCodes.RECORD_CONFLICT: DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
         DnsHostingErrorCodes.VALIDATION_FAILED: (
@@ -394,7 +389,7 @@ class DnsHostingError(Exception):
 
     @property
     def wire_code(self):
-        """Stable wire name for this error's code (e.g. 'DNS_ZONE_NOT_FOUND')."""
+        """Stable wire name for this error's code (e.g. 'DNS_NOT_FOUND')."""
         return _DNS_WIRE_CODES.get(self.code, "DNS_UNKNOWN")
 
     def __str__(self):

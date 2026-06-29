@@ -23,7 +23,7 @@ _STATUS_TO_ERROR = {
     400: (DnsValidationError, DnsHostingErrorCodes.VALIDATION_FAILED),
     401: (DnsAuthError, DnsHostingErrorCodes.AUTH_FAILED),
     403: (DnsAuthError, DnsHostingErrorCodes.AUTH_FAILED),
-    404: (DnsNotFoundError, DnsHostingErrorCodes.ZONE_NOT_FOUND),
+    404: (DnsNotFoundError, DnsHostingErrorCodes.NOT_FOUND),
     409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
     429: (DnsRateLimitError, DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
     500: (DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR),

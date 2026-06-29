@@ -57,7 +57,7 @@ class TestDnsHostingError(TestCase):
 
     def test_wire_code_is_stable_name(self):
         """`wire_code` returns the stable wire name for the error's code."""
-        self.assertEqual(DnsNotFoundError().wire_code, "DNS_ZONE_NOT_FOUND")
+        self.assertEqual(DnsNotFoundError().wire_code, "DNS_NOT_FOUND")
         self.assertEqual(DnsHostingError(code=codes.UNKNOWN).wire_code, "DNS_UNKNOWN")
 
     def test_context_is_copied_to_plain_dict(self):
