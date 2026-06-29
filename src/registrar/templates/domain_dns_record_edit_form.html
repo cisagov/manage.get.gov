@@ -3,7 +3,7 @@
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
 <tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders">
-    <td colspan="5" class="no-padding-right">
+    <td colspan="5" class="no-padding-right padding-top-0 padding-bottom-0">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
                 id="dnsrecord-edit-form-{{ record_id }}"
@@ -21,7 +21,7 @@
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
                 {% include dns_record.form_template with form=dns_record.form %}
-                <div>
+                <div class="margin-bottom-2">
                     {% with add_group_class="usa-form-group--unstyled-error" %}
                         {% input_with_errors dns_record.form.comment %}
                     {% endwith %}
@@ -47,7 +47,7 @@
 
                 <button
                     id="dnsrecord-delete-button-{{ record_id }}"
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center"
+                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center padding-bottom-05"
                     type="button"
                     role="button"
                     tabindex="0"
@@ -66,7 +66,7 @@
 
 <!-- Comment row -->
 <tr x-show="openComments.includes('{{ record_id }}')" class="hide-td-borders">
-    <td colspan="5" class="no-padding-right">
+    <td colspan="5" class="no-padding-right padding-top-0 padding-bottom-0">
           <div class="border radius-lg border-base-lighter padding-3">
              <span id="dns-comment-{{record_id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
