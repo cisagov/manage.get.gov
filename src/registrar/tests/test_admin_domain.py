@@ -1413,12 +1413,11 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         form = response.forms["domain_form"]
 
-        msg = "Authentication failed"
         with patch(
             "registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf", return_value=None
         ), patch(
             "registrar.services.dns_host_service.DnsHostService.create_and_save_account",
-            side_effect=DnsHostingError(code=DnsHostingErrorCodes.AUTH_FAILED, message=msg, upstream_status="404"),
+            side_effect=DnsHostingError(code=DnsHostingErrorCodes.AUTH_FAILED, upstream_status="404"),
         ), patch.object(
             DomainAdmin, "message_user"
         ) as mock_message_user:
