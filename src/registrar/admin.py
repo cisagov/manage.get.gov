@@ -5607,17 +5607,17 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             logger.warning("DNS enrollment blocked: %s", e)
             self.message_user(request, str(e), messages.WARNING)
         except DnsHostingError as e:
-            logger.exception(e)
+            logger.error("DNS enrollment failed: %s", e)
             self.message_user(
                 request,
-                f"Failed to enroll domain in DNS hosting. {str(e)}",
+                f"Failed to enroll domain in DNS hosting.",
                 messages.ERROR,
             )
         except Exception as e:
-            logger.exception(e)
+            logger.error("DNS enrollment failed: %s", e)
             self.message_user(
                 request,
-                f"Failed to enroll domain in DNS hosting. {str(e)}",
+                f"Failed to enroll domain in DNS hosting.",
                 messages.ERROR,
             )
         else:

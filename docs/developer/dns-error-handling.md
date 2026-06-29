@@ -124,7 +124,7 @@ raise APIError("something went wrong")
 
 # Do:
 raise DnsNotFoundError(
-    code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+    code=DnsHostingErrorCodes.NOT_FOUND,
     upstream_status=404,
     context={"zone_id": "abc123"}
 )
@@ -174,7 +174,7 @@ When you raise an error, attach:
 ### 4. Test the Error Code, Not the Message
 
 ```python
-self.assertEqual(exc.code, DnsHostingErrorCodes.ZONE_NOT_FOUND)
+self.assertEqual(exc.code, DnsHostingErrorCodes.NOT_FOUND)
 
 # Breaks when copy changes
 self.assertIn("We couldn't find", str(exc))
@@ -184,7 +184,7 @@ Exceptions must also survive `pickle.dumps`/`pickle.loads` (the parallel test ru
 
 ```python
 def test_my_error_is_picklable(self):
-    exc = DnsNotFoundError(code=DnsHostingErrorCodes.ZONE_NOT_FOUND, upstream_status=404)
+    exc = DnsNotFoundError(code=DnsHostingErrorCodes.NOT_FOUND, upstream_status=404)
     restored = pickle.loads(pickle.dumps(exc))
     self.assertEqual(restored.code, exc.code)
 ```
@@ -204,7 +204,7 @@ _STATUS_TO_ERROR = {
     400: (DnsValidationError, DnsHostingErrorCodes.VALIDATION_FAILED),
     401: (DnsAuthError,       DnsHostingErrorCodes.AUTH_FAILED),
     403: (DnsAuthError,       DnsHostingErrorCodes.AUTH_FAILED),
-    404: (DnsNotFoundError,   DnsHostingErrorCodes.ZONE_NOT_FOUND),
+    404: (DnsNotFoundError,   DnsHostingErrorCodes.NOT_FOUND),
     409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
     429: (DnsRateLimitError,  DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
 }

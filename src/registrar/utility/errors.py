@@ -330,7 +330,6 @@ class DnsHostingErrorCodes(IntEnum):
     UPSTREAM_TIMEOUT = 6
     UPSTREAM_ERROR = 7
     UNKNOWN = 8
-    SERVER_ERROR = 9
 
 
 _DNS_WIRE_CODES = {
@@ -343,6 +342,7 @@ _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.UPSTREAM_ERROR: "DNS_UPSTREAM_ERROR",
     DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
 }
+assert set(DnsHostingErrorCodes) <= set(_DNS_WIRE_CODES)
 
 
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
@@ -368,9 +368,6 @@ class DnsHostingError(Exception):
         DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
         DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
         DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
-        DnsHostingErrorCodes.SERVER_ERROR: (
-            "An unexpected error occurred. Please try again. If the problem persists, contact us for assistance."
-        ),
     }
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
@@ -409,7 +406,7 @@ class DnsNotFoundError(DnsHostingError):
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         super().__init__(
-            code=code or DnsHostingErrorCodes.ZONE_NOT_FOUND,
+            code=code or DnsHostingErrorCodes.NOT_FOUND,
             message=message,
             upstream_status=upstream_status,
             context=context,

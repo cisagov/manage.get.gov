@@ -49,7 +49,7 @@ class TestCloudflareService(SimpleTestCase):
             "error": {
                 "exception": HTTPStatusError,
                 "raised_error": DnsNotFoundError,
-                "code": DnsHostingErrorCodes.ZONE_NOT_FOUND,
+                "code": DnsHostingErrorCodes.NOT_FOUND,
             },
             "cf_ray": "579",
         },
@@ -94,22 +94,14 @@ class TestCloudflareService(SimpleTestCase):
             "cf_ray": "TEAPOT",
         },
         {
-            "test_name": "RequestError",
+            "test_name": "UpstreamError",
+            "status_code": 500,
             "error": {
-                "exception": RequestError,
-                "message": "There was an error getting a response",
-                "raised_error": DnsTransportError,
-                "code": DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
+                "exception": HTTPStatusError,
+                "raised_error": DnsHostingError,
+                "code": DnsHostingErrorCodes.UPSTREAM_ERROR,
             },
-        },
-    ]
-
-    # create_dns_record and update_dns_record wrap HTTPStatusError in APIError,
-    # so their failure cases expect APIError instead of HTTPStatusError.
-    dns_record_failure_cases = [
-        {
-            "test_name": "HTTPStatusError",
-            "error": {"exception": APIError, "response": "400 Server Error", "raised_error": APIError},
+            "cf_ray": "3CPO",
         },
         {
             "test_name": "RequestError",
