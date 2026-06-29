@@ -5610,14 +5610,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             logger.error("DNS enrollment failed: %s", e)
             self.message_user(
                 request,
-                f"Failed to enroll domain in DNS hosting.",
+                "Failed to enroll domain in DNS hosting.",
                 messages.ERROR,
             )
         except Exception as e:
             logger.error("DNS enrollment failed: %s", e)
             self.message_user(
                 request,
-                f"Failed to enroll domain in DNS hosting.",
+                "Failed to enroll domain in DNS hosting.",
                 messages.ERROR,
             )
         else:

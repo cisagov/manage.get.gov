@@ -1427,7 +1427,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         # Ensure an error message was sent to the user
         mock_message_user.assert_called_once_with(
             ANY,
-            f"Failed to enroll domain in DNS hosting.",
+            "Failed to enroll domain in DNS hosting.",
             messages.ERROR,
         )
 

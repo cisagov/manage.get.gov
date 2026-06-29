@@ -11,7 +11,7 @@ from registrar.utility.errors import (
     DnsAuthError,
     DnsTransportError,
     DnsUpstreamError,
-    _DNS_WIRE_CODES
+    _DNS_WIRE_CODES,
 )
 from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
 
@@ -45,7 +45,7 @@ class TestDnsHostingError(TestCase):
                 self.assertEqual(str(exc), exc.message)
 
     def test_all_dns_hosting_error_codes_are_wired(self):
-        self.assertLessEqual(set(codes),set(_DNS_WIRE_CODES))
+        self.assertLessEqual(set(codes), set(_DNS_WIRE_CODES))
 
     def test_record_conflict_reuses_model_validation_string(self):
         """RECORD_CONFLICT reuses the existing model-level validation copy, not a new string."""
