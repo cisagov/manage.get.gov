@@ -205,6 +205,15 @@ const editButtonEventListener = (switcher, container)=>{
 }
 
 class DNSFormSwitcher{
+    // Manages DNS form switching from Alpine Data
+    // The classes requires a html container with alpine 
+    // There are two setter methods
+    //  One is for pending to store the value of the form that the user is clicking away from
+    //  One if for target to store the value of the form that the user is clicking to
+    //  The pending value is usually in a dict with the type of form edit or add, and the recordId of the form
+    //  This is because in methods in teardown, and onCancel, uses the dict to grab the form and the buttons to track
+    //  there is also a switchForm, the method that is responsible for actually switching the form, and reseting the pending and target values to null
+    // attemptOpen is to set the pending dict on the class instance
 
     constructor(container){
         this.pending = null;
@@ -230,6 +239,7 @@ class DNSFormSwitcher{
        const data = this.getAlpineData();
        data.showFormId = this.target;
        this.setTarget(null);
+       this.setPending(null);
     }
 
     attemptOpen(form){
@@ -282,9 +292,7 @@ export function initDNSRecordCancelModal(){
         const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
         modalEl?.setAttribute("data-opener", refsFor(switcher.pending).focusId);
         modalEl?.querySelector("[data-close-modal]")?.click();
-        switcher.setPending(null)
-        switcher.getAlpineData().showFormId = switcher.target;
-        switcher.setTarget(null);
+        switcher.switchForm(switcher.target)
     });
 
     // add record
