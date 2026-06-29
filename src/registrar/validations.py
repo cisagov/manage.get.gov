@@ -65,6 +65,8 @@ DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE = "Enter the content for this record."
 DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE = "Enter a priority for this record."
 DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE = "Enter a priority number between 0-65535."
 DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE = "A record with that name already exists. Names must be unique."
+DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE = "A CNAME record with that name already exists."
+DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE = "An A or AAAA record with that name already exists."
 CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE = "Name and target can't be the same."
 CNAME_NAME_INLINE_ERROR_MESSAGE = "Name can't be the same as the target."
 CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name."
@@ -72,6 +74,7 @@ MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
+DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "You already entered this DNS record. DNS records must be unique."
 
 
 def get_content_type_label_by_record_type(record_type):
