@@ -1,7 +1,12 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
-from gevent.lock import BoundedSemaphore
+import os
+
+import gevent
+from time import sleep
+from gevent import Timeout
+from epplibwrapper.utility.pool_status import PoolStatus
 
 try:
     from epplib.client import Client
@@ -15,8 +20,19 @@ from django.conf import settings
 
 from .cert import Cert, Key
 from .errors import ErrorCode, LoginError, RegistryError
+from .socket import Socket
+from .utility.pool import EPPConnectionPool
 
 logger = logging.getLogger(__name__)
+
+
+def _worker_tag():
+    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
+
+
+# Optional delay (in seconds) applied before sending an EPP command.
+# Used only for local/sandbox latency testing. 0 = disabled.
+EPP_TEST_DELAY_SECONDS = 5
 
 try:
     # Write cert and key to disk
@@ -26,7 +42,7 @@ except Exception:
     CERT = None  # type: ignore
     KEY = None  # type: ignore
     logger.warning(
-        "Problem with client certificate. Registrar cannot contact registry.",
+        f"{_worker_tag()}: Problem with client certificate. Registrar cannot contact registry.",
         exc_info=True,
     )
 
@@ -38,12 +54,8 @@ class EPPLibWrapper:
     ATTN: This should not be used directly. Use `Domain` from domain.py.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, start_connection_pool=True) -> None:
         """Initialize settings which will be used for all connections."""
-        # set _client to None initially. In the event that the __init__ fails
-        # before _client initializes, app should still start and be in a state
-        # that it can attempt _client initialization on send attempts
-        self._client = None  # type: ignore
         # prepare (but do not send) a Login command
         self._login = commands.Login(
             cl_id=settings.SECRET_REGISTRY_CL_ID,
@@ -53,25 +65,36 @@ class EPPLibWrapper:
                 "urn:ietf:params:xml:ns:contact-1.0",
             ],
         )
-        # We should only ever have one active connection at a time
-        self.connection_lock = BoundedSemaphore(1)
 
-        self.connection_lock.acquire()
-        try:
-            self._initialize_client()
-        except Exception:
-            logger.warning("Unable to configure the connection to the registry.")
-        finally:
-            self.connection_lock.release()
-
-    def _initialize_client(self) -> None:
-        """Initialize a client, assuming _login defined. Sets _client to initialized
-        client. Raises errors if initialization fails.
-        This method will be called at app initialization, and also during retries."""
         # establish a client object with a TCP socket transport
-        # note that type: ignore added in several places because linter complains
-        # about _client initially being set to None, and None type doesn't match code
-        self._client = Client(  # type: ignore
+        self._client = self._create_client()
+
+        self.pool_options = {
+            # Pool size
+            "size": settings.EPP_CONNECTION_POOL_SIZE,
+            # Which errors the pool should look out for.
+            # Avoid changing this unless necessary,
+            # it can and will break things.
+            "exc_classes": (TransportError,),
+            # Occasionally pings the registry to keep the connection alive.
+            # Value in seconds => (keepalive / size)
+            "keepalive": settings.POOL_KEEP_ALIVE,
+        }
+
+        self._pool = None
+
+        # Tracks the status of the pool
+        self.pool_status = PoolStatus()
+
+        if start_connection_pool:
+            self.start_connection_pool()
+
+    def _create_client(self):
+        """Builds a fresh epplib client with its own TCP socket transport.
+
+        Each pooled connection must own a separate client/transport/socket so
+        that connections in the pool are independent of one another."""
+        return Client(
             SocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
@@ -79,122 +102,183 @@ class EPPLibWrapper:
                 password=settings.SECRET_REGISTRY_KEY_PASSPHRASE,
             )
         )
-        try:
-            # use the _client object to connect
-            self._connect()
-        except TransportError as err:
-            message = "_initialize_client failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}")
-            raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
-        except LoginError as err:
-            raise err
-        except Exception as err:
-            message = "_initialize_client failed to execute due to an unknown error."
-            logger.error(f"{message} Error: {err}")
-            raise RegistryError(message) from err
-
-    def _connect(self) -> None:
-        """Connects to EPP. Sends a login command. If an invalid response is returned,
-        the client will be closed and a LoginError raised."""
-        self._client.connect()  # type: ignore
-        response = self._client.send(self._login)  # type: ignore
-        if response.code >= 2000:  # type: ignore
-            self._client.close()  # type: ignore
-            raise LoginError(response.msg)  # type: ignore
-
-    def _disconnect(self) -> None:
-        """Close the connection. Sends a logout command and closes the connection."""
-        self._send_logout_command()
-        self._close_client()
-
-    def _send_logout_command(self):
-        """Sends a logout command to epp"""
-        try:
-            self._client.send(commands.Logout())  # type: ignore
-        except Exception as err:
-            logger.warning(f"Logout command not sent successfully: {err}")
-
-    def _close_client(self):
-        """Closes an active client connection"""
-        try:
-            self._client.close()
-        except Exception as err:
-            logger.warning(f"Connection to registry was not cleanly closed: {err}")
 
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
 
+        if EPP_TEST_DELAY_SECONDS > 0:
+            logger.warning(f"{_worker_tag()} TEST DELAY {EPP_TEST_DELAY_SECONDS}s before {cmd_type}")
+            gevent.sleep(EPP_TEST_DELAY_SECONDS)
+
+        # Start a timeout to check if the pool is hanging
+        timeout = Timeout(settings.POOL_TIMEOUT)
+        timeout.start()
+
         try:
-            # check for the condition that the _client was not initialized properly
-            # at app initialization
-            if self._client is None:
-                self._initialize_client()
-            response = self._client.send(command)
+            if not self.pool_status.connection_success:
+                raise LoginError("Couldn't connect to the registry after three attempts")
+            with self._pool.get() as connection:
+                logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
+                try:
+                    response = connection.send(command)
+                except Timeout as send_timeout:
+                    if send_timeout is not timeout:
+                        raise
+                    # The command timed out while this connection was checked
+                    # out. Close it and raise a transport error so the pool
+                    # drops and replaces it, rather than returning the socket
+                    # to the pool where another greenlet could reuse it.
+                    # Guard close() so a transport error is always what
+                    # propagates: any other exception here would take the pool's
+                    # "return to pool" path instead of the drop path.
+                    try:
+                        connection.close()
+                    except Exception:
+                        pass
+                    raise TransportError("EPP command timed out") from send_timeout
+        except Timeout as t:
+            # If more than one pool exists,
+            # multiple timeouts can be floating around.
+            # We need to be specific as to which we are targeting.
+            if t is timeout:
+                # Flag that the pool is frozen,
+                # then restart the pool.
+                self.pool_status.pool_hanging = True
+                logger.error("Pool timed out")
+                self.start_connection_pool()
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"{message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()} EPP connection lost. {message} Error: {err}", exc_info=True)
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
-                raise RegistryError(response.msg, code=response.code, response=response)
+                raise RegistryError(response.msg, code=response.code)
             else:
                 return response
-
-    def _retry(self, command):
-        """Retry sending a command through EPP by re-initializing the client
-        and then sending the command."""
-        # re-initialize by disconnecting and initial
-        self._disconnect()
-        self._initialize_client()
-        return self._send(command)
+        finally:
+            # Close the timeout no matter what happens
+            timeout.close()
 
     def send(self, command, *, cleaned=False):
-        """Login, the send the command. Retry once if an error is found"""
+        """Login, send the command, then close the connection. Tries 3 times."""
         # try to prevent use of this method without appropriate safeguards
-        cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
 
-        self.connection_lock.acquire()
-        try:
-            return self._send(command)
-        except RegistryError as err:
-            if err.response:
-                logger.info(f"cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
-            if (
-                err.is_transport_error()
-                or err.is_connection_error()
-                or err.is_session_error()
-                or err.is_server_error()
-                or err.should_retry()
-            ):
-                message = f"{cmd_type} failed and will be retried"
-                logger.info(f"{message} Error: {err}")
-                return self._retry(command)
-            else:
+        # Reopen the pool if its closed
+        # Only occurs when a login error is raised, after connection is successful
+        if not self.pool_status.pool_running:
+            # We want to reopen the connection pool,
+            # but we don't want the end user to wait while it opens.
+            # Raise syntax doesn't allow this, so we use a try/catch
+            # block.
+            try:
+                logger.error("Can't contact the Registry. Pool was not running.")
+                raise RegistryError("Can't contact the Registry. Pool was not running.")
+            except RegistryError as err:
                 raise err
-        finally:
-            self.connection_lock.release()
+            finally:
+                # Code execution will halt after here.
+                # The end user will need to recall .send.
+                self.start_connection_pool()
+
+        counter = 0  # we'll try 3 times
+        while True:
+            try:
+                return self._send(command)
+            except RegistryError as err:
+                if counter < 3 and (err.should_retry() or err.is_transport_error()):
+                    logger.info(f"{_worker_tag()} Retrying transport error. Attempt #{counter+1} of 3.")
+                    counter += 1
+                    sleep((counter * 50) / 1000)  # sleep 50 ms to 150 ms
+                else:  # don't try again
+                    raise err
+
+    def get_pool(self):
+        """Get the current pool instance"""
+        return self._pool
+
+    def _create_pool(self, client_factory, login, options):
+        """Creates and returns new pool instance"""
+        logger.info(f"{_worker_tag()}: New pool was created")
+        return EPPConnectionPool(client_factory, login, options)
+
+    def start_connection_pool(self, restart_pool_if_exists=True):
+        """Starts a connection pool for the registry.
+
+        restart_pool_if_exists -> bool:
+        If an instance of the pool already exists,
+        then then that instance will be killed first.
+        It is generally recommended to keep this enabled.
+        """
+        # Since we reuse the same creds for each pool, we can test on
+        # one socket, and if successful, then we know we can connect.
+        if not self._test_registry_connection_success():
+            logger.warning(f"{_worker_tag()}: start_connection_pool() -> Cannot contact the Registry")
+            self.pool_status.connection_success = False
+        else:
+            self.pool_status.connection_success = True
+
+            # If this function is reinvoked, then ensure
+            # that we don't have duplicate data sitting around.
+            if self._pool is not None and restart_pool_if_exists:
+                logger.info(f"{_worker_tag()}: Connection pool restarting...")
+                self.kill_pool()
+                logger.info(f"{_worker_tag()}: Old pool killed")
+
+            self._pool = self._create_pool(self._create_client, self._login, self.pool_options)
+
+            self.pool_status.pool_running = True
+            self.pool_status.pool_hanging = False
+
+            logger.info(f"{_worker_tag()}:  Connection pool started")
+
+    def kill_pool(self):
+        """Kills the existing pool. Use this instead
+        of self._pool = None, as that doesn't clear
+        gevent instances."""
+        if self._pool is not None:
+            self._pool.kill_all_connections()
+            self._pool = None
+            self.pool_status.pool_running = False
+            return None
+        logger.info(f"{_worker_tag()}: kill_pool() was invoked but there was no pool to delete")
+
+    def _test_registry_connection_success(self):
+        """Check that determines if our login
+        credentials are valid, and/or if the Registrar
+        can be contacted
+        """
+        # This is closed in test_connection_success
+        socket = Socket(self._client, self._login)
+        can_login = False
+
+        # Something went wrong if this doesn't exist
+        if hasattr(socket, "test_connection_success"):
+            can_login = socket.test_connection_success()
+
+        return can_login
 
 
 try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
-    logger.info("registry client initialized")
+    logger.info(f"{_worker_tag()}: registry client initialized")
 except Exception:
-    logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+    CLIENT = None  # type: ignore
+    logger.warning(f"{_worker_tag()}: Unable to configure epplib. Registrar cannot contact registry.", exc_info=True)
