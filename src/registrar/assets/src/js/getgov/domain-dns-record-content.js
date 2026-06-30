@@ -224,7 +224,7 @@ export function editAndCommentButtonListener (){
 
 // Tab-order routing for the DNS records table (#4804).
 // When a form is open, route Tab to walk:
-//   Edit → form fields → Delete → kebab → next row's Edit
+//   Edit → form fields → Form Delete → Row Delete → next row's Edit
 // Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
     const table = document.querySelector("#dnsrecords-table");

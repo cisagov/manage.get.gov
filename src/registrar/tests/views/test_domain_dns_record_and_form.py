@@ -573,7 +573,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @less_console_noise_decorator
     def test_dns_record_readonly_row_has_stable_id_for_focus_routing(self):
         """The readonly row id (dnsrecord-row-<id>) is what the tab-order JS uses
-        to find the next record's Edit button when routing focus from the kebab."""
+        to find the next record's Edit button when routing focus from the row delete."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
