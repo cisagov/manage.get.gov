@@ -8,14 +8,11 @@ from django.conf import settings
 from .cert import Cert, Key
 from .errors import ErrorCode, LoginError, RegistryError
 
-# Set > 0 to simulate a slow registry for 499 reproduction. 0 = disabled.
-EPP_TEST_DELAY_SECONDS = 5
-
 try:
     from epplib.client import Client
     from epplib import commands
     from epplib.exceptions import TransportError, ParsingError
-    from epplib.transport import SocketTransport
+    from .socket import TimeoutSocketTransport
 except ImportError:
     pass
 
@@ -72,6 +69,11 @@ class EPPLibWrapper:
             logger.warning("Unable to configure the connection to the registry.")
         finally:
             self.connection_lock.release()
+        
+        # based off what the old connection pool did
+        # Spawn a background greenlet that periodically pings the registry to keep
+        # the connection warm and detect a dead connection.
+        self._heartbeat_greenlet = gevent.spawn(self._heartbeat_loop)
 
     def _initialize_client(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
@@ -81,7 +83,7 @@ class EPPLibWrapper:
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
         self._client = Client(  # type: ignore
-            SocketTransport(
+            TimeoutSocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
                 key_file=KEY.filename,
@@ -123,22 +125,18 @@ class EPPLibWrapper:
         try:
             self._client.send(commands.Logout())  # type: ignore
         except Exception as err:
-            logger.warning(f"Logout command not sent successfully: {err}")
+            logger.warning(f"{_worker_tag()} Logout command not sent successfully: {err}")
 
     def _close_client(self):
         """Closes an active client connection"""
         try:
             self._client.close()
         except Exception as err:
-            logger.warning(f"Connection to registry was not cleanly closed: {err}")
+            logger.warning(f"{_worker_tag()} Connection to registry was not cleanly closed: {err}")
 
     def _send(self, command):
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
-
-        if EPP_TEST_DELAY_SECONDS > 0:
-            logger.warning(f"{_worker_tag()} TEST DELAY {EPP_TEST_DELAY_SECONDS}s before {cmd_type}")
-            gevent.sleep(EPP_TEST_DELAY_SECONDS)
 
         try:
             # check for the condition that the _client was not initialized properly
@@ -171,6 +169,31 @@ class EPPLibWrapper:
             else:
                 return response
 
+    def _heartbeat(self):
+        """Send a Hello() to the registry to keep the connection warm and detect a
+        dead connection. Logs and attempts to recover if the heartbeat fails."""
+        self.connection_lock.acquire()
+        try:
+            if self._client is None:
+                self._initialize_client()
+            self._client.send(commands.Hello())  # type: ignore
+            logger.info(f"{_worker_tag()} EPP heartbeat ok")
+        except Exception as err:
+            logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat failed: {err}")
+            # Try to recover the connection so the next real command has a live client.
+            try:
+                self._initialize_client()
+            except Exception as reconnect_err:
+                logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat reconnect failed: {reconnect_err}")
+        finally:
+            self.connection_lock.release()
+
+    def _heartbeat_loop(self):
+        """Run the heartbeat on a background greenlet on a fixed interval."""
+        while True:
+            gevent.sleep(settings.EPP_HEARTBEAT_INTERVAL)
+            self._heartbeat()
+
     def _retry(self, command):
         """Retry sending a command through EPP by re-initializing the client
         and then sending the command."""
@@ -191,7 +214,7 @@ class EPPLibWrapper:
             return self._send(command)
         except RegistryError as err:
             if err.response:
-                logger.info(f"cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
+                logger.info(f"{_worker_tag()} cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
             if (
                 err.is_transport_error()
                 or err.is_connection_error()

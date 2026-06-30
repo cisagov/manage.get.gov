@@ -823,6 +823,16 @@ SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
+# How often, in seconds, the background heartbeat pings the registry to keep the
+# EPP connection warm and detect a dead connection.
+EPP_HEARTBEAT_INTERVAL = 60
+
+# Max seconds an EPP socket may block on connect/read before raising.
+# The registry normally responds in milliseconds; this is a backstop so an
+# unresponsive registry cannot hang a request (and hold the connection lock)
+# indefinitely.
+EPP_CONNECTION_TIMEOUT = 30
+
 # endregion
 
 # region: DNS----------------------------------------------------------###

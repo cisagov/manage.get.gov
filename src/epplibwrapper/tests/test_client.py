@@ -2,6 +2,7 @@ import datetime
 from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+from django.conf import settings
 from django.test import TestCase
 from api.tests.common import less_console_noise_decorator
 from gevent.exceptions import ConcurrentObjectUseError
@@ -15,6 +16,7 @@ try:
     from epplib.transport import SocketTransport
     from epplib import commands
     from epplib.models import common, info
+    from epplibwrapper.socket import TimeoutSocketTransport
 except ImportError:
     pass
 
@@ -432,3 +434,20 @@ class TestClient(TestCase):
             ):
                 result = wrapper.send(tested_command, cleaned=True)
                 self.assertEqual(expected_result, result.__dict__)
+
+    @less_console_noise_decorator
+    def test_timeout_socket_transport_sets_socket_timeout(self):
+        """TimeoutSocketTransport applies settings.EPP_CONNECTION_TIMEOUT to the socket
+        after connecting, so a slow/unresponsive registry cannot block a read indefinitely."""
+        transport = TimeoutSocketTransport("localhost")
+
+        def fake_socket_transport_parent(inner_self):
+            # Stand in for the real SocketTransport.socket which is what is manipulated by .connect
+            inner_self.socket = MagicMock()
+
+        # Patch the base connect so only our subclass's timeout logic runs
+        with patch.object(SocketTransport, "connect", fake_socket_transport_parent):
+            # transport.connect() will call the fake_socket_transport_parent above
+            transport.connect()
+
+        transport.socket.settimeout.assert_called_once_with(settings.EPP_CONNECTION_TIMEOUT)
