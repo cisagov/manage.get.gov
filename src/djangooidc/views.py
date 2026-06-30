@@ -128,11 +128,7 @@ def login_callback(request):
 
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
-            if url_has_allowed_host_and_scheme(request.GET.get("next", "/"), None):
-                return redirect(request.session.get("next", "/"))
-            else:
-                logger.warning(f"Invalid redirect: {request.GET.get("next")}")
-                return redirect(request.session.get("/"))
+            return redirect(request.session.get("next", "/"))
         else:
             raise o_e.BannedUser()
     except o_e.StateMismatch as nsd_err:
@@ -144,7 +140,11 @@ def login_callback(request):
             # In the event of a state mismatch between OP and session, redirect the user to the
             # beginning of login process without raising an error to the user. Attempt once.
             logger.warning(f"No State Defined: {nsd_err}")
-            return redirect(request.session.get("next", "/"))
+            if url_has_allowed_host_and_scheme(request.GET.get("next", "/"), None):
+                return redirect(request.session.get("next", "/"))
+            else:
+                logger.warning(f"Invalid redirect: {request.GET.get("next")}")
+                return redirect(request.session.get("/"))
         else:
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
