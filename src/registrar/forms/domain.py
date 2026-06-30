@@ -810,8 +810,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
-            # Priority is required only for MX records
-            self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
         config = {
             rt.value: {
@@ -884,7 +882,6 @@ class DomainDNSRecordForm(forms.ModelForm):
         required=False,
         help_text="0–65535",
         error_messages={
-            "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
             "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
