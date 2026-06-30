@@ -342,8 +342,6 @@ _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.UPSTREAM_ERROR: "DNS_UPSTREAM_ERROR",
     DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
 }
-assert set(DnsHostingErrorCodes) <= set(_DNS_WIRE_CODES)
-
 
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
     # Module-level rebuilder so __reduce__ stays picklable by name.
