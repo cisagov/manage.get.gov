@@ -343,6 +343,7 @@ _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
 }
 
+
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
     # Module-level rebuilder so __reduce__ stays picklable by name.
     return cls(code=code, message=explicit_message, upstream_status=upstream_status, context=context)
