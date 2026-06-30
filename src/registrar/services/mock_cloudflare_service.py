@@ -299,26 +299,8 @@ class MockCloudflareService:
         if record_name.startswith("timeout-"):
             raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
 
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                    headers={"cf-ray": "ZXY321"},
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403,
-                    json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
-                    headers={"cf-ray": "ABC123"},
-                )
-            return httpx.Response(500)
+            return self._mock_cf_error_response(record_name, type)
 
         return httpx.Response(
             200,
@@ -370,26 +352,8 @@ class MockCloudflareService:
         if record_name.startswith("timeout-"):
             raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
 
-        # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
-            if record_name.startswith("error-400"):
-                return httpx.Response(
-                    400,
-                    json={
-                        "result": None,
-                        "success": False,
-                        "errors": [{"code": 9005, "message": "Bad request for dns record."}],
-                        "messages": [],
-                    },
-                    headers={"cf-ray": "R2D2"},
-                )
-            if record_name.startswith("error-403"):
-                return httpx.Response(
-                    403,
-                    json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
-                    headers={"cf-ray": "C3PO"},
-                )
-            return httpx.Response(500)
+            return self._mock_cf_error_response(cf_record_name, type)
 
         # Update response so it fits with whatever record we're returning
         return httpx.Response(
@@ -470,3 +434,80 @@ class MockCloudflareService:
             return dns_zone.name
         except Exception as e:
             logger.error(f"Failed to get record zone name using request URL: {e}.")
+
+    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response | None:
+        """Return an error response for magic ``error-*`` record names. These represent actual CF error codes and messages"""
+        if record_name.startswith("error-duplicate"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 81058, "message": "An identical record already exists."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB8"},
+            )
+        if record_name.startswith("error-invalid-name"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 9000, "message": "DNS name is invalid."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB9"},
+            )
+        if record_name.startswith("error-exceed-content-max"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 9015, "message": "Record content exceeds the allowed length of 4096 wire format bytes."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB10"},
+            )
+        if record_name.startswith("error-exceed-combined-content-max"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 83011, "message": "Combined content length of records with this name and type exceeds the limit."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB11"},
+            )
+        if record_name.startswith("error-name-conflict"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 81053, "message": "An A, AAAA, or CNAME record with that host already exists. For more details, refer to <https://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/records-with-same-name/>."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "BB12"},
+            )
+        if record_name.startswith("error-400"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 9007, "message": f"Content for {record_type} record is invalid."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "R2D2"},
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                403,
+                json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
+                headers={"cf-ray": "C3PO"},
+            )
+        return httpx.Response(500)
+    
