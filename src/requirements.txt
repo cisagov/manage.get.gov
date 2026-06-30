@@ -2,8 +2,8 @@
 annotated-types==0.7.0; python_version >= '3.8'
 anyio==4.14.1; python_version >= '3.10'
 asgiref==3.11.1; python_version >= '3.9'
-boto3==1.43.36; python_version >= '3.10'
-botocore==1.43.36; python_version >= '3.10'
+boto3==1.43.38; python_version >= '3.10'
+botocore==1.43.38; python_version >= '3.10'
 cachetools==7.1.4; python_version >= '3.10'
 certifi==2026.6.17; python_version >= '3.7'
 cfenv==0.5.3
@@ -30,13 +30,13 @@ django-stubs-ext==6.0.6; python_version >= '3.10'
 django-waffle==5.0.0; python_version >= '3.9'
 django-widget-tweaks==1.5.1; python_version >= '3.9'
 environs[django]==15.0.1; python_version >= '3.10'
-faker==40.23.0; python_version >= '3.10'
+faker==40.27.0; python_version >= '3.10'
 fred-epplib @ git+https://github.com/cisagov/epplib.git@308e625b794a9a8e50551e8f9caa837470e24630
 furl==2.1.4
 future==1.0.0; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'
 gevent==26.5.0; python_version >= '3.9'
 geventconnpool @ git+https://github.com/rasky/geventconnpool.git@1bbb93a714a331a069adf27265fe582d9ba7ecd4
-greenlet==3.5.2; python_version >= '3.10'
+greenlet==3.5.3; python_version >= '3.10'
 gunicorn==26.0.0; python_version >= '3.10'
 h11==0.16.0; python_version >= '3.8'
 httpcore==1.0.9; python_version >= '3.8'
@@ -52,7 +52,6 @@ orderedmultidict==1.0.2
 packaging==26.2; python_version >= '3.8'
 phonenumberslite==9.0.33; python_version >= '2.5'
 pillow==12.2.0; python_version >= '3.10'
-psycogreen==1.0.2
 psycopg2-binary==2.9.12; python_version >= '3.9'
 pycparser==3.0; python_version >= '3.10'
 pycryptodomex==3.23.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6'
