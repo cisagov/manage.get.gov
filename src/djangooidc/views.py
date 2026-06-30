@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.shortcuts import redirect
 from urllib.parse import parse_qs, urlencode
 
@@ -76,7 +77,11 @@ def openid(request):
             logger.debug("OIDC client is None, attempting to initialize")
             _initialize_client()
         request.session["acr_value"] = CLIENT.get_default_acr_value()
-        request.session["next"] = request.GET.get("next", "/")
+        if url_has_allowed_host_and_scheme(request.GET.get("next", "/"), None):
+            request.session["next"] = request.GET.get("next", "/")
+        else:
+            logger.warning(f"Invalid redirect: {request.GET.get("next")}")
+            request.session["next"] = "/"
         # Create the authentication request
         return CLIENT.create_authn_request(request.session)
     except Exception as err:
@@ -135,7 +140,11 @@ def login_callback(request):
             # In the event of a state mismatch between OP and session, redirect the user to the
             # beginning of login process without raising an error to the user. Attempt once.
             logger.warning(f"No State Defined: {nsd_err}")
-            return redirect(request.session.get("next", "/"))
+            if url_has_allowed_host_and_scheme(request.GET.get("next", "/"), None):
+                return redirect(request.session.get("next", "/"))
+            else:
+                logger.warning(f"Invalid redirect: {request.GET.get("next")}")
+                return redirect(request.session.get("/"))
         else:
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
