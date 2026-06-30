@@ -142,7 +142,7 @@ class DomainFixture(DomainRequestFixture):
                 if domain.is_enrolled_in_dns_hosting:
                     x_account_id = fake.uuid4().replace("-", "")
                     x_zone_id = fake.uuid4().replace("-", "")
-                    ns = fake.random_number()
+                    ns = fake.random_number(digits=1)
                     ns2 = ns + 1
                     create_initial_dns_setup(domain, x_account_id=x_account_id, x_zone_id=x_zone_id, vanity_nameservers=[f"n{ns}.rainbow.gov", f"n{ns2}.rainbow.gov"])
 
