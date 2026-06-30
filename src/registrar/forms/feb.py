@@ -29,14 +29,9 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
         max_length=2000,
         required=True,
         error_messages={
-            "required": ("Provide details on why your submission does not meet each domain naming requirement.")
+            "required": ("Provide details on why your submission does not meet each domain naming requirement."),
+            "max_length": "Reason for not meeting requirements must be no more than 2000 characters.",
         },  # noqa: E501
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
         label="",
     )
 
@@ -85,8 +80,8 @@ class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
                     Is there a special significance to this date (legal requirement, announcement, event, etc)?"}),
         validators=[
             MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
+                1000,
+                message="Context for target timeframe must be no more than 1000 characters.",
             )
         ],
         error_messages={"required": "Provide details on your target time frame."},
@@ -119,8 +114,8 @@ class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
         widget=forms.Textarea(attrs={"aria-label": "Provide details on the nature of the interagency initiative."}),
         validators=[
             MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
+                1000,
+                message="Description of interagency engagement must be no more than 1000 characters.",
             )
         ],
         error_messages={"required": "Provide details on the nature of the interagency initiative."},
