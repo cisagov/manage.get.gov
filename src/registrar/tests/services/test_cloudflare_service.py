@@ -30,6 +30,8 @@ class TestCloudflareService(SimpleTestCase):
                 "exception": HTTPStatusError,
                 "raised_error": DnsValidationError,
                 "code": DnsHostingErrorCodes.VALIDATION_FAILED,
+                "cf_error_code": 48,
+                "cf_error_message": "Needs more love"
             },
             "cf_ray": "135",
         },
@@ -50,6 +52,8 @@ class TestCloudflareService(SimpleTestCase):
                 "exception": HTTPStatusError,
                 "raised_error": DnsNotFoundError,
                 "code": DnsHostingErrorCodes.NOT_FOUND,
+                "cf_error_code": 411,
+                "cf_error_message": "Needs more info"
             },
             "cf_ray": "579",
         },
@@ -60,6 +64,8 @@ class TestCloudflareService(SimpleTestCase):
                 "exception": HTTPStatusError,
                 "raised_error": DnsAuthError,
                 "code": DnsHostingErrorCodes.AUTH_FAILED,
+                "cf_error_code": 10000,
+                "cf_error_message": "Auth error"
             },
             "cf_ray": "K9",
         },
@@ -70,6 +76,8 @@ class TestCloudflareService(SimpleTestCase):
                 "exception": HTTPStatusError,
                 "raised_error": DnsAuthError,
                 "code": DnsHostingErrorCodes.AUTH_FAILED,
+                "cf_error_code": 10000,
+                "cf_error_message": "Auth error"
             },
             "cf_ray": "KRS1",
         },
@@ -80,6 +88,8 @@ class TestCloudflareService(SimpleTestCase):
                 "exception": HTTPStatusError,
                 "raised_error": DnsRateLimitError,
                 "code": DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED,
+                "cf_error_code": 666,
+                "cf_error_message": "Unlucky"
             },
             "cf_ray": "R2D2",
         },
@@ -90,6 +100,8 @@ class TestCloudflareService(SimpleTestCase):
                 "exception": HTTPStatusError,
                 "raised_error": DnsHostingError,
                 "code": DnsHostingErrorCodes.UNKNOWN,
+                "cf_error_code": 7777,
+                "cf_error_message": "I'm a little teapot short and stout, not a coffee pot!"
             },
             "cf_ray": "TEAPOT",
         },
@@ -161,6 +173,12 @@ class TestCloudflareService(SimpleTestCase):
                     mock_response = httpx.Response(
                         400,
                         headers={"cf-ray": "135"},
+                        json={
+                            "result": None,
+                            "success": False,
+                            "errors": [{"code": 48, "message": "Needs more love"}],
+                            "messages": [],
+                        },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 409:
@@ -173,30 +191,60 @@ class TestCloudflareService(SimpleTestCase):
                     mock_response = httpx.Response(
                         404,
                         headers={"cf-ray": "579"},
+                        json={
+                            "result": None,
+                            "success": False,
+                            "errors": [{"code": 411, "message": "Needs more info"}],
+                            "messages": [],
+                        },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 429:
                     mock_response = httpx.Response(
                         429,
                         headers={"cf-ray": "R2D2"},
+                        json={
+                            "result": None,
+                            "success": False,
+                            "errors": [{"code": 666, "message": "Unlucky"}],
+                            "messages": [],
+                        },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 401:
                     mock_response = httpx.Response(
                         401,
                         headers={"cf-ray": "K9"},
+                        json={
+                            "result": None,
+                            "success": False,
+                            "errors": [{"code": 10000, "message": "Auth error"}],
+                            "messages": [],
+                        },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 403:
                     mock_response = httpx.Response(
                         403,
                         headers={"cf-ray": "KRS1"},
+                        json={
+                            "result": None,
+                            "success": False,
+                            "errors": [{"code": 10000, "message": "Auth error"}],
+                            "messages": [],
+                        },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 418:
                     mock_response = httpx.Response(
                         418,
                         headers={"cf-ray": "TEAPOT"},
+                        json={
+                            "result": None,
+                            "success": False,
+                            "errors": [{"code": 7777, "message": "I'm a little teapot short and stout, not a coffee pot!"}],
+                            "messages": [],
+                        },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 500:
@@ -210,6 +258,12 @@ class TestCloudflareService(SimpleTestCase):
             http_error = RequestError(request="something", message="last thing")
         mock_api_response.raise_for_status.side_effect = http_error
         return mock_api_response
+
+    def _assert_shared_http_status_errors_details(self, exception: HTTPStatusError, case):
+        self.assertEqual(exception.context["cf_ray"], case["cf_ray"])
+        self.assertEqual(exception.upstream_status, case["status_code"])
+        self.assertEqual(exception.context["cf_error_code"], case["error"].get("cf_error_code"))
+        self.assertEqual(exception.context["cf_error_message"], case["error"].get("cf_error_message"))
 
     def test_create_cf_account_success(self):
         """Test successful create_cf_account call"""
@@ -239,9 +293,9 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["account_name"], account_name)
+
 
     def test_create_cf_zone_success(self):
         """Test successful create_cf_zone call"""
@@ -278,8 +332,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["zone_name"], zone_name)
                     self.assertEqual(exc.context["x_account_id"], account_id)
 
@@ -346,8 +399,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
                     self.assertEqual(exc.context["record_data"], record_data_missing_content)
 
@@ -442,8 +494,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
                     self.assertEqual(exc.context["x_record_id"], record_id)
                     self.assertEqual(exc.context["record_data"], record_data_invalid_content)
@@ -489,8 +540,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
                     self.assertEqual(exc.context["x_record_id"], record_id)
 
@@ -530,8 +580,8 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
+
 
     def test_get_account_zones_success(self):
         """Test successful get_account_zones call"""
@@ -574,8 +624,8 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
+
 
     def test_get_zone_by_id_success(self):
         zone_id = "87678"
@@ -607,8 +657,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
 
     def test_get_dns_record_success(self):
@@ -642,8 +691,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
                     self.assertEqual(exc.context["x_record_id"], record_id)
 
@@ -688,8 +736,7 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_account_id"], account_id)
 
     def test_update_zone_dns_settings_success(self):
@@ -732,6 +779,5 @@ class TestCloudflareService(SimpleTestCase):
                 self.assertEqual(exc.code, case["error"]["code"])
 
                 if case["error"]["exception"] == HTTPStatusError:
-                    self.assertEqual(exc.context["cf_ray"], case["cf_ray"])
-                    self.assertEqual(exc.upstream_status, case["status_code"])
+                    self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)

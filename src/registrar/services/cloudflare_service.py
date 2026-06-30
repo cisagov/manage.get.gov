@@ -30,10 +30,28 @@ _STATUS_TO_ERROR = {
 }
 
 
+def _cf_error_detail(response) -> dict:
+    """Pull Cloudflare's own error code + message out of the response body, if present."""
+    try:
+        errors = response.json().get("errors") or []
+    except ValueError:  # body wasn't JSON (e.g. an empty 500) -> nothing to pull
+        return {}
+    if not errors:
+        return {}
+    first = errors[0]
+    return {"cf_error_code": first.get("code"), "cf_error_message": first.get("message")}
+
+
 def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
     """Map an HTTP error to the right DnsHostingError subclass and log once."""
     status = e.response.status_code
-    ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
+    details = _cf_error_detail(e.response)
+    ctx = {
+        "cf_ray": e.response.headers.get("cf-ray"),
+        "cf_error_code": details.get("cf_error_code"),
+        "cf_error_message": details.get("cf_error_message"),
+        **context,
+    }
     exc_cls, code = _STATUS_TO_ERROR.get(status, (None, None))
 
     if exc_cls is None and 500 <= status <= 599:
