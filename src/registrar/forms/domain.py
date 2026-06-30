@@ -882,8 +882,6 @@ class DomainDNSRecordForm(forms.ModelForm):
     priority = forms.IntegerField(
         label="Priority",
         required=False,
-        min_value=0,
-        max_value=65535,
         help_text="0–65535",
         error_messages={
             "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
