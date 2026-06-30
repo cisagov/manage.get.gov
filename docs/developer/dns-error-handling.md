@@ -154,7 +154,7 @@ Services log and raise. Views catch and render. A DNS failure produces exactly o
 {
   "status": "error",
   "code": "DNS_NOT_FOUND",
-  "message": "We couldn't find the DNS zone for this domain.",
+  "message": "We couldn't find the DNS resource for this domain.",
   "request_id": "1a2b3c4d-..."
 }
 ```
