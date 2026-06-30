@@ -323,18 +323,16 @@ class DnsHostingErrorCodes(IntEnum):
     """Error codes for DNS-hosting failures."""
 
     NOT_FOUND = 1
-    RECORD_CONFLICT = 2
-    VALIDATION_FAILED = 3
-    RATE_LIMIT_EXCEEDED = 4
-    AUTH_FAILED = 5
-    UPSTREAM_TIMEOUT = 6
-    UPSTREAM_ERROR = 7
-    UNKNOWN = 8
+    VALIDATION_FAILED = 2
+    RATE_LIMIT_EXCEEDED = 3
+    AUTH_FAILED = 4
+    UPSTREAM_TIMEOUT = 5
+    UPSTREAM_ERROR = 6
+    UNKNOWN = 7
 
 
 _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.NOT_FOUND: "DNS_NOT_FOUND",
-    DnsHostingErrorCodes.RECORD_CONFLICT: "DNS_RECORD_CONFLICT",
     DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
     DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
     DnsHostingErrorCodes.AUTH_FAILED: "DNS_AUTH_FAILED",
@@ -356,7 +354,6 @@ class DnsHostingError(Exception):
         DnsHostingErrorCodes.NOT_FOUND: (
             "A resource was not found. Please try again. If the problem persists, contact us for assistance."
         ),
-        DnsHostingErrorCodes.RECORD_CONFLICT: DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
         DnsHostingErrorCodes.VALIDATION_FAILED: (
             "The DNS record couldn’t be saved because one of its fields wasn’t valid."
         ),

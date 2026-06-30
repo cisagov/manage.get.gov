@@ -31,19 +31,9 @@ class TestCloudflareService(SimpleTestCase):
                 "raised_error": DnsValidationError,
                 "code": DnsHostingErrorCodes.VALIDATION_FAILED,
                 "cf_error_code": 48,
-                "cf_error_message": "Needs more love"
+                "cf_error_message": "Needs more love",
             },
             "cf_ray": "135",
-        },
-        {
-            "test_name": "409ValidationError",
-            "status_code": 409,
-            "error": {
-                "exception": HTTPStatusError,
-                "raised_error": DnsValidationError,
-                "code": DnsHostingErrorCodes.RECORD_CONFLICT,
-            },
-            "cf_ray": "246",
         },
         {
             "test_name": "DnsNotFoundError",
@@ -53,7 +43,7 @@ class TestCloudflareService(SimpleTestCase):
                 "raised_error": DnsNotFoundError,
                 "code": DnsHostingErrorCodes.NOT_FOUND,
                 "cf_error_code": 411,
-                "cf_error_message": "Needs more info"
+                "cf_error_message": "Needs more info",
             },
             "cf_ray": "579",
         },
@@ -65,7 +55,7 @@ class TestCloudflareService(SimpleTestCase):
                 "raised_error": DnsAuthError,
                 "code": DnsHostingErrorCodes.AUTH_FAILED,
                 "cf_error_code": 10000,
-                "cf_error_message": "Auth error"
+                "cf_error_message": "Auth error",
             },
             "cf_ray": "K9",
         },
@@ -77,7 +67,7 @@ class TestCloudflareService(SimpleTestCase):
                 "raised_error": DnsAuthError,
                 "code": DnsHostingErrorCodes.AUTH_FAILED,
                 "cf_error_code": 10000,
-                "cf_error_message": "Auth error"
+                "cf_error_message": "Auth error",
             },
             "cf_ray": "KRS1",
         },
@@ -89,7 +79,7 @@ class TestCloudflareService(SimpleTestCase):
                 "raised_error": DnsRateLimitError,
                 "code": DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED,
                 "cf_error_code": 666,
-                "cf_error_message": "Unlucky"
+                "cf_error_message": "Unlucky",
             },
             "cf_ray": "R2D2",
         },
@@ -101,7 +91,7 @@ class TestCloudflareService(SimpleTestCase):
                 "raised_error": DnsHostingError,
                 "code": DnsHostingErrorCodes.UNKNOWN,
                 "cf_error_code": 7777,
-                "cf_error_message": "I'm a little teapot short and stout, not a coffee pot!"
+                "cf_error_message": "I'm a little teapot short and stout, not a coffee pot!",
             },
             "cf_ray": "TEAPOT",
         },
@@ -181,12 +171,6 @@ class TestCloudflareService(SimpleTestCase):
                         },
                     )
                     http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
-                case 409:
-                    mock_response = httpx.Response(
-                        409,
-                        headers={"cf-ray": "246"},
-                    )
-                    http_error = HTTPStatusError(request="something", response=mock_response, message="other thing")
                 case 404:
                     mock_response = httpx.Response(
                         404,
@@ -242,7 +226,9 @@ class TestCloudflareService(SimpleTestCase):
                         json={
                             "result": None,
                             "success": False,
-                            "errors": [{"code": 7777, "message": "I'm a little teapot short and stout, not a coffee pot!"}],
+                            "errors": [
+                                {"code": 7777, "message": "I'm a little teapot short and stout, not a coffee pot!"}
+                            ],
                             "messages": [],
                         },
                     )
@@ -295,7 +281,6 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["account_name"], account_name)
-
 
     def test_create_cf_zone_success(self):
         """Test successful create_cf_zone call"""
@@ -582,7 +567,6 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
 
-
     def test_get_account_zones_success(self):
         """Test successful get_account_zones call"""
         account_id = "55555"
@@ -625,7 +609,6 @@ class TestCloudflareService(SimpleTestCase):
 
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
-
 
     def test_get_zone_by_id_success(self):
         zone_id = "87678"
