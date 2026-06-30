@@ -58,8 +58,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """
         How to run:
-            ./manage.py import_state_tribal_data --csv-path /tmp/state_tribe.csv --no-dry-run
-            ./manage.py import_state_tribal_data --csv-path /tmp/state_tribe.csv (dry run is on by default)
+            ./manage.py import_state_tribal_data --csv-path /home/vcap/tmp/state_tribes.csv --no-dry-run
+            ./manage.py import_state_tribal_data --csv-path /home/vcap/tmp/state_tribes.csv (dry run is on by default)
         """
         dry_run = bool(options.get("dry_run", True))
         csv_path = options.get("csv_path")
