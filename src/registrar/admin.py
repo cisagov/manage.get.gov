@@ -5600,6 +5600,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
     def do_enroll_dns_hosting(self, request, obj):
+        failed_enrollment_message = "Failed to enroll domain in DNS hosting."
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
@@ -5609,14 +5610,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         except DnsHostingError:
             self.message_user(
                 request,
-                "Failed to enroll domain in DNS hosting.",
+                failed_enrollment_message,
                 messages.ERROR,
             )
         except Exception as e:
             logger.exception(e)
             self.message_user(
                 request,
-                "Failed to enroll domain in DNS hosting.",
+                failed_enrollment_message,
                 messages.ERROR,
             )
         else:
