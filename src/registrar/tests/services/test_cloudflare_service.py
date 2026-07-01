@@ -245,7 +245,7 @@ class TestCloudflareService(SimpleTestCase):
         mock_api_response.raise_for_status.side_effect = http_error
         return mock_api_response
 
-    def _assert_shared_http_status_errors_details(self, exception: HTTPStatusError, case):
+    def _assert_shared_http_status_errors_details(self, exception: DnsHostingError, case):
         self.assertEqual(exception.context["cf_ray"], case["cf_ray"])
         self.assertEqual(exception.upstream_status, case["status_code"])
         self.assertEqual(exception.context["cf_error_code"], case["error"].get("cf_error_code"))

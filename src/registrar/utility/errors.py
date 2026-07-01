@@ -2,8 +2,6 @@ import logging
 
 from enum import IntEnum
 
-from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
-
 logger = logging.getLogger(__name__)
 
 

@@ -60,7 +60,7 @@ def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
         if exc_cls is None:  # Represents 400s we didn't map to a specific status code
             exc_cls, code = DnsHostingError, DnsHostingErrorCodes.UNKNOWN
 
-    else:                                       # RequestError -> no response, transport failure
+    else:  # RequestError -> no response, transport failure
         status = None
         ctx = {"exc_class": type(e).__name__, **context}
         log_only = {}

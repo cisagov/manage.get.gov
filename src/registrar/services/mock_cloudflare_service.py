@@ -435,8 +435,8 @@ class MockCloudflareService:
         except Exception as e:
             logger.error(f"Failed to get record zone name using request URL: {e}.")
 
-    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response | None:
-        """Return an error response for magic ``error-*`` record names. These represent actual CF error codes and messages"""
+    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:
+        """Return an error response for ``error-*`` record names. These represent actual CF error codes and messages"""
         if record_name.startswith("error-duplicate"):
             return httpx.Response(
                 400,
@@ -465,7 +465,12 @@ class MockCloudflareService:
                 json={
                     "result": None,
                     "success": False,
-                    "errors": [{"code": 9015, "message": "Record content exceeds the allowed length of 4096 wire format bytes."}],
+                    "errors": [
+                        {
+                            "code": 9015,
+                            "message": "Record content exceeds the allowed length of 4096 wire format bytes.",
+                        }
+                    ],
                     "messages": [],
                 },
                 headers={"cf-ray": "BB10"},
@@ -476,7 +481,12 @@ class MockCloudflareService:
                 json={
                     "result": None,
                     "success": False,
-                    "errors": [{"code": 83011, "message": "Combined content length of records with this name and type exceeds the limit."}],
+                    "errors": [
+                        {
+                            "code": 83011,
+                            "message": "Combined content length of records with this name and type exceeds the limit.",
+                        }
+                    ],
                     "messages": [],
                 },
                 headers={"cf-ray": "BB11"},
@@ -487,7 +497,14 @@ class MockCloudflareService:
                 json={
                     "result": None,
                     "success": False,
-                    "errors": [{"code": 81053, "message": "An A, AAAA, or CNAME record with that host already exists. For more details, refer to <https://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/records-with-same-name/>."}],
+                    "errors": [
+                        {
+                            "code": 81053,
+                            "message": "An A, AAAA, or CNAME record with that host already exists. For more details, "
+                            "refer to <https://developers.cloudflare.com/dns/manage-dns-records/troubleshooting/"
+                            "records-with-same-name/>.",
+                        }
+                    ],
                     "messages": [],
                 },
                 headers={"cf-ray": "BB12"},
@@ -510,4 +527,3 @@ class MockCloudflareService:
                 headers={"cf-ray": "C3PO"},
             )
         return httpx.Response(500)
-    
