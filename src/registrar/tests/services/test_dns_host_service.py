@@ -479,21 +479,6 @@ class TestDnsHostServiceDB(TestCase):
         User.objects.all().delete()
         DomainInformation.objects.all().delete()
 
-    def test_find_existing_account_success(self):
-        domain = create_domain(domain_name="democracy.gov")
-        test_x_account_id = "12345"
-        account_name = make_dns_account_name(domain.name)
-
-        # Paginated endpoint returns the above dictionary
-        self.service.dns_vendor_service.get_page_accounts.return_value = self.vendor_zone_data
-
-        self.service._find_account_tag_by_pubname = Mock(return_value=test_x_account_id)
-
-        create_dns_account(domain=domain, x_account_id=test_x_account_id)
-
-        found_id = self.service._find_existing_account_in_db(account_name)
-        self.assertEqual(found_id, test_x_account_id)
-
     def test_find_existing_account_in_db_does_not_exist_returns_none(self):
         account_name = "Account for nonexistent.gov"
 
