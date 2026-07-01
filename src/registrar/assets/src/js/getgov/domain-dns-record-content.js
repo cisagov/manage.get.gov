@@ -83,9 +83,6 @@ function clearRecordForm(scope){
     commentStatus.textContent = getCharCountText(100, 0)
 }
 
-// One shared modal for the Add form and every Edit row; shown only when there are unsaved
-// changes. data-opener tells USWDS where to return focus on close.
-let pendingCancel = null;
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
 const refsFor = (req) => req.type === "edit"
@@ -124,102 +121,219 @@ function formHasUnsavedChanges(form, isEditForm){
     });
 }
 
-export function initDNSRecordCancelModal(){
-    const container = document.getElementById("dnsrecords-form-container");
-    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    if(!container || !confirmButton) return;
-
-    const teardownForm = (req) => {
-        const refs = refsFor(req);
-        const form = document.querySelector(refs.form);
-        if(req.type === "edit"){
-            if(form){
-                // After a failed save the row holds the rejected values; clear both errors inline and top,
-                // then re-fetch the row for the real saved values.
-                if(form.querySelector(".usa-error-message")){
-                    clearRecordErrors(form);
-                    refreshForm(refs.form, form.getAttribute("hx-post"));
-                } else if(req.hasUnsavedChanges){
-                    form.reset();
-                }
-            }
-        } else {
-            // A reopened Add form must be blank. Capture hadError before clearRecordForm strips it,
-            // then re-fetch a clean form on error, otherwise blank the live fields in place.
-            const hadError = !!form?.querySelector(".usa-error-message");
-            clearRecordForm(form);
-            if(hadError){
+const teardownForm = (switcher) => {
+    const req = switcher.pending;
+    const refs = refsFor(req);
+    const form = document.querySelector(refs.form);
+    if(req.type === "edit"){
+        if(form){
+            // After a failed save the row holds the rejected values; clear both errors inline and top,
+            // then re-fetch the row for the real saved values.
+            if(form.querySelector(".usa-error-message")){
+                clearRecordErrors(form);
                 refreshForm(refs.form, form.getAttribute("hx-post"));
-            } else {
-                form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
-                const typeField = document.getElementById("id_type");
-                if(typeField) typeField.value = "";
+            } else if(req.hasUnsavedChanges){
+                form.reset();
             }
         }
-        Alpine.$data(container).showFormId = null;
-    };
+    } else {
+        // A reopened Add form must be blank. Capture hadError before clearRecordForm strips it,
+        // then re-fetch a clean form on error, otherwise blank the live fields in place.
+        const hadError = !!form?.querySelector(".usa-error-message");
+        clearRecordForm(form);
+        if(hadError){
+            refreshForm(refs.form, form.getAttribute("hx-post"));
+        } else {
+            form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
+            const typeField = document.getElementById("id_type");
+            if(typeField) typeField.value = "";
+        }
+    }
+    switcher.setShowId(null);
+};
 
-    const onCancel = (req) => {
+
+const onCancel = (switcher) => {
+        const req = switcher.pending;
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-            pendingCancel = req;
             openCancelModal(refs.cancelButtonId);
         } else {
-            teardownForm(req);
+            teardownForm(switcher);
+            switcher.switchForm();
             document.getElementById(refs.focusId)?.focus();
         }
-    };
+};
 
+
+const editButtonEventListener = (switcher)=>{
+    const table = document.querySelector("#dnsrecords-table");
+    if(!table) return;
+
+    const alpineData = switcher.getAlpineData();
+    
+    table.addEventListener('click', (e) => {
+            const editBtn =  e.target.closest('[data-action="edit"]')
+            const commentBtn = e.target.closest('[data-action="comment"]')
+            if(!editBtn && !commentBtn) return;
+
+            const recordId = (editBtn || commentBtn).dataset.recordId
+
+            if(editBtn){
+                const idx = alpineData.openComments.indexOf(recordId)
+                if(idx > -1) alpineData.openComments.splice(idx,1);
+        
+                switcher.setTarget(recordId)
+                if(alpineData.showFormId == null){
+                    switcher.switchForm()
+                }
+                else{
+                    switcher.attemptOpen(recordId);
+                    onCancel(switcher); 
+                }              
+            }
+
+            if(commentBtn){
+                if(alpineData.showFormId === recordId) switcher.switchForm(null);
+                const idx = alpineData.openComments.indexOf(recordId);
+                idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
+            }
+
+        }
+    )
+}
+
+class DNSFormSwitcher{
+    /**
+     * Manages DNS form switching from Alpine Data
+     * Requires an HTML container with Alpine.js initialized on it
+     * 
+     * State:
+     * - pending: an object { type, recordId} representing the form the user is currently on
+     *   type is either "edit" or "add", recordID is the form's recordID
+     * - target: the form  ID the user is clicking to.
+     * 
+     * Methods
+     * - attemptOpen: sets the pending object on the class instance
+     * - switchForm: performs the actual form switch, and resets the pending and target
+     * - getAlpineData: returns the Alpine data object for the container
+     *
+    */ 
+   
+    constructor(container){
+        this.pending = null;
+        this.target = null;
+        this.container = container;
+    }
+
+    setPending(value) {
+         this.pending = value;
+    }
+
+    setTarget(value){  
+        const current = this.getAlpineData().showFormId;
+        this.target = current == value ? null : value;
+    }
+
+
+    getAlpineData(){
+        return Alpine.$data(this.container);
+    }
+
+    setShowId(value){
+        const data = this.getAlpineData();
+        data.showFormId = value;
+    }
+
+    resetPendingAndTarget(){
+       this.setTarget(null);
+       this.setPending(null);
+    }
+
+    switchForm(value = this.target){
+       this.setShowId(value);
+       this.resetPendingAndTarget();
+    }
+
+    attemptOpen(form){
+        this.setTarget(form);
+        const currentId = this.getAlpineData().showFormId;
+        const req = {
+            type: currentId > 0 ? "edit" : "add",
+            recordId: currentId
+        }
+         this.setPending(req);
+    }
+
+}
+
+
+export function initDNSRecordCancelModal(){
+    const container = document.getElementById("dnsrecords-form-container");
+    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    if(!container || !confirmButton) return;
+    
+    const switcher = new DNSFormSwitcher(container);
+    
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        onCancel({ type: "add" });
+        switcher.setPending(
+            {
+                type: "add"
+            }
+        )
+        onCancel(switcher);
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
     document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
-        onCancel({ type: "edit", recordId: btn.dataset.recordId });
+        switcher.setPending(
+            { type: "edit", recordId: btn.dataset.recordId }
+        );
+        onCancel(switcher);
     });
+
+    const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+    const cancelButton = modalEl?.querySelector("[data-close-modal]");
 
     confirmButton.addEventListener("click", () => {
-        if(!pendingCancel) return;
-        teardownForm(pendingCancel);
-        const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-        modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
-        modalEl?.querySelector("[data-close-modal]")?.click();
-        pendingCancel = null;
+        if(!switcher.pending){
+            return;
+        }
+
+        teardownForm(
+            switcher  
+        );
+
+        const reqForTarget = {
+            type: switcher.target > 0 ? "edit" : "add",
+            recordId: switcher.target
+        }
+
+        modalEl?.setAttribute("data-opener", refsFor(reqForTarget).focusId);
+        cancelButton.click();
+        switcher.switchForm();
     });
-}
 
-export function editAndCommentButtonListener (){
-        const table = document.querySelector("#dnsrecords-table");
-        if(!table) return;
+    cancelButton.addEventListener("click", (e) => {
+        if(e.isTrusted){
+                switcher.resetPendingAndTarget()
+        }
+        }
+    );
 
-        table.addEventListener('click', function(e) {
-            const editBtn =  e.target.closest('[data-action="edit"]')
-            const commentBtn = e.target.closest('[data-action="comment"]')
-            if(!editBtn && !commentBtn) return;
-
-            const recordId = (editBtn || commentBtn).dataset.recordId
-            const alpineData = Alpine.$data(table)
-
-            if(editBtn){
-                const idx = alpineData.openComments.indexOf(recordId)
-                if(idx > -1) alpineData.openComments.splice(idx,1);
-                alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
-            }
-
-            if(commentBtn){
-                if(alpineData.showFormId === recordId) alpineData.showFormId = null;
-                const idx = alpineData.openComments.indexOf(recordId);
-                idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
-
-            }
-
-        })
+    // add Record Button EventListener 
+    const addRecordButton = document.getElementById("add-dnsrecord-button")?.addEventListener("click", ()=> {
+        switcher.attemptOpen(0);
+        onCancel(switcher);
+    })
+    // add edit button event listener
+    editButtonEventListener(switcher);
+    
 }
 
 // Tab-order routing for the DNS records table (#4804).
