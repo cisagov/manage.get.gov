@@ -59,21 +59,21 @@ def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
             exc_cls, code = DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR
         if exc_cls is None:  # Represents 400s we didn't map to a specific status code
             exc_cls, code = DnsHostingError, DnsHostingErrorCodes.UNKNOWN
-
+        exc = exc_cls(code=code, upstream_status=status, context=ctx)
     else:  # RequestError -> no response, transport failure
         status = None
         ctx = {"exc_class": type(e).__name__, **context}
         log_only = {}
-        exc_cls, code = DnsTransportError, DnsHostingErrorCodes.UPSTREAM_TIMEOUT
+        exc = exc_cls(code=code, upstream_status=status, context=ctx)
 
     unexpected_code = code == DnsHostingErrorCodes.UNKNOWN
     logger.error(
         "Dns provider returned %s for DNS request",
         status,
-        extra={"upstream_status": status, "error_code": code, **log_only, **ctx},
+        extra={"upstream_status": status, "error_code": exc.wire_code, **log_only, **ctx},
         exc_info=unexpected_code,
     )
-    return exc_cls(code=code, upstream_status=status, context=ctx)
+    return exc
 
 
 @dataclass(frozen=True)
