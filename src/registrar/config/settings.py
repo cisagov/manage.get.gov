@@ -823,15 +823,14 @@ SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
-# Whether the background heartbeat greenlet runs. Disabled by default under the
-# test runner and in local dev (where the registry is unreachable) so it doesn't
-# spawn a long-lived greenlet per EPPLibWrapper instance; the heartbeat tests
-# re-enable it explicitly.
-EPP_HEARTBEAT_ENABLED = not (RUNNING_TESTS or IS_LOCAL)
-
-# How often, in seconds, the background heartbeat pings the registry to keep the
-# EPP connection warm and detect a dead connection.
-EPP_HEARTBEAT_INTERVAL = 60
+# OS-level TCP keepalive tuning for the EPP socket, applied at connect time. The
+# kernel keeps an idle connection warm and drops it if the peer stops answering.
+# Detection time is roughly IDLE + INTERVAL * COUNT seconds. These bound how long
+# the socket may sit idle before a probe, so keep IDLE well under any idle-drop
+# window in the network path.
+EPP_KEEPALIVE_IDLE = 60  # seconds idle before the first keepalive probe
+EPP_KEEPALIVE_INTERVAL = 10  # seconds between probes
+EPP_KEEPALIVE_COUNT = 3  # unanswered probes before the socket is declared dead
 
 # Max seconds an established EPP socket may block on a read/send before raising
 # (does not bound the initial TCP connect). The registry normally responds in
