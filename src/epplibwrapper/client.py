@@ -69,11 +69,13 @@ class EPPLibWrapper:
             logger.warning("Unable to configure the connection to the registry.")
         finally:
             self.connection_lock.release()
-        
+
         # based off what the old connection pool did
         # Spawn a background greenlet that periodically pings the registry to keep
         # the connection warm and detect a dead connection.
-        self._heartbeat_greenlet = gevent.spawn(self._heartbeat_loop)
+        self._heartbeat_greenlet = None
+        if settings.EPP_HEARTBEAT_ENABLED:
+            self._heartbeat_greenlet = gevent.spawn(self._heartbeat_loop)
 
     def _initialize_client(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
@@ -180,8 +182,11 @@ class EPPLibWrapper:
             logger.info(f"{_worker_tag()} EPP heartbeat ok")
         except Exception as err:
             logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat failed: {err}")
-            # Try to recover the connection so the next real command has a live client.
+            # Close the stale client so its socket is released, then reconnect so
+            # the next real command has a live client.
             try:
+                if self._client is not None:
+                    self._close_client()
                 self._initialize_client()
             except Exception as reconnect_err:
                 logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat reconnect failed: {reconnect_err}")

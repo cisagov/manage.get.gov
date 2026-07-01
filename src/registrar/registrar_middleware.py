@@ -390,7 +390,7 @@ class DatabaseConnectionMiddleware:
 
         # Log connection state
         connection = connections["default"]
-        #logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
+        # logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
         if hasattr(request, "_db_start_time"):
             connection = connections["default"]
@@ -399,13 +399,12 @@ class DatabaseConnectionMiddleware:
 
             # Get request ID for correlation
             request_id = request.META.get("HTTP_X_REQUEST_ID", "unknown")
-            # revert me - removed bc this bloats the logs
-            # logger.info(
-            #     f"DB_CONN_END: req_id={request_id}, "
-            #     f"queries={query_count}, "
-            #     f"duration={duration:.3f}s, "
-            #     f"total_queries={len(connection.queries)}, "
-            #     f"status={response.status_code}, "
-            #     f"path={request.path}"
-            # )
+            logger.info(
+                f"DB_CONN_END: req_id={request_id}, "
+                f"queries={query_count}, "
+                f"duration={duration:.3f}s, "
+                f"total_queries={len(connection.queries)}, "
+                f"status={response.status_code}, "
+                f"path={request.path}"
+            )
         return response

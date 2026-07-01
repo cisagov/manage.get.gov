@@ -1,4 +1,5 @@
 """Internal API views"""
+
 import logging
 import os
 import time
@@ -15,7 +16,6 @@ import requests
 
 from login_required import login_not_required
 from cachetools.func import ttl_cache
-
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,9 @@ def available(request, domain=""):
         return_type=ValidationReturnType.JSON_RESPONSE,
     )
 
-    logger.info(f"{_worker_tag()} [available] completed in {round(time.monotonic() - time_start,3)}s domain={domain!r}")
+    logger.info(
+        f"{_worker_tag()} [available] completed in {round(time.monotonic() - time_start, 3)}s domain={domain!r}"
+    )
     return json_response
 
 

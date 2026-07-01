@@ -7,11 +7,14 @@ try:
         """SocketTransport that applies a socket timeout after connecting.
 
         The stock SocketTransport sets no socket timeout, so a slow or dead
-        registry makes recv() block indefinitely while holding the connection
-        lock. Instead of relying on SocketTransport alone, this code uses
-        settings.EPP_CONNECTION_TIMEOUT to timeout the connection with a 
-        socket.timeout error which epplib surfaces as a TransportError that 
-        our send()/retry path already handles.
+        registry makes a subsequent recv()/send() block indefinitely while
+        holding the connection lock. This applies settings.EPP_CONNECTION_TIMEOUT
+        once connect() has returned, so reads and sends raise a socket.timeout
+        (which epplib surfaces as a TransportError that our send()/retry path
+        already handles) instead of hanging.
+
+        Note: this only bounds reads/sends after the connection is established;
+        the initial TCP connect() in the parent class is not bounded here.
 
         This needs to be in a try/except block because epplib is not installed in local dev.
         """
