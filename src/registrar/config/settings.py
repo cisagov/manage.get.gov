@@ -114,7 +114,6 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
-DNS_HOSTING_PROD_ALLOWLIST = ["igorville.gov"]
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 
@@ -282,8 +281,7 @@ TEMPLATES = [
 ]
 
 # Stop using table-based default form renderer which is deprecated
-# FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
-# Default is already DjangoTemplates
+FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
@@ -457,8 +455,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
-# USE_L10N = True
-# COMMENT: Can be removed becuase it's enabled by default now
+USE_L10N = True
 
 # make datetimes timezone-aware by default
 USE_TZ = True
@@ -519,11 +516,6 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
             "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
-        # Surface request_id as a top-level field so OpenSearch can group every
-        # log line for a single request without parsing the message string.
-        request_id = get_user_log_context().get("request_id")
-        if request_id:
-            log_record["request_id"] = request_id
         # Capture exception info if it exists
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
@@ -762,6 +754,7 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # See above for the default value if the env variable is missing
 OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
 
+
 OIDC_PROVIDERS = {
     "identity sandbox": {
         "srv_discovery_url": "https://idp.int.identitysandbox.gov",
@@ -830,14 +823,14 @@ SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
-# OS-level TCP keepalive tuning for the EPP socket, applied at connect time. The
-# kernel keeps an idle connection warm and drops it if the peer stops answering.
-# Detection time is roughly IDLE + INTERVAL * COUNT seconds. These bound how long
-# the socket may sit idle before a probe, so keep IDLE well under any idle-drop
-# window in the network path.
-EPP_KEEPALIVE_IDLE = 60  # seconds idle before the first keepalive probe
-EPP_KEEPALIVE_INTERVAL = 10  # seconds between probes
-EPP_KEEPALIVE_COUNT = 3  # unanswered probes before the socket is declared dead
+# Whether the background heartbeat greenlet runs. Disabled by default under the
+# test runner and in local dev so it doesn't spawn a long-lived greenlet per 
+# EPPLibWrapper instance; the heartbeat tests re-enable it explicitly.
+EPP_HEARTBEAT_ENABLED = not (RUNNING_TESTS or IS_LOCAL)
+
+# How often, in seconds, the background heartbeat pings the registry to keep the
+# EPP connection warm and detect a dead connection.
+EPP_HEARTBEAT_INTERVAL = 60
 
 # Max seconds an established EPP socket may block on a read/send before raising
 # (does not bound the initial TCP connect). The registry normally responds in
@@ -1000,9 +993,7 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"
-# JSONSerializer is also default
-# FYI everyone will get logged out and will have to re login again
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

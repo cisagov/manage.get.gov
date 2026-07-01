@@ -1,10 +1,9 @@
 import datetime
-import socket
 from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from api.tests.common import less_console_noise_decorator
 from gevent.exceptions import ConcurrentObjectUseError
 from epplibwrapper.client import EPPLibWrapper
@@ -454,31 +453,43 @@ class TestClient(TestCase):
         transport.socket.settimeout.assert_called_once_with(settings.EPP_CONNECTION_TIMEOUT)
 
     @less_console_noise_decorator
-    def test_timeout_socket_transport_enables_tcp_keepalive(self):
-        """TimeoutSocketTransport enables SO_KEEPALIVE (and tunes the TCP keepalive
-        timers where the platform supports them) so an idle EPP connection is kept
-        warm and a dead peer is detected."""
-        transport = TimeoutSocketTransport("localhost")
+    @override_settings(EPP_HEARTBEAT_ENABLED=True)
+    @patch("epplibwrapper.client.Client")
+    def test_heartbeat_sends_hello(self, mock_client):
+        """_heartbeat pings the registry with a Hello() to keep the connection warm,
+        and releases the connection lock when it's done."""
+        mock_client.return_value.connect = MagicMock()
+        mock_client.return_value.send = MagicMock(return_value=self.fake_result(1000, "ok"))
+        wrapper = EPPLibWrapper()
+        # __init__ spawns the heartbeat greenlet (enabled above); kill it so it doesn't leak
+        self.addCleanup(wrapper._heartbeat_greenlet.kill)
+        # Drop the Login command sent during __init__ so we only assert on the heartbeat
+        wrapper._client.send.reset_mock()
 
-        def fake_socket_transport_parent(inner_self):
-            # Stand in for the real SocketTransport.socket which is what .connect manipulates
-            inner_self.socket = MagicMock()
+        wrapper._heartbeat()
 
-        # Patch the base connect so only our subclass's keepalive logic runs
-        with patch.object(SocketTransport, "connect", fake_socket_transport_parent):
-            transport.connect()
+        wrapper._client.send.assert_called_once()
+        self.assertIsInstance(wrapper._client.send.call_args[0][0], commands.Hello)
+        # The lock must be free so real EPP commands aren't blocked
+        self.assertFalse(wrapper.connection_lock.locked())
 
-        transport.socket.setsockopt.assert_any_call(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        # The TCP_KEEP* tuning options are Linux-only; assert them only where present
-        if hasattr(socket, "TCP_KEEPIDLE"):
-            transport.socket.setsockopt.assert_any_call(
-                socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, settings.EPP_KEEPALIVE_IDLE
-            )
-        if hasattr(socket, "TCP_KEEPINTVL"):
-            transport.socket.setsockopt.assert_any_call(
-                socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, settings.EPP_KEEPALIVE_INTERVAL
-            )
-        if hasattr(socket, "TCP_KEEPCNT"):
-            transport.socket.setsockopt.assert_any_call(
-                socket.IPPROTO_TCP, socket.TCP_KEEPCNT, settings.EPP_KEEPALIVE_COUNT
-            )
+    @less_console_noise_decorator
+    @override_settings(EPP_HEARTBEAT_ENABLED=True)
+    @patch("epplibwrapper.client.Client")
+    def test_heartbeat_failure_reconnects(self, mock_client):
+        """If the heartbeat send fails, _heartbeat swallows the error, attempts to
+        re-initialize the client, and still releases the connection lock."""
+        mock_client.return_value.connect = MagicMock()
+        mock_client.return_value.send = MagicMock(return_value=self.fake_result(1000, "ok"))
+        wrapper = EPPLibWrapper()
+        # __init__ spawns the heartbeat greenlet (enabled above); kill it so it doesn't leak
+        self.addCleanup(wrapper._heartbeat_greenlet.kill)
+        # Make the heartbeat's send blow up as if the socket were dead
+        wrapper._client.send = MagicMock(side_effect=Exception("dead socket"))
+
+        with patch.object(wrapper, "_initialize_client") as mock_init:
+            wrapper._heartbeat()  # must not raise
+            mock_init.assert_called_once()  # recovery attempted
+
+        # The lock must be released even on the failure path
+        self.assertFalse(wrapper.connection_lock.locked())
