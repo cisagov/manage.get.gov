@@ -121,7 +121,7 @@ function formHasUnsavedChanges(form, isEditForm){
     });
 }
 
-const teardownForm = (switcher, container) => {
+const teardownForm = (switcher) => {
     const req = switcher.pending;
     const refs = refsFor(req);
     const form = document.querySelector(refs.form);
@@ -153,7 +153,7 @@ const teardownForm = (switcher, container) => {
 };
 
 
-const onCancel = (switcher, container) => {
+const onCancel = (switcher) => {
         const req = switcher.pending;
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
@@ -161,14 +161,14 @@ const onCancel = (switcher, container) => {
         if(req.hasUnsavedChanges){
             openCancelModal(refs.cancelButtonId);
         } else {
-            teardownForm(switcher, container);
+            teardownForm(switcher);
             switcher.switchForm();
             document.getElementById(refs.focusId)?.focus();
         }
 };
 
 
-const editButtonEventListener = (switcher, container)=>{
+const editButtonEventListener = (switcher)=>{
     const table = document.querySelector("#dnsrecords-table");
     if(!table) return;
 
@@ -191,7 +191,7 @@ const editButtonEventListener = (switcher, container)=>{
                 }
                 else{
                     switcher.attemptOpen(recordId);
-                    onCancel(switcher, container); 
+                    onCancel(switcher); 
                 }              
             }
 
@@ -284,7 +284,7 @@ export function initDNSRecordCancelModal(){
                 type: "add"
             }
         )
-        onCancel(switcher, container);
+        onCancel(switcher);
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
@@ -294,7 +294,7 @@ export function initDNSRecordCancelModal(){
         switcher.setPending(
             { type: "edit", recordId: btn.dataset.recordId }
         );
-        onCancel(switcher, container);
+        onCancel(switcher);
     });
 
     const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
@@ -306,8 +306,7 @@ export function initDNSRecordCancelModal(){
         }
 
         teardownForm(
-            switcher,
-            container
+            switcher  
         );
 
         const reqForTarget = {
@@ -327,13 +326,13 @@ export function initDNSRecordCancelModal(){
         }
     );
 
-    // addRecordButtonEventListener(alpineData, initialState, container)
+    // add Record Button EventListener 
     const addRecordButton = document.getElementById("add-dnsrecord-button")?.addEventListener("click", ()=> {
         switcher.attemptOpen(0);
-        onCancel(switcher, container);
+        onCancel(switcher);
     })
     // add edit button event listener
-    editButtonEventListener(switcher, container)
+    editButtonEventListener(switcher);
     
 }
 
