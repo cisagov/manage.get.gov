@@ -36,7 +36,6 @@ from registrar.validations import (
     DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
-    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIREMENT,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
