@@ -43,26 +43,34 @@ def _cf_error_detail(response) -> dict:
 
 def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
     """Map an HTTP error to the right DnsHostingError subclass and log once."""
-    status = e.response.status_code
-    details = _cf_error_detail(e.response)
-    ctx = {
-        "cf_ray": e.response.headers.get("cf-ray"),
-        "cf_error_code": details.get("cf_error_code"),
-        "cf_error_message": details.get("cf_error_message"),
-        **context,
-    }
-    exc_cls, code = _STATUS_TO_ERROR.get(status, (None, None))
+    if isinstance(e, HTTPStatusError):
+        status = e.response.status_code
+        details = _cf_error_detail(e.response)
+        ctx = {
+            "cf_ray": e.response.headers.get("cf-ray"),
+            "cf_error_code": details.get("cf_error_code"),
+            "cf_error_message": details.get("cf_error_message"),
+            **context,
+        }
+        log_only = {"response_body": e.response.text}
+        exc_cls, code = _STATUS_TO_ERROR.get(status, (None, None))
 
-    if exc_cls is None and 500 <= status <= 599:
-        exc_cls, code = DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR
-    if exc_cls is None:  # Represents 400s we didn't map to a specific status code
-        exc_cls, code = DnsHostingError, DnsHostingErrorCodes.UNKNOWN
+        if exc_cls is None and 500 <= status <= 599:
+            exc_cls, code = DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR
+        if exc_cls is None:  # Represents 400s we didn't map to a specific status code
+            exc_cls, code = DnsHostingError, DnsHostingErrorCodes.UNKNOWN
+
+    else:                                       # RequestError -> no response, transport failure
+        status = None
+        ctx = {"exc_class": type(e).__name__, **context}
+        log_only = {}
+        exc_cls, code = DnsTransportError, DnsHostingErrorCodes.UPSTREAM_TIMEOUT
 
     unexpected_code = code == DnsHostingErrorCodes.UNKNOWN
     logger.error(
         "Dns provider returned %s for DNS request",
         status,
-        extra={"upstream_status": status, "error_code": code, "response_body": e.response.text, **ctx},
+        extra={"upstream_status": status, "error_code": code, **log_only, **ctx},
         exc_info=unexpected_code,
     )
     return exc_cls(code=code, upstream_status=status, context=ctx)
@@ -109,13 +117,8 @@ class CloudflareService:
         appropriate typed DnsHostingErrors."""
         try:
             yield
-        except HTTPStatusError as e:
+        except (HTTPStatusError, RequestError) as e:
             raise _typed_dns_error(e, **context) from e  # note: `from e` to keep context
-        except RequestError as e:
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={**context, "exc_class": type(e).__name__},
-            ) from e
 
     def create_cf_account(self, account_name: str):
         appended_url = "/accounts"
