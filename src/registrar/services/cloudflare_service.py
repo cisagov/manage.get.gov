@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from httpx import RequestError, HTTPStatusError
+from httpx import RequestError, HTTPStatusError, HTTPError
 from typing import Any
 import logging
 from dataclasses import dataclass
@@ -41,7 +41,7 @@ def _cf_error_detail(response) -> dict:
     return {"cf_error_code": first.get("code"), "cf_error_message": first.get("message")}
 
 
-def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
+def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
     """Map an HTTP error to the right DnsHostingError subclass and log once."""
     if isinstance(e, HTTPStatusError):
         status = e.response.status_code
@@ -128,7 +128,7 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Created host account {account_name}")
 
-        return resp.json()
+            return resp.json()
 
     def update_account_dns_settings(
         self,
@@ -156,6 +156,8 @@ class CloudflareService:
         with self._dns_call(x_account_id=account_id, zone_mode=zone_mode, nameservers_type=nameservers_type):
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
+            if not resp.json().get("success"):
+                raise()
             logger.info(
                 "Updated account DNS settings for account_id=%s (zone_mode=%s, nameservers.type=%s)",
                 account_id,
@@ -163,7 +165,7 @@ class CloudflareService:
                 nameservers_type,
             )
 
-        return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
+            return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
     def create_cf_zone(self, zone_name: str, x_account_id: str):
         appended_url = "/zones"
@@ -172,7 +174,7 @@ class CloudflareService:
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
             logger.info(f"Created zone {zone_name}")
-        return resp.json()
+            return resp.json()
 
     def update_zone_dns_settings(
         self, zone_id: str, *, nameservers_type: str = "custom.tenant", ns_set: int = 1
@@ -199,7 +201,7 @@ class CloudflareService:
                 ns_set,
             )
 
-        return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
+            return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
 
     def create_dns_record(self, zone_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records"
@@ -208,7 +210,7 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Created dns record for zone {zone_id}")
 
-        return resp.json()
+            return resp.json()
 
     def get_account_by_name(self, account_name: str):
         """Fetches a single tenant account by name. Returns the first match or None."""
@@ -232,7 +234,7 @@ class CloudflareService:
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
 
-        return resp.json()
+            return resp.json()
 
     def get_zone_by_id(self, x_zone_id: str):
         """Get zone data given a Clouflare zone id"""
@@ -252,7 +254,7 @@ class CloudflareService:
             logger.info("Fetching dns record. . .")
             resp.raise_for_status()
 
-        return resp.json()
+            return resp.json()
 
     def update_dns_record(self, zone_id: str, record_id: str, record_data: dict[str, Any]):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
@@ -261,7 +263,7 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Updated dns record {record_id} in zone {zone_id}.")
 
-        return resp.json()
+            return resp.json()
 
     def delete_dns_record(self, zone_id: str, record_id: str):
         """Delete record given a zone id and record id. Returns result with id of deleted record."""
@@ -271,4 +273,4 @@ class CloudflareService:
             resp.raise_for_status()
             logger.info(f"Deleted dns record {record_id} in zone {zone_id}.")
 
-        return resp.json()
+            return resp.json()
