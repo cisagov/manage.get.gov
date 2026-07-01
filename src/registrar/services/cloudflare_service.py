@@ -156,8 +156,6 @@ class CloudflareService:
         with self._dns_call(x_account_id=account_id, zone_mode=zone_mode, nameservers_type=nameservers_type):
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
-            if not resp.json().get("success"):
-                raise()
             logger.info(
                 "Updated account DNS settings for account_id=%s (zone_mode=%s, nameservers.type=%s)",
                 account_id,
