@@ -115,7 +115,7 @@ class CloudflareService:
     @contextmanager
     def _dns_call(self, **context):
         """Context manager to catch HTTPX-related errors and convert them into
-        appropriately typed DnsHostingErrors."""
+        appropriate typed DnsHostingErrors."""
         try:
             yield
         except (HTTPStatusError, RequestError) as e:
