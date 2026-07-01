@@ -1,7 +1,7 @@
 import logging
 import random
 
-from registrar.config import settings
+from django.conf import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.utility.errors import APIError, RegistrySystemError
@@ -18,7 +18,8 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
-from httpx import Client, HTTPStatusError
+from registrar.services.dns_http_client import build_dns_client
+from httpx import HTTPStatusError
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class DnsHostService:
     """
 
     def __init__(self, client=None):
-        self.client = client or Client()
+        self.client = client or build_dns_client()
         self.dns_vendor_service = CloudflareService(self.client)
 
     def update_account_dns_settings(self, x_account_id: str) -> CloudflareDnsSettingsUpdateResponse:
@@ -263,6 +264,35 @@ class DnsHostService:
             raise
         return vendor_record_data
 
+    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
+        """Look up the record by pk and delete it via the vendor service.
+
+        Returns the deleted DnsRecord's vendor id.
+        Raises ValueError if the record or its vendor id cannot be resolved.
+        """
+        try:
+            dns_record = DnsRecord.objects.get(pk=record_id)
+            record_name = dns_record.name
+        except DnsRecord.DoesNotExist:
+            raise ValueError("Could not find the DNS record in registrar db to delete.")
+
+        x_record_id = dns_record.get_active_x_record_id()
+        if not x_record_id:
+            raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
+
+        try:
+            with transaction.atomic():
+                DnsRecord.delete_by_x_record_id(x_record_id=x_record_id)
+                self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
+                logger.info(f"Successfully deleted record {record_name} in vendor service.")
+        except (APIError, HTTPStatusError) as e:
+            logger.error(f"Failed to delete record {record_name} in vendor service: {str(e)}")
+            raise APIError(str(e)) from e
+        except Exception as e:
+            logger.error(f"Failed to delete record {record_name}: {str(e)}.")
+            raise
+        return x_record_id
+
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         try:
             return self.dns_vendor_service.get_account_by_name(account_name)
@@ -408,6 +438,9 @@ class DnsHostService:
 
         The enrollment flag is only set if the entire operation succeeds.
         """
+        if settings.IS_PRODUCTION and domain.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
+            logger.warning("Only igorville.gov can be enrolled in DNS Hosting right now")
+            return
 
         if domain.is_enrolled_in_dns_hosting:
             logger.info("Domain already enrolled in DNS hosting")

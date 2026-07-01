@@ -1,6 +1,5 @@
-FROM python:3.10
+FROM python:3.14
 
-# Python 3.11 introduces a bug in oic package, fyi - Oct 31, 2022
 
 RUN apt-get update && apt-get install -y postgresql-client
 

@@ -6,8 +6,6 @@
 
 <div
     class="grid-row grid-gap"
-    x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
-    x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }"
 >
     <div class="grid-col-3">
         {% input_with_errors form.type %}
@@ -33,7 +31,7 @@
         </div>
     </template>
 
-    <div>
+    <div class="margin-bottom-2">
         {% with add_group_class="usa-form-group--unstyled-error" %}
             {% input_with_errors form.comment %} 
             <div class="usa-character-count__status usa-hint comment-character-count">
@@ -46,13 +44,13 @@
     </div>
 
     <button
-        type="reset"
-        class="usa-button usa-button--outline js-dnsrecord-cancel-button"
-        x-on:click="showFormId = null"
+        type="button"
+        id="dnsrecord-add-cancel-button"
+        class="usa-button usa-button--outline js-dnsrecord-add-cancel margin-right-105"
     >
         Cancel
     </button>
-    <button type="submit" class="usa-button">
+    <button type="submit" class="usa-button margin-top-5">
             Save
     </button>
 </div>

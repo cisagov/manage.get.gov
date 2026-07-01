@@ -5,6 +5,8 @@ from .domain_information import DomainInformation
 from .domain import Domain
 from .draft_domain import DraftDomain
 from .federal_agency import FederalAgency
+from .federal_tribe import FederalTribe
+from .state_tribe import StateTribe
 from .host_ip import HostIP
 from .host import Host
 from .domain_invitation import DomainInvitation
@@ -46,6 +48,8 @@ __all__ = [
     "DraftDomain",
     "DomainInvitation",
     "FederalAgency",
+    "FederalTribe",
+    "StateTribe",
     "HostIP",
     "Host",
     "UserDomainRole",
@@ -83,6 +87,8 @@ auditlog.register(DraftDomain)
 auditlog.register(DomainInvitation)
 auditlog.register(DomainInformation)
 auditlog.register(FederalAgency)
+auditlog.register(FederalTribe)
+auditlog.register(StateTribe)
 auditlog.register(HostIP)
 auditlog.register(Host)
 auditlog.register(UserDomainRole)
@@ -100,3 +106,6 @@ auditlog.register(Suborganization)
 auditlog.register(SeniorOfficial)
 auditlog.register(UserPortfolioPermission)
 auditlog.register(AllowedEmail)
+auditlog.register(DnsAccount)
+auditlog.register(DnsZone)
+auditlog.register(DnsRecord)

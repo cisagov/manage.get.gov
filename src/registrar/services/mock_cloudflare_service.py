@@ -29,6 +29,7 @@ class MockCloudflareService:
     fake_record_id = fake.uuid4().replace("-", "")  # Remove the 4 -'s in UUID4 to meet id's 32 char limit
     existing_account_id = "a1234"
     existing_domain_name = "exists.gov"
+    hostname_record_types = ["CNAME", "MX", "PTR"]
 
     def __new__(cls):
         if cls._instance is None:
@@ -111,14 +112,19 @@ class MockCloudflareService:
         self._mock_context.post("/zones").mock(side_effect=self._mock_create_cf_zone_response)
         self._mock_context.get(url__regex=r"/zones/[\w-]+").mock(side_effect=self._mock_get_cf_zone_response)
 
-        # Mock the api with any zone id
+        # Mock the create api with any zone id
         self._mock_context.post(url__regex=r"/zones/[\w-]+/dns_records").mock(
             side_effect=self._mock_create_dns_record_response
         )
 
-        # Mock the api with any record id
+        # Mock the update api with any record id
         self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
             side_effect=self._mock_update_dns_record_response
+        )
+
+        # Mock the delete api with any zone and record id
+        self._mock_context.delete(url__regex=r"/zones/[\w-]+/dns_records/[\w-]+").mock(
+            side_effect=self._mock_delete_dns_record_response
         )
 
         # PATCH account dns_settings
@@ -300,6 +306,13 @@ class MockCloudflareService:
         priority = request_as_json.get("priority")
         request_url = str(request.url)
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
+        # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
+        if type in self.hostname_record_types and content == "@":
+            content = self._get_zone_name_from_request_url(request_url)
+
+        # A record name starting with "timeout-" simulates a hung Cloudflare connection.
+        if record_name.startswith("timeout-"):
+            raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -348,7 +361,7 @@ class MockCloudflareService:
         # Update response shape must match the create response — see the field inventory
         # in _mock_create_dns_record_response. The only difference is that the record id
         # comes from the request URL rather than being newly generated.
-        logger.debug("🐟 mocking dns A record update")
+        logger.debug("🐟 mocking dns record update")
         request_as_json = json.loads(request.content.decode("utf-8"))
         record_name = request_as_json["name"]
         content = request_as_json["content"]
@@ -361,6 +374,13 @@ class MockCloudflareService:
         # Split string between "/dns_records/ and extract second partition
         record_id = request_url.split("/dns_records/")[1]
         cf_record_name = self._convert_record_name_to_cf_record_name(record_name, request_url)
+        # Records with hostname content (CNAME, MX, PTR) can use "@" as shorthand for root
+        if type in self.hostname_record_types and content == "@":
+            content = self._get_zone_name_from_request_url(request_url)
+
+        # A record name starting with "timeout-" simulates a hung Cloudflare connection.
+        if record_name.startswith("timeout-"):
+            raise httpx.ConnectTimeout("Simulated Cloudflare connect timeout")
 
         # TODO: add a variation of the 400 error for when a submitted name does not meet validation requirements
         if record_name.startswith("error"):
@@ -406,6 +426,26 @@ class MockCloudflareService:
             },
         )
 
+    def _mock_delete_dns_record_response(self, request) -> httpx.Response:
+        """Response result returns only record id so we return the record id from the request."""
+        logger.debug("🐟 mocking dns record delete")
+        # Get record id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        record_id = request_url.split("/dns_records/")[1]
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": record_id,
+                },
+                "errors": [],
+                "messages": [],
+            },
+        )
+
     def _mock_create_cf_id(self):
         """Create a 32 character UUID by removing the 4 -'s in a UUID4."""
         return fake.uuid4().replace("-", "")
@@ -419,10 +459,7 @@ class MockCloudflareService:
         Returns None if used outside scope of DNS records page / record name not given.
         """
         try:
-            zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
-            vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
-            dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
-            zone_name = dns_zone.name
+            zone_name = self._get_zone_name_from_request_url(request_url)
             if record_name == ("@"):
                 record_name = zone_name
             elif not record_name.endswith(zone_name):
@@ -430,3 +467,15 @@ class MockCloudflareService:
             return record_name
         except Exception as e:
             logger.error(f"Failed to rename record using record's DNS zone: {e}.")
+
+    def _get_zone_name_from_request_url(self, request_url):
+        """
+        Get record zone. Used to configure root names to records.
+        """
+        try:
+            zone_id = re.search("/zones/(.*)/dns_records", request_url).group(1)
+            vendor_dns_zone = VendorDnsZone.objects.get(x_zone_id=zone_id)
+            dns_zone = DnsZone.objects.get(vendor_dns_zone=vendor_dns_zone)
+            return dns_zone.name
+        except Exception as e:
+            logger.error(f"Failed to get record zone name using request URL: {e}.")

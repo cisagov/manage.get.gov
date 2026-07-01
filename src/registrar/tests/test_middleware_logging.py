@@ -1,7 +1,9 @@
 from django.test import TestCase, override_settings
 from django.urls import reverse
 import io
+import json
 import logging
+import uuid
 from registrar.config.settings import JsonFormatter
 from django.contrib.auth import get_user_model
 import registrar.registrar_middleware
@@ -56,3 +58,37 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.client.get(reverse("health"))
         log_output = self.stream.getvalue()
         self.assertNotIn("Router log", log_output)
+
+    def test_request_id_generated_when_header_missing(self):
+        """A UUID4 is minted when the header is absent and echoed on the response."""
+        response = self.client.get(reverse("health"))
+        echoed = response["X-Request-ID"]
+        # Must parse as a UUID4 (raises ValueError if not).
+        parsed = uuid.UUID(echoed)
+        self.assertEqual(parsed.version, 4)
+
+    @override_settings(IS_PRODUCTION=True)
+    def test_request_id_appears_in_log_json(self):
+        """The JsonFormatter sends request_id as a top-level field on every log line."""
+        self.client.get(reverse("health"), HTTP_X_REQUEST_ID="trace-id-xyz")
+        self.handler.flush()
+        log_lines = [line for line in self.stream.getvalue().splitlines() if line.strip()]
+        matching = [json.loads(line) for line in log_lines if "trace-id-xyz" in line]
+        self.assertTrue(matching, "No log line carried the request_id")
+        for entry in matching:
+            self.assertEqual(entry.get("request_id"), "trace-id-xyz")
+
+    def test_db_middleware_reuses_request_id(self):
+        """Both DB_CONN log lines carry the shared request_id as a structured JSON field."""
+        response = self.client.get(reverse("health"), HTTP_X_REQUEST_ID="shared-id-42")
+        self.handler.flush()
+        self.assertEqual(response["X-Request-ID"], "shared-id-42")
+
+        db_lines = [
+            json.loads(line)
+            for line in self.stream.getvalue().splitlines()
+            if line.strip() and ("DB_CONN_START" in line or "DB_CONN_END" in line)
+        ]
+        self.assertEqual(len(db_lines), 2, "Expected one DB_CONN_START and one DB_CONN_END line")
+        for entry in db_lines:
+            self.assertEqual(entry.get("request_id"), "shared-id-42")

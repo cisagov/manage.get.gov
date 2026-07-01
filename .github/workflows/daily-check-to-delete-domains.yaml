@@ -16,6 +16,9 @@ on:
     # Runs daily at 14:30 UTC
     - cron: "30 14 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   upload-reports:
     runs-on: ubuntu-latest
@@ -29,4 +32,4 @@ jobs:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
           cf_org: cisa-dotgov
-          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py delete_expired_domains_not_setup'"
+          cf_command: "run-task getgov-${{ secrets.CF_NOTIFICATIONS_ENV }} --command 'python manage.py delete_expired_domains_not_setup --alert-email ${{ secrets.SLACK_DELETION_ALERT_EMAIL}}'"

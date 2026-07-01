@@ -114,6 +114,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
+DNS_HOSTING_PROD_ALLOWLIST = ["igorville.gov"]
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 
@@ -281,7 +282,8 @@ TEMPLATES = [
 ]
 
 # Stop using table-based default form renderer which is deprecated
-FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
+# Default is already DjangoTemplates
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
@@ -455,7 +457,8 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
-USE_L10N = True
+# USE_L10N = True
+# COMMENT: Can be removed becuase it's enabled by default now
 
 # make datetimes timezone-aware by default
 USE_TZ = True
@@ -516,6 +519,11 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
             "message": f"{self.user_prepend()} | {record.getMessage()}",
         }
+        # Surface request_id as a top-level field so OpenSearch can group every
+        # log line for a single request without parsing the message string.
+        request_id = get_user_log_context().get("request_id")
+        if request_id:
+            log_record["request_id"] = request_id
         # Capture exception info if it exists
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
@@ -753,7 +761,6 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # (code does not currently support user selection)
 # See above for the default value if the env variable is missing
 OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
-
 
 OIDC_PROVIDERS = {
     "identity sandbox": {
@@ -993,7 +1000,9 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"
+# JSONSerializer is also default
+# FYI everyone will get logged out and will have to re login again
 
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load

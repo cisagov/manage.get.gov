@@ -22,6 +22,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   python-linting:
     runs-on: ubuntu-latest

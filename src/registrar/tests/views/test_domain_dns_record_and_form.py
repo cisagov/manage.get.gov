@@ -11,8 +11,12 @@ from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
-    DNS_NAME_FORMAT_ERROR_MESSAGE,
+    DNS_NAME_FORMAT_REQUIREMENT,
+    CNAME_NAME_INLINE_ERROR_MESSAGE,
+    CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
+    CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
 )
 
@@ -56,24 +60,31 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             "ttl": 300,
             "comment": "Mocked record created",
         },
-        # TODO: Uncomment test case after CNAME content validations finalized
-        # {
-        #     "id": "test-cname",
-        #     "name": "www",
-        #     "type": "CNAME",
-        #     "content": "www.example.com",
-        #     "ttl": 300,
-        #     "comment": "Mocked record created",
-        # },
-        # TODO: Uncomment test case after PTR content validations finalized
-        # {
-        #     "id": "test-ptr",
-        #     "name": "www",
-        #     "type": "PTR",
-        #     "content": "www.example.com",
-        #     "ttl": 300,
-        #     "comment": "Mocked record created",
-        # },
+        {
+            "id": "test-cname",
+            "name": "test",  # CNAME record must use different name than A/AAAA records
+            "type": "CNAME",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test-ptr",
+            "name": "www",
+            "type": "PTR",
+            "content": "www.example.com",
+            "ttl": 300,
+            "comment": "Mocked record created",
+        },
+        {
+            "id": "test-mx",
+            "name": "www",
+            "type": "MX",
+            "content": "mail.example.com",
+            "ttl": 300,
+            "priority": 5,
+            "comment": "Mocked record created",
+        },
         {
             "id": "test1",
             "name": "www",
@@ -111,8 +122,8 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         )
         # Add record sets showFormId to 0, which fires the x-effect.
         self.assertContains(response, 'x-on:click="showFormId = 0"')
-        # Cancel sets showFormId to null, which also fires the x-effect.
-        self.assertContains(response, 'x-on:click="showFormId = null"')
+        # Cancel now opens the confirmation modal
+        self.assertContains(response, "js-dnsrecord-add-cancel")
         # Submit success closes the form the same way.
         self.assertContains(
             response,
@@ -121,6 +132,166 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         # x-model keeps the type dropdown in sync with recordType, so clearing
         # recordType resets the dropdown to the empty option.
         self.assertContains(response, 'x-model="recordType"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_add_record_cancel_confirmation_modal_renders(self):
+        """Cancel on the Add record form opens an "are you sure" modal so the user
+        confirms before discarding unsaved entries. USWDS relocates the modal to the page
+        body and Alpine runs in CSP mode, so the flow is driven by USWDS data attributes
+        plus JS. Verify the template wires up the modal, its trigger, and the Cancel button.
+        """
+        response = self.client.get(self._url())
+
+        # The confirmation modal with its prompt
+        self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, "Are you sure you want to cancel your changes?")
+        self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')
+        self.assertContains(response, "Yes, cancel")
+        self.assertContains(response, "Go back")
+        self.assertContains(response, 'id="open-cancel-add-dnsrecord-modal"')
+        self.assertContains(response, 'aria-controls="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, "data-open-modal")
+        self.assertContains(response, 'id="cancel-add-dnsrecord-heading"')
+        self.assertContains(response, 'id="cancel-add-dnsrecord-description"')
+
+        # Cancel button is JS-wired
+        self.assertContains(response, "js-dnsrecord-add-cancel")
+        self.assertContains(response, 'id="dnsrecord-add-cancel-button"')
+
+        # No data-force-action on the modal, so clicking the overlay closes it.
+        modal_open_tag = re.search(r'<div[^>]*id="toggle-cancel-add-dnsrecord"[^>]*>', response.content.decode())
+        self.assertIsNotNone(modal_open_tag)
+        self.assertNotIn("data-force-action", modal_open_tag.group(0))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_added_record_edit_form_has_cancel_wiring(self):
+        """A record added without a page refresh gets its Edit form inserted via
+        htmx. That new Edit form must carry the Cancel hooks from the JS and
+        the Edit button id the modal returns focus to on close."""
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            created = {}
+
+            def _create_and_return(*_args, **_kwargs):
+                created["record"] = create_dns_record(
+                    self.dns_zone,
+                    record_name="www",
+                    record_type="A",
+                    record_content="192.0.2.10",
+                    ttl=300,
+                    x_record_id="x-create-a",
+                )
+                return created["record"]
+
+            svc.create_dns_record.side_effect = _create_and_return
+
+            response = self.client.post(
+                self._url(),
+                {"type": "A", "name": "www", "ttl": 300, "comment": "", "content": "192.0.2.10"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        record_id = created["record"].id
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record_id}"')
+        self.assertContains(response, f'id="dnsrecord-edit-button-{record_id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_messages_container_wired_for_alert_focus(self):
+        """Issue #4629: the alert focus listener relies on htmx swapping
+        the `#messages-container` div in response to the `messagesRefresh`
+        event. Keep that wiring on the page so screen-reader focus can move
+        to the first error alert after an invalid submission."""
+        response = self.client.get(self._url())
+        self.assertContains(response, 'id="messages-container"')
+        self.assertContains(response, 'hx-trigger="messagesRefresh from:body"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_add_post_triggers_messages_refresh(self):
+        """Issue #4629: an invalid DNS record submission must return the
+        `messagesRefresh` HX-TRIGGER so the alert container reloads. The
+        JS focus handler listens for the resulting `htmx:afterSettle` on
+        the messages container, so without this trigger focus would never
+        move to the alert."""
+        with patch("registrar.views.domain.DnsHostService"):
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_invalid_edit_post_triggers_messages_refresh(self):
+        """Issue #4629: invalid edit submissions must also fire
+        `messagesRefresh` so the alert at the top of the page reloads and
+        the JS focus handler can pull focus to it."""
+        editing = create_dns_record(
+            self.dns_zone,
+            record_type=DNSRecordTypes.A,
+            record_name="@",
+            record_content="192.0.2.1",
+            ttl=300,
+            x_record_id="x-existing-a",
+        )
+
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "id": editing.id,
+                    "type": "A",
+                    "name": "@",
+                    "content": "",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("messagesRefresh", response.headers.get("HX-TRIGGER", ""))
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_get_messages_renders_alert_as_focusable(self):
+        """Issue #4629: rendered alerts must carry `tabindex="-1"` so the JS
+        handler can move focus to them without putting them in the natural
+        tab order. The `role="alert"` keeps screen readers announcing the
+        message."""
+        with patch("registrar.views.domain.DnsHostService"):
+            self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "testing(",
+                    "ttl": 300,
+                    "comment": "",
+                    "content": "192.0.2.10",
+                },
+            )
+
+        messages_response = self.client.get(reverse("get-messages"))
+        self.assertEqual(messages_response.status_code, 200)
+        self.assertContains(messages_response, "usa-alert")
+        self.assertContains(messages_response, 'role="alert"')
+        self.assertContains(messages_response, 'tabindex="-1"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -146,15 +317,20 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
                     svc.create_dns_record.side_effect = _create_and_return
 
+                    record_type = data["type"]
+                    request_data = {
+                        "type": data["type"],
+                        "name": data["name"],
+                        "ttl": data["ttl"],
+                        "comment": data["comment"],
+                        "content": data["content"],
+                    }
+                    if record_type == "MX" and data["priority"]:
+                        request_data["priority"] = data["priority"]
+
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": data["type"],
-                            "name": data["name"],
-                            "ttl": data["ttl"],
-                            "comment": data["comment"],
-                            "content": data["content"],
-                        },
+                        request_data,
                     )
 
                     self.assertEqual(response.status_code, 200)
@@ -206,22 +382,28 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         invalid_content_by_type = {
             "A": "not-an-ip",
             "AAAA": "not-an-ip",
-            "TXT": 'not"valid text',
+            "CNAME": "invalid.lastlabel.123",
+            "MX": "invalid.lastlabel.123",
+            "PTR": "invalid.lastlabel.123",
+            "TXT": '"not valid text"',
         }
 
         for record_case in self.RECORD_TEST_CASES:
             record_type = record_case["type"]
             with self.subTest(record_type=record_type):
                 with patch("registrar.views.domain.DnsHostService"):
+                    request_data = {
+                        "type": record_type,
+                        "name": record_case["name"],
+                        "ttl": record_case["ttl"],
+                        "comment": record_case["comment"],
+                        "content": invalid_content_by_type[record_type],
+                    }
+                    if record_type == "MX":
+                        request_data["priority"] = record_case["priority"]
                     response = self.client.post(
                         self._url(),
-                        {
-                            "type": record_type,
-                            "name": record_case["name"],
-                            "ttl": record_case["ttl"],
-                            "comment": record_case["comment"],
-                            "content": invalid_content_by_type[record_type],
-                        },
+                        request_data,
                     )
 
                     # Invalid form should re-render the page, not redirect
@@ -249,7 +431,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
                     )
 
                     self.assertEqual(response.status_code, 200)
-                    self.assertContains(response, DNS_NAME_FORMAT_ERROR_MESSAGE)
+                    self.assertContains(response, DNS_NAME_FORMAT_REQUIREMENT)
 
                     # Ensures appropriate label exists
                     self.assertContains(response, DNSRecordTypes(record_type).field_label)
@@ -339,7 +521,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         content = response.content.decode()
 
         # All three markers must appear together on the form's Delete link.
-        self.assertContains(response, 'aria-label="Delete DNS record from Cloudflare"')
+        self.assertContains(response, 'aria-label="Delete DNS record"')
         self.assertContains(response, 'data-action="form-delete"')
         self.assertContains(response, f'data-record-id="{record.id}"')
         self.assertIn('role="button"', content)
@@ -348,15 +530,34 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
     def test_dns_record_edit_form_cancel_button_has_focus_routing_hooks(self):
-        """The Cancel button must carry data-action='form-cancel' so the tab-order JS can
-        return focus to the Edit button when the form closes — otherwise focus is stranded
-        inside the hidden form row and Tab walks past the kebab to the next record."""
+        """Cancelling an edit goes through the confirm modal, which returns focus to
+        that row's Edit button on close (via the modal's data-opener). The Edit button needs
+        a stable id for that, and the Cancel button needs its record-scoped hooks."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
 
-        self.assertContains(response, 'data-action="form-cancel"')
+        # Edit button is the focus-return target after the edit form closes.
+        self.assertContains(response, f'id="dnsrecord-edit-button-{record.id}"')
+        # Cancel button opens the modal and is the focus target while it's open.
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-cancel-button-{record.id}"')
         self.assertContains(response, f'data-record-id="{record.id}"')
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_record_cancel_opens_confirmation_modal(self):
+        """The Edit form's Cancel routes through the same confirm modal as Add. On
+        confirm the JS resets the form back to its saved values."""
+        record = create_dns_record(self.dns_zone)
+
+        response = self.client.get(self._url())
+
+        self.assertContains(response, "js-dnsrecord-edit-cancel")
+        self.assertContains(response, f'id="dnsrecord-edit-form-{record.id}"')
+        # The confirm modal it opens is the shared one
+        self.assertContains(response, 'id="toggle-cancel-add-dnsrecord"')
+        self.assertContains(response, 'id="cancel-add-dnsrecord-confirm"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -523,7 +724,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+            self.assertContains(response, DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)
@@ -631,6 +832,74 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             self.assertContains(response, "You already entered this DNS record")
             self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_cname_self_reference_shows_single_banner_with_inline_errors(self):
+        """A CNAME pointing at itself should show a single banner message and two
+        distinct inline messages (per ticket #4825).
+
+        Top banner queues exactly one message: the banner text. The name and target
+        fields each render their own inline error in the response body.
+        """
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "CNAME",
+                    "name": "www",
+                    "content": "www.example.gov",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.create_dns_record.assert_not_called()
+
+            # Banner: a single message, matching the banner text
+            queued = [str(m) for m in list(response.wsgi_request._messages)]
+            self.assertEqual(queued, [CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE])
+
+            # Inline errors are attached to the form's name and content fields, but the
+            # inline texts must NOT appear in the queued messages (otherwise the user
+            # would see them stacked as banner alerts).
+            form = response.context["form"]
+            self.assertIn(CNAME_NAME_INLINE_ERROR_MESSAGE, form.errors.get("name", []))
+            self.assertIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, form.errors.get("content", []))
+            self.assertNotIn(CNAME_NAME_INLINE_ERROR_MESSAGE, queued)
+            self.assertNotIn(CNAME_TARGET_INLINE_ERROR_MESSAGE, queued)
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_post_field_only_error_still_shows_field_message_as_banner(self):
+        """Regression test for the banner fallback path. When the form has no banner-level
+        error, each unique field error is still queued as a banner message — preserving
+        the existing UX for content/name shape errors and similar single-field validations.
+        """
+        with patch("registrar.views.domain.DnsHostService") as MockSvc:
+            svc = MockSvc.return_value
+            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+
+            response = self.client.post(
+                self._url(),
+                {
+                    "type": "A",
+                    "name": "www",
+                    "content": "not-an-ip",
+                    "ttl": 300,
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            svc.create_dns_record.assert_not_called()
+
+            queued = [str(m) for m in list(response.wsgi_request._messages)]
+            self.assertTrue(queued, "Expected at least one banner message for a field-only error")
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
