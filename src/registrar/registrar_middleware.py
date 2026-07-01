@@ -407,11 +407,12 @@ class DatabaseConnectionMiddleware:
             query_count = len(connection.queries) - request._db_queries_start
             duration = time.time() - request._db_start_time
 
-            logger.info(
-                f"DB_CONN_END: queries={query_count}, "
-                f"duration={duration:.3f}s, "
-                f"total_queries={len(connection.queries)}, "
-                f"status={response.status_code}, "
-                f"path={request.path}"
-            )
+            # revert before merging
+            # logger.info(
+            #     f"DB_CONN_END: queries={query_count}, "
+            #     f"duration={duration:.3f}s, "
+            #     f"total_queries={len(connection.queries)}, "
+            #     f"status={response.status_code}, "
+            #     f"path={request.path}"
+            # )
         return response
