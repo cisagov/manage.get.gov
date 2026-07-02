@@ -65,6 +65,7 @@ class Command(BaseCommand):
         """
         dry_run = options.get("dry_run", True)
         self.warnings = []  # collect warnings across all rows
+        self.skipped_rows = []  # collect skipped rows w missing tribe name
 
         if dry_run:
             logger.info(
@@ -79,19 +80,23 @@ class Command(BaseCommand):
         # Tally counters, updated in place by _process_row via the counts dict
         counts = {"created": 0, "skipped": 0, "errors": 0}
 
-        for row in rows:
-            self._process_row(row, dry_run, counts)
+        # start=2 as row 1 is the header
+        for row_number, row in enumerate(rows, start=2):
+            self._process_row(row, row_number, dry_run, counts)
 
         self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
+        self._print_skipped_rows()
         self._print_warnings()
 
-    def _process_row(self, row, dry_run, counts):
+    def _process_row(self, row, row_number, dry_run, counts):
         """Process a single CSV row: validate, map, then create/skip
         the corresponding FederalTribe record + updates counts in place"""
         tribe_full_name = row.get("Tribe Full Name", "").strip()
 
         if not tribe_full_name:
-            logger.warning("Skipping row with missing Tribe Full Name.")
+            message = f"Row {row_number} skipped — missing tribe name. " f"Row contents: {dict(row)}"
+            logger.warning(message)
+            self.skipped_rows.append({"row_number": row_number, "contents": dict(row)})
             counts["skipped"] += 1
             return
 
@@ -115,7 +120,7 @@ class Command(BaseCommand):
             )
             counts["errors"] += 1
 
-    def _create_tribe(self, tribe_full_name, mapped, dry_run, counts):
+    def _create_tribe(self, tribe_full_name, mapped, dry_run):
         """
         Handles the creation of a new StateTribe record.
 
@@ -163,7 +168,7 @@ class Command(BaseCommand):
         """Map a CSV row dict to FederalTribe model field names
         and cleans input along the way"""
         mapped = {}
-        tribe_name = row.get("Tribe Full Name", "unknown").stripped()
+        tribe_name = row.get("Tribe Full Name", "unknown").strip()
         for csv_col, model_field in CSV_FIELD_MAP.items():
             value = row.get(csv_col, "").strip() or None
 
@@ -292,3 +297,17 @@ class Command(BaseCommand):
         self.stderr.write(f"\n{TerminalColors.YELLOW}Warnings ({len(self.warnings)} total):{TerminalColors.ENDC}")
         for warning in self.warnings:
             self.stderr.write(f"  {TerminalColors.YELLOW}- {warning}{TerminalColors.ENDC}")
+
+    def _print_skipped_rows(self):
+        """Print all rows that were skipped due to missing tribe name."""
+        if not self.skipped_rows:
+            return
+
+        self.stderr.write(
+            f"\n{TerminalColors.YELLOW}Skipped rows with missing tribe name "
+            f"({len(self.skipped_rows)} total):{TerminalColors.ENDC}"
+        )
+        for entry in self.skipped_rows:
+            self.stderr.write(
+                f"  {TerminalColors.YELLOW}- Row {entry['row_number']}: " f"{entry['contents']}{TerminalColors.ENDC}"
+            )

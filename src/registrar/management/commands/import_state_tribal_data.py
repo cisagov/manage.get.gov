@@ -170,7 +170,7 @@ class Command(BaseCommand):
         """Map a CSV row dict to StateTribe model field names
         and cleans input along the way"""
         mapped = {}
-        tribe_name = row.get("Name", "unknown").stripped()
+        tribe_name = row.get("Name", "unknown").strip()
         for csv_col, model_field in CSV_FIELD_MAP.items():
             value = row.get(csv_col, "").strip() or None
 
