@@ -824,7 +824,7 @@ SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # Whether the background heartbeat greenlet runs. Disabled by default under the
-# test runner and in local dev so it doesn't spawn a long-lived greenlet per 
+# test runner and in local dev so it doesn't spawn a long-lived greenlet per
 # EPPLibWrapper instance; the heartbeat tests re-enable it explicitly.
 EPP_HEARTBEAT_ENABLED = not (RUNNING_TESTS or IS_LOCAL)
 
@@ -993,8 +993,7 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
-
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"  # JSONSerializer is the default
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe
