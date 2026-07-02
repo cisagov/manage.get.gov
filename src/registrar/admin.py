@@ -67,6 +67,7 @@ from registrar.utility.errors import (
     EnrollmentNotAllowedError,
     FSMDomainRequestError,
     FSMErrorCodes,
+    DnsHostingError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -5599,17 +5600,24 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
     def do_enroll_dns_hosting(self, request, obj):
+        failed_enrollment_message = "Failed to enroll domain in DNS hosting."
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
         except EnrollmentNotAllowedError as e:
             logger.warning("DNS enrollment blocked: %s", e)
             self.message_user(request, str(e), messages.WARNING)
+        except DnsHostingError:
+            self.message_user(
+                request,
+                failed_enrollment_message,
+                messages.ERROR,
+            )
         except Exception as e:
             logger.exception(e)
             self.message_user(
                 request,
-                "Failed to enroll domain in DNS hosting.",
+                failed_enrollment_message,
                 messages.ERROR,
             )
         else:
