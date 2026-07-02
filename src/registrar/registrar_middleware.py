@@ -399,20 +399,5 @@ class DatabaseConnectionMiddleware:
         request._db_start_time = time.time()
         request._db_queries_start = len(connections["default"].queries)
 
-        connection = connections["default"]
-        # logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
-        if hasattr(request, "_db_start_time"):
-            connection = connections["default"]
-            query_count = len(connection.queries) - request._db_queries_start
-            duration = time.time() - request._db_start_time
-
-            # revert before merging
-            # logger.info(
-            #     f"DB_CONN_END: queries={query_count}, "
-            #     f"duration={duration:.3f}s, "
-            #     f"total_queries={len(connection.queries)}, "
-            #     f"status={response.status_code}, "
-            #     f"path={request.path}"
-            # )
         return response
