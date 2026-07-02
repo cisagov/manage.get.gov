@@ -1295,7 +1295,7 @@ class Domain(TimeStampedModel, DomainHelper):
             try:
                 with transaction.atomic():
                     dns_zone = DnsZone.objects.get(domain_id=self.id)
-                    logger.info("Removing db DNS records for %s.", self.name)
+                    logger.info("Removing db DNS records associated with %s.", self.name)
                     records = DnsRecord.objects.filter(dns_zone=dns_zone)
                     records.delete()
                     logger.info(
