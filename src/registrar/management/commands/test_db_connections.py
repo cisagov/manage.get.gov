@@ -18,7 +18,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--agencies",
             nargs="+",
-        default=["Department of Defense", "Department of State", "Department of Treasury", "Department of Justice"],
+            default=["Department of Defense", "Department of State", "Department of Treasury", "Department of Justice"],
             help="Agency names to cycle through",
         )
 
@@ -40,8 +40,7 @@ class Command(BaseCommand):
             agency = agencies[i % len(agencies)]
             iteration_start = time.time()
             queries_before = len(connection.queries)
-            logger.info(f"DB_CONN_START: iteration={i}, queries={queries_before}")
-
+            # logger.info(f"DB_CONN_START: iteration={i}, queries={queries_before}")
             self._run_portfolio_script(agency, i)
 
             duration = time.time() - iteration_start
