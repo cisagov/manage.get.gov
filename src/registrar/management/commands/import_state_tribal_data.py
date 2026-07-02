@@ -5,6 +5,9 @@ import os
 import re
 
 from django.core.management import BaseCommand
+from django.core.exceptions import ValidationError
+
+from datetime import datetime
 
 from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.models import StateTribe
@@ -64,6 +67,7 @@ class Command(BaseCommand):
         dry_run = bool(options.get("dry_run", True))
         csv_path = options.get("csv_path")
         self.warnings = []  # collect warnings across all rows
+        self.skipped_rows = []  # collect skipped rows w missing tribe name
 
         if dry_run:
             logger.info(
@@ -78,33 +82,38 @@ class Command(BaseCommand):
         # Updated in place by _process_row via the counts dict
         counts = {"created": 0, "skipped": 0, "errors": 0}
 
-        for row in rows:
-            self._process_row(row, dry_run, counts)
+        # start=2 as row 1 is the header
+        for row_number, row in enumerate(rows, start=2):
+            self._process_row(row, row_number, dry_run, counts)
 
         self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
+        self._print_skipped_rows()
         self._print_warnings()
 
-    def _process_row(self, row, dry_run, counts):
+    def _process_row(self, row, row_number, dry_run, counts):
         """Process a single CSV row: validate, map, then create/skip
         the corresponding StateTribe record + updates counts in place"""
         tribe_name = row.get("Name", "").strip()
 
         if not tribe_name:
-            logger.warning("Skipping row with missing Tribe Name.")
+            message = f"Row {row_number} skipped — missing tribe name. " f"Row contents: {dict(row)}"
+            logger.warning(message)
+            self.skipped_rows.append({"row_number": row_number, "contents": dict(row)})
             counts["skipped"] += 1
             return
 
-        mapped = self._map_row(row)
-
         try:
-            existing = StateTribe.objects.filter(tribe_name=tribe_name).first()
+            mapped = self._map_row(row)
+
+            existing = StateTribe.objects.filter(tribe_name__iexact=tribe_name).exists()
 
             if existing:
-                logger.debug(f"'{tribe_name}' already exists, skipping.")
+                logger.info(f"'{tribe_name}' already exists, skipping.")
                 counts["skipped"] += 1
                 return
 
-            self._create_tribe(tribe_name, mapped, dry_run, counts)
+            self._create_tribe(tribe_name, mapped, dry_run)
+            counts["created"] += 1
 
         except Exception as e:
             logger.error(
@@ -113,17 +122,36 @@ class Command(BaseCommand):
             )
             counts["errors"] += 1
 
-    def _create_tribe(self, tribe_name, mapped, dry_run, counts):
-        """Handles case where no record exists yet.
-        If dry run - log the action with field details.
-        If not dry run - create the new StateTribe record."""
+    def _create_tribe(self, tribe_name, mapped, dry_run):
+        """
+        Handles the creation of a new StateTribe record.
+
+        Parameters:
+            tribe_name (str): The full name of the tribe, used for logging
+            mapped (dict): A dict of cleaned model field names to values,
+            ready to be passed into StateTribe.objects.create()
+            dry_run (bool): If True, logs what would be created.
+            If False, actually creates the record to the db.
+            counts (dict): Running tally of created/skipped/error counts,
+            updated in place
+        Returns: None
+        """
         if dry_run:
             logger.info(f"Dry run enabled...skipping creating StateTribe for '{tribe_name}'")
             self._log_action(dry_run, "Created", tribe_name, mapped)
         else:
             logger.info(f"Creating StateTribe record for '{tribe_name}'")
-            StateTribe.objects.create(**mapped)
-        counts["created"] += 1
+            tribe = StateTribe(**mapped)
+            try:
+                tribe.full_clean()
+            except ValidationError as e:
+                logger.error(
+                    f"{TerminalColors.FAIL}Validation failed for '{tribe_name}', "
+                    f"skipping record. Errors: {e.message_dict}{TerminalColors.ENDC}",
+                )
+                raise
+            else:
+                tribe.save()
 
     def _load_csv(self, csv_path):
         """Load rows from the CSV file at the given path and put into a dictionary list."""
@@ -142,7 +170,7 @@ class Command(BaseCommand):
         """Map a CSV row dict to StateTribe model field names
         and cleans input along the way"""
         mapped = {}
-        tribe_name = row.get("Name", "unknown")
+        tribe_name = row.get("Name", "unknown").stripped()
         for csv_col, model_field in CSV_FIELD_MAP.items():
             value = row.get(csv_col, "").strip() or None
 
@@ -166,8 +194,6 @@ class Command(BaseCommand):
     def _parse_date(self, value, tribe_name):
         """Parse into datetime.date string. Handles full dates (MM/DD/YYYY).
         Returns None on failure."""
-        from datetime import datetime
-
         for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y"):
             try:
                 return datetime.strptime(value.strip(), fmt).date()
@@ -201,9 +227,17 @@ class Command(BaseCommand):
         return None
 
     def _parse_email(self, value, tribe_name):
-        """Parse one or more email addresses from a field (either via , or : or ;)
-        and validate each email to check if any are invalid.
-        Returns a comma joined string of valid emails, or if invalid None"""
+        """
+        Parse one or more email addresses from a field (, : or ;)
+        and validate each one
+
+        Parameters:
+            value (str): Raw email string from the CSV field
+            tribe_name (str): Name of the tribe, used for warning messages
+
+        Returns:
+            list: List of valid email strings, or None if no valid emails found
+        """
         raw_emails = re.split(r"[,;:]\s*", value)
         valid = []
         email_pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -221,7 +255,7 @@ class Command(BaseCommand):
             self._warn(tribe_name, f"No valid emails found in '{value}', storing as None.")
             return None
 
-        return ", ".join(valid)
+        return valid
 
     def _warn(self, tribe_name, message):
         """Log warning and store it for the summary at the end"""
@@ -265,3 +299,17 @@ class Command(BaseCommand):
         self.stderr.write(f"\n{TerminalColors.YELLOW}Warnings ({len(self.warnings)} total):{TerminalColors.ENDC}")
         for warning in self.warnings:
             self.stderr.write(f"  {TerminalColors.YELLOW}- {warning}{TerminalColors.ENDC}")
+
+    def _print_skipped_rows(self):
+        """Print all rows that were skipped due to missing tribe name."""
+        if not self.skipped_rows:
+            return
+
+        self.stderr.write(
+            f"\n{TerminalColors.YELLOW}Skipped rows with missing tribe name "
+            f"({len(self.skipped_rows)} total):{TerminalColors.ENDC}"
+        )
+        for entry in self.skipped_rows:
+            self.stderr.write(
+                f"  {TerminalColors.YELLOW}- Row {entry['row_number']}: " f"{entry['contents']}{TerminalColors.ENDC}"
+            )

@@ -5,6 +5,9 @@ import re
 import requests
 
 from django.core.management import BaseCommand
+from django.core.exceptions import ValidationError
+
+from datetime import datetime
 
 from registrar.management.commands.utility.terminal_helper import TerminalColors
 from registrar.models import FederalTribe
@@ -92,9 +95,9 @@ class Command(BaseCommand):
             counts["skipped"] += 1
             return
 
-        mapped = self._map_row(row)
-
         try:
+            mapped = self._map_row(row)
+
             existing = FederalTribe.objects.filter(tribe_full_name=tribe_full_name).first()
 
             if existing:
@@ -102,7 +105,8 @@ class Command(BaseCommand):
                 counts["skipped"] += 1
                 return
 
-            self._create_tribe(tribe_full_name, mapped, dry_run, counts)
+            self._create_tribe(tribe_full_name, mapped, dry_run)
+            counts["created"] += 1
 
         except Exception as e:
             logger.error(
@@ -112,16 +116,35 @@ class Command(BaseCommand):
             counts["errors"] += 1
 
     def _create_tribe(self, tribe_full_name, mapped, dry_run, counts):
-        """Handles case where no record exists yet
-        If dry run - log the action and list out what will be created
-        If not dry run - create the new FederalTribe record"""
+        """
+        Handles the creation of a new StateTribe record.
+
+        Parameters:
+            tribe_name (str): The full name of the tribe, used for logging
+            mapped (dict): A dict of cleaned model field names to values,
+            ready to be passed into StateTribe.objects.create()
+            dry_run (bool): If True, logs what would be created.
+            If False, actually creates the record to the db.
+            counts (dict): Running tally of created/skipped/error counts,
+            updated in place
+        Returns: None
+        """
         if dry_run:
-            logger.info(f"Dry run ENABLED -- skipping creating FederalTribe for '{tribe_full_name}'")
+            logger.info(f"Dry run enabled...skipping creating StateTribe for '{tribe_full_name}'")
             self._log_action(dry_run, "Created", tribe_full_name, mapped)
         else:
-            logger.info(f"Creating FederalTribe record for '{tribe_full_name}'")
-            FederalTribe.objects.create(**mapped)
-        counts["created"] += 1
+            logger.info(f"Creating StateTribe record for '{tribe_full_name}'")
+            tribe = FederalTribe(**mapped)
+            try:
+                tribe.full_clean()
+            except ValidationError as e:
+                logger.error(
+                    f"{TerminalColors.FAIL}Validation failed for '{tribe_full_name}', "
+                    f"skipping record. Errors: {e.message_dict}{TerminalColors.ENDC}",
+                )
+                raise
+            else:
+                tribe.save()
 
     def _load_csv(self):
         """Load rows rom CSV with a 30 sec timeout and make sure download succeeded
@@ -140,7 +163,7 @@ class Command(BaseCommand):
         """Map a CSV row dict to FederalTribe model field names
         and cleans input along the way"""
         mapped = {}
-        tribe_name = row.get("Tribe Full Name", "unknown")
+        tribe_name = row.get("Tribe Full Name", "unknown").stripped()
         for csv_col, model_field in CSV_FIELD_MAP.items():
             value = row.get(csv_col, "").strip() or None
 
@@ -164,8 +187,6 @@ class Command(BaseCommand):
         """Parse into datetime.date string and handles all the different
         date types with full dates and partial month/year and sort into one unified style
         ie 9/2020 -> datetime.date(2020, 9, 1) if date not listed, 1 is default"""
-        from datetime import datetime
-
         for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y", "%m/%Y", "%m-%Y", "%B %Y", "%b %Y"):
             try:
                 return datetime.strptime(value.strip(), fmt).date()
@@ -199,9 +220,17 @@ class Command(BaseCommand):
         return None
 
     def _parse_email(self, value, tribe_name):
-        """Parse one or more email addresses from a field (either via , or : or ;)
-        and validate each email to chcek if any are invalid
-        Returns a comma joined string of valid emails, or if invalid None"""
+        """
+        Parse one or more email addresses from a field (, : or ;)
+        and validate each one
+
+        Parameters:
+            value (str): Raw email string from the CSV field
+            tribe_name (str): Name of the tribe, used for warning messages
+
+        Returns:
+            list: List of valid email strings, or None if no valid emails found
+        """
         raw_emails = re.split(r"[,;:]\s*", value)
         valid = []
         email_pattern = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -219,7 +248,7 @@ class Command(BaseCommand):
             self._warn(tribe_name, f"No valid emails found in '{value}', storing as None.")
             return None
 
-        return ", ".join(valid)
+        return valid
 
     def _warn(self, tribe_name, message):
         """Log warning and store it for the summary at the end"""
