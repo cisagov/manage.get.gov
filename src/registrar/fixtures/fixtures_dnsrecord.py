@@ -32,39 +32,21 @@ class DnsRecordFixture(DomainFixture):
 
         try:
             # Get approved domains that are enrolled in DNS hosting
-            domains = Domain.objects.filter(is_enrolled_in_dns_hosting=True, dnszone__isnull=True)[:5]
+            domains = Domain.objects.filter(is_enrolled_in_dns_hosting=True)[:5]
 
             logger.info(f"Found {domains.count()} domains enrolled in DNS hosting (taking first 5)")
 
             if not domains:
                 logger.info("No domains available. Make sure domains have is_enrolled_in_dns_hosting=True")
                 return
-
-            dns_zones_to_create = []
             dns_records_to_create = []
-
-            for domain in domains:
-                # Create or get a DNS account for this domain
-                account_name = make_dns_account_name(domain.name)
-                dns_account, created = DnsAccount.objects.get_or_create(name=account_name)
-                if created:
-                    logger.info(f"Created DNS account: {account_name}")
-
-                # Create a DNS zone for each domain with the DNS account
-                dns_zone = DnsZone(
-                    domain=domain,
-                    dns_account=dns_account,
-                    name=domain.name,
-                    nameservers=["ns1.example.gov", "ns2.example.gov"],
-                )
-                dns_zones_to_create.append(dns_zone)
-
-            # Bulk create DNS zones
-            created_zones = DnsZone.objects.bulk_create(dns_zones_to_create)
-            logger.info(f"Successfully created {len(created_zones)} DNS zones.")
+            zones = []
+            for d in domains:
+                zone = d.dnszone
+                zones.append(zone)
 
             # Create DNS records for each zone
-            for dns_zone in created_zones:
+            for dns_zone in zones:
                 # Root A record
                 dns_records_to_create.append(
                     DnsRecord(
