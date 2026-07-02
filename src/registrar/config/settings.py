@@ -455,8 +455,8 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 # enable localized formatting of numbers and dates
-USE_L10N = True
-
+# USE_L10N = True
+# COMMENT: Can be removed becuase it's enabled by default now
 # make datetimes timezone-aware by default
 USE_TZ = True
 
@@ -754,7 +754,6 @@ OIDC_ALLOW_DYNAMIC_OP = False
 # See above for the default value if the env variable is missing
 OIDC_ACTIVE_PROVIDER = env_oidc_active_provider
 
-
 OIDC_PROVIDERS = {
     "identity sandbox": {
         "srv_discovery_url": "https://idp.int.identitysandbox.gov",
@@ -836,7 +835,7 @@ EPP_HEARTBEAT_INTERVAL = 60
 # (does not bound the initial TCP connect). The registry normally responds in
 # milliseconds; this is a backstop so an unresponsive registry cannot hang a
 # request (and hold the connection lock) indefinitely.
-EPP_CONNECTION_TIMEOUT = 30
+EPP_CONNECTION_TIMEOUT = 5
 
 # endregion
 
