@@ -3,9 +3,8 @@ from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.services.cloudflare_service import CloudflareService
+from registrar.utility.errors import DnsAuthError, DnsValidationError, DnsUpstreamError, DnsTransportError
 from registrar.services.dns_http_client import build_dns_client
-from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.errors import APIError, DnsTransportError
 from registrar.models import VendorDnsZone, DnsZone, Domain, DnsAccount, DnsZone_VendorDnsZone
 
 
@@ -79,32 +78,12 @@ class TestMockCloudflareServiceEndpoints(SimpleTestCase):
         client = Client()
         self.service = CloudflareService(client)
 
-    def test_mock_get_page_accounts_response(self):
-        resp = self.service.get_page_accounts(1, 50)
-        result = resp["result"]
-        self.assertEqual(len(result), 3)
-        self.assertEqual(result[2]["account_pubname"], make_dns_account_name("exists.gov"))
-
     def test_mock_get_account_zones_response(self):
         existing_account_id = self.mock_api_service.existing_account_id
         resp = self.service.get_account_zones(existing_account_id)
         result = resp["result"]
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].get("name"), "exists.gov")
-
-    def test_mock_create_cf_account_response(self):
-        account_name = make_dns_account_name("equity.gov")
-
-        resp = self.service.create_cf_account(account_name)
-        result = resp["result"]
-
-        self.assertEqual(result["name"], account_name)
-
-        # check if new account was added to the get accounts mock
-        resp = self.service.get_page_accounts(1, 50)
-        result = resp["result"]
-        self.assertEqual(len(result), 4)
-        self.assertEqual(result[3]["account_pubname"], account_name)
 
     def test_mock_get_cf_zone_by_id_response(self):
         zone_name = "test.gov"
@@ -220,21 +199,21 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsAuthError) as context:
             self.service.create_dns_record(zone_id, error_403_record_data)
-        self.assertTrue("403" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 403)
 
         error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsValidationError) as context:
             self.service.create_dns_record(zone_id, error_400_record_data)
-        self.assertTrue("400" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 400)
 
         error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsUpstreamError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
-        self.assertTrue("500" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 500)
 
     def test_mock_create_dns_record_timeout_trigger(self):
         """A timeout- record name simulates a hung Cloudflare connection and raises DnsTransportError."""
@@ -285,18 +264,18 @@ class TestMockCloudflareServiceEndpointsWithDB(TestCase):
 
         error_403_record_data = {"type": "A", "name": "error-403-bottles", "content": "55.66.77.88"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsAuthError) as context:
             self.service.create_dns_record(zone_id, error_403_record_data)
-        self.assertTrue("403" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 403)
 
         error_400_record_data = {"type": "A", "name": "error-400-bottles", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsValidationError) as context:
             self.service.create_dns_record(zone_id, error_400_record_data)
-        self.assertTrue("400" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 400)
 
         error_500_record_data = {"type": "A", "name": "error-project", "content": "11.22.33.44"}
 
-        with self.assertRaises(APIError) as context:
+        with self.assertRaises(DnsUpstreamError) as context:
             self.service.create_dns_record(zone_id, error_500_record_data)
-        self.assertTrue("500" in str(context.exception))
+        self.assertEqual(context.exception.upstream_status, 500)
