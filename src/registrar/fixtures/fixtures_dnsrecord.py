@@ -5,9 +5,6 @@ from django.conf import settings
 from registrar.fixtures.fixtures_domains import DomainFixture
 from registrar.models import Domain
 from registrar.models.dns.dns_record import DnsRecord
-from registrar.models.dns.dns_zone import DnsZone
-from registrar.models.dns.dns_account import DnsAccount
-from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.utility.enums import DNSRecordTypes
 
 fake = Faker()
