@@ -1294,11 +1294,7 @@ class Domain(TimeStampedModel, DomainHelper):
             logger.debug("Deleting DNS data for %s.", self.name)
             try:
                 with transaction.atomic():
-                    logger.info("Removing db DNS accounts for %s.", self.name)
                     dns_zone = DnsZone.objects.get(domain_id=self.id)
-                    dns_account = dns_zone.dns_account
-                    dns_account.delete()
-                    logger.info("Removed db DNS account for domain %s.", self.name)
                     logger.info("Removing db DNS records for %s.", self.name)
                     records = DnsRecord.objects.filter(dns_zone=dns_zone)
                     records.delete()
@@ -1310,6 +1306,10 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info("Removing db DNS zone for domain %s.", self.name)
                     dns_zone.delete()
                     logger.info("Removed db DNS zone for domain %s.", self.name)
+                    logger.info("Removing db DNS accounts for %s.", self.name)
+                    dns_account = dns_zone.dns_account
+                    dns_account.delete()
+                    logger.info("Removed db DNS account for domain %s.", self.name)
 
             except Exception as e:
                 logger.error("Error deleting DNS data for %s: %s", self.name, e)
