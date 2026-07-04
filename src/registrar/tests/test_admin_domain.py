@@ -21,7 +21,7 @@ from registrar.models.federal_agency import FederalAgency
 from registrar.models.public_contact import PublicContact
 from registrar.models.user_domain_role import UserDomainRole
 from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import APIError
+from registrar.utility.errors import DnsHostingError, DnsHostingErrorCodes
 from .common import (
     MockSESClient,
     completed_domain_request,
@@ -1094,8 +1094,8 @@ class TestDomainAdminWithClient(TestCase):
 
         response = self.client.get("/admin/registrar/domain/")
         # There are 4 template references to Federal (4) plus four references in the table
-        # for our actual domain_request
-        self.assertContains(response, "Federal", count=7)
+        # for our actual domain_request including "add federal agency", "add federal tribe"
+        self.assertContains(response, "Federal", count=9)
         # This may be a bit more robust
         self.assertContains(response, '<td class="field-converted_generic_org_type">Federal</td>', count=1)
         # Now let's make sure the long description does not exist
@@ -1417,14 +1417,13 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
             "registrar.services.dns_host_service.DnsHostService._find_existing_account_in_cf", return_value=None
         ), patch(
             "registrar.services.dns_host_service.DnsHostService.create_and_save_account",
-            side_effect=APIError("Cloudflare account setup failed"),
+            side_effect=DnsHostingError(code=DnsHostingErrorCodes.AUTH_FAILED, upstream_status="404"),
         ), patch.object(
             DomainAdmin, "message_user"
         ) as mock_message_user:
 
             response = form.submit("_enroll_dns_hosting")
             response = response.follow()
-
         # Ensure an error message was sent to the user
         mock_message_user.assert_called_once_with(
             ANY,

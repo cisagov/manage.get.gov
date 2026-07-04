@@ -26,7 +26,8 @@
         <div class="tablet:display-flex tablet:flex-row">
             <button
             type="button"
-            class="usa-button usa-button--unstyled margin-right-2"
+            id="dnsrecord-edit-button-{{ record_id }}"
+            class="usa-button usa-button--unstyled margin-right-05"
             aria-expanded="false"
             :aria-expanded="showFormId == '{{ record_id }}' ? 'true' : 'false'"
             aria-controls="dnsrecord-edit-row-{{ record_id }}"
@@ -50,42 +51,17 @@
                     </svg>
 
             </button>
-            <a
-                role="button"
-                id="button-trigger-delete-dnsrecord-{{ record_id }}"
-                class="usa-button usa-button--unstyled text-underline margin-top-2 line-height-sans-5 text-secondary visible-mobile-flex"
-                >
-                <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#delete"></use>
-                </svg>
-                Delete
-            </a>
-
-            <div class="usa-accordion usa-accordion--more-actions margin-right-2 hidden-mobile-flex">
-                <div class="usa-accordion__heading">
-                <button
+            <button
                     type="button"
-                    class="usa-button usa-button--unstyled usa-button--with-icon usa-accordion__button usa-button--more-actions margin-top-2px"
-                    aria-expanded="false"
-                    aria-controls="more-actions-dnsrecord-{{ record_id }}"
-                    aria-label="More Actions for DNS record"
+                    id="row-delete-button-{{ record_id }}"
+                    class="usa-button usa-button--unstyled usa-button--with-icon margin-top-2px text-secondary js-dnsrecord-delete"
+                    data-record-id="{{ record_id }}"
                 >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
-                    <use xlink:href="/public/img/sprite.svg#more_vert"></use>
+                    <svg class="usa-icon" role="img" aria-labelledby="row-delete-img-{{ record_id }}" focusable="false" role="img" width="24">
+                        <title id="row-delete-img-{{ record_id }}">Delete {{ dns_record.name }}</title>
+                        <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
-                </button>
-                </div>
-                <div id="more-actions-dnsrecord-{{ record_id }}" class="usa-accordion__content usa-prose shadow-1 left-auto right-neg-1" hidden>
-                <h2>More options</h2>
-                <button
-                    type="button"
-                    class="usa-button usa-button--unstyled text-underline late-loading-modal-trigger margin-top-2 line-height-sans-5 text-secondary"
-                    aria-label="Delete DNS record from Cloudflare"
-                >
-                    Delete
-                </button>
-                </div>
-            </div>
+            </button>
         </div>
     </td>
 </tr>

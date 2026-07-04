@@ -35,6 +35,9 @@ on:
           - kma
           - dg
 
+permissions:
+  contents: read
+
 jobs:
   reset-db:
     runs-on: ubuntu-latest

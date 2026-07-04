@@ -3,7 +3,7 @@
 
 {# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
 <tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders">
-    <td colspan="5" class="no-padding-right">
+    <td colspan="5" class="no-padding-right padding-top-0 padding-bottom-0">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
                 id="dnsrecord-edit-form-{{ record_id }}"
@@ -21,7 +21,7 @@
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
                 {% include dns_record.form_template with form=dns_record.form %}
-                <div>
+                <div class="margin-bottom-2">
                     {% with add_group_class="usa-form-group--unstyled-error" %}
                         {% input_with_errors dns_record.form.comment %}
                     {% endwith %}
@@ -29,18 +29,14 @@
                     <!-- Hardcorded character limits for the comment field should be removed if/when the dns record model is updated -->
                     {{ 100|remaining_characters_text:dns_record.form.comment.value }}
                     </div>
-                    
+
                 </div>
+                {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <button
                     type="button"
-                    class="usa-button usa-button--outline js-dnsrecord-cancel-button"
-                    data-action="form-cancel"
+                    id="dnsrecord-edit-cancel-button-{{ record_id }}"
+                    class="usa-button usa-button--outline js-dnsrecord-edit-cancel"
                     data-record-id="{{ record_id }}"
-                    hx-get="{% url 'domain-dns-records' domain.pk %}"
-                    hx-select="#dnsrecord-edit-form-{{ record_id }}"
-                    hx-target="#dnsrecord-edit-form-{{ record_id }}"
-                    hx-swap="outerHTML"
-                    x-on:click="showFormId = null"
                 >
                     Cancel
                 </button>
@@ -49,19 +45,21 @@
                     Save
                 </button>
 
-                <a
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm"
+                <button
+                    id="dnsrecord-delete-button-{{ record_id }}"
+                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center padding-bottom-05"
+                    type="button"
                     role="button"
                     tabindex="0"
+                    aria-label="Delete DNS record"
                     data-action="form-delete"
                     data-record-id="{{ record_id }}"
-                    aria-label="Delete DNS record from Cloudflare"
                 >
-                    <svg class="usa-icon" aria-hidden="true" focusable="false" role="img">
+                    <svg class="usa-icon margin-right-05" aria-hidden="true" focusable="false" role="img">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
                     <span class="font-sans-sm">Delete</span>
-                </a>
+                </button>
             </form>
         </div>
     </td>
@@ -69,12 +67,12 @@
 
 <!-- Comment row -->
 <tr x-show="openComments.includes('{{ record_id }}')" class="hide-td-borders">
-    <td colspan="5" class="no-padding-right">
+    <td colspan="5" class="no-padding-right padding-top-0 padding-bottom-0">
           <div class="border radius-lg border-base-lighter padding-3">
              <span id="dns-comment-{{record_id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
                 {{ dns_record.comment }}
-             </span>   
+             </span>
           </div>
     </td>
 </tr>

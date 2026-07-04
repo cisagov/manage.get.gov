@@ -948,7 +948,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation(self, mock_send_domain_email, mock_send_portfolio_email):
         """Adding an existing user works and sends portfolio invitation when
@@ -1005,7 +1005,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation_to_new_email(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1055,7 +1055,98 @@ class TestDomainManagers(TestDomainOverview):
 
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("registrar.views.domain.send_domain_invitation_email")
+    def test_domain_user_add_form_sends_portfolio_permission_invitation_when_flag_on(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding a new email uses the invitation service when the invitation flag is on."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "uppflaguser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        response = add_page.form.submit()
+
+        self.assertEqual(response.status_code, 302)
+
+        mock_send_portfolio_email.assert_called_once_with(
+            email="uppflaguser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_send_domain_email.assert_called_once()
+
+        self.assertTrue(
+            UserPortfolioPermission.objects.filter(
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+                status=UserPortfolioPermission.Status.INVITED,
+            ).exists()
+        )
+        self.assertTrue(
+            PortfolioInvitation.objects.filter(
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+            ).exists()
+        )
+        self.assertFalse(
+            UserPortfolioPermission.objects.filter(
+                user__isnull=False,
+                email="uppflaguser@igorville.gov",
+                portfolio=self.portfolio,
+            ).exists()
+        )
+
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    def test_domain_user_add_form_creates_user_domain_role_invitation_when_flag_on(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding a new email uses the UserDomainRole invitation flow when the flag is on."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "udrflaguser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        response = add_page.form.submit()
+
+        self.assertEqual(response.status_code, 302)
+        mock_send_portfolio_email.assert_called_once_with(
+            email="udrflaguser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_send_domain_email.assert_called_once()
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=UserDomainRole.Status.INVITED,
+            ).exists()
+        )
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
+    @less_console_noise_decorator
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_fails_to_send_to_some_managers(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1090,7 +1181,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_doesnt_send_portfolio_invitation_if_already_member(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1140,7 +1231,7 @@ class TestDomainManagers(TestDomainOverview):
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @boto3_mocking.patching
     @less_console_noise_decorator
-    @patch("registrar.views.domain.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_sends_portfolio_invitation_raises_email_sending_error(
         self, mock_send_domain_email, mock_send_portfolio_email
@@ -1235,6 +1326,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, email_address)
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
+        self.assertFalse(UserDomainRole.objects.filter(email=email_address, domain=self.domain).exists())
 
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_domain_invitation_email")
@@ -1491,7 +1583,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("invitation-cancel", kwargs={"domain_invitation_pk": invitation.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, f"Invitation to {email_address} has already been retrieved.")
+        # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "be canceled because it has already been retrieved.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
@@ -1567,7 +1660,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": new_user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"Removed {email_address} as a manager for this domain.")
+        self.assertContains(response, f"{email_address} has been removed from this domain.")
         # Assert that the second user is displayed
         self.assertContains(response, f"{email_address_2}")
         # Assert that the UserDomainRole is deleted
@@ -1581,7 +1674,7 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that an error message is displayed to the user
-        self.assertContains(response, "Domains must have at least one domain manager.")
+        self.assertContains(response, "You can’t remove yourself because you’re the only domain manager.")
         # Assert that the user is still displayed
         self.assertContains(response, f"{self.user.email}")
         # Assert that the UserDomainRole still exists
@@ -1598,7 +1691,8 @@ class TestDomainManagers(TestDomainOverview):
             reverse("domain-user-delete", kwargs={"domain_pk": self.domain.id, "user_pk": self.user.id}), follow=True
         )
         # Assert that a success message is displayed to the user
-        self.assertContains(response, f"You are no longer managing the domain {self.domain}.")
+        # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
+        self.assertContains(response, "been removed from this domain.")
         # Assert that the UserDomainRole no longer exists
         self.assertFalse(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
@@ -3133,6 +3227,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
     def test_no_notification_when_dns_needed(self):
         """Test that an email is not sent when nameservers are changed while the state is DNS_NEEDED."""
 
+        # reset to match expected form structure
+        self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
         nameservers_page = self.app.get(
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_dns_needed.id})
         )
@@ -3150,6 +3247,9 @@ class TestDomainChangeNotifications(TestDomainOverview):
 
         # Check that an email was not sent
         self.assertFalse(self.mock_client.send_email.called)
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
 
 class TestDomainRenewal(TestWithUser):
@@ -3598,6 +3698,30 @@ class TestDomainDeletion(TestWithUser):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com"]
+
+    @override_flag("domain_deletion", active=True)
+    def test_domain_deletion_with_active_nameservers_failure(self):
+        """Deletion should be blocked when the domain has active nameservers"""
+        domain = Domain.objects.create(
+            name="blocked.gov", state=Domain.State.ON_HOLD, expiration_date=timezone.now().date() + timedelta(days=65)
+        )
+
+        Host.objects.create(name="ns1.blocked.gov", domain=domain)
+        Host.objects.create(name="ns2.blocked.gov", domain=domain)
+
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain, role=UserDomainRole.Roles.MANAGER)
+
+        self.client.force_login(self.user)
+
+        # Attempt deletion via POST
+        self.client.post(
+            reverse("domain-delete", kwargs={"domain_pk": domain.id}),
+            data={"domain_pk": domain.id},
+            follow=True,
+        )
+
+        # Validate that the domain exists despite trying to delete.
+        self.assertTrue(Domain.objects.filter(id=domain.id).exists())
 
 
 class TestDomainDns(TestWithSharedDomainPermissions, WebTest):

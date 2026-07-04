@@ -23,6 +23,7 @@ from registrar.admin import (
     PortfolioInvitationAdmin,
     UserPortfolioPermissionAdmin,
     UserDomainRoleAdmin,
+    UserDomainRoleForm,
     UserPortfolioPermissionsForm,
     VerifiedByStaffAdmin,
     FsmModelResource,
@@ -33,6 +34,7 @@ from registrar.admin import (
     TransitionDomainAdmin,
     UserGroupAdmin,
     PortfolioAdmin,
+    SuborganizationAdmin,
 )
 from registrar.models import (
     Domain,
@@ -76,6 +78,8 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from unittest.mock import ANY, call, patch, Mock
+from auditlog.models import LogEntry
+from django.contrib.contenttypes.models import ContentType
 
 import logging
 
@@ -1419,6 +1423,96 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         mock_cleanup.assert_called_once_with(portfolio=self.portfolio, email="", user=self.testuser)
 
 
+class TestUserDomainRoleInvitationAdmin(TestCase):
+    def setUp(self):
+        self.client = Client(HTTP_HOST="localhost:8080")
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.testuser = create_test_user()
+        self.portfolio = Portfolio.objects.create(organization_name="Test Portfolio", requester=self.superuser)
+        self.domain = Domain.objects.create(name="test.gov")
+        self.domain_info = DomainInformation.objects.create(
+            domain=self.domain,
+            portfolio=self.portfolio,
+            requester=self.superuser,
+        )
+
+    def tearDown(self):
+        UserDomainRole.objects.all().delete()
+        DomainInvitation.objects.all().delete()
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        DomainInformation.objects.all().delete()
+        Domain.objects.all().delete()
+        Portfolio.objects.all().delete()
+        Contact.objects.all().delete()
+        User.objects.all().delete()
+
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    def test_add_form_includes_invitation_controls(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("admin:registrar_userdomainrole_add"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="id_user"')
+        self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'id="id_domain"')
+        self.assertContains(response, "Invitation status")
+        self.assertContains(response, 'id="id_send_email"')
+        self.assertNotContains(response, 'id="id_role"')
+
+    @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_save_unknown_email_forces_invitation_email(self, mock_messages_success, mock_send_email):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        models.AllowedEmail.objects.create(email="new.person@example.gov")
+        form = UserDomainRoleForm(
+            data={
+                "user": "new.person@example.gov",
+                "domain": self.domain.id,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = self.superuser
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        self.assertIsNone(role.user)
+        self.assertEqual(role.email, "new.person@example.gov")
+        self.assertEqual(role.role, UserDomainRole.Roles.MANAGER)
+        self.assertEqual(role.status, UserDomainRole.Status.INVITED)
+        self.assertEqual(role.invited_by, self.superuser)
+        mock_send_email.assert_called_once()
+        mock_messages_success.assert_called_once_with(
+            request, "new.person@example.gov has been invited to the domain: test.gov"
+        )
+
+    @override_flag("user_domain_role_invitations", active=False)
+    @patch("registrar.admin.create_domain_role_or_invitation")
+    def test_save_with_invitation_flag_off_uses_direct_model_save(self, mock_create_role):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        role = UserDomainRole(
+            user=self.testuser,
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+        )
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = self.superuser
+
+        admin_instance.save_model(request, role, None, False)
+
+        self.assertTrue(UserDomainRole.objects.filter(user=self.testuser, domain=self.domain).exists())
+        mock_create_role.assert_not_called()
+
+
 class TestPortfolioInvitationAdmin(TestCase):
     """Tests for the PortfolioInvitationAdmin class as super user
 
@@ -1736,8 +1830,8 @@ class TestPortfolioInvitationAdmin(TestCase):
         # Call the save_model method
         admin_instance.save_model(request, portfolio_invitation, None, None)
         msg = (
-            "Email service unavailable. Try again, and if the problem persists, "
-            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a>.'
+            "Email service unavailable. Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message
@@ -1808,8 +1902,8 @@ class TestPortfolioInvitationAdmin(TestCase):
 
         msg = (
             "An unexpected error occurred: james.gordon@gotham.gov could not be added to this domain. "
-            'Try again, and if the problem persists, <a href="https://get.gov/contact" '
-            'class="usa-link" target="_blank">contact us</a>.'
+            "Please try again. If the problem persists, "
+            '<a href="https://get.gov/contact" class="usa-link" target="_blank">contact us</a> for assistance.'
         )
 
         # Assert that messages.error was called with the correct message
@@ -4894,3 +4988,140 @@ class TestDomainAdminState(TestCase):
         response = self.client.get(url)
         self.assertContains(response, "Unknown")
         self.assertNotContains(response, "dns needed")
+
+
+class TestSuborganizationAdmin(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.superuser = create_superuser()
+        self.site = AdminSite()
+        self.admin = SuborganizationAdmin(model=Suborganization, admin_site=self.site)
+
+        self.portfolio = Portfolio.objects.create(organization_name="test portfolio", requester=self.superuser)
+
+        self.sub_orgs = [
+            Suborganization.objects.create(name="test_sub_org1", portfolio=self.portfolio),
+            Suborganization.objects.create(name="test_sub_org2", portfolio=self.portfolio),
+        ]
+
+        domain_1 = Domain.objects.create(name="test_suborg.gov")
+        domain_2 = Domain.objects.create(name="test_suborg2.gov")
+
+        self.domain_infos = [
+            DomainInformation.objects.create(domain=domain_1, requester=self.superuser),
+            DomainInformation.objects.create(domain=domain_2, requester=self.superuser),
+        ]
+
+        draft_domain_1 = DraftDomain.objects.create(name="testdomainrequest1.gov")
+        draft_domain_2 = DraftDomain.objects.create(name="testdomainrequest2.gov")
+
+        self.domain_reqs = [
+            DomainRequest.objects.create(
+                requester=self.superuser,
+                requested_domain=draft_domain_1,
+                status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            ),
+            DomainRequest.objects.create(
+                requester=self.superuser,
+                requested_domain=draft_domain_2,
+                status=DomainRequest.DomainRequestStatus.SUBMITTED,
+            ),
+        ]
+
+    def tearDown(self):
+        LogEntry.objects.all().delete()
+
+    def test_logs_delete_suborg_with_a_single_item(self):
+        """
+        Test deleting a suborg with a single domain request that has this suborg
+        A log should be generated that indicates the domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+        self.domain_req = self.domain_reqs[1]
+
+        self.domain_req.sub_organization = self.sub_orgs[0]
+        self.domain_req.save()
+
+        self.admin.delete_model(request, self.sub_orgs[0])
+
+        self.domain_req.refresh_from_db()
+
+        log = LogEntry.objects.filter(object_pk=str(self.domain_req.id)).first()
+
+        self.assertEqual(log.changes, {"sub_organization": ["test_sub_org1", None]})
+        self.assertEqual(self.domain_req.sub_organization, None)
+        self.assertEqual(log.object_id, self.domain_req.id)
+        self.assertEqual(log.object_repr, str(self.domain_req))
+
+    def test_logs_delete_suborg_with_multiple_domains_and_domain_requests(self):
+        """
+        Test deleting a single suborg with multiple domains and domain requests
+        A log should be generated for each domain and domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        self.domain_reqs[0].sub_organization = self.sub_orgs[1]
+        self.domain_reqs[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_reqs[0].save()
+        self.domain_reqs[1].save()
+
+        self.domain_infos[0].sub_organization = self.sub_orgs[1]
+        self.domain_infos[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_infos[0].save()
+        self.domain_infos[1].save()
+
+        self.admin.delete_model(request, self.sub_orgs[1])
+
+        # get fresh copy of domain_info and domains requests
+        all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
+
+        for obj in all_domain_and_domain_requests:
+            ct = ContentType.objects.get_for_model(obj)
+            log = LogEntry.objects.filter(object_pk=str(obj.id), content_type=ct).first()
+            self.assertEqual(log.changes, {"sub_organization": ["test_sub_org2", None]})
+            self.assertEqual(obj.sub_organization, None)
+            self.assertEqual(log.object_id, obj.id)
+            self.assertEqual(log.object_repr, str(obj))
+
+    def test_logs_delete_queryset_with_multiple_domains_and_domain_requests(self):
+        """
+        Test deleting via delete_queryset multiple suborgs with multiple domains and domain requests
+        A log should be generated for each domain and domain request indicating the Suborg has been removed
+        """
+        request = self.factory.get("/")
+        request.user = self.superuser
+
+        self.domain_reqs[0].sub_organization = self.sub_orgs[0]
+        self.domain_reqs[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_reqs[0].save()
+        self.domain_reqs[1].save()
+
+        self.domain_infos[0].sub_organization = self.sub_orgs[0]
+        self.domain_infos[1].sub_organization = self.sub_orgs[1]
+
+        self.domain_infos[0].save()
+        self.domain_infos[1].save()
+
+        queryset = Suborganization.objects.filter(id__in=[self.sub_orgs[0].id, self.sub_orgs[1].id])
+        self.admin.delete_queryset(request, queryset)
+
+        # get fresh copy of domain_info and domains requests
+        all_domain_and_domain_requests = list(DomainRequest.objects.all()) + list(DomainInformation.objects.all())
+        sub_org_1_log = {"sub_organization": ["test_sub_org2", None]}
+        sub_org_2_log = {"sub_organization": ["test_sub_org1", None]}
+        for obj in all_domain_and_domain_requests:
+            ct = ContentType.objects.get_for_model(obj)
+            log = LogEntry.objects.filter(object_pk=str(obj.id), content_type=ct).first()
+
+            was_sub_org_deleted_log = log.changes == sub_org_1_log or log.changes == sub_org_2_log
+            self.assertEqual(obj.sub_organization, None)
+            self.assertEqual(was_sub_org_deleted_log, True)
+            self.assertEqual(log.object_id, obj.id)
+            self.assertEqual(log.object_repr, str(obj))

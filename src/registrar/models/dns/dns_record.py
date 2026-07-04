@@ -10,6 +10,8 @@ from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     validate_dns_name,
     get_fqdn_error_message,
 )
@@ -19,6 +21,7 @@ from registrar.models.dns.vendor_dns_record import VendorDnsRecord
 from registrar.models.dns.vendor_dns_zone import VendorDnsZone
 from registrar.models.dns.dns_zone import DnsZone
 from registrar.models.domain import Domain
+from django.db.models import QuerySet
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +128,7 @@ class DnsRecord(TimeStampedModel):
             conflict = conflict.exclude(pk=self.pk)
 
         if conflict.exists():
-            errors["name"] = [DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE]
+            errors["name"] = DnsRecord.get_conflict_error_message(record_type, conflict)
 
     def _normalize_fields(self) -> None:
         """Lowercase the fields that DNS treats as not case-sensitive.
@@ -262,14 +265,23 @@ class DnsRecord(TimeStampedModel):
         return query.exists()
 
     @classmethod
+    def get_conflict_error_message(cls, record_type: str, query: QuerySet[DnsRecord]) -> str:
+        if record_type == DNSRecordTypes.CNAME and not query.filter(type=record_type).exists():
+            return DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE
+        elif record_type in (DNSRecordTypes.A, DNSRecordTypes.AAAA):
+            return DNS_RECORD_CNAME_CONFLICT_ERROR_MESSAGE
+        else:
+            return DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
+
+    @classmethod
     def has_name_conflict(
         cls,
         domain_name: str,
         record_type: str,
         name: str,
         exclude_record_id: int | None = None,
-    ) -> bool:
-        """Return True if the record's name collides with an incompatible type in the zone.
+    ) -> QuerySet:
+        """Return Queryset with conflicting records if the record's name collides with an incompatible type in the zone.
 
         Per RFC 1034 Section 3.6.2, only CNAME/A/AAAA records have name conflicts.
         Handles both label and FQDN input formats with case-insensitive matching.
@@ -284,15 +296,15 @@ class DnsRecord(TimeStampedModel):
             exclude_record_id: Record ID to exclude (for editing existing records).
 
         Returns:
-            True if a conflict exists, False otherwise.
+            Queryset with values if a conflict exists, empty Queryset otherwise.
         """
         record_type_enum = DNSRecordTypes(record_type)
         if record_type_enum not in cls.CONFLICTING_RECORD_TYPES or not (name and domain_name):
-            return False
+            return cls.objects.none()
 
         dns_zone_id = DnsZone.get_zone_id_for_domain(domain_name)
         if not dns_zone_id:
-            return False
+            return cls.objects.none()
 
         query = cls.objects.filter(
             dns_zone_id=dns_zone_id,
@@ -302,7 +314,7 @@ class DnsRecord(TimeStampedModel):
         if exclude_record_id:
             query = query.exclude(pk=exclude_record_id)
 
-        return query.exists()
+        return query
 
     def _validate_cname_name_not_hostname(self, record_type, domain_name, errors):
         """Validate that a CNAME record's name does not resolve to the same hostname as its content.
@@ -447,4 +459,19 @@ class DnsRecord(TimeStampedModel):
                 dns_record.save()
         except Exception:
             logger.exception("Failed to update and save record to database.")
+            raise
+
+    @classmethod
+    def delete_by_x_record_id(cls, x_record_id: str):
+        """Delete an existing DnsRecord and its associated VendorRecord and DnsRecordVendorDnsRecord."""
+        try:
+            with transaction.atomic():
+                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
+                dns_record = cls.get_by_x_record_id(x_record_id)
+
+                # DnsRecordVendorDnsRecord object is deleted on cascade
+                dns_record.delete()  # type: ignore
+                vendor_dns_record.delete()  # type: ignore
+        except Exception:
+            logger.exception("Failed to delete record objects in database.")
             raise
