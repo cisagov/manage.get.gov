@@ -1346,6 +1346,23 @@ class TestUser(TestCase):
             save_mock.assert_called_once()
 
     @less_console_noise_decorator
+    def test_check_domain_invitations_on_login_accepts_user_domain_role_invitation(self):
+        """A pending UserDomainRole invitation should be accepted on login."""
+        domain_role = UserDomainRole.objects.create(
+            email="MAYOR@igorville.gov",
+            domain=self.domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        self.user.check_domain_invitations_on_login()
+
+        domain_role.refresh_from_db()
+        self.assertEqual(domain_role.user, self.user)
+        self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertIsNotNone(domain_role.accepted_at)
+
+    @less_console_noise_decorator
     def test_approved_domains_count(self):
         """Test that the correct approved domain count is returned for a user"""
         # with no associated approved domains, expect this to return 0

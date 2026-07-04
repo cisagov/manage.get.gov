@@ -9,30 +9,30 @@ from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 logger = logging.getLogger(__name__)
 
 
-class FederalTribe(TimeStampedModel):
+class StateTribe(TimeStampedModel):
 
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
 
-    tribe_full_name = models.CharField(
+    tribe_name = models.CharField(
         unique=True,
-        verbose_name="Tribe full name",
-        help_text="Full official name of the federally recognized tribe",
     )
-    tribe = models.CharField(
+    recognized_state = models.CharField(
+        max_length=2,
+        choices=StateTerritoryChoices.choices,  # type: ignore[misc]
         null=True,
         blank=True,
-        help_text="Shortened tribe name",
+        verbose_name="Recognized State",
     )
-    tribe_alternate_name = models.CharField(
-        null=True,
-        blank=True,
-    )
-    # Tribal contact information
-    first_name = models.CharField(
+    authorizing_legislation = models.URLField(
+        max_length=255,
         null=True,
         blank=True,
     )
-    last_name = models.CharField(
+    tribal_leader_first_name = models.CharField(
+        null=True,
+        blank=True,
+    )
+    tribal_leader_last_name = models.CharField(
         null=True,
         blank=True,
     )
@@ -41,19 +41,25 @@ class FederalTribe(TimeStampedModel):
         blank=True,
         help_text="Name suffix (ie jr, sr, III)",
     )
-    # Preferred name or nickname of contact (Also Known As)
-    aka = models.CharField(
-        null=True,
-        blank=True,
-        verbose_name="AKA",
-    )
-    job_title = models.CharField(
+    evidence_of_tribal_leader_designation = models.TextField(
         null=True,
         blank=True,
     )
-    organization = models.CharField(
+    email = models.EmailField(
+        max_length=320,
         null=True,
         blank=True,
+    )
+    phone = PhoneNumberField(
+        null=True,
+        blank=True,
+        help_text="Phone number for the tribal leader or designated contact",
+    )
+    website = models.URLField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="Tribe's official website",
     )
     address_line1 = models.CharField(
         null=True,
@@ -86,29 +92,13 @@ class FederalTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    phone = PhoneNumberField(
+    date_of_recognition = models.DateField(
         null=True,
         blank=True,
     )
-    email = models.EmailField(
-        max_length=320,
+    additional_sources = models.TextField(
         null=True,
         blank=True,
-    )
-    website = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True,
-    )
-    date_elected = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name="Date elected",
-    )
-    next_election = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name="Next election",
     )
     notes = models.TextField(
         null=True,
@@ -116,9 +106,9 @@ class FederalTribe(TimeStampedModel):
     )
 
     class Meta:
-        verbose_name = "Federal tribe"
-        verbose_name_plural = "Federal tribes"
-        ordering = ["tribe_full_name"]
+        verbose_name = "State tribe"
+        verbose_name_plural = "State tribes"
+        ordering = ["tribe_name"]
 
     def __str__(self):
-        return self.tribe_full_name or ""
+        return self.tribe_name or ""
