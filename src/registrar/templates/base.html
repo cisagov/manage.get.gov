@@ -104,7 +104,12 @@
     <!-- Yellow banner with exclamation mark in a triangle: -->
     {% include "includes/banner-warning.html" %}
   {% endcomment %}
-   {% include "includes/banner-dns-hosting-info.html" %}
+
+  <!-- Banner for DNS Hosting Info -->
+  
+  {% include "includes/banner-info-inline.html" with title="DNS hosting coming in late 2026:" message="We're looking for volunteers who can provide feedback or participate in user research. <a href='https://get.gov/contact/' class='usa-link'>Contact us</a> if you're interested."%}
+
+
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">

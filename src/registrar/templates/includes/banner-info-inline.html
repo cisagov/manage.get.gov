@@ -1,0 +1,10 @@
+<section class="usa-site-alert usa-site-alert--info margin-y-0 {% if add_class %}{{ add_class }}{% endif %}" aria-label="{{ title }}">
+    <div class="usa-alert">
+      <div class="usa-alert__body usa-alert__body--widescreen">
+        <span class="text-bold">
+          {{title}}
+        </span>
+        {{message|safe }}
+      </div>
+    </div>
+</section>
