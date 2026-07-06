@@ -6259,7 +6259,7 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "tribe_full_name",
         "tribe",
         "tribe_alternate_name",
-        "email",
+        "display_email",
         "first_name",
         "last_name",
         "suffix",
@@ -6276,7 +6276,6 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "website",
         "date_elected",
         "next_election",
-        "notes",
     ]
 
     search_fields = [
@@ -6286,6 +6285,15 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "last_name",
     ]
     search_help_text = "Search by tribe name, email address, or official name."
+
+    @admin.display(description="Email")
+    def display_email(self, obj):
+        """Display email list as a readable string without curly braces."""
+        if not obj.email:
+            return "-"
+        if isinstance(obj.email, list):
+            return ", ".join(obj.email)
+        return str(obj.email).strip("{}")
 
 
 class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
@@ -6299,7 +6307,7 @@ class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "tribal_leader_last_name",
         "suffix",
         "evidence_of_tribal_leader_designation",
-        "email",
+        "display_email",
         "phone",
         "website",
         "address_line1",
@@ -6310,7 +6318,6 @@ class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "urbanization",
         "date_of_recognition",
         "additional_sources",
-        "notes",
     ]
 
     search_fields = [
@@ -6320,6 +6327,15 @@ class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "email",
     ]
     search_help_text = "Search by tribe name, email address, or tribe leader name."
+
+    @admin.display(description="Email")
+    def display_email(self, obj):
+        """Display email list as a readable string without curly braces."""
+        if not obj.email:
+            return "-"
+        if isinstance(obj.email, list):
+            return ", ".join(obj.email)
+        return str(obj.email).strip("{}")
 
 
 class UserGroupAdmin(AuditedAdmin):
