@@ -68,6 +68,7 @@ class Command(BaseCommand):
         csv_path = options.get("csv_path")
         self.warnings = []  # collect warnings across all rows
         self.skipped_rows = []  # collect skipped rows w missing tribe name
+        self.errors = []
 
         if dry_run:
             logger.info(
@@ -88,6 +89,7 @@ class Command(BaseCommand):
 
         self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
         self._print_skipped_rows()
+        self._print_errors()
         self._print_warnings()
 
     def _process_row(self, row, row_number, dry_run, counts):
@@ -116,10 +118,12 @@ class Command(BaseCommand):
             counts["created"] += 1
 
         except Exception as e:
+            error_message = f"[{tribe_name}] Error: {e}"
             logger.error(
                 f"{TerminalColors.FAIL}Error processing '{tribe_name}': {e}{TerminalColors.ENDC}",
                 exc_info=True,
             )
+            self.errors.append(error_message)
             counts["errors"] += 1
 
     def _create_tribe(self, tribe_name, mapped, dry_run):
@@ -145,10 +149,21 @@ class Command(BaseCommand):
             try:
                 tribe.full_clean()
             except ValidationError as e:
+                # For phone validation failures we treat as warning + store None
+                # and save the record rather than skipping it entirely with an error
+                if "phone" in e.message_dict:
+                    self._warn(tribe_name, f"Phone number '{mapped.get('phone')}' is not valid, storing as None.")
+                    mapped["phone"] = None
+                    tribe = StateTribe(**mapped)
+                    tribe.save()
+                    return
+                # All other validation errors skip the record and surface as errors
+                error_message = f"[{tribe_name}] Validation failed: {e.message_dict}"
                 logger.error(
                     f"{TerminalColors.FAIL}Validation failed for '{tribe_name}', "
                     f"skipping record. Errors: {e.message_dict}{TerminalColors.ENDC}",
                 )
+                self.errors.append(error_message)
                 raise
             else:
                 tribe.save()
@@ -184,6 +199,8 @@ class Command(BaseCommand):
                         value = self._parse_phone(value, tribe_name)
                     case "email":
                         value = self._parse_email(value, tribe_name)
+                    case "website" | "authorizing_legislation":
+                        value = self._parse_url(value, tribe_name)
                     case "zipcode" if len(value) > 10:
                         self._warn(tribe_name, f"Zipcode '{value}' exceeds 10 characters, truncating.")
                         value = value[:10]
@@ -257,6 +274,22 @@ class Command(BaseCommand):
 
         return valid
 
+    def _parse_url(self, value, tribe_name):
+        """Ensure a URL has https:// or http:// in front of it
+        If missing, add https:// in front
+        Otherwise return None"""
+        if not value:
+            return None
+
+        # If it already has a url scheme, return as is
+        if value.startswith("http://") or value.startswith("https://"):
+            return value
+
+        # Add https:// for urls missing it (ie www.example.com or example.com)
+        fixed = f"https://{value}"
+        self._warn(tribe_name, f"URL '{value}' missing scheme, prepended https://: '{fixed}'")
+        return fixed
+
     def _warn(self, tribe_name, message):
         """Log warning and store it for the summary at the end"""
         full_message = f"[{tribe_name}] {message}"
@@ -313,3 +346,13 @@ class Command(BaseCommand):
             self.stderr.write(
                 f"  {TerminalColors.YELLOW}- Row {entry['row_number']}: " f"{entry['contents']}{TerminalColors.ENDC}"
             )
+
+    def _print_errors(self):
+        """Print all collected errors at the end of the run"""
+        if not self.errors:
+            self.stdout.write(f"{TerminalColors.OKGREEN}No errors during import.{TerminalColors.ENDC}")
+            return
+
+        self.stderr.write(f"\n{TerminalColors.FAIL}Errors ({len(self.errors)} total):{TerminalColors.ENDC}")
+        for error in self.errors:
+            self.stderr.write(f"  {TerminalColors.FAIL}- {error}{TerminalColors.ENDC}")

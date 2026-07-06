@@ -66,6 +66,7 @@ class Command(BaseCommand):
         dry_run = options.get("dry_run", True)
         self.warnings = []  # collect warnings across all rows
         self.skipped_rows = []  # collect skipped rows w missing tribe name
+        self.errors = []
 
         if dry_run:
             logger.info(
@@ -86,6 +87,7 @@ class Command(BaseCommand):
 
         self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
         self._print_skipped_rows()
+        self._print_errors()
         self._print_warnings()
 
     def _process_row(self, row, row_number, dry_run, counts):
@@ -114,10 +116,12 @@ class Command(BaseCommand):
             counts["created"] += 1
 
         except Exception as e:
+            error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
             logger.error(
                 f"{TerminalColors.FAIL}Error processing '{tribe_full_name}': {e}{TerminalColors.ENDC}",
                 exc_info=True,
             )
+            self.errors.append(error_message)
             counts["errors"] += 1
 
     def _create_tribe(self, tribe_full_name, mapped, dry_run):
@@ -143,10 +147,12 @@ class Command(BaseCommand):
             try:
                 tribe.full_clean()
             except ValidationError as e:
+                error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
                 logger.error(
                     f"{TerminalColors.FAIL}Validation failed for '{tribe_full_name}', "
                     f"skipping record. Errors: {e.message_dict}{TerminalColors.ENDC}",
                 )
+                self.errors.append(error_message)
                 raise
             else:
                 tribe.save()
@@ -181,6 +187,8 @@ class Command(BaseCommand):
                     value = self._parse_phone(value, tribe_name)
                 elif model_field == "email":
                     value = self._parse_email(value, tribe_name)
+                elif model_field == "website":
+                    value = self._parse_url(value, tribe_name)
                 elif model_field == "zipcode" and len(value) > 10:
                     self._warn(tribe_name, f"Zipcode '{value}' exceeds 10 characters, truncating.")
                     value = value[:10]
@@ -214,7 +222,21 @@ class Command(BaseCommand):
 
     def _parse_phone(self, value, tribe_name):
         """Strip the phone number of any other invalid info with the slash D
-        and grab only the valid 10 digit US phone number"""
+        and grab only the valid 10 digit US phone number
+        If separated with a slash we take the first number used
+        and remove extension as well
+        """
+        original = value
+
+        # If multiple numbers separated by a slash, taking only the first one
+        if "/" in value:
+            parts = value.split("/")
+            value = parts[0].strip()
+            self._warn(tribe_name, f"Multiple phone numbers found '{original}', using first: '{value}'")
+
+        # Strip away stuff like ext, x100 etc
+        value = re.sub(r"\s*(x|ext\.?)\s*\d+$", "", value, flags=re.IGNORECASE).strip()
+
         digits_only = re.sub(r"\D", "", value)
 
         if len(digits_only) >= 10:
@@ -254,6 +276,22 @@ class Command(BaseCommand):
             return None
 
         return valid
+
+    def _parse_url(self, value, tribe_name):
+        """Ensure a URL has https:// or http:// in front of it
+        If missing, add https:// in front
+        Otherwise return None"""
+        if not value:
+            return None
+
+        # If it already has a url scheme, return as is
+        if value.startswith("http://") or value.startswith("https://"):
+            return value
+
+        # Add https:// for urls missing it (ie www.example.com or example.com)
+        fixed = f"https://{value}"
+        self._warn(tribe_name, f"URL '{value}' missing scheme, prepended https://: '{fixed}'")
+        return fixed
 
     def _warn(self, tribe_name, message):
         """Log warning and store it for the summary at the end"""
@@ -311,3 +349,13 @@ class Command(BaseCommand):
             self.stderr.write(
                 f"  {TerminalColors.YELLOW}- Row {entry['row_number']}: " f"{entry['contents']}{TerminalColors.ENDC}"
             )
+
+    def _print_errors(self):
+        """Print all collected errors at the end of the run"""
+        if not self.errors:
+            self.stdout.write(f"{TerminalColors.OKGREEN}No errors during import.{TerminalColors.ENDC}")
+            return
+
+        self.stderr.write(f"\n{TerminalColors.FAIL}Errors ({len(self.errors)} total):{TerminalColors.ENDC}")
+        for error in self.errors:
+            self.stderr.write(f"  {TerminalColors.FAIL}- {error}{TerminalColors.ENDC}")
