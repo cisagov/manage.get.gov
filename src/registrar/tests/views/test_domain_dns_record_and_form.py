@@ -16,6 +16,7 @@ from registrar.validations import (
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
 )
 
@@ -497,14 +498,14 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_dns_record_row_exposes_kebab_with_aria_controls(self):
-        """The 'More options' kebab must declare aria-controls so the tab-order JS can
+    def test_dns_record_row_exposes_delete_button_id(self):
+        """The row's trash can delete icon must declare so the tab-order JS can
         locate it per record."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
 
-        self.assertContains(response, f'aria-controls="more-actions-dnsrecord-{record.id}"')
+        self.assertContains(response, f'id="row-delete-button-{record.id}"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -571,7 +572,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
     @less_console_noise_decorator
     def test_dns_record_readonly_row_has_stable_id_for_focus_routing(self):
         """The readonly row id (dnsrecord-row-<id>) is what the tab-order JS uses
-        to find the next record's Edit button when routing focus from the kebab."""
+        to find the next record's Edit button when routing focus from the row delete."""
         record = create_dns_record(self.dns_zone)
 
         response = self.client.get(self._url())
@@ -721,7 +722,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+            self.assertContains(response, DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)

@@ -339,7 +339,7 @@ export function initDNSRecordCancelModal(){
 
 // Tab-order routing for the DNS records table (#4804).
 // When a form is open, route Tab to walk:
-//   Edit → form fields → Delete → kebab → next row's Edit
+//   Edit → form fields → Form Delete → Row Delete → next row's Edit
 // Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
     const table = document.querySelector("#dnsrecords-table");
@@ -356,15 +356,15 @@ export function initDNSRecordTabOrder() {
             `button[data-action="edit"][data-record-id="${recordId}"]`
         );
         const formRow = document.getElementById(`dnsrecord-edit-row-${recordId}`);
-        const kebab = table.querySelector(
-            `button[aria-controls="more-actions-dnsrecord-${recordId}"]`
+        const rowDelete = table.querySelector(
+            `button[id="row-delete-button-${recordId}"]`
         );
         if (!editBtn || !formRow) return null;
         const formFirst = formRow.querySelector(
             'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
         );
         const formDelete = formRow.querySelector('[data-action="form-delete"]');
-        return { editBtn, formRow, kebab, formFirst, formDelete };
+        return { editBtn, formRow, rowDelete, formFirst, formDelete };
     }
 
     // Find the next record row's Edit button, skipping edit/comment rows between records.
@@ -389,7 +389,9 @@ export function initDNSRecordTabOrder() {
         const candidates = document.querySelectorAll(selector);
         let past = false;
         for (const el of candidates) {
-            if (past && el.offsetParent !== null) return el;
+            if (past && el.offsetParent !== null){
+                if (!table.contains(el)) return el;
+            }
             if (node === el || node.contains(el)) past = true;
         }
         return null;
@@ -426,35 +428,31 @@ export function initDNSRecordTabOrder() {
         if (e.key !== 'Tab') return;
 
         const t = e.target;
-
+        const recordId = getOpenRecordId();
+        const nextRecordEntry = recordId ? nextRecordEntryAfter(recordId) : null;
         // Tab/Shift+Tab from any record's Edit button: route based on that record's
         // form state, regardless of whether any other form is open.
         const editBtn = t.closest?.('[data-action="edit"]');
-        if (editBtn === t) {
-            const rid = editBtn.dataset.recordId;
-            const r = getRecordElements(rid);
+        if (editBtn === t && editBtn !== nextRecordEntry) {
+            const recordId = editBtn.dataset.recordId;
+            const r = getRecordElements(recordId);
             if (!r) return;
-            const isOpen = getOpenRecordId() === rid;
+            const isOpen = getOpenRecordId() === recordId;
             if (!e.shiftKey) {
-                // Edit -> first form field (open) | kebab (closed)
+                // Edit -> first form field (open) | rowDelete
                 e.preventDefault();
-                (isOpen ? r.formFirst : r.kebab)?.focus();
+                (isOpen ? r.formFirst : r.rowDelete)?.focus();
             }
             // Shift+Tab from Edit: let natural DOM order go to the previous focusable.
             return;
         }
 
         // The remaining rules apply only while a form is open.
-        const recordId = getOpenRecordId();
         if (!recordId) return;
         const elems = getRecordElements(recordId);
         if (!elems) return;
 
-        const kebabMenu = elems.kebab
-            ? document.getElementById(elems.kebab.getAttribute('aria-controls'))
-            : null;
-        const isKebabFocus = elems.kebab && (t === elems.kebab || kebabMenu?.contains(t));
-        const nextRecordEntry = nextRecordEntryAfter(recordId);
+        const isRowDeleteFocus = elems.rowDelete && (t === elems.rowDelete);
 
         // First form field -> Edit (Shift+Tab backward)
         if (e.shiftKey && t === elems.formFirst) {
@@ -462,27 +460,27 @@ export function initDNSRecordTabOrder() {
             elems.editBtn.focus();
             return;
         }
-        // Form Delete -> kebab "More options" (Tab forward)
+        // Form Delete -> row delete (Tab forward)
         if (!e.shiftKey && elems.formDelete && t === elems.formDelete) {
             e.preventDefault();
-            elems.kebab?.focus();
+            elems.rowDelete?.focus();
             return;
         }
-        // Kebab -> Form Delete (Shift+Tab backward, form open)
-        if (e.shiftKey && isKebabFocus) {
+        // Row delete -> Form Delete (Shift+Tab backward, form open)
+        if (e.shiftKey && isRowDeleteFocus) {
             e.preventDefault();
             elems.formDelete?.focus();
             return;
         }
-        // Next record's Edit -> kebab (Shift+Tab backward, form open)
-        if (e.shiftKey && elems.kebab && t === nextRecordEntry) {
+        // Next record's Edit -> Row delete (Shift+Tab backward, form open)
+        if (e.shiftKey && elems.rowDelete && t === nextRecordEntry) {
             e.preventDefault();
-            elems.kebab.focus();
+            elems.rowDelete.focus();
             return;
         }
-        // Kebab -> next record's Edit / out of table (Tab forward, form open — skip the
+        // Row delete -> next record's Edit / out of table (Tab forward, form open — skip the
         // visible form row that would otherwise be next in DOM order).
-        if (!e.shiftKey && isKebabFocus) {
+        if (!e.shiftKey && isRowDeleteFocus) {
             const destination = nextRecordEntry || nextFocusableAfterElement(table);
             if (!destination) return;
             e.preventDefault();
