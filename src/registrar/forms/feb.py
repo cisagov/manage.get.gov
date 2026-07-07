@@ -76,11 +76,13 @@ class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
 class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
     time_frame_details = forms.CharField(
         label="time_frame_details",
-        widget=forms.Textarea(attrs={
-            "aria-label": "Provide details on your target time frame. \
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Provide details on your target time frame. \
                 Is there a special significance to this date (legal requirement, announcement, event, etc)?",
-            "maxlength": "1000",
-        }),
+                "maxlength": "1000",
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 1000,
@@ -114,10 +116,12 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
 class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
     interagency_initiative_details = forms.CharField(
         label="interagency_initiative_details",
-        widget=forms.Textarea(attrs={
-            "aria-label": "Provide details on the nature of the interagency initiative.",
-            "maxlength": 1000,
-        }),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Provide details on the nature of the interagency initiative.",
+                "maxlength": 1000,
+            }
+        ),
         validators=[
             MaxLengthValidator(
                 1000,

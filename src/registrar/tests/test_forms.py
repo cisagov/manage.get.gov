@@ -403,7 +403,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["anything_else"],
-            ["Response must be no more than 1000 characters."],
+            ["Description must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
@@ -468,7 +468,7 @@ class TestFormValidation(MockEppLib):
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "super@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
+        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number including area code."))
 
     @less_console_noise_decorator
     def test_requirements_form_blank(self):

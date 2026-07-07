@@ -736,9 +736,7 @@ class OtherContactsForm(RegistrarForm):
         label="Middle name (optional)",
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
-        error_messages={
-            "max_length": "Middle name must be no more than 50 characters."
-        },
+        error_messages={"max_length": "Middle name must be no more than 50 characters."},
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -979,7 +977,9 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
                 **get_max_length_attrs(TEXTAREA_LONG),
             }
         ),
-        validators=[MaxLengthValidator(TEXTAREA_LONG, message=f"Description must be no more than {TEXTAREA_LONG} characters.")],
+        validators=[
+            MaxLengthValidator(TEXTAREA_LONG, message=f"Description must be no more than {TEXTAREA_LONG} characters.")
+        ],
         error_messages={
             "required": (
                 "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
@@ -995,9 +995,7 @@ class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
         required=False,
         label="Anything else?",
         widget=forms.Textarea(attrs=get_max_length_attrs(2000)),
-        validators=[
-            MaxLengthValidator(2000, message="Description must be no more than 2000 characters.")
-        ],
+        validators=[MaxLengthValidator(2000, message="Description must be no more than 2000 characters.")],
     )
 
 
