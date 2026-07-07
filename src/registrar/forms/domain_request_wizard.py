@@ -18,6 +18,7 @@ from registrar.models import Contact, DomainRequest, DraftDomain, Domain, Federa
 from registrar.templatetags.url_helpers import public_site_url
 from registrar.utility.enums import ValidationReturnType
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from registrar.validations import (
     TEXT_SHORT,
     TEXT_EXTENDED,
@@ -469,7 +470,7 @@ class SeniorOfficialForm(RegistrarForm):
         label="First name / given name",
         error_messages={
             "required": ("Enter the first name / given name of your senior official."),
-            "max_length": "First name / given name must be no longer than 50 characters.",
+            "max_length": "First name / given name must be no more than 50 characters.",
         },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
@@ -478,7 +479,7 @@ class SeniorOfficialForm(RegistrarForm):
         label="Last name / family name",
         error_messages={
             "required": ("Enter the last name / family name of your senior official."),
-            "max_length": "Last name / family name must be no longer than 50 characters.",
+            "max_length": "Last name / family name must be no more than 50 characters.",
         },
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
@@ -490,7 +491,7 @@ class SeniorOfficialForm(RegistrarForm):
                 "Enter the title or role your senior official has in your"
                 " organization (e.g., Chief Information Officer)."
             ),
-            "max_length": "Title or role must be no longer than 100 characters.",
+            "max_length": "Title or role must be no more than 100 characters.",
         },
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
@@ -702,8 +703,8 @@ class OtherContactsYesNoForm(BaseYesNoForm):
     form_choices = ((True, "Yes, I can name other employees."), (False, "No. (We’ll ask you to explain why.)"))
     field_name = "has_other_contacts"
     required_error_message = (
-        "Select “Yes” if your organization has other officials we can contact. "
-        "Select “No” if your organization doesn’t have other officials we can contact."
+        "Select “Yes” if your organization has other employees we can contact. "
+        "Select “No” if your organization doesn’t have other employees we can contact."
     )
 
     @property
@@ -735,6 +736,9 @@ class OtherContactsForm(RegistrarForm):
         label="Middle name (optional)",
         validators=[get_max_length_validator(TEXT_SHORT)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_SHORT)),
+        error_messages={
+            "max_length": "Middle name must be no more than 50 characters."
+        },
     )
     last_name = forms.CharField(
         label="Last name / family name",
@@ -770,7 +774,7 @@ class OtherContactsForm(RegistrarForm):
     phone = PhoneNumberField(
         label="Phone",
         error_messages={
-            "invalid": "Enter a valid 10-digit phone number.",
+            "invalid": "Enter a valid 10-digit phone number including the area code.",
             "required": "Enter a phone number for this contact.",
         },
     )
@@ -975,11 +979,11 @@ class AnythingElseForm(BaseDeletableRegistrarForm):
                 **get_max_length_attrs(TEXTAREA_LONG),
             }
         ),
-        validators=[get_max_length_validator(TEXTAREA_LONG)],
+        validators=[MaxLengthValidator(TEXTAREA_LONG, message=f"Description must be no more than {TEXTAREA_LONG} characters.")],
         error_messages={
             "required": (
                 "Provide additional details you’d like us to know. " "If you have nothing to add, select “No.”"
-            )
+            ),
         },
     )
 
@@ -990,9 +994,10 @@ class PortfolioAnythingElseForm(BaseDeletableRegistrarForm):
     anything_else = forms.CharField(
         required=False,
         label="Anything else?",
-        widget=forms.Textarea(attrs=get_max_length_attrs(TEXTAREA_LONG)),
-        validators=[get_max_length_validator(TEXTAREA_LONG)],
-        error_messages={"max_length": "Description must be no more than 2000 characters."},
+        widget=forms.Textarea(attrs=get_max_length_attrs(2000)),
+        validators=[
+            MaxLengthValidator(2000, message="Description must be no more than 2000 characters.")
+        ],
     )
 
 

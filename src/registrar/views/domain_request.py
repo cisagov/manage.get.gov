@@ -693,18 +693,22 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             for i in range(1):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
-            return feb_anything_else_yes_no_form.is_valid()
+            return portfolio_anything_else_form.is_valid()
         anything_else_forms_valid = True
         if not portfolio_anything_else_form.is_valid():
             feb_anything_else_yes_no_form.mark_form_for_deletion()
             anything_else_forms_valid = False
-        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
-            feb_anything_else_yes_no_form.fields["anything_else"].required = True
-            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
+        # Only check has_anything_else_text once feb_anything_else_yes_no_form is confirmed valid,
+        # since cleaned_data doesn't exist until is_valid() has been called.
+        if feb_anything_else_yes_no_form.is_valid() and feb_anything_else_yes_no_form.cleaned_data.get("has_anything_else_text"):
+            feb_anything_else_yes_no_form.fields["has_anything_else_text"].required = True
+            feb_anything_else_yes_no_form.fields["has_anything_else_text"].error_messages[
                 "required"
             ] = "Please provide additional details you'd like us to know. \
                 If you have nothing to add, select 'No'."
-            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
+            # Preserve an earlier failure (e.g. text over character limit) instead of overwriting it 
+            # with this form's validity. 
+            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid() and anything_else_forms_valid
         return anything_else_forms_valid
 
 
