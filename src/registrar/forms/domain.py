@@ -876,7 +876,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    priority = forms.IntegerField(
+    priority = forms.CharField(
         label="Priority",
         required=False,
         help_text="0–65535",
