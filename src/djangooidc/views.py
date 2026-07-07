@@ -144,7 +144,7 @@ def login_callback(request):
                 return redirect(request.session.get("next", "/"))
             else:
                 logger.warning(f"Invalid redirect: {request.GET.get("next")}")
-                return redirect(request.session.get("/"))
+                return redirect("/")
         else:
             # Clear the flag if the exception is not caught
             request.session.pop("redirect_attempted", None)
