@@ -542,3 +542,14 @@ class ViewsTest(TestCase):
             # ASSERTIONS
             self.assertEqual(response.status_code, 302)
             self.assertEqual(response.url, reverse("logout"))
+
+    def test_external_redirect_login(self, mock_client):
+        with less_console_noise():
+            # Testing with an invalid callback url
+            callback_url = "http://www.google.com"
+            mock_client.create_authn_request.side_effect = self.say_hi
+            mock_client.get_default_acr_value.side_effect = self.create_acr
+            response = self.client.get(reverse("login"), {"next": callback_url})
+            session = mock_client.create_authn_request.call_args[0][0]
+            self.assertEqual(session["next"], "/")
+            self.assertEqual(response.status_code, 200)

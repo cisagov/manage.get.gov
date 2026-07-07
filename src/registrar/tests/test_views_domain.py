@@ -1105,6 +1105,47 @@ class TestDomainManagers(TestDomainOverview):
 
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
+    @override_flag("user_domain_role_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    def test_domain_user_add_form_creates_user_domain_role_invitation_when_flag_on(
+        self, mock_send_domain_email, mock_send_portfolio_email
+    ):
+        """Adding a new email uses the UserDomainRole invitation flow when the flag is on."""
+        add_page = self.app.get(reverse("domain-users-add", kwargs={"domain_pk": self.domain.id}))
+        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
+
+        add_page.form["email"] = "udrflaguser@igorville.gov"
+
+        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
+
+        response = add_page.form.submit()
+
+        self.assertEqual(response.status_code, 302)
+        mock_send_portfolio_email.assert_called_once_with(
+            email="udrflaguser@igorville.gov",
+            requestor=self.user,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_send_domain_email.assert_called_once()
+        self.assertTrue(
+            UserDomainRole.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=UserDomainRole.Status.INVITED,
+            ).exists()
+        )
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=DomainInvitation.DomainInvitationStatus.INVITED,
+            ).exists()
+        )
+
+    @GenericTestHelper.switch_to_enterprise_mode_wrapper
+    @less_console_noise_decorator
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("registrar.views.domain.send_domain_invitation_email")
     def test_domain_user_add_form_fails_to_send_to_some_managers(
@@ -1285,6 +1326,7 @@ class TestDomainManagers(TestDomainOverview):
         self.assertContains(success_page, email_address)
         self.assertContains(success_page, "Cancel")  # link to cancel invitation
         self.assertTrue(DomainInvitation.objects.filter(email=email_address).exists())
+        self.assertFalse(UserDomainRole.objects.filter(email=email_address, domain=self.domain).exists())
 
     @less_console_noise_decorator
     @patch("registrar.views.domain.send_domain_invitation_email")
