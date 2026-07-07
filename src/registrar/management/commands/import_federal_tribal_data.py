@@ -67,6 +67,7 @@ class Command(BaseCommand):
         self.warnings = []  # collect warnings across all rows
         self.skipped_rows = []  # collect skipped rows w missing tribe name
         self.errors = []
+        self.updates = []  # collect what was changed
 
         if dry_run:
             logger.info(
@@ -79,15 +80,16 @@ class Command(BaseCommand):
             return
 
         # Tally counters, updated in place by _process_row via the counts dict
-        counts = {"created": 0, "skipped": 0, "errors": 0}
+        counts = {"created": 0, "skipped": 0, "errors": 0, "updated": 0}
 
         # start=2 as row 1 is the header
         for row_number, row in enumerate(rows, start=2):
             self._process_row(row, row_number, dry_run, counts)
 
-        self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
+        self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"], counts["updated"])
         self._print_skipped_rows()
         self._print_errors()
+        self._print_updates()
         self._print_warnings()
 
     def _process_row(self, row, row_number, dry_run, counts):
@@ -104,12 +106,14 @@ class Command(BaseCommand):
 
         try:
             mapped = self._map_row(row)
-
             existing = FederalTribe.objects.filter(tribe_full_name=tribe_full_name).first()
 
             if existing:
-                logger.debug(f"'{tribe_full_name}' already exists, skipping.")
-                counts["skipped"] += 1
+                was_updated = self._update_tribe(tribe_full_name, existing, mapped, dry_run)
+                if was_updated:
+                    counts["updated"] += 1
+                else:
+                    counts["skipped"] += 1
                 return
 
             self._create_tribe(tribe_full_name, mapped, dry_run)
@@ -137,9 +141,12 @@ class Command(BaseCommand):
             counts (dict): Running tally of created/skipped/error counts,
             updated in place
         Returns: None
+
+        NOTE: When create a tribe, I'm giving a soft failure (None to the bad field,
+        + save anyway + give warning)
         """
         if dry_run:
-            logger.info(f"Dry run enabled...skipping creating StateTribe for '{tribe_full_name}'")
+            logger.info(f"Dry run ENABLED -- skipping creating StateTribe for '{tribe_full_name}'")
             self._log_action(dry_run, "Created", tribe_full_name, mapped)
         else:
             logger.info(f"Creating StateTribe record for '{tribe_full_name}'")
@@ -312,12 +319,13 @@ class Command(BaseCommand):
 
         logger.info(f"{color}{prefix}{action.lower()} '{tribe_name}'{detail}{TerminalColors.ENDC}")
 
-    def _print_summary(self, dry_run, created, skipped, errors):
+    def _print_summary(self, dry_run, created, skipped, errors, updated):
         """Print a summary of what was/will be applied"""
         prefix = "[DRY RUN] Would have applied" if dry_run else "Completed."
         summary = (
             f"\n{TerminalColors.OKBLUE}{prefix} import summary:{TerminalColors.ENDC}\n"
             f"  {TerminalColors.OKGREEN}Created : {created}{TerminalColors.ENDC}\n"
+            f"  {TerminalColors.YELLOW}Updated : {updated}{TerminalColors.ENDC}\n"
             f"  Skipped : {skipped}\n"
             f"  {TerminalColors.FAIL}Errors  : {errors}{TerminalColors.ENDC}"
         )
@@ -359,3 +367,69 @@ class Command(BaseCommand):
         self.stderr.write(f"\n{TerminalColors.FAIL}Errors ({len(self.errors)} total):{TerminalColors.ENDC}")
         for error in self.errors:
             self.stderr.write(f"  {TerminalColors.FAIL}- {error}{TerminalColors.ENDC}")
+
+    def _print_updates(self):
+        """Print all field changes applied during the run"""
+        if not self.updates:
+            return
+
+        self.stdout.write(
+            f"\n{TerminalColors.OKGREEN}Updates applied ({len(self.updates)} total):{TerminalColors.ENDC}"
+        )
+        for entry in self.updates:
+            self.stdout.write(f"  {TerminalColors.OKGREEN}- {entry['tribe']}:{TerminalColors.ENDC}")
+            for field, change in entry["changes"].items():
+                self.stdout.write(f"      {field}: '{change['from']}' -> '{change['to']}'")
+
+    def _update_tribe(self, tribe_full_name, existing, mapped, dry_run):
+        """
+        Handles updating an existing FederalTribe record.
+        Parameters:
+            tribe_full_name (str): The full name of the tribe, used for logging
+            existing (FederalTribe): The existing db record to update
+            mapped (dict): A dict of cleaned model field names to values from the CSV
+            dry_run (bool): If True, logs what would be updated without writing to db.
+                If False, actually updates the record
+        Returns:
+            bool: True if changes were made, False if no changes were made
+
+        NOTE: When updating a tribe, I'm giving a hard failture (skipping the update
+        + logging as an error + raise) bc I dont want to overwrite past data if new
+        data is bad data
+        """
+        changes = self._get_changes(existing, mapped)
+
+        if not changes:
+            logger.debug(f"No changes for '{tribe_full_name}', skipping.")
+            return
+
+        if dry_run:
+            logger.info(f"Dry run enabled...skipping updating FederalTribe for '{tribe_full_name}'")
+            self._log_action(dry_run, "Updated", tribe_full_name, changes)
+        else:
+            logger.info(f"Updating FederalTribe record for '{tribe_full_name}'")
+            for field, value in mapped.items():
+                setattr(existing, field, value)
+            try:
+                existing.full_clean()
+            except ValidationError as e:
+                error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
+                logger.error(
+                    f"{TerminalColors.FAIL}Validation failed for '{tribe_full_name}', "
+                    f"skipping update. Errors: {e.message_dict}{TerminalColors.ENDC}",
+                )
+                self.errors.append(error_message)
+                raise
+            else:
+                existing.save()
+                self.updates.append({"tribe": tribe_full_name, "changes": changes})
+        return True
+
+    def _get_changes(self, existing, mapped):
+        """Return a dict of fields that differ between the existing record and mapped CSV data"""
+        changes = {}
+        for field, new_value in mapped.items():
+            old_value = getattr(existing, field, None)
+            if str(old_value) != str(new_value):
+                changes[field] = {"from": old_value, "to": new_value}
+        return changes

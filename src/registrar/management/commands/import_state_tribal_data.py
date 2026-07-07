@@ -141,7 +141,7 @@ class Command(BaseCommand):
         Returns: None
         """
         if dry_run:
-            logger.info(f"Dry run enabled...skipping creating StateTribe for '{tribe_name}'")
+            logger.info(f"Dry run ENABLED -- skipping creating StateTribe for '{tribe_name}'")
             self._log_action(dry_run, "Created", tribe_name, mapped)
         else:
             logger.info(f"Creating StateTribe record for '{tribe_name}'")
