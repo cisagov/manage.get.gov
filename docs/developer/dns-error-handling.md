@@ -1,6 +1,6 @@
 # DNS Error Handling
 
-**Last updated** 2026-06-16
+**Last updated** 2026-07-01
 
 ## Intro
 
@@ -47,8 +47,7 @@ When Cloudflare says "no," here's what it means:
 
 | What went wrong | Error name | User sees |
 |---|---|---|
-| Zone doesn't exist | `DNS_ZONE_NOT_FOUND` | TBD |
-| Record already exists | `DNS_RECORD_CONFLICT` | "A record with that name already exists. Names must be unique." (reuses the existing model-level validation string) |
+| Resource doesn't exist | `DNS_NOT_FOUND` | TBD |
 | Bad data | `DNS_VALIDATION_FAILED` | TBD |
 | Too many requests | `DNS_RATE_LIMIT_EXCEEDED` | TBD |
 | Permission denied | `DNS_AUTH_FAILED` | TBD |
@@ -66,8 +65,7 @@ Use this when wiring up the exception in code or asserting on it in tests.
 
 | Wire code | Enum | Subclass | Upstream status | Severity |
 |---|---|---|---|---|
-| `DNS_ZONE_NOT_FOUND` | `ZONE_NOT_FOUND` | `DnsNotFoundError` | 404 | 4xx |
-| `DNS_RECORD_CONFLICT` | `RECORD_CONFLICT` | `DnsValidationError` | 409 | 4xx |
+| `DNS_NOT_FOUND` | `NOT_FOUND` | `DnsNotFoundError` | 404 | 4xx |
 | `DNS_VALIDATION_FAILED` | `VALIDATION_FAILED` | `DnsValidationError` | 400 | 4xx |
 | `DNS_RATE_LIMIT_EXCEEDED` | `RATE_LIMIT_EXCEEDED` | `DnsRateLimitError` | 429 | 4xx (retryable) |
 | `DNS_AUTH_FAILED` | `AUTH_FAILED` | `DnsAuthError` | 401 / 403 | 5xx-equivalent |
@@ -83,8 +81,7 @@ The reference for every DNS failure condition we know about today. Update when a
 
 | Source | Trigger | Code | User surface | Log level |
 |---|---|---|---|---|
-| Cloudflare 404 on POST `/zones/.../dns_records` | Zone record not found (stale local DB, race, test fixture) | `DNS_ZONE_NOT_FOUND` | Inline; TBD copy (see #4999) | warning |
-| Cloudflare 409 | Duplicate record (same name+type). Rare — the local model validation at `dns_record.py` should catch most duplicates first; this fires only on races / vendor-side duplicates. | `DNS_RECORD_CONFLICT` | Inline field error using the existing model validation string ("A record with that name already exists. Names must be unique.") | warning |
+| Cloudflare 404 on POST `/zones/.../dns_records` | Record not found (stale local DB, race, test fixture) | `DNS_NOT_FOUND` | Inline; TBD copy (see #4999) | warning |
 | Cloudflare 400 | Invalid record content | `DNS_VALIDATION_FAILED` | Inline field error (reuse Cloudflare's reason when safe) | warning |
 | Cloudflare 429 | Rate limit | `DNS_RATE_LIMIT_EXCEEDED` | Inline; TBD copy (see #4999) | warning |
 | Cloudflare 401 / 403 | Invalid auth token or scope | `DNS_AUTH_FAILED` | Generic "couldn't reach DNS provider" + `request_id` | error |
@@ -124,7 +121,7 @@ raise APIError("something went wrong")
 
 # Do:
 raise DnsNotFoundError(
-    code=DnsHostingErrorCodes.ZONE_NOT_FOUND,
+    code=DnsHostingErrorCodes.NOT_FOUND,
     upstream_status=404,
     context={"zone_id": "abc123"}
 )
@@ -153,8 +150,8 @@ Services log and raise. Views catch and render. A DNS failure produces exactly o
 ```json
 {
   "status": "error",
-  "code": "DNS_ZONE_NOT_FOUND",
-  "message": "We couldn't find the DNS zone for this domain.",
+  "code": "DNS_NOT_FOUND",
+  "message": "We couldn't find the DNS resource for this domain.",
   "request_id": "1a2b3c4d-..."
 }
 ```
@@ -174,7 +171,7 @@ When you raise an error, attach:
 ### 4. Test the Error Code, Not the Message
 
 ```python
-self.assertEqual(exc.code, DnsHostingErrorCodes.ZONE_NOT_FOUND)
+self.assertEqual(exc.code, DnsHostingErrorCodes.NOT_FOUND)
 
 # Breaks when copy changes
 self.assertIn("We couldn't find", str(exc))
@@ -184,7 +181,7 @@ Exceptions must also survive `pickle.dumps`/`pickle.loads` (the parallel test ru
 
 ```python
 def test_my_error_is_picklable(self):
-    exc = DnsNotFoundError(code=DnsHostingErrorCodes.ZONE_NOT_FOUND, upstream_status=404)
+    exc = DnsNotFoundError(code=DnsHostingErrorCodes.NOT_FOUND, upstream_status=404)
     restored = pickle.loads(pickle.dumps(exc))
     self.assertEqual(restored.code, exc.code)
 ```
@@ -204,42 +201,73 @@ _STATUS_TO_ERROR = {
     400: (DnsValidationError, DnsHostingErrorCodes.VALIDATION_FAILED),
     401: (DnsAuthError,       DnsHostingErrorCodes.AUTH_FAILED),
     403: (DnsAuthError,       DnsHostingErrorCodes.AUTH_FAILED),
-    404: (DnsNotFoundError,   DnsHostingErrorCodes.ZONE_NOT_FOUND),
-    409: (DnsValidationError, DnsHostingErrorCodes.RECORD_CONFLICT),
+    404: (DnsNotFoundError,   DnsHostingErrorCodes.NOT_FOUND),
     429: (DnsRateLimitError,  DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED),
 }
 
+def _dns_call(self, **context):
+        """Context manager to catch HTTPX-related errors and convert them into
+        appropriate typed DnsHostingErrors."""
+        try:
+            yield
+        except (HTTPStatusError, RequestError) as e:
+            raise _typed_dns_error(e, **context) from e  # note: `from e` to keep context
 
-def _typed_dns_error(e: HTTPStatusError, **context) -> DnsHostingError:
-    """Map a Cloudflare HTTP error to the right DnsHostingError subclass and log once."""
-    status = e.response.status_code
-    ctx = {"cf_ray": e.response.headers.get("cf-ray"), **context}
-    exc_cls, code = _STATUS_TO_ERROR.get(status, (DnsHostingError, DnsHostingErrorCodes.UNKNOWN))
-    logger.exception(
-        "Cloudflare returned %s for DNS request",
+def _cf_error_detail(response) -> dict:
+    """Pull Cloudflare's own error code + message out of the response body, if present."""
+    try:
+        errors = response.json().get("errors") or []
+    except ValueError:  # body wasn't JSON (e.g. an empty 500) -> nothing to pull
+        return {}
+    if not errors:
+        return {}
+    first = errors[0]
+    return {"cf_error_code": first.get("code"), "cf_error_message": first.get("message")}
+
+def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
+    """Map an HTTP error to the right DnsHostingError subclass and log once."""
+    if isinstance(e, HTTPStatusError):
+        status = e.response.status_code
+        details = _cf_error_detail(e.response)
+        ctx = {
+            "cf_ray": e.response.headers.get("cf-ray"),
+            "cf_error_code": details.get("cf_error_code"),
+            "cf_error_message": details.get("cf_error_message"),
+            **context,
+        }
+        log_only = {"response_body": e.response.text}
+        exc_cls, code = _STATUS_TO_ERROR.get(status, (None, None))
+
+        if exc_cls is None and 500 <= status <= 599:
+            exc_cls, code = DnsUpstreamError, DnsHostingErrorCodes.UPSTREAM_ERROR
+        if exc_cls is None:  # Represents 400s we didn't map to a specific status code
+            exc_cls, code = DnsHostingError, DnsHostingErrorCodes.UNKNOWN
+
+    else:  # RequestError -> no response, transport failure
+        status = None
+        ctx = {"exc_class": type(e).__name__, **context}
+        log_only = {}
+        exc_cls, code = DnsTransportError, DnsHostingErrorCodes.UPSTREAM_TIMEOUT
+
+    unexpected_code = code == DnsHostingErrorCodes.UNKNOWN
+    exc = exc_cls(code=code, upstream_status=status, context=ctx)
+    logger.error(
+        "Dns provider returned %s for DNS request",
         status,
-        extra={"upstream_status": status, "error_code": code.name, **ctx},
+        extra={"upstream_status": status, "error_code": exc.wire_code, **log_only, **ctx},
+        exc_info=unexpected_code,
     )
-    return exc_cls(code=code, upstream_status=status, context=ctx)
+    return exc
 
 
 class CloudflareService:
     def create_dns_record(self, zone_id, record_data):
-        url = f"/zones/{zone_id}/dns_records"
-        try:
-            resp = self.client.post(url, json=record_data)
+        with self._dns_call(x_zone_id=zone_id, record_data=record_data):
+            resp = self.client.post(appended_url, json=record_data)
             resp.raise_for_status()
-        except HTTPStatusError as e:
-            # Cloudflare returned a 4xx or 5xx — map the status code to a typed error.
-            raise _typed_dns_error(e, zone_id=zone_id, record_type=record_data.get("type")) from e
-        except RequestError as e:
-            # Network / timeout — no HTTP response was received, so there's no status code
-            # to map. Raise the transport-error subclass directly.
-            raise DnsTransportError(
-                code=DnsHostingErrorCodes.UPSTREAM_TIMEOUT,
-                context={"zone_id": zone_id, "exc_class": type(e).__name__},
-            ) from e
-        return resp.json()
+            logger.info(f"Created dns record for zone {zone_id}")
+
+            return resp.json()
 ```
 
 Two failure shapes from `httpx`:
@@ -301,7 +329,7 @@ The path a DNS log line travels from our code to a searchable field in OpenSearc
 1. **Service logs once.** `CloudflareService` (via the `_typed_dns_error` helper) calls `logger.exception(...)` at the point of failure with DNS-specific `extra={"upstream_status": ..., "error_code": ..., ...}` and raises the typed `DnsHostingError`.
 
 2. **`JsonFormatter` emits one JSON document per log line** ([`src/registrar/config/settings.py`](../../src/registrar/config/settings.py)). Beyond Python's defaults (`timestamp`, `level`, `name`, `lineno`, `message`), every line carries:
-    - **DNS fields** from `extra={}` — `upstream_status`, `error_code`, `cf_ray`, `zone_id`, etc.
+    - **DNS fields** from `extra={}` — `upstream_status`, `error_code`, `cf_ray`, `zone_id`, `cf_error_code`, `cf_error_message`, etc.
     - **Request context** from ContextVars — `user_email`, `ip_address`, `request_path`, `request_id`. `request_id` will be added via [#4924](https://github.com/cisagov/manage.get.gov/issues/4924). `user_email` / `ip_address` default to `"Anonymous"` / `"Unknown IP"` outside production.
     - `exception` — full traceback, only when `logger.exception(...)` is used on the upstream.
 
@@ -311,7 +339,7 @@ The path a DNS log line travels from our code to a searchable field in OpenSearc
 
 ### Caveats
 
-- **Search prefix is `app.*`, not top-level.** Query as `app.error_code:"DNS_ZONE_NOT_FOUND"`, `app.request_id:"..."`
+- **Search prefix is `app.*`, not top-level.** Query as `app.error_code:"DNS_NOT_FOUND"`, `app.request_id:"..."`
 - **`message` and `exception` stay inside `@message` as text** — cloud.gov's ingester does not promote them to discrete fields under `app.*`. Tracebacks are full-text searchable but not aggregable.
 
 ---
@@ -394,7 +422,7 @@ Approved copy is owned by Product/Content under [#4999](https://github.com/cisag
 
 > "A record with that name already exists. Names must be unique." (existing model-level validation string)
 
-> *The other 4xx messages — `DNS_ZONE_NOT_FOUND`, `DNS_VALIDATION_FAILED`, `DNS_RATE_LIMIT_EXCEEDED` — are **TBD** in #4999.*
+> *The other 4xx messages — `DNS_NOT_FOUND`, `DNS_VALIDATION_FAILED`, `DNS_RATE_LIMIT_EXCEEDED` — are **TBD** in #4999.*
 
 ### When it's our fault (5xx — shown at page level)
 
