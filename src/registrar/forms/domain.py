@@ -37,6 +37,7 @@ from registrar.validations import (
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIREMENT,
+    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
     get_content_type_label_by_record_type,
@@ -1024,6 +1025,14 @@ class DomainDNSRecordForm(forms.ModelForm):
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
             self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
 
+    def _validate_priority(self,  record_type, priority):
+        if record_type != DNSRecordTypes.MX:
+            return
+        if priority == "":
+                self.add_error("priority", DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
+        elif priority.isdigit() is False:
+                self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
+
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
@@ -1049,6 +1058,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             self._validate_cname_record(record_type, name, content)
             self._validate_comment_field(comment)
             self._validate_name_fqdn_length(name)
+            self._validate_priority(record_type, priority)
             if not self.errors and name and content:
                 self._validate_duplicate_record(record_type, name, content, priority)
             if not self.errors and name:
