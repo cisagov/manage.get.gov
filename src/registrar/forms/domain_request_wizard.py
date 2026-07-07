@@ -772,7 +772,7 @@ class OtherContactsForm(RegistrarForm):
     phone = PhoneNumberField(
         label="Phone",
         error_messages={
-            "invalid": "Enter a valid 10-digit phone number including the area code.",
+            "invalid": "Enter a valid 10-digit phone number including area code.",
             "required": "Enter a phone number for this contact.",
         },
     )
