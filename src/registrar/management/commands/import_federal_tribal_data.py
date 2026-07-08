@@ -141,19 +141,26 @@ class Command(BaseCommand):
             counts (dict): Running tally of created/skipped/error counts,
             updated in place
         Returns: None
-
-        NOTE: When create a tribe, I'm giving a soft failure (None to the bad field,
-        + save anyway + give warning)
         """
         if dry_run:
-            logger.info(f"Dry run ENABLED -- skipping creating StateTribe for '{tribe_full_name}'")
+            logger.info(f"Dry run ENABLED -- skipping creating FederalTribe for '{tribe_full_name}'")
             self._log_action(dry_run, "Created", tribe_full_name, mapped)
         else:
-            logger.info(f"Creating StateTribe record for '{tribe_full_name}'")
+            logger.info(f"Creating FederalTribe record for '{tribe_full_name}'")
             tribe = FederalTribe(**mapped)
             try:
                 tribe.full_clean()
             except ValidationError as e:
+                # For phone validation failures we treat as warning + store None
+                # and save the record rather than skipping it entirely with an error
+                # ie 893 is a bad area code and this catches it here
+                if "phone" in e.message_dict:
+                    self._warn(tribe_full_name, f"Phone number '{mapped.get('phone')}' is not valid, storing as None.")
+                    mapped["phone"] = None
+                    tribe = FederalTribe(**mapped)
+                    tribe.save()
+                    return
+                # All other validation errors skip the record and surface as errors
                 error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
                 logger.error(
                     f"{TerminalColors.FAIL}Validation failed for '{tribe_full_name}', "
