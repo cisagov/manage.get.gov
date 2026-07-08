@@ -923,6 +923,23 @@ class DomainDNSRecordForm(forms.ModelForm):
             content = DNSRecordTypes(record_type).cleaner(content)
         return content
 
+    def clean_priority(self):
+        record_type = self.cleaned_data.get("type")
+        if record_type != DNSRecordTypes.MX:
+            return
+        
+        priority = self.cleaned_data.get("priority")
+        if priority == "":
+            priority = None  
+            return priority
+        
+        try:
+            priority = int(priority)
+        except:
+            self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
+
+        return priority
+        
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
         return bool(value) and field not in self.errors
@@ -1025,14 +1042,6 @@ class DomainDNSRecordForm(forms.ModelForm):
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
             self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
 
-    def _validate_priority(self,  record_type, priority):
-        if record_type != DNSRecordTypes.MX:
-            return
-        if priority == "":
-                self.add_error("priority", DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
-        elif priority.isdigit() is False:
-                self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
-
     def clean(self):
         cleaned_data = super().clean()
         record_type = cleaned_data.get("type")
@@ -1058,7 +1067,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             self._validate_cname_record(record_type, name, content)
             self._validate_comment_field(comment)
             self._validate_name_fqdn_length(name)
-            self._validate_priority(record_type, priority)
             if not self.errors and name and content:
                 self._validate_duplicate_record(record_type, name, content, priority)
             if not self.errors and name:
