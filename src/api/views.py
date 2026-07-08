@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _worker_tag():
-    # CF_INSTANCE_INDEX will be 0 or 1 refering to the running instanc
+    # CF_INSTANCE_INDEX will be 0 or 1 refering to the running instance
     # Stable & staging have 2 instances, but on other sandboxes expect to only see "0" as they only have 1 instance
     return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
 
