@@ -934,7 +934,7 @@ class DomainDNSRecordForm(forms.ModelForm):
 
         try:
             priority = int(priority)
-        except:
+        except ValueError:
             self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
 
         return priority
