@@ -6280,7 +6280,7 @@ class EmailListWidget(forms.TextInput):
 class FederalTribeAdminForm(forms.ModelForm):
     """Takes in the ArrayField of multiple emails and 'normalizes' it"""
 
-    email = forms.CharField(
+    emails = forms.CharField(
         required=False,
         widget=EmailListWidget,
         help_text="Enter email addresses separated by commas",
@@ -6354,7 +6354,7 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 class StateTribeAdminForm(forms.ModelForm):
     """Takes in the ArrayField of multiple emails and 'normalizes' it"""
 
-    email = forms.CharField(
+    emails = forms.CharField(
         required=False,
         widget=EmailListWidget,
         help_text="Enter email addresses separated by commas",
