@@ -927,19 +927,19 @@ class DomainDNSRecordForm(forms.ModelForm):
         record_type = self.cleaned_data.get("type")
         if record_type != DNSRecordTypes.MX:
             return
-        
+
         priority = self.cleaned_data.get("priority")
         if priority == "":
-            priority = None  
+            priority = None
             return priority
-        
+
         try:
             priority = int(priority)
         except:
             self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
 
         return priority
-        
+
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
         return bool(value) and field not in self.errors
