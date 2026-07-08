@@ -67,6 +67,7 @@ from registrar.utility.errors import (
     EnrollmentNotAllowedError,
     FSMDomainRequestError,
     FSMErrorCodes,
+    DnsHostingError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -5616,17 +5617,24 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
     def do_enroll_dns_hosting(self, request, obj):
+        failed_enrollment_message = "Failed to enroll domain in DNS hosting."
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
         except EnrollmentNotAllowedError as e:
             logger.warning("DNS enrollment blocked: %s", e)
             self.message_user(request, str(e), messages.WARNING)
+        except DnsHostingError:
+            self.message_user(
+                request,
+                failed_enrollment_message,
+                messages.ERROR,
+            )
         except Exception as e:
             logger.exception(e)
             self.message_user(
                 request,
-                "Failed to enroll domain in DNS hosting.",
+                failed_enrollment_message,
                 messages.ERROR,
             )
         else:
@@ -6302,6 +6310,40 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     search_help_text = "Search by tribe name, email address, or official name."
 
 
+class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
+    """Admin for StateTribe"""
+
+    list_display = [
+        "tribe_name",
+        "recognized_state",
+        "authorizing_legislation",
+        "tribal_leader_first_name",
+        "tribal_leader_last_name",
+        "suffix",
+        "evidence_of_tribal_leader_designation",
+        "email",
+        "phone",
+        "website",
+        "address_line1",
+        "address_line2",
+        "city",
+        "state_territory",
+        "zipcode",
+        "urbanization",
+        "date_of_recognition",
+        "additional_sources",
+        "notes",
+    ]
+
+    search_fields = [
+        "tribe_name",
+        "tribal_leader_first_name",
+        "tribal_leader_last_name",
+        "email",
+    ]
+    search_help_text = "Search by tribe name, email address, or tribe leader name."
+
+
 class UserGroupAdmin(AuditedAdmin):
     """Overwrite the generated UserGroup admin class"""
 
@@ -6504,6 +6546,7 @@ admin.site.register(models.Domain, DomainAdmin)
 admin.site.register(models.DraftDomain, DraftDomainAdmin)
 admin.site.register(models.FederalAgency, FederalAgencyAdmin)
 admin.site.register(models.FederalTribe, FederalTribeAdmin)
+admin.site.register(models.StateTribe, StateTribeAdmin)
 admin.site.register(models.Host, MyHostAdmin)
 admin.site.register(models.HostIP, HostIpAdmin)
 admin.site.register(models.Website, WebsiteAdmin)
