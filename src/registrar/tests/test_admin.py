@@ -4580,7 +4580,14 @@ class TestPortfolioAdmin(TestCase):
             ],
         )
 
-        url = reverse("admin:registrar_userportfoliopermission_changelist") + f"?portfolio={self.portfolio.id}"
+        admin_url = (
+            reverse("admin:registrar_userportfoliopermission_changelist")
+            + f"?portfolio={self.portfolio.id}&member_type={UserPortfolioPermissionAdmin.MEMBER_TYPE_ADMIN}"
+        )
+        member_url = (
+            reverse("admin:registrar_userportfoliopermission_changelist")
+            + f"?portfolio={self.portfolio.id}&member_type={UserPortfolioPermissionAdmin.MEMBER_TYPE_BASIC}"
+        )
         user4_portfolio_perm_url = reverse(
             "admin:registrar_userportfoliopermission_change", args=[user_portfolo_perm_4.id]
         )
@@ -4595,8 +4602,8 @@ class TestPortfolioAdmin(TestCase):
         # copy all button appears on page
         self.assertContains(portfolio_change_form, "Copy all", count=2)
 
-        self.assertContains(portfolio_change_form, f'<a href="{url}">2 admins</a>')
-        self.assertContains(portfolio_change_form, f'<a href="{url}">2 basic members</a>')
+        self.assertContains(portfolio_change_form, f'<a href="{admin_url}">2 admins</a>')
+        self.assertContains(portfolio_change_form, f'<a href="{member_url}">2 basic members</a>')
 
     @less_console_noise_decorator
     def test_senior_official_readonly_for_federal_org(self):
