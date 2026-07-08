@@ -211,7 +211,7 @@ jobs:
           npm i -g pa11y-ci
           echo "Waiting for app to be ready..."
           
-          timeout 180 bash -c 'until curl -sf http://localhost:8080/health/ > /dev/null; 
+          timeout 180 bash -c 'until curl -sf http://localhost:8080/health > /dev/null; 
           do 
             echo "app not up yet, retrying..."; 
             sleep 3; 
