@@ -337,7 +337,7 @@ export class NameserverForm {
                 modalTrigger.click();
             }
         } else {
-            this.addAlert("error", "At least two name servers are required. To proceed, add a new name server before removing this name server. If you need help, email us at help@get.gov.");
+            this.addAlert("error", "Domains must have at least two name servers. Add another before removing this one.");
         }
     }
 

@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -1312,9 +1313,14 @@ class DomainDNSSECView(DomainFormBaseView):
                 try:
                     self.object.dnssecdata = {}
                 except RegistryError as err:
-                    errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
-                    messages.error(self.request, errmsg)
+                    messages.error(
+                        self.request, 
+                        mark_safe(  # nosec
+                            "An unexpected error occurred. Could not remove existing DNSSec record(s). "
+                            'Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                        ),
+                    )
                 else:
                     self.send_update_notification(form, force_send=True)
         return self.form_valid(form)

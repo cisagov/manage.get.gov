@@ -1756,7 +1756,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # the required field.  form requires a minimum of 2 name servers
         self.assertContains(
             result,
-            "At least two name servers are required.",
+            "Domains must have at least two name servers.",
             count=2,
             status_code=200,
         )
@@ -2183,7 +2183,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # once around the required field.
         self.assertContains(
             result,
-            "At least two name servers are required.",
+            "Domains must have at least two name servers.",
             count=2,
             status_code=200,
         )
@@ -2813,8 +2813,8 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, "Key tag is required", count=2, status_code=200)
-        self.assertContains(result, "Algorithm is required", count=2, status_code=200)
+        self.assertContains(result, "Enter a key tag for this record.", count=2, status_code=200)
+        self.assertContains(result, "Select the algorithm for this record.", count=2, status_code=200)
         self.assertContains(result, "Digest type is required", count=2, status_code=200)
         self.assertContains(result, "Digest is required", count=2, status_code=200)
 
@@ -2841,7 +2841,7 @@ class TestDomainDNSSEC(TestDomainOverview):
         # error text appears twice, once at the top of the page, once around
         # the field.
         self.assertContains(
-            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+            result, "This DS record is already associated with this domain. DS records must be unique.", count=2, status_code=200
         )
 
     @less_console_noise_decorator

@@ -200,7 +200,7 @@ class DomainSuborganizationForm(forms.ModelForm):
 class BaseNameserverFormset(forms.BaseFormSet):
     def clean(self):
         """Check for duplicate entries in the formset and ensure at least two valid nameservers."""
-        error_message = "At least two name servers are required."
+        error_message = "Domains must have at least two name servers."
 
         valid_forms, invalid_forms, empty_forms = self._categorize_forms(error_message)
         self._enforce_minimum_nameservers(valid_forms, invalid_forms, empty_forms, error_message)
@@ -489,7 +489,7 @@ class DomainSecurityEmailForm(forms.Form):
         validators=[
             MaxLengthValidator(
                 320,
-                message="Response must be less than 320 characters.",
+                message="Security email must be no more than 320 characters.",
             )
         ],
     )
@@ -649,7 +649,7 @@ class DomainDsdataForm(forms.Form):
     key_tag = forms.CharField(
         required=True,
         label="Key tag",
-        error_messages={"required": "Key tag is required."},
+        error_messages={"required": "Enter a key tag for this record."},
     )
 
     algorithm = forms.TypedChoiceField(
@@ -657,7 +657,7 @@ class DomainDsdataForm(forms.Form):
         label="Algorithm",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
-        error_messages={"required": ("Algorithm is required.")},
+        error_messages={"required": ("Select the algorithm for this record.")},
     )
 
     digest_type = forms.TypedChoiceField(
@@ -665,7 +665,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
-        error_messages={"required": ("Digest type is required.")},
+        error_messages={"required": ("Select the digest type for this record.")},
     )
 
     digest = forms.CharField(
@@ -747,7 +747,7 @@ class BaseDsdataFormset(forms.BaseFormSet):
                 )
 
                 if ds_tuple in seen_ds_records:
-                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    form.add_error("key_tag", "This DS record is already associated with this domain. DS records must be unique.")
                     duplicate_found = True  # Track that we found at least one duplicate
 
                 seen_ds_records.add(ds_tuple)

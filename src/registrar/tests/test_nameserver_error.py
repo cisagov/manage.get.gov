@@ -20,7 +20,7 @@ class TestNameserverError(TestCase):
         """Test NameserverError when no ip address
         and no nameserver is passed"""
         nameserver = "nameserver val"
-        expected = "You can't have more than 13 nameservers."
+        expected = "Domains can have no more than 13 name servers. Remove one before adding another."
 
         nsException = NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS, nameserver=nameserver)
         self.assertEqual(nsException.message, expected)

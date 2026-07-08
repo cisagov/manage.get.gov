@@ -203,14 +203,14 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address."),
+        NameserverErrorCodes.MISSING_IP: ("Enter an IP address for this name server. That's required because it uses the domain name."),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
-        NameserverErrorCodes.INVALID_IP: ("{}: Enter an IP address in the required format."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("You can't have more than 13 nameservers."),
-        NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
+        NameserverErrorCodes.INVALID_IP: ("Enter an IP address in the required format for IPv4 or IPv6."),
+        NameserverErrorCodes.TOO_MANY_HOSTS: ("Domains can have no more than 13 name servers. Remove one before adding another."),
+        NameserverErrorCodes.MISSING_HOST: ("Enter a name server before entering an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (
-            "You already entered this name server address. Name server addresses must be unique."
+            "This name server is already associated with this domain. Name servers must be unique."
         ),
         NameserverErrorCodes.BAD_DATA: (
             "There’s something wrong with the name server information you provided. "
@@ -266,7 +266,7 @@ class DsDataError(Exception):
         ),
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
-        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters (0-9, a-f)."),
+        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Enter a digest value using only numbers (0-9) and letters (a-f)."),
         DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a number between 0 and 65535."),
         DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Key tag must be numeric (0-9)."),
     }
