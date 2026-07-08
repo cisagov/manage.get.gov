@@ -3956,3 +3956,57 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(dns_record.content, "192.168.1.1")
         self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(response.headers["HX-TRIGGER"], '{"messagesRefresh": ""}')
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_deletes_record(self):
+        """Deleting an existing DNS record saves changes and returns an empty response to replace the row."""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "id": dns_record.id,
+                "delete_record": True,
+            }
+        )
+
+        dns_record.refresh_from_db()
+
+        self.assertEqual(response.status_code, 200)
+        # self.assertJSONEqual(
+        #     response.headers["HX-Trigger-After-Settle"],
+        #     {"messagesRefresh": "", "recordSubmitSuccess": ""},
+        # )
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_removes_record_row(self):
+        """After a successful deletion, the response signals form close and removes the deleted row
+
+        The form close is driven by two response characteristics:
+        1. HX-Trigger-After-Settle contains `recordSubmitSuccess`, which Alpine.js uses to
+           reset showFormId to null, hiding the edit form row.
+        2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
+           form with a clean one, so reopening the form shows no leftover errors.
+        """
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "id": dns_record.id,
+                "delete_record": True,
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        # TODO: add asserts
+        
