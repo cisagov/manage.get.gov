@@ -6302,7 +6302,7 @@ class EmailListWidget(forms.TextInput):
 class FederalTribeAdminForm(forms.ModelForm):
     """Takes in the ArrayField of multiple emails and 'normalizes' it"""
 
-    emails = forms.CharField(
+    email = forms.CharField(
         required=False,
         widget=EmailListWidget,
         help_text="Enter email addresses separated by commas",
@@ -6314,7 +6314,7 @@ class FederalTribeAdminForm(forms.ModelForm):
 
     def clean_email(self):
         """Split comma separated str into list for db"""
-        value = self.cleaned_data.get("emails")
+        value = self.cleaned_data.get("email")
 
         if not value:
             return []
@@ -6376,7 +6376,7 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 class StateTribeAdminForm(forms.ModelForm):
     """Takes in the ArrayField of multiple emails and 'normalizes' it"""
 
-    emails = forms.CharField(
+    email = forms.CharField(
         required=False,
         widget=EmailListWidget,
         help_text="Enter email addresses separated by commas",
@@ -6388,7 +6388,7 @@ class StateTribeAdminForm(forms.ModelForm):
 
     def clean_email(self):
         """Split comma separated str into list for db"""
-        value = self.cleaned_data.get("emails")
+        value = self.cleaned_data.get("email")
 
         if not value:
             return []
