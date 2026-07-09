@@ -19,7 +19,6 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.services.dns_http_client import build_dns_client
-from httpx import HTTPStatusError
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +239,6 @@ class DnsHostService:
         """
         try:
             dns_record = DnsRecord.objects.get(pk=record_id)
-            record_name = dns_record.name
         except DnsRecord.DoesNotExist:
             raise ValueError("Could not find the DNS record in registrar db to delete.")
 
