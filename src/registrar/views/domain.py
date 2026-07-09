@@ -1070,9 +1070,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form = self.get_form()
         is_edit = self._parse_dns_record_id(request)
         delete_record = request.POST.get("delete_record")
+        print(f"💕 {delete_record}")
         self._get_domain(request)
 
-        if not form.is_valid():
+        if not delete_record and not form.is_valid():
             return self._handle_invalid_form(request, form, is_edit)
 
         nameservers = None
@@ -1121,8 +1122,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         finally:
             self.dns_host_service.client.close()
 
-
         if delete_record:
+            messages.success(request, "The DNS record for this domain has been deleted.")
+
             return TemplateResponse(
             request,
             "empty_response.html",
@@ -1154,14 +1156,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         record_id = self._parse_dns_record_id(request)
         self._get_domain(request)
 
-        try:
-            self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
 
-        except DnsHostingError as exc:
-            messages.error(request, "Failed to delete DNS record.")
 
-        finally:
-            self.dns_host_service.client.close()
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):

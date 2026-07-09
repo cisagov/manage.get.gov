@@ -15,7 +15,7 @@ data-open-modal
     id="delete-dns-record-modal"
     aria-labelledby="delete-dns-record-heading"
 >
-    {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
+    {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="confirm-delete-record-button" modal_button_class="usa-button--secondary" modal_button_text="Yes, delete"  %}
 </div>
 
 {# CANCEL modal opener #}

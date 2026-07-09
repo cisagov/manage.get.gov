@@ -51,17 +51,33 @@
                     </svg>
 
             </button>
-            <button
-                    type="button"
-                    id="row-delete-button-{{ record_id }}"
-                    class="usa-button usa-button--unstyled usa-button--with-icon margin-top-2px text-secondary js-dnsrecord-delete"
-                    data-record-id="{{ record_id }}"
-                >
-                    <svg class="usa-icon" role="img" aria-labelledby="row-delete-img-{{ record_id }}" focusable="false" role="img" width="24">
-                        <title id="row-delete-img-{{ record_id }}">Delete {{ dns_record.name }}</title>
-                        <use xlink:href="/public/img/sprite.svg#delete"></use>
-                    </svg>
-            </button>
+
+            <form id="delete-form-{{ dns_record.id }}"
+                method="post"
+                hx-post="{% url 'domain-dns-records' domain_pk=domain.pk %}"
+                hx-target="closest tr"
+                hx-swap="outerHTML"
+            >
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ dns_record.id }}">
+                <input type="hidden" name="delete_record" value="1">
+
+                <!-- hidden submit button, we'll click this from the modal confirm -->
+                <button type="submit" id="delete-submit-{{ dns_record.id }}" data-record-id="{{ dns_record.id }}" class="display-none" aria-hidden="true"></button>
+
+                <!-- visible delete button that triggers modal -->
+                <button
+                        type="button"
+                        id="row-delete-button-{{ record_id }}"
+                        class="usa-button usa-button--unstyled usa-button--with-icon margin-top-2px text-secondary js-dnsrecord-delete"
+                        data-record-id="{{ record_id }}"
+                    >
+                        <svg class="usa-icon" role="img" aria-labelledby="row-delete-img-{{ record_id }}" focusable="false" role="img" width="24">
+                            <title id="row-delete-img-{{ record_id }}">Delete {{ dns_record.name }}</title>
+                            <use xlink:href="/public/img/sprite.svg#delete"></use>
+                        </svg>
+                </button>
+            </form>
         </div>
     </td>
 </tr>

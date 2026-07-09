@@ -612,6 +612,7 @@ export function initDeleteDnsRecord() {
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
         openModal(modalTrigger, modal, focusElement);
+        submitDelete(recordId)
     });
 
     const openModal = (modalTrigger, modal, focusElement) => {
@@ -641,7 +642,23 @@ export function initDeleteDnsRecord() {
             };
 
             document.addEventListener("keydown", handleEscKey);
+
+
         }
+        // opens modal
         modalTrigger?.click()
+    }
+
+    const submitDelete = (recordId) => {
+        const modalDeleteButton = document.getElementById("confirm-delete-record-button")
+        modalDeleteButton.setAttribute("data-close-modal", "")
+        modalDeleteButton?.addEventListener("click", (e) => {
+            e.preventDefault()
+
+            const table = document.getElementById("dnsrecords-table");
+            const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
+            deleteSubmitTrigger.click()
+
+        })
     }
 }
