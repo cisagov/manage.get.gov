@@ -319,6 +319,28 @@ class TestFormValidation(MockEppLib):
             form.errors["email"],
             ["Enter an email address in the required format, like name@example.com."],
         )
+    
+    @less_console_noise_decorator
+    def test_website_max_length_failure(self):
+        """Test that a website over 100 characters shows only the max-length message"""
+
+        long_website = "https://" + ("a" * 100) + ".com"
+        form = CurrentSitesForm(data={"website": long_website})
+        self.assertEqual(
+            form.errors["website"],
+            ["Website must be no more than 100 characters."],
+        )
+
+    @less_console_noise_decorator
+    def test_website_invalid_format_failure(self):
+        """Test that an invalid URL will show the expected messaging."""
+
+        invalid_website = "invalid url"
+        form = CurrentSitesForm(data={"website": invalid_website})
+        self.assertEqual(
+            form.errors["website"],
+            ["Enter your organization's current website in the required format, like example.com"],
+        )
 
     @less_console_noise_decorator
     def test_purpose_form_character_count_invalid(self):

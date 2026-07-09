@@ -8,7 +8,7 @@ from django.core.validators import RegexValidator
 from django.utils.safestring import mark_safe
 
 from registrar.forms.utility.combobox import ComboboxWidget
-from registrar.forms.utility.fields import MaxLengthFirstEmailField
+from registrar.forms.utility.fields import MaxLengthFirstEmailField, MaxLengthFirstURLField
 from registrar.forms.utility.wizard_form_helper import (
     RegistrarForm,
     RegistrarFormSet,
@@ -510,14 +510,12 @@ class SeniorOfficialForm(RegistrarForm):
 
 
 class CurrentSitesForm(RegistrarForm):
-    website = forms.URLField(
+    website = MaxLengthFirstURLField(
         required=False,
         label="Public website",
         error_messages={
             "invalid": ("Enter your organization's current website in the required format, like example.com."),
-            "max_length": "Website must be no more than 100 characters.",
         },
-        validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.URLInput(
             attrs={
                 "aria-labelledby": "id_current_sites_header id_current_sites_body",
@@ -525,18 +523,6 @@ class CurrentSitesForm(RegistrarForm):
             }
         ),
     )
-
-    def clean_website(self):
-        website = self.data.get(self.add_prefix("website"), "")
-        if website and len(website) > TEXT_EXTENDED:
-            # Remove any errors already added
-            if "website" in self.errors:
-                del self.errors["website"]
-            raise forms.ValidationError(
-                self.fields["website"].error_messages["max_length"],
-                code="max_length",
-            )
-        return self.cleaned_data.get("website", self.data.get(self.add_prefix("website"), ""))
 
 
 class BaseCurrentSitesFormSet(RegistrarFormSet):
