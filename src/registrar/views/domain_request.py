@@ -694,25 +694,29 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
             return portfolio_anything_else_form.is_valid()
-        anything_else_forms_valid = True
-        if not portfolio_anything_else_form.is_valid():
-            feb_anything_else_yes_no_form.mark_form_for_deletion()
-            anything_else_forms_valid = False
-        # Only check has_anything_else_text once feb_anything_else_yes_no_form is confirmed valid,
-        # since cleaned_data doesn't exist until is_valid() has been called.
-        if feb_anything_else_yes_no_form.is_valid() and feb_anything_else_yes_no_form.cleaned_data.get(
-            "has_anything_else_text"
-        ):
-            feb_anything_else_yes_no_form.fields["has_anything_else_text"].required = True
-            feb_anything_else_yes_no_form.fields["has_anything_else_text"].error_messages[
-                "required"
-            ] = "Please provide additional details you'd like us to know. \
-                If you have nothing to add, select 'No'."
-            # Preserve an earlier failure (e.g. text over character limit) instead of overwriting it
-            # with this form's validity.
-            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid() and anything_else_forms_valid
-        return anything_else_forms_valid
+        
+        # Determine, from the raw posted data, whether "Yes" was selected, so that we can require the text field
+        # before calling is_valid() on the form that contains it.
+        yes_no_value = feb_anything_else_yes_no_form.data.get(
+            feb_anything_else_yes_no_form.add_prefix("has_anything_else_text")
+        )        
+        if yes_no_value == "True":
+            portfolio_anything_else_form.fields["anything_else"].required = True
+            portfolio_anything_else_form.fields["anything_else"].error_messages["required"] = (
+                "Provide additional details you'd like us to know. If you have nothing to add, select 'No'."
+            )
+            
+        anything_else_forms_valid = portfolio_anything_else_form.is_valid()
+        if not anything_else_forms_valid:
+            # Don't delete the yes/no form's own error, just clear any dependent-form deletion marking that isn't relevant.                
+            pass
 
+        # Always fold the yes/no form's own validity (e.g. the 'select one' error) into the result,
+        # regardless of the other form's outcome.
+        yes_no_valid = feb_anything_else_yes_no_form.is_valid()
+
+
+        return yes_no_valid and anything_else_forms_valid
 
 # Non-portfolio pages
 class OrganizationType(DomainRequestWizard):
