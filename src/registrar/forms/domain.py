@@ -36,7 +36,6 @@ from registrar.validations import (
     DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
-    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIREMENT,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
@@ -810,8 +809,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
-            # Priority is required only for MX records
-            self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
         config = {
             rt.value: {
@@ -879,14 +876,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    priority = forms.IntegerField(
+    priority = forms.CharField(
         label="Priority",
         required=False,
-        min_value=0,
-        max_value=65535,
         help_text="0–65535",
         error_messages={
-            "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
             "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
@@ -927,6 +921,23 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type and DNSRecordTypes(record_type).cleaner:
             content = DNSRecordTypes(record_type).cleaner(content)
         return content
+
+    def clean_priority(self):
+        record_type = self.cleaned_data.get("type")
+        if record_type != DNSRecordTypes.MX:
+            return
+
+        priority = self.cleaned_data.get("priority")
+        if priority == "":
+            priority = None
+            return priority
+
+        try:
+            priority = int(priority)
+        except ValueError:
+            self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
+
+        return priority
 
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
