@@ -319,7 +319,7 @@ class TestFormValidation(MockEppLib):
             form.errors["email"],
             ["Enter an email address in the required format, like name@example.com."],
         )
-    
+
     @less_console_noise_decorator
     def test_website_max_length_failure(self):
         """Test that a website over 100 characters shows only the max-length message"""
@@ -339,7 +339,7 @@ class TestFormValidation(MockEppLib):
         form = CurrentSitesForm(data={"website": invalid_website})
         self.assertEqual(
             form.errors["website"],
-            ["Enter your organization's current website in the required format, like example.com"],
+            ["Enter your organization's current website in the required format, like example.com."],
         )
 
     @less_console_noise_decorator
