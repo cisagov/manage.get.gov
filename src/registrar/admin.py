@@ -38,7 +38,14 @@ from django.contrib.messages import get_messages
 from django.contrib.admin.helpers import AdminForm
 from django.shortcuts import redirect, get_object_or_404
 from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models import DomainInformation, Portfolio, UserPortfolioPermission, DomainInvitation
+from registrar.models import (
+    DomainInformation,
+    Portfolio,
+    UserPortfolioPermission,
+    DomainInvitation,
+    StateTribe,
+    FederalTribe,
+)
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -6274,14 +6281,62 @@ class FederalAgencyAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return readonly_fields
 
 
+class EmailListWidget(forms.TextInput):
+    """Display ArrayField emails as a comma separated
+    string for editing"""
+
+    def format_value(self, value):
+        """Convert list from db to a comma separated string for display.
+        ie ["a@b.com", "c@d.com"] -> "a@b.com, c@d.com" """
+        if isinstance(value, list):
+            return ", ".join(value)
+        if isinstance(value, str):
+            return value.strip("{}")
+        return ""
+
+    def value_from_datadict(self, data, files, name):
+        """Grab raw comma separated str from the form submission"""
+        return data.get(name, "")
+
+
+class FederalTribeAdminForm(forms.ModelForm):
+    """Takes in the ArrayField of multiple emails and 'normalizes' it"""
+
+    email = forms.CharField(
+        required=False,
+        widget=EmailListWidget,
+        help_text="Enter email addresses separated by commas",
+    )
+
+    class Meta:
+        model = FederalTribe
+        fields = "__all__"
+
+    def clean_email(self):
+        """Split comma separated str into list for db"""
+        value = self.cleaned_data.get("email")
+
+        if not value:
+            return []
+
+        emails = []
+        for email in value.split(","):
+            email = email.strip()
+            if email:
+                emails.append(email)
+        return emails
+
+
 class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Admin for FederalTribe"""
+
+    form = FederalTribeAdminForm
 
     list_display = [
         "tribe_full_name",
         "tribe",
         "tribe_alternate_name",
-        "email",
+        "display_email",
         "first_name",
         "last_name",
         "suffix",
@@ -6298,7 +6353,6 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "website",
         "date_elected",
         "next_election",
-        "notes",
     ]
 
     search_fields = [
@@ -6309,9 +6363,48 @@ class FederalTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     ]
     search_help_text = "Search by tribe name, email address, or official name."
 
+    @admin.display(description="Emails")
+    def display_email(self, obj):
+        """Display email list as a readable string without curly braces."""
+        if not obj.email:
+            return "-"
+        if isinstance(obj.email, list):
+            return ", ".join(obj.email)
+        return str(obj.email).strip("{}")
+
+
+class StateTribeAdminForm(forms.ModelForm):
+    """Takes in the ArrayField of multiple emails and 'normalizes' it"""
+
+    email = forms.CharField(
+        required=False,
+        widget=EmailListWidget,
+        help_text="Enter email addresses separated by commas",
+    )
+
+    class Meta:
+        model = StateTribe
+        fields = "__all__"
+
+    def clean_email(self):
+        """Split comma separated str into list for db"""
+        value = self.cleaned_data.get("email")
+
+        if not value:
+            return []
+
+        emails = []
+        for email in value.split(","):
+            email = email.strip()
+            if email:
+                emails.append(email)
+        return emails
+
 
 class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     """Admin for StateTribe"""
+
+    form = StateTribeAdminForm
 
     list_display = [
         "tribe_name",
@@ -6321,7 +6414,7 @@ class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "tribal_leader_last_name",
         "suffix",
         "evidence_of_tribal_leader_designation",
-        "email",
+        "display_email",
         "phone",
         "website",
         "address_line1",
@@ -6332,7 +6425,6 @@ class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "urbanization",
         "date_of_recognition",
         "additional_sources",
-        "notes",
     ]
 
     search_fields = [
@@ -6342,6 +6434,15 @@ class StateTribeAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "email",
     ]
     search_help_text = "Search by tribe name, email address, or tribe leader name."
+
+    @admin.display(description="Emails")
+    def display_email(self, obj):
+        """Display email list as a readable string without curly braces."""
+        if not obj.email:
+            return "-"
+        if isinstance(obj.email, list):
+            return ", ".join(obj.email)
+        return str(obj.email).strip("{}")
 
 
 class UserGroupAdmin(AuditedAdmin):
