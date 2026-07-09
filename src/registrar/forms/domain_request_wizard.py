@@ -8,6 +8,7 @@ from django.core.validators import RegexValidator
 from django.utils.safestring import mark_safe
 
 from registrar.forms.utility.combobox import ComboboxWidget
+from registrar.forms.utility.fields import MaxLengthFirstEmailField
 from registrar.forms.utility.wizard_form_helper import (
     RegistrarForm,
     RegistrarFormSet,
@@ -496,21 +497,16 @@ class SeniorOfficialForm(RegistrarForm):
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
     )
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no longer than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
-            "max_length": "Email address must be no longer than 320 characters.",
         },
         widget=forms.EmailInput(attrs=get_max_length_attrs(EMAIL_MAX)),
     )
-
-    def clean_email(self):
-        email = self.data.get(self.add_prefix("email"), "")
-        if email and len(email) > EMAIL_MAX:
-            raise forms.ValidationError(self.fields["email"].error_messages["max_length"], code="max_length")
-        return self.cleaned_data.get("email", email)
 
 
 class CurrentSitesForm(RegistrarForm):

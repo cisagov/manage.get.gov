@@ -137,3 +137,6 @@ class FEBAnythingElseYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
 
     form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
     field_name = "has_anything_else_text"
+    required_error_message = (
+        "Select “Yes” if there are additional details you’d like us to know. Select “No” if you have nothing to add."
+    )
