@@ -306,9 +306,18 @@ class TestFormValidation(MockEppLib):
         self.assertEqual(
             form.errors["email"],
             [
-                "Enter an email address in the required format, like name@example.com.",
                 "Email must be no more than 320 characters.",
             ],
+        )
+
+    @less_console_noise_decorator
+    def test_email_invalid_format_failure(self):
+        """Test that invalid email format still shows the expected message."""
+
+        form = PortfolioNewMemberForm(data={"email": "invalid-email"})
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter an email address in the required format, like name@example.com."],
         )
 
     @less_console_noise_decorator
