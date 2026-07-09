@@ -478,6 +478,7 @@ class SeniorOfficialContactForm(ContactForm):
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
+    # This will need custom email field implemented in #4614 to correct.
     security_email = forms.EmailField(
         label="Security email (optional)",
         max_length=None,
@@ -672,7 +673,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest",
         validators=[validate_hexadecimal],
         error_messages={
-            "required": "Digest is required.",
+            "required": "Enter a digest value for this record.",
         },
         widget=forms.Textarea(
             attrs={

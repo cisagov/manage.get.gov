@@ -591,8 +591,8 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "This domain has not been renewed for one year, "
-                        "please email help@get.gov if this problem persists.",
+                        "We’re experiencing a connection error. Please wait a few minutes and try again. " \
+                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
