@@ -349,7 +349,7 @@ class OrganizationContactForm(RegistrarForm):
         label="Street address",
         error_messages={
             "required": "Enter the street address of your organization.",
-            "max_length": "Street address must be no longer than 100 characters.",
+            "max_length": "Street address must be no more than 100 characters.",
         },
         validators=[get_max_length_validator(TEXT_EXTENDED)],
         widget=forms.TextInput(attrs=get_max_length_attrs(TEXT_EXTENDED)),
@@ -500,7 +500,7 @@ class SeniorOfficialForm(RegistrarForm):
     email = MaxLengthFirstEmailField(
         label="Email",
         email_max_length=EMAIL_MAX,
-        email_max_length_message="Email address must be no longer than 320 characters.",
+        email_max_length_message="Email address must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
