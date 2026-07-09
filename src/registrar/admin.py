@@ -6314,7 +6314,7 @@ class FederalTribeAdminForm(forms.ModelForm):
 
     def clean_email(self):
         """Split comma separated str into list for db"""
-        value = self.cleaned_data.get("email")
+        value = self.cleaned_data.get("emails")
 
         if not value:
             return []
@@ -6388,7 +6388,7 @@ class StateTribeAdminForm(forms.ModelForm):
 
     def clean_email(self):
         """Split comma separated str into list for db"""
-        value = self.cleaned_data.get("email")
+        value = self.cleaned_data.get("emails")
 
         if not value:
             return []
