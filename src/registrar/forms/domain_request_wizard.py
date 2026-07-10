@@ -651,7 +651,12 @@ class DotGovDomainForm(RegistrarForm):
         error_messages={
             "required": DOMAIN_API_MESSAGES["required"],
         },
-        validators=[get_max_length_validator(DOMAIN_LABEL)],
+        validators=[
+            MaxLengthValidator(
+                DOMAIN_LABEL,
+                message=f"Domain name must be no more than {DOMAIN_LABEL} characters.",
+            )
+        ],
         widget=forms.TextInput(attrs=get_max_length_attrs(DOMAIN_LABEL)),
         strip=False,
     )

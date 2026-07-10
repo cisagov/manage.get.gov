@@ -704,7 +704,7 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             portfolio_anything_else_form.fields["anything_else"].required = True
             portfolio_anything_else_form.fields["anything_else"].error_messages[
                 "required"
-            ] = 'Provide additional details you\'d like us to know. If you have nothing to add, select "No".'
+            ] = 'Provide additional details you\'d like us to know. If you have nothing to add, select "No."'
 
         anything_else_forms_valid = portfolio_anything_else_form.is_valid()
 
