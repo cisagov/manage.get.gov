@@ -1,6 +1,8 @@
 import logging
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
+
 
 from .utility.time_stamped_model import TimeStampedModel
 from .domain_request import DomainRequest
@@ -45,10 +47,12 @@ class StateTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    email = models.EmailField(
-        max_length=320,
+    email = ArrayField(
+        models.EmailField(max_length=320),
         null=True,
         blank=True,
+        default=list,
+        help_text="List of email addresses for the tribal leader or designated contact",
     )
     phone = PhoneNumberField(
         null=True,

@@ -3,8 +3,8 @@
 import logging
 from django import forms
 from django.core.validators import RegexValidator
-from django.core.validators import MaxLengthValidator
 
+from registrar.forms.utility.fields import MaxLengthFirstEmailField
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.models import (
     PortfolioInvitation,
@@ -448,19 +448,12 @@ class PortfolioNewMemberForm(BasePortfolioMemberForm):
     Form for adding a portfolio invited member.
     """
 
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
-        max_length=None,
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Email must be no more than 320 characters.",
-            )
-        ],
         required=True,
     )
 
