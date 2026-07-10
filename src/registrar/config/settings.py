@@ -845,7 +845,29 @@ DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
 DNS_NS_SET_RANGE = 5
 
 # endregion
+# region: EPP connection Pool----------------------------------------------###
+# Max EPP connections per worker process. Evironments that share registry
+# credentials also share the registry's connection allowance.
+# keep the code default small in test environments (except when needed)
+EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)
 
+# Seconds a request will wait for a pooled connection before failing.
+EPP_POOL_BORROW_TIMEOUT = env.int("EPP_POOL_BORROW_TIMEOUT", default=20)
+
+# A connection idle longer than this is health-checked (EPP Hello)
+# before reuse, and replaced if it fails.
+EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
+
+# Interval for the background maintenance pass that keeps idle pooled
+# connections healthy and retires long-idle ones. 0 disables it.
+EPP_POOL_HEARTBEAT_INTERVAL = env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=120)
+
+# If a connection hasn't been used for a non-hello EPP command for longer than this
+# it is closed and replaced with a new connection. 0 disables it.
+EPP_POOL_RECYCLE_SECONDS = env.int("EPP_POOL_RECYCLE_SECONDS", default=600)
+
+
+# endregion
 # region: Security and Privacy----------------------------------------------###
 
 # SECURITY WARNING: keep the secret key used in production secret!

@@ -1,13 +1,15 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
-from gevent.lock import BoundedSemaphore
+from time import sleep
+
 
 try:
     from epplib.client import Client
     from epplib import commands
     from epplib.exceptions import TransportError, ParsingError
     from epplib.transport import SocketTransport
+    from utility.pool import PooledConnection, PoolExhausted, EPPConnectionPool
 except ImportError:
     pass
 
@@ -40,10 +42,7 @@ class EPPLibWrapper:
 
     def __init__(self) -> None:
         """Initialize settings which will be used for all connections."""
-        # set _client to None initially. In the event that the __init__ fails
-        # before _client initializes, app should still start and be in a state
-        # that it can attempt _client initialization on send attempts
-        self._client = None  # type: ignore
+   
         # prepare (but do not send) a Login command
         self._login = commands.Login(
             cl_id=settings.SECRET_REGISTRY_CL_ID,
@@ -53,25 +52,28 @@ class EPPLibWrapper:
                 "urn:ietf:params:xml:ns:contact-1.0",
             ],
         )
-        # We should only ever have one active connection at a time
-        self.connection_lock = BoundedSemaphore(1)
+        # Create the pool
+        # this will immediately kick off the maintanence loop
+        self._pool = EPPConnectionPool(connection_factory=self._create_connection,
+                        size=settings.EPP_CONNECTION_POOL_SIZE,
+                        checkout_timeout=settings.EPP_POOL_borrow_TIMEOUT,
+                        idle_ping_seconds=settings.EPP_POOL_IDLE_PING_SECONDS,
+                        heartbeat_interval=settings.EPP_POOL_HEARTBEAT_INTERVAL,
+                        idle_max_seconds=settings.EPP_POOL_IDLE_MAX_SECONDS,)
+        
+      
 
-        self.connection_lock.acquire()
-        try:
-            self._initialize_client()
-        except Exception:
-            logger.warning("Unable to configure the connection to the registry.")
-        finally:
-            self.connection_lock.release()
+        
+        
 
-    def _initialize_client(self) -> None:
+    def _create_connection(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
         client. Raises errors if initialization fails.
         This method will be called at app initialization, and also during retries."""
         # establish a client object with a TCP socket transport
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
-        self._client = Client(  # type: ignore
+        client = Client(  # type: ignore
             SocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
@@ -81,7 +83,7 @@ class EPPLibWrapper:
         )
         try:
             # use the _client object to connect
-            self._connect()
+            self._connect(client=client)
         except TransportError as err:
             message = "_initialize_client failed to execute due to a connection error."
             logger.error(f"{message} Error: {err}")
@@ -92,12 +94,15 @@ class EPPLibWrapper:
             message = "_initialize_client failed to execute due to an unknown error."
             logger.error(f"{message} Error: {err}")
             raise RegistryError(message) from err
+        
+        # Client is stored as a connection inside the pool
+        return client
 
-    def _connect(self) -> None:
+    def _connect(self, client: Client) -> None:
         """Connects to EPP. Sends a login command. If an invalid response is returned,
         the client will be closed and a LoginError raised."""
-        self._client.connect()  # type: ignore
-        response = self._client.send(self._login)  # type: ignore
+        client.connect()  # type: ignore
+        response = client.send(self._login)  # type: ignore
         if response.code >= 2000:  # type: ignore
             self._client.close()  # type: ignore
             raise LoginError(response.msg)  # type: ignore
@@ -126,11 +131,17 @@ class EPPLibWrapper:
         cmd_type = command.__class__.__name__
 
         try:
-            # check for the condition that the _client was not initialized properly
-            # at app initialization
-            if self._client is None:
-                self._initialize_client()
-            response = self._client.send(command)
+           # Grab a connection from the pool. Connection is automagically
+           # put back into the Q once the with finishes
+            with self._pool.connection() as clientConnection:
+                # TODO - initialize client here if not?????
+                response = clientConnection.send(command)
+        except PoolExhausted as err:
+            # Every connection stayed checked out for the whole wait.
+            # The registry/socket may be fine - this is a capacity signal.
+            message = f"{cmd_type} failed: all pooled EPP connections are busy."
+            logger.error(f"{message} Error: {err}. Pool stats: {self._pool.stats()}", exc_info=True)
+            raise RegistryError(message) from err
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
             logger.error(f"{message} Error: {err}")
@@ -155,13 +166,6 @@ class EPPLibWrapper:
             else:
                 return response
 
-    def _retry(self, command):
-        """Retry sending a command through EPP by re-initializing the client
-        and then sending the command."""
-        # re-initialize by disconnecting and initial
-        self._disconnect()
-        self._initialize_client()
-        return self._send(command)
 
     def send(self, command, *, cleaned=False):
         """Login, the send the command. Retry once if an error is found"""
@@ -170,7 +174,7 @@ class EPPLibWrapper:
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
 
-        self.connection_lock.acquire()
+        counter=0
         try:
             return self._send(command)
         except RegistryError as err:
@@ -182,14 +186,13 @@ class EPPLibWrapper:
                 or err.is_session_error()
                 or err.is_server_error()
                 or err.should_retry()
-            ):
+            ) and counter <3:
                 message = f"{cmd_type} failed and will be retried"
                 logger.info(f"{message} Error: {err}")
-                return self._retry(command)
+                counter+=1
+                sleep((counter *50)/1000) # sleep 50-150ms incase a logout error occured
             else:
                 raise err
-        finally:
-            self.connection_lock.release()
 
 
 try:
