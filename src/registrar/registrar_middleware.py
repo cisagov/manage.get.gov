@@ -396,71 +396,21 @@ class DatabaseConnectionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        
-class RequestLoggingMiddleware:
-    """
-    Middleware to log user email, remote address, and request path to prepend to logs.
-    """
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        # if the request has an x-request-id header, use that, otherwise generate a new uuid.
-        # This allows us to track requests across services if they all use the same header.
-        request_id = request.META.get("HTTP_X_REQUEST_ID") or str(uuid.uuid4())
-        set_user_log_context(request_id=request_id)
-
-        # Only log in production (stable)
-        if getattr(settings, "IS_PRODUCTION", False):
-            # Get user email (if authenticated), else None
-            user_email = request.user.email if request.user.is_authenticated else None
-            # Get remote IP address or IPv6 address
-            forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-            if forwarded_for:
-                remote_ip = forwarded_for.split(",")[0].strip()
-            else:
-                remote_ip = request.META.get("REMOTE_ADDR")
-            # Get request path
-            request_path = request.path
-
-            # set user log info
-            set_user_log_context(user_email, remote_ip, request_path)
-            # Log user information
-            logger.info("Router log")
-
-        response = self.get_response(request)
-        response["X-Request-ID"] = request_id
-        return response
-
-
-class DatabaseConnectionMiddleware:
-    """
-    Middleware to track database connection metrics and query performance.
-    Uses the same callable pattern as RequestLoggingMiddleware.
-    """
-
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
+        request._db_start_time = time.time()
+        request._db_queries_start = len(connections["default"].queries)
         connection = connections["default"]
-        start_time = time.time()
-        queries_start = len(connection.queries)
-        was_connected = connection.connection is not None
-
+        logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
+        if hasattr(request, "_db_start_time"):
+            connection = connections["default"]
+            query_count = len(connection.queries) - request._db_queries_start
+            duration = time.time() - request._db_start_time
 
-        opened_new = (not was_connected) and connection.connection is not None
-        query_count = len(connection.queries) - queries_start
-        duration = time.time() - start_time
-        
-        logger.info(
-            f"opened new conn={opened_new}, "
-            f"reused existing conn={was_connected}, "
-            f"queries={query_count}, "
-            f"duration={duration:.3f}s, "
-            f"status={response.status_code}, "
-            f"path={request.path}"
-            f"params={request.META.get('QUERY_STRING', '')}"
-        )
+            logger.info(
+                f"DB_CONN_END: queries={query_count}, "
+                f"duration={duration:.3f}s, "
+                f"total_queries={len(connection.queries)}, "
+                f"status={response.status_code}, "
+                f"path={request.path}"
+            )
+        return response
