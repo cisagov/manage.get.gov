@@ -398,6 +398,7 @@ class DatabaseConnectionMiddleware:
     def __call__(self, request):
         request._db_start_time = time.time()
         request._db_queries_start = len(connections["default"].queries)
+
         connection = connections["default"]
         logger.info(f"DB_CONN_START: queries_executed={len(connection.queries)}")
         response = self.get_response(request)
