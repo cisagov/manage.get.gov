@@ -13,7 +13,7 @@ from psycogreen.gevent import patch_psycopg
 
 def post_fork(server, worker):
     """Make psycopg2 cooperate with gevent in each freshly forked worker.
-    
+
     Gunicorn calls it inside each worker process right after that worker
     is forked from the master process.
 
