@@ -1070,7 +1070,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         form = self.get_form()
         is_edit = self._parse_dns_record_id(request)
         delete_record = request.POST.get("delete_record")
-        print(f"💕 {delete_record}")
         self._get_domain(request)
 
         if not delete_record and not form.is_valid():
@@ -1098,7 +1097,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
             # DELETE
             if delete_record:
-                self._handle_delete(request, x_zone_id, record_id)
+                self._handle_delete(request, x_zone_id)
             else:
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
@@ -1150,8 +1149,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
-    def _handle_delete(self, request, x_zone_id: int, record_id: int | None):
-        """Handle form submission (create + update) for DNS records via htmx."""
+    def _handle_delete(self, request, x_zone_id: int):
+        """Handle deletion for DNS records via htmx."""
         self.object = self.get_object()
         record_id = self._parse_dns_record_id(request)
         self._get_domain(request)

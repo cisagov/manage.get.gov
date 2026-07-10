@@ -45,21 +45,36 @@
                     Save
                 </button>
 
-                <button
-                    id="dnsrecord-delete-button-{{ record_id }}"
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center padding-bottom-05"
-                    type="button"
-                    role="button"
-                    tabindex="0"
-                    aria-label="Delete DNS record"
-                    data-action="form-delete"
-                    data-record-id="{{ record_id }}"
+                <form
+                    method="post"
+                    hx-post="{% url 'domain-dns-records' domain_pk=domain.pk %}"
+                    hx-target="closest tr"
+                    hx-swap="outerHTML"
                 >
-                    <svg class="usa-icon margin-right-05" aria-hidden="true" focusable="false" role="img">
-                        <use xlink:href="/public/img/sprite.svg#delete"></use>
-                    </svg>
-                    <span class="font-sans-sm">Delete</span>
-                </button>
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ record_id }}">
+                    <input type="hidden" name="delete_record" value="1">
+
+                    <!-- hidden submit button, we'll click this from the modal confirm -->
+                    <button type="submit" id="delete-submit-{{ record_id }}" data-record-id="{{ record_id }}" class="display-none" aria-hidden="true"></button>
+
+                    <!-- visible delete button that triggers modal -->
+                    <button
+                        id="dnsrecord-delete-button-{{ record_id }}"
+                        class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center padding-bottom-05"
+                        type="button"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Delete DNS record"
+                        data-action="form-delete"
+                        data-record-id="{{ record_id }}"
+                    >
+                        <svg class="usa-icon margin-right-05" aria-hidden="true" focusable="false" role="img">
+                            <use xlink:href="/public/img/sprite.svg#delete"></use>
+                        </svg>
+                        <span class="font-sans-sm">Delete</span>
+                    </button>
+                </form>
             </form>
         </div>
     </td>

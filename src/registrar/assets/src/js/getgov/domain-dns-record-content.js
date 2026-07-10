@@ -658,7 +658,6 @@ export function initDeleteDnsRecord() {
             const table = document.getElementById("dnsrecords-table");
             const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
             deleteSubmitTrigger.click()
-
         })
     }
 }
