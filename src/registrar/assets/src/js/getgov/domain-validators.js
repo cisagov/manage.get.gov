@@ -96,6 +96,14 @@ function inlineToast(el, id, style, msg) {
 }
   
 function checkDomainAvailability(el) {
+    const counterWrapper = el.closest(".usa-character-count");
+    const maxLength = counterWrapper ? counterWrapper.getAttribute("data-maxlength") : null;
+    if (maxLength && el.value.length > parseInt(maxLength, 10)) {
+        toggleInputValidity(el, false, `Domain name must be no more than ${maxLength} characters.`);
+        inlineToast(el.parentElement, el.id, ERROR, `Domain name must be no more than ${maxLength} characters.`);
+        return;
+    }
+
     const callback = (response) => {
         toggleInputValidity(el, (response && response.available), response.message);
         announce(el.id, response.message);

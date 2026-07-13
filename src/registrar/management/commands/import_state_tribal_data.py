@@ -1,8 +1,8 @@
 import argparse
 import csv
 import logging
+import os
 import re
-import requests
 
 from django.core.management import BaseCommand
 from django.core.exceptions import ValidationError
@@ -10,40 +10,36 @@ from django.core.exceptions import ValidationError
 from datetime import datetime
 
 from registrar.management.commands.utility.terminal_helper import TerminalColors
-from registrar.models import FederalTribe
+from registrar.models import StateTribe
 
 logger = logging.getLogger(__name__)
 
-TRIBAL_LEADERS_CSV_URL = "https://raw.githubusercontent.com/cisagov/flat-tribal-leaders/main/tribal-leaders.csv"
-
-# Map CSV column headers to FederalTribe model fields
+# Map CSV column headers to StateTribe model fields
 CSV_FIELD_MAP = {
-    "Tribe Full Name": "tribe_full_name",
-    "Tribe": "tribe",
-    "Tribe Alternate Name": "tribe_alternate_name",
-    "First Name": "first_name",
-    "Last Name": "last_name",
+    "Name": "tribe_name",
+    "Recognized state": "recognized_state",
+    "Authorizing legislation": "authorizing_legislation",
+    "Tribal Leader First Name": "tribal_leader_first_name",
+    "Tribal Leader Last Name": "tribal_leader_last_name",
     "Suffix": "suffix",
-    "Aka": "aka",
-    "Job Title": "job_title",
-    "Organization": "organization",
-    "Physical Address": "address_line1",
+    "Evidence of tribal leader designation": "evidence_of_tribal_leader_designation",
+    "Email": "email",
+    "Phone": "phone",
+    "Website": "website",
+    "Address": "address_line1",
     "City": "city",
     "State": "state_territory",
     "Zipcode": "zipcode",
-    "Phone": "phone",
-    "Email": "email",
-    "Website": "website",
-    "Date Elected": "date_elected",
-    "Next Election": "next_election",
+    "Date of recognition": "date_of_recognition",
+    "Additional sources": "additional_sources",
     "Notes": "notes",
 }
 
-DATE_FIELDS = {"date_elected", "next_election"}
+DATE_FIELDS = {"date_of_recognition"}
 
 
 class Command(BaseCommand):
-    help = "Imports federally recognized tribal data from the Tribal Leaders CSV into the FederalTribe table."
+    help = "Imports state recognized tribal data from the state tribe CSV into the StateTribe table."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -56,48 +52,52 @@ class Command(BaseCommand):
                 "Disable with --no-dry-run to perform the import."
             ),
         )
+        parser.add_argument(
+            "--csv-path",
+            required=True,
+            help="Path to the state tribe CSV file. Example: --csv-path /tmp/state_tribe.csv",
+        )
 
     def handle(self, *args, **options):
         """
         How to run:
-            ./manage.py import_federal_tribal_data --no-dry-run
-            ./manage.py import_federal_tribal_data (dry run is ON by default)
+            ./manage.py import_state_tribal_data --csv-path /home/vcap/tmp/state_tribes.csv --no-dry-run
+            ./manage.py import_state_tribal_data --csv-path /home/vcap/tmp/state_tribes.csv (dry run is on by default)
         """
-        dry_run = options.get("dry_run", True)
+        dry_run = bool(options.get("dry_run", True))
+        csv_path = options.get("csv_path")
         self.warnings = []  # collect warnings across all rows
         self.skipped_rows = []  # collect skipped rows w missing tribe name
         self.errors = []
-        self.updates = []  # collect what was changed
 
         if dry_run:
             logger.info(
                 f"{TerminalColors.YELLOW}DRY RUN: No changes will be written to the database.{TerminalColors.ENDC}"
             )
 
-        rows = self._load_csv()
+        rows = self._load_csv(csv_path)
         if rows is None:
             self.stderr.write(self.style.ERROR("Failed to load CSV. Aborting."))
             return
 
-        # Tally counters, updated in place by _process_row via the counts dict
-        counts = {"created": 0, "skipped": 0, "errors": 0, "updated": 0}
+        # Updated in place by _process_row via the counts dict
+        counts = {"created": 0, "skipped": 0, "errors": 0}
 
         # start=2 as row 1 is the header
         for row_number, row in enumerate(rows, start=2):
             self._process_row(row, row_number, dry_run, counts)
 
-        self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"], counts["updated"])
+        self._print_summary(dry_run, counts["created"], counts["skipped"], counts["errors"])
         self._print_skipped_rows()
         self._print_errors()
-        self._print_updates()
         self._print_warnings()
 
     def _process_row(self, row, row_number, dry_run, counts):
         """Process a single CSV row: validate, map, then create/skip
-        the corresponding FederalTribe record + updates counts in place"""
-        tribe_full_name = row.get("Tribe Full Name", "").strip()
+        the corresponding StateTribe record + updates counts in place"""
+        tribe_name = row.get("Name", "").strip()
 
-        if not tribe_full_name:
+        if not tribe_name:
             message = f"Row {row_number} skipped — missing tribe name. " f"Row contents: {dict(row)}"
             logger.warning(message)
             self.skipped_rows.append({"row_number": row_number, "contents": dict(row)})
@@ -106,29 +106,27 @@ class Command(BaseCommand):
 
         try:
             mapped = self._map_row(row)
-            existing = FederalTribe.objects.filter(tribe_full_name=tribe_full_name).first()
+
+            existing = StateTribe.objects.filter(tribe_name__iexact=tribe_name).exists()
 
             if existing:
-                was_updated = self._update_tribe(tribe_full_name, existing, mapped, dry_run)
-                if was_updated:
-                    counts["updated"] += 1
-                else:
-                    counts["skipped"] += 1
+                logger.info(f"'{tribe_name}' already exists, skipping.")
+                counts["skipped"] += 1
                 return
 
-            self._create_tribe(tribe_full_name, mapped, dry_run)
+            self._create_tribe(tribe_name, mapped, dry_run)
             counts["created"] += 1
 
         except Exception as e:
-            error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
+            error_message = f"[{tribe_name}] Error: {e}"
             logger.error(
-                f"{TerminalColors.FAIL}Error processing '{tribe_full_name}': {e}{TerminalColors.ENDC}",
+                f"{TerminalColors.FAIL}Error processing '{tribe_name}': {e}{TerminalColors.ENDC}",
                 exc_info=True,
             )
             self.errors.append(error_message)
             counts["errors"] += 1
 
-    def _create_tribe(self, tribe_full_name, mapped, dry_run):
+    def _create_tribe(self, tribe_name, mapped, dry_run):
         """
         Handles the creation of a new StateTribe record.
 
@@ -143,27 +141,26 @@ class Command(BaseCommand):
         Returns: None
         """
         if dry_run:
-            logger.info(f"Dry run ENABLED -- skipping creating FederalTribe for '{tribe_full_name}'")
-            self._log_action(dry_run, "Created", tribe_full_name, mapped)
+            logger.info(f"Dry run ENABLED -- skipping creating StateTribe for '{tribe_name}'")
+            self._log_action(dry_run, "Created", tribe_name, mapped)
         else:
-            logger.info(f"Creating FederalTribe record for '{tribe_full_name}'")
-            tribe = FederalTribe(**mapped)
+            logger.info(f"Creating StateTribe record for '{tribe_name}'")
+            tribe = StateTribe(**mapped)
             try:
                 tribe.full_clean()
             except ValidationError as e:
                 # For phone validation failures we treat as warning + store None
                 # and save the record rather than skipping it entirely with an error
-                # ie 893 is a bad area code and this catches it here
                 if "phone" in e.message_dict:
-                    self._warn(tribe_full_name, f"Phone number '{mapped.get('phone')}' is not valid, storing as None.")
+                    self._warn(tribe_name, f"Phone number '{mapped.get('phone')}' is not valid, storing as None.")
                     mapped["phone"] = None
-                    tribe = FederalTribe(**mapped)
+                    tribe = StateTribe(**mapped)
                     tribe.save()
                     return
                 # All other validation errors skip the record and surface as errors
-                error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
+                error_message = f"[{tribe_name}] Validation failed: {e.message_dict}"
                 logger.error(
-                    f"{TerminalColors.FAIL}Validation failed for '{tribe_full_name}', "
+                    f"{TerminalColors.FAIL}Validation failed for '{tribe_name}', "
                     f"skipping record. Errors: {e.message_dict}{TerminalColors.ENDC}",
                 )
                 self.errors.append(error_message)
@@ -171,50 +168,50 @@ class Command(BaseCommand):
             else:
                 tribe.save()
 
-    def _load_csv(self):
-        """Load rows rom CSV with a 30 sec timeout and make sure download succeeded
-        and put into a dictionary list"""
+    def _load_csv(self, csv_path):
+        """Load rows from the CSV file at the given path and put into a dictionary list."""
+        if not os.path.exists(csv_path):
+            logger.error(f"CSV file not found at path: {csv_path}")
+            return None
         try:
-            logger.info(f"Fetching CSV from {TRIBAL_LEADERS_CSV_URL}")
-            response = requests.get(TRIBAL_LEADERS_CSV_URL, timeout=30)
-            response.raise_for_status()
-            decoded = response.content.decode("utf-8").splitlines()
-            return list(csv.DictReader(decoded))
+            logger.info(f"Loading CSV from {csv_path}")
+            with open(csv_path, newline="", encoding="utf-8") as f:
+                return list(csv.DictReader(f))
         except Exception as e:
             logger.error(f"Failed to load CSV: {e}", exc_info=True)
             return None
 
     def _map_row(self, row):
-        """Map a CSV row dict to FederalTribe model field names
+        """Map a CSV row dict to StateTribe model field names
         and cleans input along the way"""
         mapped = {}
-        tribe_name = row.get("Tribe Full Name", "unknown").strip()
+        tribe_name = row.get("Name", "unknown").strip()
         for csv_col, model_field in CSV_FIELD_MAP.items():
             value = row.get(csv_col, "").strip() or None
 
             if value:
-                if model_field in DATE_FIELDS:
-                    value = self._parse_date(value, tribe_name)
-                elif model_field == "state_territory":
-                    value = self._parse_state(value, tribe_name)
-                elif model_field == "phone":
-                    value = self._parse_phone(value, tribe_name)
-                elif model_field == "email":
-                    value = self._parse_email(value, tribe_name)
-                elif model_field == "website":
-                    value = self._parse_url(value, tribe_name)
-                elif model_field == "zipcode" and len(value) > 10:
-                    self._warn(tribe_name, f"Zipcode '{value}' exceeds 10 characters, truncating.")
-                    value = value[:10]
+                match model_field:
+                    case field if field in DATE_FIELDS:
+                        value = self._parse_date(value, tribe_name)
+                    case "state_territory" | "recognized_state":
+                        value = self._parse_state(value, tribe_name)
+                    case "phone":
+                        value = self._parse_phone(value, tribe_name)
+                    case "email":
+                        value = self._parse_email(value, tribe_name)
+                    case "website" | "authorizing_legislation":
+                        value = self._parse_url(value, tribe_name)
+                    case "zipcode" if len(value) > 10:
+                        self._warn(tribe_name, f"Zipcode '{value}' exceeds 10 characters, truncating.")
+                        value = value[:10]
 
             mapped[model_field] = value
         return mapped
 
     def _parse_date(self, value, tribe_name):
-        """Parse into datetime.date string and handles all the different
-        date types with full dates and partial month/year and sort into one unified style
-        ie 9/2020 -> datetime.date(2020, 9, 1) if date not listed, 1 is default"""
-        for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y", "%m/%Y", "%m-%Y", "%B %Y", "%b %Y"):
+        """Parse into datetime.date string. Handles full dates (MM/DD/YYYY).
+        Returns None on failure."""
+        for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y"):
             try:
                 return datetime.strptime(value.strip(), fmt).date()
             except ValueError:
@@ -225,7 +222,7 @@ class Command(BaseCommand):
     def _parse_state(self, value, tribe_name):
         """Convert a full state name to its 2 letter abbrev using
         StateTerritoryChoices"""
-        for choice_value, choice_label in FederalTribe.StateTerritoryChoices.choices:
+        for choice_value, choice_label in StateTribe.StateTerritoryChoices.choices:
             # ie "Alabama (AL)", extract just "Alabama"
             plain_name = choice_label.split(" (")[0]
             if plain_name.lower() == value.lower():
@@ -236,21 +233,7 @@ class Command(BaseCommand):
 
     def _parse_phone(self, value, tribe_name):
         """Strip the phone number of any other invalid info with the slash D
-        and grab only the valid 10 digit US phone number
-        If separated with a slash we take the first number used
-        and remove extension as well
-        """
-        original = value
-
-        # If multiple numbers separated by a slash, taking only the first one
-        if "/" in value:
-            parts = value.split("/")
-            value = parts[0].strip()
-            self._warn(tribe_name, f"Multiple phone numbers found '{original}', using first: '{value}'")
-
-        # Strip away stuff like ext, x100 etc
-        value = re.sub(r"\s*(x|ext\.?)\s*\d+$", "", value, flags=re.IGNORECASE).strip()
-
+        and grab only the valid 10 digit US phone number"""
         digits_only = re.sub(r"\D", "", value)
 
         if len(digits_only) >= 10:
@@ -315,24 +298,23 @@ class Command(BaseCommand):
 
     def _log_action(self, dry_run, action, tribe_name, fields=None):
         """Log a create action, prefixed with [DRY RUN] if applied.
-        In a dry run we print out field deets"""
+        Field details are only shown during dry runs."""
         prefix = "[DRY RUN] Would have " if dry_run else ""
         color = TerminalColors.YELLOW if dry_run else TerminalColors.OKGREEN
 
         detail = ""
         if dry_run and fields:
-            field_lines = "\n".join(f"  {key}: {value}" for key, value in fields.items())
+            field_lines = "\n".join(f"    {key}: {value}" for key, value in fields.items())
             detail = f":\n{field_lines}"
 
         logger.info(f"{color}{prefix}{action.lower()} '{tribe_name}'{detail}{TerminalColors.ENDC}")
 
-    def _print_summary(self, dry_run, created, skipped, errors, updated):
+    def _print_summary(self, dry_run, created, skipped, errors):
         """Print a summary of what was/will be applied"""
         prefix = "[DRY RUN] Would have applied" if dry_run else "Completed."
         summary = (
             f"\n{TerminalColors.OKBLUE}{prefix} import summary:{TerminalColors.ENDC}\n"
             f"  {TerminalColors.OKGREEN}Created : {created}{TerminalColors.ENDC}\n"
-            f"  {TerminalColors.YELLOW}Updated : {updated}{TerminalColors.ENDC}\n"
             f"  Skipped : {skipped}\n"
             f"  {TerminalColors.FAIL}Errors  : {errors}{TerminalColors.ENDC}"
         )
@@ -374,69 +356,3 @@ class Command(BaseCommand):
         self.stderr.write(f"\n{TerminalColors.FAIL}Errors ({len(self.errors)} total):{TerminalColors.ENDC}")
         for error in self.errors:
             self.stderr.write(f"  {TerminalColors.FAIL}- {error}{TerminalColors.ENDC}")
-
-    def _print_updates(self):
-        """Print all field changes applied during the run"""
-        if not self.updates:
-            return
-
-        self.stdout.write(
-            f"\n{TerminalColors.OKGREEN}Updates applied ({len(self.updates)} total):{TerminalColors.ENDC}"
-        )
-        for entry in self.updates:
-            self.stdout.write(f"  {TerminalColors.OKGREEN}- {entry['tribe']}:{TerminalColors.ENDC}")
-            for field, change in entry["changes"].items():
-                self.stdout.write(f"      {field}: '{change['from']}' -> '{change['to']}'")
-
-    def _update_tribe(self, tribe_full_name, existing, mapped, dry_run):
-        """
-        Handles updating an existing FederalTribe record.
-        Parameters:
-            tribe_full_name (str): The full name of the tribe, used for logging
-            existing (FederalTribe): The existing db record to update
-            mapped (dict): A dict of cleaned model field names to values from the CSV
-            dry_run (bool): If True, logs what would be updated without writing to db.
-                If False, actually updates the record
-        Returns:
-            bool: True if changes were made, False if no changes were made
-
-        NOTE: When updating a tribe, I'm giving a hard failture (skipping the update
-        + logging as an error + raise) bc I dont want to overwrite past data if new
-        data is bad data
-        """
-        changes = self._get_changes(existing, mapped)
-
-        if not changes:
-            logger.debug(f"No changes for '{tribe_full_name}', skipping.")
-            return
-
-        if dry_run:
-            logger.info(f"Dry run enabled...skipping updating FederalTribe for '{tribe_full_name}'")
-            self._log_action(dry_run, "Updated", tribe_full_name, changes)
-        else:
-            logger.info(f"Updating FederalTribe record for '{tribe_full_name}'")
-            for field, value in mapped.items():
-                setattr(existing, field, value)
-            try:
-                existing.full_clean()
-            except ValidationError as e:
-                error_message = f"[{tribe_full_name}] Validation failed: {e.message_dict}"
-                logger.error(
-                    f"{TerminalColors.FAIL}Validation failed for '{tribe_full_name}', "
-                    f"skipping update. Errors: {e.message_dict}{TerminalColors.ENDC}",
-                )
-                self.errors.append(error_message)
-                raise
-            else:
-                existing.save()
-                self.updates.append({"tribe": tribe_full_name, "changes": changes})
-        return True
-
-    def _get_changes(self, existing, mapped):
-        """Return a dict of fields that differ between the existing record and mapped CSV data"""
-        changes = {}
-        for field, new_value in mapped.items():
-            old_value = getattr(existing, field, None)
-            if str(old_value) != str(new_value):
-                changes[field] = {"from": old_value, "to": new_value}
-        return changes

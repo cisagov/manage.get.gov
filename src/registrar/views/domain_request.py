@@ -693,19 +693,26 @@ class PortfolioAdditionalDetails(DomainRequestWizard):
             for i in range(1):
                 forms[i].mark_form_for_deletion()
             # If FEB questions aren't required, validate only the anything else form
-            return feb_anything_else_yes_no_form.is_valid()
-        anything_else_forms_valid = True
-        if not portfolio_anything_else_form.is_valid():
-            feb_anything_else_yes_no_form.mark_form_for_deletion()
-            anything_else_forms_valid = False
-        if portfolio_anything_else_form.cleaned_data.get("has_anything_else_text"):
-            feb_anything_else_yes_no_form.fields["anything_else"].required = True
-            feb_anything_else_yes_no_form.fields["anything_else"].error_messages[
+            return portfolio_anything_else_form.is_valid()
+
+        # Determine, from the raw posted data, whether "Yes" was selected, so that we can require the text field
+        # before calling is_valid() on the form that contains it.
+        yes_no_value = feb_anything_else_yes_no_form.data.get(
+            feb_anything_else_yes_no_form.add_prefix("has_anything_else_text")
+        )
+        if yes_no_value == "True":
+            portfolio_anything_else_form.fields["anything_else"].required = True
+            portfolio_anything_else_form.fields["anything_else"].error_messages[
                 "required"
-            ] = "Please provide additional details you'd like us to know. \
-                If you have nothing to add, select 'No'."
-            anything_else_forms_valid = feb_anything_else_yes_no_form.is_valid()
-        return anything_else_forms_valid
+            ] = 'Provide additional details you\'d like us to know. If you have nothing to add, select "No."'
+
+        anything_else_forms_valid = portfolio_anything_else_form.is_valid()
+
+        # Always fold the yes/no form's own validity (e.g. the 'select one' error) into the result,
+        # regardless of the other form's outcome.
+        yes_no_valid = feb_anything_else_yes_no_form.is_valid()
+
+        return yes_no_valid and anything_else_forms_valid
 
 
 # Non-portfolio pages
@@ -852,15 +859,18 @@ class Purpose(DomainRequestWizard):
             option = feb_purpose_options_form.cleaned_data.get("feb_purpose_choice")
             if option == "new":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on why a new domain is required."
+                    "required": "Provide details on why a new domain is required.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             elif option == "redirect":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on why a redirect is necessary."
+                    "required": "Provide details on why a redirect is necessary.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             elif option == "other":
                 purpose_details_form.fields["purpose"].error_messages = {
-                    "required": "Provide details on how this domain will be used."
+                    "required": "Provide details on how this domain will be used.",
+                    "max_length": "Description of how the domain will be used must be no more than 1000 characters.",
                 }
             # If somehow none of these are true use the default error message
         else:
