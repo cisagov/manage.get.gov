@@ -237,7 +237,6 @@ class DNSFormSwitcher{
         this.target = current == value ? null : value;
     }
 
-
     getAlpineData(){
         return Alpine.$data(this.container);
     }
@@ -245,6 +244,11 @@ class DNSFormSwitcher{
     setShowId(value){
         const data = this.getAlpineData();
         data.showFormId = value;
+    }
+
+    setRecordtype(value){
+        const data = this.getAlpineData();
+        data.recordType = value;
     }
 
     resetPendingAndTarget(){
@@ -334,6 +338,11 @@ export function initDNSRecordCancelModal(){
     })
     // add edit button event listener
     editButtonEventListener(switcher)
+
+    // add switch form type event listener
+    const selectRecordType = document.querySelector("#select-record-type select").addEventListener("click", ()=> {
+        console.log("hell nah")
+    })
     
 }
 
