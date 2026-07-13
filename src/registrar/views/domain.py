@@ -1317,7 +1317,7 @@ class DomainDNSSECView(DomainFormBaseView):
                     messages.error(
                         self.request, 
                         mark_safe(  # nosec
-                            "An unexpected error occurred. Could not remove existing DNSSec record(s). "
+                            "An unexpected error occurred: Could not remove existing DNSSec record(s). "
                             'Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.'
                         ),
                     )

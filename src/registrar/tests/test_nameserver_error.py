@@ -10,7 +10,7 @@ class TestNameserverError(TestCase):
     def test_with_no_ip(self):
         """Test NameserverError when no ip address is passed"""
         nameserver = "nameserver val"
-        expected = "Using your domain for a name server requires an IP address."
+        expected = "Enter an IP address for this name server. That's required because it uses the domain name."
 
         nsException = NameserverError(code=nsErrorCodes.MISSING_IP, nameserver=nameserver)
         self.assertEqual(nsException.message, expected)
@@ -31,7 +31,7 @@ class TestNameserverError(TestCase):
         ip = "ip val"
         nameserver = "nameserver val"
 
-        expected = f"{nameserver}: Enter an IP address in the required format."
+        expected = f"Enter an IP address in the required format for IPv4 or IPv6."
         nsException = NameserverError(code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip)
         self.assertEqual(nsException.message, expected)
         self.assertEqual(nsException.code, nsErrorCodes.INVALID_IP)

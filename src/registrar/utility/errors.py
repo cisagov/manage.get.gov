@@ -104,8 +104,9 @@ class GenericError(Exception):
     _error_mapping = {
         GenericErrorCodes.CANNOT_CONTACT_REGISTRY: mark_safe(  # nosec
             "We’re experiencing a connection error. Please wait a few minutes "
-            "and try again. If you continue to get this error, "
-            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us.</a>"
+            "and try again. If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> "
+            "for assistance."
         ),
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
@@ -213,9 +214,10 @@ class NameserverError(Exception):
         NameserverErrorCodes.DUPLICATE_HOST: (
             "This name server is already associated with this domain. Name servers must be unique."
         ),
-        NameserverErrorCodes.BAD_DATA: (
-            "There’s something wrong with the name server information you provided. "
-            "If you need help email us at help@get.gov."
+        NameserverErrorCodes.BAD_DATA: mark_safe(  # nosec
+            "There's something wrong with the name server information you provided. "
+            'Please try again. If the problem persists, '
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
         ),
     }
 
@@ -271,7 +273,7 @@ class DsDataError(Exception):
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
         DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Enter a digest value using only numbers (0-9) and letters (a-f)."),
         DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a number between 0 and 65535."),
-        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Key tag must be numeric (0-9)."),
+        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Enter a key tag number between 0 and 65535."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
