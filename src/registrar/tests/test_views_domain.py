@@ -29,6 +29,7 @@ from registrar.utility.errors import (
 )
 
 from registrar.models import (
+    DnsRecord,
     DomainRequest,
     Domain,
     DomainInformation,
@@ -3974,9 +3975,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
             }
         )
 
-        dns_record.refresh_from_db()
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(DnsRecord.objects.filter(id=dns_record.id).count(), 0)
         # self.assertJSONEqual(
         #     response.headers["HX-Trigger-After-Settle"],
         #     {"messagesRefresh": "", "recordSubmitSuccess": ""},
@@ -4009,4 +4010,3 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(response.status_code, 200)
 
         # TODO: add asserts
-        
