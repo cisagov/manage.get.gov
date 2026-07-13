@@ -2497,7 +2497,21 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_own_member_domains(self):
-        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)."""
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)
+        - checks decorator"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_own_member_domains_view_layer(self, mock_decorator):
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)
+        - bypasses decorator to check view layer specifically"""
         self.client.force_login(self.user_view_only)
         response = self.client.post(
             reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
@@ -2508,7 +2522,21 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_other_member_domains(self):
-        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)."""
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)
+        - checks decorator"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_other_member_domains_view_layer(self, mock_decorator):
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)
+        - bypasses decorator to check view layer specifically"""
         self.client.force_login(self.user_view_only)
         response = self.client.post(
             reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
@@ -4590,6 +4618,26 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Assert no email triggered
         mock_invite_to_portfolio.assert_not_called()
 
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.invite_to_portfolio")
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_invite_new_member_view_layer(self, mock_invite_to_portfolio, mock_decorator):
+        """Test user with only VIEW_MEMBERS cannot add a new member
+        - bypasses decorator and tests view layer specifically"""
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "email": "someone@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # Assert no email triggered
+        mock_invite_to_portfolio.assert_not_called()
+
 
 class TestPortfolioMemberEditView(WebTest):
     """Tests for the edit member page on portfolios"""
@@ -4707,7 +4755,22 @@ class TestPortfolioMemberEditView(WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_own_member_permissions(self):
-        """User with only VIEW_MEMBERS cannot edit their own permissions"""
+        """User with only VIEW_MEMBERS cannot edit their own permissions - checks decorator"""
+        view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": view_only_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_own_member_permissions_view_layer(self, mock_decorator):
+        """User with only VIEW_MEMBERS cannot edit their own permissions -
+        bypasses the decorator and checks the view layer specifically"""
         view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
 
         self.client.force_login(self.view_only_user)
@@ -4720,7 +4783,25 @@ class TestPortfolioMemberEditView(WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_other_member_permissions(self):
-        """User with only VIEW_MEMBERS cannot edit another members permissions either"""
+        """User with only VIEW_MEMBERS cannot edit another members permissions either
+        - checks decorator"""
+        other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": other_member_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        other_member_permission.refresh_from_db()
+        self.assertEqual(other_member_permission.roles, ["organization_admin"])
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_other_member_permissions_view_layer(self, mock_decorator):
+        """User with only VIEW_MEMBERS cannot edit another members permissions either
+        - bypasses the decorator and checks the view layer specifically"""
         other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
 
         self.client.force_login(self.view_only_user)
