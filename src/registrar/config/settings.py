@@ -860,7 +860,7 @@ EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
 
 # Interval for the background maintenance pass that keeps idle pooled
 # connections healthy and retires long-idle ones. 0 disables it.
-EPP_POOL_HEARTBEAT_INTERVAL = env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=120)
+EPP_POOL_HEARTBEAT_INTERVAL = env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=60)
 
 # If a connection hasn't been used for a non-hello EPP command for longer than this
 # it is closed and replaced with a new connection. 0 disables it.

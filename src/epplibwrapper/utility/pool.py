@@ -9,7 +9,7 @@ try:
     from epplib.exceptions import TransportError
 except ImportError:
     pass
-# https://medium.com/@artemkhrenov/connection-pooling-patterns-optimizing-database-connections-for-scalable-applications-159e78281389
+
 logger = logging.getLogger(__name__)
 
 class PoolExhausted(Exception):
@@ -19,7 +19,7 @@ class PoolExhausted(Exception):
     
     Translates into a RegistryError. Investigate this one when seen.
     """
-   # TODO add error message
+
 
 class PooledConnection:
     """One logged-in epplib client plus the bookkeeping the pool needs.
