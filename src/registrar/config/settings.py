@@ -846,7 +846,7 @@ DNS_NS_SET_RANGE = 5
 
 # endregion
 # region: EPP connection Pool----------------------------------------------###
-# Max EPP connections per worker process. Evironments that share registry
+# Max EPP connections per worker process. Environments that share registry
 # credentials also share the registry's connection allowance.
 # keep the code default small in test environments (except when needed)
 EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)

@@ -19,28 +19,26 @@ class PoolExhausted(Exception):
     
     Translates into a RegistryError. Investigate this one when seen.
     """
-   # TODO add error mesage
+   # TODO add error message
 
 class PooledConnection:
     """One logged-in epplib client plus the bookkeeping the pool needs.
 
     last_used is a timestamp (monotonic--> immune to wall-clock changes).
-    It is refreshed on checkin and on every successful heartbeat ping, so
-    "idle time" always means time since the connection last did real work
-    or proved itself alive.
+    It is refreshed on checkin, so "idle time" always means time since 
+    the connection last did real work. 
+    Heart beat succeeding doesn't change this
+
+    last_ping  is a timestamp (monotonic--> immune to wall-clock changes).
+    It is refreshed on checkin, AND on every successful heartbeat ping 
+    so now- last_ping represents how long it's been since the connection
+    proved it was alive. 
     """
 
     def __init__(self, client):
         self.client = client
         self.last_used = time.monotonic()
         self.last_ping= time.monotonic()
-    
-    def send(self, command):
-        response =super.send()
-        if command != Hello ():
-            self.last_used = time.monotonic()
-            self.last_ping= time.monotonic()
-        return response
 
 class EPPConnectionPool:
     def __init__(
@@ -62,7 +60,7 @@ class EPPConnectionPool:
         # LIFO stack of idle connections: the most recently returned
         # connection is handed out first. The oldest connections
         # settle at the bottom and eventually age past idle_recycle_seconds,
-        # where the heartbeat retires them - that's how the pool shrinks.
+        # where the heartbeat retires them.
         self._idle: queue.LifoQueue = queue.LifoQueue(maxsize=size)
 
         #counts connections that exist, including ones in use (checked out) 
@@ -82,7 +80,7 @@ class EPPConnectionPool:
         # Under gevent it runs as a greenlet, under gthread it is a real OS thread. 
         # No changes needed. Set to None if you don't want a heartbeat thread.
         
-        if heartbeat_interval or idle_max_seconds:
+        if heartbeat_interval or idle_recycle_seconds:
             # While load testing, having a heartbeat thread proved to reduce EPP connection errors
             # However, the pool can function without it. 
             self._maintenance_thread = threading.Thread(
@@ -96,16 +94,17 @@ class EPPConnectionPool:
         
         Usage:
             with pool.connection() as conn:
-                response = client.send(command)
+                response = conn.send(command)
 
-        You must follow the above usage pattern. Do not call conn.client.send() 
+        You must follow the above usage pattern. Do not call the epplib function Client.send() 
+        or Epplibwrapper.send() directly outside of the with block. 
         
         Exception handling: 
         - TransportError: socket connection is likely bad -> discard it! The next borrow 
         call will create a new connection to replace it.
         - Any other exception (command rejected, parsing problem, LoginError, etc): 
         the transport is presumed fine -> connection will be returned to the pool for reuse.
-        In these cases, look for creditional or command logic errors.
+        In these cases, look for credential or command logic errors.
         """
         conn = self._borrow()
         try:
@@ -186,9 +185,9 @@ class EPPConnectionPool:
         """
         logger.debug("Getting a connection from the pool. Pool stats: %s", self.stats())
         
-        # Step 1: Try to get an idle connection from the pool, waiting up to the borrow timeout.
+        # Step 1: Try to get an idle connection from the pool without waiting.
         try:
-            conn = self._idle.get(timeout=max(0, deadline - time.monotonic()))
+            conn = self._idle.get_nowait()
             return conn
         except queue.Empty:
             # Don't error on an empty queue, just move to creating a connection
@@ -209,8 +208,8 @@ class EPPConnectionPool:
         try:
             return self._idle.get(timeout=max(remaining, 0))
         except queue.Empty:
-            logger.debug("No EPP connection available after %s. %s", self.checkout_timeout, self.stats())
-            raise PoolExhausted(f"No EPP connection available after {self.checkout_timeout}s. {self.stats()}")
+            logger.debug("No EPP connection available after %s. %s", self.borrow_timeout, self.stats())
+            raise PoolExhausted(f"No EPP connection available after {self.borrow_timeout}s. {self.stats()}")
     
     def _is_healthy(self, conn: PooledConnection) -> bool:
         """Decide whether a connection can be handed to a caller.
@@ -222,11 +221,9 @@ class EPPConnectionPool:
         if time.monotonic() - conn.last_ping < self.idle_ping_seconds:
             return True
         try:
-            # note: this is NOT using conn.client.send() because send()
-            # recursively calls itself if the hello fails. 
             # we just want to check once if the connection is alive, and if not, chuck it.
             # _borrow() handles the actual discard/replacement logic.
-            conn.client._send(Hello())
+            conn.client.send(Hello())
             conn.last_ping = time.monotonic()
             return True
         except Exception:
@@ -238,8 +235,8 @@ class EPPConnectionPool:
         Any unexpected error is logged and the loop continues.
         """
         use_heartbeat = False
-        loop_interval= self.idle_max_seconds
-        
+        loop_interval= self.idle_recycle_seconds
+
         if self.heartbeat_interval is not None and self.heartbeat_interval > 0:
             use_heartbeat = True
             loop_interval = self.heartbeat_interval
@@ -247,7 +244,7 @@ class EPPConnectionPool:
         while loop_interval>0:
             time.sleep(loop_interval)
             try:
-                self._maintain_idle_connections(use_heartbeat=use_heartbeat, retire_old_connections=self.idle_max_seconds>0)
+                self._maintain_idle_connections(use_heartbeat=use_heartbeat, retire_old_connections=self.idle_recycle_seconds>0)
             except Exception:
                 logger.warning("EPP pool heartbeat pass failed. Once is fine, but investigate if you see multiple back to back. Stats: %s", self.stats(),exc_info=True)
     
@@ -281,25 +278,23 @@ class EPPConnectionPool:
                 last_ping_idle_time = now - conn.last_ping
 
                 # if the conn. has been idle too long
-                if retire_old_connections and idle_time > self.idle_max_seconds :
-                    
-                        logger.info("Retiring long-idle EPP connection (pool shrinks). %s", self.stats())
-                        self._retire(conn=conn)
-                        logger.debug("After retire. Pool stats: %s", self.stats())
-                            
+                if retire_old_connections and idle_time > self.idle_recycle_seconds:
+                    logger.info("Retiring long-idle EPP connection. %s", self.stats())
+                    self._retire(conn=conn)
+
                 # if the idle time is greater than the ping threshold, 
                 # ping to see if it's still alive
                 elif use_heartbeat and last_ping_idle_time > self.idle_ping_seconds :
                     logger.debug("Discarding stale connection during heartbeat. %s", self.stats())
                     is_healthy = self._is_healthy(conn)
                     if is_healthy:
-                        self._return_connection(conn)   
+                        self._return_health_connection(conn)
                     else:
                         logger.info("Heartbeat replaced a dead idle EPP connection. %s", self.stats())
                         self._discard(conn)
                 else:
                     # recently used, no need to ping it
-                    self._idle.put(conn)
+                    self._put_back(conn)
                 
         self._replenish()
 
@@ -307,12 +302,12 @@ class EPPConnectionPool:
         """ Refills queue if 1 or more connections were discarded/retired
         otherwise does nothing
         """
-        while self._connections_created <self.size and self._reserve_slot():
+        while self._connections_created <self.size and self._can_create():
             try:
-                self._idle.put(PooledConnection(self._connection_factory()))
+                self._put_back(PooledConnection(self._connection_factory()))
             except Exception:
                 self._release_slot()
-                logger.info("Replenish hit and error & failed to build a connection. Stats: %s", self.stats()) 
+                logger.info("Replenish hit an error & failed to build a connection. Stats: %s", self.stats())
                 break
     def _can_create(self) -> bool:
         """True if able to create one more connection. False if at capacity.
@@ -323,19 +318,18 @@ class EPPConnectionPool:
                 return True
             else:
                 return False
-    def _reserve_slot(self)-> bool:
-        """Wait on lock to be able to create one connection if not at size yet"""
-        with self._created_lock:
-            if self._created <self.size:
-                self._created+=1
-                return True
-            return False
-        
     def _return_connection(self, conn: PooledConnection):
-        """Return a connection to the idle queue after successful use."""
+        """Return after real command use - counts as activity on both clocks."""
         now = time.monotonic()
         conn.last_used = now
         conn.last_ping = now
+        self._put_back(conn)
+
+    def _return_health_connection(self, conn: PooledConnection):
+        """Return after a health-check ping - must NOT extend last_used."""
+        self._put_back(conn)
+
+    def _put_back(self, conn: PooledConnection):
         self._idle.put(conn)
 
     def _release_slot(self):
@@ -360,9 +354,14 @@ class EPPConnectionPool:
         """
         try:
             conn.client.send(Logout())
-            conn.client.close()
         except Exception:
-            logger.debug("Error occurred while retiring connection. Pool stats: %s", self.stats(), exc_info=True)
+            logger.info("Error occurred while retiring connection. Pool stats: %s", self.stats(), exc_info=True)
             # ignore any errors during logout, we are discarding the connection anyway
             pass
+        try:
+            conn.client.close()
+        except Exception:
+            logger.info("Error occurred while closing connection. Pool stats: %s", self.stats(), exc_info=True)
+            pass
         self._release_slot()
+

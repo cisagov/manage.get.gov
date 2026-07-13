@@ -32,6 +32,10 @@ applications:
     # VERSION INFO 
     GIT_COMMIT_SHA: ((GIT_COMMIT_SHA))
     GIT_TAG: ((GIT_TAG))
+    #EPP_CONNECTION_POOl_SIZE: 10
+    #setting these to 0 for now
+    EPP_POOL_HEARTBEAT_INTERVAL: 0
+    EPP_POOL_RECYCLE_SECONDS: 0
   routes:
     - route: getgov-stable.app.cloud.gov
   services:
