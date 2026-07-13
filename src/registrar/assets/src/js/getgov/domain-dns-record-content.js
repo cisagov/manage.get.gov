@@ -172,7 +172,7 @@ const editButtonEventListener = (switcher)=>{
     if(!table) return;
 
     const alpineData = switcher.getAlpineData();
-    
+
     table.addEventListener('click', (e) => {
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
@@ -183,15 +183,15 @@ const editButtonEventListener = (switcher)=>{
             if(editBtn){
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
-        
+
                 switcher.setTarget(recordId)
                 if(alpineData.showFormId == null){
                     switcher.switchForm()
                 }
                 else{
                     switcher.attemptOpen(recordId);
-                    onCancel(switcher); 
-                }              
+                    onCancel(switcher);
+                }
             }
 
             if(commentBtn){
@@ -208,20 +208,20 @@ class DNSFormSwitcher{
     /**
      * Manages DNS form switching from Alpine Data
      * Requires an HTML container with Alpine.js initialized on it
-     * 
+     *
      * State:
      * - pending: an object { type, recordId} representing the form the user is currently on
      *   type is either "edit" or "add", recordID is the form's recordID
      * - target: the form  ID the user is clicking to.
-     * 
+     *
      * Methods
      * - attemptOpen: sets the pending object on the class instance
      * - switchForm: performs the actual form switch, and resets the pending and target
      *   - uses methods setShowId, and resetPendingAndTarget methods
      * - getAlpineData: returns the Alpine data object for the container
      *
-    */ 
-   
+    */
+
     constructor(container){
         this.pending = null;
         this.target = null;
@@ -232,7 +232,7 @@ class DNSFormSwitcher{
          this.pending = value;
     }
 
-    setTarget(value){  
+    setTarget(value){
         const current = this.getAlpineData().showFormId;
         this.target = current == value ? null : value;
     }
@@ -274,9 +274,9 @@ export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
     if(!container || !confirmButton) return;
-    
+
     const switcher = new DNSFormSwitcher(container);
-    
+
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
         switcher.setPending(
@@ -334,7 +334,7 @@ export function initDNSRecordCancelModal(){
     })
     // add edit button event listener
     editButtonEventListener(switcher)
-    
+
 }
 
 // Tab-order routing for the DNS records table (#4804).
@@ -516,16 +516,18 @@ export function commentCharacterEventListener(){
         }
         const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[id$="_comment"]')
-        commentTextArea.addEventListener('input', function () {
+        commentTextArea?.addEventListener('input', function () {
             commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
             commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
               commentTextArea.value.length > commentCharLimit
           );
        });
-        commentTextStatus.id = `${element.id}-comment--status`
-        commentTextStatus.setAttribute('aria-live', 'polite')
-        commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
+       if (commentTextStatus){
+            commentTextStatus.id = `${element.id}-comment--status`
+            commentTextStatus.setAttribute('aria-live', 'polite')
+            commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
+       }
     }
 
 
@@ -599,6 +601,7 @@ export function initDynamicDNSRecordFormFields() {
 }
 
 export function initDeleteDnsRecord() {
+    console.log("inside init")
     const table = document.getElementById("dnsrecords-table");
 
     table?.addEventListener("click", (e) => {
@@ -640,22 +643,22 @@ export function initDeleteDnsRecord() {
                     document.removeEventListener("keydown", handleEscKey);
                 }
             };
-
             document.addEventListener("keydown", handleEscKey);
-
-
         }
         // opens modal
         modalTrigger?.click()
     }
 
     const submitDelete = (recordId) => {
+        console.log("submitDelete called")
         const modalDeleteButton = document.getElementById("confirm-delete-record-button")
+        if(!modalDeleteButton) return;
         modalDeleteButton.setAttribute("data-close-modal", "")
         modalDeleteButton?.addEventListener("click", (e) => {
             e.preventDefault()
 
             const table = document.getElementById("dnsrecords-table");
+            console.log({"recordId-in-listener": recordId})
             const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
             deleteSubmitTrigger.click()
         }, { once: true })

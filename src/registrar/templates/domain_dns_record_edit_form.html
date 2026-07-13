@@ -45,19 +45,6 @@
                     Save
                 </button>
 
-                <!-- hidden submit button, we'll click this from the modal confirm -->
-                <button
-                    hx-post="{% url 'domain-dns-records' domain_pk=domain.pk %}"
-                    {% comment %} hx-include="input" {% endcomment %}
-                    hx-target="closest tr"
-                    hx-swap="outerHTML"
-                    id="delete-submit-{{ record_id }}"
-                    data-record-id="{{ record_id }}"
-                    class="display-none" aria-hidden="true">
-                    <input type="hidden" name="id" value="{{ record_id }}">
-                    <input type="hidden" name="delete_record" value="1">
-                </button>
-
                 <!-- visible delete button that triggers modal -->
                 <button
                     id="dnsrecord-delete-button-{{ record_id }}"
@@ -75,6 +62,19 @@
                     <span class="font-sans-sm">Delete</span>
                 </button>
             </form>
+            <!-- hidden submit button, we'll click this from the modal confirm -->
+                <button
+                    type="button"
+                    hx-post="{% url 'domain-dns-records' domain_pk=domain.pk %}"
+                    hx-include="input"
+                    hx-target="closest tr"
+                    hx-swap="outerHTML"
+                    id="delete-submit-{{ record_id }}"
+                    data-record-id="{{ record_id }}"
+                    class="display-none" aria-hidden="true">
+                    <input type="hidden" name="id" value="{{ record_id }}">
+                    <input type="hidden" name="delete_record" value="1">
+                </button>
         </div>
     </td>
 </tr>
