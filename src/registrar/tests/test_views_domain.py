@@ -3977,26 +3977,18 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(DnsRecord.objects.filter(id=dns_record.id).count(), 0)
-        # self.assertJSONEqual(
-        #     response.headers["HX-Trigger-After-Settle"],
-        #     {"messagesRefresh": "", "recordSubmitSuccess": ""},
-        # )
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_delete_dns_record_removes_record_row(self):
-        """After a successful deletion, the response signals form close and removes the deleted row
-
-        The form close is driven by two response characteristics:
-        1. HX-Trigger-After-Settle contains `recordSubmitSuccess`, which Alpine.js uses to
-           reset showFormId to null, hiding the edit form row.
-        2. An OOB swap of the edit form row (hx-swap-oob) replaces the stale error-containing
-           form with a clean one, so reopening the form shows no leftover errors.
-        """
+        """After a successful deletion, the response signals form close and removes the deleted row"""
         _, _, dns_zone = create_initial_dns_setup(
             domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
         )
-        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123")
+        record_name = "delete.me"
+        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123", record_name=record_name)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertContains(page, record_name)
 
         response = self.client.post(
             reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
@@ -4008,4 +4000,5 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
 
         self.assertEqual(response.status_code, 200)
 
-        # TODO: add asserts
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertNotContains(page, record_name)

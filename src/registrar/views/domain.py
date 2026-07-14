@@ -1064,7 +1064,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.dns_record = None
         return is_first_record, None
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
         form = self.get_form()
@@ -1112,11 +1112,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             # temp log to show these values are available. Remove in #4892
             logger.error(f"wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
             messages.error(request, e.message)
-        except (APIError, RequestError) as e:
-            logger.error(f"DNS record create/update failed, API error in view {e}")
-            messages.error(request, "Failed to save DNS record.")
-            self.dns_record = None
-            record_id = None
         except GenericError:
             return self._error_response(request, status=400)
         finally:
