@@ -129,7 +129,7 @@ class DnsHostService:
     def create_and_save_account(self, account_name) -> str:
 
         account_data = self.dns_vendor_service.create_cf_account(account_name)
-        logger.info("Successfully created account at vendor")
+        logger.info(f"Successfully created {account_name} at vendor")
         x_account_id = account_data["result"]["id"]
 
         self._configure_new_account_dns_settings(x_account_id, account_name)
@@ -153,10 +153,9 @@ class DnsHostService:
 
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
-        zone_name = domain_name
         zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
         zone_name = zone_data["result"].get("name")
-        logger.info(f"Successfully created zone {domain_name}.")
+        logger.info(f"Successfully created zone {zone_name}.")
         x_zone_id = zone_data["result"]["id"]
 
         # Update zone to use and assign custom nameservers
