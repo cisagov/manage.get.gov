@@ -601,16 +601,15 @@ export function initDynamicDNSRecordFormFields() {
 }
 
 export function initDeleteDnsRecord() {
-    console.log("inside init")
     const table = document.getElementById("dnsrecords-table");
 
     table?.addEventListener("click", (e) => {
         const deleteBtn = e.target.closest(".js-dnsrecord-delete");
         if(!deleteBtn) return;
 
-        const recordId = deleteBtn.dataset.recordId
         e.preventDefault()
 
+        const recordId = deleteBtn.dataset.recordId
         const focusElement = deleteBtn;
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
@@ -650,15 +649,15 @@ export function initDeleteDnsRecord() {
     }
 
     const submitDelete = (recordId) => {
-        console.log("submitDelete called")
         const modalDeleteButton = document.getElementById("confirm-delete-record-button")
         if(!modalDeleteButton) return;
+
         modalDeleteButton.setAttribute("data-close-modal", "")
         modalDeleteButton?.addEventListener("click", (e) => {
+
             e.preventDefault()
 
             const table = document.getElementById("dnsrecords-table");
-            console.log({"recordId-in-listener": recordId})
             const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
             deleteSubmitTrigger.click()
         }, { once: true })
