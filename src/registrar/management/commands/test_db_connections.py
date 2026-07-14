@@ -40,12 +40,16 @@ class Command(BaseCommand):
             agency = agencies[i % len(agencies)]
             iteration_start = time.time()
             queries_before = len(connection.queries)
+
+            logger.info(f"DB_CONN_START: iteration={i}, queries={queries_before}")
+
             self._run_portfolio_script(agency, i)
 
             duration = time.time() - iteration_start
             durations.append(duration)
             queries_after = len(connection.queries)
             new_queries = queries_after - queries_before
+
             log_msg = (
                 f"Test {i+1}: duration={duration:.3f}s, "
                 f"queries={new_queries}, agency='{agency}', "

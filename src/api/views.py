@@ -1,9 +1,5 @@
 """Internal API views"""
 
-import logging
-import os
-import time
-
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
@@ -11,21 +7,14 @@ from django.http import HttpResponse, JsonResponse
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
 from django.db import transaction
-from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
 import requests
 
 from login_required import login_not_required
+
 from cachetools.func import ttl_cache
 
-logger = logging.getLogger(__name__)
-
-
-def _worker_tag():
-    # CF_INSTANCE_INDEX will be 0 or 1 refering to the running instance
-    # Stable & staging have 2 instances, but on other sandboxes expect to only see "0" as they only have 1 instance
-    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
-
+from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
 
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
@@ -74,16 +63,9 @@ def available(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
 
-    time_start = time.monotonic()
-    logger.info(f"{_worker_tag()} [available] received domain={domain!r}")
-
     _, json_response = Domain.validate_and_handle_errors(
         domain=domain,
         return_type=ValidationReturnType.JSON_RESPONSE,
-    )
-
-    logger.info(
-        f"{_worker_tag()} [available] completed in {round(time.monotonic() - time_start, 3)}s domain={domain!r}"
     )
     return json_response
 

@@ -77,3 +77,18 @@ class RegisterLoggingMiddlewareTest(TestCase):
         self.assertTrue(matching, "No log line carried the request_id")
         for entry in matching:
             self.assertEqual(entry.get("request_id"), "trace-id-xyz")
+
+    def test_db_middleware_reuses_request_id(self):
+        """Both DB_CONN log lines carry the shared request_id as a structured JSON field."""
+        response = self.client.get(reverse("health"), HTTP_X_REQUEST_ID="shared-id-42")
+        self.handler.flush()
+        self.assertEqual(response["X-Request-ID"], "shared-id-42")
+
+        db_lines = [
+            json.loads(line)
+            for line in self.stream.getvalue().splitlines()
+            if line.strip() and ("DB_CONN_START" in line or "DB_CONN_END" in line)
+        ]
+        self.assertEqual(len(db_lines), 2, "Expected one DB_CONN_START and one DB_CONN_END line")
+        for entry in db_lines:
+            self.assertEqual(entry.get("request_id"), "shared-id-42")

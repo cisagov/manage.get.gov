@@ -8,8 +8,6 @@ from django.conf import settings
 from .cert import Cert, Key
 from .errors import ErrorCode, LoginError, RegistryError
 
-# remove before merging
-EPP_TEST_DELAY_SECONDS = 5
 
 try:
     from epplib.client import Client
@@ -143,9 +141,6 @@ class EPPLibWrapper:
         """Helper function used by `send`."""
         cmd_type = command.__class__.__name__
 
-        if EPP_TEST_DELAY_SECONDS > 0:
-            gevent.sleep(EPP_TEST_DELAY_SECONDS)
-
         try:
             # check for the condition that the _client was not initialized properly
             # at app initialization
@@ -185,7 +180,6 @@ class EPPLibWrapper:
             if self._client is None:
                 self._initialize_client()
             self._client.send(commands.Hello())  # type: ignore
-            logger.info(f"{_worker_tag()} EPP heartbeat ok")
         except Exception as err:
             logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat failed: {err}")
             # Close the stale client so its socket is released, then reconnect so
