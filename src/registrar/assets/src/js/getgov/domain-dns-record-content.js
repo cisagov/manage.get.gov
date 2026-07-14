@@ -85,13 +85,30 @@ function clearRecordForm(scope){
 
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
-const refsFor = (req) => req.type === "edit"
-    ? {
+const refsFor = (req) =>{
+    
+    if(req.type === "edit"){
+        return  {
         form: `#dnsrecord-edit-form-${req.recordId}`,
         cancelButtonId: `dnsrecord-edit-cancel-button-${req.recordId}`,
         focusId: `dnsrecord-edit-button-${req.recordId}`,
-      }
-    : { form: "#form-container", cancelButtonId: "dnsrecord-add-cancel-button", focusId: "add-dnsrecord-button" };
+        }
+    }
+    else {
+        const refDict =  
+            { 
+            form: "#form-container", 
+            cancelButtonId: "dnsrecord-add-cancel-button",
+             focusId: "add-dnsrecord-button" };
+        if(req.selectForm){
+            refDict.focusId = "select-record-type"
+        }
+
+       return refDict;
+    }
+
+}
+
 
 // Replace with a fresh server copy, removes client-side edits and errors
 const refreshForm = (selector, url) =>
