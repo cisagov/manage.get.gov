@@ -61,6 +61,7 @@
                 id="delete-submit-{{ record_id }}"
                 class="display-none"
                 aria-hidden="true"
+                tabindex="-1"
             >
                 {% csrf_token %}
                 <input type="hidden" name="id" value="{{ record_id }}">
