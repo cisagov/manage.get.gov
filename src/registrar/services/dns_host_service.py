@@ -129,7 +129,7 @@ class DnsHostService:
     def create_and_save_account(self, account_name) -> str:
 
         account_data = self.dns_vendor_service.create_cf_account(account_name)
-        logger.info(f"Successfully created {account_name} at vendor")
+        logger.info(f"Successfully created account {account_name} at vendor")
         x_account_id = account_data["result"]["id"]
 
         self._configure_new_account_dns_settings(x_account_id, account_name)
