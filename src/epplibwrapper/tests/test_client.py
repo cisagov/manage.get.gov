@@ -1,16 +1,23 @@
+"""Tests for the EPPLibWrapper client: connection creation/login and the
+send/retry logic layered on top of the connection pool.
+
+The pool's own borrow/return/discard mechanics are covered in test_pool.py.
+The pool maintenance heartbeat is intentionally not tested yet.
+"""
+
 import datetime
 from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from api.tests.common import less_console_noise_decorator
 from gevent.exceptions import ConcurrentObjectUseError
 from epplibwrapper.client import EPPLibWrapper
-from epplibwrapper.errors import RegistryError, LoginError
+from epplibwrapper.errors import ErrorCode, RegistryError, LoginError
 import logging
 
 try:
-    from epplib.exceptions import TransportError
+    from epplib.exceptions import TransportError, ParsingError
     from epplib.responses import Result
     from epplib.transport import SocketTransport
     from epplib import commands
@@ -21,318 +28,321 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+@override_settings(
+    EPP_CONNECTION_POOL_SIZE=1,
+    EPP_POOL_BORROW_TIMEOUT=1,
+    EPP_POOL_IDLE_PING_SECONDS=60,
+    # TODO - COME Back here when heartbeat code is merged in!
+    EPP_POOL_HEARTBEAT_INTERVAL=0,
+)
 class TestClient(TestCase):
     """Test the EPPlibwrapper client"""
 
-    @less_console_noise_decorator
     def fake_result(self, code, msg):
         """Helper function to create a fake Result object"""
         return Result(code=code, msg=msg, res_data=[], cl_tr_id="cl_tr_id", sv_tr_id="sv_tr_id")
 
+    def fake_success_result(self):
+        return self.fake_result(1000, "Command completed successfully")
+
+    def fake_command(self):
+        """A real epplib command to send through the wrapper."""
+        return commands.InfoDomain(name="test.gov")
+
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
-    def test_initialize_client_success(self, mock_client):
-        """Test when the initialize_client is successful"""
-        # Mock the Client instance and its methods
-        mock_connect = MagicMock()
-        # Create a mock Result instance
-        mock_result = MagicMock(spec=Result)
-        mock_result.code = 200
-        mock_result.msg = "Success"
-        mock_result.res_data = ["data1", "data2"]
-        mock_result.cl_tr_id = "client_id"
-        mock_result.sv_tr_id = "server_id"
-        mock_send = MagicMock(return_value=mock_result)
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.send = mock_send
+    def test_pool_created_with_successful_connection(self, mock_client):
+        """On init the wrapper builds the pool, which connects and logs in one client."""
+        mock_client.return_value.send = MagicMock(return_value=self.fake_success_result())
 
-        # Create EPPLibWrapper instance and initialize client
         wrapper = EPPLibWrapper()
 
-        # Assert that connect method is called once
-        mock_connect.assert_called_once()
-        # Assert that _client is not None after initialization
-        self.assertIsNotNone(wrapper._client)
+        mock_client.return_value.connect.assert_called_once()
+        # the one send was the login command prepared in __init__
+        mock_client.return_value.send.assert_called_once_with(wrapper._login)
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
-    def test_initialize_client_transport_error(self, mock_client):
-        """Test when the send(login) step of initialize_client raises a TransportError."""
-        # Mock the Client instance and its methods
-        mock_connect = MagicMock()
-        mock_send = MagicMock(side_effect=TransportError("Transport error"))
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.send = mock_send
+    def test_wrapper_initializes_even_when_registry_is_down(self, mock_client):
+        """A connection failure at startup leaves the pool empty but does not raise."""
+        mock_client.return_value.connect = MagicMock(side_effect=TransportError("registry unreachable"))
 
-        with self.assertRaises(RegistryError):
-            # Create EPPLibWrapper instance and initialize client
-            # if functioning as expected, initial __init__ should except
-            # and log any Exception raised
-            wrapper = EPPLibWrapper()
-            # so call _initialize_client a second time directly to test
-            # the raised exception
-            wrapper._initialize_client()
+        wrapper = EPPLibWrapper()
+
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 0, "idle": 0, "in use": 0})
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
-    def test_initialize_client_login_error(self, mock_client):
-        """Test when the send(login) step of initialize_client returns (2400) comamnd failed code."""
-        # Mock the Client instance and its methods
-        mock_connect = MagicMock()
-        # Create a mock Result instance
-        mock_result = MagicMock(spec=Result)
-        mock_result.code = 2400
-        mock_result.msg = "Login failed"
-        mock_result.res_data = ["data1", "data2"]
-        mock_result.cl_tr_id = "client_id"
-        mock_result.sv_tr_id = "server_id"
-        mock_send = MagicMock(return_value=mock_result)
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.send = mock_send
+    def test_create_connection_transport_error(self, mock_client):
+        """A TransportError while connecting becomes a RegistryError with the transport code."""
+        mock_client.return_value.connect = MagicMock(side_effect=TransportError("registry unreachable"))
+        wrapper = EPPLibWrapper()
+
+        with self.assertRaises(RegistryError)as command_response:
+            wrapper._create_connection()
+        self.assertEqual(command_response.exception.code, ErrorCode.TRANSPORT_ERROR)
+        self.assertTrue(command_response.exception.is_transport_error())
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.Client")
+    def test_create_connection_login_error(self, mock_client):
+        """A failure code (2400) in the login response raises LoginError and closes the client."""
+        mock_client.return_value.send = MagicMock(return_value=self.fake_result(2400, "Login failed"))
+        wrapper = EPPLibWrapper()
 
         with self.assertRaises(LoginError):
-            # Create EPPLibWrapper instance and initialize client
-            # if functioning as expected, initial __init__ should except
-            # and log any Exception raised
-            wrapper = EPPLibWrapper()
-            # so call _initialize_client a second time directly to test
-            # the raised exception
-            wrapper._initialize_client()
+            wrapper._create_connection()
+        # closed once for the failed login attempt at init, once for the direct call above
+        self.assertEqual(mock_client.return_value.close.call_count, 2)
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
-    def test_initialize_client_unknown_exception(self, mock_client):
-        """Test when the send(login) step of initialize_client raises an unexpected Exception."""
-        # Mock the Client instance and its methods
-        mock_connect = MagicMock()
-        mock_send = MagicMock(side_effect=Exception("Unknown exception"))
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.send = mock_send
-
-        with self.assertRaises(RegistryError):
-            # Create EPPLibWrapper instance and initialize client
-            # if functioning as expected, initial __init__ should except
-            # and log any Exception raised
-            wrapper = EPPLibWrapper()
-            # so call _initialize_client a second time directly to test
-            # the raised exception
-            wrapper._initialize_client()
-
-    @less_console_noise_decorator
-    @patch("epplibwrapper.client.Client")
-    def test_initialize_client_fails_recovers_with_send_command(self, mock_client):
-        """Test when the initialize_client fails on the connect() step. And then a subsequent
-        call to send() should recover and re-initialize the client and properly return
-        the successful send command.
-        Flow:
-        Initialization step fails at app init
-        Send command fails (with 2400 code) prompting retry
-        Client closes and re-initializes, and command is sent successfully"""
-        # Mock the Client instance and its methods
-        # close() should return successfully
-        mock_close = MagicMock()
-        mock_client.return_value.close = mock_close
-        # Create success and failure results
-        command_success_result = self.fake_result(1000, "Command completed successfully")
-        command_failure_result = self.fake_result(2400, "Command failed")
-        # side_effect for the connect() calls
-        # first connect() should raise an Exception
-        # subsequent connect() calls should return success
-        connect_call_count = 0
-
-        def connect_side_effect(*args, **kwargs):
-            nonlocal connect_call_count
-            connect_call_count += 1
-            if connect_call_count == 1:
-                raise Exception("Connection failed")
-            else:
-                return command_success_result
-
-        mock_connect = MagicMock(side_effect=connect_side_effect)
-        mock_client.return_value.connect = mock_connect
-        # side_effect for the send() calls
-        # first send will be the send("InfoDomainCommand") and should fail
-        # subsequend send() calls should return success
-        send_call_count = 0
-
-        def send_side_effect(*args, **kwargs):
-            nonlocal send_call_count
-            send_call_count += 1
-            if send_call_count == 1:
-                return command_failure_result
-            else:
-                return command_success_result
-
-        mock_send = MagicMock(side_effect=send_side_effect)
-        mock_client.return_value.send = mock_send
-        # Create EPPLibWrapper instance and call send command
+    def test_create_connection_login_error_when_close_fails(self, mock_client):
+        """A close() failure after a failed login does not mask the LoginError."""
+        mock_client.return_value.send = MagicMock(return_value=self.fake_result(2400, "Login failed"))
+        mock_client.return_value.close = MagicMock(side_effect=Exception("close failed"))
         wrapper = EPPLibWrapper()
-        wrapper.send("InfoDomainCommand", cleaned=True)
-        # two connect() calls should be made, the initial failed connect()
-        # and the successful connect() during retry()
-        self.assertEqual(mock_connect.call_count, 2)
-        # close() should only be called once, during retry()
-        mock_close.assert_called_once()
-        # send called 4 times: failed send("InfoDomainCommand"), passed send(logout),
-        # passed send(login), passed send("InfoDomainCommand")
-        self.assertEqual(mock_send.call_count, 4)
+
+        with self.assertRaises(LoginError):
+            wrapper._create_connection()
 
     @less_console_noise_decorator
+    @patch("epplibwrapper.client.Client")
+    def test_create_connection_unknown_error(self, mock_client):
+        """An unexpected exception while connecting becomes a codeless RegistryError."""
+        mock_client.return_value.connect = MagicMock(side_effect=Exception("unknown error"))
+        wrapper = EPPLibWrapper()
+
+        with self.assertRaises(RegistryError)as command_response:
+            wrapper._create_connection()
+        self.assertIsNone(command_response.exception.code)
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.Client")
+    def test_send_success(self, mock_client):
+        """A successful command returns the registry's response."""
+        command_success = self.fake_success_result()
+
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            return command_success
+
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
+
+        result = wrapper.send(self.fake_command())
+
+        self.assertIs(result, command_success)
+        # 2 because 1 call is made to login at init & 1 call for the fake command
+        self.assertEqual(mock_client.return_value.send.call_count, 2)
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.Client")
+    def test_send_command_rejected_not_retried(self, mock_client):
+        """A non-retryable failure code (2303) raises immediately without a retry,
+        and the connection goes back to the pool."""
+
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            return self.fake_result(2303, "Object does not exist")
+
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
+
+        with self.assertRaises(RegistryError)as command_response:
+            wrapper.send(self.fake_command())
+
+        self.assertEqual(command_response.exception.code, 2303)
+        # login at init + one (unretried) command attempt
+        self.assertEqual(mock_client.return_value.send.call_count, 2)
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep", MagicMock())
     @patch("epplibwrapper.client.Client")
     def test_send_command_failed_retries_and_fails_again(self, mock_client):
-        """Test when the send("InfoDomainCommand) call fails with a 2400, prompting a retry
-        and the subsequent send("InfoDomainCommand) call also fails with a 2400, raise
-        a RegistryError
-        Flow:
-        Initialization succeeds
-        Send command fails (with 2400 code) prompting retry
-        Client closes and re-initializes, and command fails again with 2400"""
-        # Mock the Client instance and its methods
-        # connect() and close() should succeed throughout
-        mock_connect = MagicMock()
-        mock_close = MagicMock()
-        # Create a mock Result instance
-        send_command_success_result = self.fake_result(1000, "Command completed successfully")
-        send_command_failure_result = self.fake_result(2400, "Command failed")
+        """A retryable failure code (2400) is retried up to 4 attempts, then raised.
+        The response did arrive, so the same pooled connection is reused throughout."""
 
-        # side_effect for send command, passes for all other sends (login, logout), but
-        # fails for send("InfoDomainCommand")
-        def side_effect(*args, **kwargs):
-            if args[0] == "InfoDomainCommand":
-                return send_command_failure_result
-            else:
-                return send_command_success_result
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            return self.fake_result(2400, "Command failed")
 
-        mock_send = MagicMock(side_effect=side_effect)
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.close = mock_close
-        mock_client.return_value.send = mock_send
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
 
-        with self.assertRaises(RegistryError):
-            # Create EPPLibWrapper instance and initialize client
-            wrapper = EPPLibWrapper()
-            # call send, which should throw a RegistryError (after retry)
-            wrapper.send("InfoDomainCommand", cleaned=True)
-        # connect() should be called twice, once during initialization, second time
-        # during retry
-        self.assertEqual(mock_connect.call_count, 2)
-        # close() is called once during retry
-        mock_close.assert_called_once()
-        # send() is called 5 times: send(login), send(command) fails, send(logout)
-        # send(login), send(command)
-        self.assertEqual(mock_send.call_count, 5)
+        with self.assertRaises(RegistryError)as command_response:
+            wrapper.send(self.fake_command())
+
+        self.assertEqual(command_response.exception.code, 2400)
+        # login at init + 4 command attempts, all over the same connection
+        self.assertEqual(mock_client.return_value.send.call_count, 5)
+        mock_client.return_value.connect.assert_called_once()
+        mock_client.return_value.close.assert_not_called()
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    @patch("epplibwrapper.client.Client")
+    def test_send_not_logged_in_prompts_successful_retry(self, mock_client):
+        """A 2002 'Registrar is not logged in.' response is retried and can succeed."""
+        command_success = self.fake_success_result()
+        command_calls = {"count": 0}
+
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            command_calls["count"] += 1
+            if command_calls["count"] == 1:
+                return self.fake_result(2002, "Registrar is not logged in.")
+            return command_success
+
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
+
+        result = wrapper.send(self.fake_command())
+
+        self.assertIs(result, command_success)
+        # login at init + failed command + retried command
+        self.assertEqual(mock_client.return_value.send.call_count, 3)
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    @patch("epplibwrapper.client.Client")
+    def test_send_transport_error_reconnects_and_retries_successfully(self, mock_client):
+        """A TransportError mid-command discards the connection; the retry gets a
+        freshly created (connected + logged in) connection and succeeds."""
+        command_success = self.fake_success_result()
+        command_calls = {"count": 0}
+
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            command_calls["count"] += 1
+            if command_calls["count"] == 1:
+                raise TransportError("connection dropped")
+            return command_success
+
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
+
+        result = wrapper.send(self.fake_command())
+
+        self.assertIs(result, command_success)
+        # initial connection + the replacement built on retry
+        self.assertEqual(mock_client.return_value.connect.call_count, 2)
+        # the dead connection was closed exactly once
+        mock_client.return_value.close.assert_called_once()
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    @patch("epplibwrapper.client.Client")
+    def test_send_transport_error_exhausts_all_retries(self, mock_client):
+        """If every attempt hits a TransportError, all 4 attempts run and the error raises."""
+
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            raise TransportError("connection dropped")
+
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
+
+        with self.assertRaises(RegistryError)as command_response:
+            wrapper.send(self.fake_command())
+
+        self.assertEqual(command_response.exception.code, ErrorCode.TRANSPORT_ERROR)
+        # initial connection + one replacement per retry attempt
+        self.assertEqual(mock_client.return_value.connect.call_count, 4)
+        # every dead connection was discarded
+        self.assertEqual(mock_client.return_value.close.call_count, 4)
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 0, "idle": 0, "in use": 0})
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    @patch("epplibwrapper.client.Client")
+    def test_send_reconnect_failure_is_retried(self, mock_client):
+        """If building the replacement connection itself fails, that failure is also
+        retried, and a later successful reconnect completes the command."""
+        command_success = self.fake_success_result()
+        connect_calls = {"count": 0}
+        command_calls = {"count": 0}
+
+        def connect_side_effect():
+            connect_calls["count"] += 1
+            if connect_calls["count"] == 2:
+                raise TransportError("registry unreachable")
+
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            command_calls["count"] += 1
+            if command_calls["count"] == 1:
+                raise TransportError("connection dropped")
+            return command_success
+
+        mock_client.return_value.connect = MagicMock(side_effect=connect_side_effect)
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
+        wrapper = EPPLibWrapper()
+
+        result = wrapper.send(self.fake_command())
+
+        self.assertIs(result, command_success)
+        # init connect + failed reconnect + successful reconnect
+        self.assertEqual(mock_client.return_value.connect.call_count, 3)
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    @patch("epplibwrapper.client.Client")
+    def test_send_pool_exhausted_raises_registry_error(self, mock_client):
+        """When every pooled connection stays checked out, send raises a RegistryError."""
+        mock_client.return_value.send = MagicMock(return_value=self.fake_success_result())
+        wrapper = EPPLibWrapper()
+
+        # hold the pool's only connection so send() cannot borrow one
+        held = wrapper._pool._borrow()
+        wrapper._pool.borrow_timeout = 0.01
+        try:
+            with self.assertRaises(RegistryError)as command_response:
+                wrapper.send(self.fake_command())
+        finally:
+            wrapper._pool._return_connection(held)
+
+        self.assertIn("all pooled EPP connections are busy", str(command_response.exception))
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
-    def test_send_command_failure_prompts_successful_retry(self, mock_client):
-        """Test when the send("InfoDomainCommand) call fails with a 2400, prompting a retry
-        and the subsequent send("InfoDomainCommand) call succeeds
-        Flow:
-        Initialization succeeds
-        Send command fails (with 2400 code) prompting retry
-        Client closes and re-initializes, and command succeeds"""
-        # Mock the Client instance and its methods
-        # connect() and close() should succeed throughout
-        mock_connect = MagicMock()
-        mock_close = MagicMock()
-        # create success and failure result messages
-        send_command_success_result = self.fake_result(1000, "Command completed successfully")
-        send_command_failure_result = self.fake_result(2400, "Command failed")
-        # side_effect for send call, initial send(login) succeeds during initialization, next send(command)
-        # fails, subsequent sends (logout, login, command) all succeed
-        send_call_count = 0
+    def test_send_parsing_error_raises_registry_error(self, mock_client):
+        """A ParsingError is reported as a syntax RegistryError and the connection,
+        presumed healthy, is returned to the pool."""
 
-        def side_effect(*args, **kwargs):
-            nonlocal send_call_count
-            send_call_count += 1
-            if send_call_count == 2:
-                return send_command_failure_result
-            else:
-                return send_command_success_result
+        def send_side_effect(command):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            raise ParsingError("malformed XML")
 
-        mock_send = MagicMock(side_effect=side_effect)
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.close = mock_close
-        mock_client.return_value.send = mock_send
-        # Create EPPLibWrapper instance and initialize client
+        mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
-        wrapper.send("InfoDomainCommand", cleaned=True)
-        # connect() is called twice, once during initialization of app, once during retry
-        self.assertEqual(mock_connect.call_count, 2)
-        # close() is called once, during retry
-        mock_close.assert_called_once()
-        # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
-        self.assertEqual(mock_send.call_count, 5)
 
-    @less_console_noise_decorator
-    @patch("epplibwrapper.client.Client")
-    @patch("epplibwrapper.client.logger")
-    def test_send_command_2002_failure_prompts_successful_retry(self, mock_logger, mock_client):
-        """Test when the send("InfoDomainCommand) call fails with a 2002, prompting a retry
-        and the subsequent send("InfoDomainCommand) call succeeds
-        Flow:
-        Initialization succeeds
-        Send command fails (with 2002 code) prompting retry
-        Client closes and re-initializes, and command succeeds"""
-        # Mock the Client instance and its methods
-        # connect() and close() should succeed throughout
-        mock_connect = MagicMock()
-        mock_close = MagicMock()
-        # create success and failure result messages
-        send_command_success_result = self.fake_result(1000, "Command completed successfully")
-        send_command_failure_result = self.fake_result(2002, "Registrar is not logged in.")
-        # side_effect for send call, initial send(login) succeeds during initialization, next send(command)
-        # fails, subsequent sends (logout, login, command) all succeed
-        send_call_count = 0
+        with self.assertRaises(RegistryError) as command_response:
+            wrapper._send(self.fake_command())
 
-        # Create a mock command
-        mock_command = MagicMock()
-        mock_command.__class__.__name__ = "InfoDomainCommand"
+        self.assertIn("syntax error", str(command_response.exception))
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
 
-        def side_effect(*args, **kwargs):
-            nonlocal send_call_count
-            send_call_count += 1
-            if send_call_count == 2:
-                return send_command_failure_result
-            else:
-                return send_command_success_result
-
-        mock_send = MagicMock(side_effect=side_effect)
-        mock_client.return_value.connect = mock_connect
-        mock_client.return_value.close = mock_close
-        mock_client.return_value.send = mock_send
-        # Create EPPLibWrapper instance and initialize client
-        wrapper = EPPLibWrapper()
-        wrapper.send(mock_command, cleaned=True)
-        # connect() is called twice, once during initialization of app, once during retry
-        self.assertEqual(mock_connect.call_count, 2)
-        # close() is called once, during retry
-        mock_close.assert_called_once()
-        # send() is called 5 times: send(login), send(command) fail, send(logout), send(login), send(command)
-        self.assertEqual(mock_send.call_count, 5)
-        # Assertion proper logging; note that the
-        mock_logger.info.assert_any_call(
-            "InfoDomainCommand failed and will be retried Error: Registrar is not logged in."
-        )
-        mock_logger.info.assert_any_call("cltrid is cl_tr_id svtrid is sv_tr_id")
-
-    @less_console_noise_decorator
-    def fake_failure_send_concurrent_threads(self, command=None, cleaned=None):
+    def fake_failure_send_concurrent_threads(self, command=None):
         """
         Raises a ConcurrentObjectUseError, which gevent throws when accessing
-        the same thread from two different locations.
+        the same socket from two different threads (greenlets).
         """
-        # This error is thrown when two threads are being used concurrently
-        raise ConcurrentObjectUseError("This socket is already used by another greenlet")
+        raise ConcurrentObjectUseError("This socket is already used by another thread/greenlet")
 
-    def do_nothing(self, command=None):
-        """
-        A placeholder method that performs no action.
-        """
-        pass  # noqa
-
-    @less_console_noise_decorator
-    def fake_success_send(self, command=None, cleaned=None):
+    def fake_success_send(self, command=None):
         """
         Simulates receiving a success response from EPP.
         """
@@ -347,8 +357,7 @@ class TestClient(TestCase):
         )
         return mock
 
-    @less_console_noise_decorator
-    def fake_info_domain_received(self, command=None, cleaned=None):
+    def fake_info_domain_received(self, command=None):
         """
         Simulates receiving a response by reading from a predefined XML file.
         """
@@ -356,7 +365,6 @@ class TestClient(TestCase):
         xml = (location).read_bytes()
         return xml
 
-    @less_console_noise_decorator
     def get_fake_epp_result(self):
         """Mimics a return from EPP by returning a dictionary in the same format"""
         result = {
@@ -396,39 +404,34 @@ class TestClient(TestCase):
         return result
 
     @less_console_noise_decorator
-    def test_send_command_close_failure_recovers(self):
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    def test_send_unknown_error_retries_then_recovers(self):
         """
         Validates the resilience of the connection handling mechanism
-        during command execution on retry.
+        during command execution, using a real epplib Client.
 
         Scenario:
-        - Initialization of the connection is successful.
-        - An attempt to send a command fails with a specific error code (ConcurrentObjectUseError)
-        - The client attempts to retry.
-        - Subsequently, the client re-initializes the connection.
-        - A retry of the command execution post-reinitialization succeeds.
+        - Initialization of the pooled connection is successful.
+        - An attempt to send a command fails with a ConcurrentObjectUseError.
+        - The error is not a transport error, so the connection returns to the pool
+          and all retries exhaust with a RegistryError.
+        - A subsequent send over the same pooled connection succeeds.
         """
         expected_result = self.get_fake_epp_result()
-        wrapper = None
-        # Trigger a retry
-        # Do nothing on connect, as we aren't testing it and want to connect while
-        # mimicking the rest of the client as closely as possible (which is not entirely possible with MagicMock)
-        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+        tested_command = self.fake_command()
+        # Do nothing on _connect: a real connect/login needs a live registry.
+        # The real Client + SocketTransport objects are still built and pooled.
+        with patch.object(EPPLibWrapper, "_connect"):
             with patch.object(SocketTransport, "send", self.fake_failure_send_concurrent_threads):
                 wrapper = EPPLibWrapper()
-                tested_command = commands.InfoDomain(name="test.gov")
-                try:
-                    wrapper.send(tested_command, cleaned=True)
-                except RegistryError as err:
-                    expected_error = "InfoDomain failed to execute due to an unknown error."
-                    self.assertEqual(err.args[0], expected_error)
-                else:
-                    self.fail("Registry error was not thrown")
+                with self.assertRaises(RegistryError)as command_response:
+                    wrapper.send(tested_command)
+                expected_error = "InfoDomain failed to execute due to an unknown error."
+                self.assertEqual(command_response.exception.args[0], expected_error)
 
-        # After a retry, try sending again to see if the connection recovers
-        with patch.object(EPPLibWrapper, "_connect", self.do_nothing):
+            # the connection survived (non-transport error) - sending again recovers
             with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
                 SocketTransport, "receive", self.fake_info_domain_received
             ):
-                result = wrapper.send(tested_command, cleaned=True)
+                result = wrapper.send(tested_command)
                 self.assertEqual(expected_result, result.__dict__)

@@ -19,25 +19,19 @@ class PoolExhausted(Exception):
     
     Translates into a RegistryError. Investigate this one when seen.
     """
-
+##TODO- remove retire!
 
 class PooledConnection:
     """One logged-in epplib client plus the bookkeeping the pool needs.
 
-    last_used is a timestamp (monotonic--> immune to wall-clock changes).
-    It is refreshed on checkin, so "idle time" always means time since 
-    the connection last did real work. 
-    Heart beat succeeding doesn't change this
-
     last_ping  is a timestamp (monotonic--> immune to wall-clock changes).
-    It is refreshed on checkin, AND on every successful heartbeat ping 
+    It is refreshed on checkin, AND on every successful heartbeat ping
     so now- last_ping represents how long it's been since the connection
-    proved it was alive. 
+    proved it was alive.
     """
 
     def __init__(self, client):
         self.client = client
-        self.last_used = time.monotonic()
         self.last_ping= time.monotonic()
 
 class EPPConnectionPool:
@@ -48,19 +42,17 @@ class EPPConnectionPool:
         borrow_timeout,
         idle_ping_seconds,
         heartbeat_interval,
-        idle_recycle_seconds,
     ):
         self._connection_factory = connection_factory
         self.size = size
         self.borrow_timeout = borrow_timeout
         self.idle_ping_seconds = idle_ping_seconds
         self.heartbeat_interval = heartbeat_interval
-        self.idle_recycle_seconds = idle_recycle_seconds
-        
+
         # LIFO stack of idle connections: the most recently returned
         # connection is handed out first. The oldest connections
-        # settle at the bottom and eventually age past idle_recycle_seconds,
-        # where the heartbeat retires them.
+        # settle at the bottom and eventually age past idle_ping_seconds,
+        # where the heartbeat pings them.
         self._idle: queue.LifoQueue = queue.LifoQueue(maxsize=size)
 
         #counts connections that exist, including ones in use (checked out) 
@@ -80,7 +72,7 @@ class EPPConnectionPool:
         # Under gevent it runs as a greenlet, under gthread it is a real OS thread. 
         # No changes needed. Set to None if you don't want a heartbeat thread.
         
-        if heartbeat_interval or idle_recycle_seconds:
+        if heartbeat_interval:
             # While load testing, having a heartbeat thread proved to reduce EPP connection errors
             # However, the pool can function without it. 
             self._maintenance_thread = threading.Thread(
@@ -234,68 +226,52 @@ class EPPConnectionPool:
         Forever: sleep, then run one maintenance pass over idle connections.
         Any unexpected error is logged and the loop continues.
         """
-        use_heartbeat = False
-        loop_interval= self.idle_recycle_seconds
-
-        if self.heartbeat_interval is not None and self.heartbeat_interval > 0:
-            use_heartbeat = True
-            loop_interval = self.heartbeat_interval
-
-        while loop_interval>0:
-            time.sleep(loop_interval)
+        while self.heartbeat_interval > 0:
+            time.sleep(self.heartbeat_interval)
             try:
-                self._maintain_idle_connections(use_heartbeat=use_heartbeat, retire_old_connections=self.idle_recycle_seconds>0)
+                self._maintain_idle_connections()
             except Exception:
                 logger.warning("EPP pool heartbeat pass failed. Once is fine, but investigate if you see multiple back to back. Stats: %s", self.stats(),exc_info=True)
-    
-    def _maintain_idle_connections(self, use_heartbeat: bool, retire_old_connections:bool):
+
+    def _maintain_idle_connections(self):
         """
-        Ping each idle connection to see if it is still alive.
-        If a connection has been idle for more than idle_max_seconds, retire it.
+        Ping each idle connection that hasn't proven itself alive recently.
+        Return the healthy ones to the pool, discard the dead ones.
         """
 
         # snapshot holds the idle queue at this point in time
+        # fill snapshot with all IDLE connections.
         snapshot = []
-        if retire_old_connections or use_heartbeat:
-            # fill snapshot with all IDLE connections.
-            while True:
-                try:
-                    # Pop items from Q into snapshot
-                    conn = self._idle.get_nowait()
-                    snapshot.append(conn)
-                except queue.Empty:
-                    break
-            
-            #for each conn. 1.) return it to the Q if recently used
-            # 2.) if it's been idle too long ping it & return it to Q if it's healthy,
-            # 3.) If it's been idle too long the ping fails, discard it.
-            # 3.) if it's dead just toss (retire) the connection.
-            
-            now = time.monotonic()
-            
-            for conn in snapshot:
-                idle_time = now - conn.last_used
-                last_ping_idle_time = now - conn.last_ping
+        while True:
+            try:
+                # Pop items from Q into snapshot
+                conn = self._idle.get_nowait()
+                snapshot.append(conn)
+            except queue.Empty:
+                break
 
-                # if the conn. has been idle too long
-                if retire_old_connections and idle_time > self.idle_recycle_seconds:
-                    logger.info("Retiring long-idle EPP connection. %s", self.stats())
-                    self._retire(conn=conn)
+        # for each conn. 1.) return it to the Q if it recently proved it was alive
+        # 2.) if it's been unpinged too long ping it & return it to Q if it's healthy,
+        # 3.) if the ping fails, discard it.
 
-                # if the idle time is greater than the ping threshold, 
-                # ping to see if it's still alive
-                elif use_heartbeat and last_ping_idle_time > self.idle_ping_seconds :
-                    logger.debug("Discarding stale connection during heartbeat. %s", self.stats())
-                    is_healthy = self._is_healthy(conn)
-                    if is_healthy:
-                        self._return_health_connection(conn)
-                    else:
-                        logger.info("Heartbeat replaced a dead idle EPP connection. %s", self.stats())
-                        self._discard(conn)
+        now = time.monotonic()
+
+        for conn in snapshot:
+            last_ping_idle_time = now - conn.last_ping
+
+            # if the time since the last ping is greater than the ping threshold,
+            # ping to see if it's still alive
+            if last_ping_idle_time > self.idle_ping_seconds:
+                is_healthy = self._is_healthy(conn)
+                if is_healthy:
+                    self._return_connection(conn)
                 else:
-                    # recently used, no need to ping it
-                    self._put_back(conn)
-                
+                    logger.info("Heartbeat replaced a dead idle EPP connection. %s", self.stats())
+                    self._discard(conn)
+            else:
+                # recently proved alive, no need to ping it
+                self._put_back(conn)
+
         self._replenish()
 
     def _replenish(self):
@@ -319,14 +295,8 @@ class EPPConnectionPool:
             else:
                 return False
     def _return_connection(self, conn: PooledConnection):
-        """Return after real command use - counts as activity on both clocks."""
-        now = time.monotonic()
-        conn.last_used = now
-        conn.last_ping = now
-        self._put_back(conn)
-
-    def _return_health_connection(self, conn: PooledConnection):
-        """Return after a health-check ping - must NOT extend last_used."""
+        """Return after the connection proved itself alive (real command or ping)."""
+        conn.last_ping = time.monotonic()
         self._put_back(conn)
 
     def _put_back(self, conn: PooledConnection):
@@ -350,7 +320,7 @@ class EPPConnectionPool:
 
     def _retire(self, conn: PooledConnection):
         """"Dispose of a HEALTHY connection we simply no longer need.
-        used by the idle connection heartbeat to shrink the pool & close_all
+        used by close_all at worker shutdown
         """
         try:
             conn.client.send(Logout())

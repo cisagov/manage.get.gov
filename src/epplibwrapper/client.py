@@ -58,8 +58,7 @@ class EPPLibWrapper:
                         size=settings.EPP_CONNECTION_POOL_SIZE,
                         borrow_timeout=settings.EPP_POOL_BORROW_TIMEOUT,
                         idle_ping_seconds=settings.EPP_POOL_IDLE_PING_SECONDS,
-                        heartbeat_interval=settings.EPP_POOL_HEARTBEAT_INTERVAL,
-                        idle_recycle_seconds=settings.EPP_POOL_RECYCLE_SECONDS,)
+                        heartbeat_interval=settings.EPP_POOL_HEARTBEAT_INTERVAL,)
 
     def _create_connection(self) -> "Client":
         """Initialize a client, assuming _login defined. Raises errors if initialization fails.

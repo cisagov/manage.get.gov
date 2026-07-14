@@ -12,20 +12,18 @@ is using it) or **in the idle queue**. A request borrows a connection through th
 `connection()` context manager and returns it when done. Idle connections wait in a
 LIFO queue, so the most recently used (warmest) connection is reused first.
 
-A background maintenance thread (`epp-pool-maintenance`) periodically:
-
-- **pings** idle connections with an EPP `Hello` so silently dropped sockets are
-  found and replaced before a request touches them (`EPP_POOL_HEARTBEAT_INTERVAL`), and
-- **retires** connections that have gone too long without doing real command work
-  (`EPP_POOL_RECYCLE_SECONDS`), then replenishes the pool with fresh connections.
+A background maintenance thread (`epp-pool-maintenance`) periodically **pings**
+idle connections with an EPP `Hello` so silently dropped sockets are found and
+replaced before a request touches them (`EPP_POOL_HEARTBEAT_INTERVAL`), then
+replenishes the pool with fresh connections.
 
 Vocabulary used in the code and logs:
 
 - **borrow / return** — a request takes a connection / gives it back.
 - **discard** — the connection is presumed dead: close the socket only (no `Logout`,
   which would just fail and add noise).
-- **retire** — the connection is believed healthy but no longer wanted: graceful
-  `Logout` + close.
+- **retire** — the connection is believed healthy but no longer wanted (worker
+  shutdown): graceful `Logout` + close.--- TODO remove?
 
 ## Reading `stats()`
 
@@ -50,7 +48,6 @@ connections — look at registry availability and login errors.
 |---|---|---|---|
 | `Discarding stale pooled EPP connection; will replace` | INFO | A borrowed connection failed its `Hello` health check; it was closed and the borrow loop got a different/fresh one. The caller never saw the dead connection. Occasional occurrences are normal housekeeping; continuous back-to-back occurrences warrant investigation. | `pool.py` `_borrow` |
 | `Heartbeat replaced a dead idle EPP connection` | INFO | The maintenance pass pinged an idle connection, got no valid answer, and discarded it; the replenish step builds its replacement. | `pool.py` `_maintain_idle_connections` |
-| `Retiring long-idle EPP connection` | INFO | A connection went longer than `EPP_POOL_RECYCLE_SECONDS` without real command traffic and was gracefully logged out and closed; the replenish step rebuilds it. | `pool.py` `_maintain_idle_connections` |
 | `Replenish hit an error & failed to build a connection` | INFO | A top-up connection build (connect + login) failed; the pool defers the rest to the next pass instead of retrying immediately. Persistent occurrences mean the registry is down or refusing logins. | `pool.py` `_replenish` |
 | `EPP pool heartbeat pass failed` | WARNING | The whole maintenance pass hit an unexpected error. The thread survives and runs again next interval. Once is fine; repeated back-to-back occurrences warrant investigation. | `pool.py` `_maintenance_loop` |
 | `failed: all pooled EPP connections are busy` | ERROR | `PoolExhausted`: every connection stayed checked out for the entire `EPP_POOL_BORROW_TIMEOUT` wait. This is a capacity signal, not a socket problem — check the embedded stats (`in use` == `size`, `idle` == 0). | `client.py` `_send` |
@@ -77,8 +74,7 @@ environment:
 | `EPP_CONNECTION_POOL_SIZE` | 1 | Max connections per worker process. Environments that share registry credentials also share the registry's connection allowance, so keep non-production sizes small. |
 | `EPP_POOL_BORROW_TIMEOUT` | 20 | Seconds a request waits for a connection before `PoolExhausted`. |
 | `EPP_POOL_IDLE_PING_SECONDS` | 60 | A connection idle longer than this must answer a `Hello` before reuse. |
-| `EPP_POOL_HEARTBEAT_INTERVAL` | 120 | Cadence of the background maintenance pass. 0 disables pinging. |
-| `EPP_POOL_RECYCLE_SECONDS` | 600 | Max time since a connection's last real (non-`Hello`) command before it is retired and replaced. 0 disables recycling. |
+| `EPP_POOL_HEARTBEAT_INTERVAL` | 60 | Cadence of the background maintenance pass. 0 disables pinging. |
 
 ### Changing environment variables in a running sandbox
 
