@@ -591,7 +591,7 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "We’re experiencing a connection error. Please wait a few minutes and try again. " \
+                        "We’re experiencing a connection error. Please wait a few minutes and try again. "
                         'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
@@ -1222,6 +1222,9 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
+        # messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
+        # return self.form_invalid(formset)
+
         self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
@@ -1313,12 +1316,14 @@ class DomainDNSSECView(DomainFormBaseView):
                 try:
                     self.object.dnssecdata = {}
                 except RegistryError as err:
+                    errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
                     messages.error(
-                        self.request, 
+                        self.request,
                         mark_safe(  # nosec
                             "An unexpected error occurred: Could not remove existing DNSSec record(s). "
-                            'Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.'
+                            "Please try again. If the problem persists, "
+                            '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                         ),
                     )
                 else:

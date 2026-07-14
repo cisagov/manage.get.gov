@@ -747,7 +747,9 @@ class BaseDsdataFormset(forms.BaseFormSet):
                 )
 
                 if ds_tuple in seen_ds_records:
-                    form.add_error("key_tag", "This DS record is already associated with this domain. DS records must be unique.")
+                    form.add_error(
+                        "key_tag", "This DS record is already associated with this domain. DS records must be unique."
+                    )
                     duplicate_found = True  # Track that we found at least one duplicate
 
                 seen_ds_records.add(ds_tuple)

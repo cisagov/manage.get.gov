@@ -2701,11 +2701,11 @@ class TestRegistrantDNSSEC(MockEppLib):
             with self.assertRaises(RegistryError) as err:
                 domain.dnssecdata = self.dnssecExtensionWithDsData
                 self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
-    
+
     @less_console_noise_decorator
     def test_nameserver_bad_data_error_message_success(self):
         """
-        Scenario: The registry returns an unsuccessful response code 
+        Scenario: The registry returns an unsuccessful response code
             When the nameserver setter raises NameserverError BAD_DATA
             Then the error message matches the approved copy
         """

@@ -31,7 +31,7 @@ class TestNameserverError(TestCase):
         ip = "ip val"
         nameserver = "nameserver val"
 
-        expected = f"Enter an IP address in the required format for IPv4 or IPv6."
+        expected = "Enter an IP address in the required format for IPv4 or IPv6."
         nsException = NameserverError(code=nsErrorCodes.INVALID_IP, nameserver=nameserver, ip=ip)
         self.assertEqual(nsException.message, expected)
         self.assertEqual(nsException.code, nsErrorCodes.INVALID_IP)

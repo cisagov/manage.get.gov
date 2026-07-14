@@ -103,7 +103,7 @@ class GenericError(Exception):
 
     _error_mapping = {
         GenericErrorCodes.CANNOT_CONTACT_REGISTRY: mark_safe(  # nosec
-            "We’re experiencing a connection error. Please wait a few minutes "
+            "We're experiencing a connection error. Please wait a few minutes "
             "and try again. If the problem persists, "
             "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> "
             "for assistance."
@@ -205,10 +205,14 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: ("Enter an IP address for this name server. That's required because it uses the domain name."),
+        NameserverErrorCodes.MISSING_IP: (
+            "Enter an IP address for this name server. That's required because it uses the domain name."
+        ),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
         NameserverErrorCodes.INVALID_IP: ("Enter an IP address in the required format for IPv4 or IPv6."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("Domains can have no more than 13 name servers. Remove one before adding another."),
+        NameserverErrorCodes.TOO_MANY_HOSTS: (
+            "Domains can have no more than 13 name servers. Remove one before adding another."
+        ),
         NameserverErrorCodes.MISSING_HOST: ("Enter a name server before entering an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (
@@ -216,7 +220,7 @@ class NameserverError(Exception):
         ),
         NameserverErrorCodes.BAD_DATA: mark_safe(  # nosec
             "There's something wrong with the name server information you provided. "
-            'Please try again. If the problem persists, '
+            "Please try again. If the problem persists, "
             '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
         ),
     }
