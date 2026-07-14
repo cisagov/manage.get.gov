@@ -4,7 +4,6 @@ from faker import Faker
 from django.conf import settings
 from registrar.fixtures.fixtures_domains import DomainFixture
 from registrar.models import Domain
-from registrar.models.dns.dns_record import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.tests.helpers.dns_data_generator import create_dns_record
 
@@ -51,10 +50,9 @@ class DnsRecordFixture(DomainFixture):
                     **{
                         "record_name": dns_zone.name,
                         "record_type": DNSRecordTypes.A,
-                        "record_content":fake.ipv4(),
+                        "record_content": fake.ipv4(),
                         "x_record_id": fake.uuid4().replace("-", ""),
-
-                    }
+                    },
                 )
 
                 # A: WWW subdomain
@@ -63,11 +61,10 @@ class DnsRecordFixture(DomainFixture):
                     **{
                         "record_name": "www",
                         "record_type": DNSRecordTypes.A,
-                        "record_content":fake.ipv4(),
+                        "record_content": fake.ipv4(),
                         "x_record_id": fake.uuid4().replace("-", ""),
-                        "comment":"WWW subdomain",
-
-                    }
+                        "comment": "WWW subdomain",
+                    },
                 )
 
                 # A: API subdomain
@@ -76,11 +73,10 @@ class DnsRecordFixture(DomainFixture):
                     **{
                         "record_name": "api",
                         "record_type": DNSRecordTypes.A,
-                        "record_content":fake.ipv4(),
+                        "record_content": fake.ipv4(),
                         "x_record_id": fake.uuid4().replace("-", ""),
-                        "comment":"api endpoint",
-
-                    }
+                        "comment": "api endpoint",
+                    },
                 )
 
                 # AAAA
@@ -89,9 +85,9 @@ class DnsRecordFixture(DomainFixture):
                     **{
                         "record_name": dns_zone.name,
                         "record_type": DNSRecordTypes.AAAA,
-                        "record_content":fake.ipv6(),
+                        "record_content": fake.ipv6(),
                         "x_record_id": fake.uuid4().replace("-", ""),
-                    }
+                    },
                 )
 
                 # PTR
@@ -100,9 +96,9 @@ class DnsRecordFixture(DomainFixture):
                     **{
                         "record_name": dns_zone.name,
                         "record_type": DNSRecordTypes.PTR,
-                        "record_content":dns_zone.name,
+                        "record_content": dns_zone.name,
                         "x_record_id": fake.uuid4().replace("-", ""),
-                    }
+                    },
                 )
 
                 # CNAME
@@ -113,7 +109,7 @@ class DnsRecordFixture(DomainFixture):
                         "record_type": DNSRecordTypes.CNAME,
                         "record_content": "blog.something.com",
                         "x_record_id": fake.uuid4().replace("-", ""),
-                    }
+                    },
                 )
 
                 # MX: mail routing
@@ -125,7 +121,7 @@ class DnsRecordFixture(DomainFixture):
                         "record_content": f"mail.{dns_zone.name}",
                         "x_record_id": fake.uuid4().replace("-", ""),
                         "comment": "Primary mail server",
-                    }
+                    },
                 )
 
             logger.info("Successfully created DNS records.")

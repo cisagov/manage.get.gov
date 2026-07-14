@@ -3972,9 +3972,8 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
             data={
                 "id": dns_record.id,
                 "delete_record": True,
-            }
+            },
         )
-
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(DnsRecord.objects.filter(id=dns_record.id).count(), 0)
@@ -4004,7 +4003,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
             data={
                 "id": dns_record.id,
                 "delete_record": True,
-            }
+            },
         )
 
         self.assertEqual(response.status_code, 200)

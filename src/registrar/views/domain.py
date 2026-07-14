@@ -1082,7 +1082,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         try:
             allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
             if settings.IS_PRODUCTION and self.object.name not in allowlist:
-                allowed_domains_string = allowlist.join(", ") + "is" if len(allowed_domains_string) == 1 else allowlist.join(", ") + "are"
+                verb = "is" if len(allowlist) == 1 else "are"
+                allowed_domains_string = f"{', '.join(allowlist)} {verb}"
                 raise EnrollmentNotAllowedError(
                     f"Create/update/delete dns record called for domain {self.object.name}. "
                     f"Only {allowed_domains_string} is allowed in production right now."
@@ -1125,12 +1126,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
             messages.success(request, "The DNS record for this domain has been deleted.")
 
             return TemplateResponse(
-            request,
-            "empty_response.html",
-            {"dns_record": None},
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
-            status=200,
-        )
+                request,
+                "empty_response.html",
+                {"dns_record": None},
+                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+                status=200,
+            )
 
         return TemplateResponse(
             request,
@@ -1156,7 +1157,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self._get_domain(request)
 
         self.dns_host_service.delete_dns_record(x_zone_id, record_id)
-
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
