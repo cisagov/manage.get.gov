@@ -2026,7 +2026,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
         # form submission was a successful post, response should be a 302
 
-        self.assertEqual(result.status_code, 302)
+        self.assertEqual(result.status_code, 302, result.text)
         self.assertEqual(
             result["Location"],
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),

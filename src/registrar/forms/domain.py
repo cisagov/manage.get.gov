@@ -8,6 +8,8 @@ from django.core.validators import (
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
+from registrar.forms.utility.fields import MaxLengthFirstEmailField
+from registrar.validations import EMAIL_MAX
 from registrar.models import DomainRequest, FederalAgency
 from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -50,19 +52,14 @@ import re
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
-        max_length=None,
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
     )
 
     def clean(self):
@@ -86,7 +83,7 @@ class DomainNameserverForm(forms.Form):
         label="Name server",
         strip=True,
         required=True,
-        error_messages={"required": "At least two name servers are required."},
+        error_messages={"required": "Domains must have at least two name servers."},
     )
 
     ip = forms.CharField(
@@ -239,7 +236,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
             self._remove_required_error_from_forms(error_message)
 
     def _add_required_error(self, empty_forms, error_message):
-        """Add 'At least two name servers' error to one form and remove duplicates."""
+        """Add 'Domains must have at least two name servers.' error to one form and remove duplicates."""
         error_added = False
 
         for form in empty_forms:
@@ -251,7 +248,10 @@ class BaseNameserverFormset(forms.BaseFormSet):
                 error_added = True
 
     def _remove_required_error_from_forms(self, error_message):
-        """Remove the 'At least two name servers' error from all forms if sufficient nameservers exist."""
+        """
+        Remove the 'Domains must have at least two name servers.' error from all forms
+        if sufficient nameservers exist.
+        """
         for form in self.forms:
             if form.errors.get("server") == [error_message]:
                 form.errors.pop("server")
