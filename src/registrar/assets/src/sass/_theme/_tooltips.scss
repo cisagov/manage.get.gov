@@ -9,10 +9,9 @@
   max-width: units("mobile"); // 320px
   white-space: normal;
   text-align: center;
-}
 
-#extended-logo .usa-tooltip__body {
-  font-weight: 400 !important;
+  font-weight: normal; // reset inherited text styling from where they sit
+  line-height: 1.5;
 }
 
 .usa-table {
