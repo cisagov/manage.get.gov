@@ -1,22 +1,28 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+import os
+import gevent
 from gevent.lock import BoundedSemaphore
+from django.conf import settings
+from .cert import Cert, Key
+from .errors import ErrorCode, LoginError, RegistryError
 
 try:
     from epplib.client import Client
     from epplib import commands
     from epplib.exceptions import TransportError, ParsingError
-    from epplib.transport import SocketTransport
+    from .socket import TimeoutSocketTransport
 except ImportError:
     pass
 
-from django.conf import settings
-
-from .cert import Cert, Key
-from .errors import ErrorCode, LoginError, RegistryError
 
 logger = logging.getLogger(__name__)
+
+
+def _worker_tag():
+    return f"[instance={os.environ.get('CF_INSTANCE_INDEX', 'local')} pid={os.getpid()}]"
+
 
 try:
     # Write cert and key to disk
@@ -64,6 +70,13 @@ class EPPLibWrapper:
         finally:
             self.connection_lock.release()
 
+        # based off what the old connection pool did
+        # Spawn a background greenlet that periodically pings the registry to keep
+        # the connection warm and detect a dead connection.
+        self._heartbeat_greenlet = None
+        if settings.EPP_HEARTBEAT_ENABLED:
+            self._heartbeat_greenlet = gevent.spawn(self._heartbeat_loop)
+
     def _initialize_client(self) -> None:
         """Initialize a client, assuming _login defined. Sets _client to initialized
         client. Raises errors if initialization fails.
@@ -72,7 +85,7 @@ class EPPLibWrapper:
         # note that type: ignore added in several places because linter complains
         # about _client initially being set to None, and None type doesn't match code
         self._client = Client(  # type: ignore
-            SocketTransport(
+            TimeoutSocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
                 key_file=KEY.filename,
@@ -101,9 +114,11 @@ class EPPLibWrapper:
         if response.code >= 2000:  # type: ignore
             self._client.close()  # type: ignore
             raise LoginError(response.msg)  # type: ignore
+        logger.info(f"{_worker_tag()} EPP connection established")
 
     def _disconnect(self) -> None:
         """Close the connection. Sends a logout command and closes the connection."""
+        logger.info(f"{_worker_tag()} EPP connection closing")
         self._send_logout_command()
         self._close_client()
 
@@ -112,14 +127,14 @@ class EPPLibWrapper:
         try:
             self._client.send(commands.Logout())  # type: ignore
         except Exception as err:
-            logger.warning(f"Logout command not sent successfully: {err}")
+            logger.warning(f"{_worker_tag()} Logout command not sent successfully: {err}")
 
     def _close_client(self):
         """Closes an active client connection"""
         try:
             self._client.close()
         except Exception as err:
-            logger.warning(f"Connection to registry was not cleanly closed: {err}")
+            logger.warning(f"{_worker_tag()} Connection to registry was not cleanly closed: {err}")
 
     def _send(self, command):
         """Helper function used by `send`."""
@@ -130,6 +145,7 @@ class EPPLibWrapper:
             # at app initialization
             if self._client is None:
                 self._initialize_client()
+            logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
             response = self._client.send(command)
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
@@ -137,23 +153,50 @@ class EPPLibWrapper:
             raise RegistryError(message) from err
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()} EPP connection lost. {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}")
             raise RegistryError(message) from err
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}")
             raise RegistryError(message) from err
         else:
             if response.code >= 2000:
                 raise RegistryError(response.msg, code=response.code, response=response)
             else:
                 return response
+
+    def _heartbeat(self):
+        """Send a Hello() to the registry to keep the connection warm and detect a
+        dead connection. Logs and attempts to recover if the heartbeat fails."""
+        self.connection_lock.acquire()
+        try:
+            if self._client is None:
+                self._initialize_client()
+            self._client.send(commands.Hello())  # type: ignore
+        except Exception as err:
+            logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat failed: {err}")
+            # Close the stale client so its socket is released, then reconnect so
+            # the next real command has a live client.
+            try:
+                if self._client is not None:
+                    self._close_client()
+                self._initialize_client()
+            except Exception as reconnect_err:
+                logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat reconnect failed: {reconnect_err}")
+        finally:
+            self.connection_lock.release()
+
+    def _heartbeat_loop(self):
+        """Run the heartbeat on a background greenlet on a fixed interval."""
+        while True:
+            gevent.sleep(settings.EPP_HEARTBEAT_INTERVAL)
+            self._heartbeat()
 
     def _retry(self, command):
         """Retry sending a command through EPP by re-initializing the client
@@ -195,6 +238,6 @@ class EPPLibWrapper:
 try:
     # Initialize epplib
     CLIENT = EPPLibWrapper()
-    logger.info("registry client initialized")
+    logger.info(f"{_worker_tag()}: registry client initialized")
 except Exception:
-    logger.warning("Unable to configure epplib. Registrar cannot contact registry.")
+    logger.warning(f"{_worker_tag()}: Unable to configure epplib. Registrar cannot contact registry.")
