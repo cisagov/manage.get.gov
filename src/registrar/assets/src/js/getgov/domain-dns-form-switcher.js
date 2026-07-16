@@ -82,7 +82,7 @@ export class EditFormSwitcher extends DNSFormSwitcher{
     attemptOpen(form){
         this.setTarget(form);
         const currentId = this.getCurrentShowFormId();
-         this.setPending(this.createReq(currentId));
+        this.setPending(this.createReq(currentId));
     }
 
     switchForm(value = this.target){
@@ -132,7 +132,7 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
     }
 
     updateSelectedType(value = this.target){
-        this.container.selectedIndex = value;
+        this.container.querySelector("#id_type").selectedIndex = value;
     }
 
     switchForm(){

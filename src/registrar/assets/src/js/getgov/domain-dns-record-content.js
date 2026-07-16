@@ -181,13 +181,17 @@ const onCancel = (switcher) => {
 };
 
 
-const editButtonEventListener = (switcher)=>{
+const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
     const table = document.querySelector("#dnsrecords-table");
     if(!table) return;
 
     const alpineData = switcher.getAlpineData();
     
     table.addEventListener('click', (e) => {
+            // reset values for the recordType switcher when you click on an edit form
+            recordTypeSwitcher.resetPendingAndTarget();
+            recordTypeSwitcher.setRecordType();
+
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
             if(!editBtn && !commentBtn) return;
@@ -258,7 +262,6 @@ export function initDNSRecordCancelModal(){
 
     const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
     const cancelButton = modalEl?.querySelector("[data-close-modal]");
-    const selector = document.querySelector("#select-record-type select");
 
     confirmButton.addEventListener("click", () => {
 
@@ -295,20 +298,22 @@ export function initDNSRecordCancelModal(){
         editFormSwitcher.attemptOpen(0);
         onCancel(editFormSwitcher);
     })
+    const recordTypeSwitcher = new RecordSelectTypeSwitcher(container);
     // add edit button event listener
-    editButtonEventListener(editFormSwitcher)
-
-    // add switch form type event listener
-    const recordTypeSwitcher = new RecordSelectTypeSwitcher(selector);
-    const selectRecordType = selector?.addEventListener("change", (e)=> {
-        if(!e.isTrusted){
+    editButtonEventListener(editFormSwitcher, recordTypeSwitcher)
+    const selectRecordType = container.addEventListener("change", (e)=> {
+        // grabbing from container to add event listener to select type form, since select type form is a swapped element
+        if(e.target.matches("#id_type")){
+                  if(!e.isTrusted){
             return;
         }
         const index = e.target.selectedIndex;
         recordTypeSwitcher.attemptOpen(index);
         onCancel(recordTypeSwitcher)
+
+         }
     })
-    
+
 }
 
 // Tab-order routing for the DNS records table (#4804).
