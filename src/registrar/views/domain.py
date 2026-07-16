@@ -1733,7 +1733,7 @@ class DomainAddUserView(DomainFormBaseView):
             is_member_of_different_org=member_of_different_org,
         ):
             messages.warning(self.request, "Could not send email notification to existing domain managers.")
-        DomainInvitation.objects.get_or_create(email=email, domain=self.object)
+        DomainInvitation.objects.get_or_create(email__iexact=email, domain=self.object)
         messages.success(self.request, f"{email} has been invited to this domain.")
 
     def _handle_existing_user(

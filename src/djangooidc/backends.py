@@ -77,6 +77,10 @@ class OpenIdConnectBackend(ModelBackend):
     def get_user_by_email(self, UserModel, email):
         """Retrieve user by email."""
         try:
+            # User e-mails are lowercased before storage, so we don't need __iexact here.
+            # Note: We rely on login.gov to manage the uniqueness of email addresses in a 
+            # case-insensitive manner, so we don't need to check for multiple users with
+            # the same email.
             return UserModel.objects.get(email=email)
         except UserModel.DoesNotExist:
             return None

@@ -861,7 +861,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 messages.warning(self.request, "Could not send email notification to existing domain managers.")
 
             # Update existing invitations from CANCELED to INVITED
-            existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
+            existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email__iexact=email)
             existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
 
             # Determine which domains need new invitations

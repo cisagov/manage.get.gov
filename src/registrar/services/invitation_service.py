@@ -417,13 +417,13 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
         if existing_role:
             raise AlreadyDomainManagerError(email)
 
-    invited = UserDomainRole.objects.filter(email=email, domain=domain, status=UserDomainRole.Status.INVITED).exists()
+    invited = UserDomainRole.objects.filter(email__iexact=email, domain=domain, status=UserDomainRole.Status.INVITED).exists()
     if invited:
         raise AlreadyDomainInvitedError(email)
 
     # Check for duplicates in legacy model
     try:
-        invite = DomainInvitation.objects.get(email=email, domain=domain)
+        invite = DomainInvitation.objects.get(email__iexact=email, domain=domain)
         if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
             raise AlreadyDomainManagerError(email)
         elif invite.status == DomainInvitation.DomainInvitationStatus.INVITED:
@@ -593,7 +593,7 @@ def invite_to_domains_bulk(
             # Fetch existing roles in bulk to avoid N+1 queries
             domain_ids = [d.id for d in domain_list]
             existing_roles = {
-                role.domain_id: role for role in UserDomainRole.objects.filter(email=email, domain_id__in=domain_ids)
+                role.domain_id: role for role in UserDomainRole.objects.filter(email__iexact=email, domain_id__in=domain_ids)
             }
 
             for domain in domain_list:
@@ -669,7 +669,7 @@ def get_pending_invitations(user: User):
         email=email, status=UserPortfolioPermission.Status.INVITED
     ).select_related("portfolio", "invited_by")
 
-    domain_roles = UserDomainRole.objects.filter(email=email, status=UserDomainRole.Status.INVITED).select_related(
+    domain_roles = UserDomainRole.objects.filter(email__iexact=email, status=UserDomainRole.Status.INVITED).select_related(
         "domain", "invited_by"
     )
 
@@ -967,12 +967,12 @@ def check_duplicate_domain_invitation(email: str, domain: Domain):
     email = email.lower()
 
     # Check new model
-    if UserDomainRole.objects.filter(email=email, domain=domain).exists():
+    if UserDomainRole.objects.filter(email__iexact=email, domain=domain).exists():
         return True
 
     # Check legacy model for active invitations
     if (
-        DomainInvitation.objects.filter(email=email, domain=domain)
+        DomainInvitation.objects.filter(email__iexact=email, domain=domain)
         .exclude(
             status__in=[
                 DomainInvitation.DomainInvitationStatus.RETRIEVED,
@@ -999,7 +999,7 @@ def check_duplicate_portfolio_invitation(email: str, portfolio: Portfolio):
 
     # Check legacy model for active invitations
     if (
-        PortfolioInvitation.objects.filter(email=email, portfolio=portfolio)
+        PortfolioInvitation.objects.filter(email__iexact=email, portfolio=portfolio)
         .exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
         .exists()
     ):

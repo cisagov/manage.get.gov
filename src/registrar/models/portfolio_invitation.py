@@ -192,7 +192,7 @@ class PortfolioInvitation(TimeStampedModel):
         # get a user with this email address
         User = get_user_model()
         try:
-            user = User.objects.get(email=self.email)
+            user = User.objects.get(email__iexact=self.email)
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
@@ -226,7 +226,7 @@ class PortfolioInvitation(TimeStampedModel):
         if self.status == self.PortfolioInvitationStatus.INVITED:
 
             # Query the user by email
-            users = User.objects.filter(email=email)
+            users = User.objects.filter(email__iexact=email)
 
             if users.count() > 1:
                 # This should never happen, log an error if more than one object is returned
