@@ -1118,8 +1118,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_host_service.client.close()
 
         if delete_record:
-            messages.success(request, "The DNS record for this domain has been deleted.")
-
             return TemplateResponse(
                 request,
                 "empty_response.html",
@@ -1152,6 +1150,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self._get_domain(request)
 
         self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        messages.success(request, "The DNS record for this domain has been deleted.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
