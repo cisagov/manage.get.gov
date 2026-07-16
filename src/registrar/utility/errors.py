@@ -340,7 +340,6 @@ _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
 }
 
-
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
     # Module-level rebuilder so __reduce__ stays picklable by name.
     return cls(code=code, message=explicit_message, upstream_status=upstream_status, context=context)
@@ -349,23 +348,37 @@ def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, con
 class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
-    _error_mapping = {
-        DnsHostingErrorCodes.NOT_FOUND: (
-            "A resource was not found. Please try again. If the problem persists, contact us for assistance."
-        ),
-        DnsHostingErrorCodes.VALIDATION_FAILED: (
-            "The DNS record couldn’t be saved because one of its fields wasn’t valid."
-        ),
-        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
-            "You’re making changes too quickly. Please wait a moment and try again."
-        ),
-        DnsHostingErrorCodes.AUTH_FAILED: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
-    }
+    GENERIC_ERROR_MESSAGE = "An unexpected error occurred: Please try again. If the problem persists, "
+    '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
 
-    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
+    def _build_error_mapping(self, request_id):
+
+        error_msg = DnsHostingError.GENERIC_ERROR_MESSAGE
+
+        if request_id:
+            error_msg = "An unexpected error occurred: Please try again. If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a>'
+            f"for assistance and share this ID {request_id}."
+
+            return {
+            DnsHostingErrorCodes.NOT_FOUND: mark_safe(error_msg),
+            DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(
+                "There’s something wrong with the DNS record information you provided. Please try again."
+                "If the problem persists, "
+                '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
+            ),
+            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
+                "You’re making changes too quickly. Please wait a moment and try again."
+            ),
+            DnsHostingErrorCodes.AUTH_FAILED: mark_safe(error_msg),
+            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: mark_safe(error_msg),
+            DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
+            DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
+        }
+        else:
+            Exception("Must build message with `request_id` using get_message")
+
+    def __init__(self, *, code=None, message=GENERIC_ERROR_MESSAGE, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
         self._explicit_message = message
         self.upstream_status = upstream_status
@@ -374,10 +387,12 @@ class DnsHostingError(Exception):
 
     @property
     def message(self):
+        return self._explicit_message
+
+    def set_message(self, request_id):
         """User-facing text: explicit caller message, else the code-level default."""
-        if self._explicit_message:
-            return self._explicit_message
-        return self._error_mapping.get(self.code) or "DNS operation failed."
+        error_mapping = self._build_error_mapping(request_id)
+        self._explicit_message = error_mapping.get(self.code) or DnsHostingError.GENERIC_ERROR_MESSAGE
 
     @property
     def wire_code(self):

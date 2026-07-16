@@ -38,6 +38,7 @@ from registrar.models import (
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
+from registrar.utility.api_response_helpers import get_request_id
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -837,6 +838,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def __init__(self):
         self.dns_record = None
         self.dns_host_service = DnsHostService()
+        self.request_id = None
 
     def _get_domain(self, request):
         """
@@ -846,6 +848,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
+        self.request_id = get_request_id(request)
 
     def dispatch(self, request, *args, **kwargs):
         self._get_domain(
@@ -1111,6 +1114,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except DnsHostingError as e:
             # temp log to show these values are available. Remove in #4892
             logger.error(f"wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
+            e.set_message(self.request_id)
             messages.error(request, e.message)
         except GenericError:
             return self._error_response(request, status=400)
