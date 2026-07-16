@@ -95,19 +95,13 @@ const refsFor = (req) =>{
         focusId: `dnsrecord-edit-button-${req.recordId}`,
         }
     }
-    else {
-        const refDict =  
-            { 
+    else {     
+        return  { 
             form: "#form-container", 
             cancelButtonId: "dnsrecord-add-cancel-button",
-            focusId: "add-dnsrecord-button" 
+            focusId: req.isRecordType ? "id_type" :"add-dnsrecord-button" 
         };
-        
-        if(req.isRecordType){
-            refDict.focusId = "id_type"
-        }
 
-        return refDict;
     }
 
 }

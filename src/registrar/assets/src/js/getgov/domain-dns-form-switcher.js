@@ -42,12 +42,15 @@ export class EditFormSwitcher extends DNSFormSwitcher{
      * EditFormSwitcher for changes between edit forms, and opening the add record
      * State: inherited from DNSFormSwitcher
      * showFormId: the form number that is set on showFormId on Alpine data will show on the UI
+     * - the value 0 represents that the add Record form is open
+     * - values above 0 represents the edit forms in the table rows
      * Methods:
      * - setTarget: toggle from closing and opening the form if same value, and if different value set the form target;
      * - setShowFormId: update the showFormId in Alpine data
      * - getCurrentShowFormId: get current showFormId from Alpine data
-     * - attemptOpen: sets the pending target in a dict to be used in the refsForm method to get the focusId, buttonId, and something else I forgot
+     * - attemptOpen: sets the pending target in a dict to be used in the refsForm method to get the focusId, buttonId, and form
      * - switchForm: uses setShowFormId to switch showFormId to current target, and reset the target and pending values
+     * - createReq: creates the dict for the refForm method in the domain-dns-record-content.js
      */
 
     setTarget(value){  
@@ -89,6 +92,16 @@ export class EditFormSwitcher extends DNSFormSwitcher{
 }
 
 export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
+    /**
+     * RecordSelectTypeSwitcher for changes between the add record types
+     * State: inherited from DNSFormSwitcher, and isRecordType is differentiate between this and the EditFormSwitcher
+     * Method:
+     * - createReq: creates the dict for the refForm method in the domain-dns-record-content.js
+     * - setRecordType: sets recordType on the Alpine data obj
+     * - attemptOpen: sets the current element to the pending value
+     * - updatedSelectedType: switches the value in the select element to the current target value if none is given
+     * - switchForm: updates recordType in Alpine data, update the select html element to the target, and resets the target and pending
+     */
 
     constructor(container){
         super(container);
