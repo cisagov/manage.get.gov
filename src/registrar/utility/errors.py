@@ -268,7 +268,7 @@ class DsDataError(Exception):
     """
 
     _error_mapping = {
-        DsDataErrorCodes.BAD_DATA: (
+        DsDataErrorCodes.BAD_DATA: mark_safe(
             "There’s something wrong with the DS data you provided. If the problem persists, "
             "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
             " for assistance."
@@ -276,7 +276,7 @@ class DsDataError(Exception):
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
         DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Enter a digest value using only numbers (0-9) and letters (a-f)."),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a number between 0 and 65535."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a key tag number between 0 and 65535."),
         DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Enter a key tag number between 0 and 65535."),
     }
 
