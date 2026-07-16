@@ -100,12 +100,14 @@ const refsFor = (req) =>{
             { 
             form: "#form-container", 
             cancelButtonId: "dnsrecord-add-cancel-button",
-             focusId: "add-dnsrecord-button" };
-        if(req.selectRecordType){
-            refDict.focusId = "select-record-type"
+            focusId: "add-dnsrecord-button" 
+        };
+        
+        if(req.isRecordType){
+            refDict.focusId = "id_type"
         }
 
-       return refDict;
+        return refDict;
     }
 
 }
@@ -140,7 +142,6 @@ function formHasUnsavedChanges(form, isEditForm){
 }
 
 const teardownForm = (switcher) => {
-    console.log(switcher.pending);
     const req = switcher.pending;
     const refs = refsFor(req);
     const form = document.querySelector(refs.form);
@@ -173,7 +174,6 @@ const teardownForm = (switcher) => {
 
 const onCancel = (switcher) => {
         const req = switcher.pending;
-        console.log(req);
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
@@ -233,7 +233,7 @@ export function initDNSRecordCancelModal(){
     
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        switcher.setPending(
+        editFormSwitcher.setPending(
             {
                 type: "add"
             }
@@ -250,12 +250,8 @@ export function initDNSRecordCancelModal(){
         );
         onCancel(editFormSwitcher);
     });
-
-    const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-    const cancelButton = modalEl?.querySelector("[data-close-modal]");
-
-    confirmButton.addEventListener("click", () => {
-        const switcher = ()=>{
+    
+    const getSwitcher = ()=>{
             if(recordTypeSwitcher.pending){
                 return recordTypeSwitcher;
             }
@@ -264,7 +260,18 @@ export function initDNSRecordCancelModal(){
             }
 
             return;
-        }
+    }
+
+    const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+    const cancelButton = modalEl?.querySelector("[data-close-modal]");
+    const selector = document.querySelector("#select-record-type select");
+
+    confirmButton.addEventListener("click", () => {
+
+       const switcher = getSwitcher()
+       if(!switcher){
+        return;
+       }
 
         teardownForm(
             switcher,
@@ -272,8 +279,9 @@ export function initDNSRecordCancelModal(){
         );
 
         const reqForTarget = {
-            type: switcher.target > 0 ? "edit" : "add",
-            recordId: switcher.target
+            type: switcher.target > 0 && !switcher.isRecordType ? "edit" : "add",
+            recordId: switcher.target,
+            isRecordType: switcher.isRecordType
         }
 
         modalEl?.setAttribute("data-opener", refsFor(reqForTarget).focusId);
@@ -283,10 +291,16 @@ export function initDNSRecordCancelModal(){
 
     cancelButton.addEventListener("click", (e) => {
         if(e.isTrusted){
-                switcher.resetPendingAndTarget()
-        }
+                const switcher = getSwitcher()
+                if(switcher.isRecordType){
+                    switcher.updateSelectedType(switcher.pending.recordId);
+                }
+                switcher && switcher.resetPendingAndTarget()
+           }
         }
     );
+
+
     // addRecordButtonEventListener(alpineData, initialState, container)
     const addRecordButton = document.getElementById("add-dnsrecord-button")?.addEventListener("click", ()=> {
         editFormSwitcher.attemptOpen(0);
@@ -296,13 +310,14 @@ export function initDNSRecordCancelModal(){
     editButtonEventListener(editFormSwitcher)
 
     // add switch form type event listener
-    const selector = document.querySelector("#select-record-type select");
     const recordTypeSwitcher = new RecordSelectTypeSwitcher(selector);
     const selectRecordType = selector?.addEventListener("change", (e)=> {
-          console.log(e.target.selectedIndex)
-          recordTypeSwitcher.attemptOpen(e.target.selectedIndex);
-          onCancel(recordTypeSwitcher)
-          selector.selectedIndex = e.target.selectedIndex;
+        if(!e.isTrusted){
+            return;
+        }
+        const index = e.target.selectedIndex;
+        recordTypeSwitcher.attemptOpen(index);
+        onCancel(recordTypeSwitcher)
     })
     
 }

@@ -17,8 +17,8 @@
 <!-- showFormId = which form is open (null = none, 0 = Add, record-id = edit row).
      x-effect resets recordType whenever the Add form closes/reopens, so it starts clean. -->
 <div
-    x-data="{ showFormId: null, recordType: '', openComments: []}"
-    x-effect="showFormId === null || showFormId === 0 ? recordType = '' : null"
+    x-data="{ showFormId: null, recordType: null , openComments: []}"
+    x-effect="showFormId === null || showFormId === 0 ? recordType = null : null"
     @record-submit-success.camel.window="showFormId = null">
 
     {% include "includes/form_errors.html" with form=form %}
@@ -53,8 +53,8 @@
                 
                     <section class="border radius-lg border-base-lighter padding-3"
                         :class="{ 'padding-bottom-5': !recordType }"
-                        x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
-                        x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }">
+                        x-init="recordType = ($el.querySelector('#id_type') || {}).selectedIndex || recordType"
+                        x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.selectedIndex }">
                     <form 
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"

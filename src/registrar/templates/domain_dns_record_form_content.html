@@ -12,20 +12,22 @@
     </div>
 </div>
 
+<!-- RecordType number goes by this list ['-Select-', 'A', 'AAAA', 'MX','CNAME', 'PTR', 'TXT'] -->
+
 <div x-cloak x-show="recordType" x-cloak>
 
-    <template x-if="recordType !== 'TXT' && recordType !== 'MX'">
+    <template x-if="recordType !== 6 && recordType !== 4 ">
         <!-- Only show this for forms that are not txt or mx -->
         <div>
               {% include "dns_record_forms/base_record_form.html" with form=form %}
         </div>
     </template>
-    <template x-if="recordType === 'MX'">
+    <template x-if="recordType === 4 ">
         <div>
               {% include "dns_record_forms/mx_record_form.html" with form=form %}
         </div>
     </template>
-    <template x-if="recordType === 'TXT' ">
+    <template x-if="recordType === 6 ">
         <div>
               {% include "dns_record_forms/txt_record_form.html" with form=form %}
         </div>
