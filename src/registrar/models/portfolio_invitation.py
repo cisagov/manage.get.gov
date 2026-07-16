@@ -235,4 +235,4 @@ class PortfolioInvitation(TimeStampedModel):
             # Retrieve the first user, or None if no users are found
             user = users.first()
 
-            cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
+            cleanup_after_portfolio_member_deletion(portfolio=portfolio, email__iexact=email, user=user)

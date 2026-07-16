@@ -427,7 +427,7 @@ def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
 
     # Fetch domain invitations matching the criteria
     invitations = DomainInvitation.objects.filter(
-        email=email, domain__domain_info__portfolio=portfolio, status=DomainInvitation.DomainInvitationStatus.INVITED
+        email__iexact=email, domain__domain_info__portfolio=portfolio, status=DomainInvitation.DomainInvitationStatus.INVITED
     )
 
     # Call `cancel_invitation` on each invitation

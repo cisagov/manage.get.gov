@@ -92,7 +92,7 @@ class PortfolioMemberDomainsJson(View):
                     "domain_id", flat=True
                 )
                 domain_invitations = DomainInvitation.objects.filter(
-                    email=email, status=DomainInvitation.DomainInvitationStatus.INVITED
+                    email__iexact=email, status=DomainInvitation.DomainInvitationStatus.INVITED
                 ).values_list("domain_id", flat=True)
                 return domain_info_ids.intersection(domain_invitations)
         else:

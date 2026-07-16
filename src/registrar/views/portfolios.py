@@ -919,7 +919,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(
             domain_id__in=removed_domain_ids,
-            email=email,
+            email__iexact=email,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
         ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
 
