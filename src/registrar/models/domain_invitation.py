@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 from django_fsm import FSMField, transition  # type: ignore
+from registrar.utility.errors import MultipleUsersWithEmailError
 
 from .utility.time_stamped_model import TimeStampedModel
 from .user_domain_role import UserDomainRole
@@ -49,21 +50,24 @@ class DomainInvitation(TimeStampedModel):
         return f"Invitation for {self.email} on {self.domain} is {self.status}"
 
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.RETRIEVED)
-    def retrieve(self):
+    def retrieve(self, user=None):
         """When an invitation is retrieved, create the corresponding permission.
 
         Raises:
             RuntimeError if no matching user can be found.
+            MultipleUsersWithEmailError if the email matches multiple users.
         """
 
-        # get a user with this email address
-        User = get_user_model()
-        try:
-            user = User.objects.get(email__iexact=self.email)
-        except User.DoesNotExist:
-            # should not happen because a matching user should exist before
-            # we retrieve this invitation
-            raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
+        if user is None:
+            User = get_user_model()
+            users = list(User.objects.filter(email__iexact=self.email).order_by("pk")[:2])
+            if len(users) > 1:
+                raise MultipleUsersWithEmailError(self.email)
+            if not users:
+                # should not happen because a matching user should exist before
+                # we retrieve this invitation
+                raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
+            user = users[0]
 
         # and create a role for that user on this domain
         _, created = UserDomainRole.objects.get_or_create(
