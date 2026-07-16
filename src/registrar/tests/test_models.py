@@ -24,6 +24,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
+from registrar.utility.errors import MultipleUsersWithEmailError
 
 from .common import (
     MockSESClient,
@@ -122,6 +123,15 @@ class TestDomainInvitations(TestCase):
             self.invitation.retrieve()
 
     @less_console_noise_decorator
+    def test_retrieve_duplicate_users_error(self):
+        User.objects.create(username="duplicate", email=self.email.upper())
+
+        with self.assertRaises(MultipleUsersWithEmailError):
+            self.invitation.retrieve()
+
+        self.assertFalse(UserDomainRole.objects.filter(domain=self.domain).exists())
+
+    @less_console_noise_decorator
     def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
@@ -191,6 +201,15 @@ class TestPortfolioInvitations(TestCase):
         User.objects.filter(email=self.email).delete()
         with self.assertRaises(RuntimeError):
             self.invitation.retrieve()
+
+    @less_console_noise_decorator
+    def test_retrieve_duplicate_users_error(self):
+        User.objects.create(username="duplicate", email=self.email.upper())
+
+        with self.assertRaises(MultipleUsersWithEmailError):
+            self.invitation.retrieve()
+
+        self.assertFalse(UserPortfolioPermission.objects.filter(portfolio=self.portfolio).exists())
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
