@@ -427,7 +427,7 @@ class TestInvitationService(TestCase):
 
         self.assertTrue(result)
 
-    ######## LEGACY TESTS #########
+    # ------ LEGACY TESTS ------
     # These tests are for the legacy invitation models and
     # can be removed once the legacy models are fully deprecated.
     # (Created with github copilot)
@@ -441,12 +441,12 @@ class TestInvitationService(TestCase):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
         )
-        
+
         # User has lowercase email
         user = User.objects.create(username="test_invitee2", email="invitee@example.com")
-        
+
         result = get_pending_invitations(user)
-        
+
         # Should find the invitation despite case difference
         self.assertEqual(len(result["legacy_portfolio_invitations"]), 1)
 
@@ -459,12 +459,12 @@ class TestInvitationService(TestCase):
             domain=self.domain,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
         )
-        
+
         # User has lowercase email
         user = User.objects.create(username="test_manager", email="manager@example.com")
-        
+
         result = get_pending_invitations(user)
-        
+
         # Should find the invitation despite case difference
         self.assertEqual(len(result["legacy_domain_invitations"]), 1)
 
@@ -476,10 +476,10 @@ class TestInvitationService(TestCase):
             domain=self.domain,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
         )
-        
+
         # Cancel with lowercase
         result = cancel_domain_invitation("manager@example.com", self.domain)
-        
+
         # Should successfully find and cancel
         self.assertTrue(result)
         invitation = DomainInvitation.objects.get(domain=self.domain)
@@ -494,10 +494,10 @@ class TestInvitationService(TestCase):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
         )
-        
+
         # Cancel with lowercase
         result = cancel_portfolio_invitation("member@example.com", self.portfolio)
-        
+
         # Should successfully find and cancel
         self.assertTrue(result)
         invitation = PortfolioInvitation.objects.get(portfolio=self.portfolio)
@@ -512,11 +512,11 @@ class TestInvitationService(TestCase):
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
             status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
         )
-        
+
         # User with lowercase email accepts
         user = User.objects.create(username="test_invitee3", email="invitee@example.com")
         result = accept_portfolio_invitation(user, self.portfolio)
-        
+
         # Should successfully find and accept
         self.assertIsNotNone(result)
         invitation = PortfolioInvitation.objects.get(portfolio=self.portfolio)

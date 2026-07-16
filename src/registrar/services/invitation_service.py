@@ -417,7 +417,9 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
         if existing_role:
             raise AlreadyDomainManagerError(email)
 
-    invited = UserDomainRole.objects.filter(email__iexact=email, domain=domain, status=UserDomainRole.Status.INVITED).exists()
+    invited = UserDomainRole.objects.filter(
+        email__iexact=email, domain=domain, status=UserDomainRole.Status.INVITED
+    ).exists()
     if invited:
         raise AlreadyDomainInvitedError(email)
 
@@ -593,7 +595,8 @@ def invite_to_domains_bulk(
             # Fetch existing roles in bulk to avoid N+1 queries
             domain_ids = [d.id for d in domain_list]
             existing_roles = {
-                role.domain_id: role for role in UserDomainRole.objects.filter(email__iexact=email, domain_id__in=domain_ids)
+                role.domain_id: role
+                for role in UserDomainRole.objects.filter(email__iexact=email, domain_id__in=domain_ids)
             }
 
             for domain in domain_list:
@@ -669,9 +672,9 @@ def get_pending_invitations(user: User):
         email__iexact=email, status=UserPortfolioPermission.Status.INVITED
     ).select_related("portfolio", "invited_by")
 
-    domain_roles = UserDomainRole.objects.filter(email__iexact=email, status=UserDomainRole.Status.INVITED).select_related(
-        "domain", "invited_by"
-    )
+    domain_roles = UserDomainRole.objects.filter(
+        email__iexact=email, status=UserDomainRole.Status.INVITED
+    ).select_related("domain", "invited_by")
 
     # Get legacy model invitations with related objects
     legacy_portfolio_invitations = PortfolioInvitation.objects.filter(
