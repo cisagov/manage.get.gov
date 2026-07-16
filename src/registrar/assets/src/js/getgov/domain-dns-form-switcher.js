@@ -9,10 +9,8 @@ class DNSFormSwitcher{
      * - target: the form  ID the user is clicking to.
      * 
      * Methods
-     * - attemptOpen: sets the pending object on the class instance
-     * - switchForm: performs the actual form switch, and resets the pending and target
-     *   - uses methods setShowId, and resetPendingAndTarget methods
      * - getAlpineData: returns the Alpine data object for the container
+     * - resetPendingAndTarget: resets the target, and pending values to null
      *
     */ 
    
@@ -40,6 +38,17 @@ class DNSFormSwitcher{
 }
 
 export class EditFormSwitcher extends DNSFormSwitcher{
+    /**
+     * EditFormSwitcher for changes between edit forms, and opening the add record
+     * State: inherited from DNSFormSwitcher
+     * showFormId: the form number that is set on showFormId on Alpine data will show on the UI
+     * Methods:
+     * - setTarget: toggle from closing and opening the form if same value, and if different value set the form target;
+     * - setShowFormId: update the showFormId in Alpine data
+     * - getCurrentShowFormId: get current showFormId from Alpine data
+     * - attemptOpen: sets the pending target in a dict to be used in the refsForm method to get the focusId, buttonId, and something else I forgot
+     * - switchForm: uses setShowFormId to switch showFormId to current target, and reset the target and pending values
+     */
 
     setTarget(value){  
         const current = this.getCurrentShowFormId();
@@ -59,15 +68,18 @@ export class EditFormSwitcher extends DNSFormSwitcher{
     getCurrentShowFormId(){
         return this.getAlpineData().showFormId
     }
+
+    createReq(currentId){
+      return {
+            type: currentId > 0 ? "edit" : "add",
+            recordId: currentId
+        }
+    }
    
     attemptOpen(form){
         this.setTarget(form);
         const currentId = this.getCurrentShowFormId();
-        const req = {
-            type: currentId > 0 ? "edit" : "add",
-            recordId: currentId
-        }
-         this.setPending(req);
+         this.setPending(this.createReq(currentId));
     }
 
     switchForm(value = this.target){
@@ -83,6 +95,14 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
         this.isRecordType = true;
     }
 
+    createReq(currentId){
+       return {
+            type: 'add',
+            recordId: currentId,
+            isRecordType: this.isRecordType
+        }
+    }
+
     setTarget(value){
         this.target = value;
     }
@@ -95,13 +115,7 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
     attemptOpen(form){
         this.setTarget(form);
         const currentId = this.getAlpineData().recordType;
-        const req = {
-            type: 'add',
-            recordId: currentId,
-            isRecordType: this.isRecordType
-        }
-
-         this.setPending(req);
+        this.setPending(this.createReq(currentId));
     }
 
     updateSelectedType(value = this.target){

@@ -278,13 +278,8 @@ export function initDNSRecordCancelModal(){
             container
         );
 
-        const reqForTarget = {
-            type: switcher.target > 0 && !switcher.isRecordType ? "edit" : "add",
-            recordId: switcher.target,
-            isRecordType: switcher.isRecordType
-        }
 
-        modalEl?.setAttribute("data-opener", refsFor(reqForTarget).focusId);
+        modalEl?.setAttribute("data-opener", refsFor(switcher.createReq(switcher.target)).focusId);
         cancelButton.click();
         switcher.switchForm();
     });
