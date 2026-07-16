@@ -284,7 +284,6 @@ TEMPLATES = [
 # Stop using table-based default form renderer which is deprecated
 # FORM_RENDERER = "django.forms.renderers.DjangoDivFormRenderer"
 # Default is already DjangoTemplates
-
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
 # IS_DEMO_SITE controls whether or not we show our big red "TEST SITE" banner
@@ -459,7 +458,6 @@ USE_I18N = True
 # enable localized formatting of numbers and dates
 # USE_L10N = True
 # COMMENT: Can be removed becuase it's enabled by default now
-
 # make datetimes timezone-aware by default
 USE_TZ = True
 
@@ -831,6 +829,34 @@ SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
 # endregion
+# region: EPP connection Pool----------------------------------------------###
+
+# Max EPP connections per worker process. Environments that share registry
+# credentials also share the registry's connection allowance.
+# keep the code default small in test environments (except when needed)
+EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)
+
+# Seconds a request will wait for a pooled connection before failing.
+EPP_POOL_BORROW_TIMEOUT = env.int("EPP_POOL_BORROW_TIMEOUT", default=20)
+
+# A connection idle longer than this is health-checked (EPP Hello)
+# before reuse, and replaced if it fails.
+EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
+
+# How often, in seconds, the background heartbeat pings the registry to keep the
+# EPP connection warm and detect a dead connection. 0 disables it.
+EPP_POOL_HEARTBEAT_INTERVAL = (
+    env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=30) if not (RUNNING_TESTS or IS_LOCAL) else 0
+)
+
+
+# Max seconds an established EPP socket may block on a read/send before raising
+# (does not bound the initial TCP connect). The registry normally responds in
+# milliseconds; this is a backstop so an unresponsive registry cannot hang a
+# request (and hold the connection lock) indefinitely.
+EPP_CONNECTION_TIMEOUT = 5
+
+# endregion
 
 # region: DNS----------------------------------------------------------###
 
@@ -845,25 +871,8 @@ DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
 DNS_NS_SET_RANGE = 5
 
 # endregion
-# region: EPP connection Pool----------------------------------------------###
-# Max EPP connections per worker process. Environments that share registry
-# credentials also share the registry's connection allowance.
-# keep the code default small in test environments (except when needed)
-EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)
-
-# Seconds a request will wait for a pooled connection before failing.
-EPP_POOL_BORROW_TIMEOUT = env.int("EPP_POOL_BORROW_TIMEOUT", default=20)
-
-# A connection idle longer than this is health-checked (EPP Hello)
-# before reuse, and replaced if it fails.
-EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
-
-# Interval for the background maintenance pass that keeps idle pooled
-# connections healthy. 0 disables it.
-EPP_POOL_HEARTBEAT_INTERVAL = env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=60)
 
 
-# endregion
 # region: Security and Privacy----------------------------------------------###
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -1003,10 +1012,7 @@ SESSION_COOKIE_SECURE = True
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
-SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"
-# JSONSerializer is also default
-# FYI everyone will get logged out and will have to re login again
-
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.JSONSerializer"  # JSONSerializer is the default
 # ~ Set by django.middleware.clickjacking.XFrameOptionsMiddleware
 # prevent clickjacking by instructing the browser not to load
 # our site within an iframe

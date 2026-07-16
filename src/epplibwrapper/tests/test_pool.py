@@ -1,8 +1,9 @@
 """Tests for the EPP connection pool: borrow/return, health checks on checkout,
-discard/replace, replenish, and shutdown.
+discard/replace, replenish, maintenance heartbeat, and shutdown.
 
 Every pool here is built with heartbeat_interval=0 so no maintenance thread
-starts — the heartbeat/maintenance loop is not covered yet.
+starts — the heartbeat tests call _maintain_idle_connections() directly instead
+of waiting on the background thread.
 """
 
 import time
@@ -262,3 +263,44 @@ class TestEPPConnectionPool(TestCase):
         pool.close_all()
         self.created_clients[0].close.assert_called_once()
         self.assertEqual(pool.stats()["connections created"], 0)
+
+    @less_console_noise_decorator
+    def test_maintenance_pings_stale_idle_connection(self):
+        """The maintenance pass Hellos an idle connection past idle_ping_seconds
+        and returns it to the pool with a refreshed clock."""
+        pool = self.make_pool(size=1, idle_ping_seconds=60)
+        conn = pool._borrow()
+        conn.last_ping = time.monotonic() - 120
+        pool._put_back(conn)  # bypass the checkin stamps so the connection stays stale
+
+        pool._maintain_idle_connections()
+
+        hello_calls = [c for c in self.created_clients[0].send.call_args_list if isinstance(c.args[0], Hello)]
+        self.assertEqual(len(hello_calls), 1)
+        self.assertEqual(pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    def test_maintenance_replaces_dead_idle_connection(self):
+        """If the maintenance Hello fails, the dead connection is discarded
+        and replenish builds a replacement."""
+        pool = self.make_pool(size=1, idle_ping_seconds=60)
+        conn = pool._borrow()
+        conn.last_ping = time.monotonic() - 120
+        conn.client.send.side_effect = TransportError("connection silently dropped")
+        pool._put_back(conn)  # bypass the checkin stamps so the connection stays stale
+
+        pool._maintain_idle_connections()
+
+        self.created_clients[0].close.assert_called_once()
+        self.assertEqual(len(self.created_clients), 2)  # a replacement was built
+        self.assertEqual(pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    def test_maintenance_skips_recently_proven_connection(self):
+        """A connection that proved itself alive recently is not pinged by the maintenance pass."""
+        pool = self.make_pool(size=1, idle_ping_seconds=60)
+
+        pool._maintain_idle_connections()
+
+        self.created_clients[0].send.assert_not_called()
+        self.assertEqual(pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})

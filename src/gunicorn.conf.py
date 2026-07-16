@@ -29,12 +29,13 @@ def post_fork(server, worker):
     patch_psycopg()
     worker.log.info("Made psycopg2 green for gevent (psycogreen)")
 
+
 def worker_exit(server, worker):
     """Runs in each worker as it exits; logs out pooled EPP connections."""
     # import here, not module level - this file is also read by the
     # gunicorn master process, which must not initialize the app
     from epplibwrapper.client import CLIENT
-    
+
     if CLIENT is not None:
         worker.log.info("Closing all Registrar to Registry connections")
         CLIENT._pool.close_all()

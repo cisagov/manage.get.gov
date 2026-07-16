@@ -1,17 +1,17 @@
 """Tests for the EPPLibWrapper client: connection creation/login and the
 send/retry logic layered on top of the connection pool.
 
-The pool's own borrow/return/discard mechanics are covered in test_pool.py.
-The pool maintenance heartbeat is intentionally not tested yet.
+The pool's own borrow/return/discard mechanics and the maintenance
+heartbeat pass are covered in test_pool.py.
 """
 
 import datetime
 from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+from django.conf import settings
 from django.test import TestCase, override_settings
 from api.tests.common import less_console_noise_decorator
-from gevent.exceptions import ConcurrentObjectUseError
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import ErrorCode, RegistryError, LoginError
 import logging
@@ -22,6 +22,7 @@ try:
     from epplib.transport import SocketTransport
     from epplib import commands
     from epplib.models import common, info
+    from epplibwrapper.socket import TimeoutSocketTransport
 except ImportError:
     pass
 
@@ -32,7 +33,6 @@ logger = logging.getLogger(__name__)
     EPP_CONNECTION_POOL_SIZE=1,
     EPP_POOL_BORROW_TIMEOUT=1,
     EPP_POOL_IDLE_PING_SECONDS=60,
-    # TODO - COME Back here when heartbeat code is merged in!
     EPP_POOL_HEARTBEAT_INTERVAL=0,
 )
 class TestClient(TestCase):
@@ -79,7 +79,7 @@ class TestClient(TestCase):
         mock_client.return_value.connect = MagicMock(side_effect=TransportError("registry unreachable"))
         wrapper = EPPLibWrapper()
 
-        with self.assertRaises(RegistryError)as command_response:
+        with self.assertRaises(RegistryError) as command_response:
             wrapper._create_connection()
         self.assertEqual(command_response.exception.code, ErrorCode.TRANSPORT_ERROR)
         self.assertTrue(command_response.exception.is_transport_error())
@@ -114,7 +114,7 @@ class TestClient(TestCase):
         mock_client.return_value.connect = MagicMock(side_effect=Exception("unknown error"))
         wrapper = EPPLibWrapper()
 
-        with self.assertRaises(RegistryError)as command_response:
+        with self.assertRaises(RegistryError) as command_response:
             wrapper._create_connection()
         self.assertIsNone(command_response.exception.code)
 
@@ -132,7 +132,7 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        result = wrapper.send(self.fake_command())
+        result = wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertIs(result, command_success)
         # 2 because 1 call is made to login at init & 1 call for the fake command
@@ -152,8 +152,8 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        with self.assertRaises(RegistryError)as command_response:
-            wrapper.send(self.fake_command())
+        with self.assertRaises(RegistryError) as command_response:
+            wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertEqual(command_response.exception.code, 2303)
         # login at init + one (unretried) command attempt
@@ -175,8 +175,8 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        with self.assertRaises(RegistryError)as command_response:
-            wrapper.send(self.fake_command())
+        with self.assertRaises(RegistryError) as command_response:
+            wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertEqual(command_response.exception.code, 2400)
         # login at init + 4 command attempts, all over the same connection
@@ -203,7 +203,7 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        result = wrapper.send(self.fake_command())
+        result = wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertIs(result, command_success)
         # login at init + failed command + retried command
@@ -229,7 +229,7 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        result = wrapper.send(self.fake_command())
+        result = wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertIs(result, command_success)
         # initial connection + the replacement built on retry
@@ -252,8 +252,8 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        with self.assertRaises(RegistryError)as command_response:
-            wrapper.send(self.fake_command())
+        with self.assertRaises(RegistryError) as command_response:
+            wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertEqual(command_response.exception.code, ErrorCode.TRANSPORT_ERROR)
         # initial connection + one replacement per retry attempt
@@ -289,7 +289,7 @@ class TestClient(TestCase):
         mock_client.return_value.send = MagicMock(side_effect=send_side_effect)
         wrapper = EPPLibWrapper()
 
-        result = wrapper.send(self.fake_command())
+        result = wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertIs(result, command_success)
         # init connect + failed reconnect + successful reconnect
@@ -308,8 +308,8 @@ class TestClient(TestCase):
         held = wrapper._pool._borrow()
         wrapper._pool.borrow_timeout = 0.01
         try:
-            with self.assertRaises(RegistryError)as command_response:
-                wrapper.send(self.fake_command())
+            with self.assertRaises(RegistryError) as command_response:
+                wrapper.send(self.fake_command(), cleaned=True)
         finally:
             wrapper._pool._return_connection(held)
 
@@ -335,12 +335,12 @@ class TestClient(TestCase):
         self.assertIn("syntax error", str(command_response.exception))
         self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
 
-    def fake_failure_send_concurrent_threads(self, command=None):
+    def fake_failure_send_unexpected_error(self, command=None):
         """
-        Raises a ConcurrentObjectUseError, which gevent throws when accessing
-        the same socket from two different threads (greenlets).
+        Raises an error type the wrapper has no specific handler for,
+        so it exercises the catch-all "unknown error" path.
         """
-        raise ConcurrentObjectUseError("This socket is already used by another thread/greenlet")
+        raise RuntimeError("unexpected failure while sending")
 
     def fake_success_send(self, command=None):
         """
@@ -412,7 +412,7 @@ class TestClient(TestCase):
 
         Scenario:
         - Initialization of the pooled connection is successful.
-        - An attempt to send a command fails with a ConcurrentObjectUseError.
+        - An attempt to send a command fails with an unexpected error type.
         - The error is not a transport error, so the connection returns to the pool
           and all retries exhaust with a RegistryError.
         - A subsequent send over the same pooled connection succeeds.
@@ -422,10 +422,10 @@ class TestClient(TestCase):
         # Do nothing on _connect: a real connect/login needs a live registry.
         # The real Client + SocketTransport objects are still built and pooled.
         with patch.object(EPPLibWrapper, "_connect"):
-            with patch.object(SocketTransport, "send", self.fake_failure_send_concurrent_threads):
+            with patch.object(SocketTransport, "send", self.fake_failure_send_unexpected_error):
                 wrapper = EPPLibWrapper()
-                with self.assertRaises(RegistryError)as command_response:
-                    wrapper.send(tested_command)
+                with self.assertRaises(RegistryError) as command_response:
+                    wrapper.send(tested_command, cleaned=True)
                 expected_error = "InfoDomain failed to execute due to an unknown error."
                 self.assertEqual(command_response.exception.args[0], expected_error)
 
@@ -433,5 +433,22 @@ class TestClient(TestCase):
             with patch.object(SocketTransport, "send", self.fake_success_send), patch.object(
                 SocketTransport, "receive", self.fake_info_domain_received
             ):
-                result = wrapper.send(tested_command)
+                result = wrapper.send(tested_command, cleaned=True)
                 self.assertEqual(expected_result, result.__dict__)
+
+    @less_console_noise_decorator
+    def test_timeout_socket_transport_sets_socket_timeout(self):
+        """TimeoutSocketTransport applies settings.EPP_CONNECTION_TIMEOUT to the socket
+        after connecting, so a slow/unresponsive registry cannot block a read indefinitely."""
+        transport = TimeoutSocketTransport("localhost")
+
+        def fake_socket_transport_parent(inner_self):
+            # Stand in for the real SocketTransport.socket which is what is manipulated by .connect
+            inner_self.socket = MagicMock()
+
+        # Patch the base connect so only our subclass's timeout logic runs
+        with patch.object(SocketTransport, "connect", fake_socket_transport_parent):
+            # transport.connect() will call the fake_socket_transport_parent above
+            transport.connect()
+
+        transport.socket.settimeout.assert_called_once_with(settings.EPP_CONNECTION_TIMEOUT)
