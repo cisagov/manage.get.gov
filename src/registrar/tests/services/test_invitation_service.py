@@ -426,3 +426,98 @@ class TestInvitationService(TestCase):
         result = check_duplicate_portfolio_invitation(email, self.portfolio)
 
         self.assertTrue(result)
+
+    ######## LEGACY TESTS #########
+    # These tests are for the legacy invitation models and
+    # can be removed once the legacy models are fully deprecated.
+    # (Created with github copilot)
+    def test_get_pending_invitations_finds_camelcase_portfolio_invitation(self):
+        """Test that get_pending_invitations finds legacy portfolio invitations
+        regardless of email case (camelCase vs lowercase)."""
+        # Create a camelcased invitation
+        PortfolioInvitation.objects.create(
+            email="InvitEe@Example.com",  # camelCase
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        )
+        
+        # User has lowercase email
+        user = User.objects.create(username="test_invitee2", email="invitee@example.com")
+        
+        result = get_pending_invitations(user)
+        
+        # Should find the invitation despite case difference
+        self.assertEqual(len(result["legacy_portfolio_invitations"]), 1)
+
+    def test_get_pending_invitations_finds_camelcase_domain_invitation(self):
+        """Test that get_pending_invitations finds legacy domain invitations
+        regardless of email case."""
+        # Create a camelcased invitation
+        DomainInvitation.objects.create(
+            email="MaNaGeR@Example.com",  # mixed case
+            domain=self.domain,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+        
+        # User has lowercase email
+        user = User.objects.create(username="test_manager", email="manager@example.com")
+        
+        result = get_pending_invitations(user)
+        
+        # Should find the invitation despite case difference
+        self.assertEqual(len(result["legacy_domain_invitations"]), 1)
+
+    def test_cancel_domain_invitation_with_camelcase_email(self):
+        """Test that cancel_domain_invitation works with camelcased stored emails."""
+        # Create invitation with camelCase
+        DomainInvitation.objects.create(
+            email="MaNaGeR@Example.com",
+            domain=self.domain,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+        
+        # Cancel with lowercase
+        result = cancel_domain_invitation("manager@example.com", self.domain)
+        
+        # Should successfully find and cancel
+        self.assertTrue(result)
+        invitation = DomainInvitation.objects.get(domain=self.domain)
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+
+    def test_cancel_portfolio_invitation_with_camelcase_email(self):
+        """Test that cancel_portfolio_invitation works with camelcased stored emails."""
+        # Create invitation with camelCase
+        PortfolioInvitation.objects.create(
+            email="MeMbEr@Example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        )
+        
+        # Cancel with lowercase
+        result = cancel_portfolio_invitation("member@example.com", self.portfolio)
+        
+        # Should successfully find and cancel
+        self.assertTrue(result)
+        invitation = PortfolioInvitation.objects.get(portfolio=self.portfolio)
+        self.assertEqual(invitation.status, PortfolioInvitation.PortfolioInvitationStatus.REJECTED)
+
+    def test_accept_portfolio_invitation_with_camelcase_email(self):
+        """Test that accept_portfolio_invitation works with camelcased stored emails."""
+        # Create invitation with camelCase
+        PortfolioInvitation.objects.create(
+            email="InViTeE@Example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        )
+        
+        # User with lowercase email accepts
+        user = User.objects.create(username="test_invitee3", email="invitee@example.com")
+        result = accept_portfolio_invitation(user, self.portfolio)
+        
+        # Should successfully find and accept
+        self.assertIsNotNone(result)
+        invitation = PortfolioInvitation.objects.get(portfolio=self.portfolio)
+        self.assertEqual(invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
