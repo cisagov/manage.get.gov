@@ -345,4 +345,4 @@ class UserPortfolioPermission(TimeStampedModel):
         super().delete(*args, **kwargs)
 
         if user or email:
-            cleanup_after_portfolio_member_deletion(portfolio=portfolio, email__iexact=email, user=user)
+            cleanup_after_portfolio_member_deletion(portfolio=portfolio, email=email, user=user)
