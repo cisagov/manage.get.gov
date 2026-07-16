@@ -83,9 +83,6 @@ function clearRecordForm(scope){
     commentStatus.textContent = getCharCountText(100, 0)
 }
 
-// One shared modal for the Add form and every Edit row; shown only when there are unsaved
-// changes. data-opener tells USWDS where to return focus on close.
-let pendingCancel = null;
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
 const refsFor = (req) => req.type === "edit"
@@ -124,107 +121,225 @@ function formHasUnsavedChanges(form, isEditForm){
     });
 }
 
-export function initDNSRecordCancelModal(){
-    const container = document.getElementById("dnsrecords-form-container");
-    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    if(!container || !confirmButton) return;
-
-    const teardownForm = (req) => {
-        const refs = refsFor(req);
-        const form = document.querySelector(refs.form);
-        if(req.type === "edit"){
-            if(form){
-                // After a failed save the row holds the rejected values; clear both errors inline and top,
-                // then re-fetch the row for the real saved values.
-                if(form.querySelector(".usa-error-message")){
-                    clearRecordErrors(form);
-                    refreshForm(refs.form, form.getAttribute("hx-post"));
-                } else if(req.hasUnsavedChanges){
-                    form.reset();
-                }
-            }
-        } else {
-            // A reopened Add form must be blank. Capture hadError before clearRecordForm strips it,
-            // then re-fetch a clean form on error, otherwise blank the live fields in place.
-            const hadError = !!form?.querySelector(".usa-error-message");
-            clearRecordForm(form);
-            if(hadError){
+const teardownForm = (switcher) => {
+    const req = switcher.pending;
+    const refs = refsFor(req);
+    const form = document.querySelector(refs.form);
+    if(req.type === "edit"){
+        if(form){
+            // After a failed save the row holds the rejected values; clear both errors inline and top,
+            // then re-fetch the row for the real saved values.
+            if(form.querySelector(".usa-error-message")){
+                clearRecordErrors(form);
                 refreshForm(refs.form, form.getAttribute("hx-post"));
-            } else {
-                form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
-                const typeField = document.getElementById("id_type");
-                if(typeField) typeField.value = "";
+            } else if(req.hasUnsavedChanges){
+                form.reset();
             }
         }
-        Alpine.$data(container).showFormId = null;
-    };
+    } else {
+        // A reopened Add form must be blank. Capture hadError before clearRecordForm strips it,
+        // then re-fetch a clean form on error, otherwise blank the live fields in place.
+        const hadError = !!form?.querySelector(".usa-error-message");
+        clearRecordForm(form);
+        if(hadError){
+            refreshForm(refs.form, form.getAttribute("hx-post"));
+        } else {
+            form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
+            const typeField = document.getElementById("id_type");
+            if(typeField) typeField.value = "";
+        }
+    }
+};
 
-    const onCancel = (req) => {
+
+const onCancel = (switcher) => {
+        const req = switcher.pending;
         const refs = refsFor(req);
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-            pendingCancel = req;
             openCancelModal(refs.cancelButtonId);
         } else {
-            teardownForm(req);
+            teardownForm(switcher);
+            switcher.switchForm();
             document.getElementById(refs.focusId)?.focus();
         }
-    };
+};
 
+
+const editButtonEventListener = (switcher)=>{
+    const table = document.querySelector("#dnsrecords-table");
+    if(!table) return;
+
+    const alpineData = switcher.getAlpineData();
+    
+    table.addEventListener('click', (e) => {
+            const editBtn =  e.target.closest('[data-action="edit"]')
+            const commentBtn = e.target.closest('[data-action="comment"]')
+            if(!editBtn && !commentBtn) return;
+
+            const recordId = (editBtn || commentBtn).dataset.recordId
+
+            if(editBtn){
+                const idx = alpineData.openComments.indexOf(recordId)
+                if(idx > -1) alpineData.openComments.splice(idx,1);
+        
+                switcher.setTarget(recordId)
+                if(alpineData.showFormId == null){
+                    switcher.switchForm()
+                }
+                else{
+                    switcher.attemptOpen(recordId);
+                    onCancel(switcher); 
+                }              
+            }
+
+            if(commentBtn){
+                if(alpineData.showFormId === recordId) switcher.switchForm(null);
+                const idx = alpineData.openComments.indexOf(recordId);
+                idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
+            }
+
+        }
+    )
+}
+
+class DNSFormSwitcher{
+    /**
+     * Manages DNS form switching from Alpine Data
+     * Requires an HTML container with Alpine.js initialized on it
+     * 
+     * State:
+     * - pending: an object { type, recordId} representing the form the user is currently on
+     *   type is either "edit" or "add", recordID is the form's recordID
+     * - target: the form  ID the user is clicking to.
+     * 
+     * Methods
+     * - attemptOpen: sets the pending object on the class instance
+     * - switchForm: performs the actual form switch, and resets the pending and target
+     *   - uses methods setShowId, and resetPendingAndTarget methods
+     * - getAlpineData: returns the Alpine data object for the container
+     *
+    */ 
+   
+    constructor(container){
+        this.pending = null;
+        this.target = null;
+        this.container = container;
+    }
+
+    setPending(value) {
+         this.pending = value;
+    }
+
+    setTarget(value){  
+        const current = this.getAlpineData().showFormId;
+        this.target = current == value ? null : value;
+    }
+
+
+    getAlpineData(){
+        return Alpine.$data(this.container);
+    }
+
+    setShowId(value){
+        const data = this.getAlpineData();
+        data.showFormId = value;
+    }
+
+    resetPendingAndTarget(){
+       this.setTarget(null);
+       this.setPending(null);
+    }
+
+    switchForm(value = this.target){
+       this.setShowId(value);
+       this.resetPendingAndTarget();
+    }
+
+    attemptOpen(form){
+        this.setTarget(form);
+        const currentId = this.getAlpineData().showFormId;
+        const req = {
+            type: currentId > 0 ? "edit" : "add",
+            recordId: currentId
+        }
+         this.setPending(req);
+    }
+
+}
+
+
+export function initDNSRecordCancelModal(){
+    const container = document.getElementById("dnsrecords-form-container");
+    const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    if(!container || !confirmButton) return;
+    
+    const switcher = new DNSFormSwitcher(container);
+    
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        onCancel({ type: "add" });
+        switcher.setPending(
+            {
+                type: "add"
+            }
+        )
+        onCancel(switcher);
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
     document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
-        onCancel({ type: "edit", recordId: btn.dataset.recordId });
+        switcher.setPending(
+            { type: "edit", recordId: btn.dataset.recordId }
+        );
+        onCancel(switcher);
     });
+
+    const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+    const cancelButton = modalEl?.querySelector("[data-close-modal]");
 
     confirmButton.addEventListener("click", () => {
-        if(!pendingCancel) return;
-        teardownForm(pendingCancel);
-        const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-        modalEl?.setAttribute("data-opener", refsFor(pendingCancel).focusId);
-        modalEl?.querySelector("[data-close-modal]")?.click();
-        pendingCancel = null;
+        if(!switcher.pending){
+            return;
+        }
+
+        teardownForm(
+            switcher,
+            container
+        );
+
+        const reqForTarget = {
+            type: switcher.target > 0 ? "edit" : "add",
+            recordId: switcher.target
+        }
+
+        modalEl?.setAttribute("data-opener", refsFor(reqForTarget).focusId);
+        cancelButton.click();
+        switcher.switchForm();
     });
-}
 
-export function editAndCommentButtonListener (){
-        const table = document.querySelector("#dnsrecords-table");
-        if(!table) return;
+    cancelButton.addEventListener("click", (e) => {
+        if(e.isTrusted){
+                switcher.resetPendingAndTarget()
+        }
+        }
+    );
 
-        table.addEventListener('click', function(e) {
-            const editBtn =  e.target.closest('[data-action="edit"]')
-            const commentBtn = e.target.closest('[data-action="comment"]')
-            if(!editBtn && !commentBtn) return;
-
-            const recordId = (editBtn || commentBtn).dataset.recordId
-            const alpineData = Alpine.$data(table)
-
-            if(editBtn){
-                const idx = alpineData.openComments.indexOf(recordId)
-                if(idx > -1) alpineData.openComments.splice(idx,1);
-                alpineData.showFormId = alpineData.showFormId === recordId ? null : recordId;
-            }
-
-            if(commentBtn){
-                if(alpineData.showFormId === recordId) alpineData.showFormId = null;
-                const idx = alpineData.openComments.indexOf(recordId);
-                idx > -1 ? alpineData.openComments.splice(idx,1) : alpineData.openComments.push(recordId)
-
-            }
-
-        })
+    // addRecordButtonEventListener(alpineData, initialState, container)
+    const addRecordButton = document.getElementById("add-dnsrecord-button")?.addEventListener("click", ()=> {
+        switcher.attemptOpen(0);
+        onCancel(switcher);
+    })
+    // add edit button event listener
+    editButtonEventListener(switcher)
+    
 }
 
 // Tab-order routing for the DNS records table (#4804).
 // When a form is open, route Tab to walk:
-//   Edit → form fields → Delete → kebab → next row's Edit
+//   Edit → form fields → Form Delete → Row Delete → next row's Edit
 // Shift+Tab does the reverse. When closed, native order is fine.
 export function initDNSRecordTabOrder() {
     const table = document.querySelector("#dnsrecords-table");
@@ -241,15 +356,15 @@ export function initDNSRecordTabOrder() {
             `button[data-action="edit"][data-record-id="${recordId}"]`
         );
         const formRow = document.getElementById(`dnsrecord-edit-row-${recordId}`);
-        const kebab = table.querySelector(
-            `button[aria-controls="more-actions-dnsrecord-${recordId}"]`
+        const rowDelete = table.querySelector(
+            `button[id="row-delete-button-${recordId}"]`
         );
         if (!editBtn || !formRow) return null;
         const formFirst = formRow.querySelector(
             'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
         );
         const formDelete = formRow.querySelector('[data-action="form-delete"]');
-        return { editBtn, formRow, kebab, formFirst, formDelete };
+        return { editBtn, formRow, rowDelete, formFirst, formDelete };
     }
 
     // Find the next record row's Edit button, skipping edit/comment rows between records.
@@ -274,7 +389,9 @@ export function initDNSRecordTabOrder() {
         const candidates = document.querySelectorAll(selector);
         let past = false;
         for (const el of candidates) {
-            if (past && el.offsetParent !== null) return el;
+            if (past && el.offsetParent !== null){
+                if (!table.contains(el)) return el;
+            }
             if (node === el || node.contains(el)) past = true;
         }
         return null;
@@ -311,35 +428,31 @@ export function initDNSRecordTabOrder() {
         if (e.key !== 'Tab') return;
 
         const t = e.target;
-
+        const recordId = getOpenRecordId();
+        const nextRecordEntry = recordId ? nextRecordEntryAfter(recordId) : null;
         // Tab/Shift+Tab from any record's Edit button: route based on that record's
         // form state, regardless of whether any other form is open.
         const editBtn = t.closest?.('[data-action="edit"]');
-        if (editBtn === t) {
-            const rid = editBtn.dataset.recordId;
-            const r = getRecordElements(rid);
+        if (editBtn === t && editBtn !== nextRecordEntry) {
+            const recordId = editBtn.dataset.recordId;
+            const r = getRecordElements(recordId);
             if (!r) return;
-            const isOpen = getOpenRecordId() === rid;
+            const isOpen = getOpenRecordId() === recordId;
             if (!e.shiftKey) {
-                // Edit -> first form field (open) | kebab (closed)
+                // Edit -> first form field (open) | rowDelete
                 e.preventDefault();
-                (isOpen ? r.formFirst : r.kebab)?.focus();
+                (isOpen ? r.formFirst : r.rowDelete)?.focus();
             }
             // Shift+Tab from Edit: let natural DOM order go to the previous focusable.
             return;
         }
 
         // The remaining rules apply only while a form is open.
-        const recordId = getOpenRecordId();
         if (!recordId) return;
         const elems = getRecordElements(recordId);
         if (!elems) return;
 
-        const kebabMenu = elems.kebab
-            ? document.getElementById(elems.kebab.getAttribute('aria-controls'))
-            : null;
-        const isKebabFocus = elems.kebab && (t === elems.kebab || kebabMenu?.contains(t));
-        const nextRecordEntry = nextRecordEntryAfter(recordId);
+        const isRowDeleteFocus = elems.rowDelete && (t === elems.rowDelete);
 
         // First form field -> Edit (Shift+Tab backward)
         if (e.shiftKey && t === elems.formFirst) {
@@ -347,27 +460,27 @@ export function initDNSRecordTabOrder() {
             elems.editBtn.focus();
             return;
         }
-        // Form Delete -> kebab "More options" (Tab forward)
+        // Form Delete -> row delete (Tab forward)
         if (!e.shiftKey && elems.formDelete && t === elems.formDelete) {
             e.preventDefault();
-            elems.kebab?.focus();
+            elems.rowDelete?.focus();
             return;
         }
-        // Kebab -> Form Delete (Shift+Tab backward, form open)
-        if (e.shiftKey && isKebabFocus) {
+        // Row delete -> Form Delete (Shift+Tab backward, form open)
+        if (e.shiftKey && isRowDeleteFocus) {
             e.preventDefault();
             elems.formDelete?.focus();
             return;
         }
-        // Next record's Edit -> kebab (Shift+Tab backward, form open)
-        if (e.shiftKey && elems.kebab && t === nextRecordEntry) {
+        // Next record's Edit -> Row delete (Shift+Tab backward, form open)
+        if (e.shiftKey && elems.rowDelete && t === nextRecordEntry) {
             e.preventDefault();
-            elems.kebab.focus();
+            elems.rowDelete.focus();
             return;
         }
-        // Kebab -> next record's Edit / out of table (Tab forward, form open — skip the
+        // Row delete -> next record's Edit / out of table (Tab forward, form open — skip the
         // visible form row that would otherwise be next in DOM order).
-        if (!e.shiftKey && isKebabFocus) {
+        if (!e.shiftKey && isRowDeleteFocus) {
             const destination = nextRecordEntry || nextFocusableAfterElement(table);
             if (!destination) return;
             e.preventDefault();
