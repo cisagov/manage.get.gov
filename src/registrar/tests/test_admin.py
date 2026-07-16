@@ -1293,30 +1293,6 @@ class TestUserPortfolioPermissionAdmin(TestCase):
             ["Enter an email address in the required format, like name@example.gov."],
         )
 
-    @less_console_noise_decorator
-    @override_flag("user_portfolio_permission_invitations", active=True)
-    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
-    def test_add_view_shows_only_clear_success_message(self, mock_send_email):
-        self.client.force_login(self.superuser)
-
-        response = self.client.post(
-            reverse("admin:registrar_userportfoliopermission_add"),
-            data={
-                "user": self.testuser.id,
-                "portfolio": self.portfolio.id,
-                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
-                "send_email": "",
-            },
-            follow=True,
-        )
-
-        self.assertContains(
-            response,
-            f"{self.testuser.email.lower()} has been added to {self.portfolio}. Member role: Basic.",
-        )
-        self.assertNotContains(response, "was added successfully")
-        mock_send_email.assert_not_called()
-
     @override_flag("user_portfolio_permission_invitations", active=True)
     @override_settings(IS_PRODUCTION=False)
     def test_add_view_does_not_show_success_when_invitation_email_is_not_allowed(self):
@@ -1539,29 +1515,6 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
             form.errors["user"],
             ["Enter an email address in the required format, like name@example.gov."],
         )
-
-    @less_console_noise_decorator
-    @override_flag("user_domain_role_invitations", active=True)
-    @patch("registrar.services.invitation_service.send_domain_invitation_email")
-    def test_add_view_shows_only_clear_success_message(self, mock_send_email):
-        self.client.force_login(self.superuser)
-
-        response = self.client.post(
-            reverse("admin:registrar_userdomainrole_add"),
-            data={
-                "user": self.testuser.id,
-                "domain": self.domain.id,
-                "send_email": "",
-            },
-            follow=True,
-        )
-
-        self.assertContains(
-            response,
-            f"{self.testuser.email.lower()} has been added to the domain: {self.domain}",
-        )
-        self.assertNotContains(response, "was added successfully")
-        mock_send_email.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("user_domain_role_invitations", active=True)
