@@ -32,7 +32,7 @@ def post_fork(server, worker):
 
 def worker_exit(server, worker):
     """Runs in each worker as it exits; logs out pooled EPP connections."""
-    # import here, not module level - this file is also read by the
+    # import here, not module level. This file is also read by the
     # gunicorn master process, which must not initialize the app
     from epplibwrapper.client import CLIENT
 

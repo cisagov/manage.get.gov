@@ -30,6 +30,7 @@ applications:
     # VERSION INFO 
     GIT_BRANCH: ((GIT_BRANCH))
     GIT_COMMIT_SHA: ((GIT_COMMIT_SHA))
+    EPP_CONNECTION_POOl_SIZE: 10
   routes:
     - route: getgov-development.app.cloud.gov
   services:
