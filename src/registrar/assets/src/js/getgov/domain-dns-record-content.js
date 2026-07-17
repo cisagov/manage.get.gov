@@ -613,18 +613,33 @@ export function initDeleteDnsRecord() {
         const focusElement = deleteBtn;
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
-        openModal(modalTrigger, modal, focusElement);
-        submitDelete(recordId)
+
+        const handleDelete = (e) => {
+            e.preventDefault()
+            const table = document.getElementById("dnsrecords-table");
+            const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
+            deleteSubmitTrigger.click()
+        }
+        const modalDeleteButton = document.getElementById("confirm-delete-record-button")
+        // Set up delete handler before opening modal
+        submitDelete(recordId, handleDelete, modalDeleteButton);
+        handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete);
     });
 
-    const openModal = (modalTrigger, modal, focusElement) => {
-            // Listen for when the modal closes
+    const handleModal = (modalTrigger, modal, focusElement, modalConfirmButton, handleConfirm) => {
+
+
+        // Listen for when the modal closes
         if (modal) {
             const closeButtons = modal.querySelectorAll("[data-close-modal]")
 
-            // targets the "X" and "Cancel" or "Go back" and moves focus to the focusElement after closing the modal
+
+            // targets the "X" and "Cancel" or "Go back", removes the delete handler, and moves focus to the focusElement after closing the modal
             closeButtons.forEach(btn => {
                 btn.addEventListener("click", () => {
+                    modalConfirmButton.removeEventListener("click", handleConfirm);
+                    delete modalConfirmButton._confirmHandler;
+
                     // Defer focus restoration to after modal closes
                     focusElement?.focus()
                     setTimeout(() => {
@@ -635,6 +650,9 @@ export function initDeleteDnsRecord() {
 
             // Handle ESC key press to close modal --> move focus to focusElement
             const handleEscKey = (e) => {
+                modalConfirmButton.removeEventListener("click", handleConfirm);
+                delete modalConfirmButton._confirmHandler;
+
                 if (e.key === "Escape") {
                     setTimeout(() => {
                         focusElement?.focus();
@@ -643,23 +661,25 @@ export function initDeleteDnsRecord() {
                 }
             };
             document.addEventListener("keydown", handleEscKey);
+
+
         }
         // opens modal
         modalTrigger?.click()
     }
 
-    const submitDelete = (recordId) => {
-        const modalDeleteButton = document.getElementById("confirm-delete-record-button")
+    const submitDelete = (recordId, handleDelete, modalDeleteButton) => {
         if(!modalDeleteButton) return;
 
         modalDeleteButton.setAttribute("data-close-modal", "")
-        modalDeleteButton?.addEventListener("click", (e) => {
 
-            e.preventDefault()
+        // Clean up any existing delete handlers
+        modalDeleteButton.removeEventListener("click", modalDeleteButton._confirmHandler);
 
-            const table = document.getElementById("dnsrecords-table");
-            const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
-            deleteSubmitTrigger.click()
-        }, { once: true })
+        // Store the handler on the element so we can remove it later
+        modalDeleteButton._deleteHandler = handleDelete;
+
+        // Add the new listener
+        modalDeleteButton?.addEventListener("click", handleDelete, { once: true })
     }
 }
