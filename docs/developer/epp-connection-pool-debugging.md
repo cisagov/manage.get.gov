@@ -12,7 +12,7 @@ is using it) or **in the idle queue**. A request borrows a connection through th
 `connection()` context manager and returns it when done. Idle connections wait in a
 LIFO queue, so the most recently used (warmest) connection is reused first.
 
-A background maintenance thread (`epp-pool-maintenance`) periodically **pings**
+A background maintenance thread (`epp-pool-maintenance`) periodically pings
 idle connections with an EPP `Hello` so silently dropped sockets are found and
 replaced before a request touches them (`EPP_POOL_HEARTBEAT_INTERVAL`), then
 replenishes the pool with fresh connections.
@@ -23,7 +23,7 @@ Vocabulary used in the code and logs:
 - **discard** — the connection is presumed dead: close the socket only (no `Logout`,
   which would just fail and add noise).
 - **retire** — the connection is believed healthy but no longer wanted (worker
-  shutdown): graceful `Logout` + close.--- TODO remove?
+  shutdown): graceful `Logout` + close.
 
 ## Reading `stats()`
 

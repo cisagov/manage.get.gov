@@ -849,7 +849,6 @@ EPP_POOL_HEARTBEAT_INTERVAL = (
     env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=30) if not (RUNNING_TESTS or IS_LOCAL) else 0
 )
 
-
 # Max seconds an established EPP socket may block on a read/send before raising
 # (does not bound the initial TCP connect). The registry normally responds in
 # milliseconds; this is a backstop so an unresponsive registry cannot hang a
