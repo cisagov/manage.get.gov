@@ -8,7 +8,7 @@ from waffle.testutils import override_flag
 
 from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
-from registrar.utility.errors import APIError, DnsHostingError
+from registrar.utility.errors import DnsHostingError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,

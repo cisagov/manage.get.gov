@@ -634,7 +634,8 @@ export function initDeleteDnsRecord() {
             const closeButtons = modal.querySelectorAll("[data-close-modal]")
 
 
-            // targets the "X" and "Cancel" or "Go back", removes the delete handler, and moves focus to the focusElement after closing the modal
+            // targets the "X" and "Cancel" or "Go back", removes the delete handler,
+            // and moves focus to the focusElement after closing the modal
             closeButtons.forEach(btn => {
                 btn.addEventListener("click", () => {
                     modalConfirmButton.removeEventListener("click", handleConfirm);
