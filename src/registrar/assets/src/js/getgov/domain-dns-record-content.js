@@ -613,14 +613,25 @@ export function initDeleteDnsRecord() {
         const focusElement = deleteBtn;
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
+        const modalDeleteButton = document.getElementById("confirm-delete-record-button")
 
         const handleDelete = (e) => {
-            e.preventDefault()
             const table = document.getElementById("dnsrecords-table");
             const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
             deleteSubmitTrigger.click()
+            console.log("in handle, ready to close modal")
+            const closeBtn = modal.querySelector("[data-close-modal]");
+            closeBtn?.click();
         }
-        const modalDeleteButton = document.getElementById("confirm-delete-record-button")
+
+        const handleKeydown = (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopImmediatePropagation(); // try to run before USWDS's own handler
+                handleDelete(e);
+            }
+};
+        modalDeleteButton.addEventListener("keydown", handleKeydown, { once: true });
         // Set up delete handler before opening modal
         submitDelete(recordId, handleDelete, modalDeleteButton);
         handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete);
@@ -632,7 +643,6 @@ export function initDeleteDnsRecord() {
         // Listen for when the modal closes
         if (modal) {
             const closeButtons = modal.querySelectorAll("[data-close-modal]")
-
 
             // targets the "X" and "Cancel" or "Go back", removes the delete handler,
             // and moves focus to the focusElement after closing the modal
@@ -663,7 +673,6 @@ export function initDeleteDnsRecord() {
             };
             document.addEventListener("keydown", handleEscKey);
 
-
         }
         // opens modal
         modalTrigger?.click()
@@ -671,16 +680,11 @@ export function initDeleteDnsRecord() {
 
     const submitDelete = (recordId, handleDelete, modalDeleteButton) => {
         if(!modalDeleteButton) return;
-
-        modalDeleteButton.setAttribute("data-close-modal", "")
-
         // Clean up any existing delete handlers
         modalDeleteButton.removeEventListener("click", modalDeleteButton._confirmHandler);
-
         // Store the handler on the element so we can remove it later
-        modalDeleteButton._deleteHandler = handleDelete;
-
+        modalDeleteButton._confirmHandler = handleDelete;
         // Add the new listener
-        modalDeleteButton?.addEventListener("click", handleDelete, { once: true })
+        modalDeleteButton.addEventListener("click", handleDelete, { once: true })
     }
 }
