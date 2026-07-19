@@ -624,7 +624,7 @@ export function initDeleteDnsRecord() {
             closeBtn?.click();
         }
 
-        const handleKeydown = (e) => {
+        const handleEnterKeydown = (e) => {
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 e.stopImmediatePropagation(); // try to run before USWDS's own handler
@@ -632,14 +632,12 @@ export function initDeleteDnsRecord() {
             }
         };
 
-        modalDeleteButton._keydownHandler = handleKeydown;
-        modalDeleteButton.addEventListener("keydown", handleKeydown, { once: true });
         // Set up delete handler before opening modal
-        submitDelete(recordId, handleDelete, modalDeleteButton);
-        handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete, handleKeydown);
+        submitDelete(handleDelete, handleEnterKeydown, modalDeleteButton);
+        handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete, handleEnterKeydown);
     });
 
-    const handleModal = (modalTrigger, modal, focusElement, modalConfirmButton, handleConfirm, handleKeydown) => {
+    const handleModal = (modalTrigger, modal, focusElement, modalConfirmButton, handleConfirm, handleEnterKeydown) => {
 
 
         // Listen for when the modal closes
@@ -650,7 +648,7 @@ export function initDeleteDnsRecord() {
                 modalConfirmButton.removeEventListener("click", handleConfirm);
                 delete modalConfirmButton._confirmHandler;
 
-                modalConfirmButton.removeEventListener("keydown", handleKeydown);
+                modalConfirmButton.removeEventListener("keydown", handleEnterKeydown);
                 delete modalConfirmButton._keydownHandler;
             };
             // targets the "X" and "Cancel" or "Go back", removes the delete handler,
@@ -686,8 +684,16 @@ export function initDeleteDnsRecord() {
         modalTrigger?.click()
     }
 
-    const submitDelete = (recordId, handleDelete, modalDeleteButton) => {
+    const submitDelete = (handleDelete, handleEnterKeydown, modalDeleteButton) => {
         if(!modalDeleteButton) return;
+
+        // if modal delete button event is keydown and 'Enter', handle delete
+        modalDeleteButton._keydownHandler = handleEnterKeydown;
+        modalDeleteButton.addEventListener("keydown", handleEnterKeydown, { once: true });
+
+        // OR
+
+        // if modal delete button is a click event, handle delete
         // Clean up any existing delete handlers
         modalDeleteButton.removeEventListener("click", modalDeleteButton._confirmHandler);
         // Store the handler on the element so we can remove it later
