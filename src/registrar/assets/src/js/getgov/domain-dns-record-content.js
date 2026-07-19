@@ -630,26 +630,34 @@ export function initDeleteDnsRecord() {
                 e.stopImmediatePropagation(); // try to run before USWDS's own handler
                 handleDelete(e);
             }
-};
+        };
+
+        modalDeleteButton._keydownHandler = handleKeydown;
         modalDeleteButton.addEventListener("keydown", handleKeydown, { once: true });
         // Set up delete handler before opening modal
         submitDelete(recordId, handleDelete, modalDeleteButton);
-        handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete);
+        handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete, handleKeydown);
     });
 
-    const handleModal = (modalTrigger, modal, focusElement, modalConfirmButton, handleConfirm) => {
+    const handleModal = (modalTrigger, modal, focusElement, modalConfirmButton, handleConfirm, handleKeydown) => {
 
 
         // Listen for when the modal closes
         if (modal) {
             const closeButtons = modal.querySelectorAll("[data-close-modal]")
 
+            const cleanupHandlers = () => {
+                modalConfirmButton.removeEventListener("click", handleConfirm);
+                delete modalConfirmButton._confirmHandler;
+
+                modalConfirmButton.removeEventListener("keydown", handleKeydown);
+                delete modalConfirmButton._keydownHandler;
+            };
             // targets the "X" and "Cancel" or "Go back", removes the delete handler,
             // and moves focus to the focusElement after closing the modal
             closeButtons.forEach(btn => {
                 btn.addEventListener("click", () => {
-                    modalConfirmButton.removeEventListener("click", handleConfirm);
-                    delete modalConfirmButton._confirmHandler;
+                    cleanupHandlers()
 
                     // Defer focus restoration to after modal closes
                     focusElement?.focus()
@@ -661,10 +669,10 @@ export function initDeleteDnsRecord() {
 
             // Handle ESC key press to close modal --> move focus to focusElement
             const handleEscKey = (e) => {
-                modalConfirmButton.removeEventListener("click", handleConfirm);
-                delete modalConfirmButton._confirmHandler;
+
 
                 if (e.key === "Escape") {
+                    cleanupHandlers()
                     setTimeout(() => {
                         focusElement?.focus();
                     }, 50);
