@@ -733,8 +733,10 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.retrieve()
+                permission_legacy = legacy_invitation.retrieve()
                 legacy_invitation.save()
+                if not permission:
+                    permission = permission_legacy
 
             logger.info(f"User {user.id} accepted portfolio invitation " f"for {portfolio.id}")
             return permission
@@ -785,8 +787,10 @@ def accept_domain_invitation(user: User, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.retrieve()
+                domain_role_legacy = legacy_invitation.retrieve()
                 legacy_invitation.save()
+                if not domain_role:
+                    domain_role = domain_role_legacy
 
             logger.info(f"User {user.id} accepted domain invitation for {domain.id}")
             return domain_role
@@ -837,7 +841,7 @@ def cancel_domain_invitation(email: str, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.status = DomainInvitation.DomainInvitationStatus.CANCELED
+                legacy_invitation.cancel_invitation()
                 legacy_invitation.save()
                 canceled = True
 

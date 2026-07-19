@@ -207,6 +207,7 @@ class PortfolioInvitation(TimeStampedModel):
         if self.additional_permissions and len(self.additional_permissions) > 0:
             user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
+        return user_portfolio_permission
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""

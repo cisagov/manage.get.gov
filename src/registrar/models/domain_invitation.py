@@ -66,13 +66,14 @@ class DomainInvitation(TimeStampedModel):
             raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
 
         # and create a role for that user on this domain
-        _, created = UserDomainRole.objects.get_or_create(
+        domain_role, created = UserDomainRole.objects.get_or_create(
             user=user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         if not created:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
             logger.warning("Invitation %s was retrieved for a role that already exists.", self)
+        return domain_role
 
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
