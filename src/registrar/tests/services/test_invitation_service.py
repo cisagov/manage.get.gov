@@ -482,7 +482,6 @@ class TestInvitationService(TestCase):
         invitation = DomainInvitation.objects.get(domain=self.domain)
         self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
 
-
     def test_cancel_portfolio_invitation_with_camelcase_email(self):
         """Test that cancel_portfolio_invitation works with camelcased stored emails."""
         # Create invitation with camelCase
@@ -502,7 +501,6 @@ class TestInvitationService(TestCase):
         with self.assertRaises(PortfolioInvitation.DoesNotExist):
             PortfolioInvitation.objects.get(portfolio=self.portfolio)
 
-
     def test_cancel_domain_invitation_with_camelcase_email(self):
         """Test that cancel_portfolio_invitation works with camelcased stored emails."""
         # Create invitation with camelCase
@@ -519,5 +517,3 @@ class TestInvitationService(TestCase):
         self.assertTrue(result)
         invitation = DomainInvitation.objects.get(pk=invite.pk)
         self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)
-
-
