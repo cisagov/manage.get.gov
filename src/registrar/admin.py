@@ -5139,7 +5139,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_state_territory",
         "state",
         "expiration_date",
-        "created_at",
+        "created_at_display",
         "first_ready",
         "on_hold_date_display",
         "days_on_hold_display",
@@ -5246,6 +5246,12 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Use native value for the change form
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
+
+    @admin.display(description=_("Created at"), ordering="x_registry_created_at")
+    def created_at_display(self, obj):
+        """Registry creation date, falling back to the registrar record date so UNKNOWN domains
+        (which have no registry date) still show a date, matching the old created_at column."""
+        return obj.display_created_at
 
     # --- On hold date / days on hold
     @admin.display(description=_("On hold date"))

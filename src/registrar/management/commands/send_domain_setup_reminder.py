@@ -120,8 +120,8 @@ class Command(BaseCommand):
         seven_days_ago_start, seven_days_ago_end = self._get_seven_days_ago_date_range(today)
 
         domains = Domain.objects.filter(
-            created_at__gte=seven_days_ago_start,
-            created_at__lte=seven_days_ago_end,
+            created_at_reference__gte=seven_days_ago_start,
+            created_at_reference__lte=seven_days_ago_end,
             state__in=[Domain.State.UNKNOWN, Domain.State.DNS_NEEDED],
         ).exclude(state=Domain.State.DELETED)
 

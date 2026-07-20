@@ -271,6 +271,12 @@ class Domain(TimeStampedModel, DomainHelper):
             self.created_at_reference = self.created_at
         self._original_updated_at = self.updated_at
 
+    @property
+    def display_created_at(self):
+        """Creation date shown in the UI: the registry creation date, falling
+        back to the registrar record date for domains that never reached the registry (e.g. UNKNOWN)."""
+        return self.x_registry_created_at or self.created_at_reference
+
     @classmethod
     def available(cls, domain: str) -> bool:
         """Check if a domain is available.
