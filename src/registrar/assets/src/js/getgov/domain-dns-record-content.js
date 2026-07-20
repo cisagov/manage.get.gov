@@ -260,8 +260,16 @@ export function initDNSRecordCancelModal(){
             return;
     }
 
+    const resetSwitcherValues = ()=>{
+            const switcher = getSwitcher()
+            if(switcher.isRecordType){
+                    switcher.updateSelectedType(switcher.pending.recordId);
+            }
+            switcher && switcher.resetPendingAndTarget()
+         }
+
     const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-    const cancelButton = modalEl?.querySelector("[data-close-modal]");
+    const cancelButtons = modalEl?.querySelectorAll("[data-close-modal]");
 
     confirmButton.addEventListener("click", () => {
 
@@ -277,20 +285,19 @@ export function initDNSRecordCancelModal(){
 
 
         modalEl?.setAttribute("data-opener", refsFor(switcher.createReq(switcher.target)).focusId);
-        cancelButton.click();
+        cancelButtons[0].click();
         switcher.switchForm();
     });
 
-    cancelButton.addEventListener("click", (e) => {
-        if(e.isTrusted){
-                const switcher = getSwitcher()
-                if(switcher.isRecordType){
-                    switcher.updateSelectedType(switcher.pending.recordId);
-                }
-                switcher && switcher.resetPendingAndTarget()
-           }
-        }
-    );
+    // reset the switcher values when user clikcks on the cancel, 'x', and the outside modal.
+
+    document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]')?.addEventListener("click", ()=>{
+         resetSwitcherValues()
+    })
+    
+    for(let button of cancelButtons){
+         button.addEventListener("click", () => resetSwitcherValues())
+    }
 
 
     // addRecordButtonEventListener(alpineData, initialState, container)
@@ -301,12 +308,13 @@ export function initDNSRecordCancelModal(){
     const recordTypeSwitcher = new RecordSelectTypeSwitcher(container);
     // add edit button event listener
     editButtonEventListener(editFormSwitcher, recordTypeSwitcher)
-    const selectRecordType = container.addEventListener("change", (e)=> {
-        // grabbing from container to add event listener to select type form, since select type form is a swapped element
+
+    // grabbing from form container to add event listener to select type form, since select type form is a swapped element
+    container.addEventListener("change", (e)=> {
         if(e.target.matches("#id_type")){
-                  if(!e.isTrusted){
+         if(!e.isTrusted){
             return;
-        }
+          }
         const index = e.target.selectedIndex;
         recordTypeSwitcher.attemptOpen(index);
         onCancel(recordTypeSwitcher)
