@@ -22,7 +22,6 @@ from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
     HAS_PORTFOLIO_MEMBERS_EDIT,
-    HAS_PORTFOLIO_MEMBERS_ANY_PERM,
     HAS_PORTFOLIO_MEMBERS_VIEW,
     ALL,
 )
@@ -110,8 +109,8 @@ URL_PERMISSIONS = {
     "get-rejection-email-for-user-json": [IS_CISA_ANALYST, IS_FULL_ACCESS, IS_OMB_ANALYST],
     "get_domains_json": [ALL],
     "get_domain_requests_json": [ALL],
-    "get_portfolio_members_json": [HAS_PORTFOLIO_MEMBERS_ANY_PERM],
-    "get_member_domains_json": [HAS_PORTFOLIO_MEMBERS_ANY_PERM],
+    "get_portfolio_members_json": [HAS_PORTFOLIO_MEMBERS_VIEW],
+    "get_member_domains_json": [HAS_PORTFOLIO_MEMBERS_VIEW],
     "get-messages": [IS_DOMAIN_MANAGER, IS_STAFF],
     # User profile
     "finish-user-profile-setup": [ALL],

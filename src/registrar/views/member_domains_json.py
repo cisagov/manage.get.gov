@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.views import View
-from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
+from registrar.decorators import HAS_PORTFOLIO_MEMBERS_VIEW, grant_access
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.urls import reverse
 from django.db.models import Q
@@ -14,7 +14,7 @@ from registrar.models.domain_invitation import DomainInvitation
 logger = logging.getLogger(__name__)
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioMemberDomainsJson(View):
 
     def get(self, request):

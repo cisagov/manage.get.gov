@@ -30,7 +30,6 @@ HAS_PORTFOLIO_DOMAINS_ANY_PERM = "has_portfolio_domains_any_perm"
 HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
-HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
 HAS_LEGACY_AND_ORG_USER = "has_legacy_and_org_user"
@@ -185,15 +184,6 @@ def _user_has_permission(user, request, rules, **kwargs):
             HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT,
             lambda: _has_portfolio_domain_requests_edit(user, portfolio, kwargs.get("domain_request_pk"))
             and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
-        ),
-        (
-            HAS_PORTFOLIO_MEMBERS_ANY_PERM,
-            lambda: is_org
-            and (
-                user.has_view_members_portfolio_permission(portfolio)
-                or user.has_edit_members_portfolio_permission(portfolio)
-            )
-            and _member_checks(portfolio, kwargs),
         ),
         (
             HAS_PORTFOLIO_MEMBERS_EDIT,
