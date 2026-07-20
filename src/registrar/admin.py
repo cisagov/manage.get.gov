@@ -5247,10 +5247,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
-    @admin.display(description=_("Created at"), ordering="x_registry_created_at")
+    @admin.display(
+        description=_("Created at"),
+        ordering=Coalesce("x_registry_created_at", "created_at_reference"),
+    )
     def created_at_display(self, obj):
         """Registry creation date, falling back to the registrar record date so UNKNOWN domains
-        (which have no registry date) still show a date, matching the old created_at column."""
+        (which have no registry date) still show a date, matching the old created_at column.
+        The ordering mirrors that fallback so the column sorts by the value it displays."""
         return obj.display_created_at
 
     # --- On hold date / days on hold
