@@ -1286,10 +1286,10 @@ class Domain(TimeStampedModel, DomainHelper):
         - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
         """
         from registrar.models import (
-            DnsAccount,
             DnsZone,
             DnsRecord
         )
+        # TODO: have django cascade delete grandchild object when grandparent object deleted
         if self.is_enrolled_in_dns_hosting:
             logger.debug("Deleting DNS data for %s.", self.name)
             try:
