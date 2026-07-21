@@ -101,7 +101,12 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "federaltribe",
-                "permissions": ["add_federaltribe", "change_federaltribe", "delete_federaltribe", "view_federaltribe"],
+                "permissions": ["view_federaltribe"],
+            },
+            {
+                "app_label": "registrar",
+                "model": "statetribe",
+                "permissions": ["add_statetribe", "change_statetribe", "delete_statetribe", "view_statetribe"],
             },
         ]
 

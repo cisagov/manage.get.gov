@@ -103,8 +103,14 @@
 
     <!-- Yellow banner with exclamation mark in a triangle: -->
     {% include "includes/banner-warning.html" %}
+
+    <!-- Inline banner info with slim design -->
+    {% include "includes/banner-info-inline.html" title="words in bold that start the sentence" aria_label="label for the screen reader" message="Words that appear after the title"%}
   {% endcomment %}
+
   
+
+
   <section class="usa-banner" aria-label="Official website of the United States government">
     <div class="usa-accordion">
       <header class="usa-banner__header">
@@ -162,6 +168,8 @@
     </div>
   </section>
 
+    <!-- Banner for DNS Hosting Info -->
+  {% include "includes/banner-info-inline.html" with title="DNS hosting coming in late 2026:" aria_label="DNS hosting announcement" message="We're looking for volunteers who can provide feedback and participate in user research. <a rel='noopener noreferrer' target='_blank' href='https://get.gov/contact/' class='usa-link'>Contact us</a> if you're interested."%}
 
   <div class="usa-overlay"></div>
   {% block header %}

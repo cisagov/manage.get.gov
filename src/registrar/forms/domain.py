@@ -33,10 +33,9 @@ from registrar.validations import (
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
     CNAME_TARGET_INLINE_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIRED_ERROR_MESSAGE,
-    DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
-    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIREMENT,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
@@ -810,8 +809,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
-            # Priority is required only for MX records
-            self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
         config = {
             rt.value: {
@@ -879,14 +876,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    priority = forms.IntegerField(
+    priority = forms.CharField(
         label="Priority",
         required=False,
-        min_value=0,
-        max_value=65535,
-        help_text="0 - 65535",
+        help_text="0–65535",
         error_messages={
-            "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
             "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
@@ -927,6 +921,23 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type and DNSRecordTypes(record_type).cleaner:
             content = DNSRecordTypes(record_type).cleaner(content)
         return content
+
+    def clean_priority(self):
+        record_type = self.cleaned_data.get("type")
+        if record_type != DNSRecordTypes.MX:
+            return
+
+        priority = self.cleaned_data.get("priority")
+        if priority == "":
+            priority = None
+            return priority
+
+        try:
+            priority = int(priority)
+        except ValueError:
+            self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
+
+        return priority
 
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""
@@ -997,13 +1008,15 @@ class DomainDNSRecordForm(forms.ModelForm):
         records are allowed to share names with other types (standard practice: e.g.
         MX at the root alongside A, or SPF/DKIM TXT alongside A).
         """
-        if DnsRecord.has_name_conflict(
+        conflict_query = DnsRecord.has_name_conflict(
             domain_name=self.domain_name,
             record_type=record_type,
             name=name,
             exclude_record_id=self.instance.pk,
-        ):
-            self.add_error("name", DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE)
+        )
+        if conflict_query:
+            error_message = DnsRecord.get_conflict_error_message(record_type, conflict_query)
+            self.add_error("name", error_message)
 
     def _validate_duplicate_record(self, record_type, name, content, priority):
         """Flag when the submitted record matches an existing record in the zone.
@@ -1022,12 +1035,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         ):
             return
 
-        message = "You already entered this DNS record. DNS records must be unique."
-        self.add_error(None, message)
-        self.add_error("name", message)
-        self.add_error("content", message)
+        self.add_error(None, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        self.add_error("name", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
+        self.add_error("content", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
         if DNSRecordTypes(record_type) == DNSRecordTypes.MX:
-            self.add_error("priority", message)
+            self.add_error("priority", DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
 
     def clean(self):
         cleaned_data = super().clean()

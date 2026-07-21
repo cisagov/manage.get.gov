@@ -33,7 +33,7 @@
                 <p class="measure-none">
                     To create a new record, select “Add record” and enter the required values. To update an existing record, click “Edit.”
                 </p>
-                <div class="display-flex flex-align-center margin-top-4 margin-bottom-1">
+                <div class="display-flex flex-align-center margin-top-5 margin-bottom-1">
                     <div class="grid-col">
                         <h2 class="margin-top-0 margin-bottom-0">Manage DNS records</h2>
                     </div>
@@ -42,7 +42,6 @@
                             class="usa-button"
                             id="add-dnsrecord-button"
                             type="button"
-                            x-on:click="showFormId = 0"
                         >
                             Add record
                         </button>
@@ -51,9 +50,12 @@
 
                 <div class="margin-bottom-5" x-cloak x-show="showFormId == 0">
                     {% include "includes/required_fields.html" %}
-
-                    <section class="border radius-lg border-base-lighter padding-3">
-                    <form
+                
+                    <section class="border radius-lg border-base-lighter padding-3"
+                        :class="{ 'padding-bottom-5': !recordType }"
+                        x-init="recordType = ($el.querySelector('#id_type') || {}).value || recordType"
+                        x-on:change="if ($event.target && $event.target.id === 'id_type') { recordType = $event.target.value }">
+                    <form 
                         class="usa-form usa-form--extra-large"
                         hx-post="{% url 'domain-dns-records' domain.pk %}"
                         hx-swap="innerHTML show:top"
@@ -77,11 +79,11 @@
         {% include "domain_dns_records_table.html" %}
     </div>
 
-    <h2 class="h3 margin-top-6 margin-bottom-2">Authoritative nameservers</h2>
+    <h2 class="h3 margin-top-6 margin-bottom-2">Authoritative name servers</h2>
     <div class="grid-row">
         <div class="grid-col-12">
             <p class="measure-none margin-bottom-1 margin-top-0">
-                Name servers indicate which DNS server is authoritative for your domain. Every .gov domain enrolled in DNS hosting is assigned a set of default name servers, which cannot be edited.
+                Name servers tell the internet where to find your domain’s DNS records. Domains enrolled in .gov DNS hosting are assigned default name servers that cannot be changed.
             </p>
         </div>
     </div>
