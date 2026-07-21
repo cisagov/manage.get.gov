@@ -76,6 +76,7 @@ TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080
 HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
 DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "This DNS record is already associated with this domain. "
 "DNS records must be unique."
+MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE = "Combined content length of records with this name and type must not exceed 8192 characters."
 
 
 
