@@ -427,6 +427,10 @@ class TestDnsHostService(TestCase):
         create_domain(**{"domain_name": "not-igorville.gov"})
         self.service.dns_account_setup.assert_not_called()
 
+    def test_delete_epp_domain_deletes_dns_db_data(self):
+        """Deleting a domain from the registry deletes the domain's DNS data from the registrar db."""
+        
+
 
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):

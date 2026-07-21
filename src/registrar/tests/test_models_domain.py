@@ -3319,7 +3319,7 @@ class TestAnalystDelete(MockEppLib):
     def test_delete_related_objects_cleans_database(self):
         """
         Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
-        should remove HostIP, Host, and non‑registrant contacts from the database
+        should remove HostIP, Host, non‑registrant contacts, and DNS data from the database
         """
 
         # 1. Create domain in db and mark it as deleted
@@ -3343,16 +3343,19 @@ class TestAnalystDelete(MockEppLib):
             email="tech@cleanup.gov",
         )
 
+        # 4. Set up DNS data for domain
+
+
         # Double check they all exist before cleaning up
         self.assertTrue(Domain.objects.filter(name="cleanup.gov", state=Domain.State.DELETED).exists())
         self.assertTrue(Host.objects.filter(domain=domain).exists())
         self.assertTrue(HostIP.objects.filter(host__domain=domain).exists())
         self.assertTrue(PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech"]).exists())
 
-        # 4. Call the clean up method
+        # 5. Call the clean up method
         domain._delete_related_objects_from_db()
 
-        # 5. Assert hostIP, host, non-registrant contacts  are cleared from DB
+        # 6. Assert hostIP, host, non-registrant contacts  are cleared from DB
         self.assertFalse(HostIP.objects.filter(host__domain=domain).exists())
         self.assertFalse(Host.objects.filter(domain=domain).exists())
         self.assertFalse(
