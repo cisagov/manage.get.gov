@@ -480,8 +480,8 @@ class TestPopulateFirstReady(TestCase):
         """
         Tests that the populate_first_ready works as expected for the state 'ready'
         """
-        # Set the created at date
-        self.ready_domain.created_at = self.ready_at_date_tz_aware
+        # Set the registry creation date
+        self.ready_domain.x_registry_created_at = self.ready_at_date_tz_aware
         self.ready_domain.save()
         desired_domain = copy.deepcopy(self.ready_domain)
         desired_domain.first_ready = self.ready_at_date
@@ -497,8 +497,8 @@ class TestPopulateFirstReady(TestCase):
         """
         Tests that the populate_first_ready works as expected for the state 'deleted'
         """
-        # Set the created at date
-        self.deleted_domain.created_at = self.ready_at_date_tz_aware
+        # Set the registry creation date
+        self.deleted_domain.x_registry_created_at = self.ready_at_date_tz_aware
         self.deleted_domain.save()
         desired_domain = copy.deepcopy(self.deleted_domain)
         desired_domain.first_ready = self.ready_at_date
@@ -534,7 +534,7 @@ class TestPopulateFirstReady(TestCase):
         """
         Tests that the populate_first_ready works as expected for the state 'on_hold'
         """
-        self.hold_domain.created_at = self.ready_at_date_tz_aware
+        self.hold_domain.x_registry_created_at = self.ready_at_date_tz_aware
         self.hold_domain.save()
         desired_domain = copy.deepcopy(self.hold_domain)
         desired_domain.first_ready = self.ready_at_date
