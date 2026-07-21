@@ -3316,6 +3316,48 @@ class TestAnalystDelete(MockEppLib):
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
+    def test_delete_domain_in_epp_deletes_db_dns_data(self):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            DnsZone,
+            DnsRecord
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        dns_account_id, dns_zone_id = dns_account.id, dns_zone.id
+
+        self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+
+        # Delete the domain
+        domain.deleteInEpp()
+        domain.save()
+
+        self.assertFalse(
+            DnsAccount.objects.filter(id=dns_account_id).exists()
+        )
+        self.assertFalse(
+            DnsZone.objects.filter(domain=domain).exists()
+        )
+        self.assertFalse(
+            DnsRecord.objects.filter(dns_zone_id=dns_zone_id).exists()
+        )
+
     def test_delete_related_objects_cleans_database(self):
         """
         Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
@@ -3343,19 +3385,16 @@ class TestAnalystDelete(MockEppLib):
             email="tech@cleanup.gov",
         )
 
-        # 4. Set up DNS data for domain
-
-
         # Double check they all exist before cleaning up
         self.assertTrue(Domain.objects.filter(name="cleanup.gov", state=Domain.State.DELETED).exists())
         self.assertTrue(Host.objects.filter(domain=domain).exists())
         self.assertTrue(HostIP.objects.filter(host__domain=domain).exists())
         self.assertTrue(PublicContact.objects.filter(domain=domain).filter(contact_type__in=["admin", "tech"]).exists())
 
-        # 5. Call the clean up method
+        # 4. Call the clean up method
         domain._delete_related_objects_from_db()
 
-        # 6. Assert hostIP, host, non-registrant contacts  are cleared from DB
+        # 5. Assert hostIP, host, non-registrant contacts  are cleared from DB
         self.assertFalse(HostIP.objects.filter(host__domain=domain).exists())
         self.assertFalse(Host.objects.filter(domain=domain).exists())
         self.assertFalse(
