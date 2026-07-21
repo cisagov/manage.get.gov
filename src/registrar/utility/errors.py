@@ -360,23 +360,20 @@ class DnsHostingError(Exception):
             '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a>'
             f"for assistance and share this ID {request_id}."
 
-            return {
-            DnsHostingErrorCodes.NOT_FOUND: mark_safe(error_msg),
-            DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(
-                "There’s something wrong with the DNS record information you provided. Please try again."
-                "If the problem persists, "
-                '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
-            ),
-            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
-                "You’re making changes too quickly. Please wait a moment and try again."
-            ),
-            DnsHostingErrorCodes.AUTH_FAILED: mark_safe(error_msg),
-            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: mark_safe(error_msg),
-            DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
-            DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
+        return {
+        DnsHostingErrorCodes.NOT_FOUND: mark_safe(error_msg),
+        DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(
+            "There’s something wrong with the DNS record information you provided. Please try again."
+            "If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
+        ),
+        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: mark_safe(error_msg),
+        DnsHostingErrorCodes.AUTH_FAILED: mark_safe(error_msg),
+        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: mark_safe(error_msg),
+        DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
+        DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
         }
-        else:
-            Exception("Must build message with `request_id` using get_message")
+
 
     def __init__(self, *, code=None, message=GENERIC_ERROR_MESSAGE, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
