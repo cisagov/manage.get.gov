@@ -509,13 +509,24 @@ class MockCloudflareService:
                 },
                 headers={"cf-ray": "BB12"},
             )
-        if record_name.startswith("error-400"):
+        if record_name.startswith("error-content"):
             return httpx.Response(
                 400,
                 json={
                     "result": None,
                     "success": False,
                     "errors": [{"code": 9007, "message": f"Content for {record_type} record is invalid."}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "R2D2"},
+            )
+        if record_name.startswith("error-400"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 0000, "message": "Unidentified 400 error"}],
                     "messages": [],
                 },
                 headers={"cf-ray": "R2D2"},
