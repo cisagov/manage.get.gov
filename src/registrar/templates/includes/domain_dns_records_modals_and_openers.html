@@ -13,7 +13,6 @@ data-open-modal
 <div
     class="usa-modal"
     id="delete-dns-record-modal"
-    aria-labelledby="delete-dns-record-heading"
 >
     {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="confirm-delete-record-button" modal_button_class="usa-button--secondary" modal_button_text="Yes, delete"  %}
 </div>
@@ -31,8 +30,6 @@ data-open-modal
 <div
     class="usa-modal"
     id="toggle-cancel-add-dnsrecord"
-    aria-labelledby="cancel-add-dnsrecord-heading"
-    aria-describedby="cancel-add-dnsrecord-description"
 >
     {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
 </div>
