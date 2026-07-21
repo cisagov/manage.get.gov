@@ -92,7 +92,7 @@ def _check_user_org_admin(requestor_email, domains) -> bool:
 def _validate_existing_invitation(email, user, domain):
     """Check for existing invitations and handle their status."""
     try:
-        invite = DomainInvitation.objects.get(email=email, domain=domain)
+        invite = DomainInvitation.objects.get(email__iexact=email, domain=domain)
         if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
             raise AlreadyDomainManagerError(email)
         elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
