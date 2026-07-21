@@ -9,7 +9,13 @@ from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
 from registrar.forms.utility.fields import MaxLengthFirstEmailField
-from registrar.validations import EMAIL_MAX
+from registrar.validations import (
+    EMAIL_MAX,
+    TEXT_SHORT,
+    TEXT_EXTENDED,
+    get_max_length_attrs,
+    get_max_length_validator,
+)
 from registrar.models import DomainRequest, FederalAgency
 from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -346,7 +352,10 @@ class UserForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 
-    email = forms.EmailField(max_length=None)
+    email = MaxLengthFirstEmailField(
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
+    )
 
     class Meta:
         model = Contact
@@ -370,10 +379,6 @@ class ContactForm(forms.ModelForm):
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
-
-        # Define a custom validator for the email field with a custom error message
-        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
-        self.fields["email"].validators.append(email_max_length_validator)
 
         for field_name in self.required:
             self.fields[field_name].required = True
@@ -417,16 +422,30 @@ class SeniorOfficialContactForm(ContactForm):
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter the first name / given name of your senior official."
+            "required": "Enter the first name / given name of your senior official.",
+            "max_length": "First name / given name must be no more than 50 characters.",
         }
         self.fields["last_name"].error_messages = {
-            "required": "Enter the last name / family name of your senior official."
+            "required": "Enter the last name / family name of your senior official.",
+            "max_length": "Last name / family name must be no more than 50 characters.",
         }
-        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."}
+        self.fields["title"].error_messages = {
+            "required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer).",
+            "max_length": "Title or role must be no more than 100 characters.",
+        }
         self.fields["email"].error_messages = {
             "required": "Enter an email address in the required format, like name@example.com."
         }
+
+        self.fields["first_name"].validators.append(get_max_length_validator(TEXT_SHORT))
+        self.fields["first_name"].widget.attrs.update(get_max_length_attrs(TEXT_SHORT))
+
+        self.fields["last_name"].validators.append(get_max_length_validator(TEXT_SHORT))
+        self.fields["last_name"].widget.attrs.update(get_max_length_attrs(TEXT_SHORT))
+
+        self.fields["title"].validators.append(get_max_length_validator(TEXT_EXTENDED))
+        self.fields["title"].widget.attrs.update(get_max_length_attrs(TEXT_EXTENDED))
 
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:

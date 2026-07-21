@@ -268,7 +268,7 @@ class DsDataError(Exception):
     """
 
     _error_mapping = {
-        DsDataErrorCodes.BAD_DATA: mark_safe(
+        DsDataErrorCodes.BAD_DATA: mark_safe(  # nosec
             "There’s something wrong with the DS data you provided. If the problem persists, "
             "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
             " for assistance."
