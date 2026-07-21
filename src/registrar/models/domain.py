@@ -1192,7 +1192,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_dnssecdata()
 
-        self._delete_dns_data()
+        self._delete_db_dns_data()
 
         # Check if the domain can be deleted
         if not self._domain_can_be_deleted():
@@ -1277,7 +1277,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
-    def _delete_dns_data(self):
+    def _delete_db_dns_data(self):
         """
         Delete DNS objects associated with this domain from database.
         Includes:
