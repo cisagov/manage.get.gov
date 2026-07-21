@@ -46,7 +46,7 @@ export class DomainsTable extends BaseTable {
       <td data-label="Status">
         ${domain.state_display}
         <svg 
-        class="usa-icon usa-tooltip usa-tooltip--registrar text-middle margin-bottom-05 ${iconColor} no-click-outline-and-cursor-help" 
+        class="usa-icon usa-tooltip text-middle margin-bottom-05 ${iconColor} no-click-outline-and-cursor-help"
         data-position="top"
           title="${domain.get_state_help_text}"
           focusable="true"
