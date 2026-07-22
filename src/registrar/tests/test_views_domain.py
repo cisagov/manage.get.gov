@@ -1782,6 +1782,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # the required field.  subdomain missing an ip
         self.assertContains(
             result,
+            # Note that the string must be escaped as HTML displays apostrophe as &#x27;
             escape(str(NameserverError(code=NameserverErrorCodes.MISSING_IP))),
             count=2,
             status_code=200,
