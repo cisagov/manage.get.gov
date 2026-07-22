@@ -429,7 +429,6 @@ class TestDnsHostService(TestCase):
 
     def test_delete_epp_domain_deletes_dns_db_data(self):
         """Deleting a domain from the registry deletes the domain's DNS data from the registrar db."""
-        
 
 
 class TestDnsHostServiceDB(TestCase):

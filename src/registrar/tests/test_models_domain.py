@@ -3340,13 +3340,14 @@ class TestAnalystDelete(MockEppLib):
             DnsZone_VendorDnsZone,
             DnsRecord,
             VendorDnsRecord,
-            DnsRecord_VendorDnsRecord
+            DnsRecord_VendorDnsRecord,
         )
         from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
         _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
         dns_record = create_dns_record(dns_zone)
         account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
-        
+
         vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
         vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone)
         vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id)
@@ -3357,27 +3358,13 @@ class TestAnalystDelete(MockEppLib):
         domain.deleteInEpp()
         domain.save()
 
-        self.assertFalse(
-            DnsAccount.objects.filter(id=account_id).exists()
-        )
-        self.assertFalse(
-            DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists()
-        )
-        self.assertFalse(
-            VendorDnsAccount.objects.filter(id=vendor_account_id).exists()
-        )
-        self.assertFalse(
-            DnsZone.objects.filter(domain=domain).exists()
-        )
-        self.assertFalse(
-            DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists()
-        )
-        self.assertFalse(
-            DnsRecord.objects.filter(dns_zone_id=zone_id).exists()
-        )
-        self.assertFalse(
-            DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists()
-        )
+        self.assertFalse(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertFalse(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertFalse(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertFalse(DnsZone.objects.filter(domain=domain).exists())
+        self.assertFalse(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
 
     def test_delete_related_objects_cleans_database(self):
         """
