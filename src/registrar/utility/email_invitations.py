@@ -132,7 +132,7 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
             f"  Error: {err}",
             exc_info=True,
         )
-        raise EmailSendingError(f"An unexpected error occurred: {email} could not be added to this domain.") from err
+        raise EmailSendingError(f"{email} could not be added to this domain.") from err
 
 
 def send_domain_invitation_email(
@@ -520,7 +520,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
             f"  Error: {err}",
             exc_info=True,
         )
-        raise EmailSendingError(f"An unexpected error occurred: {email} could not be added to this domain.") from err
+        raise EmailSendingError(f"{email} could not be added to this domain.") from err
 
     all_admin_emails_sent = True
     # send emails to portfolio admins

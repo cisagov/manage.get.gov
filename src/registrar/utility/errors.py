@@ -38,6 +38,16 @@ class InvitationError(Exception):
     pass
 
 
+class MultipleUsersWithEmailError(InvitationError):
+    """Raised when an email address cannot identify one user account."""
+
+    def __init__(self, email):
+        super().__init__(
+            f"More than one user account exists for {email}. "
+            "The invitation could not be created. Contact support to resolve the duplicate accounts."
+        )
+
+
 class AlreadyDomainManagerError(InvitationError):
     """Raised when the user is already a manager of the domain."""
 

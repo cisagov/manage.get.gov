@@ -569,7 +569,7 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
             send_portfolio_invitation_email(self.email, self.requestor, self.portfolio, is_admin_invitation)
 
         self.assertIn(
-            "An unexpected error occurred: invitee@example.com could not be added to this domain.",
+            "invitee@example.com could not be added to this domain.",
             str(context.exception),
         )
 

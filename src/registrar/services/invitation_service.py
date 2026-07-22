@@ -21,6 +21,7 @@ from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
     InvitationError,
+    MultipleUsersWithEmailError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
 
@@ -29,10 +30,14 @@ logger = logging.getLogger(__name__)
 
 def get_requested_user(email):
     """Retrieve a user by email or return None if the user doesn't exist."""
-    try:
-        return User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
+    if not email:
         return None
+
+    users = list(User.objects.filter(email__iexact=email).order_by("pk")[:2])
+    if len(users) > 1:
+        raise MultipleUsersWithEmailError(email)
+
+    return users[0] if users else None
 
 
 def invite_to_portfolio(
@@ -231,7 +236,7 @@ def _save_legacy_portfolio_invitation(
     legacy_invitation.save()
 
     if user:
-        legacy_invitation.retrieve()
+        legacy_invitation.retrieve(user=user)
         legacy_invitation.save()
 
     return legacy_invitation
@@ -433,10 +438,10 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
 
 
 def validate_domain_role_or_invitation(email, domain):
-    requested_user = get_requested_user(email)
     try:
+        requested_user = get_requested_user(email)
         _check_existing_domain_invitation(email, domain, requested_user)
-    except (AlreadyDomainManagerError, AlreadyDomainInvitedError) as error:
+    except (AlreadyDomainManagerError, AlreadyDomainInvitedError, MultipleUsersWithEmailError) as error:
         raise ValidationError(str(error)) from error
 
 
@@ -472,7 +477,7 @@ def _save_legacy_domain_invitation(
     legacy_invitation.save()
 
     if user:
-        legacy_invitation.retrieve()
+        legacy_invitation.retrieve(user=user)
         legacy_invitation.save()
 
     return legacy_invitation
@@ -730,7 +735,7 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.retrieve()
+                legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
 
             logger.info(f"User {user.id} accepted portfolio invitation " f"for {portfolio.id}")
@@ -782,7 +787,7 @@ def accept_domain_invitation(user: User, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                legacy_invitation.retrieve()
+                legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
 
             logger.info(f"User {user.id} accepted domain invitation for {domain.id}")

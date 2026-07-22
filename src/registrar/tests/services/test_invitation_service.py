@@ -157,6 +157,24 @@ class TestInvitationService(TestCase):
         self.assertEqual(saved_permission.email, self.user.email)
         self.assertTrue(admin_notifications_sent)
 
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    def test_create_portfolio_permission_rejects_duplicate_user_emails(self, mock_send_email):
+        """Duplicate user records produce a clear invitation error."""
+        User.objects.create(username="duplicate_invitee", email=self.user.email.upper())
+
+        with self.assertRaises(InvitationError) as context:
+            create_portfolio_permission_or_invitation(
+                email=self.user.email,
+                portfolio=self.portfolio,
+                requestor=self.requestor,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                send_email=False,
+            )
+
+        self.assertIn("More than one user account exists", str(context.exception))
+        self.assertFalse(UserPortfolioPermission.objects.filter(portfolio=self.portfolio).exists())
+        mock_send_email.assert_not_called()
+
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
     def test_create_portfolio_invitation_does_not_set_details_when_email_fails(self, mock_send_email):
         """create_portfolio_permission_or_invitation records invite details only after email succeeds."""
@@ -240,6 +258,24 @@ class TestInvitationService(TestCase):
         self.assertEqual(domain_role.status, UserDomainRole.Status.ACCEPTED)
         self.assertIsNone(domain_role.invited_by)
         self.assertTrue(email_was_sent)
+        mock_send_email.assert_not_called()
+
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    def test_create_domain_role_rejects_duplicate_user_emails(self, mock_send_email):
+        """Duplicate user records produce a clear invitation error."""
+        User.objects.create(username="duplicate_invitee", email=self.user.email.upper())
+
+        with self.assertRaises(InvitationError) as context:
+            create_domain_role_or_invitation(
+                email=self.user.email,
+                domain=self.domain,
+                requestor=self.requestor,
+                role=UserDomainRole.Roles.MANAGER,
+                send_email=False,
+            )
+
+        self.assertIn("More than one user account exists", str(context.exception))
+        self.assertFalse(UserDomainRole.objects.filter(domain=self.domain).exists())
         mock_send_email.assert_not_called()
 
     @patch("registrar.utility.email_invitations._send_domain_invitation_update_emails_to_domain_managers")
