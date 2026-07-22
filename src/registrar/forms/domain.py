@@ -435,7 +435,8 @@ class SeniorOfficialContactForm(ContactForm):
             "max_length": "Title or role must be no more than 100 characters.",
         }
         self.fields["email"].error_messages = {
-            "required": "Enter an email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com.",
+            "invalid": "Enter an email address in the required format, like name@example.com.",
         }
 
         self.fields["first_name"].validators.append(get_max_length_validator(TEXT_SHORT))
