@@ -49,6 +49,7 @@ from registrar.models import (
 
 from datetime import date, datetime, timedelta
 from django.utils import timezone
+from django.utils.html import escape
 
 from .common import less_console_noise
 from .test_views import TestWithUser
@@ -1757,7 +1758,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # the required field.  form requires a minimum of 2 name servers
         self.assertContains(
             result,
-            "At least two name servers are required.",
+            "Domains must have at least two name servers.",
             count=2,
             status_code=200,
         )
@@ -1782,7 +1783,8 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # the required field.  subdomain missing an ip
         self.assertContains(
             result,
-            str(NameserverError(code=NameserverErrorCodes.MISSING_IP)),
+            # Note that the string must be escaped as HTML displays apostrophe as &#x27;
+            escape(str(NameserverError(code=NameserverErrorCodes.MISSING_IP))),
             count=2,
             status_code=200,
         )
@@ -2026,7 +2028,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
         # form submission was a successful post, response should be a 302
 
-        self.assertEqual(result.status_code, 302)
+        self.assertEqual(result.status_code, 302, result.text)
         self.assertEqual(
             result["Location"],
             reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_with_three_nameservers.id}),
@@ -2184,7 +2186,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         # once around the required field.
         self.assertContains(
             result,
-            "At least two name servers are required.",
+            "Domains must have at least two name servers.",
             count=2,
             status_code=200,
         )
@@ -2814,10 +2816,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         # form submission was a post with an error, response should be a 200
         # error text appears twice, once at the top of the page, once around
         # the field.
-        self.assertContains(result, "Key tag is required", count=2, status_code=200)
-        self.assertContains(result, "Algorithm is required", count=2, status_code=200)
-        self.assertContains(result, "Digest type is required", count=2, status_code=200)
-        self.assertContains(result, "Digest is required", count=2, status_code=200)
+        self.assertContains(result, "Enter a key tag for this record.", count=2, status_code=200)
+        self.assertContains(result, "Select the algorithm for this record.", count=2, status_code=200)
+        self.assertContains(result, "Select the digest type for this record.", count=2, status_code=200)
+        self.assertContains(result, "Enter a digest value for this record.", count=2, status_code=200)
 
     @less_console_noise_decorator
     def test_ds_data_form_duplicate(self):
@@ -2842,7 +2844,10 @@ class TestDomainDNSSEC(TestDomainOverview):
         # error text appears twice, once at the top of the page, once around
         # the field.
         self.assertContains(
-            result, "You already entered this DS record. DS records must be unique.", count=2, status_code=200
+            result,
+            "This DS record is already associated with this domain. DS records must be unique.",
+            count=2,
+            status_code=200,
         )
 
     @less_console_noise_decorator

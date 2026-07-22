@@ -227,7 +227,7 @@ export class NameserverForm {
                 // show nameservers form
                 showElement(this.addNameserversForm);
             } else {
-                this.addAlert("error", "You’ve reached the maximum amount of name server records (13). To add another record, you’ll need to delete one of your saved records.");
+                this.addAlert("error", "Domains can have no more than 13 name servers. Remove one before adding another.");
             }
         };
         if (this.formChanged) {
@@ -337,7 +337,7 @@ export class NameserverForm {
                 modalTrigger.click();
             }
         } else {
-            this.addAlert("error", "At least two name servers are required. To proceed, add a new name server before removing this name server. If you need help, email us at help@get.gov.");
+            this.addAlert("error", "Domains must have at least two name servers. Add another before removing this one.");
         }
     }
 

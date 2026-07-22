@@ -18,7 +18,7 @@ from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
 from registrar.utility.enums import DefaultEmail
-from registrar.utility.errors import ActionNotAllowed, NameserverError
+from registrar.utility.errors import ActionNotAllowed, NameserverError, NameserverErrorCodes
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 from registrar.utility import errors
@@ -2701,6 +2701,22 @@ class TestRegistrantDNSSEC(MockEppLib):
             with self.assertRaises(RegistryError) as err:
                 domain.dnssecdata = self.dnssecExtensionWithDsData
                 self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
+
+    @less_console_noise_decorator
+    def test_nameserver_bad_data_error_message_success(self):
+        """
+        Scenario: The registry returns an unsuccessful response code
+            When the nameserver setter raises NameserverError BAD_DATA
+            Then the error message matches the approved copy
+        """
+        err = NameserverError(code=NameserverErrorCodes.BAD_DATA)
+
+        expected = (
+            "There's something wrong with the name server information you provided. "
+            "Please try again. If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
+        )
+        self.assertEqual(str(err), expected)
 
 
 class TestExpirationDate(MockEppLib):
