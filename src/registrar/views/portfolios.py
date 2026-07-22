@@ -1234,7 +1234,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         # portfolio not submitted with form, so override the value
         data = request.POST.copy()
         if not data.get("portfolio"):
-            data["portfolio"] = self.request.session.get("portfolio")
+            data["portfolio"] = portfolio
         # Pass the modified data to the form
         form = portfolioForms.PortfolioNewMemberForm(data)
 
