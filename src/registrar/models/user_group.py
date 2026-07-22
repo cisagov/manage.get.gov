@@ -107,7 +107,7 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "federaltribe",
-                "permissions": ["add_federaltribe", "change_federaltribe", "delete_federaltribe", "view_federaltribe"],
+                "permissions": ["view_federaltribe"],
             },
             {
                 "app_label": "registrar",

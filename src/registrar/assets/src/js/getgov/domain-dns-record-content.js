@@ -172,7 +172,7 @@ const editButtonEventListener = (switcher)=>{
     if(!table) return;
 
     const alpineData = switcher.getAlpineData();
-    
+
     table.addEventListener('click', (e) => {
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
@@ -183,15 +183,15 @@ const editButtonEventListener = (switcher)=>{
             if(editBtn){
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
-        
+
                 switcher.setTarget(recordId)
                 if(alpineData.showFormId == null){
                     switcher.switchForm()
                 }
                 else{
                     switcher.attemptOpen(recordId);
-                    onCancel(switcher); 
-                }              
+                    onCancel(switcher);
+                }
             }
 
             if(commentBtn){
@@ -208,20 +208,20 @@ class DNSFormSwitcher{
     /**
      * Manages DNS form switching from Alpine Data
      * Requires an HTML container with Alpine.js initialized on it
-     * 
+     *
      * State:
      * - pending: an object { type, recordId} representing the form the user is currently on
      *   type is either "edit" or "add", recordID is the form's recordID
      * - target: the form  ID the user is clicking to.
-     * 
+     *
      * Methods
      * - attemptOpen: sets the pending object on the class instance
      * - switchForm: performs the actual form switch, and resets the pending and target
      *   - uses methods setShowId, and resetPendingAndTarget methods
      * - getAlpineData: returns the Alpine data object for the container
      *
-    */ 
-   
+    */
+
     constructor(container){
         this.pending = null;
         this.target = null;
@@ -232,7 +232,7 @@ class DNSFormSwitcher{
          this.pending = value;
     }
 
-    setTarget(value){  
+    setTarget(value){
         const current = this.getAlpineData().showFormId;
         this.target = current == value ? null : value;
     }
@@ -274,9 +274,9 @@ export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
     if(!container || !confirmButton) return;
-    
+
     const switcher = new DNSFormSwitcher(container);
-    
+
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
         switcher.setPending(
@@ -334,7 +334,7 @@ export function initDNSRecordCancelModal(){
     })
     // add edit button event listener
     editButtonEventListener(switcher)
-    
+
 }
 
 // Tab-order routing for the DNS records table (#4804).
@@ -516,16 +516,18 @@ export function commentCharacterEventListener(){
         }
         const commentTextStatus = element.querySelector('.comment-character-count')
         const commentTextArea = element.querySelector('textarea[id$="_comment"]')
-        commentTextArea.addEventListener('input', function () {
+        commentTextArea?.addEventListener('input', function () {
             commentTextStatus.textContent = getCharCountText(commentCharLimit, commentTextArea.value.length);
             commentTextStatus.classList.toggle(
               'usa-character-count__status--invalid',
               commentTextArea.value.length > commentCharLimit
           );
        });
-        commentTextStatus.id = `${element.id}-comment--status`
-        commentTextStatus.setAttribute('aria-live', 'polite')
-        commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
+       if (commentTextStatus){
+            commentTextStatus.id = `${element.id}-comment--status`
+            commentTextStatus.setAttribute('aria-live', 'polite')
+            commentTextArea.setAttribute('aria-describedby', commentTextStatus.id)
+       }
     }
 
 
@@ -605,23 +607,56 @@ export function initDeleteDnsRecord() {
         const deleteBtn = e.target.closest(".js-dnsrecord-delete");
         if(!deleteBtn) return;
 
-        const recordId = deleteBtn.dataset.recordId
         e.preventDefault()
 
+        const recordId = deleteBtn.dataset.recordId
         const focusElement = deleteBtn;
         const modal = document.getElementById("delete-dns-record-modal");
         const modalTrigger = document.getElementById("delete-dns-record-modal-trigger")
-        openModal(modalTrigger, modal, focusElement);
+        const modalDeleteButton = document.getElementById("confirm-delete-record-button")
+
+        const handleDelete = (e) => {
+            const table = document.getElementById("dnsrecords-table");
+            const deleteSubmitTrigger = table.querySelector(`#delete-submit-${recordId}`)
+            deleteSubmitTrigger.click()
+            console.log("in handle, ready to close modal")
+            const closeBtn = modal.querySelector("[data-close-modal]");
+            closeBtn?.click();
+        }
+
+        const handleEnterKeydown = (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopImmediatePropagation(); // try to run before USWDS's own handler
+                handleDelete(e);
+            }
+        };
+
+        // Set up delete handler before opening modal
+        submitDelete(handleDelete, handleEnterKeydown, modalDeleteButton);
+        handleModal(modalTrigger, modal, focusElement, modalDeleteButton, handleDelete, handleEnterKeydown);
     });
 
-    const openModal = (modalTrigger, modal, focusElement) => {
-            // Listen for when the modal closes
+    const handleModal = (modalTrigger, modal, focusElement, modalConfirmButton, handleConfirm, handleEnterKeydown) => {
+
+
+        // Listen for when the modal closes
         if (modal) {
             const closeButtons = modal.querySelectorAll("[data-close-modal]")
 
-            // targets the "X" and "Cancel" or "Go back" and moves focus to the focusElement after closing the modal
+            const cleanupHandlers = () => {
+                modalConfirmButton.removeEventListener("click", handleConfirm);
+                delete modalConfirmButton._confirmHandler;
+
+                modalConfirmButton.removeEventListener("keydown", handleEnterKeydown);
+                delete modalConfirmButton._keydownHandler;
+            };
+            // targets the "X" and "Cancel" or "Go back", removes the delete handler,
+            // and moves focus to the focusElement after closing the modal
             closeButtons.forEach(btn => {
                 btn.addEventListener("click", () => {
+                    cleanupHandlers()
+
                     // Defer focus restoration to after modal closes
                     focusElement?.focus()
                     setTimeout(() => {
@@ -632,16 +667,38 @@ export function initDeleteDnsRecord() {
 
             // Handle ESC key press to close modal --> move focus to focusElement
             const handleEscKey = (e) => {
+
+
                 if (e.key === "Escape") {
+                    cleanupHandlers()
                     setTimeout(() => {
                         focusElement?.focus();
                     }, 50);
                     document.removeEventListener("keydown", handleEscKey);
                 }
             };
-
             document.addEventListener("keydown", handleEscKey);
+
         }
+        // opens modal
         modalTrigger?.click()
+    }
+
+    const submitDelete = (handleDelete, handleEnterKeydown, modalDeleteButton) => {
+        if(!modalDeleteButton) return;
+
+        // if modal delete button event is keydown and 'Enter', handle delete
+        modalDeleteButton._keydownHandler = handleEnterKeydown;
+        modalDeleteButton.addEventListener("keydown", handleEnterKeydown, { once: true });
+
+        // OR
+
+        // if modal delete button is a click event, handle delete
+        // Clean up any existing delete handlers
+        modalDeleteButton.removeEventListener("click", modalDeleteButton._confirmHandler);
+        // Store the handler on the element so we can remove it later
+        modalDeleteButton._confirmHandler = handleDelete;
+        // Add the new listener
+        modalDeleteButton.addEventListener("click", handleDelete, { once: true })
     }
 }
