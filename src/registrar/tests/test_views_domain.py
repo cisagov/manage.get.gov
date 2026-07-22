@@ -29,6 +29,7 @@ from registrar.utility.errors import (
 )
 
 from registrar.models import (
+    DnsRecord,
     DomainRequest,
     Domain,
     DomainInformation,
@@ -3961,3 +3962,48 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(dns_record.content, "192.168.1.1")
         self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(response.headers["HX-TRIGGER"], '{"messagesRefresh": ""}')
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_deletes_record(self):
+        """Deleting an existing DNS record saves changes and returns an empty response to replace the row."""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-edit-123")
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "id": dns_record.id,
+                "delete_record": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(DnsRecord.objects.filter(id=dns_record.id).count(), 0)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_removes_record_row(self):
+        """After a successful deletion, the response signals form close and removes the deleted row"""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
+        record_name = "delete.me"
+        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123", record_name=record_name)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertContains(page, record_name)
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "id": dns_record.id,
+                "delete_record": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertNotContains(page, record_name)

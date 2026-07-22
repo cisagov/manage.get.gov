@@ -51,6 +51,24 @@
                     </svg>
 
             </button>
+            <!-- hidden deletion submit button, we'll click this from the modal confirm -->
+            <button
+                type="button"
+                hx-post="{% url 'domain-dns-records' domain_pk=domain.pk %}"
+                hx-include="#delete-submit-{{ record_id }} input"
+                hx-target="closest tr"
+                hx-swap="outerHTML"
+                id="delete-submit-{{ record_id }}"
+                class="display-none"
+                aria-hidden="true"
+                tabindex="-1"
+            >
+                {% csrf_token %}
+                <input type="hidden" name="id" value="{{ record_id }}">
+                <input type="hidden" name="delete_record" value="1">
+            </button>
+
+            <!-- visible delete button that triggers modal -->
             <button
                     type="button"
                     id="row-delete-button-{{ record_id }}"

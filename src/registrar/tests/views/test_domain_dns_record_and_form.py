@@ -8,7 +8,7 @@ from waffle.testutils import override_flag
 
 from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
-from registrar.utility.errors import APIError
+from registrar.utility.errors import DnsHostingError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,
@@ -350,7 +350,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
             svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
-            svc.create_dns_record.side_effect = APIError("Vendor rejected the record")
+            svc.create_dns_record.side_effect = DnsHostingError()
 
             response = self.client.post(
                 self._url(),
