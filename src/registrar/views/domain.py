@@ -39,7 +39,6 @@ from registrar.models import (
 )
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
-from registrar.utility.api_response_helpers import get_request_id
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import (
     GenericError,
@@ -849,7 +848,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.session = request.session
         self.object = self.get_object()
         self._update_session_with_domain()
-        self.request_id = get_request_id(request)
+        self.request_id = request.headers.get("X-Request-Id")
+        print(f"🙈 {self.request_id}")
 
     def dispatch(self, request, *args, **kwargs):
         self._get_domain(
