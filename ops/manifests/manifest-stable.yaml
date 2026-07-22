@@ -32,7 +32,7 @@ applications:
     # VERSION INFO 
     GIT_COMMIT_SHA: ((GIT_COMMIT_SHA))
     GIT_TAG: ((GIT_TAG))
-    EPP_CONNECTION_POOl_SIZE: 5
+    EPP_CONNECTION_POOL_SIZE: 5
   routes:
     - route: getgov-stable.app.cloud.gov
   services:

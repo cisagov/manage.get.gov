@@ -74,7 +74,7 @@ environment:
 | `EPP_CONNECTION_POOL_SIZE` | 1 | Max connections per worker process. Environments that share registry credentials also share the registry's connection allowance, so keep non-production sizes small. |
 | `EPP_POOL_BORROW_TIMEOUT` | 20 | Seconds a request waits for a connection before `PoolExhausted`. |
 | `EPP_POOL_IDLE_PING_SECONDS` | 60 | A connection idle longer than this must answer a `Hello` before reuse. |
-| `EPP_POOL_HEARTBEAT_INTERVAL` | 60 | Cadence of the background maintenance pass. 0 disables pinging. |
+| `EPP_POOL_HEARTBEAT_INTERVAL` | 30 | Cadence of the background maintenance pass. 0 disables pinging. |
 
 ### Changing environment variables in a running sandbox
 
