@@ -3369,7 +3369,7 @@ class TestAnalystDelete(MockEppLib):
     def test_delete_related_objects_cleans_database(self):
         """
         Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
-        should remove HostIP, Host, non‑registrant contacts, and DNS data from the database
+        should remove HostIP, Host, and non‑registrant contacts from the database
         """
 
         # 1. Create domain in db and mark it as deleted
