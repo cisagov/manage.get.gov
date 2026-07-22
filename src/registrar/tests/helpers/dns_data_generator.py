@@ -133,7 +133,7 @@ def create_initial_dns_setup(domain=None, domain_manager=None, **kwargs):
     When given a domain manager, assigns that domain manager to the domain.
     """
     domain = domain or create_domain()
-    dns_account = kwargs.get("dns_account", create_dns_account(domain))
+    dns_account = kwargs.get("dns_account", create_dns_account(domain, **kwargs))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
     domain.is_enrolled_in_dns_hosting = True
     domain.save()

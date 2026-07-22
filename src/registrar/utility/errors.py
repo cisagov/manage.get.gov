@@ -2,8 +2,6 @@ import logging
 
 from enum import IntEnum
 
-from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
-
 logger = logging.getLogger(__name__)
 
 
@@ -322,19 +320,17 @@ class APIError(Exception):
 class DnsHostingErrorCodes(IntEnum):
     """Error codes for DNS-hosting failures."""
 
-    ZONE_NOT_FOUND = 1
-    RECORD_CONFLICT = 2
-    VALIDATION_FAILED = 3
-    RATE_LIMIT_EXCEEDED = 4
-    AUTH_FAILED = 5
-    UPSTREAM_TIMEOUT = 6
-    UPSTREAM_ERROR = 7
-    UNKNOWN = 8
+    NOT_FOUND = 1
+    VALIDATION_FAILED = 2
+    RATE_LIMIT_EXCEEDED = 3
+    AUTH_FAILED = 4
+    UPSTREAM_TIMEOUT = 5
+    UPSTREAM_ERROR = 6
+    UNKNOWN = 7
 
 
 _DNS_WIRE_CODES = {
-    DnsHostingErrorCodes.ZONE_NOT_FOUND: "DNS_ZONE_NOT_FOUND",
-    DnsHostingErrorCodes.RECORD_CONFLICT: "DNS_RECORD_CONFLICT",
+    DnsHostingErrorCodes.NOT_FOUND: "DNS_NOT_FOUND",
     DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
     DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
     DnsHostingErrorCodes.AUTH_FAILED: "DNS_AUTH_FAILED",
@@ -353,10 +349,9 @@ class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
     _error_mapping = {
-        DnsHostingErrorCodes.ZONE_NOT_FOUND: (
-            "We couldn’t find the DNS zone for this domain. It may not be enrolled in DNS hosting yet."
+        DnsHostingErrorCodes.NOT_FOUND: (
+            "A resource was not found. Please try again. If the problem persists, contact us for assistance."
         ),
-        DnsHostingErrorCodes.RECORD_CONFLICT: DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
         DnsHostingErrorCodes.VALIDATION_FAILED: (
             "The DNS record couldn’t be saved because one of its fields wasn’t valid."
         ),
@@ -385,7 +380,7 @@ class DnsHostingError(Exception):
 
     @property
     def wire_code(self):
-        """Stable wire name for this error's code (e.g. 'DNS_ZONE_NOT_FOUND')."""
+        """Stable wire name for this error's code (e.g. 'DNS_NOT_FOUND')."""
         return _DNS_WIRE_CODES.get(self.code, "DNS_UNKNOWN")
 
     def __str__(self):
@@ -405,7 +400,7 @@ class DnsNotFoundError(DnsHostingError):
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         super().__init__(
-            code=code or DnsHostingErrorCodes.ZONE_NOT_FOUND,
+            code=code or DnsHostingErrorCodes.NOT_FOUND,
             message=message,
             upstream_status=upstream_status,
             context=context,

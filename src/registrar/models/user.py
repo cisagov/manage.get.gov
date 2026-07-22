@@ -349,17 +349,35 @@ class User(AbstractUser):
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
         invitations that match their email address."""
-        for invitation in DomainInvitation.objects.filter(
+        from registrar.services.invitation_service import accept_domain_invitation
+
+        pending_legacy_invitations = DomainInvitation.objects.filter(
             email__iexact=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED
-        ):
+        ).select_related("domain")
+        pending_new_roles = UserDomainRole.objects.filter(
+            email__iexact=self.email,
+            status=UserDomainRole.Status.INVITED,
+        ).select_related("domain")
+
+        pending_domains = []
+        seen_domain_ids = set()
+
+        for invitation in pending_legacy_invitations:
+            if invitation.domain_id not in seen_domain_ids:
+                seen_domain_ids.add(invitation.domain_id)
+                pending_domains.append(invitation.domain)
+
+        for domain_role in pending_new_roles:
+            if domain_role.domain_id not in seen_domain_ids:
+                seen_domain_ids.add(domain_role.domain_id)
+                pending_domains.append(domain_role.domain)
+
+        for domain in pending_domains:
             try:
-                invitation.retrieve()
-                invitation.save()
-            except RuntimeError:
-                # retrieving should not fail because of a missing user, but
-                # if it does fail, log the error so a new user can continue
-                # logging in
-                logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
+                accept_domain_invitation(self, domain)
+            except Exception:
+                # Invitation retrieval should not block the user from logging in.
+                logger.warning("Failed to retrieve invitation for %s", domain, exc_info=True)
 
     def create_domain_and_invite(self, transition_domain: TransitionDomain):
         transition_domain_name = transition_domain.domain_name

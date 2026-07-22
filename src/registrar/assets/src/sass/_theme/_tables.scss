@@ -72,11 +72,9 @@ th {
     border-top: none;
   }
 
-  //No border for very bottom element
-  tbody tr:last-of-type {
-    td, th {
-      border-bottom: 0;
-    }
+  //No border for very bottom row
+  tbody tr:last-child {
+    border-bottom: 0;
   }
 
   td, th {
@@ -126,8 +124,7 @@ th {
 
 // The member table has an extra "expand" row, which looks like a single row.
 // But the DOM disagrees - so we basically need to hide the border on both rows.
-#members__table-wrapper .dotgov-table tr:nth-last-child(2) td,
-#members__table-wrapper .dotgov-table tr:nth-last-child(2) th {
+#members__table-wrapper .dotgov-table tr:nth-last-child(2) {
   border-bottom: none;
 }
 

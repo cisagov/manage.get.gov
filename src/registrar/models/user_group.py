@@ -103,6 +103,11 @@ class UserGroup(Group):
                 "model": "federaltribe",
                 "permissions": ["add_federaltribe", "change_federaltribe", "delete_federaltribe", "view_federaltribe"],
             },
+            {
+                "app_label": "registrar",
+                "model": "statetribe",
+                "permissions": ["add_statetribe", "change_statetribe", "delete_statetribe", "view_statetribe"],
+            },
         ]
 
         # Avoid error: You can't execute queries until the end
