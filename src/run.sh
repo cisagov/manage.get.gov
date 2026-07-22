@@ -8,4 +8,4 @@ set -o pipefail
 
 # -c gunicorn.conf.py loads the post_fork hook that patches psycopg2 for gevent
 # (psycogreen) so DB calls yield to the event loop instead of blocking the worker.
-gunicorn -c gunicorn.conf.py --workers=3 --worker-class=gevent --max-requests=500 --max-requests-jitter=50 -t 60 registrar.config.wsgi 
+gunicorn -c gunicorn.conf.py --workers=3 --worker-class=gevent --max-requests=250 --max-requests-jitter=25 -t 60 registrar.config.wsgi 
