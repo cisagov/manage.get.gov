@@ -1286,6 +1286,7 @@ class Domain(TimeStampedModel, DomainHelper):
         - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
         """
         from registrar.models import DnsZone
+
         if self.is_enrolled_in_dns_hosting and DnsZone.objects.filter(domain_id=self.id).exists():
             from registrar.models import (
                 DnsRecord,
@@ -1293,6 +1294,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 DnsZone_VendorDnsZone,
                 DnsRecord_VendorDnsRecord,
             )
+
             logger.debug("Deleting DNS data for %s.", self.name)
             try:
                 with transaction.atomic():
