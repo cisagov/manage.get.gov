@@ -54,7 +54,12 @@ class UserGroup(Group):
             {
                 "app_label": "registrar",
                 "model": "userdomainrole",
-                "permissions": ["view_userdomainrole", "delete_userdomainrole"],
+                "permissions": [
+                    "add_userdomainrole",
+                    "change_userdomainrole",
+                    "delete_userdomainrole",
+                    "view_userdomainrole",
+                ],
             },
             {
                 "app_label": "registrar",
@@ -88,6 +93,7 @@ class UserGroup(Group):
                     "add_userportfoliopermission",
                     "change_userportfoliopermission",
                     "delete_userportfoliopermission",
+                    "view_userportfoliopermission",
                 ],
             },
             {
