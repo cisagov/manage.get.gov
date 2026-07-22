@@ -145,6 +145,7 @@ URL_PERMISSIONS = {
 UNCHECKED_URLS = [
     "health",
     "openid/",
+    "admin-login"
     "get-current-federal",
     "get-current-full",
     "available",

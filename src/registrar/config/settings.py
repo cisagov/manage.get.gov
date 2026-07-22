@@ -734,7 +734,6 @@ LOGGING = {
 
 # list of Python classes used when trying to authenticate a user
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
     "djangooidc.backends.OpenIdConnectBackend",
 ]
 
