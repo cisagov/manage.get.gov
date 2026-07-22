@@ -1287,7 +1287,10 @@ class Domain(TimeStampedModel, DomainHelper):
         """
         from registrar.models import (
             DnsZone,
-            DnsRecord
+            DnsRecord,
+            DnsAccount_VendorDnsAccount,
+            DnsZone_VendorDnsZone,
+            DnsRecord_VendorDnsRecord,
         )
         # TODO: have django cascade delete grandchild object when grandparent object deleted
         if self.is_enrolled_in_dns_hosting:
@@ -1297,6 +1300,9 @@ class Domain(TimeStampedModel, DomainHelper):
                     dns_zone = DnsZone.objects.get(domain_id=self.id)
                     logger.info("Removing db DNS records associated with %s.", self.name)
                     records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                    for record in records:
+                        vendor_record = DnsRecord_VendorDnsRecord.objects.get(dns_record=record).vendor_dns_record
+                        vendor_record.delete()
                     records.delete()
                     logger.info(
                         "Removed db DNS records associated with zone for domain %s: %s.",
@@ -1304,11 +1310,15 @@ class Domain(TimeStampedModel, DomainHelper):
                         str(records)
                     )
                     logger.info("Removing db DNS zone for domain %s.", self.name)
+                    vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
                     dns_zone.delete()
+                    vendor_zone.delete()
                     logger.info("Removed db DNS zone for domain %s.", self.name)
                     logger.info("Removing db DNS accounts for %s.", self.name)
                     dns_account = dns_zone.dns_account
+                    vendor_account = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account
                     dns_account.delete()
+                    vendor_account.delete()
                     logger.info("Removed db DNS account for domain %s.", self.name)
 
             except Exception as e:

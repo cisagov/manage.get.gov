@@ -3348,6 +3348,8 @@ class TestAnalystDelete(MockEppLib):
         account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
         
         vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone)
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id)
         self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
         self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
 
@@ -3360,6 +3362,9 @@ class TestAnalystDelete(MockEppLib):
         )
         self.assertFalse(
             DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists()
+        )
+        self.assertFalse(
+            VendorDnsAccount.objects.filter(id=vendor_account_id).exists()
         )
         self.assertFalse(
             DnsZone.objects.filter(domain=domain).exists()
