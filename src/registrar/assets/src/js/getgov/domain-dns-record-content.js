@@ -261,11 +261,16 @@ export function initDNSRecordCancelModal(){
     }
 
     const resetSwitcherValues = ()=>{
-            const switcher = getSwitcher()
+            const switcher = getSwitcher();
+            console.log("here", switcher)
+            if(switcher){
+                return;
+            }
+
             if(switcher.isRecordType){
                     switcher.updateSelectedType(switcher.pending.recordId);
             }
-            switcher && switcher.resetPendingAndTarget()
+            switcher.resetPendingAndTarget()
          }
 
     const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
@@ -283,7 +288,7 @@ export function initDNSRecordCancelModal(){
             container
         );
 
-
+        console.log(switcher.pending)
         modalEl?.setAttribute("data-opener", refsFor(switcher.createReq(switcher.target)).focusId);
         cancelButtons[0].click();
         switcher.switchForm();
@@ -291,12 +296,18 @@ export function initDNSRecordCancelModal(){
 
     // reset the switcher values when user clikcks on the cancel, 'x', and the outside modal.
 
-    document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]')?.addEventListener("click", ()=>{
-         resetSwitcherValues()
+    const modalOverlay =  document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
+    modalEl?.addEventListener("click", (e)=>{ 
+        if(e.target == modalOverlay){
+             resetSwitcherValues()
+        }
     })
     
     for(let button of cancelButtons){
-         button.addEventListener("click", () => resetSwitcherValues())
+        button.addEventListener("click", (e) =>  {
+            console.log(button)
+            resetSwitcherValues()
+      })
     }
 
 
@@ -310,16 +321,13 @@ export function initDNSRecordCancelModal(){
     editButtonEventListener(editFormSwitcher, recordTypeSwitcher)
 
     // grabbing from form container to add event listener to select type form, since select type form is a swapped element
-    container.addEventListener("change", (e)=> {
-        if(e.target.matches("#id_type")){
-         if(!e.isTrusted){
-            return;
-          }
+
+    const typeField = document.getElementById('id_type');
+    typeField.addEventListener('change', function (e){
         const index = e.target.selectedIndex;
         recordTypeSwitcher.attemptOpen(index);
         onCancel(recordTypeSwitcher)
 
-         }
     })
 
 }
