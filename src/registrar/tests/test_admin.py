@@ -4224,8 +4224,7 @@ class TestPublicContactAdmin(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
         response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
@@ -4964,8 +4963,7 @@ class TestDomainAdminState(TestCase):
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
 
     def test_domain_state_remains_unknown_on_refresh(self):
         """
