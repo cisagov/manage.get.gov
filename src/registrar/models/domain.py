@@ -1285,22 +1285,21 @@ class Domain(TimeStampedModel, DomainHelper):
         - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
         - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
         """
-        from registrar.models import (
-            DnsZone,
-            DnsRecord,
-            DnsAccount_VendorDnsAccount,
-            DnsZone_VendorDnsZone,
-            DnsRecord_VendorDnsRecord,
-        )
-
-        if self.is_enrolled_in_dns_hosting:
+        from registrar.models import DnsZone
+        if self.is_enrolled_in_dns_hosting and DnsZone.objects.filter(domain_id=self.id).exists():
+            from registrar.models import (
+                DnsRecord,
+                DnsAccount_VendorDnsAccount,
+                DnsZone_VendorDnsZone,
+                DnsRecord_VendorDnsRecord,
+            )
             logger.debug("Deleting DNS data for %s.", self.name)
             try:
                 with transaction.atomic():
                     dns_zone = DnsZone.objects.get(domain_id=self.id)
                     logger.info("Removing db DNS records associated with %s.", self.name)
                     records = DnsRecord.objects.filter(dns_zone=dns_zone)
-                    # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord. 
+                    # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
                     # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
                     for record in records:
                         vendor_record = DnsRecord_VendorDnsRecord.objects.get(dns_record=record).vendor_dns_record
