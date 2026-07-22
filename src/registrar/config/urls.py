@@ -5,6 +5,7 @@ For more information see:
 """
 
 from django.contrib import admin
+from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 from django.views.generic import RedirectView
 
@@ -251,6 +252,7 @@ urlpatterns = [
         get_rejection_email_for_user_json,
         name="get-rejection-email-for-user-json",
     ),
+    path("admin/login/", login_required(RedirectView.as_view(url="/admin/", permanent=True)), name="admin-login"),
     path("admin/", admin.site.urls),
     path(
         "reports/export_members_portfolio/",
