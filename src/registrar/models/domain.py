@@ -1293,7 +1293,6 @@ class Domain(TimeStampedModel, DomainHelper):
             DnsRecord_VendorDnsRecord,
         )
 
-        # TODO: have django cascade delete grandchild object when grandparent object deleted
         if self.is_enrolled_in_dns_hosting:
             logger.debug("Deleting DNS data for %s.", self.name)
             try:
@@ -1301,6 +1300,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     dns_zone = DnsZone.objects.get(domain_id=self.id)
                     logger.info("Removing db DNS records associated with %s.", self.name)
                     records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                    # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord. 
+                    # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
                     for record in records:
                         vendor_record = DnsRecord_VendorDnsRecord.objects.get(dns_record=record).vendor_dns_record
                         vendor_record.delete()
