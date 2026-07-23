@@ -3368,6 +3368,9 @@ class TestAnalystDelete(MockEppLib):
         self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
         self.assertFalse(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
 
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+
     def test_delete_related_objects_cleans_database(self):
         """
         Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
