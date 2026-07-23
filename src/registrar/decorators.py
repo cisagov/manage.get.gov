@@ -298,6 +298,7 @@ def _member_exists_under_portfolio(portfolio, member_pk):
         return True
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
 
+
 def _is_own_member_record(user, portfolio, member_pk):
     """Checks whether the given member_pk refers to the requesting users own
     UserPortfolioPermission under the current portfolio
@@ -310,6 +311,7 @@ def _is_own_member_record(user, portfolio, member_pk):
     if not portfolio or not member_pk:
         return False
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk, user=user).exists()
+
 
 def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     """Checks to see if the given PortfolioInvitation exists under the provided portfolio.

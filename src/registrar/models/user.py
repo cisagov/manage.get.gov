@@ -230,7 +230,7 @@ class User(AbstractUser):
             self.has_view_members_portfolio_permission(portfolio)
             or self.has_edit_members_portfolio_permission(portfolio)
         )
-    
+
     def has_any_domains_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS

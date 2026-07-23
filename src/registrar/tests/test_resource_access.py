@@ -175,6 +175,7 @@ class TestPortfolioResourceAccess(MockDbForIndividualTests):
         """Verify returns False when member_pk is the users record but under a diff portfolio"""
         self.assertFalse(_is_own_member_record(self.user, self.other_portfolio, self.other_user_permission.id))
 
+
 class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
     """Tests for domain request views to ensure users can only access domain requests in their portfolio."""
 
