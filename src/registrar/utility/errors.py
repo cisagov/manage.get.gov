@@ -370,6 +370,13 @@ class DnsHostingError(Exception):
         "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
     )
 
+    def __init__(self, *, code=None, message=GENERIC_ERROR_MESSAGE, upstream_status=None, context=None):
+        self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
+        self._explicit_message = message
+        self.upstream_status = upstream_status
+        self.context = dict(context) if context else {}
+        super().__init__(self.message)
+
     def _build_error_mapping(self, request_id):
         validation_msg = (
             "There’s something wrong with the DNS record information you provided. Please try again. "
@@ -398,14 +405,7 @@ class DnsHostingError(Exception):
             DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
             DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
         }
-
-    def __init__(self, *, code=None, message=GENERIC_ERROR_MESSAGE, upstream_status=None, context=None):
-        self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
-        self._explicit_message = message
-        self.upstream_status = upstream_status
-        self.context = dict(context) if context else {}
-        super().__init__(self.message)
-
+    
     @property
     def message(self):
         if self._explicit_message:
