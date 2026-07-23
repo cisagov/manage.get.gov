@@ -3316,6 +3316,61 @@ class TestAnalystDelete(MockEppLib):
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
+    def test_delete_domain_in_epp_deletes_db_dns_data(self):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            VendorDnsAccount,
+            DnsAccount_VendorDnsAccount,
+            DnsZone,
+            VendorDnsZone,
+            DnsZone_VendorDnsZone,
+            DnsRecord,
+            VendorDnsRecord,
+            DnsRecord_VendorDnsRecord,
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+
+        vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).id
+        self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+
+        # Delete the domain
+        domain.deleteInEpp()
+        domain.save()
+
+        self.assertFalse(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertFalse(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertFalse(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertFalse(DnsZone.objects.filter(domain=domain).exists())
+        self.assertFalse(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(VendorDnsZone.objects.filter(id=vendor_zone_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
+        self.assertFalse(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+
     def test_delete_related_objects_cleans_database(self):
         """
         Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`
