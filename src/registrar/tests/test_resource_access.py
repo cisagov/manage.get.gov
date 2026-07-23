@@ -21,6 +21,7 @@ from registrar.decorators import (
     _domain_request_exists_under_portfolio,
     _member_exists_under_portfolio,
     _member_invitation_exists_under_portfolio,
+    _is_own_member_record,
 )
 
 
@@ -149,6 +150,30 @@ class TestPortfolioResourceAccess(MockDbForIndividualTests):
     def test_member_invitation_exists_under_portfolio_when_not_exists(self):
         """Verify returns False when the member invitation does not exist under the portfolio."""
         self.assertFalse(_member_invitation_exists_under_portfolio(self.portfolio, self.other_portfolio_invitation.id))
+
+    # Own record checking member tests (self view access rule)
+    @less_console_noise_decorator
+    def test_is_own_member_record_when_pk_is_none(self):
+        """No access if no member_pk"""
+        self.assertFalse(_is_own_member_record(self.user, self.portfolio, None))
+
+    @less_console_noise_decorator
+    def test_is_own_member_record_when_own_record(self):
+        """Verify returns True when member_pk is the requesting users own record"""
+        self.assertTrue(_is_own_member_record(self.user, self.portfolio, self.user_permission.id))
+
+    @less_console_noise_decorator
+    def test_is_own_member_record_when_other_users_record(self):
+        """Verify returns False when member_pk belongs to a diff user in the same portfolio"""
+        other_user_same_portfolio = UserPortfolioPermission.objects.create(
+            user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.assertFalse(_is_own_member_record(self.user, self.portfolio, other_user_same_portfolio.id))
+
+    @less_console_noise_decorator
+    def test_is_own_member_record_when_different_portfolio(self):
+        """Verify returns False when member_pk is the users record but under a diff portfolio"""
+        self.assertFalse(_is_own_member_record(self.user, self.other_portfolio, self.other_user_permission.id))
 
 
 class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):

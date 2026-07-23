@@ -34,6 +34,7 @@ HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
 HAS_LEGACY_AND_ORG_USER = "has_legacy_and_org_user"
+IS_PORTFOLIO_MEMBER_VIEWING_SELF = "is_portfolio_member_viewing_self"
 
 
 def grant_access(*rules):
@@ -208,6 +209,10 @@ def _user_has_permission(user, request, rules, **kwargs):
             and _member_checks(portfolio, kwargs),
         ),
         (HAS_LEGACY_AND_ORG_USER, lambda: user.has_legacy_domain() and user.is_any_org_user()),
+        (
+            IS_PORTFOLIO_MEMBER_VIEWING_SELF,
+            lambda: is_org and _is_own_member_record(user, portfolio, kwargs.get("member_pk")),
+        ),
     ]
     # Check conditions iteratively
     return any(check() for rule, check in permission_checks if rule in rules)
@@ -292,6 +297,20 @@ def _member_exists_under_portfolio(portfolio, member_pk):
         )
         return True
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
+
+
+def _is_own_member_record(user, portfolio, member_pk):
+    """Checks whether the given member_pk refers to the requesting users own
+    UserPortfolioPermission under the current portfolio
+
+    Used to allow a basic member (NO view or edit members perms) to view
+    ONLY THEIR OWN entry on the Members pages, and nothing else
+
+    Returns False if member_pk is missing / deny access
+    """
+    if not portfolio or not member_pk:
+        return False
+    return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk, user=user).exists()
 
 
 def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):

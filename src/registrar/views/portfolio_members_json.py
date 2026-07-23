@@ -23,9 +23,17 @@ class PortfolioMembersJson(View):
 
         portfolio = request.GET.get("portfolio")
 
+        self_only = request.user.has_no_members_portfolio_permission(portfolio)
+
         # Two initial querysets which will be combined
         permissions = self.initial_permissions_search(portfolio)
-        invitations = self.initial_invitations_search(portfolio)
+        if self_only:
+            # "No access" members can only see their own record
+            # and can't see invited ppl
+            permissions = permissions.filter(user=request.user)
+            invitations = PortfolioInvitation.objects.none()
+        else:
+            invitations = self.initial_invitations_search(portfolio)
 
         # Get total across both querysets before applying filters
         unfiltered_total = permissions.count() + invitations.count()

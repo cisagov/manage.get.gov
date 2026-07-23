@@ -11,9 +11,11 @@
     {% with label_text="Search by member email address" item_name="members" aria_label_text="Members search component"%}
         {% include "includes/search.html" %}
     {% endwith %}
-    {% with export_aria="Members report component" export_url='export_members_portfolio' %}
-        {% include "includes/export.html" %}
-    {% endwith %}
+    {% if has_view_members_portfolio_permission or has_edit_members_portfolio_permission %}
+      {% with export_aria="Members report component" export_url='export_members_portfolio' %}
+          {% include "includes/export.html" %}
+      {% endwith %}
+    {% endif %}
   </div>
 
     <!-- ---------- MAIN TABLE ---------- -->
