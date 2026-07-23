@@ -359,10 +359,10 @@ class EPPConnectionPool:
         except Exception:
             logger.info("Error occurred while retiring connection. Pool stats: %s", self.stats(), exc_info=True)
             # ignore any errors during logout, we are discarding the connection anyway
-            
+
         try:
             conn.client.close()
         except Exception:
             logger.info("Error occurred while closing connection. Pool stats: %s", self.stats(), exc_info=True)
-            
+
         self._release_slot()
