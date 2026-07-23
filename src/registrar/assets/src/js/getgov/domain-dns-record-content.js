@@ -205,7 +205,6 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
                 if(alpineData.showFormId === 0){
                      // reset values for the recordType switcher when you click on an edit form from a record type form
                     recordTypeSwitcher.resetPendingAndTarget();
-                    recordTypeSwitcher.setRecordType();
                 }
             
                 if(alpineData.showFormId == null){
@@ -301,20 +300,30 @@ export function initDNSRecordCancelModal(){
         cancelButtons[0].click();
     });
 
-    // reset the switcher values when user clikcks on the cancel, 'x', and the outside modal.
+    // reset the switcher values when user clicks on the cancel, 'x', esc and the outside modal.
 
     const modalOverlay =  document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
+
     modalEl?.addEventListener("click", (e)=>{ 
         if(e.target == modalOverlay){
-             resetSwitcherValues(e);
+             resetSwitcherValues();
+        }
+    })
+
+    modalEl?.addEventListener("keydown", (e)=> {
+        console.log("hello", e.key);
+        if(e.key === "Escape"){
+            resetSwitcherValues();
         }
     })
     
     for(let button of cancelButtons){
-        button.addEventListener("click", (e) =>  {
-            resetSwitcherValues(e);
+        button.addEventListener("click", () =>  {
+            resetSwitcherValues();
       })
     }
+
+
 
 
     // addRecordButtonEventListener(alpineData, initialState, container)
