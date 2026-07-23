@@ -2,7 +2,11 @@ import logging
 
 from enum import IntEnum
 from django.utils.safestring import mark_safe
-from registrar.validations import MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE, TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE, DUPLICATE_DNS_RECORD_ERROR_MESSAGE
+from registrar.validations import (
+    MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE,
+    TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -341,9 +345,11 @@ _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
 }
 
+
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
     # Module-level rebuilder so __reduce__ stays picklable by name.
     return cls(code=code, message=explicit_message, upstream_status=upstream_status, context=context)
+
 
 _DNS_VALIDATION_MSG = {
     # TODO: string values are temporary and to be replaced with approved content
@@ -354,38 +360,44 @@ _DNS_VALIDATION_MSG = {
     81053: "An A, AAAA, or CNAME record with that name already exists.",
     9007: "Content for record is invalid.",
 }
+
+
 class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
-    GENERIC_ERROR_MESSAGE = "An unexpected error occurred: Please try again. If the problem persists, "
-    '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
+    GENERIC_ERROR_MESSAGE = (
+        "An unexpected error occurred: Please try again. If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )
 
     def _build_error_mapping(self, request_id):
-        validation_msg = "There’s something wrong with the DNS record information you provided."
+        validation_msg = (
+            "There’s something wrong with the DNS record information you provided. Please try again. "
+            "If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+        )
         cf_error_code = self.context.get("cf_error_code")
+
         if self.wire_code == "DNS_VALIDATION_FAILED" and cf_error_code:
             validation_msg = _DNS_VALIDATION_MSG[cf_error_code] or validation_msg
 
         error_msg = DnsHostingError.GENERIC_ERROR_MESSAGE
-
         if request_id:
-            error_msg = "An unexpected error occurred: Please try again. If the problem persists, "
-            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a>'
-            f"for assistance and share this ID {request_id}."
+            error_msg = (
+                "An unexpected error occurred: Please try again. If the problem persists, "
+                "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
+                f"for assistance and share this ID {request_id}."
+            )
 
         return {
-        DnsHostingErrorCodes.NOT_FOUND: mark_safe(error_msg),
-        DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(
-            f"{validation_msg} Please try again. If the problem persists, "
-            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
-        ),
-        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: mark_safe(error_msg),
-        DnsHostingErrorCodes.AUTH_FAILED: mark_safe(error_msg),
-        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: mark_safe(error_msg),
-        DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
-        DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
+            DnsHostingErrorCodes.NOT_FOUND: mark_safe(error_msg),
+            DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(validation_msg),
+            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: mark_safe(error_msg),
+            DnsHostingErrorCodes.AUTH_FAILED: mark_safe(error_msg),
+            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: mark_safe(error_msg),
+            DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
+            DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
         }
-
 
     def __init__(self, *, code=None, message=GENERIC_ERROR_MESSAGE, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
@@ -396,12 +408,11 @@ class DnsHostingError(Exception):
 
     @property
     def message(self):
-        return self._explicit_message
-
-    def set_message(self, request_id):
-        """User-facing text: explicit caller message, else the code-level default."""
+        if self._explicit_message:
+            return self._explicit_message
+        request_id = self.context.get("request_id")
         error_mapping = self._build_error_mapping(request_id)
-        self._explicit_message = error_mapping.get(self.code) or DnsHostingError.GENERIC_ERROR_MESSAGE
+        return error_mapping.get(self.code) or DnsHostingError.GENERIC_ERROR_MESSAGE
 
     @property
     def wire_code(self):
