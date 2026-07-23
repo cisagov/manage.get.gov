@@ -2680,3 +2680,11 @@ class Domain(TimeStampedModel, DomainHelper):
         # Delete domain
         self.deleteInEpp()
         self.save()
+
+    def update_domain_registrant_in_registry(self, contact: PublicContact):
+        logger.info(f"Updating registrant contact for domain: {contact.domain.name}")
+        try:
+            self._add_registrant_to_existing_domain(contact)
+        except Exception as e:
+            logger.error(f"Error updating domain registrant {contact.domain.name}: {e}")
+        return contact

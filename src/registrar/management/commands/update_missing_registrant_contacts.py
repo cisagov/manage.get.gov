@@ -66,7 +66,16 @@ class Command(BaseCommand):
                 else:
                     logger.info(f"Creating Registrant Public Contact for {domain.name}")
                     try:
-                        domain.addRegistrant()
+                        # Create the registrant in the registrar DB
+                        registry_id = domain.addRegistrant()
+
+                        # This is needed because currently, the Admin contact is listed as the registrant in CloudFlare
+                        # so addRegistrant() fails to update the value since the ids don't match.
+                        registrant = PublicContact.objects.filter(registry_id=registry_id)
+
+                        logger.info(f"Updating registry Registrant Public Contact {registry_id} for {domain.name}")
+                        domain.update_domain_registrant_in_registry(registrant)
+
                         add_count += 1
                     except Exception as e:
                         logger.error(f"Error adding domain registrant {domain.name}: {e}")
