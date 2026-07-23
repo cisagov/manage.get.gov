@@ -132,10 +132,11 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
     }
 
     updateSelectedType(value = this.target){ 
-        this.container.querySelector("#id_type").selectedIndex = value;
+        const selectEl= this.container.querySelector("#id_type")
+        selectEl.selectedIndex = value;
         // programmatically dispatches change event for alpine to switch the form, and to get the appropiate form labels
         const changeEvent = new Event('change');
-        this.container.querySelector("#id_type").dispatchEvent(changeEvent);
+        selectEl.querySelector("#id_type").dispatchEvent(changeEvent);
     }
 
     switchForm(value = this.target){

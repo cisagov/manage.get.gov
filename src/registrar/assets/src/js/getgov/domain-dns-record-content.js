@@ -205,6 +205,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
                 if(alpineData.showFormId === 0){
                      // reset values for the recordType switcher when you click on an edit form from a record type form
                     recordTypeSwitcher.resetPendingAndTarget();
+
                 }
             
                 if(alpineData.showFormId == null){
@@ -311,7 +312,6 @@ export function initDNSRecordCancelModal(){
     })
 
     modalEl?.addEventListener("keydown", (e)=> {
-        console.log("hello", e.key);
         if(e.key === "Escape"){
             resetSwitcherValues();
         }
