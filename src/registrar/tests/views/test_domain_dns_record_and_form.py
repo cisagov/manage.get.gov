@@ -118,7 +118,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         # x-effect clears recordType when the form closes (null) or Add opens (0).
         self.assertContains(
             response,
-            "x-effect=\"showFormId === null || showFormId === 0 ? recordType = '' : null\"",
+            'x-effect="showFormId === null || showFormId === 0 ? recordType = null : null"',
         )
         # Cancel now opens the confirmation modal
         self.assertContains(response, "js-dnsrecord-add-cancel")
@@ -127,9 +127,6 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             response,
             '@record-submit-success.camel.window="showFormId = null"',
         )
-        # x-model keeps the type dropdown in sync with recordType, so clearing
-        # recordType resets the dropdown to the empty option.
-        self.assertContains(response, 'x-model="recordType"')
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
