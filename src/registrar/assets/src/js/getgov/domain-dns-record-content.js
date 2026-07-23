@@ -1,4 +1,5 @@
 import { EditFormSwitcher, RecordSelectTypeSwitcher } from "./domain-dns-form-switcher";
+import { showElement } from "./helpers";
 
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
@@ -188,9 +189,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
     const alpineData = switcher.getAlpineData();
     
     table.addEventListener('click', (e) => {
-            // reset values for the recordType switcher when you click on an edit form
-            recordTypeSwitcher.resetPendingAndTarget();
-            recordTypeSwitcher.setRecordType();
+        
 
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
@@ -203,6 +202,12 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
                 if(idx > -1) alpineData.openComments.splice(idx,1);
         
                 switcher.setTarget(recordId)
+                if(alpineData.showFormId === 0){
+                     // reset values for the recordType switcher when you click on an edit form from a record type form
+                    recordTypeSwitcher.resetPendingAndTarget();
+                    recordTypeSwitcher.setRecordType();
+                }
+            
                 if(alpineData.showFormId == null){
                     switcher.switchForm()
                 }
@@ -262,19 +267,22 @@ export function initDNSRecordCancelModal(){
 
     const resetSwitcherValues = ()=>{
             const switcher = getSwitcher();
-            console.log("here", switcher)
-            if(switcher){
+            if(!switcher){
                 return;
             }
-
             if(switcher.isRecordType){
-                    switcher.updateSelectedType(switcher.pending.recordId);
+                switcher.switchForm(switcher.pending.recordId);
             }
-            switcher.resetPendingAndTarget()
-         }
+            else{
+                switcher.resetPendingAndTarget();
+            }
+           
+        
+        }
 
     const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
     const cancelButtons = modalEl?.querySelectorAll("[data-close-modal]");
+
 
     confirmButton.addEventListener("click", () => {
 
@@ -282,16 +290,15 @@ export function initDNSRecordCancelModal(){
        if(!switcher){
         return;
        }
-
+        
         teardownForm(
             switcher,
             container
         );
 
-        console.log(switcher.pending)
         modalEl?.setAttribute("data-opener", refsFor(switcher.createReq(switcher.target)).focusId);
-        cancelButtons[0].click();
         switcher.switchForm();
+        cancelButtons[0].click();
     });
 
     // reset the switcher values when user clikcks on the cancel, 'x', and the outside modal.
@@ -299,14 +306,13 @@ export function initDNSRecordCancelModal(){
     const modalOverlay =  document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
     modalEl?.addEventListener("click", (e)=>{ 
         if(e.target == modalOverlay){
-             resetSwitcherValues()
+             resetSwitcherValues(e);
         }
     })
     
     for(let button of cancelButtons){
         button.addEventListener("click", (e) =>  {
-            console.log(button)
-            resetSwitcherValues()
+            resetSwitcherValues(e);
       })
     }
 
@@ -320,14 +326,17 @@ export function initDNSRecordCancelModal(){
     // add edit button event listener
     editButtonEventListener(editFormSwitcher, recordTypeSwitcher)
 
-    // grabbing from form container to add event listener to select type form, since select type form is a swapped element
-
-    const typeField = document.getElementById('id_type');
-    typeField.addEventListener('change', function (e){
+  // grabbing from form container to add event listener to select type form, since select type form is a swapped element
+    container.addEventListener("change", (e)=> {
+        if(e.target.matches("#id_type")){
+         if(!e.isTrusted){
+            return;
+          }
         const index = e.target.selectedIndex;
         recordTypeSwitcher.attemptOpen(index);
         onCancel(recordTypeSwitcher)
 
+        }
     })
 
 }

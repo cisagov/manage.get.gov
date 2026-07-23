@@ -122,7 +122,7 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
 
     setRecordType(value = this.target){
         const data = this.getAlpineData();
-        data.recordType = this.target;
+        data.recordType = value;
     }
 
     attemptOpen(form){
@@ -131,13 +131,16 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
         this.setPending(this.createReq(currentId));
     }
 
-    updateSelectedType(value = this.target){
+    updateSelectedType(value = this.target){ 
         this.container.querySelector("#id_type").selectedIndex = value;
+        // programmatically dispatches change event for alpine to switch the form, and to get the appropiate form labels
+        const changeEvent = new Event('change');
+        this.container.querySelector("#id_type").dispatchEvent(changeEvent);
     }
 
-    switchForm(){
-       this.setRecordType(this.target);
-       this.updateSelectedType();
+    switchForm(value = this.target){
+       this.setRecordType(value);
+       this.updateSelectedType(value);  
        this.resetPendingAndTarget();
     }
 }
