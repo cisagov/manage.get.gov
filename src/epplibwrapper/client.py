@@ -1,12 +1,12 @@
 """Provide a wrapper around epplib to handle authentication and errors."""
 
 import logging
+from time import sleep
 import os
-import gevent
-from gevent.lock import BoundedSemaphore
 from django.conf import settings
 from .cert import Cert, Key
 from .errors import ErrorCode, LoginError, RegistryError
+from .utility.pool import PoolExhausted, EPPConnectionPool
 
 try:
     from epplib.client import Client
@@ -46,10 +46,7 @@ class EPPLibWrapper:
 
     def __init__(self) -> None:
         """Initialize settings which will be used for all connections."""
-        # set _client to None initially. In the event that the __init__ fails
-        # before _client initializes, app should still start and be in a state
-        # that it can attempt _client initialization on send attempts
-        self._client = None  # type: ignore
+
         # prepare (but do not send) a Login command
         self._login = commands.Login(
             cl_id=settings.SECRET_REGISTRY_CL_ID,
@@ -59,32 +56,23 @@ class EPPLibWrapper:
                 "urn:ietf:params:xml:ns:contact-1.0",
             ],
         )
-        # We should only ever have one active connection at a time
-        self.connection_lock = BoundedSemaphore(1)
+        # Create the pool
+        # this will immediately kick off the maintenance loop
+        self._pool = EPPConnectionPool(
+            connection_factory=self._create_connection,
+            size=settings.EPP_CONNECTION_POOL_SIZE,
+            borrow_timeout=settings.EPP_POOL_BORROW_TIMEOUT,
+            idle_ping_seconds=settings.EPP_POOL_IDLE_PING_SECONDS,
+            heartbeat_interval=settings.EPP_POOL_HEARTBEAT_INTERVAL,
+        )
 
-        self.connection_lock.acquire()
-        try:
-            self._initialize_client()
-        except Exception:
-            logger.warning("Unable to configure the connection to the registry.")
-        finally:
-            self.connection_lock.release()
-
-        # based off what the old connection pool did
-        # Spawn a background greenlet that periodically pings the registry to keep
-        # the connection warm and detect a dead connection.
-        self._heartbeat_greenlet = None
-        if settings.EPP_HEARTBEAT_ENABLED:
-            self._heartbeat_greenlet = gevent.spawn(self._heartbeat_loop)
-
-    def _initialize_client(self) -> None:
-        """Initialize a client, assuming _login defined. Sets _client to initialized
-        client. Raises errors if initialization fails.
-        This method will be called at app initialization, and also during retries."""
+    def _create_connection(self) -> "Client":
+        """Initialize a client, assuming _login defined. Raises errors if initialization fails.
+        This method will be called at app initialization, when the pool makes a new conneciton,
+        and upon retries if a connection is discarded or retired."""
         # establish a client object with a TCP socket transport
-        # note that type: ignore added in several places because linter complains
-        # about _client initially being set to None, and None type doesn't match code
-        self._client = Client(  # type: ignore
+
+        client = Client(  # type: ignore
             TimeoutSocketTransport(
                 settings.SECRET_REGISTRY_HOSTNAME,
                 cert_file=CERT.filename,
@@ -93,146 +81,124 @@ class EPPLibWrapper:
             )
         )
         try:
-            # use the _client object to connect
-            self._connect()
+            self._connect(client=client)
         except TransportError as err:
-            message = "_initialize_client failed to execute due to a connection error."
-            logger.error(f"{message} Error: {err}")
+            message = "_create_connection failed to execute due to a connection error."
+            logger.error(f"{_worker_tag()} {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             raise err
         except Exception as err:
-            message = "_initialize_client failed to execute due to an unknown error."
-            logger.error(f"{message} Error: {err}")
+            message = "_create_connection failed to execute due to an unknown error."
+            logger.error(f"{_worker_tag()} {message} Error: {err}")
             raise RegistryError(message) from err
 
-    def _connect(self) -> None:
+        # Client is stored as a connection inside the pool
+        return client
+
+    def _connect(self, client: "Client") -> None:
         """Connects to EPP. Sends a login command. If an invalid response is returned,
         the client will be closed and a LoginError raised."""
-        self._client.connect()  # type: ignore
-        response = self._client.send(self._login)  # type: ignore
+        client.connect()  # type: ignore
+
+        # Note this doesn't use the "with" setup as then client would close after the send
+        # we want to keep the connection open
+        response = client.send(self._login)  # type: ignore
+        # response codes >= 2000 are failure codes
         if response.code >= 2000:  # type: ignore
-            self._client.close()  # type: ignore
+            try:
+                client.close()  # type: ignore
+            except Exception:
+                # the connection was never fully established (login failed),
+                # so a failed close just means there is nothing to clean up
+                logger.warning("Failed to close client after failed login", exc_info=True)
             raise LoginError(response.msg)  # type: ignore
         logger.info(f"{_worker_tag()} EPP connection established")
 
-    def _disconnect(self) -> None:
-        """Close the connection. Sends a logout command and closes the connection."""
-        logger.info(f"{_worker_tag()} EPP connection closing")
-        self._send_logout_command()
-        self._close_client()
-
-    def _send_logout_command(self):
-        """Sends a logout command to epp"""
-        try:
-            self._client.send(commands.Logout())  # type: ignore
-        except Exception as err:
-            logger.warning(f"{_worker_tag()} Logout command not sent successfully: {err}")
-
-    def _close_client(self):
-        """Closes an active client connection"""
-        try:
-            self._client.close()
-        except Exception as err:
-            logger.warning(f"{_worker_tag()} Connection to registry was not cleanly closed: {err}")
-
     def _send(self, command):
-        """Helper function used by `send`."""
+        """Helper function used by `send` handles the actual sending of a message
+        this utilizes the pool to get a connection and automatically closes the connection
+        when done (indirectly via the with statement).
+
+        Does NOT contain retry logic
+
+        Raises RegistryError
+
+        Returns epplib response object
+        """
         cmd_type = command.__class__.__name__
 
         try:
-            # check for the condition that the _client was not initialized properly
-            # at app initialization
-            if self._client is None:
-                self._initialize_client()
-            logger.info(f"{_worker_tag()} Sending EPP command: {cmd_type}")
-            response = self._client.send(command)
+            # Grab a connection from the pool. Connection is automagically
+            # put back into the Q once the with finishes
+            with self._pool.connection() as clientConnection:
+                response = clientConnection.send(command)
+        except PoolExhausted as err:
+
+            # Every connection stayed checked out for the whole wait.
+            # The registry/socket may be fine - this is a capacity signal.
+            message = f"{cmd_type} failed: all pooled EPP connections are busy."
+            logger.error(f"{_worker_tag()}  {message} Error: {err}. Pool stats: {self._pool.stats()}", exc_info=True)
+            raise RegistryError(message) from err
+
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
-            logger.error(f"{message} Error: {err}")
+            logger.error(f"{_worker_tag()} {message} Error: {err}")
             raise RegistryError(message) from err
+
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"EPP ERROR {_worker_tag()} EPP connection lost. {message} Error: {err}")
+            logger.error(f"{_worker_tag()} EPP connection lost. {message} Error: {err}")
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
+
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}")
+            logger.error(f"{_worker_tag()}: msg: {message} Error: {err}")
             raise RegistryError(message) from err
+        except RegistryError:
+            # _create_connection is called by the "self._pool.connection() as clientConnection"
+            # This can result in a registry error. Raising it again here allows for retry
+            raise
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(f"EPP ERROR {_worker_tag()}: msg: {message} Error: {err}")
+            logger.error(f"{_worker_tag()}: msg: {message} Error: {err}")
             raise RegistryError(message) from err
+
         else:
             if response.code >= 2000:
                 raise RegistryError(response.msg, code=response.code, response=response)
             else:
                 return response
 
-    def _heartbeat(self):
-        """Send a Hello() to the registry to keep the connection warm and detect a
-        dead connection. Logs and attempts to recover if the heartbeat fails."""
-        self.connection_lock.acquire()
-        try:
-            if self._client is None:
-                self._initialize_client()
-            self._client.send(commands.Hello())  # type: ignore
-        except Exception as err:
-            logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat failed: {err}")
-            # Close the stale client so its socket is released, then reconnect so
-            # the next real command has a live client.
-            try:
-                if self._client is not None:
-                    self._close_client()
-                self._initialize_client()
-            except Exception as reconnect_err:
-                logger.error(f"EPP ERROR {_worker_tag()} EPP heartbeat reconnect failed: {reconnect_err}")
-        finally:
-            self.connection_lock.release()
-
-    def _heartbeat_loop(self):
-        """Run the heartbeat on a background greenlet on a fixed interval."""
-        while True:
-            gevent.sleep(settings.EPP_HEARTBEAT_INTERVAL)
-            self._heartbeat()
-
-    def _retry(self, command):
-        """Retry sending a command through EPP by re-initializing the client
-        and then sending the command."""
-        # re-initialize by disconnecting and initial
-        self._disconnect()
-        self._initialize_client()
-        return self._send(command)
-
     def send(self, command, *, cleaned=False):
-        """Login, the send the command. Retry once if an error is found"""
+        """Login, the send the command. Retry three times if an error is found."""
         # try to prevent use of this method without appropriate safeguards
         cmd_type = command.__class__.__name__
         if not cleaned:
             raise ValueError("Please sanitize user input before sending it.")
 
-        self.connection_lock.acquire()
-        try:
-            return self._send(command)
-        except RegistryError as err:
-            if err.response:
-                logger.info(f"cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
-            if (
-                err.is_transport_error()
-                or err.is_connection_error()
-                or err.is_session_error()
-                or err.is_server_error()
-                or err.should_retry()
-            ):
-                message = f"{cmd_type} failed and will be retried"
-                logger.info(f"{message} Error: {err}")
-                return self._retry(command)
-            else:
-                raise err
-        finally:
-            self.connection_lock.release()
+        max_attempts = 4
+        for attempt in range(1, max_attempts + 1):
+            try:
+                return self._send(command)
+            except RegistryError as err:
+                if err.response:
+                    logger.info(f"{_worker_tag()}  cltrid is {err.response.cl_tr_id} svtrid is {err.response.sv_tr_id}")
+                if (
+                    err.is_transport_error()
+                    or err.is_connection_error()
+                    or err.is_session_error()
+                    or err.is_server_error()
+                    or err.should_retry()
+                ) and attempt < max_attempts:
+                    message = f"{cmd_type} failed and will be retried"
+                    logger.info(f"{_worker_tag()} {message} Error: {err}")
+
+                    sleep((attempt * 50) / 1000)  # sleep 50-150ms incase a logout error occured
+                else:
+                    raise err
 
 
 try:

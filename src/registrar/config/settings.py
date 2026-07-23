@@ -828,14 +828,26 @@ SECRET_REGISTRY_KEY = secret_registry_key
 SECRET_REGISTRY_KEY_PASSPHRASE = secret_registry_key_passphrase
 SECRET_REGISTRY_HOSTNAME = secret_registry_hostname
 
-# Whether the background heartbeat greenlet runs. Disabled by default under the
-# test runner and in local dev so it doesn't spawn a long-lived greenlet per
-# EPPLibWrapper instance; the heartbeat tests re-enable it explicitly.
-EPP_HEARTBEAT_ENABLED = not (RUNNING_TESTS or IS_LOCAL)
+# endregion
+# region: EPP connection Pool----------------------------------------------###
+
+# Max EPP connections per worker process. Environments that share registry
+# credentials also share the registry's connection allowance.
+# keep the code default small in test environments (except when needed)
+EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)
+
+# Seconds a request will wait for a pooled connection before failing.
+EPP_POOL_BORROW_TIMEOUT = env.int("EPP_POOL_BORROW_TIMEOUT", default=20)
+
+# A connection idle longer than this is health-checked (EPP Hello)
+# before reuse, and replaced if it fails.
+EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
 
 # How often, in seconds, the background heartbeat pings the registry to keep the
-# EPP connection warm and detect a dead connection.
-EPP_HEARTBEAT_INTERVAL = 60
+# EPP connection warm and detect a dead connection. 0 disables it.
+EPP_POOL_HEARTBEAT_INTERVAL = (
+    env.int("EPP_POOL_HEARTBEAT_INTERVAL", default=30) if not (RUNNING_TESTS or IS_LOCAL) else 0
+)
 
 # Max seconds an established EPP socket may block on a read/send before raising
 # (does not bound the initial TCP connect). The registry normally responds in
@@ -858,6 +870,7 @@ DNS_MOCK_EXTERNAL_APIS = dns_mock_external_apis
 DNS_NS_SET_RANGE = 5
 
 # endregion
+
 
 # region: Security and Privacy----------------------------------------------###
 
