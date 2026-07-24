@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -590,8 +591,8 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "This domain has not been renewed for one year, "
-                        "please email help@get.gov if this problem persists.",
+                        "We’re experiencing a connection error. Please wait a few minutes and try again. "
+                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
@@ -1245,6 +1246,9 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
+        # messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
+        # return self.form_invalid(formset)
+
         self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
@@ -1338,7 +1342,14 @@ class DomainDNSSECView(DomainFormBaseView):
                 except RegistryError as err:
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
-                    messages.error(self.request, errmsg)
+                    messages.error(
+                        self.request,
+                        mark_safe(  # nosec
+                            "An unexpected error occurred: Could not remove existing DNSSEC record(s). "
+                            "Please try again. If the problem persists, "
+                            '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                        ),
+                    )
                 else:
                     self.send_update_notification(form, force_send=True)
         return self.form_valid(form)
