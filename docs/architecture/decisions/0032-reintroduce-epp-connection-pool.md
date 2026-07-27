@@ -15,7 +15,7 @@ reuse existing connections instead of paying a new TLS handshake and EPP login o
 That pool was later removed (February 2024). At the time, the gunicorn worker class had been
 changed to `gevent` with 3 workers per instance. Because each worker process held its own
 long-lived EPP client, the deployment immediately established 3 registry connections (one per
-worker), and the dedicated connection pool was deemed unneeded — the per-worker singleton client, guarded by a semaphore, appeared to provide enough connectivity. Removing the pool also removed the dependency on `geventconnpool`, which had been unmaintained since 2021 and was a known risk(see the Consequences section of ADR 23).
+worker), and the dedicated connection pool was deemed unneeded — the per-worker singleton client, guarded by a semaphore, appeared to provide enough connectivity. Removing the pool also removed the dependency on `geventconnpool`, which had been unmaintained since 2021 and was a known risk (see the Consequences section of ADR 23).
 
 Since then, operational experience and load testing have shown the limits of the singleton-client
 design: with one connection per worker, every EPP command on a worker is serialized behind a
@@ -33,9 +33,12 @@ Key properties of the new pool (`src/epplibwrapper/utility/pool.py`):
 
 - **Fixed maximum size per worker**, configured via the `EPP_CONNECTION_POOL_SIZE` environment
   variable (see the EPP connection pool region of `src/registrar/config/settings.py`).
-- **Thread-based, not gevent-based.** Under gunicorn's `gevent` worker class the standard library
-  primitives are monkey-patched and cooperate with greenlets; under a `gthread` worker they are
-  natively thread-safe. The pool works under either worker class with no code changes.
+- **Python thread-based, not gevent library-based connection** This new setup uses the python
+  standard library for threading instead of using `import gevent` and using the gevent library to
+  spawn greenlets. With this new python threading configuration and our under gunicorn's `gevent`
+  worker class the python 'threads' are monkey-patched into greenlets. If we ever change our worker
+  class to gthread no code changes will be needed as the python thread library is natively
+  thread-safe. The pool works under either worker class with no code changes.
 - **Background maintenance thread** that periodically pings idle connections (EPP `Hello`) and
   retires connections that have gone too long without doing real work, replacing them with fresh
   ones.
