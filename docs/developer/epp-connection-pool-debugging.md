@@ -76,6 +76,10 @@ environment:
 | `EPP_POOL_IDLE_PING_SECONDS` | 60 | A connection idle longer than this must answer a `Hello` before reuse. |
 | `EPP_POOL_HEARTBEAT_INTERVAL` | 30 | Cadence of the background maintenance pass. 0 disables pinging. |
 
+**Regarding the connection pool size**: There are a max of 100 connections allowed at the same time & with the same login credentials. This means 100 connections total allowed on stable and 100 connections allowed on OT&E across **all** non-production sandboxes. To have more than 100 on OT&E we would need to use different credentials or request an increase in the number of connections allowed.
+
+**Regarding EPP_POOL_IDLE_PING_SECONDS **- The registry will terminate a logged in connection once it is idle for one hour, EPP_POOL_IDLE_PING_SECONDS should never exceed 3600 seconds (1 hr).
+
 ### Changing environment variables in a running sandbox
 
 1. Target the sandbox in question: `cf target -s {sandbox-name}`
