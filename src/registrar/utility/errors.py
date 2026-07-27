@@ -381,7 +381,7 @@ class DnsHostingError(Exception):
             error_msg = (
                 "An unexpected error occurred: Please try again. If the problem persists, "
                 "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
-                f"for assistance and share this ID {request_id}."
+                f" for assistance and share this ID {request_id}."
             )
 
         return {

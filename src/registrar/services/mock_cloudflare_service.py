@@ -531,10 +531,28 @@ class MockCloudflareService:
                 },
                 headers={"cf-ray": "R2D2"},
             )
+        if record_name.startswith("error-401"):
+            return httpx.Response(
+                401,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "AARD"},
+            )
         if record_name.startswith("error-403"):
             return httpx.Response(
                 403,
                 json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
                 headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                404,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-429"):
+            return httpx.Response(
+                429,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "VARK"},
             )
         return httpx.Response(500)
