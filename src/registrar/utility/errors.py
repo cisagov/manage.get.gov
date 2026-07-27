@@ -377,8 +377,13 @@ class DnsHostingError(Exception):
         "An unexpected error occurred: Please try again. If the problem persists, "
         "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
     )
+    GENERIC_VALIDATION_ERROR_MESSAGE = (
+            "There’s something wrong with the DNS record information you provided. Please try again. "
+            "If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+        )
 
-    def __init__(self, *, code=None, message=GENERIC_ERROR_MESSAGE, upstream_status=None, context=None):
+    def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
         self._explicit_message = message
         self.upstream_status = upstream_status
@@ -386,17 +391,13 @@ class DnsHostingError(Exception):
         super().__init__(self.message)
 
     def _build_error_mapping(self, request_id):
-        validation_msg = (
-            "There’s something wrong with the DNS record information you provided. Please try again. "
-            "If the problem persists, "
-            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
-        )
+        validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
         cf_error_code = self.context.get("cf_error_code")
 
         if self.wire_code == "DNS_VALIDATION_FAILED" and cf_error_code:
-            validation_msg = _DNS_VALIDATION_MSG[cf_error_code] or validation_msg
+            validation_msg = _DNS_VALIDATION_MSG.get(cf_error_code) or validation_msg
 
-        error_msg = DnsHostingError.GENERIC_ERROR_MESSAGE
+        error_msg = self.GENERIC_ERROR_MESSAGE
         if request_id:
             error_msg = (
                 "An unexpected error occurred: Please try again. If the problem persists, "
@@ -413,7 +414,7 @@ class DnsHostingError(Exception):
             DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
             DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
         }
-    
+
     @property
     def message(self):
         if self._explicit_message:
