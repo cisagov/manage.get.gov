@@ -2,11 +2,6 @@ import logging
 
 from enum import IntEnum
 from django.utils.safestring import mark_safe
-from registrar.validations import (
-    MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE,
-    TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
-    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
-)
 
 logger = logging.getLogger(__name__)
 
