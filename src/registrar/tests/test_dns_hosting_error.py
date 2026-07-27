@@ -44,6 +44,17 @@ class TestDnsHostingError(TestCase):
                 self.assertEqual(exc.message, exc._build_error_mapping(request_id)[code])
                 self.assertEqual(str(exc), exc.message)
 
+    def test_message_resolves_from_error_mapping_with_request_id(self):
+        """A user-facing message is resolved from `_build_error_mapping` for every code."""
+        request_id = "123EASYASABC"
+        for code in codes:
+            with self.subTest(code=code.name):
+                exc = DnsHostingError(code=code, context={"request_id": request_id})
+                self.assertEqual(exc.message, exc._build_error_mapping(request_id)[code])
+                self.assertEqual(str(exc), exc.message)
+                if code != codes.VALIDATION_FAILED:
+                    self.assertIn(request_id, exc.message)
+
     def test_all_dns_hosting_error_codes_are_wired(self):
         self.assertLessEqual(set(codes), set(_DNS_WIRE_CODES))
 
