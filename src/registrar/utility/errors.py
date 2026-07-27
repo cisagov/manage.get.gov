@@ -359,17 +359,6 @@ def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, con
     return cls(code=code, message=explicit_message, upstream_status=upstream_status, context=context)
 
 
-_DNS_VALIDATION_MSG = {
-    # TODO: string values are temporary and to be replaced with approved content
-    81058: DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
-    9000: "DNS name is invalid.",
-    9015: TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE,
-    83011: MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE,
-    81053: "An A, AAAA, or CNAME record with that name already exists.",
-    9007: "Content for record is invalid.",
-}
-
-
 class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
@@ -378,10 +367,10 @@ class DnsHostingError(Exception):
         "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
     )
     GENERIC_VALIDATION_ERROR_MESSAGE = (
-            "There’s something wrong with the DNS record information you provided. Please try again. "
-            "If the problem persists, "
-            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
-        )
+        "There’s something wrong with the DNS record information you provided. Please try again. "
+        "If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
@@ -392,11 +381,6 @@ class DnsHostingError(Exception):
 
     def _build_error_mapping(self, request_id):
         validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
-        cf_error_code = self.context.get("cf_error_code")
-
-        if self.wire_code == "DNS_VALIDATION_FAILED" and cf_error_code:
-            validation_msg = _DNS_VALIDATION_MSG.get(cf_error_code) or validation_msg
-
         error_msg = self.GENERIC_ERROR_MESSAGE
         if request_id:
             error_msg = (
