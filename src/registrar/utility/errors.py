@@ -2,6 +2,7 @@ import logging
 
 from enum import IntEnum
 from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -378,20 +379,21 @@ class DnsHostingError(Exception):
         validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
         error_msg = self.GENERIC_ERROR_MESSAGE
         if request_id:
-            error_msg = (
+            error_msg = format_html(
                 "An unexpected error occurred: Please try again. If the problem persists, "
                 "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
-                f" for assistance and share this ID {request_id}."
+                " for assistance and share this ID {}.",
+                request_id,
             )
 
         return {
-            DnsHostingErrorCodes.NOT_FOUND: mark_safe(error_msg),
-            DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(validation_msg),
-            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: mark_safe(error_msg),
-            DnsHostingErrorCodes.AUTH_FAILED: mark_safe(error_msg),
-            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: mark_safe(error_msg),
-            DnsHostingErrorCodes.UPSTREAM_ERROR: mark_safe(error_msg),
-            DnsHostingErrorCodes.UNKNOWN: mark_safe(error_msg),
+            DnsHostingErrorCodes.NOT_FOUND: error_msg,
+            DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(validation_msg),  # nosec
+            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: error_msg,
+            DnsHostingErrorCodes.AUTH_FAILED: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_ERROR: error_msg,
+            DnsHostingErrorCodes.UNKNOWN: error_msg,
         }
 
     @property

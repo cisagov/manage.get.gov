@@ -435,7 +435,7 @@ class MockCloudflareService:
         except Exception as e:
             logger.error(f"Failed to get record zone name using request URL: {e}.")
 
-    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:
+    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:  # noqa: C901
         """Return an error response for ``error-*`` record names. These represent actual CF error codes and messages"""
         if record_name.startswith("error-duplicate"):
             return httpx.Response(
