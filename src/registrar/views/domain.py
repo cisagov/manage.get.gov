@@ -1595,9 +1595,12 @@ class DomainUsersView(DomainBaseView):
             .exclude(email__isnull=True)
             .exclude(email="")
         )
+        legacy_invitations = self.object.invitations.filter(
+            status=DomainInvitation.DomainInvitationStatus.INVITED
+        )
         invited_emails = {invitation.email.lower() for invitation in user_domain_role_invitations}
 
-        for domain_invitation in chain(user_domain_role_invitations, self.object.invitations.all()):
+        for domain_invitation in chain(user_domain_role_invitations, legacy_invitations):
             is_user_domain_role = isinstance(domain_invitation, UserDomainRole)
 
             # The invitation service temporarily creates both models. Prefer the
@@ -1625,17 +1628,14 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list if the domain invitation
-            # if the status is not canceled
-            if domain_invitation.status != "canceled":
-                invitations.append(
-                    {
-                        "domain_invitation": domain_invitation,
-                        "has_admin_flag": has_admin_flag,
-                        "is_user_domain_role": is_user_domain_role,
-                        "can_cancel": domain_invitation.status == UserDomainRole.Status.INVITED,
-                    }
-                )
+            invitations.append(
+                {
+                    "domain_invitation": domain_invitation,
+                    "has_admin_flag": has_admin_flag,
+                    "is_user_domain_role": is_user_domain_role,
+                    "can_cancel": True,
+                }
+            )
 
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
