@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
     EPP_POOL_BORROW_TIMEOUT=1,
     EPP_POOL_IDLE_PING_SECONDS=60,
     EPP_POOL_HEARTBEAT_INTERVAL=0,
+    IS_LOCAL=False,
 )
 class TestClient(TestCase):
     """Test the EPPlibwrapper client"""

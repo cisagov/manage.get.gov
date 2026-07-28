@@ -37,14 +37,7 @@ class PooledConnection:
 
 
 class EPPConnectionPool:
-    def __init__(
-        self,
-        connection_factory,
-        size,
-        borrow_timeout,
-        idle_ping_seconds,
-        heartbeat_interval,
-    ):
+    def __init__(self, connection_factory, size, borrow_timeout, idle_ping_seconds, heartbeat_interval, prefill= False):
         self._connection_factory = connection_factory
         self.size = size
         self.borrow_timeout = borrow_timeout
@@ -68,7 +61,8 @@ class EPPConnectionPool:
         self._creation_lock = threading.Lock()
 
         # Fill the Queue of connections to begin with
-        self._replenish()
+        if prefill:
+            self._replenish()
 
         # Background maintenance thread. daemon=True means it never blocks process shutdown.
         # Under gevent it runs as a greenlet, under gthread it is a real OS thread.
@@ -135,9 +129,10 @@ class EPPConnectionPool:
     def stats(self):
         """Pool snapshot, embedded in log messages.
 
-        connections created = connections in existence (checked out + idle)
-        idle    = connections currently waiting in the queue
-
+        size = size of the pool
+        connections created = connections in existence (in use + idle)
+        idle    = connections currently waiting (idle) in the queue
+        in use  = connections currently in use
         """
         return {
             "size": self.size,

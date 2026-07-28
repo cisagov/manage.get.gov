@@ -43,6 +43,7 @@ class TestEPPConnectionPool(TestCase):
             borrow_timeout=borrow_timeout,
             idle_ping_seconds=idle_ping_seconds,
             heartbeat_interval=0,
+            prefill=True,
         )
 
     @less_console_noise_decorator

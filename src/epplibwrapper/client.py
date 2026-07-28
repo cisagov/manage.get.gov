@@ -64,6 +64,7 @@ class EPPLibWrapper:
             borrow_timeout=settings.EPP_POOL_BORROW_TIMEOUT,
             idle_ping_seconds=settings.EPP_POOL_IDLE_PING_SECONDS,
             heartbeat_interval=settings.EPP_POOL_HEARTBEAT_INTERVAL,
+            prefill=not settings.IS_LOCAL,
         )
 
     def _create_connection(self) -> "Client":
@@ -206,4 +207,5 @@ try:
     CLIENT = EPPLibWrapper()
     logger.info(f"{_worker_tag()}: registry client initialized")
 except Exception:
+    CLIENT = None
     logger.warning(f"{_worker_tag()}: Unable to configure epplib. Registrar cannot contact registry.")
