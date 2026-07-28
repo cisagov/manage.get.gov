@@ -173,6 +173,16 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
                 UserPortfolioPermissionChoices.EDIT_MEMBERS,
             ],
         )
+        UserPortfolioPermission.objects.create(
+            email=self.email6,
+            portfolio=self.portfolio,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[
+                UserPortfolioPermissionChoices.VIEW_MEMBERS,
+                UserPortfolioPermissionChoices.EDIT_MEMBERS,
+            ],
+        )
 
         response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
         self.assertEqual(response.status_code, 200)

@@ -2243,6 +2243,12 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+        permission = UserPortfolioPermission.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
 
         # Invited member removal email sent successfully
         send_invited_member_removal.return_value = True
@@ -2266,6 +2272,9 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
             # and then confirm that we're now on Members Table page
             self.assertEqual(response.headers["Location"], reverse("members"))
+            permission.refresh_from_db()
+            self.assertEqual(permission.status, UserPortfolioPermission.Status.REJECTED)
+            self.assertFalse(PortfolioInvitation.objects.filter(pk=invitation.pk).exists())
 
             # assert send_portfolio_admin_removal_emails not called since invitation
             # is for a basic member

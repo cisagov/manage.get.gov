@@ -870,25 +870,25 @@ def cancel_portfolio_invitation(email: str, portfolio: Portfolio):
             canceled = False
 
             # Cancel new model invitation
-            permission = UserPortfolioPermission.objects.filter(
-                email=email,
+            permissions = UserPortfolioPermission.objects.filter(
+                email__iexact=email,
                 portfolio=portfolio,
                 status=UserPortfolioPermission.Status.INVITED,
-            ).first()
+            )
 
-            if permission:
+            for permission in permissions:
                 permission.status = UserPortfolioPermission.Status.REJECTED
                 permission.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = PortfolioInvitation.objects.filter(
-                email=email,
+            legacy_invitations = PortfolioInvitation.objects.filter(
+                email__iexact=email,
                 portfolio=portfolio,
                 status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 # Note: PortfolioInvitation doesn't have CANCELED status
                 # so we delete the invitation instead
                 legacy_invitation.delete()

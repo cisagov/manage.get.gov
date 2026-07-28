@@ -29,7 +29,7 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.services.invitation_service import invite_to_portfolio
+from registrar.services.invitation_service import cancel_portfolio_invitation, invite_to_portfolio
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -641,9 +641,10 @@ class PortfolioInvitedMemberDeleteView(View):
         except Exception as e:
             self._handle_exceptions(e)
 
-        portfolio_invitation.delete()
+        invitation_email = portfolio_invitation.email
+        cancel_portfolio_invitation(invitation_email, portfolio_invitation.portfolio)
 
-        success_message = f"{portfolio_invitation.email} has been removed from this organization."
+        success_message = f"{invitation_email} has been removed from this organization."
         # From the Members Table page Else the Member Page
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": success_message}, status=200)
