@@ -1759,7 +1759,6 @@ class TestPortfolio(WebTest):
         self.assertContains(response, 'id="member-delete-form"')
 
 
-
 class TestPortfolioMemberDeleteView(WebTest):
     def setUp(self):
         super().setUp()

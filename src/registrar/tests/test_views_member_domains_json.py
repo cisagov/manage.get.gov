@@ -572,13 +572,11 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_member_domains_json_self_only_view_ignores_others_member_id(self):
-        """If a user with no Member access that passes another members 
+        """If a user with no Member access that passes another members
         id, they'll still only get their own domains back"""
         domain, _ = Domain.objects.get_or_create(name="nopermsdomain.gov")
         DomainInformation.objects.get_or_create(requester=self.user, domain=domain, portfolio=self.portfolio)
-        UserDomainRole.objects.get_or_create(
-            user=self.user_no_perms, domain=domain, role=UserDomainRole.Roles.MANAGER
-        )
+        UserDomainRole.objects.get_or_create(user=self.user_no_perms, domain=domain, role=UserDomainRole.Roles.MANAGER)
 
         other_domain, _ = Domain.objects.get_or_create(name="othermanagerdomain.gov")
         DomainInformation.objects.get_or_create(requester=self.user, domain=other_domain, portfolio=self.portfolio)

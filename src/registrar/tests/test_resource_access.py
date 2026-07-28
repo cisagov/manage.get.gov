@@ -395,7 +395,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
     @less_console_noise_decorator
     def test_member_view_self_cannot_view_others(self):
         """
-        A no Member access user cannot view other 
+        A no Member access user cannot view other
         members records even in same portfolio"""
         another_basic_member = UserPortfolioPermission.objects.create(
             user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -421,7 +421,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
     @less_console_noise_decorator
     def test_member_domains_view_self_cannot_view_others(self):
         """
-        A no Member access user cannot view another members 
+        A no Member access user cannot view another members
         domain assignments page"""
         another_basic_member = UserPortfolioPermission.objects.create(
             user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
