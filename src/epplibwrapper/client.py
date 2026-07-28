@@ -207,5 +207,5 @@ try:
     CLIENT = EPPLibWrapper()
     logger.info(f"{_worker_tag()}: registry client initialized")
 except Exception:
-    CLIENT = None
+    CLIENT = None  # type: ignore[assignment]
     logger.warning(f"{_worker_tag()}: Unable to configure epplib. Registrar cannot contact registry.")
