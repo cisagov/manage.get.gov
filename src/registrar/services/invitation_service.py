@@ -834,7 +834,7 @@ def cancel_domain_invitation(email: str, domain: Domain):
             )
 
             for legacy_invitation in legacy_invitations:
-                legacy_invitation.status = DomainInvitation.DomainInvitationStatus.CANCELED
+                legacy_invitation.cancel_invitation()
                 legacy_invitation.save()
                 canceled = True
 
