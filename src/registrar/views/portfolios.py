@@ -78,11 +78,7 @@ class PortfolioDomainRequestsView(View):
         return render(request, "portfolio_requests.html")
 
 
-<<<<<<< HEAD
 @grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
-=======
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
->>>>>>> 2b1a8a8f14277f75a7a06f9971497624f527d434
 class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -1204,11 +1200,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         return reverse("organization-senior-official")
 
 
-<<<<<<< HEAD
 @grant_access(IS_PORTFOLIO_MEMBER)
-=======
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
->>>>>>> 2b1a8a8f14277f75a7a06f9971497624f527d434
 class PortfolioMembersView(View):
 
     template_name = "portfolio_members.html"
