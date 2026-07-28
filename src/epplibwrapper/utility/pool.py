@@ -37,7 +37,7 @@ class PooledConnection:
 
 
 class EPPConnectionPool:
-    def __init__(self, connection_factory, size, borrow_timeout, idle_ping_seconds, heartbeat_interval, prefill= False):
+    def __init__(self, connection_factory, size, borrow_timeout, idle_ping_seconds, heartbeat_interval, prefill=False):
         self._connection_factory = connection_factory
         self.size = size
         self.borrow_timeout = borrow_timeout
