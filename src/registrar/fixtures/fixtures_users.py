@@ -176,6 +176,7 @@ class UserFixture:
             "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
             "first_name": "Rebecca-Analyst",
             "last_name": "Hsieh-Analyst",
+            "email": "rebecca.hsieh+1@truss.works",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",

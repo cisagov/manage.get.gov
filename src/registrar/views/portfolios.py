@@ -10,7 +10,7 @@ from django.core.exceptions import PermissionDenied
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM,
     HAS_PORTFOLIO_DOMAINS_ANY_PERM,
-    HAS_PORTFOLIO_MEMBERS_ANY_PERM,
+    HAS_PORTFOLIO_MEMBERS_VIEW,
     HAS_PORTFOLIO_MEMBERS_EDIT,
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
@@ -78,7 +78,7 @@ class PortfolioDomainRequestsView(View):
         return render(request, "portfolio_requests.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
 class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -135,6 +135,10 @@ class PortfolioMemberDeleteView(View):
         Redirect to a success page after deletion (or any other appropriate page).
         """
         portfolio = resolve_portfolio(request, member_pk=member_pk)
+
+        if not request.user.has_edit_members_portfolio_permission(portfolio):
+            raise PermissionDenied
+
         portfolio_member_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_member_permission.user
         portfolio = portfolio_member_permission.portfolio
@@ -279,39 +283,18 @@ class PortfolioMemberEditView(DetailView, View):
 
     def post(self, request, member_pk):
         portfolio = resolve_portfolio(request, member_pk=member_pk)
+
+        if not request.user.has_edit_members_portfolio_permission(portfolio):
+            raise PermissionDenied
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         user = portfolio_permission.user
         form = self.form_class(request.POST, instance=portfolio_permission)
-        removing_admin_role_on_self = False
         if form.is_valid():
             try:
-                if form.is_change():
-                    if not send_portfolio_member_permission_update_email(
-                        requestor=request.user, permissions=form.instance
-                    ):
-                        messages.warning(self.request, f"Could not send email notification to {user.email}.")
-                if form.is_change_from_member_to_admin():
-                    if not send_portfolio_admin_addition_emails(
-                        email=portfolio_permission.user.email,
-                        requestor=request.user,
-                        portfolio=portfolio_permission.portfolio,
-                    ):
-                        messages.warning(
-                            self.request, "Could not send email notification to existing organization admins."
-                        )
-                elif form.is_change_from_admin_to_member():
-                    if not send_portfolio_admin_removal_emails(
-                        email=portfolio_permission.user.email,
-                        requestor=request.user,
-                        portfolio=portfolio_permission.portfolio,
-                    ):
-                        messages.warning(
-                            self.request, "Could not send email notification to existing organization admins."
-                        )
-                    # Check if user is removing their own admin or edit role
-                    removing_admin_role_on_self = request.user == user
+                removing_admin_role_on_self = self._send_role_change_emails(form, portfolio_permission, user)
             except Exception as e:
                 self._handle_exceptions(e)
+                removing_admin_role_on_self = False
             form.save()
             messages.success(self.request, "The member's role and permissions have been updated.")
             return redirect("member", member_pk=member_pk) if not removing_admin_role_on_self else redirect("home")
@@ -327,6 +310,31 @@ class PortfolioMemberEditView(DetailView, View):
                 },
             )
 
+    def _send_role_change_emails(self, form, portfolio_permission, user):
+        """Send appropriate notification emails based on the type of role change."""
+        removing_admin_role_on_self = False
+        if form.is_change():
+            if not send_portfolio_member_permission_update_email(
+                requestor=self.request.user, permissions=form.instance
+            ):
+                messages.warning(self.request, f"Could not send email notification to {user.email}.")
+        if form.is_change_from_member_to_admin():
+            if not send_portfolio_admin_addition_emails(
+                email=portfolio_permission.user.email,
+                requestor=self.request.user,
+                portfolio=portfolio_permission.portfolio,
+            ):
+                messages.warning(self.request, "Could not send email notification to existing organization admins.")
+        elif form.is_change_from_admin_to_member():
+            if not send_portfolio_admin_removal_emails(
+                email=portfolio_permission.user.email,
+                requestor=self.request.user,
+                portfolio=portfolio_permission.portfolio,
+            ):
+                messages.warning(self.request, "Could not send email notification to existing organization admins.")
+            removing_admin_role_on_self = self.request.user == user
+        return removing_admin_role_on_self
+
     def _handle_exceptions(self, exception):
         """Handle exceptions raised during the process."""
         if isinstance(exception, MissingEmailError):
@@ -340,7 +348,7 @@ class PortfolioMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
@@ -389,6 +397,9 @@ class PortfolioMemberDomainsEditView(DetailView, View):
         added_domains = request.POST.get("added_domains")
         removed_domains = request.POST.get("removed_domains")
         portfolio = resolve_portfolio(request, member_pk=member_pk)
+
+        if not request.user.has_edit_members_portfolio_permission(portfolio):
+            raise PermissionDenied
         portfolio_permission = get_object_or_404(UserPortfolioPermission, pk=member_pk, portfolio=portfolio)
         member = portfolio_permission.user
         portfolio = portfolio_permission.portfolio
@@ -537,7 +548,7 @@ class PortfolioMemberDomainsEditView(DetailView, View):
             UserDomainRole.objects.filter(domain_id__in=removed_domain_ids, user=member).delete()
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioInvitedMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -590,7 +601,8 @@ class PortfolioInvitedMemberDeleteView(View):
         Redirect to a success page after deletion (or any other appropriate page).
         """
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
-
+        if not request.user.has_edit_members_portfolio_permission(portfolio_invitation.portfolio):
+            raise PermissionDenied
         try:
             # if invitation being removed is an admin
             if UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_invitation.roles:
@@ -676,6 +688,8 @@ class PortfolioInvitedMemberEditView(DetailView, View):
 
     def post(self, request, invitedmember_pk):
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
+        if not request.user.has_edit_members_portfolio_permission(portfolio_invitation.portfolio):
+            raise PermissionDenied
         form = self.form_class(request.POST, instance=portfolio_invitation)
         if form.is_valid():
             try:
@@ -725,7 +739,7 @@ class PortfolioInvitedMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioInvitedMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
@@ -769,6 +783,8 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         added_domains = request.POST.get("added_domains")
         removed_domains = request.POST.get("removed_domains")
         portfolio_invitation = get_object_or_404(PortfolioInvitation, pk=invitedmember_pk)
+        if not request.user.has_edit_members_portfolio_permission(portfolio_invitation.portfolio):
+            raise PermissionDenied
         email = portfolio_invitation.email
         portfolio = portfolio_invitation.portfolio
 
@@ -1063,6 +1079,10 @@ class PortfolioOrganizationInfoView(DetailView, FormMixin):
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
         self.object = self.get_object()
+
+        portfolio = get_portfolio_from_session(self.request.session)
+        if not request.user.has_edit_portfolio_permission(portfolio):
+            raise PermissionDenied
         form = self.get_form()
         if form.is_valid():
             user = request.user
@@ -1137,6 +1157,9 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
     def post(self, request, *args, **kwargs):
         """Handle POST requests to process form submission."""
         self.object = self.get_object()
+        portfolio = get_portfolio_from_session(self.request.session)
+        if not request.user.has_edit_portfolio_permission(portfolio):
+            raise PermissionDenied
         form = self.get_form()
         if form.is_valid():
             user = request.user
@@ -1177,7 +1200,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         return reverse("organization-senior-official")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(IS_PORTFOLIO_MEMBER)
 class PortfolioMembersView(View):
 
     template_name = "portfolio_members.html"
@@ -1205,10 +1228,14 @@ class PortfolioAddMemberView(DetailView, FormMixin):
         """Handle POST requests to process form submission."""
         self.object = None  # For a new invitation, there's no existing model instance
 
+        portfolio = get_portfolio_from_session(self.request.session)
+        if not request.user.has_edit_members_portfolio_permission(portfolio):
+            raise PermissionDenied
+
         # portfolio not submitted with form, so override the value
         data = request.POST.copy()
         if not data.get("portfolio"):
-            data["portfolio"] = self.request.session.get("portfolio")
+            data["portfolio"] = portfolio
         # Pass the modified data to the form
         form = portfolioForms.PortfolioNewMemberForm(data)
 

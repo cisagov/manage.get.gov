@@ -569,3 +569,46 @@ class GetPortfolioMemberDomainsJsonTest(TestWithUser, WebTest):
         # Assert that the response is a redirect to openid login
         self.assertEqual(response.status_code, 302)
         self.assertIn("/openid/login", response.location)
+
+    @less_console_noise_decorator
+    def test_member_domains_json_self_only_view_ignores_others_member_id(self):
+        """If a user with no Member access that passes another members 
+        id, they'll still only get their own domains back"""
+        domain, _ = Domain.objects.get_or_create(name="nopermsdomain.gov")
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain, portfolio=self.portfolio)
+        UserDomainRole.objects.get_or_create(
+            user=self.user_no_perms, domain=domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        other_domain, _ = Domain.objects.get_or_create(name="othermanagerdomain.gov")
+        DomainInformation.objects.get_or_create(requester=self.user, domain=other_domain, portfolio=self.portfolio)
+        UserDomainRole.objects.get_or_create(
+            user=self.user_member, domain=other_domain, role=UserDomainRole.Roles.MANAGER
+        )
+
+        UserPortfolioPermission.objects.create(
+            user=self.user_no_perms,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        member_perm = UserPortfolioPermission.objects.get(
+            user=self.user_member,
+            portfolio=self.portfolio,
+        )
+
+        self.app.set_user(self.user_no_perms.username)
+        response = self.app.get(
+            reverse("get_member_domains_json"),
+            params={
+                "portfolio": self.portfolio.id,
+                "member_only": "true",
+                # Grabs another members ids
+                "member_id": member_perm.user.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        domain_names = {d["name"] for d in data["domains"]}
+        self.assertIn(domain.name, domain_names)
+        self.assertNotIn(other_domain.name, domain_names)

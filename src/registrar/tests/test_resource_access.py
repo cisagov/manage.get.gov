@@ -325,6 +325,10 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
         self.client = Client()
         self.client.force_login(self.user)
 
+        self.meoward_user.title = "Member"
+        self.meoward_user.phone = "8003111234"
+        self.meoward_user.save()
+
         # Create portfolios
         self.portfolio = Portfolio.objects.create(requester=self.user, organization_name="Test Portfolio")
         self.other_portfolio = Portfolio.objects.create(requester=self.tired_user, organization_name="Other Portfolio")
@@ -362,4 +366,80 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
     def test_member_view_different_portfolio(self):
         """Test that user cannot access member not in their portfolio."""
         response = self.client.get(reverse("member", kwargs={"member_pk": self.other_member_permission.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_members_list_reachable_by_self_view_member(self):
+        """
+        A no Member access user (can't view or edit other members permission)
+        can reaech the member list page"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("members"))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_member_view_self_as_self_view_member(self):
+        """
+        A no Member access user can view their own member
+        record"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member", kwargs={"member_pk": self.member_permission.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_member_view_self_cannot_view_others(self):
+        """
+        A no Member access user cannot view other 
+        members records even in same portfolio"""
+        another_basic_member = UserPortfolioPermission.objects.create(
+            user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member", kwargs={"member_pk": another_basic_member.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_member_domains_view_self_view_member(self):
+        """
+        A no Member access user can view their own domain assignments"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member-domains", kwargs={"member_pk": self.member_permission.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    @less_console_noise_decorator
+    def test_member_domains_view_self_cannot_view_others(self):
+        """
+        A no Member access user cannot view another members 
+        domain assignments page"""
+        another_basic_member = UserPortfolioPermission.objects.create(
+            user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
+        )
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member-domains", kwargs={"member_pk": another_basic_member.pk}))
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    def test_member_edit_still_blocked_for_basic_member_on_self(self):
+        """
+        A no Member access user cannot edit or delete their own record"""
+        self.client.force_login(self.meoward_user)
+        session = self.client.session
+        session["portfolio"] = self.portfolio.id
+        session.save()
+        response = self.client.get(reverse("member-permissions", kwargs={"member_pk": self.member_permission.pk}))
         self.assertEqual(response.status_code, 403)

@@ -6,7 +6,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.views import View
 
-from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
+from registrar.decorators import IS_PORTFOLIO_MEMBER, grant_access
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -15,7 +15,7 @@ from registrar.models.utility.orm_helper import ArrayRemoveNull
 from django.contrib.postgres.aggregates import StringAgg
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(IS_PORTFOLIO_MEMBER)
 class PortfolioMembersJson(View):
 
     def get(self, request):
@@ -27,13 +27,15 @@ class PortfolioMembersJson(View):
 
         # Two initial querysets which will be combined
         permissions = self.initial_permissions_search(portfolio)
+        invitations = self.initial_invitations_search(portfolio)
         if self_only:
             # "No access" members can only see their own record
-            # and can't see invited ppl
+            # and have no invitee identity so invs are excluded entirely
+            # .none() (rather than building a separate empty PortfolioInvitation
+            # queryset preserves the .values(...) column shape that
+            # initial_invitations_search() built then cleanly cleans it
             permissions = permissions.filter(user=request.user)
-            invitations = PortfolioInvitation.objects.none()
-        else:
-            invitations = self.initial_invitations_search(portfolio)
+            invitations = invitations.none()
 
         # Get total across both querysets before applying filters
         unfiltered_total = permissions.count() + invitations.count()
