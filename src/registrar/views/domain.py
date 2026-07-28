@@ -1595,9 +1595,7 @@ class DomainUsersView(DomainBaseView):
             .exclude(email__isnull=True)
             .exclude(email="")
         )
-        legacy_invitations = self.object.invitations.filter(
-            status=DomainInvitation.DomainInvitationStatus.INVITED
-        )
+        legacy_invitations = self.object.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
         invited_emails = {invitation.email.lower() for invitation in user_domain_role_invitations}
 
         for domain_invitation in chain(user_domain_role_invitations, legacy_invitations):
@@ -1605,10 +1603,7 @@ class DomainUsersView(DomainBaseView):
 
             # The invitation service temporarily creates both models. Prefer the
             # UserDomainRole so each invitation appears only once.
-            if (
-                not is_user_domain_role
-                and domain_invitation.email.lower() in invited_emails
-            ):
+            if not is_user_domain_role and domain_invitation.email.lower() in invited_emails:
                 continue
 
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
