@@ -19,6 +19,7 @@ from .domain import (
     DomainLifecycleView,
 )
 from .user_profile import UserProfileView, FinishProfileSetupView
+from .admin_login import admin_login
 from .health import *
 from .version_info import *
 from .index import *
