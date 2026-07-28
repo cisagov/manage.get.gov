@@ -215,8 +215,9 @@ def _is_domain_manager(user, **kwargs):
 
     - First, it checks if 'domain_pk' is present in the URL parameters.
     - If 'domain_pk' exists, it verifies if the user has a domain role for that domain.
-    - If 'domain_pk' is absent, it checks for 'domain_invitation_pk' to determine if the user
-      has domain permissions through an invitation.
+    - If 'domain_pk' is absent, it resolves the domain from either 'user_domain_role_pk'
+      or the legacy 'domain_invitation_pk', then verifies that the user has a role for
+      that domain.
 
     Returns:
         bool: True if the user is a domain manager, False otherwise.
@@ -224,6 +225,12 @@ def _is_domain_manager(user, **kwargs):
     domain_id = kwargs.get("domain_pk")
     if domain_id:
         return UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
+    user_domain_role_id = kwargs.get("user_domain_role_pk")
+    if user_domain_role_id:
+        return UserDomainRole.objects.filter(
+            id=user_domain_role_id,
+            domain__permissions__user=user,
+        ).exists()
     domain_invitation_id = kwargs.get("domain_invitation_pk")
     if domain_invitation_id:
         return DomainInvitation.objects.filter(id=domain_invitation_id, domain__permissions__user=user).exists()
@@ -328,7 +335,8 @@ def _is_staff_managing_domain(request, **kwargs):
 
     Process:
     - First, the function retrieves the `domain_pk` from the URL parameters.
-    - If `domain_pk` is not provided, it attempts to resolve the domain via `domain_invitation_pk`.
+    - If `domain_pk` is not provided, it attempts to resolve the domain via
+      `user_domain_role_pk` or the legacy `domain_invitation_pk`.
     - It checks if the user has the required permissions.
     - It verifies that the user has an active 'analyst action' session for the domain.
     - Finally, it ensures that the domain is in a status that allows management.
@@ -339,10 +347,16 @@ def _is_staff_managing_domain(request, **kwargs):
 
     domain_id = kwargs.get("domain_pk")
     if not domain_id:
-        domain_invitation_id = kwargs.get("domain_invitation_pk")
-        domain_invitation = DomainInvitation.objects.filter(id=domain_invitation_id).first()
-        if domain_invitation:
-            domain_id = domain_invitation.domain_id
+        user_domain_role_id = kwargs.get("user_domain_role_pk")
+        if user_domain_role_id:
+            domain_role = UserDomainRole.objects.filter(id=user_domain_role_id).first()
+            if domain_role:
+                domain_id = domain_role.domain_id
+        else:
+            domain_invitation_id = kwargs.get("domain_invitation_pk")
+            domain_invitation = DomainInvitation.objects.filter(id=domain_invitation_id).first()
+            if domain_invitation:
+                domain_id = domain_invitation.domain_id
 
     # Check if the request user is permissioned...
     user_is_analyst_or_superuser = request.user.has_perm(

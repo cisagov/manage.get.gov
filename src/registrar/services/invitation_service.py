@@ -815,25 +815,25 @@ def cancel_domain_invitation(email: str, domain: Domain):
             canceled = False
 
             # Cancel new model invitation
-            domain_role = UserDomainRole.objects.filter(
-                email=email,
+            domain_roles = UserDomainRole.objects.filter(
+                email__iexact=email,
                 domain=domain,
                 status=UserDomainRole.Status.INVITED,
-            ).first()
+            )
 
-            if domain_role:
+            for domain_role in domain_roles:
                 domain_role.status = UserDomainRole.Status.REJECTED
                 domain_role.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = DomainInvitation.objects.filter(
-                email=email,
+            legacy_invitations = DomainInvitation.objects.filter(
+                email__iexact=email,
                 domain=domain,
                 status=DomainInvitation.DomainInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 legacy_invitation.status = DomainInvitation.DomainInvitationStatus.CANCELED
                 legacy_invitation.save()
                 canceled = True
