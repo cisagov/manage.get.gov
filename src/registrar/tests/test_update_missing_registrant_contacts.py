@@ -69,17 +69,17 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
     def test_command_update_missing_registrant_contacts_dry_run(self):
         with patch("registrar.models.domain.Domain.addRegistrant") as update_mock:
             call_command("update_missing_registrant_contacts", dry_run=True)
-            #Mock contacts count = 3
+            # Mock contacts count = 3
             self.assertEqual(Domain.objects.all().count(), 3)
-            #Dry run so none should be added
+            # Dry run so none should be added
             self.assertEqual(update_mock.call_count, 0)
 
     @patch("registrar.models.domain.Domain.addRegistrant")
-    def test_command_update_missing_registrant_contacts_no_dry_run(self,  mock_add_registrants):
+    def test_command_update_missing_registrant_contacts_no_dry_run(self, mock_add_registrants):
         call_command("update_missing_registrant_contacts", dry_run=False)
-        #Mock contacts count = 3
+        # Mock contacts count = 3
         self.assertEqual(Domain.objects.all().count(), 3)
-        #Only 2 are valid registrant contacts, make sure those are updated
+        # Only 2 are valid registrant contacts, make sure those are updated
         self.assertEqual(mock_add_registrants.call_count, 2)
 
     def test_command_update_missing_registrant_contacts_none_found(self):

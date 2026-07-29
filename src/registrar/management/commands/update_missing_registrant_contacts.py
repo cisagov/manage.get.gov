@@ -75,8 +75,8 @@ class Command(BaseCommand):
 
                         logger.info(f"Updating registry Registrant Public Contact {registry_id} for {domain.name}")
                         try:
-                            #This is a one off script, makes more sense to use the internal method than create
-                            #a new public access method which we need to maintain. 
+                            # This is a one off script, makes more sense to use the internal method than create
+                            # a new public access method which we need to maintain.
                             domain._add_registrant_to_existing_domain(registrant)
                             add_count += 1
 
