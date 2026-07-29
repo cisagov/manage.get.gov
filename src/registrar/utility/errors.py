@@ -358,15 +358,15 @@ def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, con
 class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
-    GENERIC_ERROR_MESSAGE = (
+    GENERIC_ERROR_MESSAGE = mark_safe(
         "An unexpected error occurred: Please try again. If the problem persists, "
         "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
-    )
-    GENERIC_VALIDATION_ERROR_MESSAGE = (
+    )  # nosec
+    GENERIC_VALIDATION_ERROR_MESSAGE = mark_safe(
         "There’s something wrong with the DNS record information you provided. Please try again. "
         "If the problem persists, "
         "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
-    )
+    )  # nosec
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
@@ -380,15 +380,13 @@ class DnsHostingError(Exception):
         error_msg = self.GENERIC_ERROR_MESSAGE
         if request_id:
             error_msg = format_html(
-                "An unexpected error occurred: Please try again. If the problem persists, "
-                "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
-                " for assistance and share this ID {}.",
+                self.GENERIC_ERROR_MESSAGE[:-1] + " and share this ID {}.",
                 request_id,
-            )
+            )  # format_html also marks safe
 
         return {
             DnsHostingErrorCodes.NOT_FOUND: error_msg,
-            DnsHostingErrorCodes.VALIDATION_FAILED: mark_safe(validation_msg),  # nosec
+            DnsHostingErrorCodes.VALIDATION_FAILED: validation_msg,
             DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: error_msg,
             DnsHostingErrorCodes.AUTH_FAILED: error_msg,
             DnsHostingErrorCodes.UPSTREAM_TIMEOUT: error_msg,
