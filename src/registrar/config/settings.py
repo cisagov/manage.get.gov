@@ -96,9 +96,8 @@ secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # Used for DNS hosting
 secret_dns_tenant_key = secret("DNS_TENANT_KEY", "")
-secret_dns_tenant_name = secret("DNS_TENANT_NAME", "")
 secret_registry_service_email = secret("DNS_SERVICE_EMAIL", "")
-secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", "")
+secret_dns_tenant_id = secret("DNS_TENANT_ID", "")
 dns_mock_external_apis = env.bool("DNS_MOCK_EXTERNAL_APIS", default=False)
 
 # region: Basic Django Config-----------------------------------------------###
@@ -849,7 +848,6 @@ EPP_CONNECTION_TIMEOUT = 5
 
 # SECURITY WARNING: keep all DNS variables in production secret!
 SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
-SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
 SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
 SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
