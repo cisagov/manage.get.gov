@@ -4,8 +4,8 @@ from faker import Faker
 from django.conf import settings
 from registrar.fixtures.fixtures_domains import DomainFixture
 from registrar.models import Domain
-from registrar.models.dns.dns_record import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
+from registrar.tests.helpers.dns_data_generator import create_dns_record
 
 fake = Faker()
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class DnsRecordFixture(DomainFixture):
             if not domains:
                 logger.info("No domains available. Make sure domains have is_enrolled_in_dns_hosting=True")
                 return
-            dns_records_to_create = []
+
             zones = []
             for d in domains:
                 zone = d.dnszone
@@ -45,87 +45,86 @@ class DnsRecordFixture(DomainFixture):
             # Create DNS records for each zone
             for dns_zone in zones:
                 # Root A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="@",
-                        ttl=3600,
-                        content=fake.ipv4(),
-                        comment="Root domain A record",
-                        tags=["production", "primary"],
-                    )
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.A,
+                        "record_content": fake.ipv4(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-                # WWW subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="www",
-                        ttl=3600,
-                        content=fake.ipv4(),
-                        comment="WWW subdomain",
-                        tags=["production"],
-                    )
+                # A: WWW subdomain
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": "www",
+                        "record_type": DNSRecordTypes.A,
+                        "record_content": fake.ipv4(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                        "comment": "WWW subdomain",
+                    },
                 )
 
-                # Mail subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="mail",
-                        ttl=7200,
-                        content=fake.ipv4(),
-                        comment="Mail server",
-                        tags=["email", "production"],
-                    )
+                # A: API subdomain
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": "api",
+                        "record_type": DNSRecordTypes.A,
+                        "record_content": fake.ipv4(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                        "comment": "api endpoint",
+                    },
                 )
 
-                # API subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="api",
-                        ttl=1800,
-                        content=fake.ipv4(),
-                        comment="API endpoint",
-                        tags=["production", "api"],
-                    )
+                # AAAA
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.AAAA,
+                        "record_content": fake.ipv6(),
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-                # Dev subdomain A record
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.A,
-                        name="dev",
-                        ttl=300,
-                        content=fake.ipv4(),
-                        comment="Development environment",
-                        tags=["development", "non-production"],
-                    )
+                # PTR
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.PTR,
+                        "record_content": dns_zone.name,
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-                # MX record for mail routing
-                dns_records_to_create.append(
-                    DnsRecord(
-                        dns_zone=dns_zone,
-                        type=DNSRecordTypes.MX,
-                        name="@",
-                        ttl=3600,
-                        content=f"mail.{dns_zone.name}",
-                        priority=10,
-                        comment="Primary mail server",
-                        tags=["email", "production"],
-                    )
+                # CNAME
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": "blog.something.gov",
+                        "record_type": DNSRecordTypes.CNAME,
+                        "record_content": "blog.something.com",
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                    },
                 )
 
-            # Bulk create DNS records
-            created_records = DnsRecord.objects.bulk_create(dns_records_to_create)
-            logger.info(f"Successfully created {len(created_records)} DNS records.")
+                # MX: mail routing
+                create_dns_record(
+                    dns_zone,
+                    **{
+                        "record_name": dns_zone.name,
+                        "record_type": DNSRecordTypes.MX,
+                        "record_content": f"mail.{dns_zone.name}",
+                        "x_record_id": fake.uuid4().replace("-", ""),
+                        "comment": "Primary mail server",
+                    },
+                )
+
+            logger.info("Successfully created DNS records.")
 
         except Exception as e:
             logger.error(f"Error creating DNS record fixtures: {e}")

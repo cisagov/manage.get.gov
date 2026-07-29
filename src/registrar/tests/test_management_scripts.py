@@ -1,5 +1,6 @@
 import copy
 import boto3_mocking  # type: ignore
+from io import StringIO
 from datetime import date, datetime, time, timezone as dt_timezone
 from django.utils import timezone
 from django.core.management import call_command
@@ -40,6 +41,8 @@ import tablib
 from unittest.mock import patch, call, MagicMock, mock_open
 from epplibwrapper import commands, common
 from datetime import timedelta
+from django.contrib.contenttypes.models import ContentType
+from auditlog.models import LogEntry
 
 from .common import (
     MockEppLib,
@@ -2853,3 +2856,151 @@ class TestDeleteDomainNotSetup(MockEppLib):
         Domain.objects.all().delete()
         AllowedEmail.objects.all().delete()
         super().tearDown()
+
+
+class TestPopulateDomainCreatedAtColumns(TestCase):
+    """Tests for the populate_domain_created_at_columns backfill script"""
+
+    @less_console_noise_decorator
+    def setUp(self):
+        super().setUp()
+        self.domain_ct = ContentType.objects.get_for_model(Domain)
+        # The registrar record-creation date we want to recover from the audit log.
+        self.registrar_created = datetime(2022, 1, 1, 12, 0, tzinfo=dt_timezone.utc)
+        # The registry creation date that overwrote created_at - what created_at now holds and what
+        # x_registry_created_at should be copied from.
+        self.registry_created = datetime(2022, 1, 5, 9, 30, tzinfo=dt_timezone.utc)
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        LogEntry.objects.all().delete()
+        super().tearDown()
+
+    def naive(self, value):
+        """Mirrors how auditlog stores datetimes: a naive UTC string."""
+        return str(timezone.make_naive(value, dt_timezone.utc))
+
+    def make_domain(self, name, state, current_created_at):
+        """Creates a domain, forces its current created_at, and clears auto-generated audit logs."""
+        domain, _ = Domain.objects.get_or_create(name=name, state=state)
+        Domain.objects.filter(pk=domain.pk).update(created_at=current_created_at)
+        # Drop the entries auditlog created automatically so each test controls its own trail.
+        LogEntry.objects.filter(content_type=self.domain_ct, object_pk=str(domain.pk)).delete()
+        # Simulate a legacy row whose reference columns were never populated.
+        Domain.objects.filter(pk=domain.pk).update(created_at_reference=None, x_registry_created_at=None)
+        return Domain.objects.get(pk=domain.pk)
+
+    def add_log_entry(self, domain, action, created_at_change):
+        """Adds an audit log entry for a created_at change, mirroring auditlog's storage format."""
+        LogEntry.objects.create(
+            content_type=self.domain_ct,
+            object_pk=str(domain.pk),
+            object_id=domain.pk,
+            object_repr=str(domain),
+            action=action,
+            changes={"created_at": created_at_change},
+        )
+
+    @less_console_noise_decorator
+    def run_script(self, **options):
+        """Runs the command and returns its stdout output."""
+        out = StringIO()
+        with patch(
+            "registrar.management.commands.utility.terminal_helper.TerminalHelper.query_yes_no_exit",  # noqa
+            return_value=True,
+        ):
+            call_command("populate_domain_created_at_columns", stdout=out, **options)
+        return out.getvalue()
+
+    @less_console_noise_decorator
+    def test_backfills_non_unknown(self):
+        """Recovers the registrar date from the audit log and copies created_at into x_registry."""
+        domain = self.make_domain("backfillready.gov", Domain.State.READY, self.registry_created)
+        self.add_log_entry(domain, LogEntry.Action.CREATE, [None, self.naive(self.registrar_created)])
+        self.add_log_entry(
+            domain, LogEntry.Action.UPDATE, [self.naive(self.registrar_created), self.naive(self.registry_created)]
+        )
+
+        self.run_script()
+
+        # Re-query rather than refresh_from_db as state is an FSM field and rejects direct setattr.
+        refreshed = Domain.objects.get(pk=domain.pk)
+        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
+        # Copied from the current created_at column.
+        self.assertEqual(refreshed.x_registry_created_at, self.registry_created)
+
+    @less_console_noise_decorator
+    def test_recovers_from_update_entry_only(self):
+        """Uses the old value of the first created_at change when there is no create entry."""
+        domain = self.make_domain("updateonly.gov", Domain.State.READY, self.registry_created)
+        self.add_log_entry(
+            domain, LogEntry.Action.UPDATE, [self.naive(self.registrar_created), self.naive(self.registry_created)]
+        )
+
+        self.run_script()
+
+        refreshed = Domain.objects.get(pk=domain.pk)
+        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
+        self.assertEqual(refreshed.x_registry_created_at, self.registry_created)
+
+    @less_console_noise_decorator
+    def test_unknown_domain_keeps_created_at_and_no_registry_date(self):
+        """Unknown domains keep their registrar created_at and get no registry date."""
+        domain = self.make_domain("backfillunknown.gov", Domain.State.UNKNOWN, self.registrar_created)
+
+        self.run_script()
+
+        refreshed = Domain.objects.get(pk=domain.pk)
+        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
+        self.assertIsNone(refreshed.x_registry_created_at)
+
+    @less_console_noise_decorator
+    def test_falls_back_to_created_at_without_audit_history(self):
+        """A non-unknown domain with no audit history falls back to its current created_at."""
+        domain = self.make_domain("nohistory.gov", Domain.State.READY, self.registry_created)
+
+        self.run_script()
+
+        refreshed = Domain.objects.get(pk=domain.pk)
+        self.assertEqual(refreshed.created_at_reference, self.registry_created)
+        self.assertEqual(refreshed.x_registry_created_at, self.registry_created)
+
+    @less_console_noise_decorator
+    def test_does_not_modify_updated_at(self):
+        """The backfill uses bulk_update, so updated_at (auto_now) must be left untouched."""
+        domain = self.make_domain("untouched.gov", Domain.State.READY, self.registry_created)
+        self.add_log_entry(domain, LogEntry.Action.CREATE, [None, self.naive(self.registrar_created)])
+        updated_at_before = Domain.objects.get(pk=domain.pk).updated_at
+
+        self.run_script()
+
+        refreshed = Domain.objects.get(pk=domain.pk)
+        self.assertEqual(refreshed.updated_at, updated_at_before)
+        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
+
+    @less_console_noise_decorator
+    def test_dry_run_makes_no_changes(self):
+        """A dry run previews the work but leaves the columns untouched."""
+        domain = self.make_domain("dryrun.gov", Domain.State.READY, self.registry_created)
+        self.add_log_entry(domain, LogEntry.Action.CREATE, [None, self.naive(self.registrar_created)])
+
+        self.run_script(dry_run=True)
+
+        refreshed = Domain.objects.get(pk=domain.pk)
+        self.assertIsNone(refreshed.created_at_reference)
+        self.assertIsNone(refreshed.x_registry_created_at)
+
+    @less_console_noise_decorator
+    def test_reports_approval_mismatch(self):
+        """A created_at_reference that does not match the approval date is reported with id and name."""
+        domain = self.make_domain("mismatch.gov", Domain.State.READY, self.registry_created)
+        self.add_log_entry(domain, LogEntry.Action.CREATE, [None, self.naive(self.registrar_created)])
+        approval = datetime(2021, 1, 1, 12, 0, tzinfo=dt_timezone.utc)  # different day than registrar_created
+
+        command_path = "registrar.management.commands.populate_domain_created_at_columns"
+        with patch(f"{command_path}.Command.get_approval_datetime", return_value=approval):
+            output = self.run_script()
+
+        self.assertIn("mismatch.gov", output)
+        mismatch_row = next(line for line in output.splitlines() if "mismatch.gov" in line)
+        self.assertIn(str(domain.id), mismatch_row)
