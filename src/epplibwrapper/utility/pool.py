@@ -94,7 +94,6 @@ class EPPConnectionPool:
         the transport is presumed fine -> connection will be returned to the pool for reuse.
         In these cases, look for credential or command logic errors.
         """
-        logger.info("REMOVE BEFORE MERGE: calling a connection should call borrow")
 
         conn = self._borrow()
         try:
@@ -152,7 +151,6 @@ class EPPConnectionPool:
         """
         # Deadline is time when borrow expires, if can't borrow within this time,
         # raise PoolExhausted.
-        logger.info("REMOVE BEFORE MERGE: inside of _borrow ")
         deadline = time.monotonic() + self.borrow_timeout
         while True:
             conn = self._get_or_create(deadline)
@@ -180,12 +178,10 @@ class EPPConnectionPool:
             PooledConnection: a connection from the pool
         """
         logger.debug("Getting a connection from the pool. Pool stats: %s", self.stats())
-        logger.info("REMOVE BEFORE MERGE: get_or_create")
 
         # Step 1: Try to get an idle connection from the pool without waiting.
         try:
             conn = self._idle.get_nowait()
-            logger.info("REMOVE BEFORE MERGE: returning connection")
 
             return conn
         except queue.Empty:
@@ -194,8 +190,6 @@ class EPPConnectionPool:
 
         # Step 2: Couldn't get an idle connection, create a new one if possible
         if self._can_create():
-            logger.info("REMOVE BEFORE MERGE: creating a connection")
-
             try:
                 return PooledConnection(self._connection_factory())
             except Exception:
@@ -207,8 +201,6 @@ class EPPConnectionPool:
         # only wait for the remaining time until the deadline.
         remaining = deadline - time.monotonic()
         try:
-            logger.info("REMOVE BEFORE MERGE: pool is at max size, wait for connection")
-
             return self._idle.get(timeout=max(remaining, 0))
         except queue.Empty:
             logger.debug("No EPP connection available after %s. %s", self.borrow_timeout, self.stats())
@@ -221,7 +213,6 @@ class EPPConnectionPool:
         - A connection idle past the idle max seconds must answer an
         EPP `Hello` first-> idle sockets can be silently dropped, hello checks for this.
         """
-        logger.info("REMOVE BEFORE MERGE: Inside heartbeat")
         if time.monotonic() - conn.last_ping < self.idle_ping_seconds:
             return True
         try:
@@ -229,7 +220,6 @@ class EPPConnectionPool:
             # _borrow() handles the actual discard/replacement logic.
             conn.client.send(Hello())
             conn.last_ping = time.monotonic()
-            logger.info("REMOVE BEFORE MERGE: Pinged heart beat- returning true")
             # add print here
             return True
         except Exception:
@@ -300,11 +290,9 @@ class EPPConnectionPool:
         If it hits an error when creating a single connection it stops immediately,
         relying on the next .send or heartbeat to result in _replenish being called
         """
-        logger.info("REMOVE BEFORE MERGE: calling replenish")
 
         while self._connections_created < self.size and self._can_create():
             try:
-                logger.info("REMOVE BEFORE MERGE: creating new connection")
                 self._put_back(PooledConnection(self._connection_factory()))
             except Exception:
                 self._release_slot()
@@ -341,7 +329,6 @@ class EPPConnectionPool:
 
     def _discard(self, conn: PooledConnection):
         """Dispose of a connection presumed dead."""
-        logger.info("REMOVE BEFORE MERGE: Discarding a connection")
 
         try:
             conn.client.close()
@@ -355,8 +342,6 @@ class EPPConnectionPool:
         """Dispose of a HEALTHY connection we simply no longer need.
         used by close_all at worker shutdown
         """
-        logger.info("REMOVE BEFORE MERGE: Retiring a connection")
-
         try:
             conn.client.send(Logout())
         except Exception:
