@@ -500,6 +500,10 @@ class User(AbstractUser):
         portfolio = get_portfolio_from_session(request.session)
         if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
             return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+        elif portfolio:
+            return UserDomainRole.objects.filter(user=self, domain__domain_info__portfolio=portfolio).values_list(
+                "domain_id", flat=True
+            )
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)
 
