@@ -425,7 +425,7 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
 
     # Check for duplicates in legacy model
     try:
-        invite = DomainInvitation.objects.get(email__iexact=email, domain=domain)
+        invite = DomainInvitation.objects.get(email__iexact=email, domain=domain).order_by("-created_at").first()
         if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
             raise AlreadyDomainManagerError(email)
         elif invite.status == DomainInvitation.DomainInvitationStatus.INVITED:
