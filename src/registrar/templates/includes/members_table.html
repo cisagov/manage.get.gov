@@ -10,12 +10,12 @@
 
   <div class="section-outlined__header margin-bottom-3 grid-row">
     <!-- ---------- SEARCH ---------- -->
-      {% with label_text="Search by member email address" item_name="members" aria_label_text="Members search component"%}
-          {% include "includes/search.html" %}
-      {% endwith %}
-      {% with export_aria="Members report component" export_url='export_members_portfolio' %}
-          {% include "includes/export.html" %}
-      {% endwith %}
+    {% with label_text="Search by member email address" item_name="members" aria_label_text="Members search component"%}
+        {% include "includes/search.html" %}
+    {% endwith %}
+    {% with export_aria="Members report component" export_url='export_members_portfolio' %}
+        {% include "includes/export.html" %}
+    {% endwith %}
   </div>
   {% endif %}
 

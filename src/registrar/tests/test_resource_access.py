@@ -370,8 +370,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
     @less_console_noise_decorator
     def test_members_list_reachable_by_self_view_member(self):
-        """
-        A no Member access user (can't view or edit other members permission)
+        """A no Member access user (can't view or edit other members permission)
         can reaech the member list page"""
         self.client.force_login(self.meoward_user)
         session = self.client.session
@@ -382,8 +381,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
     @less_console_noise_decorator
     def test_member_view_self_as_self_view_member(self):
-        """
-        A no Member access user can view their own member
+        """A no Member access user can view their own member
         record"""
         self.client.force_login(self.meoward_user)
         session = self.client.session
@@ -394,8 +392,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
     @less_console_noise_decorator
     def test_member_view_self_cannot_view_others(self):
-        """
-        A no Member access user cannot view other
+        """A no Member access user cannot view other
         members records even in same portfolio"""
         another_basic_member = UserPortfolioPermission.objects.create(
             user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -409,8 +406,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
     @less_console_noise_decorator
     def test_member_domains_view_self_view_member(self):
-        """
-        A no Member access user can view their own domain assignments"""
+        """A no Member access user can view their own domain assignments"""
         self.client.force_login(self.meoward_user)
         session = self.client.session
         session["portfolio"] = self.portfolio.id
@@ -420,8 +416,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
     @less_console_noise_decorator
     def test_member_domains_view_self_cannot_view_others(self):
-        """
-        A no Member access user cannot view another members
+        """A no Member access user cannot view another members
         domain assignments page"""
         another_basic_member = UserPortfolioPermission.objects.create(
             user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -435,8 +430,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
 
     @less_console_noise_decorator
     def test_member_edit_still_blocked_for_basic_member_on_self(self):
-        """
-        A no Member access user cannot edit or delete their own record"""
+        """A no Member access user cannot edit or delete their own record"""
         self.client.force_login(self.meoward_user)
         session = self.client.session
         session["portfolio"] = self.portfolio.id

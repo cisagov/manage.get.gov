@@ -224,7 +224,6 @@ class User(AbstractUser):
     def has_no_members_portfolio_permission(self, portfolio):
         """
         True: If user has NO view or edit members perms on the portfolio
-        not (A or B)  ==  (not A) and (not B) smh
         """
         return not (
             self.has_view_members_portfolio_permission(portfolio)
