@@ -78,6 +78,15 @@ environment:
 
 **Regarding the connection pool size**: There are a max of 100 connections allowed at the same time & with the same login credentials. This means 100 connections total allowed on stable and 100 connections allowed on OT&E across **all** non-production sandboxes. To have more than 100 on OT&E we would need to use different credentials or request an increase in the number of connections allowed.
 
+### Example of counting the connections on a sandbox:
+
+At this point in time staging has 2 instances and a pool size of 5. Each instance has 3 workers. This means the total connections on staging are:
+
+Pool size #of instances X  #number of workers  X #of instances
+  5                     X    3                 X  2
+                      30 total connections on staging
+
+
 **Regarding EPP_POOL_IDLE_PING_SECONDS **- The registry will terminate a logged in connection once it is idle for one hour, EPP_POOL_IDLE_PING_SECONDS should never exceed 3600 seconds (1 hr).
 
 ### Changing environment variables in a running sandbox

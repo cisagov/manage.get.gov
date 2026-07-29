@@ -296,6 +296,9 @@ class EPPConnectionPool:
     def _replenish(self):
         """Refills queue if 1 or more connections were discarded/retired
         otherwise does nothing
+
+        If it hits an error when creating a single connection it stops immediately,
+        relying on the next .send or heartbeat to result in _replenish being called
         """
         logger.info("REMOVE BEFORE MERGE: calling replenish")
 
@@ -305,7 +308,12 @@ class EPPConnectionPool:
                 self._put_back(PooledConnection(self._connection_factory()))
             except Exception:
                 self._release_slot()
-                logger.info("Replenish hit an error & failed to build a connection. Stats: %s", self.stats())
+                logger.error("Replenish hit an error & failed to build a connection. Stats: %s", self.stats())
+                # Exit the loop if we can't form a connection
+                # log in creds could be invalid
+                # or the registry system is down
+                # Either way there is no sense in continuing the loop
+                # At the next heartbeat _replenish will be called
                 break
 
     def _can_create(self) -> bool:
@@ -344,7 +352,7 @@ class EPPConnectionPool:
         self._release_slot()
 
     def _retire(self, conn: PooledConnection):
-        """ "Dispose of a HEALTHY connection we simply no longer need.
+        """Dispose of a HEALTHY connection we simply no longer need.
         used by close_all at worker shutdown
         """
         logger.info("REMOVE BEFORE MERGE: Retiring a connection")
