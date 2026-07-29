@@ -488,82 +488,82 @@ PHONENUMBER_DEFAULT_REGION = "US"
 #   logger.critical("Going to crash now.")
 
 
+# Standard LogRecord attributes that are already represented in the structured
+# log fields above, so we skip them when sweeping `record.__dict__` for extras.
+# `taskName` is included because Python 3.12+ adds it as a default attribute
+# (always None under WSGI) which would otherwise leak through as JSON noise.
+_STANDARD_LOG_RECORD_ATTRS = frozenset(
+    {
+        "name",
+        "msg",
+        "args",
+        "levelname",
+        "levelno",
+        "pathname",
+        "filename",
+        "module",
+        "lineno",
+        "funcName",
+        "created",
+        "msecs",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "processName",
+        "process",
+        "getMessage",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+        "message",
+        "taskName",
+    }
+)
+
+
 class JsonFormatter(logging.Formatter):
     """Formats logs into JSON for better parsing"""
 
     def __init__(self):
         super().__init__(datefmt="%d/%b/%Y %H:%M:%S")
 
-    def user_prepend(self):
-        context = get_user_log_context()
-        user_email = context["user_email"]
-        ip = context["ip_address"]
-        request_path = context["request_path"]
+    @staticmethod
+    def _user_prepend(context):
         parts = []
-        if user_email:
-            parts.append(f"user: {user_email}")
-        if ip:
-            parts.append(f"ip: {ip}")
-        if request_path:
-            parts.append(f"request_path: {request_path}")
-
+        if context["user_email"]:
+            parts.append(f"user: {context['user_email']}")
+        if context["ip_address"]:
+            parts.append(f"ip: {context['ip_address']}")
+        if context["request_path"]:
+            parts.append(f"request_path: {context['request_path']}")
         return " | ".join(parts)
 
     def format(self, record):
+        context = get_user_log_context()
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "name": record.name,
             "lineno": record.lineno,
-            "message": f"{self.user_prepend()} | {record.getMessage()}",
+            "message": f"{self._user_prepend(context)} | {record.getMessage()}",
         }
         # Surface request_id as a top-level field so OpenSearch can group every
         # log line for a single request without parsing the message string.
-        request_id = get_user_log_context().get("request_id")
+        request_id = context.get("request_id")
         if request_id:
             log_record["request_id"] = request_id
-        # Capture exception info if it exists
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
-        # Add all extra fields from the log record
-        extra_fields = {}
         for key, value in record.__dict__.items():
-            # Skip standard LogRecord attributes
-            if key not in {
-                "name",
-                "msg",
-                "args",
-                "levelname",
-                "levelno",
-                "pathname",
-                "filename",
-                "module",
-                "lineno",
-                "funcName",
-                "created",
-                "msecs",
-                "relativeCreated",
-                "thread",
-                "threadName",
-                "processName",
-                "process",
-                "getMessage",
-                "exc_info",
-                "exc_text",
-                "stack_info",
-                "message",
-            }:
-                # Only include JSON-serializable values
-                try:
-                    json.dumps(value)
-                    extra_fields[key] = value
-                except (TypeError, ValueError):
-                    # Convert non-serializable values to strings
-                    extra_fields[key] = str(value)
-
-        # Merge extra fields into the main log record
-        log_record.update(extra_fields)
+            if key in _STANDARD_LOG_RECORD_ATTRS:
+                continue
+            # Only include JSON-serializable values; stringify the rest.
+            try:
+                json.dumps(value)
+                log_record[key] = value
+            except (TypeError, ValueError):
+                log_record[key] = str(value)
 
         return json.dumps(log_record, ensure_ascii=False)
 
@@ -585,18 +585,21 @@ class JsonServerFormatter(ServerFormatter):
         return json.dumps(log_entry)
 
 
-# If we're running locally we don't want json formatting
-if "localhost" in env_base_url:
-    django_handlers = ["console"]
-elif env_log_format == "json":
-    # in production we need everything to be logged as json so that log levels are parsed correctly
+# Log-format selection, driven entirely by DJANGO_LOG_FORMAT (set per environment
+# in ops/manifests, and overridable per-invocation on a server):
+#   - "json"  -> structured JSON, one line per event, parsed into named fields by
+#                OpenSearch. Used by stable + staging.
+#   - anything else (default "console") -> human-readable console text. Used by
+#                local and the developer sandboxes, where a person reads the logs
+#                directly.
+# There's no per-severity split anymore, so an environment logs one shape and its
+# own output never comes out half console / half JSON. To flip a single session
+# while SSHed onto a server, run the command with DJANGO_LOG_FORMAT=json (to read
+# structured output) or =console (to read it plainly).
+if env_log_format == "json":
     django_handlers = ["json"]
 else:
-    # for non-production non-local environments:
-    # - send ERROR and above to json handler
-    # - send below ERROR to console handler with verbose formatting
-    # yes this is janky but it's the best we can do for now
-    django_handlers = ["split_console", "split_json"]
+    django_handlers = ["console"]
 
 LOGGING = {
     "version": 1,
@@ -632,18 +635,6 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
-        # Special handlers for split logging case
-        "split_console": {
-            "level": env_log_level,
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-            "filters": ["below_error"],
-        },
-        "split_json": {
-            "level": "ERROR",
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-        },
         "django.server": {
             "level": "INFO",
             "class": "logging.StreamHandler",
@@ -657,12 +648,6 @@ LOGGING = {
         # No file logger is configured,
         # because containerized apps
         # do not log to the file system.
-    },
-    "filters": {
-        "below_error": {
-            "()": "django.utils.log.CallbackFilter",
-            "callback": lambda record: record.levelno < logging.ERROR,
-        }
     },
     # define loggers: these are "sinks" into which
     # messages are sent for processing
