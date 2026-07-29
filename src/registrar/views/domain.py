@@ -1110,8 +1110,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
         except DnsHostingError as e:
-            # temp log to show these values are available. Remove in #4892
-            logger.error(f"wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
             messages.error(request, e.message)
         except GenericError:
             return self._error_response(request, status=400)
