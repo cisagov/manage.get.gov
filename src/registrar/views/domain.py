@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
@@ -590,8 +591,8 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "This domain has not been renewed for one year, "
-                        "please email help@get.gov if this problem persists.",
+                        "We’re experiencing a connection error. Please wait a few minutes and try again. "
+                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
@@ -1064,14 +1065,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.dns_record = None
         return is_first_record, None
 
-    def post(self, request, *args, **kwargs):
-        """Handle form submission (create + update) for DNS records via htmx."""
+    def post(self, request, *args, **kwargs):  # noqa: C901
+        """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
         form = self.get_form()
         is_edit = self._parse_dns_record_id(request)
+        delete_record = request.POST.get("delete_record")
         self._get_domain(request)
 
-        if not form.is_valid():
+        if not delete_record and not form.is_valid():
             return self._handle_invalid_form(request, form, is_edit)
 
         nameservers = None
@@ -1079,12 +1081,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
         record_id = None
 
         try:
-            if settings.IS_PRODUCTION and self.object.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
+            allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
+            if settings.IS_PRODUCTION and self.object.name not in allowlist:
+                verb = "is" if len(allowlist) == 1 else "are"
+                allowed_domains_string = f"{', '.join(allowlist)} {verb}"
                 raise EnrollmentNotAllowedError(
-                    f"Create/update dns record called for domain {self.object.name}. "
-                    "Only igorville.gov is allowed in production right now."
+                    f"Create/update/delete dns record called for domain {self.object.name}. "
+                    f"Only {allowed_domains_string} is allowed in production right now."
                 )
-            form_record_data = self._build_dns_record_form_data(form)
+
             x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if not x_zone_id:
                 return JsonResponse(
@@ -1092,24 +1097,33 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     status=400,
                 )
 
-            if is_edit:
-                record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+            # DELETE
+            if delete_record:
+                self._handle_delete(request, x_zone_id)
             else:
-                is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
+                form_record_data = self._build_dns_record_form_data(form)
+                # EDIT
+                if is_edit:
+                    record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+                # CREATE
+                else:
+                    is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
         except DnsHostingError as e:
-            # temp log to show these values are available. Remove in #4892
-            logger.error(f"wire_code: {e.wire_code}, upstream_status: {e.upstream_status}")
             messages.error(request, e.message)
-        except (APIError, RequestError) as e:
-            logger.error(f"DNS record create/update failed, API error in view {e}")
-            messages.error(request, "Failed to save DNS record.")
-            self.dns_record = None
-            record_id = None
         except GenericError:
             return self._error_response(request, status=400)
         finally:
             self.dns_host_service.client.close()
+
+        if delete_record:
+            return TemplateResponse(
+                request,
+                "empty_response.html",
+                {"dns_record": None},
+                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+                status=200,
+            )
 
         return TemplateResponse(
             request,
@@ -1127,6 +1141,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
             headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
             status=200,
         )
+
+    def _handle_delete(self, request, x_zone_id: int):
+        """Handle deletion for DNS records via htmx."""
+        self.object = self.get_object()
+        record_id = self._parse_dns_record_id(request)
+        self._get_domain(request)
+
+        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        messages.success(request, "The DNS record for this domain has been deleted.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1221,6 +1244,9 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
+        # messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
+        # return self.form_invalid(formset)
+
         self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
@@ -1314,7 +1340,14 @@ class DomainDNSSECView(DomainFormBaseView):
                 except RegistryError as err:
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
-                    messages.error(self.request, errmsg)
+                    messages.error(
+                        self.request,
+                        mark_safe(  # nosec
+                            "An unexpected error occurred: Could not remove existing DNSSEC record(s). "
+                            "Please try again. If the problem persists, "
+                            '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                        ),
+                    )
                 else:
                     self.send_update_notification(form, force_send=True)
         return self.form_valid(form)
