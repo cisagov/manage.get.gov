@@ -85,7 +85,10 @@ class DnsHostService:
         # Check if account exists in DB
         x_account_id = self._find_existing_account_in_db(account_name)
         if x_account_id:
-            logger.info("Already has an existing vendor account")
+            logger.info(
+                "Already has an existing vendor account",
+                extra={"account_name": account_name},
+            )
             return x_account_id
 
         # If not in DB, check if account exists in vendor (CF) service
@@ -511,7 +514,11 @@ class DnsHostService:
                 domain.save(update_fields=["is_enrolled_in_dns_hosting"])
 
         except Exception:
-            logger.exception("DNS enrollment failed for %s", domain_name)
+            logger.exception(
+                "DNS enrollment failed for %s",
+                domain_name,
+                extra={"domain_name": domain_name},
+            )
             # Domain remains unenrolled because transaction rolls back
             raise
         logger.info(
