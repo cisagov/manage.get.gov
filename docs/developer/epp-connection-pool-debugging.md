@@ -82,9 +82,9 @@ environment:
 
 At this point in time staging has 2 instances and a pool size of 5. Each instance has 3 workers. This means the total connections on staging are:
 
-Pool size #of instances X  #number of workers  X #of instances
-  5                     X    3                 X  2
-                      30 total connections on staging
+Pool size  X  #number of workers  X #of instances
+  3        X    3                 X  2
+              30 total connections on staging
 
 
 **Regarding EPP_POOL_IDLE_PING_SECONDS **- The registry will terminate a logged in connection once it is idle for one hour, EPP_POOL_IDLE_PING_SECONDS should never exceed 3600 seconds (1 hr).
