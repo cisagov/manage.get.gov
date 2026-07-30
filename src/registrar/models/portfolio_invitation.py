@@ -192,9 +192,11 @@ class PortfolioInvitation(TimeStampedModel):
         # get a user with this email address
         User = get_user_model()
         try:
-            user = User.objects.get(email__iexact=self.email).first()
-            if not user:
-                raise User.DoesNotExist
+            user = User.objects.get(email__iexact=self.email)
+        except User.MultipleObjectsReturned:
+            # This should not happen, but if it does, log an error and raise a RuntimeError
+            logger.error(f"Multiple users found with the same email: {self.email}")
+            raise RuntimeError("Multiple users found with the same email. Cannot retrieve this portfolio invitation.")
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
