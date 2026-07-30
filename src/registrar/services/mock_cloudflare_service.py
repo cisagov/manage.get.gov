@@ -435,7 +435,7 @@ class MockCloudflareService:
         except Exception as e:
             logger.error(f"Failed to get record zone name using request URL: {e}.")
 
-    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:
+    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:  # noqa: C901
         """Return an error response for ``error-*`` record names. These represent actual CF error codes and messages"""
         if record_name.startswith("error-duplicate"):
             return httpx.Response(
@@ -509,7 +509,7 @@ class MockCloudflareService:
                 },
                 headers={"cf-ray": "BB12"},
             )
-        if record_name.startswith("error-400"):
+        if record_name.startswith("error-content"):
             return httpx.Response(
                 400,
                 json={
@@ -520,10 +520,39 @@ class MockCloudflareService:
                 },
                 headers={"cf-ray": "R2D2"},
             )
+        if record_name.startswith("error-400"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 0000, "message": "Unidentified 400 error"}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "R2D2"},
+            )
+        if record_name.startswith("error-401"):
+            return httpx.Response(
+                401,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "AARD"},
+            )
         if record_name.startswith("error-403"):
             return httpx.Response(
                 403,
                 json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
                 headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                404,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-429"):
+            return httpx.Response(
+                429,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "VARK"},
             )
         return httpx.Response(500)

@@ -6,7 +6,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.views import View
 
-from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
+from registrar.decorators import HAS_PORTFOLIO_MEMBERS_VIEW, grant_access
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -15,7 +15,7 @@ from registrar.models.utility.orm_helper import ArrayRemoveNull
 from django.contrib.postgres.aggregates import StringAgg
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
 class PortfolioMembersJson(View):
 
     def get(self, request):
