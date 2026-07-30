@@ -96,9 +96,8 @@ secret_registry_hostname = secret("REGISTRY_HOSTNAME")
 
 # Used for DNS hosting
 secret_dns_tenant_key = secret("DNS_TENANT_KEY", "")
-secret_dns_tenant_name = secret("DNS_TENANT_NAME", "")
 secret_registry_service_email = secret("DNS_SERVICE_EMAIL", "")
-secret_dns_tenant_id = secret("DNS_TEST_TENANT_ID", "")
+secret_dns_tenant_id = secret("DNS_TENANT_ID", "")
 dns_mock_external_apis = env.bool("DNS_MOCK_EXTERNAL_APIS", default=False)
 
 # region: Basic Django Config-----------------------------------------------###
@@ -114,7 +113,7 @@ DEBUG = env_debug
 
 # Controls production specific feature toggles
 IS_PRODUCTION = env_is_production
-DNS_HOSTING_PROD_ALLOWLIST = ["igorville.gov"]
+DNS_HOSTING_PROD_ALLOWLIST = ["dnsops.gov", "example.gov", "igorville.gov"]
 SECRET_ENCRYPT_METADATA = secret_encrypt_metadata
 BASE_URL = env_base_url
 
@@ -860,7 +859,6 @@ EPP_CONNECTION_TIMEOUT = 5
 
 # SECURITY WARNING: keep all DNS variables in production secret!
 SECRET_DNS_TENANT_KEY = secret_dns_tenant_key
-SECRET_DNS_TENANT_NAME = secret_dns_tenant_name
 SECRET_DNS_SERVICE_EMAIL = secret_registry_service_email
 SECRET_DNS_TENANT_ID = secret_dns_tenant_id
 
