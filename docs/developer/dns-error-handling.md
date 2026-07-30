@@ -47,15 +47,13 @@ When Cloudflare says "no," here's what it means:
 
 | What went wrong | Error name | User sees |
 |---|---|---|
-| Resource doesn't exist | `DNS_NOT_FOUND` | TBD |
-| Bad data | `DNS_VALIDATION_FAILED` | TBD |
-| Too many requests | `DNS_RATE_LIMIT_EXCEEDED` | TBD |
-| Permission denied | `DNS_AUTH_FAILED` | TBD |
-| Network problem | `DNS_UPSTREAM_TIMEOUT` | TBD |
-| Cloudflare down | `DNS_UPSTREAM_ERROR` | TBD |
-| Something unexpected | `DNS_UNKNOWN` | TBD |
-
-> "TBD" copy is finalized in [#4999](https://github.com/cisagov/manage.get.gov/issues/4999) (Product/Content owns the wording). This table is updated when those strings are approved.
+| Resource doesn't exist | `DNS_NOT_FOUND` | An unexpected error occurred: Please try again. If the problem persists, contact us for assistance and share this ID <request id>.  |
+| Bad data | `DNS_VALIDATION_FAILED` | There’s something wrong with the DNS record information you provided. Please try again. If the problem persists, contact us for assistance. |
+| Too many requests | `DNS_RATE_LIMIT_EXCEEDED` | An unexpected error occurred: Please try again. If the problem persists, contact us for assistance and share this ID <request id>. |
+| Permission denied | `DNS_AUTH_FAILED` | An unexpected error occurred: Please try again. If the problem persists, contact us for assistance and share this ID <request id>. |
+| Network problem | `DNS_UPSTREAM_TIMEOUT` | An unexpected error occurred: Please try again. If the problem persists, contact us for assistance and share this ID <request id>.  |
+| Cloudflare down | `DNS_UPSTREAM_ERROR` | An unexpected error occurred: Please try again. If the problem persists, contact us for assistance and share this ID <request id>. |
+| Something unexpected | `DNS_UNKNOWN` | An unexpected error occurred: Please try again. If the problem persists, contact us for assistance and share this ID <request id>. |
 
 **Quick rule:** 4xx codes are the user's problem (they can fix it). 5xx codes are our problem (Cloudflare or network).
 
@@ -278,8 +276,6 @@ Two failure shapes from `httpx`:
 Adding a new status code is a line in the `_STATUS_TO_ERROR` dict. The helper is testable on its own — feed it a fake `HTTPStatusError` and assert the returned exception type and code.
 
 The service logs **once** here, at the point of failure, with the raw Cloudflare context (`upstream_status`, `error_code`, `cf_ray`, `zone_id`, etc.). `logger.exception(...)` attaches the full Python traceback. The middleware's ContextVars (`request_id`, `user_email`, `ip_address`, `request_path`) are merged into the same log line by the `JsonFormatter`, so a single log entry has the Cloudflare-side context *and* the request-side context. Nothing downstream needs to log again.
-
-> **Today vs. after #4924:** the `request_id` ContextVar is not wired up in the current code; [#4924](https://github.com/cisagov/manage.get.gov/issues/4924) deliver this. Until then the field stays empty on log lines. Also, `user_email`, `ip_address`, and `request_path` only populate in production environments — non-prod log lines show the `"Anonymous"` / `"Unknown IP"` defaults from `logging_context.py`. That gate stays in place after #4924 for privacy reasons.
 
 **Layer 2 — `DnsHostService` passes the typed exception through unchanged** (sub-ticket [#4922](https://github.com/cisagov/manage.get.gov/issues/4922)). The current try/except around the Cloudflare call is removed. Because Python propagates exceptions up the call stack automatically, removing the `try/except` is all it takes — the typed error from `CloudflareService` flows straight through `DnsHostService` and into the view.
 
