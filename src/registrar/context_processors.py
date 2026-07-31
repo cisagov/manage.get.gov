@@ -66,7 +66,6 @@ def portfolio_permissions(request):
         "has_edit_request_portfolio_permission": False,
         "has_view_members_portfolio_permission": False,
         "has_edit_members_portfolio_permission": False,
-        "can_view_members_page": False,
         "portfolio": None,
         "is_portfolio_user": False,
         "is_portfolio_admin": False,

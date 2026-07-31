@@ -52,11 +52,11 @@
     </div>
     <!-- display text for no member access + user viewing self-->
     {% if not has_view_members_portfolio_permission and not has_edit_members_portfolio_permission %}
-      <div class="margin-top-2">
-        <p class="maxw-none">
+      <div class="padding-top-3 border-top-1px border-base-lighter">
+        <p class="maxw-none font-body-xs text-base-darker">
         This organization may have other members, but your current permissions only allow you to view your own membership details. To make changes to your role, reach out to <a href="{% url 'organization' %}" class="usa-link">your organization admin</a>.
         </p>
-        <p class="margin-top-2">
+        <p class="margin-top-2 font-body-xs text-base-darker">
           <a href="https://get.gov/help/member-management/#understanding-enterprise-mode-roles-and-permissions" class="usa-link" target="_blank" rel="noopener noreferrer">
           Learn more about roles and permissions.
           </a>
