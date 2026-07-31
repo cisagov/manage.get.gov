@@ -96,8 +96,8 @@ class RegisterLoggingMiddlewareTest(TestCase):
     @override_settings(IS_PRODUCTION=True)
     def test_arbitrary_extra_fields_appear_in_log_json(self):
         """
-        Fields passed via 'extra' on a log call surface as a top-level JSON keys, 
-        not just imbedded in the message string. This was primarily created for dns hosting, 
+        Fields passed via 'extra' on a log call surface as a top-level JSON keys,
+        not just imbedded in the message string. This was primarily created for dns hosting,
         so it may need to be edited if we expand our logging in other parts of the app
         """
         self.logger.info(
@@ -128,9 +128,10 @@ class RegisterLoggingMiddlewareTest(TestCase):
     @override_settings(IS_PRODUCTION=True)
     def test_non_serializable_extra_field_is_stringified(self):
         """
-        A value in 'extra' that isn't JSON-serializeable (e.g. an object) 
+        A value in 'extra' that isn't JSON-serializeable (e.g. an object)
         gets converted to a string rather than raising or being silently dropped.
         """
+
         class Unserializeable:
             def __str__(self):
                 return "unserializable-thing"
