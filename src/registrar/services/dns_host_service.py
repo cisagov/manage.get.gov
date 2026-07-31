@@ -202,7 +202,7 @@ class DnsHostService:
         logger.info(
             "Successfully created zone %s",
             zone_name,
-            extra={"zone_name": zone_name},
+            extra={"zone_name": zone_name, "x_account_id": x_account_id, "domain_name": domain_name},
         )
         x_zone_id = zone_data["result"]["id"]
 
@@ -219,7 +219,7 @@ class DnsHostService:
             logger.error(
                 "Failed to save zone for %s in database.",
                 domain_name,
-                extra={"domain_name": domain_name},
+                extra={"domain_name": domain_name, "x_account_id": x_account_id},
                 exc_info=True,
             )
             raise
@@ -248,7 +248,7 @@ class DnsHostService:
             logger.error(
                 "Failed to save record %s in database.",
                 form_record_data,
-                extra={"form_record_data": form_record_data},
+                extra={"form_record_data": form_record_data, "x_zone_id": x_zone_id},
                 exc_info=True,
             )
             raise
@@ -287,7 +287,7 @@ class DnsHostService:
             logger.error(
                 "Failed to save record %s in database.",
                 form_record_data,
-                extra={"form_record_data": form_record_data},
+                extra={"form_record_data": form_record_data, "x_zone_id": x_zone_id, "x_record_id": x_record_id},
                 exc_info=True,
             )
             raise
