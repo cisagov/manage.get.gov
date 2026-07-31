@@ -21,7 +21,7 @@ from registrar.decorators import (
     _domain_request_exists_under_portfolio,
     _member_exists_under_portfolio,
     _member_invitation_exists_under_portfolio,
-    _is_own_member_record,
+    _is_self_view_member,
 )
 
 
@@ -153,27 +153,27 @@ class TestPortfolioResourceAccess(MockDbForIndividualTests):
 
     # Own record checking member tests (self view access rule)
     @less_console_noise_decorator
-    def test_is_own_member_record_when_pk_is_none(self):
+    def test_is_self_view_member_when_pk_is_none(self):
         """No access if no member_pk"""
-        self.assertFalse(_is_own_member_record(self.user, self.portfolio, None))
+        self.assertFalse(_is_self_view_member(self.user, self.portfolio, None))
 
     @less_console_noise_decorator
-    def test_is_own_member_record_when_own_record(self):
+    def test_is_self_view_member_when_own_record(self):
         """Verify returns True when member_pk is the requesting users own record"""
-        self.assertTrue(_is_own_member_record(self.user, self.portfolio, self.user_permission.id))
+        self.assertTrue(_is_self_view_member(self.user, self.portfolio, self.user_permission.id))
 
     @less_console_noise_decorator
-    def test_is_own_member_record_when_other_users_record(self):
+    def test_is_self_view_member_when_other_users_record(self):
         """Verify returns False when member_pk belongs to a diff user in the same portfolio"""
         other_user_same_portfolio = UserPortfolioPermission.objects.create(
             user=self.tired_user, portfolio=self.portfolio, roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
         )
-        self.assertFalse(_is_own_member_record(self.user, self.portfolio, other_user_same_portfolio.id))
+        self.assertFalse(_is_self_view_member(self.user, self.portfolio, other_user_same_portfolio.id))
 
     @less_console_noise_decorator
-    def test_is_own_member_record_when_different_portfolio(self):
+    def test_is_self_view_member_when_different_portfolio(self):
         """Verify returns False when member_pk is the users record but under a diff portfolio"""
-        self.assertFalse(_is_own_member_record(self.user, self.other_portfolio, self.other_user_permission.id))
+        self.assertFalse(_is_self_view_member(self.user, self.other_portfolio, self.other_user_permission.id))
 
 
 class TestPortfolioDomainRequestViewAccess(MockDbForIndividualTests):
@@ -371,7 +371,7 @@ class TestPortfolioMemberViewAccess(MockDbForIndividualTests):
     @less_console_noise_decorator
     def test_members_list_reachable_by_self_view_member(self):
         """A no Member access user (can't view or edit other members permission)
-        can reaech the member list page"""
+        can reach the member list page"""
         self.client.force_login(self.meoward_user)
         session = self.client.session
         session["portfolio"] = self.portfolio.id

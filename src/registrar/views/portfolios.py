@@ -15,7 +15,7 @@ from registrar.decorators import (
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
     HAS_LEGACY_AND_ORG_USER,
-    IS_PORTFOLIO_MEMBER_VIEWING_SELF,
+    IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY,
     grant_access,
     resolve_portfolio,
 )
@@ -78,7 +78,7 @@ class PortfolioDomainRequestsView(View):
         return render(request, "portfolio_requests.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY)
 class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -348,7 +348,7 @@ class PortfolioMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY)
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"

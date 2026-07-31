@@ -133,9 +133,6 @@ def portfolio_permissions(request):
                     "has_any_requests_portfolio_permission": user.has_any_requests_portfolio_permission(portfolio),
                     "has_view_members_portfolio_permission": user.has_view_members_portfolio_permission(portfolio),
                     "has_edit_members_portfolio_permission": user.has_edit_members_portfolio_permission(portfolio),
-                    # Any portfolio user can now see the Members tab but only their
-                    # own info if they dont have "elevated" read or write permissions
-                    "can_view_members_page": is_org_user,
                     "portfolio": portfolio,
                     "is_portfolio_user": True,
                     "is_portfolio_admin": user.is_portfolio_admin(portfolio),

@@ -33,7 +33,7 @@ HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
 HAS_LEGACY_AND_ORG_USER = "has_legacy_and_org_user"
-IS_PORTFOLIO_MEMBER_VIEWING_SELF = "is_portfolio_member_viewing_self"
+IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY = "is_portfolio_member_viewing_self_only"
 
 
 def grant_access(*rules):
@@ -200,8 +200,8 @@ def _user_has_permission(user, request, rules, **kwargs):
         ),
         (HAS_LEGACY_AND_ORG_USER, lambda: user.has_legacy_domain() and user.is_any_org_user()),
         (
-            IS_PORTFOLIO_MEMBER_VIEWING_SELF,
-            lambda: is_org and _is_own_member_record(user, portfolio, kwargs.get("member_pk")),
+            IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY,
+            lambda: is_org and _is_self_view_member(user, portfolio, kwargs.get("member_pk")),
         ),
     ]
     # Check conditions iteratively
@@ -289,7 +289,7 @@ def _member_exists_under_portfolio(portfolio, member_pk):
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
 
 
-def _is_own_member_record(user, portfolio, member_pk):
+def _is_self_view_member(user, portfolio, member_pk):
     """Checks whether the given member_pk refers to the requesting users own
     UserPortfolioPermission under the current portfolio
 
