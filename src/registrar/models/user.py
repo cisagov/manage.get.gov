@@ -221,6 +221,15 @@ class User(AbstractUser):
     def has_edit_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
+    def has_no_members_portfolio_permission(self, portfolio):
+        """
+        True: If user has NO view or edit members perms on the portfolio
+        """
+        return not (
+            self.has_view_members_portfolio_permission(portfolio)
+            or self.has_edit_members_portfolio_permission(portfolio)
+        )
+
     def has_any_domains_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS

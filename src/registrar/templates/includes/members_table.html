@@ -6,6 +6,8 @@
 {% url 'get_portfolio_members_json' as url %}
 <span id="get_members_json_url" class="display-none">{{url}}</span>
 <section class="section-outlined members margin-top-0 section-outlined--border-base-light" id="members">
+  {% if has_view_members_portfolio_permission or has_edit_members_portfolio_permission %}
+
   <div class="section-outlined__header margin-bottom-3 grid-row">
     <!-- ---------- SEARCH ---------- -->
     {% with label_text="Search by member email address" item_name="members" aria_label_text="Members search component"%}
@@ -15,6 +17,7 @@
         {% include "includes/export.html" %}
     {% endwith %}
   </div>
+  {% endif %}
 
     <!-- ---------- MAIN TABLE ---------- -->
     <div class="display-none margin-top-0" id="members__table-wrapper">
@@ -47,6 +50,20 @@
     <div class="display-none" id="members__no-search-results">
       <p>No results found</p>
     </div>
+    <!-- display text for no member access + user viewing self-->
+    {% if not has_view_members_portfolio_permission and not has_edit_members_portfolio_permission %}
+      <div class="padding-top-3 border-top-1px border-base-lighter">
+        <p class="maxw-none font-body-xs text-base-darker margin-top-0">
+        This organization may have other members, but your current permissions only allow you to view your own membership details. To make changes to your role, reach out to <a href="{% url 'organization' %}" class="usa-link">your organization admin</a>.
+        </p>
+        <p class="margin-top-2 font-body-xs text-base-darker">
+          <a href="https://get.gov/help/member-management/#understanding-enterprise-mode-roles-and-permissions" class="usa-link" target="_blank" rel="noopener noreferrer">
+          Learn more about roles and permissions.
+          </a>
+        </p>
+      </div>
+    {% endif %}
+
   </section>
   <nav aria-label="Pagination" class="usa-pagination flex-justify" id="members-pagination">
     <span class="usa-pagination__counter text-base-dark padding-left-2 margin-bottom-1">
