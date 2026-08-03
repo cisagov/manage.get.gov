@@ -58,18 +58,16 @@ class DomainInvitation(TimeStampedModel):
             MultipleUsersWithEmailError if the email matches multiple users.
         """
 
-        # get a user with this email address
-        User = get_user_model()
-        try:
-            user = User.objects.get(email__iexact=self.email)
-        except User.MultipleObjectsReturned:
-            # This should not happen, but if it does, log an error and raise a RuntimeError
-            logger.error(f"Multiple users found with the same email: {self.email}")
-            raise RuntimeError("Multiple users found with the same email. Cannot retrieve this domain invitation.")
-        except User.DoesNotExist:
-            # should not happen because a matching user should exist before
-            # we retrieve this invitation
-            raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
+        if user is None:
+            User = get_user_model()
+            users = list(User.objects.filter(email__iexact=self.email).order_by("pk")[:2])
+            if len(users) > 1:
+                raise MultipleUsersWithEmailError(self.email)
+            if not users:
+                # should not happen because a matching user should exist before
+                # we retrieve this invitation
+                raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
+            user = users[0]
 
         # and create a role for that user on this domain
         domain_role, created = UserDomainRole.objects.get_or_create(
