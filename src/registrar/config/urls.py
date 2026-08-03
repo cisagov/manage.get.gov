@@ -251,6 +251,7 @@ urlpatterns = [
         get_rejection_email_for_user_json,
         name="get-rejection-email-for-user-json",
     ),
+    path("admin/login/", views.admin_login, name="admin-login"),
     path("admin/", admin.site.urls),
     path(
         "reports/export_members_portfolio/",

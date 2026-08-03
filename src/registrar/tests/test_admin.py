@@ -4278,8 +4278,7 @@ class TestPublicContactAdmin(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
         response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
@@ -5018,8 +5017,7 @@ class TestDomainAdminState(TestCase):
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
 
     def test_domain_state_remains_unknown_on_refresh(self):
         """
@@ -5186,3 +5184,32 @@ class TestSuborganizationAdmin(TestCase):
             self.assertEqual(was_sub_org_deleted_log, True)
             self.assertEqual(log.object_id, obj.id)
             self.assertEqual(log.object_repr, str(obj))
+
+
+class TestAdminLogin(TestCase):
+    """Test /admin/login/ unauthenticated users are redirected to
+    Login.gov, staff go to the admin index, and non-staff see the admin login
+    page showing who they are authenticated as."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = create_superuser()
+
+    def tearDown(self):
+        User.objects.all().delete()
+
+    def test_unauthenticated_redirects_to_login_gov(self):
+        response = self.client.get("/admin/login/")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith("/openid/login"))
+
+    def test_staff_redirects_to_admin_index(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/login/")
+        self.assertRedirects(response, "/admin/")
+
+    def test_non_staff_sees_their_user_id(self):
+        user = create_test_user()
+        self.client.force_login(user)
+        response = self.client.get("/admin/login/")
+        self.assertContains(response, user.get_username(), status_code=200)

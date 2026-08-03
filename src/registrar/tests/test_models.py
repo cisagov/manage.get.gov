@@ -1306,6 +1306,34 @@ class TestUser(TestCase):
         self.assertTrue(self.user.has_edit_request_portfolio_permission(self.portfolio))
         mock_has_permission.assert_called_once_with(self.portfolio, UserPortfolioPermissionChoices.EDIT_REQUESTS)
 
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_no_view_or_edit_member_permissions_can_view_self(self, mock_has_permission):
+        """User w neither NO view and NO edit permission -> True (self view only)"""
+        mock_has_permission.return_value = False
+
+        self.assertTrue(self.user.has_no_members_portfolio_permission(self.portfolio))
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_view_member_permission_cant_view_self(self, mock_has_permission):
+        """User WITH view permissions -> False (bc can view more than just self)"""
+        mock_has_permission.side_effect = [True, False]  # view=True, edit=False
+
+        self.assertFalse(self.user.has_no_members_portfolio_permission(self.portfolio))
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_member_permission_cant_view_self(self, mock_has_permission):
+        """User WITH edit permission -> False (not self only view)"""
+        mock_has_permission.side_effect = [False, True]  # view=False, edit=True
+
+        self.assertFalse(self.user.has_no_members_portfolio_permission(self.portfolio))
+
+    @patch("registrar.models.User._has_portfolio_permission")
+    def test_has_edit_and_view_member_permission_cant_view_self(self, mock_has_permission):
+        """User WITH view and WITH edit permission -> False (not self only view)"""
+        mock_has_permission.return_value = True
+
+        self.assertFalse(self.user.has_no_members_portfolio_permission(self.portfolio))
+
     @less_console_noise_decorator
     def test_check_transition_domains_without_domains_on_login(self):
         """A user's on_each_login callback does not check transition domains.

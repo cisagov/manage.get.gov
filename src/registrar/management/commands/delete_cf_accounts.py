@@ -22,7 +22,7 @@ class Command(BaseCommand):
         self.email = settings.SECRET_DNS_SERVICE_EMAIL
         self.api_key = settings.SECRET_DNS_TENANT_KEY
         self.tenant_id = os.environ.get(
-            "DNS_TEST_TENANT_ID"
+            "DNS_TENANT_ID"
         )  # We only ever want to delete from the test tenant DO NOT USE THE PROD TENANT ID
         self.base_url = "https://api.cloudflare.com/client/v4"
         self.headers = {"X-Auth-Email": self.email, "X-Auth-Key": self.api_key, "Content-Type": "application/json"}
@@ -196,7 +196,7 @@ class Command(BaseCommand):
             Environment Variables:
             DNS_SERVICE_EMAIL: Cloudflare account email
             DNS_TENANT_KEY: Cloudflare API key
-            DNS_TEST_TENANT_ID: Unique ID associated with Cloudflare tenant
+            DNS_TENANT_ID: Unique ID associated with Cloudflare tenant
 
             %(prog)s --all
 
