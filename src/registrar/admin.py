@@ -2149,6 +2149,8 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         return flag_is_active(request, "user_portfolio_permission_invitations")
 
     def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
+        # Suppress Django's duplicate success message for invitation adds.
+        # Confirm this message text still matches after any Django upgrade.
         if (
             self._use_invitation_admin(request)
             and level == messages.SUCCESS
@@ -2390,6 +2392,8 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return flag_is_active(request, "user_domain_role_invitations")
 
     def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
+        # Suppress Django's duplicate success message for invitation adds.
+        # Confirm this message text still matches after any Django upgrade.
         if (
             self._use_invitation_admin(request)
             and level == messages.SUCCESS
@@ -2919,15 +2923,15 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
             domain_org = getattr(domain.domain_info, "portfolio", None)
             obj.email = obj.email.lower()
             requested_email = obj.email
-            # Look up a user with that email
-            requested_user = get_requested_user(requested_email)
             requestor = request.user
 
-            member_of_a_different_org, member_of_this_org = get_org_membership(
-                domain_org, requested_email, requested_user
-            )
-
             try:
+                # Look up a user with that email
+                requested_user = get_requested_user(requested_email)
+                member_of_a_different_org, member_of_this_org = get_org_membership(
+                    domain_org, requested_email, requested_user
+                )
+
                 if (
                     request.user.is_org_user(request)
                     and not flag_is_active(request, "multiple_portfolios")
@@ -2945,7 +2949,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
-                        portfolio_invitation.retrieve()
+                        portfolio_invitation.retrieve(user=requested_user)
                         portfolio_invitation.save()
                     messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
@@ -2959,7 +2963,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
-                    obj.retrieve()
+                    obj.retrieve(user=requested_user)
                 # Call the parent save method to save the object
                 super().save_model(request, obj, form, change)
                 messages.success(request, f"{requested_email} has been invited to the domain: {domain}")
@@ -3064,7 +3068,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         messages.warning(request, "Could not send email notification to existing organization admins.")
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
-                        obj.retrieve()
+                        obj.retrieve(user=requested_user)
                     messages.success(request, f"{requested_email} has been invited to this organization.")
                 else:
                     return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
