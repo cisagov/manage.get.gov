@@ -1192,8 +1192,6 @@ class Domain(TimeStampedModel, DomainHelper):
 
         self._delete_dnssecdata()
 
-        self._delete_db_dns_data()
-
         # Check if the domain can be deleted
         if not self._domain_can_be_deleted():
             note = "Domain has associated objects that prevent deletion."
@@ -1354,6 +1352,12 @@ class Domain(TimeStampedModel, DomainHelper):
                 c.delete()
         except Exception as e:
             logger.error("Error deleting contacts for domain %s: %s", self.name, str(e))
+        
+        logger.info("Deleteing DNS Data")
+        try:
+            self._delete_db_dns_data()
+        except Exception as e:
+            logger.error("Error deleting DNS data for domain %s: %s", self.name, str(e))
 
     def _domain_can_be_deleted(self, max_attempts=5, wait_interval=2) -> bool:
         """
