@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from django.views import View
-from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
+from registrar.decorators import IS_PORTFOLIO_MEMBER, grant_access
 from registrar.models import UserDomainRole, Domain, DomainInformation, User
 from django.urls import reverse
 from django.db.models import Q
@@ -14,7 +14,7 @@ from registrar.models.domain_invitation import DomainInvitation
 logger = logging.getLogger(__name__)
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(IS_PORTFOLIO_MEMBER)
 class PortfolioMemberDomainsJson(View):
 
     def get(self, request):
@@ -22,7 +22,11 @@ class PortfolioMemberDomainsJson(View):
         get all domains that are associated with the portfolio, or
         associated with the member/invited member"""
 
-        domain_ids = self._get_domain_ids_from_request(request)
+        portfolio = request.GET.get("portfolio")
+
+        self_only = request.user.has_no_members_portfolio_permission(portfolio)
+
+        domain_ids = self._get_domain_ids_from_request(request, self_only)
 
         objects = Domain.objects.filter(id__in=domain_ids).select_related("domain_info__sub_organization")
         unfiltered_total = objects.count()
@@ -34,7 +38,10 @@ class PortfolioMemberDomainsJson(View):
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
 
-        member_id = request.GET.get("member_id")
+        if self_only:
+            member_id = request.user.pk
+        else:
+            member_id = request.GET.get("member_id")
         domains = [self._serialize_domain(domain, member_id, request.user) for domain in page_obj.object_list]
 
         return JsonResponse(
@@ -66,7 +73,7 @@ class PortfolioMemberDomainsJson(View):
             # later
             return 1000
 
-    def _get_domain_ids_from_request(self, request):
+    def _get_domain_ids_from_request(self, request, self_only):
         """Get domain ids from request.
 
         request.get.email - email address of invited member
@@ -74,11 +81,22 @@ class PortfolioMemberDomainsJson(View):
         request.get.portfolio - portfolio id of portfolio
         request.get.member_only - whether to return only domains associated with member
         or to return all domains in the portfolio
+
+        self_only - if True, the requesting user has no view or edit members perms on the
+        portfolio, so member_id/email are ignored and forced to the requesting users own id
+        preventing a self only member from passing another members id to see their domains
         """
         portfolio = request.GET.get("portfolio")
         email = request.GET.get("email")
         member_id = request.GET.get("member_id")
         member_only = request.GET.get("member_only", "false").lower() in ["true", "1"]
+
+        # Ignores presets above, can only see their own domains
+        if self_only:
+            member_id = request.user.pk
+            email = None
+            member_only = True
+
         if member_only:
             if member_id:
                 member = get_object_or_404(User, pk=member_id)
@@ -92,7 +110,7 @@ class PortfolioMemberDomainsJson(View):
                     "domain_id", flat=True
                 )
                 domain_invitations = DomainInvitation.objects.filter(
-                    email=email, status=DomainInvitation.DomainInvitationStatus.INVITED
+                    email__iexact=email, status=DomainInvitation.DomainInvitationStatus.INVITED
                 ).values_list("domain_id", flat=True)
                 return domain_info_ids.intersection(domain_invitations)
         else:
