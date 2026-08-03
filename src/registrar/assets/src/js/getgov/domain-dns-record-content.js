@@ -318,8 +318,10 @@ export function initDNSRecordCancelModal(){
     })
     
     for(let button of cancelButtons){
-        button.addEventListener("click", () =>  {
-            resetSwitcherValues();
+        button.addEventListener("click", (e) =>  {
+            if(e.isTrusted){
+                resetSwitcherValues();
+            }
       })
     }
 
