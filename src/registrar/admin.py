@@ -2149,7 +2149,7 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
         return flag_is_active(request, "user_portfolio_permission_invitations")
 
     def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
-        # Suppress Django's duplicate success message for invitation adds.
+        # Suppress Django's duplicate success message when adding invitations.
         # Confirm this message text still matches after any Django upgrade.
         if (
             self._use_invitation_admin(request)
@@ -2392,7 +2392,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return flag_is_active(request, "user_domain_role_invitations")
 
     def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
-        # Suppress Django's duplicate success message for invitation adds.
+        # Suppress Django's duplicate success message when adding invitations.
         # Confirm this message text still matches after any Django upgrade.
         if (
             self._use_invitation_admin(request)
