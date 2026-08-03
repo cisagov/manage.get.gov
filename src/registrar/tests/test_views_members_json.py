@@ -548,3 +548,30 @@ class GetPortfolioMembersJsonTest(MockEppLib, WebTest):
         self.assertEqual(response.status_code, 200)
         data = response.json
         self.assertEqual(len(data["members"]), 0)
+
+    @less_console_noise_decorator
+    def test_get_portfolio_members_json_view_self_only_member(self):
+        """A user with no Member access and no view/edit member permissions
+        only sees their own row, no invitations"""
+        UserPortfolioPermission.objects.create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.user2,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        PortfolioInvitation.objects.create(
+            email=self.email6,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        response = self.app.get(reverse("get_portfolio_members_json"), params={"portfolio": self.portfolio.id})
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+
+        self.assertEqual(len(data["members"]), 1)
+        self.assertEqual(data["members"][0]["email"], self.user.email)

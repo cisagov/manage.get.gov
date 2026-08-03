@@ -78,7 +78,7 @@ class TestPortfolio(WebTest):
 
     def set_session_portfolio(self, portfolio=None):
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = (portfolio or self.portfolio).id
         session.save()
 
     @less_console_noise_decorator
@@ -863,14 +863,10 @@ class TestPortfolio(WebTest):
         self.assertEqual(domain_requests.status_code, 200)
 
     @less_console_noise_decorator
-    def test_cannot_view_members_table(self):
-        """Test that user without proper permission is denied access to members view."""
-
-        # Users can only view the members table if they have
-        # Portfolio Permission "view_members" selected.
-        # NOTE: Admins, by default, DO have permission
-        # to view/edit members.
-        # Testing scenario: User is not admin and can view portfolio, but not the members table
+    def test_user_with_no_member_access_sees_self_view_only(self):
+        """A user with no Member access (no edit or view) can still reach
+        the Members page (self view only) to only their own record
+        and the text that only displays in Member table in self view"""
 
         # --- non-admin
         self.app.set_user(self.user.username)
@@ -887,8 +883,45 @@ class TestPortfolio(WebTest):
         # This will redirect the user to the members page.
         self.client.force_login(self.user)
         response = self.client.get(reverse("members"), follow=True)
-        # Assert the response is a 403 Forbidden
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "This organization may have other members, but your current permissions only allow "
+            "you to view your own membership details.",
+        )
+
+        # Search bar should not render
+        self.assertNotContains(response, "Search by member email address")
+        self.assertNotContains(response, 'id="members__search-field"')
+
+        # Export button should not render
+        self.assertNotContains(response, "Export as CSV")
+
+    @less_console_noise_decorator
+    def test_member_with_view_permission_does_not_see_self_view_text(self):
+        """A user with view Member access should not see self
+        view only text below in the Member table"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+        self.set_session_portfolio()
+
+        members_page = self.app.get(reverse("members"))
+        self.assertNotContains(
+            members_page,
+            "This organization may have other members, but your current permissions only allow "
+            "you to view your own membership details.",
+        )
+
+        # Search + export should render
+        self.assertContains(members_page, "Search by member email address")
+        self.assertContains(members_page, 'id="members__search-field"')
+        self.assertContains(members_page, "Export as CSV")
 
     @less_console_noise_decorator
     def test_can_view_members_table(self):
@@ -1273,8 +1306,8 @@ class TestPortfolio(WebTest):
         self.assertNotContains(portfolio_landing_page, 'href="/requests/')
         # nav does not include link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
-        # nav does not include link to members
-        self.assertNotContains(portfolio_landing_page, 'href="/members/')
+        # nav DOES include link to members (now that we have self view only)
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     def test_main_nav_when_user_has_all_permissions(self):

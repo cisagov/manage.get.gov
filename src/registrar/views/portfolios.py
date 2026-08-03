@@ -15,6 +15,7 @@ from registrar.decorators import (
     IS_PORTFOLIO_MEMBER,
     IS_MULTIPLE_PORTFOLIOS_MEMBER,
     HAS_LEGACY_AND_ORG_USER,
+    IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY,
     grant_access,
     resolve_portfolio,
 )
@@ -77,7 +78,7 @@ class PortfolioDomainRequestsView(View):
         return render(request, "portfolio_requests.html")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY)
 class PortfolioMemberView(DetailView, View):
     model = Portfolio
     context_object_name = "portfolio"
@@ -347,7 +348,7 @@ class PortfolioMemberEditView(DetailView, View):
             messages.warning(self.request, "Could not send email notification to existing organization admins.")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW, IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY)
 class PortfolioMemberDomainsView(View):
 
     template_name = "portfolio_member_domains.html"
@@ -878,7 +879,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
                 messages.warning(self.request, "Could not send email notification to existing domain managers.")
 
             # Update existing invitations from CANCELED to INVITED
-            existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email=email)
+            existing_invitations = DomainInvitation.objects.filter(domain__in=added_domains, email__iexact=email)
             existing_invitations.update(status=DomainInvitation.DomainInvitationStatus.INVITED)
 
             # Determine which domains need new invitations
@@ -936,7 +937,7 @@ class PortfolioInvitedMemberDomainsEditView(DetailView, View):
         # Update invitations from INVITED to CANCELED
         DomainInvitation.objects.filter(
             domain_id__in=removed_domain_ids,
-            email=email,
+            email__iexact=email,
             status=DomainInvitation.DomainInvitationStatus.INVITED,
         ).update(status=DomainInvitation.DomainInvitationStatus.CANCELED)
 
@@ -1200,7 +1201,7 @@ class PortfolioSeniorOfficialView(DetailView, FormMixin):
         return reverse("organization-senior-official")
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_VIEW)
+@grant_access(IS_PORTFOLIO_MEMBER)
 class PortfolioMembersView(View):
 
     template_name = "portfolio_members.html"
