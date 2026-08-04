@@ -1299,6 +1299,9 @@ class Domain(TimeStampedModel, DomainHelper):
                     dns_zone = DnsZone.objects.get(domain_id=self.id)
                     logger.info("Removing db DNS records associated with %s.", self.name)
                     records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                    logger.info(
+                        "Removing %s db DNS records: %s.", self.name, str(records)
+                    )
                     # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
                     # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
                     for record in records:
@@ -1306,7 +1309,7 @@ class Domain(TimeStampedModel, DomainHelper):
                         vendor_record.delete()
                     records.delete()
                     logger.info(
-                        "Removed db DNS records associated with zone for domain %s: %s.", self.name, str(records)
+                        "Removed db DNS records associated with zone for domain %s.", self.name
                     )
                     logger.info("Removing db DNS zone data for domain %s.", self.name)
                     vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
@@ -1321,7 +1324,7 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info("Removed db DNS account data for domain %s.", self.name)
 
             except Exception as e:
-                logger.error("Error deleting DNS data for %s: %s", self.name, e)
+                logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
                 raise e
 
     def _delete_related_objects_from_db(self):

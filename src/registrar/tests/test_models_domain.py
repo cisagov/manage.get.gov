@@ -3294,7 +3294,7 @@ class TestAnalystDelete(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
-        # Create a domain with DS data
+        # Create a domain with DNS data
         domain, _ = Domain.objects.get_or_create(name="dsdomain.gov", state=Domain.State.READY)
         # set domain to be on hold
         domain.place_client_hold()
@@ -3332,11 +3332,12 @@ class TestAnalystDelete(MockEppLib):
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
+    @less_console_noise_decorator
     def test_delete_domain_in_epp_deletes_db_dns_data(self):
         """
         Deleting a domain from EPP removes the domain's DNS data from the database.
         """
-        # Create a domain with DS data
+        # Create a domain with DNS data
         domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
         # set domain to be on hold
         domain.place_client_hold()
@@ -3365,8 +3366,8 @@ class TestAnalystDelete(MockEppLib):
         account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
 
         vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
-        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).id
-        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).vendor_dns_record.id
         self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
         self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
 
