@@ -1308,17 +1308,17 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info(
                         "Removed db DNS records associated with zone for domain %s: %s.", self.name, str(records)
                     )
-                    logger.info("Removing db DNS zone for domain %s.", self.name)
+                    logger.info("Removing db DNS zone data for domain %s.", self.name)
                     vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
                     dns_zone.delete()
                     vendor_zone.delete()
-                    logger.info("Removed db DNS zone for domain %s.", self.name)
-                    logger.info("Removing db DNS accounts for %s.", self.name)
+                    logger.info("Removed db DNS zone data for domain %s.", self.name)
+                    logger.info("Removing db DNS account data for %s.", self.name)
                     dns_account = dns_zone.dns_account
                     vendor_account = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account
                     dns_account.delete()
                     vendor_account.delete()
-                    logger.info("Removed db DNS account for domain %s.", self.name)
+                    logger.info("Removed db DNS account data for domain %s.", self.name)
 
             except Exception as e:
                 logger.error("Error deleting DNS data for %s: %s", self.name, e)
@@ -1352,7 +1352,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 c.delete()
         except Exception as e:
             logger.error("Error deleting contacts for domain %s: %s", self.name, str(e))
-        
+
         logger.info("Deleteing DNS Data")
         try:
             self._delete_db_dns_data()
