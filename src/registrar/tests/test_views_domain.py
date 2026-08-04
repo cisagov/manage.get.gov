@@ -2664,8 +2664,6 @@ class TestDomainSecurityEmail(TestDomainOverview):
         Test against the success and error messages that are defined in the view
         """
         with less_console_noise():
-            p = "adminpass"
-            self.client.login(username="superuser", password=p)
             form_data_registry_error = {
                 "security_email": "test@failCreate.gov",
             }

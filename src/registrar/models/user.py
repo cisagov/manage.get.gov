@@ -221,6 +221,15 @@ class User(AbstractUser):
     def has_edit_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
+    def has_no_members_portfolio_permission(self, portfolio):
+        """
+        True: If user has NO view or edit members perms on the portfolio
+        """
+        return not (
+            self.has_view_members_portfolio_permission(portfolio)
+            or self.has_edit_members_portfolio_permission(portfolio)
+        )
+
     def has_any_domains_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
@@ -312,7 +321,7 @@ class User(AbstractUser):
         # We need to check for this condition.
         if verification_type == User.VerificationTypeChoices.INVITED:
             invitation = (
-                DomainInvitation.objects.filter(email=email_or_username, status=retrieved)
+                DomainInvitation.objects.filter(email__iexact=email_or_username, status=retrieved)
                 .order_by("created_at")
                 .first()
             )
@@ -329,15 +338,15 @@ class User(AbstractUser):
         """Retrieves the verification type based off of a provided email address"""
 
         verification_type = None
-        if TransitionDomain.objects.filter(Q(username=email) | Q(email=email)).exists():
+        if TransitionDomain.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).exists():
             # A new incoming user who is a domain manager for one of the domains
             # that we inputted from Verisign (that is, their email address appears
             # in the username field of a TransitionDomain)
             verification_type = cls.VerificationTypeChoices.GRANDFATHERED
-        elif VerifiedByStaff.objects.filter(email=email).exists():
+        elif VerifiedByStaff.objects.filter(email__iexact=email).exists():
             # New users flagged by Staff to bypass ial2
             verification_type = cls.VerificationTypeChoices.VERIFIED_BY_STAFF
-        elif DomainInvitation.objects.filter(email=email, status=invitation_status).exists():
+        elif DomainInvitation.objects.filter(email__iexact=email, status=invitation_status).exists():
             # A new incoming user who is being invited to be a domain manager (that is,
             # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
             verification_type = cls.VerificationTypeChoices.INVITED
