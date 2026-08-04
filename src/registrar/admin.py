@@ -5119,7 +5119,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 # Otherwise, return the natively assigned value
                 default=F("domain_info__state_territory"),
             ),
-            # Sortable on hold date, derived from the audit log (mirrors Domain.on_hold_date)
+            # Subquery grabs the newest LogEntry for this domain, where log shows
+            # a ready -> on hold transition, and returns a timestamp
+            # When(state=ON_HOLD, then=<subquery>) only runs when domain is ON_HOLD
+            # Case wraps the above with default=None for every domain not currently on hold
             _on_hold_date=Case(
                 When(
                     state=Domain.State.ON_HOLD,
