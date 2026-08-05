@@ -643,7 +643,14 @@ class PortfolioInvitedMemberDeleteView(View):
             self._handle_exceptions(e)
 
         invitation_email = portfolio_invitation.email
-        cancel_portfolio_invitation(invitation_email, portfolio_invitation.portfolio)
+        if not cancel_portfolio_invitation(invitation_email, portfolio_invitation.portfolio):
+            error_message = (
+                f"The invitation for {invitation_email} could not be removed because it is no longer pending."
+            )
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"error": error_message}, status=400)
+            messages.error(request, error_message)
+            return redirect(reverse("members"))
 
         success_message = f"{invitation_email} has been removed from this organization."
         # From the Members Table page Else the Member Page

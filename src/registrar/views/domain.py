@@ -1827,15 +1827,13 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
         return super().get_object(queryset)
 
     def post(self, request, *args, **kwargs):
-        """Override post method in order to error in the case when the
-        domain invitation status is RETRIEVED"""
+        """Return an error when the domain invitation is no longer pending."""
         self.object = self.get_object()
         if self.object.status == UserDomainRole.Status.INVITED:
             cancel_domain_invitation(self.object.email, self.object.domain)
             messages.success(request, self.get_success_message({}))
         else:
-            # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, "This invitation can't be canceled because it has already been retrieved.")
+            messages.error(request, "This invitation can't be canceled because it is no longer pending.")
 
         return HttpResponseRedirect(self.get_success_url())
 

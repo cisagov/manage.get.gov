@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models import Q
 from django.apps import apps
 from django.forms import ValidationError
+from django.utils import timezone
 from registrar.utility.waffle import flag_is_active_for_user
 from django.contrib.auth import get_user_model
 import logging
@@ -444,6 +445,7 @@ def cleanup_after_portfolio_member_deletion(portfolio, email, user=None):
     )
     for domain_role in domain_role_invitations:
         domain_role.status = UserDomainRole.Status.REJECTED
+        domain_role.revoked_at = timezone.now()
         domain_role.save()
 
     if user:
