@@ -96,7 +96,9 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Subquery
+from django.db.models.fields import DateField
+from django.db.models.functions import Cast
 from .models import DnsRecord
 
 logger = logging.getLogger(__name__)
@@ -5117,6 +5119,26 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 # Otherwise, return the natively assigned value
                 default=F("domain_info__state_territory"),
             ),
+            # Subquery grabs the newest LogEntry for this domain, where log shows
+            # a ready -> on hold transition, and returns a timestamp
+            # When(state=ON_HOLD, then=<subquery>) only runs when domain is ON_HOLD
+            # Case wraps the above with default=None for every domain not currently on hold
+            _on_hold_date=Case(
+                When(
+                    state=Domain.State.ON_HOLD,
+                    then=Subquery(
+                        LogEntry.objects.filter(
+                            object_pk=Cast(OuterRef("pk"), output_field=CharField()),
+                            action=LogEntry.Action.UPDATE,
+                            changes__contains={"state": ["ready", "on hold"]},
+                        )
+                        .order_by("-timestamp")
+                        .values("timestamp")[:1]
+                    ),
+                ),
+                default=Value(None),
+                output_field=DateField(),
+            ),
         )
 
     # Filters
@@ -5258,13 +5280,13 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return obj.display_created_at
 
     # --- On hold date / days on hold
-    @admin.display(description=_("On hold date"))
+    @admin.display(description=_("On hold date"), ordering="_on_hold_date")
     def on_hold_date_display(self, obj):
         """Display the date the domain was put on hold"""
         date = obj.on_hold_date
         return date
 
-    @admin.display(description=_("Days on hold"))
+    @admin.display(description=_("Days on hold"), ordering="_on_hold_date")
     def days_on_hold_display(self, obj):
         """Display how many days the domain has been on hold"""
         days = obj.days_on_hold

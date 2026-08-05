@@ -8,7 +8,7 @@ from waffle.testutils import override_flag
 
 from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
-from registrar.utility.errors import APIError
+from registrar.utility.errors import DnsHostingError
 from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
 from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,
@@ -18,6 +18,7 @@ from registrar.validations import (
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
 )
 
 from registrar.tests.test_views import TestWithUser
@@ -350,7 +351,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
             svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
-            svc.create_dns_record.side_effect = APIError("Vendor rejected the record")
+            svc.create_dns_record.side_effect = DnsHostingError()
 
             response = self.client.post(
                 self._url(),
@@ -613,7 +614,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertNotContains(response, "You already entered this DNS record")
+            self.assertNotContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             svc.update_dns_record.assert_called_once()
 
     @override_flag("dns_hosting", active=True)
@@ -756,7 +757,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "You already entered this DNS record")
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)
@@ -790,7 +791,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "You already entered this DNS record")
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)
@@ -827,7 +828,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "You already entered this DNS record")
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 

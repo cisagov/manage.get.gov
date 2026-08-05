@@ -192,7 +192,11 @@ class PortfolioInvitation(TimeStampedModel):
         # get a user with this email address
         User = get_user_model()
         try:
-            user = User.objects.get(email=self.email)
+            user = User.objects.get(email__iexact=self.email)
+        except User.MultipleObjectsReturned:
+            # This should not happen, but if it does, log an error and raise a RuntimeError
+            logger.error(f"Multiple users found with the same email: {self.email}")
+            raise RuntimeError("Multiple users found with the same email. Cannot retrieve this portfolio invitation.")
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
@@ -207,6 +211,7 @@ class PortfolioInvitation(TimeStampedModel):
         if self.additional_permissions and len(self.additional_permissions) > 0:
             user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
+        return user_portfolio_permission
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
@@ -226,7 +231,7 @@ class PortfolioInvitation(TimeStampedModel):
         if self.status == self.PortfolioInvitationStatus.INVITED:
 
             # Query the user by email
-            users = User.objects.filter(email=email)
+            users = User.objects.filter(email__iexact=email)
 
             if users.count() > 1:
                 # This should never happen, log an error if more than one object is returned
