@@ -42,10 +42,9 @@ class Command(BaseCommand):
         dry_run = bool(options.get("dry_run", True))
         target_domain = options.get("target_domain", None)
 
-
         # Get all contacts
         all_contacts = PublicContact.objects.all()
-        #Get domains
+        # Get domains
         if target_domain:
             domains_list = Domain.objects.filter(name=target_domain)
         else:
