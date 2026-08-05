@@ -59,10 +59,6 @@ class Command(BaseCommand):
         for registrant in registrant_contacts:
             registrant_domain_set.add(registrant.domain.name)
 
-        # If the counts match up, every domain has a registrant contact
-        if not target_domain and domains_list.count() == len(registrant_domain_set):
-            logger.info("No missing registrants found")
-            return 0
         add_count = 0
         fail_count = 0
         # Loop thru the domains

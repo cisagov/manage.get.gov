@@ -25,7 +25,7 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             state_territory="VA",
             zipcode="22201",
         )
-        self.domain_two = Domain.objects.create(name="exampletwo.gov")
+        self.domain_two = Domain.objects.create(name="exampletwo.gov", state=Domain.State.READY)
         self.domain_info_two = DomainInformation.objects.create(
             requester=self.user_one,
             domain=self.domain_two,
@@ -36,7 +36,7 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             zipcode="22201",
         )
 
-        self.domain_three = Domain.objects.create(name="examplethree.gov")
+        self.domain_three = Domain.objects.create(name="examplethree.gov", state=Domain.State.DNS_NEEDED)
         self.domain_info_three = DomainInformation.objects.create(
             requester=self.user_one,
             domain=self.domain_three,
@@ -75,52 +75,12 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
             self.assertEqual(update_mock.call_count, 0)
 
     @patch("registrar.models.domain.Domain.addRegistrant")
-    def test_command_update_missing_registrant_contacts_no_dry_run(self, mock_add_registrants):
+    @patch("registrar.models.domain.Domain._add_registrant_to_existing_domain")
+    def test_command_update_missing_registrant_contacts_no_dry_run(self, mock_add_registrants, mock_epp_lib):
         call_command("update_missing_registrant_contacts", dry_run=False)
         # Mock contacts count = 3
         self.assertEqual(Domain.objects.all().count(), 3)
         # Only 2 are valid registrant contacts, make sure those are updated
+        self.assertEqual(Domain.objects.filter(state=Domain.State.READY or Domain.State.DNS_NEEDED).count(), 2)
         self.assertEqual(mock_add_registrants.call_count, 2)
-
-    def test_command_update_missing_registrant_contacts_none_found(self):
-        self.contact_two = PublicContact(
-            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-            name="Registrant CSD/CB – Attn: .gov TLD",
-            org="Cybersecurity and Infrastructure Security Agency",
-            street1="1110 N. Glebe Rd",
-            city="Arlington",
-            sp="VA",
-            pc="22201",
-            cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
-            voice="+1.8882820870",
-            pw="thisisnotapassword",
-        )
-
-        self.contact_two.registry_id = "contact"
-        self.contact_two.domain = self.domain_two
-
-        self.contact_two.save(skip_epp_save=True)
-
-        self.contact_three = PublicContact(
-            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
-            name="Registrant CSD/CB – Attn: .gov TLD",
-            org="Cybersecurity and Infrastructure Security Agency",
-            street1="1110 N. Glebe Rd",
-            city="Arlington",
-            sp="VA",
-            pc="22201",
-            cc="US",
-            email=DefaultEmail.PUBLIC_CONTACT_DEFAULT,
-            voice="+1.8882820870",
-            pw="thisisnotapassword",
-        )
-
-        self.contact_three.registry_id = "contact"
-        self.contact_three.domain = self.domain_three
-
-        self.contact_three.save(skip_epp_save=True)
-
-        update_count = call_command("update_missing_registrant_contacts", dry_run=True)
-
-        self.assertEqual(update_count, 0)
+        self.assertEqual(mock_epp_lib.call_count, 2)
