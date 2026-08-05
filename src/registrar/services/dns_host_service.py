@@ -86,8 +86,10 @@ class DnsHostService:
         x_account_id = self._find_existing_account_in_db(account_name)
         if x_account_id:
             logger.info(
-                "Already has an existing vendor account",
-                extra={"account_name": account_name},
+                "Domain %s already has an existing vendor account %s in our database",
+                domain_name,
+                account_name,
+                extra={"account_name": account_name, "domain_name": domain_name},
             )
             return x_account_id
 
@@ -95,9 +97,10 @@ class DnsHostService:
         cf_account_response = self._find_existing_account_in_cf(account_name)
         if cf_account_response:
             logger.info(
-                "Found existing account in Cloudflare for %s",
+                "Domain %s has an existing account in Cloudflare: %s",
+                domain_name,
                 account_name,
-                extra={"account_name": account_name},
+                extra={"account_name": account_name, "domain_name": domain_name},
             )
             normalized_account = self._normalize_cf_account_response(cf_account_response)
             return self.create_db_account({"result": normalized_account})
@@ -240,6 +243,7 @@ class DnsHostService:
         """
         # Create record in vendor service
         vendor_record_data = self.dns_vendor_service.create_dns_record(x_zone_id, form_record_data)
+        x_record_id = vendor_record_data["result"].get("id")
 
         # Create and save dns record in registrar db
         try:
@@ -248,12 +252,11 @@ class DnsHostService:
             logger.error(
                 "Failed to save record %s in database.",
                 form_record_data,
-                extra={"form_record_data": form_record_data, "x_zone_id": x_zone_id},
+                extra={"form_record_data": form_record_data, "x_zone_id": x_zone_id, "x_record_id": x_record_id},
                 exc_info=True,
             )
             raise
 
-        x_record_id = vendor_record_data["result"].get("id")
         return DnsRecord.get_by_x_record_id(x_record_id) if x_record_id else None
 
     def update_dns_record(self, x_zone_id: str, record_id: int, form_record_data: dict) -> DnsRecord:
