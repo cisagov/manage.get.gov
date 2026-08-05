@@ -54,7 +54,6 @@ DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
 DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
 DNS_RECORD_CONTENT_REQUIREMENT = "for this record"
 DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
-HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "that ends with a domain name"
 
 # Constants for error message validating fqdn length and label length
 DNS_LABEL_LENGTH_ERROR_MESSAGE = "Labels must be no more than 63 characters."
@@ -92,15 +91,16 @@ def get_content_type_label_by_record_type(record_type):
 
 
 def get_trailing_number_message_by_record_type(field_type):
+    trailing_number_error_message = "that ends with a domain name"
     requirement_dict = {
-        "target": f"{HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE }, like example.gov or www.example.gov",
-        "mail server": f"{HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE }, like mail.example.gov",
+        "target": f"{trailing_number_error_message}, like example.gov or www.example.gov",
+        "mail server": f"{trailing_number_error_message}, like mail.example.gov",
     }
 
     if field_type == "domain name":
         field_type = "content"
 
-    requirement = requirement_dict.get(field_type, HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE )
+    requirement = requirement_dict.get(field_type,trailing_number_error_message)
     return get_error_message_from_requirement(requirement=requirement, content_field=field_type)
 
 
