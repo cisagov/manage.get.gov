@@ -30,14 +30,26 @@ class Command(BaseCommand):
                 "For not dry run: ./manage.py update_missing_registrant_contacts --no-dry-run"
             ),
         )
+        parser.add_argument(
+            "--target-domain",
+            "--target_domain",
+            required=False,
+            help="Only update contacts for a given domain name (case insensitive).",
+        )
 
     def handle(self, *args, **options):
         logger.debug("Running missing registrants update script")
         dry_run = bool(options.get("dry_run", True))
+        target_domain = options.get("target_domain", None)
+
+
         # Get all contacts
         all_contacts = PublicContact.objects.all()
-        # Get all domains
-        all_domains = Domain.objects.all()
+        #Get domains
+        if target_domain:
+            domains_list = Domain.objects.filter(name=target_domain)
+        else:
+            domains_list = Domain.objects.filter(state=Domain.State.READY or Domain.State.DNS_NEEDED)
         # Filter out the existing registrant contacts
         registrant_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.REGISTRANT)
 
@@ -48,13 +60,13 @@ class Command(BaseCommand):
             registrant_domain_set.add(registrant.domain.name)
 
         # If the counts match up, every domain has a registrant contact
-        if all_domains.count() == len(registrant_domain_set):
+        if not target_domain and domains_list.count() == len(registrant_domain_set):
             logger.info("No missing registrants found")
             return 0
         add_count = 0
         fail_count = 0
         # Loop thru the domains
-        for domain in all_domains:
+        for domain in domains_list:
             # If the domain is not part of the registrant domain set, then create a new registrant contact
             if domain.name not in registrant_domain_set:
                 logger.info("No Registrant info found...creating")
