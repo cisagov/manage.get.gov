@@ -18,6 +18,7 @@ from registrar.validations import (
     DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_A_NAME_CONFLICT_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
+    DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
 )
 
 from registrar.tests.test_views import TestWithUser
@@ -610,7 +611,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertNotContains(response, "You already entered this DNS record")
+            self.assertNotContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             svc.update_dns_record.assert_called_once()
 
     @override_flag("dns_hosting", active=True)
@@ -753,7 +754,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "You already entered this DNS record")
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)
@@ -787,7 +788,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "You already entered this DNS record")
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
     @override_flag("dns_hosting", active=True)
@@ -824,7 +825,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertContains(response, "You already entered this DNS record")
+            self.assertContains(response, DUPLICATE_DNS_RECORD_ERROR_MESSAGE)
             self.assertNotContains(response, DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE)
             svc.create_dns_record.assert_not_called()
 
