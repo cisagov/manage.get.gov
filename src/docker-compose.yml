@@ -63,7 +63,7 @@ services:
       - DNS_TENANT_KEY
       - DNS_SERVICE_EMAIL
       - DNS_TENANT_NAME
-      - DNS_TEST_TENANT_ID
+      - DNS_TENANT_ID
       - DNS_MOCK_EXTERNAL_APIS
     stdin_open: true
     tty: true

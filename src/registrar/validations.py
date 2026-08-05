@@ -74,7 +74,10 @@ CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
-DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "You already entered this DNS record. DNS records must be unique."
+DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "This DNS record is already associated with this domain. "
+"DNS records must be unique."
+MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE = "Combined content length of records with this name and "
+"type must not exceed 8192 characters."
 
 
 def get_content_type_label_by_record_type(record_type):
@@ -89,16 +92,15 @@ def get_content_type_label_by_record_type(record_type):
 
 
 def get_trailing_number_message_by_record_type(field_type):
-    domain_name_req_message = "that ends with a domain name"
     requirement_dict = {
-        "target": f"{domain_name_req_message}, like example.gov or www.example.gov",
-        "mail server": f"{domain_name_req_message}, like mail.example.gov",
+        "target": f"{HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE }, like example.gov or www.example.gov",
+        "mail server": f"{HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE }, like mail.example.gov",
     }
 
     if field_type == "domain name":
         field_type = "content"
 
-    requirement = requirement_dict.get(field_type, domain_name_req_message)
+    requirement = requirement_dict.get(field_type, HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE )
     return get_error_message_from_requirement(requirement=requirement, content_field=field_type)
 
 
