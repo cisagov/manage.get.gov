@@ -81,6 +81,7 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
         # Mock contacts count = 3
         self.assertEqual(Domain.objects.all().count(), 3)
         # Only 2 are valid registrant contacts, make sure those are updated
-        self.assertEqual(Domain.objects.filter(state=Domain.State.READY or Domain.State.DNS_NEEDED).count(), 2)
+        logger.info(Domain.objects.all())
+        self.assertEqual(Domain.objects.filter(state__in=[Domain.State.READY, Domain.State.DNS_NEEDED]).count(), 2)
         self.assertEqual(mock_add_registrants.call_count, 2)
         self.assertEqual(mock_epp_lib.call_count, 2)

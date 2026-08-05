@@ -48,7 +48,7 @@ class Command(BaseCommand):
         if target_domain:
             domains_list = Domain.objects.filter(name=target_domain)
         else:
-            domains_list = Domain.objects.filter(state=Domain.State.READY or Domain.State.DNS_NEEDED)
+            domains_list = Domain.objects.filter(state__in=[Domain.State.READY, Domain.State.DNS_NEEDED])
         # Filter out the existing registrant contacts
         registrant_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.REGISTRANT)
 
@@ -77,7 +77,7 @@ class Command(BaseCommand):
                         registry_id = domain.addRegistrant()
 
                         # This is needed because currently, the Admin contact is listed as the registrant in CloudFlare
-                        # If vendors change in the future, it's less of a headache to limit when we use the vendors name.
+                        # If vendors change in the future, it's less of a headache to limit when we use the vendor name.
                         registrant = PublicContact.objects.filter(registry_id=registry_id).first()
 
                         logger.info(f"Updating registry Registrant Public Contact {registry_id} for {domain.name}")
