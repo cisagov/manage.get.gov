@@ -88,6 +88,20 @@ def get_content_type_label_by_record_type(record_type):
     return record_type_to_content_dict.get(record_type, "content")
 
 
+def get_trailing_number_message_by_record_type(field_type):
+    domain_name_req_message = "that ends with a domain name"
+    requirement_dict = {
+        "target": f"{domain_name_req_message}, like example.gov or www.example.gov",
+        "mail server": f"{domain_name_req_message}, like mail.example.gov",
+    }
+
+    if field_type == "domain name":
+        field_type = "content"
+
+    requirement = requirement_dict.get(field_type, domain_name_req_message)
+    return get_error_message_from_requirement(requirement=requirement, content_field=field_type)
+
+
 # For system level validation
 def get_max_length_validator(limit: int) -> MaxLengthValidator:
     return MaxLengthValidator(limit, message=f"Response must be no more than {limit} characters.")
@@ -148,7 +162,7 @@ def _validate_dns_hostname_structure(content: str, field_type) -> None:
         raise ValidationError(error_message)
     last_label = _get_non_wildcard_dns_name_labels(content)[-1]
     if last_label.isdigit():
-        error_message = get_error_message_from_requirement(HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE, field_type)
+        error_message = get_trailing_number_message_by_record_type(field_type)
         raise ValidationError(error_message)
 
 
