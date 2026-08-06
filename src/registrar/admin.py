@@ -643,7 +643,7 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
             return
 
         self.add_error(
-            "user", "Can't send invitation email because this user doesn't exist in the allowed emails list."
+            "user", "Can't send invitation email because this email doesn't exist in the allowed emails list."
         )
 
     def _will_send_invitation_email(self, cleaned_data, user):

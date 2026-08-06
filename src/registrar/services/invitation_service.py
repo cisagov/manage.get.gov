@@ -738,7 +738,7 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
             ).first()
 
             if legacy_invitation:
-                permission_legacy = legacy_invitation.retrieve()
+                permission_legacy = legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
                 if not permission:
                     permission = permission_legacy
@@ -792,7 +792,7 @@ def accept_domain_invitation(user: User, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                domain_role_legacy = legacy_invitation.retrieve()
+                domain_role_legacy = legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
                 if not domain_role:
                     domain_role = domain_role_legacy
