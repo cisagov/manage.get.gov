@@ -158,10 +158,14 @@ const teardownForm = (switcher) => {
         clearRecordForm(form);
         if(hadError){
             refreshForm(refs.form, form.getAttribute("hx-post"));
+            document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
+                switcher.switchForm()
+            })
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
             if(typeField) typeField.value = "";
+            switcher.switchForm()
         }
     }
 };
@@ -176,7 +180,6 @@ const onCancel = (switcher) => {
             openCancelModal(refs.cancelButtonId);
         } else {
             teardownForm(switcher);
-            switcher.switchForm();
             document.getElementById(refs.focusId)?.focus();
         }
 };
@@ -230,6 +233,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    const deleteButton = document.getElementById("confirm-delete-record-button");
     if(!container || !confirmButton) return;
     
     const editFormSwitcher = new EditFormSwitcher(container);
@@ -271,6 +275,7 @@ export function initDNSRecordCancelModal(){
                 return;
             }
             if(switcher.isRecordType){
+                document.getElementById(refsFor(switcher.pending).focusId).focus()
                 switcher.switchForm(switcher.pending.recordId);
             }
             else{
@@ -297,16 +302,21 @@ export function initDNSRecordCancelModal(){
         );
 
         modalEl?.setAttribute("data-opener", refsFor(switcher.createReq(switcher.target)).focusId);
-        switcher.switchForm();
         cancelButtons[0].click();
     });
 
-    // reset the switcher values when user clicks on the cancel, 'x', esc and the outside modal.
+    // reset the switcher values when user clicks on the cancel, 'x', esc, the outside modal, and the delete button.
 
-    const modalOverlay =  document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
+    const modalOverlay = document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
+
+    deleteButton.addEventListener("click", ()=> {
+        const switcher = getSwitcher();
+        switcher.resetPendingAndTarget;
+    });
 
     modalEl?.addEventListener("click", (e)=>{ 
         if(e.target == modalOverlay){
+             console.log("we are in overlay")
              resetSwitcherValues();
         }
     })
