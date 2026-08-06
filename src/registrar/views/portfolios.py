@@ -643,22 +643,28 @@ class PortfolioInvitedMemberDeleteView(View):
             self._handle_exceptions(e)
 
         invitation_email = portfolio_invitation.email
-        if not cancel_portfolio_invitation(invitation_email, portfolio_invitation.portfolio):
-            error_message = (
-                f"The invitation for {invitation_email} could not be removed because it is no longer pending."
-            )
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return JsonResponse({"error": error_message}, status=400)
-            messages.error(request, error_message)
-            return redirect(reverse("members"))
+        canceled = cancel_portfolio_invitation(invitation_email, portfolio_invitation.portfolio)
+        return self._handle_cancellation_response(request, invitation_email, canceled)
 
-        success_message = f"{invitation_email} has been removed from this organization."
-        # From the Members Table page Else the Member Page
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": success_message}, status=200)
+    def _handle_cancellation_response(self, request, invitation_email, canceled):
+        """Return response for an invitation cancellation."""
+        if canceled:
+            message = f"{invitation_email} has been removed from this organization."
+            message_type = "success"
+            status = 200
         else:
-            messages.success(request, success_message)
-            return redirect(reverse("members"))
+            message = f"The invitation for {invitation_email} could not be removed because it is no longer pending."
+            message_type = "error"
+            status = 400
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({message_type: message}, status=status)
+
+        if canceled:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        return redirect(reverse("members"))
 
     def _handle_exceptions(self, exception):
         """Handle exceptions raised during the process."""

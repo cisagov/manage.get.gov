@@ -1605,7 +1605,7 @@ class TestDomainManagers(TestDomainOverview):
         )
         # Assert that an error message is displayed to the user
         # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
-        self.assertContains(response, "be canceled because it has already been retrieved.")
+        self.assertContains(response, "be canceled because it is no longer pending.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
