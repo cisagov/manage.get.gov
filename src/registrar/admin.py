@@ -3,6 +3,7 @@ import logging
 import copy
 from typing import Optional
 from django import forms
+from django.db import transaction
 from django.db.models import (
     Case,
     CharField,
@@ -5456,8 +5457,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             return
 
         try:
-            obj.deleteInEpp()
-            obj.save(optimistic_lock=True)
+            with transaction.atomic():
+                obj.deleteInEpp()
+                obj.save(optimistic_lock=True)
         except RegistryError as err:
             # Using variables to get past the linter
             message1 = f"Cannot delete Domain when in state {obj.state}"
