@@ -76,12 +76,11 @@ class TestUpdateMissingRegistrantContacts(MockEppLib):
 
     @patch("registrar.models.domain.Domain.addRegistrant")
     @patch("registrar.models.domain.Domain._add_registrant_to_existing_domain")
-    def test_command_update_missing_registrant_contacts_no_dry_run(self, mock_add_registrants, mock_epp_lib):
+    def test_command_update_missing_registrant_contacts_no_dry_run(self, mock_epp_lib, mock_add_registrants):
         call_command("update_missing_registrant_contacts", dry_run=False)
         # Mock contacts count = 3
         self.assertEqual(Domain.objects.all().count(), 3)
         # Only 2 are valid registrant contacts, make sure those are updated
-        logger.info(Domain.objects.all())
         self.assertEqual(Domain.objects.filter(state__in=[Domain.State.READY, Domain.State.DNS_NEEDED]).count(), 2)
         self.assertEqual(mock_add_registrants.call_count, 2)
         self.assertEqual(mock_epp_lib.call_count, 2)
