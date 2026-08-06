@@ -100,7 +100,7 @@ def get_trailing_number_message_by_record_type(field_type):
     if field_type == "domain name":
         field_type = "content"
 
-    requirement = requirement_dict.get(field_type,trailing_number_error_message)
+    requirement = requirement_dict.get(field_type, trailing_number_error_message)
     return get_error_message_from_requirement(requirement=requirement, content_field=field_type)
 
 
