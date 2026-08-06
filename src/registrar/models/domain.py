@@ -1291,6 +1291,7 @@ class Domain(TimeStampedModel, DomainHelper):
                 DnsAccount_VendorDnsAccount,
                 DnsZone_VendorDnsZone,
                 DnsRecord_VendorDnsRecord,
+                VendorDnsRecord
             )
 
             logger.debug("Deleting DNS data for %s.", self.name)
@@ -1303,7 +1304,8 @@ class Domain(TimeStampedModel, DomainHelper):
                     # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
                     # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
                     for record in records:
-                        vendor_records = DnsRecord_VendorDnsRecord.objects.filter(dns_record=record).values_list("vendor_dns_record", flat=True)
+                        vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(dns_record=record).values_list("vendor_dns_record_id", flat=True)
+                        vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
                         if vendor_records:
                             vendor_records.delete()
                     records.delete()
