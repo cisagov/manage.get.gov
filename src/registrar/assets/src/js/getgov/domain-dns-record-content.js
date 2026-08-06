@@ -112,9 +112,10 @@ const refsFor = (req) =>{
 const refreshForm = (selector, url) =>
     window.htmx?.ajax("GET", url, { target: selector, select: selector, swap: "outerHTML" });
 
-function openCancelModal(opener){
+function openCancelModal(opener, recordType){
     document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
-    document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
+    const dataOpenerId = recordType ? "id_type" : "toggle-cancel-add-dnsrecord"
+    document.getElementById(dataOpenerId)?.setAttribute("data-opener", opener);
 }
 
 // fields, reused for both Add and Edit forms.
@@ -177,7 +178,7 @@ const onCancel = (switcher) => {
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-            openCancelModal(refs.cancelButtonId);
+            openCancelModal(refs.cancelButtonId, req.isRecordType);
         } else {
             teardownForm(switcher);
             document.getElementById(refs.focusId)?.focus();
@@ -269,13 +270,16 @@ export function initDNSRecordCancelModal(){
             return;
     }
 
-    const resetSwitcherValues = ()=>{
+    const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
+    const cancelButtons = modalEl?.querySelectorAll("[data-close-modal]");
+
+       const resetSwitcherValues = ()=>{
             const switcher = getSwitcher();
             if(!switcher){
                 return;
             }
             if(switcher.isRecordType){
-                document.getElementById(refsFor(switcher.pending).focusId).focus()
+                document.getElementById("id_type").focus();
                 switcher.switchForm(switcher.pending.recordId);
             }
             else{
@@ -283,11 +287,7 @@ export function initDNSRecordCancelModal(){
             }
            
         
-        }
-
-    const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-    const cancelButtons = modalEl?.querySelectorAll("[data-close-modal]");
-
+    }
 
     confirmButton.addEventListener("click", () => {
 
@@ -311,14 +311,12 @@ export function initDNSRecordCancelModal(){
 
     deleteButton.addEventListener("click", ()=> {
         const switcher = getSwitcher();
-        switcher.resetPendingAndTarget;
+        switcher.resetPendingAndTarget();
     });
 
-    modalEl?.addEventListener("click", (e)=>{ 
-        if(e.target == modalOverlay){
-             console.log("we are in overlay")
+    modalOverlay?.addEventListener("click", (e)=>{ 
              resetSwitcherValues();
-        }
+
     })
 
     modalEl?.addEventListener("keydown", (e)=> {
