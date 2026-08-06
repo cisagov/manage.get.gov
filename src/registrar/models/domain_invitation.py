@@ -60,19 +60,24 @@ class DomainInvitation(TimeStampedModel):
         User = get_user_model()
         try:
             user = User.objects.get(email__iexact=self.email)
+        except User.MultipleObjectsReturned:
+            # This should not happen, but if it does, log an error and raise a RuntimeError
+            logger.error(f"Multiple users found with the same email: {self.email}")
+            raise RuntimeError("Multiple users found with the same email. Cannot retrieve this domain invitation.")
         except User.DoesNotExist:
             # should not happen because a matching user should exist before
             # we retrieve this invitation
             raise RuntimeError("Cannot find the user to retrieve this domain invitation.")
 
         # and create a role for that user on this domain
-        _, created = UserDomainRole.objects.get_or_create(
+        domain_role, created = UserDomainRole.objects.get_or_create(
             user=user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
         )
         if not created:
             # something strange happened and this role already existed when
             # the invitation was retrieved. Log that this occurred.
             logger.warning("Invitation %s was retrieved for a role that already exists.", self)
+        return domain_role
 
     @transition(field="status", source=DomainInvitationStatus.INVITED, target=DomainInvitationStatus.CANCELED)
     def cancel_invitation(self):
