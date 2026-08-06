@@ -575,10 +575,6 @@ export function initDynamicDNSRecordFormFields() {
     })
 
     typeField.addEventListener('change', function (e){
-        // e.isTrusted ensures that this only fires when a user select a new type.
-        if(e.isTrusted){
-            clearRecordForm()
-        }
 
         const selectedType = this.value;
         const info = config[selectedType];
