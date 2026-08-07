@@ -79,8 +79,7 @@ export class EditFormSwitcher extends DNSFormSwitcher{
         }
     }
    
-    attemptOpen(form){
-        this.setTarget(form);
+    attemptOpen(){
         const currentId = this.getCurrentShowFormId();
         this.setPending(this.createReq(currentId));
     }
