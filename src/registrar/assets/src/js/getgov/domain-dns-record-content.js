@@ -114,7 +114,13 @@ const refreshForm = (selector, url) =>
 
 function openCancelModal(opener, switcher){
     document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
-    const dataOpenerId = switcher.pending.recordType ? "id_type" : "toggle-cancel-add-dnsrecord";
+    let dataOpenerId;
+    if(switcher.pending.recordType){
+        dataOpenerId = "id_type"
+    }
+    else{
+        dataOpenerId = switcher.target > 0 ? `dnsrecord-edit-button-${switcher.target}` : "toggle-cancel-add-dnsrecord"
+    }
     document.getElementById(dataOpenerId)?.setAttribute("data-opener", opener);
 }
 
