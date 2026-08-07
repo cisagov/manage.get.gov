@@ -1,3 +1,6 @@
+import { EditFormSwitcher, RecordSelectTypeSwitcher } from "./domain-dns-form-switcher";
+import { showElement } from "./helpers";
+
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
     let finalString = "";
@@ -85,21 +88,40 @@ function clearRecordForm(scope){
 
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
-const refsFor = (req) => req.type === "edit"
-    ? {
+const refsFor = (req) =>{
+    if(req.type === "edit"){
+        return  {
         form: `#dnsrecord-edit-form-${req.recordId}`,
         cancelButtonId: `dnsrecord-edit-cancel-button-${req.recordId}`,
         focusId: `dnsrecord-edit-button-${req.recordId}`,
-      }
-    : { form: "#form-container", cancelButtonId: "dnsrecord-add-cancel-button", focusId: "add-dnsrecord-button" };
+        }
+    }
+    else {     
+        return  { 
+            form: "#form-container", 
+            cancelButtonId: "dnsrecord-add-cancel-button",
+            focusId: req.isRecordType ? "id_type" :"add-dnsrecord-button" 
+        };
+
+    }
+
+}
+
 
 // Replace with a fresh server copy, removes client-side edits and errors
 const refreshForm = (selector, url) =>
     window.htmx?.ajax("GET", url, { target: selector, select: selector, swap: "outerHTML" });
 
-function openCancelModal(opener){
+function openCancelModal(opener, switcher){
     document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
-    document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
+    let dataOpenerId;
+    if(switcher.pending.recordType){
+        dataOpenerId = "id_type"
+    }
+    else{
+        dataOpenerId = switcher.target > 0 ? `dnsrecord-edit-button-${switcher.target}` : "toggle-cancel-add-dnsrecord"
+    }
+    document.getElementById(dataOpenerId)?.setAttribute("data-opener", opener);
 }
 
 // fields, reused for both Add and Edit forms.
@@ -125,6 +147,7 @@ const teardownForm = (switcher) => {
     const req = switcher.pending;
     const refs = refsFor(req);
     const form = document.querySelector(refs.form);
+    let didHtmxSwapHappen = false;
     if(req.type === "edit"){
         if(form){
             // After a failed save the row holds the rejected values; clear both errors inline and top,
@@ -143,12 +166,18 @@ const teardownForm = (switcher) => {
         clearRecordForm(form);
         if(hadError){
             refreshForm(refs.form, form.getAttribute("hx-post"));
+            const target = switcher.target;
+            document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
+                didHtmxSwapHappen = true;
+                switcher.switchForm(target);
+         })  
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
             if(typeField) typeField.value = "";
         }
     }
+    !didHtmxSwapHappen && switcher.switchForm();
 };
 
 
@@ -158,22 +187,23 @@ const onCancel = (switcher) => {
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-            openCancelModal(refs.cancelButtonId);
+            openCancelModal(refs.cancelButtonId, switcher);
         } else {
             teardownForm(switcher);
-            switcher.switchForm();
             document.getElementById(refs.focusId)?.focus();
         }
 };
 
 
-const editButtonEventListener = (switcher)=>{
+const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
     const table = document.querySelector("#dnsrecords-table");
     if(!table) return;
 
     const alpineData = switcher.getAlpineData();
 
     table.addEventListener('click', (e) => {
+        
+
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
             if(!editBtn && !commentBtn) return;
@@ -183,13 +213,19 @@ const editButtonEventListener = (switcher)=>{
             if(editBtn){
                 const idx = alpineData.openComments.indexOf(recordId)
                 if(idx > -1) alpineData.openComments.splice(idx,1);
-
+        
                 switcher.setTarget(recordId)
+                if(alpineData.showFormId === 0){
+                     // reset values for the recordType switcher when you click on an edit form from a record type form
+                    recordTypeSwitcher.resetPendingAndTarget();
+
+                }
+            
                 if(alpineData.showFormId == null){
-                    switcher.switchForm()
+                    switcher.switchForm();
                 }
                 else{
-                    switcher.attemptOpen(recordId);
+                    switcher.attemptOpen();
                     onCancel(switcher);
                 }
             }
@@ -204,136 +240,131 @@ const editButtonEventListener = (switcher)=>{
     )
 }
 
-class DNSFormSwitcher{
-    /**
-     * Manages DNS form switching from Alpine Data
-     * Requires an HTML container with Alpine.js initialized on it
-     *
-     * State:
-     * - pending: an object { type, recordId} representing the form the user is currently on
-     *   type is either "edit" or "add", recordID is the form's recordID
-     * - target: the form  ID the user is clicking to.
-     *
-     * Methods
-     * - attemptOpen: sets the pending object on the class instance
-     * - switchForm: performs the actual form switch, and resets the pending and target
-     *   - uses methods setShowId, and resetPendingAndTarget methods
-     * - getAlpineData: returns the Alpine data object for the container
-     *
-    */
-
-    constructor(container){
-        this.pending = null;
-        this.target = null;
-        this.container = container;
-    }
-
-    setPending(value) {
-         this.pending = value;
-    }
-
-    setTarget(value){
-        const current = this.getAlpineData().showFormId;
-        this.target = current == value ? null : value;
-    }
-
-
-    getAlpineData(){
-        return Alpine.$data(this.container);
-    }
-
-    setShowId(value){
-        const data = this.getAlpineData();
-        data.showFormId = value;
-    }
-
-    resetPendingAndTarget(){
-       this.setTarget(null);
-       this.setPending(null);
-    }
-
-    switchForm(value = this.target){
-       this.setShowId(value);
-       this.resetPendingAndTarget();
-    }
-
-    attemptOpen(form){
-        this.setTarget(form);
-        const currentId = this.getAlpineData().showFormId;
-        const req = {
-            type: currentId > 0 ? "edit" : "add",
-            recordId: currentId
-        }
-         this.setPending(req);
-    }
-
-}
-
-
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
+    const deleteButton = document.getElementById("confirm-delete-record-button");
     if(!container || !confirmButton) return;
-
-    const switcher = new DNSFormSwitcher(container);
-
+    
+    const editFormSwitcher = new EditFormSwitcher(container);
+    
     container.addEventListener("click", (e) => {
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        switcher.setPending(
+        editFormSwitcher.setPending(
             {
                 type: "add"
             }
         )
-        onCancel(switcher);
+        onCancel(editFormSwitcher);
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
     document.querySelector("#dnsrecords-table")?.addEventListener("click", (e) => {
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
-        switcher.setPending(
+        editFormSwitcher.setPending(
             { type: "edit", recordId: btn.dataset.recordId }
         );
-        onCancel(switcher);
+        onCancel(editFormSwitcher);
     });
+    
+    const getSwitcher = ()=>{
+            if(recordTypeSwitcher.pending){
+                return recordTypeSwitcher;
+            }
+            if(editFormSwitcher.pending){
+                return editFormSwitcher;
+            }
+
+            return;
+    }
 
     const modalEl = document.getElementById("toggle-cancel-add-dnsrecord");
-    const cancelButton = modalEl?.querySelector("[data-close-modal]");
+    const cancelButtons = modalEl?.querySelectorAll("[data-close-modal]");
+
+    const resetSwitcherValues = ()=>{
+        const switcher = getSwitcher();
+        if(!switcher){
+                return;
+        }
+        if(switcher.isRecordType){
+                switcher.switchForm(switcher.pending.recordId);
+                document.getElementById("id_type").focus();
+        }
+        else{
+                switcher.resetPendingAndTarget();
+        }
+    }
 
     confirmButton.addEventListener("click", () => {
-        if(!switcher.pending){
-            return;
-        }
+
+       const switcher = getSwitcher()
+       if(!switcher){
+        return;
+       }
+
+        const targetFocusId = refsFor(switcher.createReq(switcher.target)).focusId;
 
         teardownForm(
             switcher,
             container
         );
 
-        const reqForTarget = {
-            type: switcher.target > 0 ? "edit" : "add",
-            recordId: switcher.target
-        }
+        modalEl?.setAttribute("data-opener", targetFocusId);
 
-        modalEl?.setAttribute("data-opener", refsFor(reqForTarget).focusId);
-        cancelButton.click();
-        switcher.switchForm();
+
+        cancelButtons[0].click();
     });
 
-    cancelButton.addEventListener("click", (e) => {
-        if(e.isTrusted){
-                switcher.resetPendingAndTarget()
+    // reset the switcher values when user clicks on the cancel, 'x', esc, the outside modal, and the delete button.
+
+    const modalOverlay = document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
+
+    deleteButton.addEventListener("click", ()=> {
+        const switcher = getSwitcher();
+        switcher.resetPendingAndTarget();
+    });
+
+    modalOverlay?.addEventListener("click", (e)=>{ 
+             resetSwitcherValues();
+
+    })
+
+    modalEl?.addEventListener("keydown", (e)=> {
+        if(e.key === "Escape"){
+            resetSwitcherValues();
         }
-        }
-    );
+    })
+    
+    for(let button of cancelButtons){
+        button.addEventListener("click", (e) =>  {
+            if(e.isTrusted){
+                resetSwitcherValues();
+            }
+      })
+    }
 
     // addRecordButtonEventListener(alpineData, initialState, container)
     const addRecordButton = document.getElementById("add-dnsrecord-button")?.addEventListener("click", ()=> {
-        switcher.attemptOpen(0);
-        onCancel(switcher);
+        editFormSwitcher.setTarget(0);
+        editFormSwitcher.attemptOpen();
+        onCancel(editFormSwitcher);
     })
+    const recordTypeSwitcher = new RecordSelectTypeSwitcher(container);
     // add edit button event listener
-    editButtonEventListener(switcher)
+    editButtonEventListener(editFormSwitcher, recordTypeSwitcher)
+
+    // grabbing from form container to add event listener to select type form, since select type form is a swapped element
+    container.addEventListener("change", (e)=> {
+        if(e.target.matches("#id_type")){
+         if(!e.isTrusted){
+            return;
+          }
+        const index = e.target.selectedIndex;
+        recordTypeSwitcher.attemptOpen(index);
+        onCancel(recordTypeSwitcher)
+        }
+    })
 
 }
 
@@ -560,10 +591,6 @@ export function initDynamicDNSRecordFormFields() {
     })
 
     typeField.addEventListener('change', function (e){
-        // e.isTrusted ensures that this only fires when a user select a new type.
-        if(e.isTrusted){
-            clearRecordForm()
-        }
 
         const selectedType = this.value;
         const info = config[selectedType];
