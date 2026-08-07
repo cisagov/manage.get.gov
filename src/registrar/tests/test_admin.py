@@ -1212,6 +1212,8 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_user"')
         self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-placeholder="Search by email address"')
+        self.assertContains(response, "or enter a new email address to send an invitation")
         self.assertContains(response, 'id="id_portfolio"')
         self.assertContains(response, "Invitation status")
         self.assertContains(response, 'id="id_send_email"')
@@ -1248,6 +1250,20 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(form.cleaned_data["user"], self.testuser)
         self.assertEqual(form.cleaned_data["email"], self.testuser.email.lower())
 
+    def test_form_rejects_email_with_multiple_users(self):
+        User.objects.create(username="duplicate", email=self.testuser.email.upper())
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": self.testuser.email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "send_email": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("More than one user account exists", form.errors["user"][0])
+
     def test_form_rerenders_unknown_email_tag_without_user_id_error(self):
         form = UserPortfolioPermissionsForm(
             data={
@@ -1260,6 +1276,22 @@ class TestUserPortfolioPermissionAdmin(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("new.person@example.gov", str(form["user"]))
+
+    def test_form_does_not_add_status_error_for_invalid_email(self):
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": "not-an-email",
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER,
+                "send_email": "on",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["user"],
+            ["Enter an email address in the required format, like name@example.gov."],
+        )
 
     @override_flag("user_portfolio_permission_invitations", active=True)
     @override_settings(IS_PRODUCTION=False)
@@ -1280,7 +1312,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, blocked_email)
-        self.assertContains(response, "does not exist within the allowlist")
+        self.assertContains(response, "allowed emails list.")
         self.assertNotContains(response, "was added successfully")
         self.assertFalse(UserPortfolioPermission.objects.filter(email=blocked_email).exists())
 
@@ -1312,7 +1344,10 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(permission.status, UserPortfolioPermission.Status.INVITED)
         self.assertEqual(permission.invited_by, self.superuser)
         mock_send_email.assert_called_once()
-        mock_messages_success.assert_called_once_with(request, "new.person@example.gov has been invited.")
+        mock_messages_success.assert_called_once_with(
+            request,
+            f"new.person@example.gov has been invited to {self.portfolio}. Member role: Admin.",
+        )
 
     @less_console_noise_decorator
     @override_flag("user_portfolio_permission_invitations", active=True)
@@ -1342,7 +1377,8 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertIsNone(permission.invited_by)
         mock_send_email.assert_not_called()
         mock_messages_success.assert_called_once_with(
-            request, f"{self.testuser.email.lower()} has been added to {self.portfolio}."
+            request,
+            f"{self.testuser.email.lower()} has been added to {self.portfolio}. Member role: Admin.",
         )
 
     @less_console_noise_decorator
@@ -1373,7 +1409,8 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(permission.invited_by, self.superuser)
         mock_send_email.assert_called_once()
         mock_messages_success.assert_called_once_with(
-            request, f"{self.testuser.email.lower()} has been added to {self.portfolio}."
+            request,
+            f"{self.testuser.email.lower()} has been added to {self.portfolio}. Member role: Admin.",
         )
 
     @override_flag("user_portfolio_permission_invitations", active=False)
@@ -1457,10 +1494,27 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_user"')
         self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-placeholder="Search by email address"')
+        self.assertContains(response, "or enter a new email address to send an invitation")
         self.assertContains(response, 'id="id_domain"')
         self.assertContains(response, "Invitation status")
         self.assertContains(response, 'id="id_send_email"')
         self.assertNotContains(response, 'id="id_role"')
+
+    def test_form_does_not_add_status_error_for_invalid_email(self):
+        form = UserDomainRoleForm(
+            data={
+                "user": "not-an-email",
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors["user"],
+            ["Enter an email address in the required format, like name@example.gov."],
+        )
 
     @less_console_noise_decorator
     @override_flag("user_domain_role_invitations", active=True)
@@ -4224,8 +4278,7 @@ class TestPublicContactAdmin(TestCase):
     @less_console_noise_decorator
     def test_has_model_description(self):
         """Tests if this model has a model description on the table view"""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
         response = self.client.get(reverse("admin:registrar_publiccontact_changelist"))
         # Make sure that the page is loaded correctly
         self.assertEqual(response.status_code, 200)
@@ -4964,8 +5017,7 @@ class TestDomainAdminState(TestCase):
     def setUp(self):
         super().setUp()
         self.client = Client(HTTP_HOST="localhost:8080")
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
 
     def test_domain_state_remains_unknown_on_refresh(self):
         """
@@ -5132,3 +5184,32 @@ class TestSuborganizationAdmin(TestCase):
             self.assertEqual(was_sub_org_deleted_log, True)
             self.assertEqual(log.object_id, obj.id)
             self.assertEqual(log.object_repr, str(obj))
+
+
+class TestAdminLogin(TestCase):
+    """Test /admin/login/ unauthenticated users are redirected to
+    Login.gov, staff go to the admin index, and non-staff see the admin login
+    page showing who they are authenticated as."""
+
+    def setUp(self):
+        self.client = Client()
+        self.superuser = create_superuser()
+
+    def tearDown(self):
+        User.objects.all().delete()
+
+    def test_unauthenticated_redirects_to_login_gov(self):
+        response = self.client.get("/admin/login/")
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith("/openid/login"))
+
+    def test_staff_redirects_to_admin_index(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get("/admin/login/")
+        self.assertRedirects(response, "/admin/")
+
+    def test_non_staff_sees_their_user_id(self):
+        user = create_test_user()
+        self.client.force_login(user)
+        response = self.client.get("/admin/login/")
+        self.assertContains(response, user.get_username(), status_code=200)

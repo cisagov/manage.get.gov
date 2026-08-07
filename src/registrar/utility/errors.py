@@ -2,6 +2,7 @@ import logging
 
 from enum import IntEnum
 from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,16 @@ class InvitationError(Exception):
     """Base exception for invitation-related errors."""
 
     pass
+
+
+class MultipleUsersWithEmailError(InvitationError):
+    """Raised when an email address cannot identify one user account."""
+
+    def __init__(self, email):
+        super().__init__(
+            f"More than one user account exists for {email}. "
+            "The invitation could not be created. Contact support to resolve the duplicate accounts."
+        )
 
 
 class AlreadyDomainManagerError(InvitationError):
@@ -357,21 +368,15 @@ def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, con
 class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
-    _error_mapping = {
-        DnsHostingErrorCodes.NOT_FOUND: (
-            "A resource was not found. Please try again. If the problem persists, contact us for assistance."
-        ),
-        DnsHostingErrorCodes.VALIDATION_FAILED: (
-            "The DNS record couldn’t be saved because one of its fields wasn’t valid."
-        ),
-        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
-            "You’re making changes too quickly. Please wait a moment and try again."
-        ),
-        DnsHostingErrorCodes.AUTH_FAILED: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
-    }
+    GENERIC_ERROR_MESSAGE = mark_safe(
+        "An unexpected error occurred: Please try again. If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )  # nosec
+    GENERIC_VALIDATION_ERROR_MESSAGE = mark_safe(
+        "There’s something wrong with the DNS record information you provided. Please try again. "
+        "If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )  # nosec
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
@@ -380,12 +385,32 @@ class DnsHostingError(Exception):
         self.context = dict(context) if context else {}
         super().__init__(self.message)
 
+    def _build_error_mapping(self, request_id):
+        validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
+        error_msg = self.GENERIC_ERROR_MESSAGE
+        if request_id:
+            error_msg = format_html(
+                self.GENERIC_ERROR_MESSAGE[:-1] + " and share this ID {}.",
+                request_id,
+            )  # format_html also marks safe
+
+        return {
+            DnsHostingErrorCodes.NOT_FOUND: error_msg,
+            DnsHostingErrorCodes.VALIDATION_FAILED: validation_msg,
+            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: error_msg,
+            DnsHostingErrorCodes.AUTH_FAILED: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_ERROR: error_msg,
+            DnsHostingErrorCodes.UNKNOWN: error_msg,
+        }
+
     @property
     def message(self):
-        """User-facing text: explicit caller message, else the code-level default."""
         if self._explicit_message:
             return self._explicit_message
-        return self._error_mapping.get(self.code) or "DNS operation failed."
+        request_id = self.context.get("request_id")
+        error_mapping = self._build_error_mapping(request_id)
+        return error_mapping.get(self.code) or DnsHostingError.GENERIC_ERROR_MESSAGE
 
     @property
     def wire_code(self):

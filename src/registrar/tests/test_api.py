@@ -3,7 +3,7 @@ from django.test import TestCase, Client
 from registrar.models import FederalAgency, SeniorOfficial, User, DomainRequest
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio import Portfolio
-from registrar.tests.common import create_superuser, create_test_user, create_user, completed_domain_request
+from registrar.tests.common import create_superuser, create_test_user, create_user, completed_domain_request, mock_user
 
 from api.tests.common import less_console_noise_decorator
 from registrar.utility.constants import BranchChoices
@@ -33,8 +33,7 @@ class GetSeniorOfficialJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_senior_official_json_authenticated_superuser(self):
         """Test that a superuser can fetch the senior official information."""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency"})
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -46,8 +45,7 @@ class GetSeniorOfficialJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_senior_official_json_authenticated_analyst(self):
         """Test that an analyst user can fetch the senior official's information."""
-        p = "userpass"
-        self.client.login(username="staffuser", password=p)
+        self.client.force_login(user=self.analyst_user)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency"})
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -57,18 +55,16 @@ class GetSeniorOfficialJsonTest(TestCase):
         self.assertEqual(data["title"], "Director")
 
     @less_console_noise_decorator
-    def test_get_senior_official_json_unauthenticated(self):
-        """Test that an unauthenticated user receives a 403 with an error message."""
-        p = "password"
-        self.client.login(username="testuser", password=p)
+    def test_get_senior_official_unauthorized_user(self):
+        """Test that a logged-in user without permissions receives a 403 with an error message."""
+        self.client.force_login(user=self.user)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency"})
         self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     def test_get_senior_official_json_not_found(self):
         """Test that a request for a non-existent agency returns a 404 with an error message."""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(user=self.superuser)
         response = self.client.get(self.api_url, {"agency_name": "Non-Federal Agency"})
         self.assertEqual(response.status_code, 404)
         data = response.json()
@@ -168,8 +164,7 @@ class GetFederalPortfolioTypeJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_federal_and_portfolio_types_json_authenticated_superuser(self):
         """Test that a superuser can fetch the federal and portfolio types."""
-        p = "adminpass"
-        self.client.login(username="superuser", password=p)
+        self.client.force_login(self.superuser)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency", "organization_type": "federal"})
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -178,8 +173,7 @@ class GetFederalPortfolioTypeJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_federal_and_portfolio_types_json_authenticated_regularuser(self):
         """Test that a regular user receives a 403 with an error message."""
-        p = "password"
-        self.client.login(username="testuser", password=p)
+        self.client.force_login(self.user)
         response = self.client.get(self.api_url, {"agency_name": "Test Agency", "organization_type": "federal"})
         self.assertEqual(response.status_code, 403)
 
@@ -189,6 +183,7 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
         self.client = Client()
         self.superuser = create_superuser()
         self.analyst_user = create_user()
+        self.user = mock_user()
         self.agency = FederalAgency.objects.create(agency="Test Agency")
         self.domain_request = completed_domain_request(
             federal_agency=self.agency,
@@ -240,8 +235,7 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_action_needed_email_for_user_json_regular(self):
         """Test that a regular user receives a 403 with an error message."""
-        p = "password"
-        self.client.login(username="testuser", password=p)
+        self.client.force_login(self.user)
         response = self.client.get(
             self.api_url,
             {
@@ -249,7 +243,7 @@ class GetActionNeededEmailForUserJsonTest(TestCase):
                 "domain_request_id": self.domain_request.id,
             },
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
 
 class GetRejectionEmailForUserJsonTest(TestCase):
@@ -257,6 +251,7 @@ class GetRejectionEmailForUserJsonTest(TestCase):
         self.client = Client()
         self.superuser = create_superuser()
         self.analyst_user = create_user()
+        self.user = create_test_user()
         self.agency = FederalAgency.objects.create(agency="Test Agency")
         self.domain_request = completed_domain_request(
             federal_agency=self.agency,
@@ -308,8 +303,7 @@ class GetRejectionEmailForUserJsonTest(TestCase):
     @less_console_noise_decorator
     def test_get_rejected_email_for_user_json_regular(self):
         """Test that a regular user receives a 403 with an error message."""
-        p = "password"
-        self.client.login(username="testuser", password=p)
+        self.client.force_login(self.user)
         response = self.client.get(
             self.api_url,
             {
@@ -317,4 +311,4 @@ class GetRejectionEmailForUserJsonTest(TestCase):
                 "domain_request_id": self.domain_request.id,
             },
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)

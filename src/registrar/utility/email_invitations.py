@@ -91,17 +91,18 @@ def _check_user_org_admin(requestor_email, domains) -> bool:
 
 def _validate_existing_invitation(email, user, domain):
     """Check for existing invitations and handle their status."""
-    try:
-        invite = DomainInvitation.objects.get(email=email, domain=domain)
-        if invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
-            raise AlreadyDomainManagerError(email)
-        elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
-            invite.update_cancellation_status()
-            invite.save()
-        else:
-            raise AlreadyDomainInvitedError(email)
-    except DomainInvitation.DoesNotExist:
+
+    invite = DomainInvitation.objects.filter(email__iexact=email, domain=domain).order_by("-created_at").first()
+    if not invite:
         pass
+    elif invite.status == DomainInvitation.DomainInvitationStatus.RETRIEVED:
+        raise AlreadyDomainManagerError(email)
+    elif invite.status == DomainInvitation.DomainInvitationStatus.CANCELED:
+        invite.update_cancellation_status()
+        invite.save()
+    else:
+        raise AlreadyDomainInvitedError(email)
+
     if user:
         if UserDomainRole.objects.filter(user=user, domain=domain).exists():
             raise AlreadyDomainManagerError(email)
@@ -132,7 +133,7 @@ def _send_domain_invitation_email(email, requestor_email, domains, requested_use
             f"  Error: {err}",
             exc_info=True,
         )
-        raise EmailSendingError(f"An unexpected error occurred: {email} could not be added to this domain.") from err
+        raise EmailSendingError(f"{email} could not be added to this domain.") from err
 
 
 def send_domain_invitation_email(
@@ -520,7 +521,7 @@ def send_portfolio_invitation_email(email: str, requestor, portfolio, is_admin_i
             f"  Error: {err}",
             exc_info=True,
         )
-        raise EmailSendingError(f"An unexpected error occurred: {email} could not be added to this domain.") from err
+        raise EmailSendingError(f"{email} could not be added to this domain.") from err
 
     all_admin_emails_sent = True
     # send emails to portfolio admins
@@ -752,7 +753,7 @@ def _send_portfolio_admin_addition_emails_to_portfolio_admins(email: str, reques
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
         portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-    ).exclude(user__email=email)
+    ).exclude(user__email__iexact=email)
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
@@ -811,7 +812,7 @@ def _send_portfolio_admin_removal_emails_to_portfolio_admins(email: str, request
     # Get each portfolio admin from list
     user_portfolio_permissions = UserPortfolioPermission.objects.filter(
         portfolio=portfolio, roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
-    ).exclude(user__email=email)
+    ).exclude(user__email__iexact=email)
     for user_portfolio_permission in user_portfolio_permissions:
         # Send email to each portfolio_admin
         user = user_portfolio_permission.user
