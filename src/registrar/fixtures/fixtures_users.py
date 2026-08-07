@@ -201,7 +201,7 @@ class UserFixture:
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
-            "email": "kristina.yin@gwe.cia.dhs.gov",
+            "email": "kristina.yin@gwe.cisa.dhs.gov",
             "title": "ANALYST",
         },
         {
