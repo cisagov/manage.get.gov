@@ -30,47 +30,63 @@ class Command(BaseCommand):
                 "For not dry run: ./manage.py update_missing_registrant_contacts --no-dry-run"
             ),
         )
+        parser.add_argument(
+            "--target-domain",
+            "--target_domain",
+            required=False,
+            help="Only update contacts for a given domain name (case insensitive).",
+        )
 
     def handle(self, *args, **options):
         logger.debug("Running missing registrants update script")
         dry_run = bool(options.get("dry_run", True))
-        # Get all contacts
-        all_contacts = PublicContact.objects.all()
-        # Get all domains
-        all_domains = Domain.objects.all()
-        # Filter out the existing registrant contacts
-        registrant_contacts = all_contacts.filter(contact_type=PublicContact.ContactTypeChoices.REGISTRANT)
+        target_domain = options.get("target_domain", None)
 
-        registrant_domain_set = set()
+        # Get domains
+        if target_domain:
+            domains_list = Domain.objects.filter(
+                name=target_domain, state__in=[Domain.State.READY, Domain.State.DNS_NEEDED]
+            )
+        else:
+            domains_list = Domain.objects.filter(state__in=[Domain.State.READY, Domain.State.DNS_NEEDED])
 
-        # Add all domains with registrant contacts to the set
-        for registrant in registrant_contacts:
-            registrant_domain_set.add(registrant.domain.name)
-
-        # If the counts match up, every domain has a registrant contact
-        if all_domains.count() == len(registrant_domain_set):
-            logger.info("No missing registrants found")
-            return 0
         add_count = 0
         fail_count = 0
         # Loop thru the domains
-        for domain in all_domains:
-            # If the domain is not part of the registrant domain set, then create a new registrant contact
-            if domain.name not in registrant_domain_set:
-                logger.info("No Registrant info found...creating")
-                # If this is a dry run, just output the domain for tracking purposes
-                if dry_run:
-                    add_count += 1
-                    logger.info(f"Dry run enabled...skipping adding registrant for {domain.name}")
-                # Add the registrant
-                else:
-                    logger.info(f"Creating Registrant Public Contact for {domain.name}")
+        for domain in domains_list:
+            # If this is a dry run, just output the domain for tracking purposes
+            if dry_run:
+                add_count += 1
+                logger.info(f"Dry run enabled...skipping adding registrant for {domain.name}")
+            # Add the registrant
+            else:
+                logger.info(f"Creating Registrant Public Contact for {domain.name}")
+                try:
+                    registrant = PublicContact.objects.filter(
+                        domain=domain, contact_type=PublicContact.ContactTypeChoices.REGISTRANT
+                    ).first()
+                    if registrant is None:
+                        registry_id = domain.addRegistrant()
+                        registrant = PublicContact.objects.filter(
+                            domain=domain,
+                            registry_id=registry_id,
+                            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                        ).first()
+                    # This is needed because currently, the Admin contact is listed as the registrant in CloudFlare
+                    # and the addRegistrant method requires the Registrant contact to be blank in Cloudflare to
+                    # update it. Due to this, we use _add_registrant_to_existing_domain to force update it.
+                    logger.info(f"Updating registry Registrant Public Contact for {domain.name}")
                     try:
-                        domain.addRegistrant()
+                        # This is a one off script, makes more sense to use the internal method than create
+                        # a new public access method which we need to maintain.
+                        domain._add_registrant_to_existing_domain(registrant)
                         add_count += 1
                     except Exception as e:
-                        logger.error(f"Error adding domain registrant {domain.name}: {e}")
+                        logger.error(f"Error updating domain in registry {domain.name}: {e}")
                         fail_count += 1
+                except Exception as e:
+                    logger.error(f"Error adding domain registrant {domain.name}: {e}")
+                    fail_count += 1
         logger.info("DRYRUN SUMMARY:" if dry_run else "SUMMARY:")
         logger.info(f"Added {add_count} Registrant Contacts")
         logger.info(f"Failed to add {fail_count} Registrant Contacts")
