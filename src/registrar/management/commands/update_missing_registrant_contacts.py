@@ -76,7 +76,7 @@ class Command(BaseCommand):
                     # and the addRegistrant method requires the Registrant contact to be blank in Cloudflare to
                     # update it. Due to this, we use _add_registrant_to_existing_domain to force update it.
                     logger.info(
-                        f"Updating registry Registrant Public Contact {registrant.registry_id} for {domain.name}"
+                        f"Updating registry Registrant Public Contact for {domain.name}"
                     )
                     try:
                         # This is a one off script, makes more sense to use the internal method than create
