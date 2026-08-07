@@ -79,7 +79,8 @@ class UserFixture:
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
-            "title": "Hufflepuff prefect",
+            "email": "kristina.yin@cisa.dhs.gov",
+            "title": "Sorcerer",
         },
         {
             "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
@@ -193,7 +194,8 @@ class UserFixture:
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
-            "email": "kristina.yin+1@gsa.gov",
+            "email": "kristina.yin@gwe.cisa.dhs.gov",
+            "title": "ANALYST",
         },
         {
             "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
