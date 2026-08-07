@@ -189,6 +189,7 @@ class Command(BaseCommand):
                     # the created_at date was null (violated a key constraint).
                     # How do we want to handle this case?
                     target_domain.created_at = transition_domain_creation_date
+                    target_domain.x_registry_created_at = transition_domain_creation_date
 
                 if transition_domain_expiration_date is not None:
                     target_domain.expiration_date = transition_domain_expiration_date

@@ -97,7 +97,9 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils.dateparse import parse_datetime
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Subquery
+from django.db.models.fields import DateField
+from django.db.models.functions import Cast
 from .models import DnsRecord
 
 logger = logging.getLogger(__name__)
@@ -5148,6 +5150,26 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 # Otherwise, return the natively assigned value
                 default=F("domain_info__state_territory"),
             ),
+            # Subquery grabs the newest LogEntry for this domain, where log shows
+            # a ready -> on hold transition, and returns a timestamp
+            # When(state=ON_HOLD, then=<subquery>) only runs when domain is ON_HOLD
+            # Case wraps the above with default=None for every domain not currently on hold
+            _on_hold_date=Case(
+                When(
+                    state=Domain.State.ON_HOLD,
+                    then=Subquery(
+                        LogEntry.objects.filter(
+                            object_pk=Cast(OuterRef("pk"), output_field=CharField()),
+                            action=LogEntry.Action.UPDATE,
+                            changes__contains={"state": ["ready", "on hold"]},
+                        )
+                        .order_by("-timestamp")
+                        .values("timestamp")[:1]
+                    ),
+                ),
+                default=Value(None),
+                output_field=DateField(),
+            ),
         )
 
     # Filters
@@ -5170,7 +5192,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_state_territory",
         "state",
         "expiration_date",
-        "created_at",
+        "created_at_display",
         "first_ready",
         "on_hold_date_display",
         "days_on_hold_display",
@@ -5278,14 +5300,24 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def state_territory(self, obj):
         return obj.domain_info.state_territory if obj.domain_info else None
 
+    @admin.display(
+        description=_("Created at"),
+        ordering=Coalesce("x_registry_created_at", "created_at_reference"),
+    )
+    def created_at_display(self, obj):
+        """Registry creation date, falling back to the registrar record date so UNKNOWN domains
+        (which have no registry date) still show a date, matching the old created_at column.
+        The ordering mirrors that fallback so the column sorts by the value it displays."""
+        return obj.display_created_at
+
     # --- On hold date / days on hold
-    @admin.display(description=_("On hold date"))
+    @admin.display(description=_("On hold date"), ordering="_on_hold_date")
     def on_hold_date_display(self, obj):
         """Display the date the domain was put on hold"""
         date = obj.on_hold_date
         return date
 
-    @admin.display(description=_("Days on hold"))
+    @admin.display(description=_("Days on hold"), ordering="_on_hold_date")
     def days_on_hold_display(self, obj):
         """Display how many days the domain has been on hold"""
         days = obj.days_on_hold
