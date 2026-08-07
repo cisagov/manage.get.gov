@@ -647,7 +647,8 @@ class SendExpirationEmailsTests(TestCase):
         # Override the auto-set creation date
         creation_date = self.fixed_today - timedelta(days=365 - 30)
         domain_unknown.created_at = creation_date
-        domain_unknown.save(update_fields=["created_at"])
+        domain_unknown.created_at_reference = creation_date
+        domain_unknown.save(update_fields=["created_at", "created_at_reference"])
 
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Null Expirations Portfolio")
         DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, requester=self.manager)
@@ -958,7 +959,8 @@ class SendDomainSetupReminderTests(TestCase):
             state=Domain.State.UNKNOWN,
         )
         domain_unknown.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
-        domain_unknown.save(update_fields=["created_at"])
+        domain_unknown.created_at_reference = domain_unknown.created_at
+        domain_unknown.save(update_fields=["created_at", "created_at_reference"])
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Setup Reminder")
         DomainInformation.objects.create(domain=domain_unknown, portfolio=portfolio, requester=self.manager)
         UserDomainRole.objects.create(user=self.manager, domain=domain_unknown, role="manager")
@@ -1006,7 +1008,8 @@ class SendDomainSetupReminderTests(TestCase):
             state=Domain.State.DNS_NEEDED,
         )
         domain_dns.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
-        domain_dns.save(update_fields=["created_at"])
+        domain_dns.created_at_reference = domain_dns.created_at
+        domain_dns.save(update_fields=["created_at", "created_at_reference"])
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Setup Reminder")
         DomainInformation.objects.create(domain=domain_dns, portfolio=portfolio, requester=self.manager)
         UserDomainRole.objects.create(user=self.manager, domain=domain_dns, role="manager")
@@ -1053,7 +1056,8 @@ class SendDomainSetupReminderTests(TestCase):
             state=Domain.State.UNKNOWN,
         )
         domain_legacy.created_at = timezone.make_aware(datetime.combine(seven_days_ago, datetime.min.time()))
-        domain_legacy.save(update_fields=["created_at"])
+        domain_legacy.created_at_reference = domain_legacy.created_at
+        domain_legacy.save(update_fields=["created_at", "created_at_reference"])
         # Create domain_info without portfolio (legacy mode)
         DomainInformation.objects.create(domain=domain_legacy, requester=self.manager)
         UserDomainRole.objects.create(user=self.manager, domain=domain_legacy, role="manager")
