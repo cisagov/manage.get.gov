@@ -51,7 +51,7 @@ class Command(BaseCommand):
             | Q(
                 expiration_date__isnull=True,
                 state__in=[Domain.State.UNKNOWN],
-                created_at__in=[today + timedelta(days=d) - timedelta(days=365) for d in days_to_check],
+                created_at_reference__in=[today + timedelta(days=d) - timedelta(days=365) for d in days_to_check],
             )
         )
         logger.info(f"Found {expiring_domains.count()} domains expiring in 30, 7, or 1 days")
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 | Q(
                     expiration_date__isnull=True,
                     state__in=[Domain.State.UNKNOWN],
-                    created_at=forecast_expiration_date - timedelta(days=365),
+                    created_at_reference=forecast_expiration_date - timedelta(days=365),
                 )
             )
             logger.info(f"Found {domains.count()} domains expiring in {days_remaining} days")
@@ -78,10 +78,10 @@ class Command(BaseCommand):
                 logger.info(
                     f"{TerminalColors.MAGENTA}Domain {domain.name} (id: {domain.id})"
                     f"has status {domain.state}, expiration date {domain.expiration_date},"
-                    f"and creation date {domain.created_at}{TerminalColors.ENDC}"
+                    f"and creation date {domain.created_at_reference}{TerminalColors.ENDC}"
                 )
                 if domain.expiration_date is None:
-                    effective_expiration = (domain.created_at + timedelta(days=365)).date()
+                    effective_expiration = (domain.created_at_reference + timedelta(days=365)).date()
                     logger.warning(
                         f"{TerminalColors.YELLOW}Domain {domain.name} (id: {domain.id}) has a"
                         f"null expiration date in state {domain.state}. "
