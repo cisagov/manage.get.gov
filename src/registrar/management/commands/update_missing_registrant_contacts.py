@@ -61,25 +61,26 @@ class Command(BaseCommand):
             # Add the registrant
             else:
                 logger.info(f"Creating Registrant Public Contact for {domain.name}")
-
                 try:
-                    # Check to see if the registrant contact exists already
-                    if not PublicContact.objects.filter(domain=domain).first():
+                    registrant = PublicContact.objects.filter(
+                        domain=domain, contact_type=PublicContact.ContactTypeChoices.REGISTRANT
+                    ).first()
+                    if registrant is None:
                         registry_id = domain.addRegistrant()
-                    else:
-                        registry_id = domain.registrant_contact.registry_id
-
+                        registrant = PublicContact.objects.filter(
+                            domain=domain,
+                            registry_id=registry_id,
+                            contact_type=PublicContact.ContactTypeChoices.REGISTRANT,
+                        ).first()
                     # This is needed because currently, the Admin contact is listed as the registrant in CloudFlare
                     # and the addRegistrant method requires the Registrant contact to be blank in Cloudflare to
                     # update it. Due to this, we use _add_registrant_to_existing_domain to force update it.
-                    registrant = PublicContact.objects.filter(registry_id=registry_id).first()
                     logger.info(f"Updating registry Registrant Public Contact {registry_id} for {domain.name}")
                     try:
                         # This is a one off script, makes more sense to use the internal method than create
                         # a new public access method which we need to maintain.
                         domain._add_registrant_to_existing_domain(registrant)
                         add_count += 1
-
                     except Exception as e:
                         logger.error(f"Error updating domain in registry {domain.name}: {e}")
                         fail_count += 1
