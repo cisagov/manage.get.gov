@@ -1180,10 +1180,10 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         "actor__username",
     ]
 
-    # Gives approximation instead of exact count 
+    # Gives approximation instead of exact count
     show_full_result_count = False
 
-    # Eager loading "actors" all at once 
+    # Eager loading "actors" all at once
     list_select_related = ("actor",)
 
     # Stopping point: Need to add comments to why to do those,
