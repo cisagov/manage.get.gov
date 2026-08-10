@@ -75,6 +75,7 @@ from registrar.utility.errors import (
     FSMDomainRequestError,
     FSMErrorCodes,
     DnsHostingError,
+    MultipleUsersWithEmailError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
@@ -396,6 +397,13 @@ class UserOrEmailChoiceField(forms.ModelChoiceField):
         if user:
             if user.email:
                 self.resolved_email = user.email.lower()
+                self._validate_unique_user_email()
+
+    def _validate_unique_user_email(self):
+        try:
+            return get_requested_user(self.resolved_email)
+        except MultipleUsersWithEmailError as error:
+            raise ValidationError(str(error)) from error
 
     def _clean_email_value(self, value):
         email_field = forms.EmailField(
@@ -405,7 +413,7 @@ class UserOrEmailChoiceField(forms.ModelChoiceField):
         )
         email = email_field.clean(value)
         self.resolved_email = email.lower()
-        return models.User.objects.filter(email__iexact=self.resolved_email).first()
+        return self._validate_unique_user_email()
 
 
 class UserOrEmailAutocompleteSelect(AutocompleteSelectWithPlaceholder):
@@ -503,11 +511,12 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
     user = UserOrEmailChoiceField(
         queryset=models.User.objects.all(),
         label="User",
+        help_text="Search for an existing user by email address, or enter a new email address to send an invitation.",
         widget=UserOrEmailAutocompleteSelect(
             models.UserPortfolioPermission._meta.get_field("user"),
             admin.site,
             attrs={
-                "data-placeholder": "Search for a user by email address (or send an invitation to a new user)",
+                "data-placeholder": "Search by email address",
                 "data-tags": "true",
             },
         ),
@@ -601,10 +610,6 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
 
         # Model validation requires a user for accepted permissions, so the form
         # sets the invitation status before model clean runs.
-        if user is None:
-            if not email:
-                return
-
         self.instance.status = get_portfolio_permission_status(user)
 
     def _validate_new_invitation(self, cleaned_data, user, email):
@@ -639,7 +644,9 @@ class UserPortfolioPermissionsForm(PortfolioPermissionsForm):
         if models.AllowedEmail.is_allowed_email(email):
             return
 
-        self.add_error("user", f"Could not send email. The email '{email}' does not exist within the allowlist.")
+        self.add_error(
+            "user", "Can't send invitation email because this email doesn't exist in the allowed emails list."
+        )
 
     def _will_send_invitation_email(self, cleaned_data, user):
         if user is None:
@@ -674,11 +681,12 @@ class UserDomainRoleForm(forms.ModelForm):
     user = UserOrEmailChoiceField(
         queryset=models.User.objects.all(),
         label="User",
+        help_text="Search for an existing user by email address, or enter a new email address to send an invitation.",
         widget=UserOrEmailAutocompleteSelect(
             models.UserDomainRole._meta.get_field("user"),
             admin.site,
             attrs={
-                "data-placeholder": "Search for a user by email address (or send an invitation to a new user)",
+                "data-placeholder": "Search by email address",
                 "data-tags": "true",
             },
         ),
@@ -769,10 +777,6 @@ class UserDomainRoleForm(forms.ModelForm):
 
         # Model validation requires a user for accepted roles, so the form sets
         # the invitation status before model clean runs.
-        if user is None:
-            if not email:
-                return
-
         self.instance.status = get_domain_role_status(user)
 
     def _validate_new_invitation(self, cleaned_data, email):
@@ -807,7 +811,9 @@ class UserDomainRoleForm(forms.ModelForm):
         if models.AllowedEmail.is_allowed_email(email):
             return
 
-        self.add_error("user", f"Could not send email. The email '{email}' does not exist within the allowlist.")
+        self.add_error(
+            "user", "Can't send invitation email because this user doesn't exist in the allowed emails list."
+        )
 
     def _will_send_invitation_email(self, cleaned_data, user):
         if user is None:
@@ -2144,6 +2150,18 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
     def _use_invitation_admin(self, request):
         return flag_is_active(request, "user_portfolio_permission_invitations")
 
+    def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
+        # Suppress Django's duplicate success message when adding invitations.
+        # Confirm this message text still matches after any Django upgrade.
+        if (
+            self._use_invitation_admin(request)
+            and level == messages.SUCCESS
+            and "was added successfully" in str(message)
+        ):
+            return
+
+        super().message_user(request, message, level, extra_tags, fail_silently)
+
     def get_form(self, request, obj=None, **kwargs):
         if self._use_invitation_admin(request):
             kwargs["form"] = self.invitation_form
@@ -2302,11 +2320,12 @@ class UserPortfolioPermissionAdmin(ListHeaderAdmin):
             return
 
         email = obj.email.lower()
+        member_role = ", ".join(obj.get_readable_roles())
 
         if obj.status == UserPortfolioPermission.Status.INVITED:
-            messages.success(request, f"{email} has been invited.")
+            messages.success(request, f"{email} has been invited to {obj.portfolio}. Member role: {member_role}.")
         else:
-            messages.success(request, f"{email} has been added to {obj.portfolio}.")
+            messages.success(request, f"{email} has been added to {obj.portfolio}. Member role: {member_role}.")
 
     def delete_queryset(self, request, queryset):
         """We override the delete method in the model.
@@ -2373,6 +2392,18 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def _use_invitation_admin(self, request):
         return flag_is_active(request, "user_domain_role_invitations")
+
+    def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
+        # Suppress Django's duplicate success message when adding invitations.
+        # Confirm this message text still matches after any Django upgrade.
+        if (
+            self._use_invitation_admin(request)
+            and level == messages.SUCCESS
+            and "was added successfully" in str(message)
+        ):
+            return
+
+        super().message_user(request, message, level, extra_tags, fail_silently)
 
     def get_form(self, request, obj=None, **kwargs):
         if self._use_invitation_admin(request):
@@ -2497,9 +2528,9 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     def _create_new_role(self, request, obj, form):
         requested_email = self._get_requested_email(obj, form)
-        requested_user = get_requested_user(requested_email) if requested_email else None
 
         try:
+            requested_user = get_requested_user(requested_email) if requested_email else None
             member_of_a_different_org = self._save_portfolio_membership_invitation(
                 request,
                 obj.domain,
@@ -2894,15 +2925,15 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
             domain_org = getattr(domain.domain_info, "portfolio", None)
             obj.email = obj.email.lower()
             requested_email = obj.email
-            # Look up a user with that email
-            requested_user = get_requested_user(requested_email)
             requestor = request.user
 
-            member_of_a_different_org, member_of_this_org = get_org_membership(
-                domain_org, requested_email, requested_user
-            )
-
             try:
+                # Look up a user with that email
+                requested_user = get_requested_user(requested_email)
+                member_of_a_different_org, member_of_this_org = get_org_membership(
+                    domain_org, requested_email, requested_user
+                )
+
                 if (
                     request.user.is_org_user(request)
                     and not flag_is_active(request, "multiple_portfolios")
@@ -2920,7 +2951,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     )
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
-                        portfolio_invitation.retrieve()
+                        portfolio_invitation.retrieve(user=requested_user)
                         portfolio_invitation.save()
                     messages.success(request, f"{requested_email} has been invited to become a member of {domain_org}")
 
@@ -2934,7 +2965,7 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                     messages.warning(request, "Could not send email notification to existing domain managers.")
                 if requested_user is not None:
                     # Domain Invitation creation for an existing User
-                    obj.retrieve()
+                    obj.retrieve(user=requested_user)
                 # Call the parent save method to save the object
                 super().save_model(request, obj, form, change)
                 messages.success(request, f"{requested_email} has been invited to the domain: {domain}")
@@ -3039,7 +3070,7 @@ class PortfolioInvitationAdmin(BaseInvitationAdmin):
                         messages.warning(request, "Could not send email notification to existing organization admins.")
                     # if user exists for email, immediately retrieve portfolio invitation upon creation
                     if requested_user is not None:
-                        obj.retrieve()
+                        obj.retrieve(user=requested_user)
                     messages.success(request, f"{requested_email} has been invited to this organization.")
                 else:
                     return self.display_error_msgs(request, requested_email, permission_exists, invitation_exists)
