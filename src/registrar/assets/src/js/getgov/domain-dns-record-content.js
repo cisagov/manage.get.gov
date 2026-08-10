@@ -194,7 +194,7 @@ const onCancel = (switcher) => {
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-            openCancelModal(refs.focusId);
+           switcher.pending.fromCancelButton == null ? openCancelModal(refs.focusId) : openCancelModal(refs.cancelButtonId);
         } else {
             teardownForm(switcher);
             document.getElementById(refs.focusId)?.focus();
@@ -265,13 +265,19 @@ export function initDNSRecordCancelModal(){
     const editFormSwitcher = new EditFormSwitcher(container);
     
     container.addEventListener("click", (e) => {
-        if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
-        editFormSwitcher.setPending(
+        if(e.target.closest(".js-dnsrecord-add-cancel")) return;
+
+        if(e.target.closest(".js-dnsrecord-add-cancel" )){
+            recordTypeSwitcher.setPending(
             {
-                type: "add"
-            }
-        )
-        onCancel(editFormSwitcher);
+                type: "add",
+                fromCancelButton: true
+             }
+            )
+
+         onCancel(editFormSwitcher);
+        }
+
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
@@ -279,7 +285,7 @@ export function initDNSRecordCancelModal(){
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
         editFormSwitcher.setPending(
-            { type: "edit", recordId: btn.dataset.recordId }
+            { type: "edit", recordId: btn.dataset.recordId, fromCancelButton: true}
         );
         onCancel(editFormSwitcher);
     });
