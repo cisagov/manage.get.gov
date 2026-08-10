@@ -327,10 +327,10 @@ export function initDNSRecordCancelModal(){
     // reset the switcher values when user clicks on the cancel, 'x', esc, the outside modal, and the delete button.
 
     const modalOverlay = document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
-    console.log(deleteButton)
+
     deleteButton.addEventListener("click", ()=> {
         const switcher = getSwitcher();
-        switcher.resetPendingAndTarget();
+        switcher && switcher.resetPendingAndTarget();
     });
 
     modalOverlay?.addEventListener("click", (e)=>{ 
