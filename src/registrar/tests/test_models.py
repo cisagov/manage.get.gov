@@ -24,6 +24,7 @@ from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.transition_domain import TransitionDomain
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.models.verified_by_staff import VerifiedByStaff  # type: ignore
+from registrar.utility.errors import MultipleUsersWithEmailError
 
 from .common import (
     MockSESClient,
@@ -122,6 +123,15 @@ class TestDomainInvitations(TestCase):
             self.invitation.retrieve()
 
     @less_console_noise_decorator
+    def test_retrieve_duplicate_users_error(self):
+        User.objects.create(username="duplicate", email=self.email.upper())
+
+        with self.assertRaises(MultipleUsersWithEmailError):
+            self.invitation.retrieve()
+
+        self.assertFalse(UserDomainRole.objects.filter(domain=self.domain).exists())
+
+    @less_console_noise_decorator
     def test_retrieve_existing_role_no_error(self):
         # make the overlapping role
         UserDomainRole.objects.get_or_create(user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER)
@@ -191,6 +201,15 @@ class TestPortfolioInvitations(TestCase):
         User.objects.filter(email=self.email).delete()
         with self.assertRaises(RuntimeError):
             self.invitation.retrieve()
+
+    @less_console_noise_decorator
+    def test_retrieve_duplicate_users_error(self):
+        User.objects.create(username="duplicate", email=self.email.upper())
+
+        with self.assertRaises(MultipleUsersWithEmailError):
+            self.invitation.retrieve()
+
+        self.assertFalse(UserPortfolioPermission.objects.filter(portfolio=self.portfolio).exists())
 
     @less_console_noise_decorator
     def test_retrieve_user_already_member_error(self):
@@ -1629,6 +1648,68 @@ class TestUser(TestCase):
 
         count = self.user.get_active_requests_count_in_portfolio(request)
         self.assertEqual(count, 3)
+
+    @less_console_noise_decorator
+    def test_get_user_domain_ids_scoped_to_current_portfolio(self):
+        """A limited (vew managed domains only) user's domain ids should only include
+        domains they manage within the portfolio currently in session, not domains
+        they manage in other, unrelated portfolios"""
+        # Give the user limited permission on its own portfolio
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MANAGED_DOMAINS],
+        )
+
+        # Domain managed by the user, inside the current portfolio
+        domain_in_portfolio, _ = Domain.objects.get_or_create(name="domain-in-a-portfolio.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=domain_in_portfolio, portfolio=self.portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_portfolio, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # Domain managed by the user, but in a DIFFERENT portfolio
+        other_portfolio, _ = Portfolio.objects.get_or_create(
+            requester=self.user, organization_name="A Different Organization"
+        )
+        domain_in_another_portfolio, _ = Domain.objects.get_or_create(name="domain-in-another-portfolio.gov")
+        DomainInformation.objects.get_or_create(
+            requester=self.user, domain=domain_in_another_portfolio, portfolio=other_portfolio
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=domain_in_another_portfolio, role=UserDomainRole.Roles.MANAGER
+        )
+
+        # View self.portfolio - should only see the domain scoped to it
+        request = self.factory.get("/")
+        request.session = {"portfolio": self.portfolio.id}
+
+        domain_ids = self.user.get_user_domain_ids(request)
+
+        self.assertIn(domain_in_portfolio.id, domain_ids)
+        self.assertNotIn(domain_in_another_portfolio.id, domain_ids)
+
+    @less_console_noise_decorator
+    def test_get_user_domain_ids_with_no_portfolio_in_session_returns_all_domains(self):
+        """When there's no active portfolio in session (a non org user hitting
+        a general page), get_user_domain_ids should fall back to returning all of
+        the user's UserDomainRole domains"""
+        domain1, _ = Domain.objects.get_or_create(name="domain1.gov")
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain1, role=UserDomainRole.Roles.MANAGER)
+
+        domain2, _ = Domain.objects.get_or_create(name="domain2.gov")
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain2, role=UserDomainRole.Roles.MANAGER)
+
+        request = self.factory.get("/")
+        request.session = {}
+
+        domain_ids = self.user.get_user_domain_ids(request)
+
+        self.assertIn(domain1.id, domain_ids)
+        self.assertIn(domain2.id, domain_ids)
 
     @less_console_noise_decorator
     def test_is_only_admin_of_portfolio_returns_true(self):
