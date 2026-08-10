@@ -56,6 +56,7 @@ export class EditFormSwitcher extends DNSFormSwitcher{
     setTarget(value){  
         const current = this.getCurrentShowFormId();
         this.target = current == value ? null : value;
+        console.log(current, value);
     }
 
     setShowId(value){

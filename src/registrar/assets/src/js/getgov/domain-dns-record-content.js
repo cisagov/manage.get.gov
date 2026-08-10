@@ -265,19 +265,14 @@ export function initDNSRecordCancelModal(){
     const editFormSwitcher = new EditFormSwitcher(container);
     
     container.addEventListener("click", (e) => {
-        if(e.target.closest(".js-dnsrecord-add-cancel")) return;
-
-        if(e.target.closest(".js-dnsrecord-add-cancel" )){
-            recordTypeSwitcher.setPending(
+        if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
+        editFormSwitcher.setPending(
             {
                 type: "add",
                 fromCancelButton: true
-             }
-            )
-
-         onCancel(editFormSwitcher);
-        }
-
+            }
+        )
+        onCancel(editFormSwitcher);
     });
 
     // Delegated on the table so it survives the htmx swaps that re-render Edit rows.
