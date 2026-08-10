@@ -209,12 +209,21 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
     const alpineData = switcher.getAlpineData();
 
     table.addEventListener('click', (e) => {
-        
+
 
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
+            const deleteBtn = e.target.closest('.js-dnsrecord-delete');
+
+            if(deleteBtn){
+                switcher.attemptOpen();
+                switcher.setTarget(null);
+                return;
+            }
+
             if(!editBtn && !commentBtn) return;
 
+       
             const recordId = (editBtn || commentBtn).dataset.recordId
 
             if(editBtn){
@@ -330,7 +339,12 @@ export function initDNSRecordCancelModal(){
 
     deleteButton.addEventListener("click", ()=> {
         const switcher = getSwitcher();
-        switcher && switcher.resetPendingAndTarget();
+        if(!switcher) return;
+        const req = switcher.pending;
+        const formId = req.type == "edit" ? `#dnsrecord-edit-form-${req.recordId}` : "#form-container";
+        const form = document.querySelector(formId);
+        switcher.pending.hasUnsavedChanges = formHasUnsavedChanges(form, req.type == "edit");
+        teardownForm(switcher);
     });
 
     modalOverlay?.addEventListener("click", (e)=>{ 
