@@ -1363,7 +1363,7 @@ class Domain(TimeStampedModel, DomainHelper):
         except Exception as e:
             logger.error("Error deleting contacts for domain %s: %s", self.name, str(e))
 
-        logger.info("Deleteing DNS Data")
+        logger.info("Deleting db DNS data")
         try:
             self._delete_db_dns_data()
         except Exception as e:
