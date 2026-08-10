@@ -88,12 +88,26 @@ function clearRecordForm(scope){
 
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
-const refsFor = (req) =>{
+const refsFor = (req, target) =>{
+    
+    const getFocusForEdit = (req, target)=>{
+        // if a user decides not to switch forms, the focus should go to the element that triggered it
+        if(target == 0){
+            return "add-dnsrecord-button"
+        }
+        else if(target == null){
+            return `dnsrecord-edit-button-${req.recordId}`
+        }
+        else if(target > 0){
+            return `dnsrecord-edit-button-${target}`
+        }
+    }
+
     if(req.type === "edit"){
         return  {
         form: `#dnsrecord-edit-form-${req.recordId}`,
         cancelButtonId: `dnsrecord-edit-cancel-button-${req.recordId}`,
-        focusId: `dnsrecord-edit-button-${req.recordId}`,
+        focusId: getFocusForEdit(req, target),
         }
     }
     else {     
@@ -112,16 +126,9 @@ const refsFor = (req) =>{
 const refreshForm = (selector, url) =>
     window.htmx?.ajax("GET", url, { target: selector, select: selector, swap: "outerHTML" });
 
-function openCancelModal(opener, switcher){
-    document.getElementById("open-cancel-add-dnsrecord-modal")?.click();
-    let dataOpenerId;
-    if(switcher.pending.recordType){
-        dataOpenerId = "id_type"
-    }
-    else{
-        dataOpenerId = switcher.target > 0 ? `dnsrecord-edit-button-${switcher.target}` : "toggle-cancel-add-dnsrecord"
-    }
-    document.getElementById(dataOpenerId)?.setAttribute("data-opener", opener);
+function openCancelModal(opener){
+    document.getElementById("open-cancel-add-dnsrecord-modal")?.click(); 
+    document.getElementById("toggle-cancel-add-dnsrecord")?.setAttribute("data-opener", opener);
 }
 
 // fields, reused for both Add and Edit forms.
@@ -145,7 +152,7 @@ function formHasUnsavedChanges(form, isEditForm){
 
 const teardownForm = (switcher) => {
     const req = switcher.pending;
-    const refs = refsFor(req);
+    const refs = refsFor(req, switcher.target);
     const form = document.querySelector(refs.form);
     let didHtmxSwapHappen = false;
     if(req.type === "edit"){
@@ -183,11 +190,11 @@ const teardownForm = (switcher) => {
 
 const onCancel = (switcher) => {
         const req = switcher.pending;
-        const refs = refsFor(req);
+        const refs = refsFor(req,switcher.target);
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-            openCancelModal(refs.cancelButtonId, switcher);
+            openCancelModal(refs.focusId);
         } else {
             teardownForm(switcher);
             document.getElementById(refs.focusId)?.focus();
@@ -305,6 +312,7 @@ export function initDNSRecordCancelModal(){
 
         const targetFocusId = refsFor(switcher.createReq(switcher.target)).focusId;
 
+
         teardownForm(
             switcher,
             container
@@ -319,7 +327,7 @@ export function initDNSRecordCancelModal(){
     // reset the switcher values when user clicks on the cancel, 'x', esc, the outside modal, and the delete button.
 
     const modalOverlay = document.querySelector('.usa-modal-overlay[aria-controls="toggle-cancel-add-dnsrecord"]');
-
+    console.log(deleteButton)
     deleteButton.addEventListener("click", ()=> {
         const switcher = getSwitcher();
         switcher.resetPendingAndTarget();
