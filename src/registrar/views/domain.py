@@ -1667,9 +1667,6 @@ class DomainAddUserView(DomainFormBaseView):
         """Add the specified user to this domain."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
-
-        # Look up a user with that email
-        requested_user = get_requested_user(requested_email)
         domain_org = self.object.domain_info.portfolio
 
         # requestor can only send portfolio invitations if they are staff or if they are a member
@@ -1678,8 +1675,12 @@ class DomainAddUserView(DomainFormBaseView):
             domain_org and UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).exists()
         )
 
-        member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
+            member_of_a_different_org, member_of_this_org = get_org_membership(
+                domain_org, requested_email, requested_user
+            )
             self._ensure_portfolio_membership(
                 requested_email=requested_email,
                 requested_user=requested_user,

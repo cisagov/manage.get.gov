@@ -1323,7 +1323,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
             messages.error(
                 self.request,
                 mark_safe(  # nosec
-                    f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
+                    f"An unexpected error occurred: {str(exception)} Please try again. If the problem persists, "
                     '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ),
             )
