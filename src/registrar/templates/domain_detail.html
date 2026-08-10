@@ -82,7 +82,6 @@
       {% endif %}
     {% endif %}
 
-
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
       {% if domain.nameservers|length > 0 %}
