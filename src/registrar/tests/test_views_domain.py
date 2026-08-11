@@ -2194,7 +2194,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
     def test_domain_dns_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
         """
-        When DNS hosting flag is off, cannot load domain's nameservers, DNSSEC, or DS data page. 
+        When DNS hosting flag is off, cannot load domain's nameservers, DNSSEC, or DS data page.
         Redirects to dns records page instead."""
         with override_flag("dns_hosting", active=True):
             for view_name in [
@@ -2209,7 +2209,7 @@ class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
                     response,
                     reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
                 )
-    
+
     @override_flag("dns_hosting", active=False)
     def test_domain_nameservers_dnssec_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
         """Can load domain's nameservers, DNSSEC, and DS data pages when dns hosting flag is disabled
@@ -2221,9 +2221,7 @@ class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
                 ("domain-dns-dnssec", "DNSSEC"),
                 ("domain-dns-dnssec-dsdata", "DS data"),
             ]:
-                page = self.client.get(
-                    reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-                )
+                page = self.client.get(reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
                 self.assertContains(page, page_title)
 
 
