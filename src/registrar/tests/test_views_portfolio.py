@@ -4373,7 +4373,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             mock_error.assert_called_once_with(
                 response.wsgi_request,
                 "An unexpected error occurred: Failed to send"
-                ' email.. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
+                ' email. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
                 " for assistance.",
             )
             # assert that portfolio invitation is not created

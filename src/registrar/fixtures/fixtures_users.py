@@ -79,7 +79,8 @@ class UserFixture:
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
-            "title": "Hufflepuff prefect",
+            "email": "kristina.yin@cisa.dhs.gov",
+            "title": "Sorcerer",
         },
         {
             "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
@@ -101,13 +102,6 @@ class UserFixture:
             "last_name": "Abbitt",
             "email": "kaitlin.abbitt@cisa.dhs.gov",
             "title": "Product Manager",
-        },
-        {
-            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
-            "first_name": "Jaxon",
-            "last_name": "Silva",
-            "email": "jaxon.silva@cisa.dhs.gov",
-            "title": "Designer",
         },
         {
             "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
@@ -193,7 +187,8 @@ class UserFixture:
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
-            "email": "kristina.yin+1@gsa.gov",
+            "email": "kristina.yin@gwe.cisa.dhs.gov",
+            "title": "ANALYST",
         },
         {
             "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
