@@ -1727,42 +1727,11 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
-    def test_domain_nameservers_dnssec_dsdata_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
-        """Cannot load domain's nameservers page. Redirects to dns records page instead."""
-        with override_flag("dns_hosting", active=True):
-            for view_name in [
-                "domain-dns-nameservers",
-                "domain-dns-dnssec",
-                "domain-dns-dnssec-dsdata",
-            ]:
-                response = self.client.get(
-                    reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-                )
-                self.assertRedirects(
-                    response,
-                    reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
-                )
-
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
         """Cannot load domain's nameservers page."""
         with override_flag("dns_hosting", active=True):
             page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
             self.assertContains(page, "DNS name servers")
-
-    @override_flag("dns_hosting", active=False)
-    def test_domain_nameservers_dnssec_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
-        """Can load domain's nameservers, DNSSEC, and DS data page when dns hosting flag is disabled
-        and domain is enrolled in dns hosting.
-        """
-        with override_flag("dns_hosting", active=False):
-            for view_page, page_title in [
-                ("domain-dns-nameservers", "DNS name servers"),
-                ("domain-dns-dnssec", "DNSSEC"),
-            ]:
-                page = self.client.get(
-                    reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-                )
-                self.assertContains(page, page_title)
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_submit_one_nameserver(self):
@@ -2220,6 +2189,42 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             count=2,
             status_code=200,
         )
+
+
+class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
+    def test_domain_dns_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
+        """
+        When DNS hosting flag is off, cannot load domain's nameservers, DNSSEC, or DS data page. 
+        Redirects to dns records page instead."""
+        with override_flag("dns_hosting", active=True):
+            for view_name in [
+                "domain-dns-nameservers",
+                "domain-dns-dnssec",
+                "domain-dns-dnssec-dsdata",
+            ]:
+                response = self.client.get(
+                    reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+                self.assertRedirects(
+                    response,
+                    reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
+                )
+    
+    @override_flag("dns_hosting", active=False)
+    def test_domain_nameservers_dnssec_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
+        """Can load domain's nameservers, DNSSEC, and DS data pages when dns hosting flag is disabled
+        and domain is enrolled in dns hosting.
+        """
+        with override_flag("dns_hosting", active=False):
+            for view_page, page_title in [
+                ("domain-dns-nameservers", "DNS name servers"),
+                ("domain-dns-dnssec", "DNSSEC"),
+                ("domain-dns-dnssec-dsdata", "DS data"),
+            ]:
+                page = self.client.get(
+                    reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+                self.assertContains(page, page_title)
 
 
 class TestDomainSeniorOfficial(TestDomainOverview):
