@@ -5075,6 +5075,22 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 )
             return queryset
 
+    class DnsEnrolledFilter(admin.SimpleListFilter):
+        title = _(".gov DNS")
+        parameter_name = "is_enrolled_in_dns_hosting"
+
+        def lookups(self, request, model_admin):
+            return (
+                ("1", _("Yes")),
+                ("0", _("No")),
+            )
+
+        def queryset(self, request, queryset):
+            if self.value() == "1":
+                return queryset.filter(is_enrolled_in_dns_hosting=True)
+            if self.value() == "0":
+                return queryset.filter(Q(is_enrolled_in_dns_hosting=False))
+
     def get_annotated_queryset(self, queryset):
         return queryset.annotate(
             converted_generic_org_type=Case(
@@ -5142,7 +5158,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         )
 
     # Filters
-    list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
+    list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state", DnsEnrolledFilter]
 
     # ------- END FILTERS
 
@@ -5152,6 +5168,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     # Columns
     list_display = [
         "name",
+        "enrolled_dns_hosting_display",
         "converted_generic_org_type",
         "converted_federal_type",
         "converted_federal_agency",
@@ -5179,6 +5196,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                     "on_hold_date_display",
                     "days_on_hold_display",
                     "deleted",
+                    "is_enrolled_in_dns_hosting",
                     "dnssecdata",
                     "nameservers",
                 ]
@@ -5297,6 +5315,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     dnssecdata.short_description = "DNSSEC enabled"  # type: ignore
 
+    @admin.display(description=_(".gov DNS"))
+    def enrolled_dns_hosting_display(self, obj):
+        return obj.enrolled_hosting_display()
+
     # Custom method to display formatted nameservers
     def nameservers(self, obj):
         if obj.state == Domain.State.UNKNOWN or not obj.nameservers:
@@ -5313,6 +5335,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return "\n".join(formatted_nameservers)
 
     nameservers.short_description = "Name servers"  # type: ignore
+
+    @admin.display(description=_(".gov DNS"), ordering="is_enrolled_in_dns_hosting")
+    def domain_enrolled_in_dns_hosting(self, obj):
+        return "Yes" if obj.is_enrolled_in_dns_hosting else "No"
 
     def custom_election_board(self, obj):
         domain_info = getattr(obj, "domain_info", None)
@@ -5337,6 +5363,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "first_ready",
         "deleted",
         "federal_agency",
+        "is_enrolled_in_dns_hosting",
         "dnssecdata",
         "nameservers",
     )
@@ -5372,6 +5399,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
             extra_context["state_help_message"] = Domain.State.get_admin_help_text(domain.state)
             extra_context["domain_state"] = domain.get_state_display()
+            extra_context["enrolled_hosting_display"] = domain.enrolled_hosting_display()
             extra_context["curr_exp_date"] = (
                 domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
             )

@@ -531,6 +531,7 @@ class TestDomainAdminAsStaff(MockEppLib):
                 DomainAdmin.FederalTypeFilter,
                 DomainAdmin.ElectionOfficeFilter,
                 "state",
+                DomainAdmin.DnsEnrolledFilter
             ]
 
             self.assertEqual(filters, expected_filters)
@@ -1122,6 +1123,7 @@ class TestDomainAdminWithClient(TestCase):
                 DomainAdmin.FederalTypeFilter,
                 DomainAdmin.ElectionOfficeFilter,
                 "state",
+                DomainAdmin.DnsEnrolledFilter
             ]
 
             self.assertEqual(filters, expected_filters)
