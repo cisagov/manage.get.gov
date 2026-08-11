@@ -129,15 +129,20 @@
       <tbody>
         {% for invitation in invitations %}
         <tr>
-          <th scope="row" role="rowheader" data-sort-value="{{ invitation.domain_invitation.user.email }}" data-label="Email">
+          <th scope="row" role="rowheader" data-sort-value="{{ invitation.domain_invitation.email }}" data-label="Email">
             {{ invitation.domain_invitation.email }}
             {% if invitation.has_admin_flag %}<span class="usa-tag margin-left-1 bg-primary-dark text-semibold">Admin</span>{% endif %}
           </th>
           <td data-sort-value="{{ invitation.domain_invitation.created_at|date:"U" }}" data-label="Date created">{{ invitation.domain_invitation.created_at|date }} </td>
           {% if not portfolio %}<td data-label="Status">{{ invitation.domain_invitation.status|title }}</td>{% endif %}
           <td>
-            {% if invitation.domain_invitation.status == invitation.domain_invitation.DomainInvitationStatus.INVITED %}
-            <form method="POST" action="{% url "invitation-cancel" domain_invitation_pk=invitation.domain_invitation.id %}">
+            {% if invitation.can_cancel %}
+              {% if invitation.is_user_domain_role %}
+                {% url "invitation-cancel" user_domain_role_pk=invitation.domain_invitation.id as cancel_url %}
+              {% else %}
+                {% url "invitation-cancel" domain_invitation_pk=invitation.domain_invitation.id as cancel_url %}
+              {% endif %}
+            <form method="POST" action="{{ cancel_url }}">
               {% csrf_token %}<input type="submit" class="usa-button--unstyled text-no-underline cursor-pointer" value="Cancel">
             </form>
             {% endif %}
