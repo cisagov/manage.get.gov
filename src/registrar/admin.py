@@ -5336,10 +5336,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     nameservers.short_description = "Name servers"  # type: ignore
 
-    @admin.display(description=_(".gov DNS"), ordering="is_enrolled_in_dns_hosting")
-    def domain_enrolled_in_dns_hosting(self, obj):
-        return "Yes" if obj.is_enrolled_in_dns_hosting else "No"
-
     def custom_election_board(self, obj):
         domain_info = getattr(obj, "domain_info", None)
         if domain_info:
