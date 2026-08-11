@@ -3789,7 +3789,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertNotContains(page, "Name servers")
         self.assertContains(page, "DNS Records")
-        self.assertNotComtains(page, "DNSSEC")
+        self.assertNotContains(page, "DNSSEC")
 
     @override_flag("dns_hosting", active=False)
     def test_domain_dns_when_dns_hosting_flag_is_disabled_and_enrolled_in_dns_hosting(self):
