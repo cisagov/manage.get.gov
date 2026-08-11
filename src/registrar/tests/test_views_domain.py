@@ -1708,16 +1708,21 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
-    def test_domain_nameservers_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
+    def test_domain_nameservers_dnssec_dsdata_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
         """Cannot load domain's nameservers page. Redirects to dns records page instead."""
         with override_flag("dns_hosting", active=True):
-            response = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
-            self.assertRedirects(
-                response,
-                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
-            )
+            for view_name in [
+                "domain-dns-nameservers",
+                "domain-dns-dnssec",
+                "domain-dns-dnssec-dsdata",
+            ]:
+                response = self.client.get(
+                    reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+                self.assertRedirects(
+                    response,
+                    reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
+                )
 
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
         """Cannot load domain's nameservers page."""
@@ -1727,7 +1732,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
     @override_flag("dns_hosting", active=False)
     def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
-        """Can load domain's nameservers page when dns hosting flag is disabled
+        """Can load domain's nameservers, DNSSEC, and DS data page when dns hosting flag is disabled
         and domain is enrolled in dns hosting.
         """
         with override_flag("dns_hosting", active=False):
@@ -3758,6 +3763,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertNotContains(page, "Name servers")
         self.assertContains(page, "DNS Records")
+        self.assertNotComtains(page, "DNSSEC")
 
     @override_flag("dns_hosting", active=False)
     def test_domain_dns_when_dns_hosting_flag_is_disabled_and_enrolled_in_dns_hosting(self):
@@ -3772,6 +3778,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertContains(page, "Name servers")
         self.assertNotContains(page, "DNS Records")
+        self.assertContains(page, "DNSSEC")
 
 
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
