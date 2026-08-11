@@ -1186,9 +1186,6 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     # Eager loading "actors" all at once
     list_select_related = ("actor",)
 
-    # Stopping point: Need to add comments to why to do those,
-    # and then do more benchmarks with the JS
-
     # Loads "tabtitle" for this admin page so that on render the <title>
     # element will only have the model name instead of
     # the default string loaded by native Django admin code.
