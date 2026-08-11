@@ -426,16 +426,16 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "2.3.4.5)")
 
     @override_flag("dns_hosting", active=True)
-    def test_domain_detail_no_nameserver_info_when_enrolled_in_dns_hosting(self):
+    def test_domain_detail_no_external_dns_info_when_enrolled_in_dns_hosting(self):
         with less_console_noise():
             # Views DNS record and does not view nameservers or DNSSEC on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
             self.assertNotContains(detail_page, "DNS name servers")
             self.assertNotContains(detail_page, "DNSSEC")
 
-    def test_domain_detail_show_nameserver_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
+    def test_domain_detail_show_external_dns_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
         with less_console_noise() and override_flag("dns_hosting", active=False):
-            # Does not view dns record and not nameserver on Domain Overview page
+            # Displays dns nameservers and DNSSEC pages on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
 
             self.assertContains(detail_page, "DNS name servers")
@@ -2192,7 +2192,7 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
 
 
 class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
-    def test_domain_dns_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
+    def test_domain_external_dns_pages_redirect_when_dns_hosting_flag_enabled_and_enrolled(self):
         """
         When DNS hosting flag is off, cannot load domain's nameservers, DNSSEC, or DS data page.
         Redirects to dns records page instead."""
@@ -2211,7 +2211,7 @@ class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
                 )
 
     @override_flag("dns_hosting", active=False)
-    def test_domain_nameservers_dnssec_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
+    def test_domain_loads_external_dns_pages_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
         """Can load domain's nameservers, DNSSEC, and DS data pages when dns hosting flag is disabled
         and domain is enrolled in dns hosting.
         """
