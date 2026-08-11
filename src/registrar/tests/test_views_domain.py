@@ -1750,15 +1750,19 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             self.assertContains(page, "DNS name servers")
 
     @override_flag("dns_hosting", active=False)
-    def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
+    def test_domain_nameservers_dnssec_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
         """Can load domain's nameservers, DNSSEC, and DS data page when dns hosting flag is disabled
         and domain is enrolled in dns hosting.
         """
         with override_flag("dns_hosting", active=False):
-            page = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
-            self.assertContains(page, "DNS name servers")
+            for view_page, page_title in [
+                ("domain-dns-nameservers", "DNS name servers"),
+                ("domain-dns-dnssec", "DNSSEC"),
+            ]:
+                page = self.client.get(
+                    reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+                self.assertContains(page, page_title)
 
     @less_console_noise_decorator
     def test_domain_nameservers_form_submit_one_nameserver(self):
