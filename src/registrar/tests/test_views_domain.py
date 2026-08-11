@@ -428,9 +428,10 @@ class TestDomainDetail(TestDomainOverview):
     @override_flag("dns_hosting", active=True)
     def test_domain_detail_no_nameserver_info_when_enrolled_in_dns_hosting(self):
         with less_console_noise():
-            # Views DNS record and does not view nameserver on Domain Overview page
+            # Views DNS record and does not view nameservers or DNSSEC on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
             self.assertNotContains(detail_page, "DNS name servers")
+            self.assertNotContains(detail_page, "DNSSEC")
 
     def test_domain_detail_show_nameserver_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
         with less_console_noise() and override_flag("dns_hosting", active=False):
@@ -438,6 +439,7 @@ class TestDomainDetail(TestDomainOverview):
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
 
             self.assertContains(detail_page, "DNS name servers")
+            self.assertContains(detail_page, "DNSSEC")
 
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
