@@ -827,25 +827,25 @@ def cancel_domain_invitation(email: str, domain: Domain):
             canceled = False
 
             # Cancel new model invitation
-            domain_role = UserDomainRole.objects.filter(
+            domain_roles = UserDomainRole.objects.filter(
                 email__iexact=email,
                 domain=domain,
                 status=UserDomainRole.Status.INVITED,
-            ).first()
+            )
 
-            if domain_role:
+            for domain_role in domain_roles:
                 domain_role.status = UserDomainRole.Status.REJECTED
                 domain_role.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = DomainInvitation.objects.filter(
+            legacy_invitations = DomainInvitation.objects.filter(
                 email__iexact=email,
                 domain=domain,
                 status=DomainInvitation.DomainInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 legacy_invitation.cancel_invitation()
                 legacy_invitation.save()
                 canceled = True
@@ -882,25 +882,25 @@ def cancel_portfolio_invitation(email: str, portfolio: Portfolio):
             canceled = False
 
             # Cancel new model invitation
-            permission = UserPortfolioPermission.objects.filter(
+            permissions = UserPortfolioPermission.objects.filter(
                 email__iexact=email,
                 portfolio=portfolio,
                 status=UserPortfolioPermission.Status.INVITED,
-            ).first()
+            )
 
-            if permission:
+            for permission in permissions:
                 permission.status = UserPortfolioPermission.Status.REJECTED
                 permission.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = PortfolioInvitation.objects.filter(
+            legacy_invitations = PortfolioInvitation.objects.filter(
                 email__iexact=email,
                 portfolio=portfolio,
                 status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 # Note: PortfolioInvitation doesn't have CANCELED status
                 # so we delete the invitation instead
                 legacy_invitation.delete()

@@ -104,13 +104,6 @@ class UserFixture:
             "title": "Product Manager",
         },
         {
-            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
-            "first_name": "Jaxon",
-            "last_name": "Silva",
-            "email": "jaxon.silva@cisa.dhs.gov",
-            "title": "Designer",
-        },
-        {
             "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
             "first_name": "Kim",
             "last_name": "Allen",
