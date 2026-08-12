@@ -1109,9 +1109,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 # CREATE
                 else:
                     is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
-
         except DnsHostingError as e:
             messages.error(request, e.message)
+            return self._handle_invalid_form(request, form=form, is_edit=is_edit)
         except GenericError:
             return self._error_response(request, status=400)
         finally:
