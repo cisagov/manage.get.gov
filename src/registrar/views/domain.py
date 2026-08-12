@@ -61,6 +61,7 @@ from registrar.views.utility.invitation_helper import (
     handle_invitation_exceptions,
 )
 from registrar.services.invitation_service import (
+    cancel_domain_invitation,
     create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
     get_requested_user,
@@ -1565,7 +1566,7 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store roles with an admin flag
         domain_manager_roles = []
 
-        for permission in self.object.permissions.all():
+        for permission in self.object.permissions.filter(user__isnull=False):
             # Determine if the user has the ORGANIZATION_ADMIN role
             has_admin_flag = any(
                 UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
@@ -1587,7 +1588,22 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store invitations with an admin flag
         invitations = []
 
-        for domain_invitation in self.object.invitations.all():
+        user_domain_role_invitations = (
+            self.object.permissions.filter(status=UserDomainRole.Status.INVITED)
+            .exclude(email__isnull=True)
+            .exclude(email="")
+        )
+        legacy_invitations = self.object.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
+        invited_emails = {invitation.email.lower() for invitation in user_domain_role_invitations}
+
+        for domain_invitation in chain(user_domain_role_invitations, legacy_invitations):
+            is_user_domain_role = isinstance(domain_invitation, UserDomainRole)
+
+            # The invitation service temporarily creates both models. Prefer the
+            # UserDomainRole so each invitation appears only once.
+            if not is_user_domain_role and domain_invitation.email.lower() in invited_emails:
+                continue
+
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
             has_admin_flag = False
 
@@ -1605,10 +1621,14 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list if the domain invitation
-            # if the status is not canceled
-            if domain_invitation.status != "canceled":
-                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+            invitations.append(
+                {
+                    "domain_invitation": domain_invitation,
+                    "has_admin_flag": has_admin_flag,
+                    "is_user_domain_role": is_user_domain_role,
+                    "can_cancel": True,
+                }
+            )
 
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
@@ -1800,19 +1820,23 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
     pk_url_kwarg = "domain_invitation_pk"
     fields = []
 
+    def get_object(self, queryset=None):
+        user_domain_role_pk = self.kwargs.get("user_domain_role_pk")
+        if user_domain_role_pk:
+            return get_object_or_404(UserDomainRole, pk=user_domain_role_pk)
+
+        return super().get_object(queryset)
+
     def post(self, request, *args, **kwargs):
-        """Override post method in order to error in the case when the
-        domain invitation status is RETRIEVED"""
+        """Return an error when the domain invitation is no longer pending."""
         self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
-            self.object.cancel_invitation()
-            self.object.save()
-            return self.form_valid(form)
+        if self.object.status == UserDomainRole.Status.INVITED:
+            cancel_domain_invitation(self.object.email, self.object.domain)
+            messages.success(request, self.get_success_message({}))
         else:
-            # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, "This invitation can't be canceled because it has already been retrieved.")
-            return HttpResponseRedirect(self.get_success_url())
+            messages.error(request, "This invitation can't be canceled because it is no longer pending.")
+
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})

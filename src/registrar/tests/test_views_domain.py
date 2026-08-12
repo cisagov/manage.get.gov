@@ -1146,6 +1146,25 @@ class TestDomainManagers(TestDomainOverview):
             ).exists()
         )
 
+        success_page = response.follow()
+        domain_role = UserDomainRole.objects.get(
+            email="udrflaguser@igorville.gov",
+            domain=self.domain,
+        )
+        cancel_url = reverse("invitation-cancel", kwargs={"user_domain_role_pk": domain_role.id})
+        self.assertContains(success_page, cancel_url)
+
+        self.client.post(cancel_url)
+        domain_role.refresh_from_db()
+        self.assertEqual(domain_role.status, UserDomainRole.Status.REJECTED)
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=DomainInvitation.DomainInvitationStatus.CANCELED,
+            ).exists()
+        )
+
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
@@ -1586,7 +1605,7 @@ class TestDomainManagers(TestDomainOverview):
         )
         # Assert that an error message is displayed to the user
         # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
-        self.assertContains(response, "be canceled because it has already been retrieved.")
+        self.assertContains(response, "be canceled because it is no longer pending.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
