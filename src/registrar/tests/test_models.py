@@ -479,6 +479,12 @@ class TestPortfolioInvitations(TestCase):
             requester=self.user, domain=domain_in_portfolio_1, portfolio=self.portfolio
         )
         invite_1, _ = DomainInvitation.objects.get_or_create(email=email_with_no_user, domain=domain_in_portfolio_1)
+        domain_role_invite, _ = UserDomainRole.objects.get_or_create(
+            email=email_with_no_user,
+            domain=domain_in_portfolio_1,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
 
         domain_in_portfolio_2, _ = Domain.objects.get_or_create(
             name="domain_in_portfolio_and_invited_2.gov", state=Domain.State.READY
@@ -517,6 +523,8 @@ class TestPortfolioInvitations(TestCase):
         # The domain invitations to the portfolio domains have been canceled
         self.assertEqual(invite_1.status, DomainInvitation.DomainInvitationStatus.CANCELED)
         self.assertEqual(invite_2.status, DomainInvitation.DomainInvitationStatus.CANCELED)
+        domain_role_invite.refresh_from_db()
+        self.assertEqual(domain_role_invite.status, UserDomainRole.Status.REJECTED)
 
         # Invite 3 is unaffected
         self.assertEqual(invite_3.status, DomainInvitation.DomainInvitationStatus.INVITED)
