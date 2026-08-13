@@ -9,7 +9,7 @@ from registrar.models import (
     PortfolioInvitation,
     User,
 )
-from registrar.models import Portfolio, DraftDomain
+from registrar.models import Portfolio, DraftDomain, DomainInformation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
@@ -328,6 +328,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_1.domain_info.save()
         self.domain_3.domain_info.save()
 
+        # User manages this domain (VIEW_MANAGED_DOMAINS) AND it's in the portfolio
+        domain_4, _ = Domain.objects.get_or_create(name="fourthdomain.gov")
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_4, portfolio=portfolio)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain_4, role=UserDomainRole.Roles.MANAGER)
+
         # Set up user permissions
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission.save()
@@ -342,12 +347,14 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # We expect only domains associated with the user's portfolio
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
+        self.assertIn(domain_4.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
+        self.assertIn(domain_4.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -356,12 +363,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
+        # domain_1/domain_3: in portfolio, BUT user has no UserDomainRole -> excluded
         self.assertNotIn(self.domain_1.name, csv_content)
         self.assertNotIn(self.domain_3.name, csv_content)
-        self.assertIn(self.domain_2.name, csv_content)
+        # domain_2: user has UserDomainRole, BUT not in this portfolio -> excluded
+        self.assertNotIn(self.domain_2.name, csv_content)
+        # domain_4: user has UserDomainRole AND it's in this portfolio -> included
+        self.assertIn(domain_4.name, csv_content)
         self.domain_1.delete()
         self.domain_2.delete()
         self.domain_3.delete()
+        domain_4.delete()
         portfolio.delete()
 
     def _run_domain_data_type_user_export(self, request):

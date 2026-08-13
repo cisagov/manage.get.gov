@@ -27,8 +27,10 @@ class AnalyticsView(View):
         last_30_days_approved_applications = models.DomainRequest.objects.filter(
             created_at__gt=thirty_days_ago, status=models.DomainRequest.DomainRequestStatus.APPROVED
         )
+        # created_at_reference is when the domain record was created, which is the approval moment.
+        # FYSA: x_registry_created_at is null until a domain reaches the registry.
         avg_approval_time = last_30_days_approved_applications.annotate(
-            approval_time=F("approved_domain__created_at") - F("last_submitted_date")
+            approval_time=F("approved_domain__created_at_reference") - F("last_submitted_date")
         ).aggregate(Avg("approval_time"))["approval_time__avg"]
         # Format the timedelta to display only days
         if avg_approval_time is not None:
