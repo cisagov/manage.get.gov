@@ -87,13 +87,16 @@ function clearRecordForm(scope){
 }
 
 
-// DOM ids/selectors for a cancel target, keyed off the add vs edit row id
-const refsFor = (req, target) =>{
-    const addRecordbtn = "add-dnsrecord-button";
 
-    const getFocusForEdit = ()=>{
+const getFocusId = (req, target)=>{
+        if(!req){
+            return;
+        }
+
+        const addRecordbtn = "add-dnsrecord-button";
+        const isFromAddRecord = req.fromAddRecord ?? false
         // if a user decides not to switch forms, the focus should go to the element that triggered it
-        if(target == 0 || req.pending.fromAddRecord ){
+        if(target == 0 || isFromAddRecord ){
             return addRecordbtn
         }
         else if(req.isRecordType){
@@ -105,20 +108,26 @@ const refsFor = (req, target) =>{
         else if(target > 0){
             return `dnsrecord-edit-button-${target}`
         }
+        else{
+            return `dnsrecord-edit-cancel-button-${req.recordId}`
+        }
     }
+
+// DOM ids/selectors for a cancel target, keyed off the add vs edit row id
+const refsFor = (req, target) =>{
 
     if(req.type === "edit"){
         return  {
         form: `#dnsrecord-edit-form-${req.recordId}`,
         cancelButtonId: `dnsrecord-edit-cancel-button-${req.recordId}`,
-        focusId: getFocusForEdit(),
+        focusId: getFocusId(req, target),
         }
     }
     else {     
         return  { 
             form: "#form-container", 
             cancelButtonId: "dnsrecord-add-cancel-button",
-            focusId: getFocusForEdit()
+            focusId: getFocusId(req, target)
         };
 
     }
@@ -133,14 +142,15 @@ const refreshForm = (selector, url) =>
 function openCancelModal(refs, switcher){
     let modal = "open-cancel-add-dnsrecord-modal"
     let toggle = "toggle-cancel-add-dnsrecord"
-    let opener = refs.cancelButtonId;
-    console.log(switcher.pending);
-    if(switcher.pending){
+    if(!switcher.pending.fromAddRecord 
+        && !switcher.pending.fromCancelButton
+        && switcher.target != null){
         modal = switcher.modalDict["modal"];
         toggle = switcher.modalDict["toggle"];
-        opener = refs.focusId
     }
 
+    const opener = switcher.pending.fromCancelButton ? refs.cancelButtonId : refs.focusId;
+    
     document.getElementById(modal)?.click(); 
     document.getElementById(toggle)?.setAttribute("data-opener", opener);
 }
@@ -204,11 +214,11 @@ const teardownForm = (switcher) => {
 
 const onCancel = (switcher) => {
         const req = switcher.pending;
-        const refs = refsFor(req,switcher);
+        const refs = refsFor(req,switcher.target);
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
-          openCancelModal(refs, switcher);
+            openCancelModal(refs,switcher)
         } else {
             teardownForm(switcher);
             document.getElementById(refs.focusId)?.focus();
@@ -230,8 +240,6 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
             const deleteBtn = e.target.closest('.js-dnsrecord-delete');
-
-            console.log(editBtn)
 
             if(deleteBtn){
                 switcher.attemptOpen();
@@ -285,7 +293,8 @@ export function initDNSRecordCancelModal(){
         if(!e.target.closest(".js-dnsrecord-add-cancel")) return;
         editFormSwitcher.setPending(
             {
-                type: "add"
+                type: "add",
+                fromCancelButton: true
             }
         )
         onCancel(editFormSwitcher);
@@ -296,7 +305,7 @@ export function initDNSRecordCancelModal(){
         const btn = e.target.closest(".js-dnsrecord-edit-cancel");
         if(!btn) return;
         editFormSwitcher.setPending(
-            { type: "edit", recordId: btn.dataset.recordId}
+            { type: "edit", recordId: btn.dataset.recordId, fromCancelButton: true}
         );
         onCancel(editFormSwitcher);
     });
@@ -312,18 +321,19 @@ export function initDNSRecordCancelModal(){
             return;
     }
 
-    const resetSwitcherValues = ()=>{
+    const resetSwitcherValues = (modal)=>{
         const switcher = getSwitcher();
         if(!switcher){
                 return;
         }
         if(switcher.isRecordType){
-                switcher.switchForm(switcher.pending.recordId);
-                document.getElementById("id_type").focus();
+            switcher.switchForm(switcher.pending.recordId);
         }
         else{
                 switcher.resetPendingAndTarget();
         }
+        const focusId = getFocusId(switcher.pending, switcher.target);
+        modal.setAttribute('data-opener', focusId);
     }
     
     const modalOverallOverlays = document.querySelectorAll('.usa-modal-overlay:not([aria-controls="delete-dns-record-modal"])');
@@ -331,7 +341,7 @@ export function initDNSRecordCancelModal(){
     for(const modalOl of modalOverallOverlays){
         modalOl.addEventListener("keydown", (e)=>{
          if(e.key === "Escape"){
-            resetSwitcherValues();
+            resetSwitcherValues(modalOl);
         }}
         )
 
@@ -342,7 +352,7 @@ export function initDNSRecordCancelModal(){
                 return;
             }
 
-            const targetFocusId = refsFor(switcher.pending, switcher.createReq(switcher.target)).focusId;
+            const targetFocusId = getFocusId(switcher.pending, switcher.target);
             
             teardownForm(
             switcher,
@@ -356,22 +366,22 @@ export function initDNSRecordCancelModal(){
 
             if(e.target.matches("[data-close-modal]")){
                 if(e.isTrusted){
-                    resetSwitcherValues();
+                    resetSwitcherValues(modalOl);
                 }
             }
 
             const recordTypeModalOverlay = recordTypeSwitcher.modalDict["toggle"];
             if(e.target.matches(`[aria-controls="${recordTypeModalOverlay}"`)){ 
-                resetSwitcherValues();
+                resetSwitcherValues(modalOl);
             }
 
             const editTypeModalOverlay = editFormSwitcher.modalDict["toggle"];
             if(e.target.matches(`[aria-controls="${editTypeModalOverlay}]"`)){
-                resetSwitcherValues();
+                resetSwitcherValues(modalOl);
             }
 
             if(e.target.matches('[aria-controls="toggle-cancel-add-dnsrecord"]')){
-                resetSwitcherValues();
+                resetSwitcherValues(modalOl);
              }
 
             }
@@ -412,7 +422,6 @@ export function initDNSRecordCancelModal(){
     })
 
     document.getElementById('add-dnsrecord-button').addEventListener("click", (e) => {
-            console.log(e.target);
             editFormSwitcher.setTarget(0);
             editFormSwitcher.attemptOpen();
             editFormSwitcher.pending.fromAddRecord = true;
