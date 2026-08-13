@@ -1173,6 +1173,20 @@ class CustomLogEntryAdmin(LogEntryAdmin):
         "user_url",
     ]
 
+    # Explicity set search field for common searches
+    search_fields = [
+        "object_repr",
+        "actor__first_name",
+        "actor__last_name",
+        "actor__username",
+    ]
+
+    # Gives approximation instead of exact count
+    show_full_result_count = False
+
+    # Eager loading "actors" all at once
+    list_select_related = ("actor",)
+
     # Loads "tabtitle" for this admin page so that on render the <title>
     # element will only have the model name instead of
     # the default string loaded by native Django admin code.

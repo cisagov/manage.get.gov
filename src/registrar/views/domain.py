@@ -166,7 +166,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             "registrar.full_access_permission"
         )
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
-        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["can_access_domain_via_portfolio"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()

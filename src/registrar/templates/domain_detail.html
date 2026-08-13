@@ -48,9 +48,9 @@
                 This domain will expire soon.
                 {% url 'domain-renewal' domain_pk=domain.id as url %}
                 <a href="{{ url }}" class="usa-link">Renew to maintain access.</a>
-              {% elif domain.is_expiring and is_portfolio_user %}
+              {% elif domain.is_expiring and can_access_domain_via_portfolio %}
                 This domain will expire soon. Contact one of the listed domain managers to renew the domain.
-              {% elif domain.is_expired and is_portfolio_user %}
+              {% elif domain.is_expired and can_access_domain_via_portfolio %}
                 This domain has expired, but it is still online. Contact one of the listed domain managers to renew the domain.
               {% else %}
                 {{ domain.get_state_help_text }}
@@ -64,7 +64,7 @@
     {% include "includes/domain_dates.html" %}
 
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
-      {% if is_portfolio_user and not is_domain_manager %}
+      {% if can_access_domain_via_portfolio and not is_domain_manager %}
       <div class="usa-alert usa-alert--info usa-alert--slim">
         <div class="usa-alert__body">
           {% if not is_portfolio_admin %}
