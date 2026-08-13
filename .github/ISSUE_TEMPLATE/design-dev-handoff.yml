@@ -21,7 +21,7 @@ body:
     attributes:
       label: Acceptance criteria
       description: |
-        - [ ] Read the Design<>Dev Handoff Guide https://docs.google.com/document/d/1ANpobtbaP9kd924ocWB5tOqFh4YssZtTwkTtLGF2XGY/edit?usp=sharing
+        - [ ] Read the [Design<>Dev Handoff Guide](https://docs.google.com/document/d/1ANpobtbaP9kd924ocWB5tOqFh4YssZtTwkTtLGF2XGY/edit?usp=sharing)
         - [ ] Prep the Figma designs and make sure any content needed is documented in Google Docs as suggested changes
         - [ ] Create or a new issue or edit the existing implementation issue
 
