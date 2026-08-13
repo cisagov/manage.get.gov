@@ -1,5 +1,6 @@
 name: Design<>Dev Handoff
 description: For prepping designs for handoff to developers
+labels: ["design"]
 
 body:
   - type: markdown
