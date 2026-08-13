@@ -53,10 +53,17 @@ export class EditFormSwitcher extends DNSFormSwitcher{
      * - createReq: creates the dict for the refForm method in the domain-dns-record-content.js
      */
 
+    constructor(container){
+        super(container);
+        this.modalDict = {
+            "modal": "dns-record-edit-form-modal-trigger",
+            "toggle": "edit-dns-record-switcher" ,
+        }
+    }
+
     setTarget(value){  
         const current = this.getCurrentShowFormId();
         this.target = current == value ? null : value;
-        console.log(current, value);
     }
 
     setShowId(value){
@@ -106,6 +113,10 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
     constructor(container){
         super(container);
         this.isRecordType = true;
+        this.modalDict = {
+            "modal": "dns-record-type-modal-trigger",
+            "toggle": "domain-dns-record-type-switcher" ,
+        }
     }
 
     createReq(currentId){
