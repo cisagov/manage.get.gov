@@ -5190,7 +5190,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         )
 
     # Filters
-    list_filter = [GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state", DnsEnrolledFilter]
+    list_filter = [DnsEnrolledFilter, GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
 
     # ------- END FILTERS
 
