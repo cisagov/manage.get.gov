@@ -44,7 +44,7 @@
     {% include "includes/summary_item.html" with title='Your contact information' value=request.user edit_link=url editable=is_editable  contact='true' %}
   
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
-      {% if is_portfolio_user and not is_domain_manager %}
+      {% if can_access_domain_via_portfolio and not is_domain_manager %}
       <div class="usa-alert usa-alert--info usa-alert--slim">
         <div class="usa-alert__body">
           <p class="usa-alert__text ">
