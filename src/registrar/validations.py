@@ -91,7 +91,7 @@ def get_content_type_label_by_record_type(record_type):
 
 
 def get_trailing_number_message_by_record_type(field_type):
-    trailing_number_error_message = "that ends with a domain name"
+    trailing_number_error_message = "that ends in a domain name"
     requirement_dict = {
         "target": f"{trailing_number_error_message}, like example.gov or www.example.gov",
         "mail server": f"{trailing_number_error_message}, like mail.example.gov",
