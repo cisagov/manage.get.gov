@@ -418,7 +418,18 @@ class UserOrEmailChoiceField(forms.ModelChoiceField):
 
 
 class UserOrEmailAutocompleteSelect(AutocompleteSelectWithPlaceholder):
-    """Autocomplete widget that differentiates emails from Users."""
+    """Select an existing User from Select2 AJAX results or accept a typed email tag.
+
+    Django's autocomplete widget normally submits only model IDs. Select2's
+    tagging support lets this widget also submit a new email address, but its
+    AJAX results can lag behind the text being typed. The data attribute enables
+    the client-side code that commits the live email on Enter, Tab, or close
+    instead of selecting an older rendered AJAX tag.
+    """
+
+    def __init__(self, field, admin_site, attrs=None, choices=(), using=None):
+        super().__init__(field, admin_site, attrs, choices, using)
+        self.attrs["data-user-or-email-autocomplete"] = "true"
 
     def optgroups(self, name, value, attr=None):
         # Autocomplete assumes selected values for this field are
