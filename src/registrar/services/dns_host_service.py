@@ -190,6 +190,15 @@ class DnsHostService:
 
         return x_account_id
 
+    def delete_account(self, account_id) -> str:
+        account_data = self.dns_vendor_service.delete_cf_account(account_id)
+        logger.info(
+            "Successfully deleted account %s at vendor",
+            account_id,
+            extra={"account_id": account_id},
+        )
+        x_account_id = account_data["result"]["id"]
+
     def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
         """Apply required DNS settings to a newly created account.
 
