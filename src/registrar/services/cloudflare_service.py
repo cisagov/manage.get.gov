@@ -135,6 +135,23 @@ class CloudflareService:
 
             return resp.json()
 
+    def delete_cf_account(self, account_id: str):
+        """
+        Delete DNS account and subsequently the account's zones, records, and other resources.
+        Returns id of the deleted account.
+        """
+        appended_url = f"/accounts/{account_id}"
+        with self._dns_call(x_account_id=account_id):
+            resp = self.client.delete(appended_url, headers=self.headers)
+            resp.raise_for_status()
+            logger.info(
+                "Deleted dns account %s",
+                account_id,
+                extra={"account_id": account_id},
+            )
+
+            return resp.json()
+
     def update_account_dns_settings(
         self,
         account_id: str,
