@@ -198,6 +198,7 @@ class DnsHostService:
             extra={"account_id": account_id},
         )
         x_account_id = account_data["result"]["id"]
+        return x_account_id
 
     def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
         """Apply required DNS settings to a newly created account.
