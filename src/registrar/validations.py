@@ -101,6 +101,8 @@ def get_trailing_number_message_by_record_type(field_type):
         field_type = "content"
 
     requirement = requirement_dict.get(field_type, trailing_number_error_message)
+    if field_type == "target":
+        return f'Enter a {field_type} {requirement}.'
     return get_error_message_from_requirement(requirement=requirement, content_field=field_type)
 
 
