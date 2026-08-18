@@ -1187,6 +1187,7 @@ class CustomLogEntryAdmin(LogEntryAdmin):
     # Explicity set search field for common searches
     search_fields = [
         "object_repr",
+        "changes_text",
         "actor__first_name",
         "actor__last_name",
         "actor__username",
