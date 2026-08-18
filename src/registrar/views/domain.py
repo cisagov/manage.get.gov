@@ -1008,7 +1008,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         dns_record.refresh_from_db()
         self._attach_form(dns_record)
         self.dns_record = dns_record
-        return record_id
 
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
@@ -1064,7 +1063,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return is_first_record, dns_record.id
 
         self.dns_record = None
-        return is_first_record, None
+        return is_first_record
 
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
@@ -1105,13 +1104,20 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
                 if is_edit:
-                    record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+                    self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+                    record_id = is_edit
+                
                 # CREATE
                 else:
-                    is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
+                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
+                    record_id = self.dns_record.id
         except DnsHostingError as e:
             messages.error(request, e.message)
-            return self._handle_invalid_form(request, form=form, is_edit=is_edit)
+            if is_edit:
+                record_id = is_edit
+                dns_record = DnsRecord.objects.get(id=record_id)
+                self._attach_form(dns_record=dns_record)
+                self.dns_record = dns_record
         except GenericError:
             return self._error_response(request, status=400)
         finally:
