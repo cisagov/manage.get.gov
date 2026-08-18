@@ -17,6 +17,10 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
+# Set up DNS data for domain
+from registrar.models import (
+    DnsAccount
+)
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import ActionNotAllowed, NameserverError, NameserverErrorCodes
 
@@ -3130,6 +3134,7 @@ class TestAnalystDelete(MockEppLib):
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
+        DnsAccount.objects.all().delete()
         super().tearDown()
 
     @less_console_noise_decorator
