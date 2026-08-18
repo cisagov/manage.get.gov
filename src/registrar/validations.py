@@ -102,9 +102,9 @@ def get_trailing_number_message_by_record_type(field_type):
 
     requirement = requirement_dict.get(field_type, trailing_number_error_message)
     if field_type == "content":
-        return f'Enter {field_type} {requirement}.'
+        return f"Enter {field_type} {requirement}."
     else:
-        return f'Enter a {field_type} {requirement}'
+        return f"Enter a {field_type} {requirement}"
 
 
 # For system level validation
