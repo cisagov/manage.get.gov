@@ -1332,6 +1332,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
                     logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
                     from registrar.services.dns_host_service import DnsHostService
+
                     dns_host_service = DnsHostService()
                     dns_host_service.delete_account(vendor_account.x_account_id)
             except Exception as e:

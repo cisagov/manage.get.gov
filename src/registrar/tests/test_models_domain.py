@@ -3405,9 +3405,12 @@ class TestAnalystDelete(MockEppLib):
         self.mockDataInfoDomain.hosts = []
 
         from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
         create_initial_dns_setup(domain=domain, x_account_id="12345")
 
-        with patch("registrar.services.cloudflare_service.CloudflareService.delete_cf_account") as mock_delete_cf_account:
+        with patch(
+            "registrar.services.cloudflare_service.CloudflareService.delete_cf_account"
+        ) as mock_delete_cf_account:
             domain.deleteInEpp()
             domain.save()
 
