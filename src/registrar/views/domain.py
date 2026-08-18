@@ -1115,7 +1115,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 if is_edit:
                     self._handle_edit(request, x_zone_id, form_record_data, is_edit)
                     record_id = is_edit
-                
+
                 # CREATE
                 else:
                     is_first_record = self._handle_create(request, x_zone_id, form_record_data)
