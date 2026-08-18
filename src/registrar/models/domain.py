@@ -1485,7 +1485,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     is_enrolled_in_dns_hosting = models.BooleanField(
         default=False,
-        help_text=("Indicates whether this domain is enrolled in internal DNS hosting."),
+        help_text=("Indicates whether the domain is enrolled in .gov DNS hosting."),
+        verbose_name=".gov DNS",
     )
 
     def isActive(self):
@@ -1526,6 +1527,9 @@ class Domain(TimeStampedModel, DomainHelper):
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
         return self.state.capitalize()
+
+    def enrolled_hosting_display(self, request=None):
+        return "Yes" if self.is_enrolled_in_dns_hosting else "No"
 
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""
