@@ -21,6 +21,7 @@ from registrar.utility.errors import (
     AlreadyDomainInvitedError,
     AlreadyDomainManagerError,
     InvitationError,
+    MultipleUsersWithEmailError,
 )
 from registrar.utility.waffle import flag_is_active_for_user
 
@@ -29,10 +30,14 @@ logger = logging.getLogger(__name__)
 
 def get_requested_user(email):
     """Retrieve a user by email or return None if the user doesn't exist."""
-    try:
-        return User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
+    if not email:
         return None
+
+    users = list(User.objects.filter(email__iexact=email).order_by("pk")[:2])
+    if len(users) > 1:
+        raise MultipleUsersWithEmailError(email)
+
+    return users[0] if users else None
 
 
 def invite_to_portfolio(
@@ -231,7 +236,7 @@ def _save_legacy_portfolio_invitation(
     legacy_invitation.save()
 
     if user:
-        legacy_invitation.retrieve()
+        legacy_invitation.retrieve(user=user)
         legacy_invitation.save()
 
     return legacy_invitation
@@ -435,10 +440,10 @@ def _check_existing_domain_invitation(email: str, domain: Domain, requested_user
 
 
 def validate_domain_role_or_invitation(email, domain):
-    requested_user = get_requested_user(email)
     try:
+        requested_user = get_requested_user(email)
         _check_existing_domain_invitation(email, domain, requested_user)
-    except (AlreadyDomainManagerError, AlreadyDomainInvitedError) as error:
+    except (AlreadyDomainManagerError, AlreadyDomainInvitedError, MultipleUsersWithEmailError) as error:
         raise ValidationError(str(error)) from error
 
 
@@ -474,7 +479,7 @@ def _save_legacy_domain_invitation(
     legacy_invitation.save()
 
     if user:
-        legacy_invitation.retrieve()
+        legacy_invitation.retrieve(user=user)
         legacy_invitation.save()
 
     return legacy_invitation
@@ -733,7 +738,7 @@ def accept_portfolio_invitation(user: User, portfolio: Portfolio):
             ).first()
 
             if legacy_invitation:
-                permission_legacy = legacy_invitation.retrieve()
+                permission_legacy = legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
                 if not permission:
                     permission = permission_legacy
@@ -787,7 +792,7 @@ def accept_domain_invitation(user: User, domain: Domain):
             ).first()
 
             if legacy_invitation:
-                domain_role_legacy = legacy_invitation.retrieve()
+                domain_role_legacy = legacy_invitation.retrieve(user=user)
                 legacy_invitation.save()
                 if not domain_role:
                     domain_role = domain_role_legacy
@@ -822,25 +827,25 @@ def cancel_domain_invitation(email: str, domain: Domain):
             canceled = False
 
             # Cancel new model invitation
-            domain_role = UserDomainRole.objects.filter(
+            domain_roles = UserDomainRole.objects.filter(
                 email__iexact=email,
                 domain=domain,
                 status=UserDomainRole.Status.INVITED,
-            ).first()
+            )
 
-            if domain_role:
+            for domain_role in domain_roles:
                 domain_role.status = UserDomainRole.Status.REJECTED
                 domain_role.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = DomainInvitation.objects.filter(
+            legacy_invitations = DomainInvitation.objects.filter(
                 email__iexact=email,
                 domain=domain,
                 status=DomainInvitation.DomainInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 legacy_invitation.cancel_invitation()
                 legacy_invitation.save()
                 canceled = True
@@ -877,25 +882,25 @@ def cancel_portfolio_invitation(email: str, portfolio: Portfolio):
             canceled = False
 
             # Cancel new model invitation
-            permission = UserPortfolioPermission.objects.filter(
+            permissions = UserPortfolioPermission.objects.filter(
                 email__iexact=email,
                 portfolio=portfolio,
                 status=UserPortfolioPermission.Status.INVITED,
-            ).first()
+            )
 
-            if permission:
+            for permission in permissions:
                 permission.status = UserPortfolioPermission.Status.REJECTED
                 permission.save()
                 canceled = True
 
             # Cancel legacy model invitation
-            legacy_invitation = PortfolioInvitation.objects.filter(
+            legacy_invitations = PortfolioInvitation.objects.filter(
                 email__iexact=email,
                 portfolio=portfolio,
                 status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-            ).first()
+            )
 
-            if legacy_invitation:
+            for legacy_invitation in legacy_invitations:
                 # Note: PortfolioInvitation doesn't have CANCELED status
                 # so we delete the invitation instead
                 legacy_invitation.delete()

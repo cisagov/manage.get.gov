@@ -68,7 +68,12 @@ class PortfolioMembersJson(View):
 
     def initial_permissions_search(self, portfolio):
         """Perform initial search for permissions before applying any filters."""
-        permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
+        # Pending invitations have no user and are represented by the temporary
+        # legacy PortfolioInvitation row until that flow is removed.
+        permissions = UserPortfolioPermission.objects.filter(
+            portfolio=portfolio,
+            user__isnull=False,
+        ).exclude(status=UserPortfolioPermission.Status.INVITED)
         permissions = (
             permissions.select_related("user")
             .annotate(

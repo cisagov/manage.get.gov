@@ -426,18 +426,20 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "2.3.4.5)")
 
     @override_flag("dns_hosting", active=True)
-    def test_domain_detail_no_nameserver_info_when_enrolled_in_dns_hosting(self):
+    def test_domain_detail_no_external_dns_info_when_enrolled_in_dns_hosting(self):
         with less_console_noise():
-            # Views DNS record and does not view nameserver on Domain Overview page
+            # Views DNS record and does not view nameservers or DNSSEC on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
             self.assertNotContains(detail_page, "DNS name servers")
+            self.assertNotContains(detail_page, "DNSSEC")
 
-    def test_domain_detail_show_nameserver_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
+    def test_domain_detail_show_external_dns_info_when_enrolled_in_dns_hosting_but_feature_flag_disabled(self):
         with less_console_noise() and override_flag("dns_hosting", active=False):
-            # Does not view dns record and not nameserver on Domain Overview page
+            # Displays dns nameservers and DNSSEC pages on Domain Overview page
             detail_page = self.app.get(reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
 
             self.assertContains(detail_page, "DNS name servers")
+            self.assertContains(detail_page, "DNSSEC")
 
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
@@ -1146,6 +1148,25 @@ class TestDomainManagers(TestDomainOverview):
             ).exists()
         )
 
+        success_page = response.follow()
+        domain_role = UserDomainRole.objects.get(
+            email="udrflaguser@igorville.gov",
+            domain=self.domain,
+        )
+        cancel_url = reverse("invitation-cancel", kwargs={"user_domain_role_pk": domain_role.id})
+        self.assertContains(success_page, cancel_url)
+
+        self.client.post(cancel_url)
+        domain_role.refresh_from_db()
+        self.assertEqual(domain_role.status, UserDomainRole.Status.REJECTED)
+        self.assertTrue(
+            DomainInvitation.objects.filter(
+                email="udrflaguser@igorville.gov",
+                domain=self.domain,
+                status=DomainInvitation.DomainInvitationStatus.CANCELED,
+            ).exists()
+        )
+
     @GenericTestHelper.switch_to_enterprise_mode_wrapper
     @less_console_noise_decorator
     @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
@@ -1586,7 +1607,7 @@ class TestDomainManagers(TestDomainOverview):
         )
         # Assert that an error message is displayed to the user
         # Truncated the assert value because the response comes in as HTML and replaces the ' in can't with unicode
-        self.assertContains(response, "be canceled because it has already been retrieved.")
+        self.assertContains(response, "be canceled because it is no longer pending.")
         # Assert that the Cancel link (form) is not displayed
         self.assertNotContains(response, f"/invitation/{invitation.id}/cancel")
         # Assert that the DomainInvitation is not deleted
@@ -1706,32 +1727,10 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
         page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
         self.assertContains(page, "DNS name servers")
 
-    def test_domain_nameservers_redirects_when_dns_hosting_flag_enabled_and_enrolled(self):
-        """Cannot load domain's nameservers page. Redirects to dns records page instead."""
-        with override_flag("dns_hosting", active=True):
-            response = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
-            self.assertRedirects(
-                response,
-                reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
-            )
-
     def test_domain_nameservers_when_dns_hosting_flag_enabled_and_not_enrolled(self):
         """Cannot load domain's nameservers page."""
         with override_flag("dns_hosting", active=True):
             page = self.client.get(reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain.id}))
-            self.assertContains(page, "DNS name servers")
-
-    @override_flag("dns_hosting", active=False)
-    def test_domain_nameservers_found_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
-        """Can load domain's nameservers page when dns hosting flag is disabled
-        and domain is enrolled in dns hosting.
-        """
-        with override_flag("dns_hosting", active=False):
-            page = self.client.get(
-                reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-            )
             self.assertContains(page, "DNS name servers")
 
     @less_console_noise_decorator
@@ -2190,6 +2189,40 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             count=2,
             status_code=200,
         )
+
+
+class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
+    def test_domain_external_dns_pages_redirect_when_dns_hosting_flag_enabled_and_enrolled(self):
+        """
+        When DNS hosting flag is off, cannot load domain's nameservers, DNSSEC, or DS data page.
+        Redirects to dns records page instead."""
+        with override_flag("dns_hosting", active=True):
+            for view_name in [
+                "domain-dns-nameservers",
+                "domain-dns-dnssec",
+                "domain-dns-dnssec-dsdata",
+            ]:
+                response = self.client.get(
+                    reverse(view_name, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+                self.assertRedirects(
+                    response,
+                    reverse("domain-dns-records", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}),
+                )
+
+    @override_flag("dns_hosting", active=False)
+    def test_domain_loads_external_dns_pages_when_dns_hosting_flag_disabled_and_domain_enrolled_in_dns_hosting(self):
+        """Can load domain's nameservers, DNSSEC, and DS data pages when dns hosting flag is disabled
+        and domain is enrolled in dns hosting.
+        """
+        with override_flag("dns_hosting", active=False):
+            for view_page, page_title in [
+                ("domain-dns-nameservers", "DNS name servers"),
+                ("domain-dns-dnssec", "DNSSEC"),
+                ("domain-dns-dnssec-dsdata", "DS data"),
+            ]:
+                page = self.client.get(reverse(view_page, kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
+                self.assertContains(page, page_title)
 
 
 class TestDomainSeniorOfficial(TestDomainOverview):
@@ -3756,6 +3789,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertNotContains(page, "Name servers")
         self.assertContains(page, "DNS Records")
+        self.assertNotContains(page, "DNSSEC")
 
     @override_flag("dns_hosting", active=False)
     def test_domain_dns_when_dns_hosting_flag_is_disabled_and_enrolled_in_dns_hosting(self):
@@ -3770,6 +3804,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id}))
         self.assertContains(page, "Name servers")
         self.assertNotContains(page, "DNS Records")
+        self.assertContains(page, "DNSSEC")
 
 
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
