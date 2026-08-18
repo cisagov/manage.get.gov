@@ -17,10 +17,6 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
-# Set up DNS data for domain
-from registrar.models import (
-    DnsAccount
-)
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import ActionNotAllowed, NameserverError, NameserverErrorCodes
 
@@ -3134,7 +3130,6 @@ class TestAnalystDelete(MockEppLib):
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
-        DnsAccount.objects.all().delete()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -3364,7 +3359,7 @@ class TestAnalystDelete(MockEppLib):
             VendorDnsRecord,
             DnsRecord_VendorDnsRecord,
         )
-        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data_cf_only
 
         _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
         dns_record = create_dns_record(dns_zone)
@@ -3392,6 +3387,7 @@ class TestAnalystDelete(MockEppLib):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+        delete_all_dns_data_cf_only()
 
     @less_console_noise_decorator
     def test_delete_domain_in_epp_deletes_cf_account(self):
@@ -3409,7 +3405,7 @@ class TestAnalystDelete(MockEppLib):
         # This is needed to simulate the domain being able to be deleted
         self.mockDataInfoDomain.hosts = []
 
-        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data_cf_only
 
         create_initial_dns_setup(domain=domain, x_account_id="12345")
 
@@ -3424,6 +3420,7 @@ class TestAnalystDelete(MockEppLib):
 
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+        delete_all_dns_data_cf_only()
 
     def test_delete_related_objects_cleans_database(self):
         """

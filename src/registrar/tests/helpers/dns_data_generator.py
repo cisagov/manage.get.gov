@@ -193,3 +193,17 @@ def delete_all_dns_data():
     DomainInformation.objects.all().delete()
     Portfolio.objects.all().delete()
     Domain.objects.all().delete()
+
+
+def delete_all_dns_data_cf_only():
+    """Utility function to delete all accounts, zones, and records from the database"""
+    RecordsJoin.objects.all().delete()
+    VendorDnsRecord.objects.all().delete()
+    DnsRecord.objects.all().delete()
+    VendorDnsZone.objects.all().delete()
+    DnsZone.objects.all().delete()
+    ZonesJoin.objects.all().delete()
+    VendorDnsAccount.objects.all().delete()
+    DnsAccount.objects.all().delete()
+    AccountsJoin.objects.all().delete()
+
