@@ -601,8 +601,11 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "We’re experiencing a connection error. Please wait a few minutes and try again. "
-                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
+                        mark_safe(  # nosec
+                            "We’re experiencing a connection error. Please wait a few minutes and try again. "
+                            'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                            "for assistance.",
+                        ),
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
