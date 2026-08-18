@@ -3388,6 +3388,35 @@ class TestAnalystDelete(MockEppLib):
         # reset to avoid test pollution
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
+    @less_console_noise_decorator
+    def test_delete_domain_in_epp_deletes_cf_account(self):
+        """
+        Deleting a domain in EPP should successfully request to delete the CF
+        account associated with the domain.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+        create_initial_dns_setup(domain=domain, x_account_id="12345")
+
+        with patch("registrar.services.cloudflare_service.CloudflareService.delete_cf_account") as mock_delete_cf_account:
+            domain.deleteInEpp()
+            domain.save()
+
+            # EPP deletion calls CloudflareService delete account on the x_account_id
+            mock_delete_cf_account.assert_called_once_with("12345")
+
+        # reset to avoid test pollution
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+
     def test_delete_related_objects_cleans_database(self):
         """
         Scenario: After a domain is deleted in EPP, `_delete_related_objects_from_db`

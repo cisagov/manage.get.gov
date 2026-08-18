@@ -80,11 +80,7 @@ MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE = "Combined content length of records 
 "type must not exceed 8192 characters."
 
 
-<<<<<<< Updated upstream
 def get_content_type_label_by_record_type(record_type):
-=======
-def get_content_type_by_record_type(record_type: str):
->>>>>>> Stashed changes
     from registrar.utility.enums import DNSRecordTypes
 
     record_type_to_content_dict = {
@@ -105,7 +101,6 @@ def get_max_length_attrs(limit: int) -> dict[str, str]:
     return {"maxlength": str(limit)}
 
 
-<<<<<<< Updated upstream
 def get_error_message_from_requirement(requirement: str, content_field=None) -> str:
     """
     Returns full error message for a field given a validation requirement.
@@ -127,11 +122,6 @@ def get_fqdn_error_message(content_type_label=None) -> str:
         return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Mail server {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
     else:
         return f"{DNS_LABEL_LENGTH_ERROR_MESSAGE} Full {content_type_label} {DNS_FQDN_LENGTH_ERROR_REQUIREMENT}"
-=======
-def get_error_message_from_requirement(requirement: str, field: str | None) -> str:
-    """Returns full error message for a field given a validation requirement."""
-    return f"Enter the {field} {requirement}."
->>>>>>> Stashed changes
 
 
 def _validate_dns_name_spaces(name: str, field_type="name") -> None:
