@@ -1018,6 +1018,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self._attach_form(dns_record)
         self.dns_record = dns_record
 
+        return record_id
+
     def _handle_invalid_form(self, request, form, is_edit):
         """Return the appropriate error response for an invalid form submission."""
         # If the form set a banner-level (non-field) error, show only that as the banner;
@@ -1071,7 +1073,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_record = dns_record
             return is_first_record, dns_record.id
 
-        self.dns_record = None
         return is_first_record
 
     def post(self, request, *args, **kwargs):  # noqa: C901
@@ -1113,8 +1114,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
                 if is_edit:
-                    self._handle_edit(request, x_zone_id, form_record_data, is_edit)
-                    record_id = is_edit
+                    record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
 
                 # CREATE
                 else:
