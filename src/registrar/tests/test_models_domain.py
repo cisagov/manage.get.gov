@@ -3404,7 +3404,7 @@ class TestAnalystDelete(MockEppLib):
         # This is needed to simulate the domain being able to be deleted
         self.mockDataInfoDomain.hosts = []
 
-        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
 
         create_initial_dns_setup(domain=domain, x_account_id="12345")
 
