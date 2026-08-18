@@ -92,18 +92,15 @@ const getFocusId = (req, target)=>{
         if(!req){
             return;
         }
-
+        console.log(target, req);
         const addRecordbtn = "add-dnsrecord-button";
         const isFromAddRecord = req.fromAddRecord ?? false
         // if a user decides not to switch forms, the focus should go to the element that triggered it
-        if(target == 0 || isFromAddRecord ){
-            return addRecordbtn
+        if(target == null){
+            return req.isRecordType ? addRecordbtn :`dnsrecord-edit-button-${req.recordId}`
         }
         else if(req.isRecordType){
             return "id_type"
-        }
-        else if(target == null){
-            return `dnsrecord-edit-button-${req.recordId}`
         }
         else if(target > 0){
             return `dnsrecord-edit-button-${target}`
@@ -142,9 +139,7 @@ const refreshForm = (selector, url) =>
 function openCancelModal(refs, switcher){
     let modal = "open-cancel-add-dnsrecord-modal"
     let toggle = "toggle-cancel-add-dnsrecord"
-    if(!switcher.pending.fromAddRecord 
-        && !switcher.pending.fromCancelButton
-        && switcher.target != null){
+    if(switcher.target != null){
         modal = switcher.modalDict["modal"];
         toggle = switcher.modalDict["toggle"];
     }
@@ -215,6 +210,7 @@ const teardownForm = (switcher) => {
 const onCancel = (switcher) => {
         const req = switcher.pending;
         const refs = refsFor(req,switcher.target);
+        console.log("focus id", refs.focusId)
         const form = document.querySelector(refs.form);
         req.hasUnsavedChanges = formHasUnsavedChanges(form, req.type === "edit");
         if(req.hasUnsavedChanges){
@@ -233,9 +229,6 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
     const alpineData = switcher.getAlpineData();
 
     table.addEventListener('click', (e) => {
-
-
-        console.log(e.target)
 
             const editBtn =  e.target.closest('[data-action="edit"]')
             const commentBtn = e.target.closest('[data-action="comment"]')
