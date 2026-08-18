@@ -51,14 +51,14 @@ class Command(BaseCommand):
         if total_mismatched == 0:
             self.stdout.write(
                 self.style.SUCCESS(
-                    "Nothing to do. created_at already matches created_at_reference for all eligible rows."
+                    "No action needed - created_at already matches created_at_reference for all eligible rows."
                 )
             )
             self.print_warnings(warnings)
             return
 
         self.stdout.write(
-            f"Found {total_mismatched} row(s) where created_at != created_at_reference (excluding NULL references)."
+            f"Found {total_mismatched} row(s) where created_at_reference != created_at (excluding NULL references)."
         )
 
         if dry_run:
@@ -69,14 +69,16 @@ class Command(BaseCommand):
         self.print_summary(total_updated, total_mismatched, warnings, errors)
 
     def get_warnings(self):
-        """Rows where created_at_reference is NULL are skipped entirely - copying NULL into
-        created_at would erase an existing timestamp and we don't want that"""
+        """
+        Rows where created_at_reference is NULL are skipped entirely - copying NULL into
+        created_at would erase an existing timestamp and we don't want that
+        """
         null_reference_count = Domain.objects.filter(created_at_reference__isnull=True).count()
         if not null_reference_count:
             return []
         return [
             f"{null_reference_count} row(s) have a NULL created_at_reference and will be skipped. "
-            "Their created_at will be left untouched."
+            "Matching created_at row will be left untouched."
         ]
 
     def get_mismatched_queryset(self):
@@ -166,7 +168,7 @@ class Command(BaseCommand):
 
     def print_summary(self, total_updated, total_mismatched, warnings, errors):
         self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS(f"Done. {total_updated}/{total_mismatched} row(s) updated."))
+        self.stdout.write(self.style.SUCCESS(f"Completed - {total_updated}/{total_mismatched} row(s) updated."))
 
         if warnings:
             self.stdout.write(self.style.WARNING(f"{len(warnings)} warning(s):"))
