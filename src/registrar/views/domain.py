@@ -1076,7 +1076,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_record = dns_record
             return is_first_record, dns_record.id
 
-        return is_first_record
+        return is_first_record, None
 
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
@@ -1121,8 +1121,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
                 # CREATE
                 else:
-                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
-                    record_id = self.dns_record.id
+                    is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
+    
         except DnsHostingError as e:
             messages.error(request, e.message)
             if is_edit:
