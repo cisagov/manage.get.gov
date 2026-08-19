@@ -435,6 +435,7 @@ class TestDnsHostService(TestCase):
         self.service.enroll_domain(not_allowed_domain)
         self.service.dns_account_setup.assert_not_called()  # did not get past allowllist conditional
 
+
 class TestDnsHostServiceDB(TestCase):
     def setUp(self):
         self.vendor = DnsVendor.objects.get(name=DnsVendor.CF)
