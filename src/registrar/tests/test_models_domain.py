@@ -3336,7 +3336,8 @@ class TestAnalystDelete(MockEppLib):
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     @less_console_noise_decorator
-    def test_delete_domain_in_epp_deletes_db_dns_data(self):
+    @patch("registrar.services.dns_host_service.DnsHostService.delete_account")
+    def test_delete_domain_in_epp_deletes_db_dns_data(self, mock_delete_account):
         """
         Deleting a domain from EPP removes the domain's DNS data from the database.
         """
