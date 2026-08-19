@@ -25,7 +25,7 @@ class DNSFormSwitcher{
     }
 
     setTarget(value){
-        throw new Error("set Target must be implemented by subclass")
+        throw new Error("set Target must be implemented")
     }
 
     getAlpineData(){

@@ -86,8 +86,20 @@ function clearRecordForm(scope){
     commentStatus.textContent = getCharCountText(100, 0)
 }
 
-
+/*
+* Generates the focus id based on where the user clicked to attempt 
+* to close or change the form.
+* 
+* 
+* @param{object} req
+* @param {boolean} [req.isRecordType] - True if the user is switching the DNS record type on the add record from.
+* @param {boolean} [req.fromConfirmButton] - True if the confirm button on the modal was clicked.
+* @param {string} [req.type] - "add" or "edit", identifying the form, either Add record form or edit form, respectively.
+* @param {number|null} target = The form/row the user clicked toward; null closes the form.
+* @returns {string|undefined} The DOM id to focus or undefiened if req is missing.
+*/ 
 const getFocusId = (req, target)=>{
+
         if(!req){
             return;
         }
@@ -101,24 +113,21 @@ const getFocusId = (req, target)=>{
         }
 
         if(req.fromConfirmButton && target){
-                return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
+            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
         }
 
         if(target == 0){
-                return addRecordbtn
+            return addRecordbtn;
         }
         
         if(target > 0 && req.type == "edit"){
-                return editButtonId(target)
+            return editButtonId(target)
         }
 
 
         if(target == null) {
             return req.type == "add" ? addRecordbtn : editButtonId(req.recordId)
         }     
-         
-        
-     
     }
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
