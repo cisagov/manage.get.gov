@@ -426,7 +426,7 @@ class TestDnsHostService(TestCase):
         self.service.dns_account_setup.assert_called()  # got past allowllist conditional
 
     @override_settings(IS_PRODUCTION=True)
-    def test_enroll_domain_gates_disallowed_domain_enrollment_in_production(self):
+    def test_enroll_domain_disallowed_domain_enrollment_in_production_fails(self):
         not_allowed_domain = create_domain(**{"domain_name": "not-igorville.gov"})
         mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists

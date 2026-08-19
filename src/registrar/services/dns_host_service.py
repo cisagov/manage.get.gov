@@ -477,7 +477,7 @@ class DnsHostService:
         The enrollment flag is only set if the entire operation succeeds.
         """
         if domain.name not in settings.DNS_HOSTING_PROD_ALLOWLIST:
-            raise EnrollmentNotAllowedError("This domain cannot be enrolled in DNS Hosting. Domain must be in the prod allowlist")
+            raise EnrollmentNotAllowedError("This domain cannot be enrolled in DNS Hosting. Domain must be in the prod allowlist.")
 
         if domain.is_enrolled_in_dns_hosting:
             logger.info("Domain %s already enrolled in DNS hosting.", domain.name, extra={"domain_name": domain.name})
