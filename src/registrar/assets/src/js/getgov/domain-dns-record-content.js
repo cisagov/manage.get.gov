@@ -95,7 +95,6 @@ const getFocusId = (req, target)=>{
         const addRecordbtn = "add-dnsrecord-button";
         const selectDropDown = "id_type"
         const editButtonId = (id) => `dnsrecord-edit-button-${id}`
-        console.log(req, target)
 
         if(req.fromConfirmButton && req.isRecordType || req.isRecordType ){
             return selectDropDown;
