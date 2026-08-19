@@ -44,6 +44,7 @@ export class EditFormSwitcher extends DNSFormSwitcher{
      * showFormId: the form number that is set on showFormId on Alpine data will show on the UI
      * - the value 0 represents that the add Record form is open
      * - values above 0 represents the edit forms in the table rows
+     * modalDict: holds modal values for the switcher
      * Methods:
      * - setTarget: toggle from closing and opening the form if same value, and if different value set the form target;
      * - setShowFormId: update the showFormId in Alpine data
@@ -102,6 +103,7 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
     /**
      * RecordSelectTypeSwitcher for changes between the add record types
      * State: inherited from DNSFormSwitcher, and isRecordType is differentiate between this and the EditFormSwitcher
+     * modalDict: holds modal values for the switcher
      * Method:
      * - createReq: creates the dict for the refForm method in the domain-dns-record-content.js
      * - setRecordType: sets recordType on the Alpine data obj

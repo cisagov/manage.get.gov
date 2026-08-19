@@ -87,28 +87,50 @@ function clearRecordForm(scope){
 }
 
 
+/** * Generates the focus id for the DNS record form after a user responds * to the "unsaved changes" confirmation modal, or navigates between forms. 
+ * * Scenarios:
+ * * * 1. From cancel button on the form, from addrecord form -> add record button, from edit form, -> edit button for that form
+ * * * 2. Confirmed on the modal, while on the record-type form * -> focus goes to the "id_type" dropdown. 
+ * * * 3. Confirmed on the modal, from any other form * -> focus goes back to wherever the user was heading: * - the "Add Record" button, if they were leaving the add-record form * (or heading to it) * - otherwise, the edit button for the record they were editing. 
+ * * * 4. Closing the form entirely (target == null) — via the cancel button, * or by clicking the same toggle button that opened the form: * - if closing the record-type form -> focus the "Add Record" button * - if closing an edit form -> focus that record's edit button 
+ * * * 5. Switching to the record-type form (not via the modal) * -> focus goes to the "id_type" dropdown. 
+ * * * 6. Target is 0 ("Add Record" form) * -> focus goes to the "Add Record" button. 
+ * * * 7. Target is greater than 0 (an edit row, via the edit-form switcher) * -> focus goes to that row's edit button, on the far right. */
 
 const getFocusId = (req, target)=>{
+        const addRecordbtn = "add-dnsrecord-button";
         if(!req){
             return;
         }
-        
-        const addRecordbtn = "add-dnsrecord-button";
-        // if a user decides not to switch forms, the focus should go to the element that triggered it
-        if(req.fromConfirmButton){
-            return req.type == "add" || target == 0 ? addRecordbtn : `dnsrecord-edit-button-${req.recordId}`
+
+        const editButtonId = (id) => `dnsrecord-edit-button-${id}`
+
+        if(req.fromCancelButton){
+            return req.type == "add" ? addRecordbtn : editButtonEventListener(target)
         }
-        else if(target == null) {
-            return req.isRecordType ? addRecordbtn :`dnsrecord-edit-button-${req.recordId}`
-        }     
-        else if(req.isRecordType){
+
+        if(req.fromConfirmButton && req.isRecordType){
             return "id_type"
         }
-        else if(target == 0){
+
+        if(req.fromConfirmButton){
+            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(req.recordId)
+        }
+        
+        if(target == null) {
+            return req.isRecordType ? addRecordbtn : editButtonId(req.recordId)
+        }     
+         
+        if(req.isRecordType){
+            return "id_type"
+        }
+        
+        if(target == 0){
             return addRecordbtn
         }
-        else if(target > 0){
-            return `dnsrecord-edit-button-${target}`
+        
+        if(target > 0){
+            editButtonId(target)
         }
     }
 
@@ -141,7 +163,7 @@ const refreshForm = (selector, url) =>
 function openCancelModal(refs, switcher){
     let modal = "open-cancel-add-dnsrecord-modal"
     let toggle = "toggle-cancel-add-dnsrecord"
-    if(switcher.target != null){
+    if(!switcher.pending.fromCancelButton){
         modal = switcher.modalDict["modal"];
         toggle = switcher.modalDict["toggle"];
     }
