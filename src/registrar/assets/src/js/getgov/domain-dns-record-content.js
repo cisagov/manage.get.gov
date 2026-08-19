@@ -367,7 +367,6 @@ export function initDNSRecordCancelModal(){
             switcher.pending.fromConfirmButton = true;
 
             const focusId = getFocusId(switcher.pending, switcher.target);
-            console.log("lool", focusId)
         
             teardownForm(
             switcher,
