@@ -24,6 +24,9 @@ class DNSFormSwitcher{
          this.pending = value;
     }
 
+    setTarget(value){
+        throw new Error("set Target must be implemented by subclass")
+    }
 
     getAlpineData(){
         return Alpine.$data(this.container);
@@ -94,10 +97,6 @@ export class EditFormSwitcher extends DNSFormSwitcher{
         this.setPending(this.createReq(currentId));
     }
 
-    switchForm(value = this.target){
-       this.setShowId(value);
-       this.resetPendingAndTarget();
-    }
 }
 
 export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
@@ -139,8 +138,7 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
         data.recordType = value;
     }
 
-    attemptOpen(form){
-        this.setTarget(form);
+    attemptOpen(){
         const currentId = this.getAlpineData().recordType;
         this.setPending(this.createReq(currentId));
     }

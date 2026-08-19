@@ -421,7 +421,8 @@ export function initDNSRecordCancelModal(){
                 return;
             }
             const index = e.target.selectedIndex;
-            recordTypeSwitcher.attemptOpen(index);
+            recordTypeSwitcher.setTarget(index);
+            recordTypeSwitcher.attemptOpen();
             recordTypeSwitcher.updateSelectedType(recordTypeSwitcher.pending.recordId);
             onCancel(recordTypeSwitcher)
             }
