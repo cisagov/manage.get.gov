@@ -3331,7 +3331,7 @@ class TestAnalystDelete(MockEppLib):
         self.assertEqual(domain.state, Domain.State.DELETED)
 
         # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+        # self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     @less_console_noise_decorator
     @patch("registrar.services.dns_host_service.DnsHostService.delete_account")
