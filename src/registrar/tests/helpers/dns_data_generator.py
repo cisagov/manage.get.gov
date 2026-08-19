@@ -179,7 +179,7 @@ def create_dns_record(zone, **kwargs):
     return dns_record
 
 
-def delete_all_dns_data():
+def delete_all_dns_data(cf_only=False):
     """Utility function to delete all DNS related data from the database"""
     RecordsJoin.objects.all().delete()
     VendorDnsRecord.objects.all().delete()
@@ -190,9 +190,10 @@ def delete_all_dns_data():
     VendorDnsAccount.objects.all().delete()
     DnsAccount.objects.all().delete()
     AccountsJoin.objects.all().delete()
-    DomainInformation.objects.all().delete()
-    Portfolio.objects.all().delete()
-    Domain.objects.all().delete()
+    if not cf_only:
+        DomainInformation.objects.all().delete()
+        Portfolio.objects.all().delete()
+        Domain.objects.all().delete()
 
 
 def delete_all_dns_data_cf_only():

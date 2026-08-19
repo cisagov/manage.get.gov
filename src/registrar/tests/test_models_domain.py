@@ -3105,6 +3105,7 @@ class TestAnalystDelete(MockEppLib):
             And a domain exists in the registry
         """
         super().setUp()
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         self.domain_with_contacts, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.READY)
         self.domain_on_hold, _ = Domain.objects.get_or_create(name="fake-on-hold.gov", state=Domain.State.ON_HOLD)
