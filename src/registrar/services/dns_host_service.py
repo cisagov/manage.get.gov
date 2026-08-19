@@ -199,22 +199,9 @@ class DnsHostService:
         2. changing params from account to domain/zone.
         3. adding/modifying tests to verify DnsHostService deletes DNS data in db.
         """
-        try:
-            account_data = self.dns_vendor_service.delete_cf_account(x_account_id)
-            logger.info(
-                "Successfully deleted account %s at vendor",
-                x_account_id,
-                extra={"x_account_id": x_account_id},
-            )
-            x_account_id = account_data["result"]["id"]
-            return x_account_id
-        except Exception:
-            logger.error(
-                "Failed to delete dns account %s.",
-                extra={"x_account_id": x_account_id},
-                exc_info=True,
-            )
-            raise
+        account_data = self.dns_vendor_service.delete_cf_account(x_account_id)
+        x_account_id = account_data["result"]["id"]
+        return x_account_id
 
     def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
         """Apply required DNS settings to a newly created account.
@@ -452,50 +439,6 @@ class DnsHostService:
                 exc_info=True,
             )
             raise
-
-    def delete_dns_data_from_zone_and_vendor_account(self, dns_zone, dns_account, vendor_account):
-        """
-        Deletes DNS data from db associated with a given domain_id, including:
-            - DnsAccount, VendorDnsAccount, DnsAccountVendorDnsAccount
-            - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
-            - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
-        """
-        from registrar.models import (
-            DnsZone_VendorDnsZone,
-            DnsRecord_VendorDnsRecord,
-            VendorDnsRecord,
-        )
-
-        logger.debug("Deleting DNS data for %s.", self.name)
-        try:
-            with transaction.atomic():
-                logger.info("Removing db DNS records associated with %s.", self.name)
-                records = DnsRecord.objects.filter(dns_zone=dns_zone)
-                logger.info("Removing %s db DNS records: %s.", self.name, str(records))
-                # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
-                # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
-                for record in records:
-                    vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(dns_record=record).values_list(
-                        "vendor_dns_record_id", flat=True
-                    )
-                    vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
-                    if vendor_records:
-                        vendor_records.delete()
-                records.delete()
-                logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
-                logger.info("Removing db DNS zone data for domain %s.", self.name)
-                vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
-                dns_zone.delete()
-                vendor_zone.delete()
-                logger.info("Removed db DNS zone data for domain %s.", self.name)
-                logger.info("Removing db DNS account data for %s.", self.name)
-                dns_account.delete()
-                vendor_account.delete()
-                logger.info("Removed db DNS account data for domain %s.", self.name)
-
-        except Exception as e:
-            logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
-            raise e
 
     def create_db_zone(self, vendor_zone_data, domain_name):
         zone_data = vendor_zone_data["result"]
