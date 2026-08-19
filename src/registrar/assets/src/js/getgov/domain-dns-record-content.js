@@ -106,7 +106,7 @@ const getFocusId = (req, target)=>{
         const editButtonId = (id) => `dnsrecord-edit-button-${id}`
 
         if(req.fromCancelButton){
-            return req.type == "add" ? addRecordbtn : editButtonEventListener(target)
+            return req.type == "add" ? addRecordbtn : editButtonId(target)
         }
 
         if(req.fromConfirmButton && req.isRecordType){
@@ -118,7 +118,7 @@ const getFocusId = (req, target)=>{
         }
         
         if(target == null) {
-            return req.isRecordType ? addRecordbtn : editButtonId(req.recordId)
+            return req.type == "add" ? addRecordbtn : editButtonId(req.recordId)
         }     
          
         if(req.isRecordType){
