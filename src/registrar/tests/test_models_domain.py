@@ -37,7 +37,6 @@ import logging
 import boto3_mocking  # type: ignore
 import copy
 from django.core.exceptions import ValidationError
-from registrar.tests.helpers.dns_data_generator import cleanup_dns_data
 
 logger = logging.getLogger(__name__)
 
@@ -3132,7 +3131,6 @@ class TestAnalystDelete(MockEppLib):
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
-        cleanup_dns_data()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -3368,6 +3366,7 @@ class TestAnalystDelete(MockEppLib):
         _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
         dns_record = create_dns_record(dns_zone)
         account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+        mock_delete_account.return_value = "1"
 
         vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
         vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
