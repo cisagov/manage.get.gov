@@ -32,6 +32,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
+from registrar.utility.errors import DnsHostingError
 from .common import DEFAULT_EPP_CR_DATE, MockEppLib, MockSESClient, less_console_noise
 import logging
 import boto3_mocking  # type: ignore
@@ -3385,6 +3386,60 @@ class TestAnalystDelete(MockEppLib):
         self.assertFalse(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
         self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
         self.assertFalse(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
+
+    @less_console_noise_decorator
+    @patch("registrar.services.cloudflare_service.CloudflareService.delete_cf_account")
+    def test_delete_domain_in_epp_preserves_db_dns_data_on_cf_delete_failure(self, mock_delete_account):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            VendorDnsAccount,
+            DnsAccount_VendorDnsAccount,
+            DnsZone,
+            VendorDnsZone,
+            DnsZone_VendorDnsZone,
+            DnsRecord,
+            VendorDnsRecord,
+            DnsRecord_VendorDnsRecord,
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+        # CloudflareService delete account raises Error
+        mock_delete_account.side_effect = DnsHostingError
+
+        # Delete the domain
+        domain.deleteInEpp()
+        domain.save()
+
+        vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).vendor_dns_record.id
+
+        self.assertTrue(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertTrue(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertTrue(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+        self.assertTrue(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertTrue(VendorDnsZone.objects.filter(id=vendor_zone_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertTrue(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
+        self.assertTrue(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
 
     @less_console_noise_decorator
     def test_delete_domain_in_epp_deletes_cf_account(self):
