@@ -3105,6 +3105,7 @@ class TestAnalystDelete(MockEppLib):
             And a domain exists in the registry
         """
         super().setUp()
+        # Reset hosts to account for unit tests that modify them (e.g., deleting hosts to make domains EPP deletable)
         self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         self.domain_with_contacts, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.READY)
@@ -3329,9 +3330,6 @@ class TestAnalystDelete(MockEppLib):
 
         # Check that the domain was deleted
         self.assertEqual(domain.state, Domain.State.DELETED)
-
-        # reset to avoid test pollution
-        # self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
 
     @less_console_noise_decorator
     @patch("registrar.services.dns_host_service.DnsHostService.delete_account")
