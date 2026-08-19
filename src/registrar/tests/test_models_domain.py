@@ -37,6 +37,7 @@ import logging
 import boto3_mocking  # type: ignore
 import copy
 from django.core.exceptions import ValidationError
+from registrar.tests.helpers.dns_data_generator import cleanup_dns_data
 
 logger = logging.getLogger(__name__)
 
@@ -3131,6 +3132,7 @@ class TestAnalystDelete(MockEppLib):
         Host.objects.all().delete()
         PublicContact.objects.all().delete()
         Domain.objects.all().delete()
+        cleanup_dns_data()
         super().tearDown()
 
     @less_console_noise_decorator
@@ -3360,7 +3362,7 @@ class TestAnalystDelete(MockEppLib):
             VendorDnsRecord,
             DnsRecord_VendorDnsRecord,
         )
-        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data_cf_only
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
 
         _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
         dns_record = create_dns_record(dns_zone)
@@ -3386,10 +3388,6 @@ class TestAnalystDelete(MockEppLib):
         self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
         self.assertFalse(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
 
-        # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
-        delete_all_dns_data_cf_only()
-
     @less_console_noise_decorator
     def test_delete_domain_in_epp_deletes_cf_account(self):
         """
@@ -3406,7 +3404,7 @@ class TestAnalystDelete(MockEppLib):
         # This is needed to simulate the domain being able to be deleted
         self.mockDataInfoDomain.hosts = []
 
-        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, delete_all_dns_data_cf_only
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
 
         create_initial_dns_setup(domain=domain, x_account_id="12345")
 
@@ -3418,10 +3416,6 @@ class TestAnalystDelete(MockEppLib):
 
             # EPP deletion calls CloudflareService delete account on the x_account_id
             mock_delete_cf_account.assert_called_once_with("12345")
-
-        # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
-        delete_all_dns_data_cf_only()
 
     def test_delete_related_objects_cleans_database(self):
         """
