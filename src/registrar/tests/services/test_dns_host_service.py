@@ -22,7 +22,7 @@ from registrar.models import (
     DomainInformation,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, EnrollmentNotAllowedError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
     create_dns_account,
@@ -432,8 +432,8 @@ class TestDnsHostService(TestCase):
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
 
-        self.service.enroll_domain(not_allowed_domain)
-        self.service.dns_account_setup.assert_not_called()  # did not get past allowllist conditional
+        with self.assertRaises(EnrollmentNotAllowedError):
+            self.service.enroll_domain(not_allowed_domain)
 
 
 class TestDnsHostServiceDB(TestCase):
