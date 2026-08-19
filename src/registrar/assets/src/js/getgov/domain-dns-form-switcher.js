@@ -46,7 +46,8 @@ export class EditFormSwitcher extends DNSFormSwitcher{
      * - values above 0 represents the edit forms in the table rows
      * modalDict: holds modal values for the switcher
      * Methods:
-     * - setTarget: toggle from closing and opening the form if same value, and if different value set the form target;
+     * - setTarget: toggle from closing and opening the form if same value, and if different value set the form target; 
+     *   a null value closes all forms
      * - setShowFormId: update the showFormId in Alpine data
      * - getCurrentShowFormId: get current showFormId from Alpine data
      * - attemptOpen: sets the pending target in a dict to be used in the refsForm method to get the focusId, buttonId, and form

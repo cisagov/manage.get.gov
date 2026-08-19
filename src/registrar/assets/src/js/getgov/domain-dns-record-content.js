@@ -87,51 +87,39 @@ function clearRecordForm(scope){
 }
 
 
-/** * Generates the focus id for the DNS record form after a user responds * to the "unsaved changes" confirmation modal, or navigates between forms. 
- * * Scenarios:
- * * * 1. From cancel button on the form, from addrecord form -> add record button, from edit form, -> edit button for that form
- * * * 2. Confirmed on the modal, while on the record-type form * -> focus goes to the "id_type" dropdown. 
- * * * 3. Confirmed on the modal, from any other form * -> focus goes back to wherever the user was heading: * - the "Add Record" button, if they were leaving the add-record form * (or heading to it) * - otherwise, the edit button for the record they were editing. 
- * * * 4. Closing the form entirely (target == null) — via the cancel button, * or by clicking the same toggle button that opened the form: * - if closing the record-type form -> focus the "Add Record" button * - if closing an edit form -> focus that record's edit button 
- * * * 5. Switching to the record-type form (not via the modal) * -> focus goes to the "id_type" dropdown. 
- * * * 6. Target is 0 ("Add Record" form) * -> focus goes to the "Add Record" button. 
- * * * 7. Target is greater than 0 (an edit row, via the edit-form switcher) * -> focus goes to that row's edit button, on the far right. */
-
 const getFocusId = (req, target)=>{
-        const addRecordbtn = "add-dnsrecord-button";
         if(!req){
             return;
         }
-
+        
+        const addRecordbtn = "add-dnsrecord-button";
+        const selectDropDown = "id_type"
         const editButtonId = (id) => `dnsrecord-edit-button-${id}`
+        console.log(req, target)
 
-        if(req.fromCancelButton){
-            return req.type == "add" ? addRecordbtn : editButtonId(target)
+        if(req.fromConfirmButton && req.isRecordType || req.isRecordType ){
+            return selectDropDown;
         }
 
-        if(req.fromConfirmButton && req.isRecordType){
-            return "id_type"
+        if(req.fromConfirmButton && target){
+                return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
         }
 
-        if(req.fromConfirmButton){
-            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(req.recordId)
+        if(target == 0){
+                return addRecordbtn
         }
         
+        if(target > 0 && req.type == "edit"){
+                return editButtonId(target)
+        }
+
+
         if(target == null) {
             return req.type == "add" ? addRecordbtn : editButtonId(req.recordId)
         }     
          
-        if(req.isRecordType){
-            return "id_type"
-        }
         
-        if(target == 0){
-            return addRecordbtn
-        }
-        
-        if(target > 0){
-            editButtonId(target)
-        }
+     
     }
 
 // DOM ids/selectors for a cancel target, keyed off the add vs edit row id
@@ -167,9 +155,8 @@ function openCancelModal(refs, switcher){
         modal = switcher.modalDict["modal"];
         toggle = switcher.modalDict["toggle"];
     }
-
+  
     const opener = switcher.pending.fromCancelButton ? refs.cancelButtonId : refs.focusId;
-    
     document.getElementById(modal)?.click(); 
     document.getElementById(toggle)?.setAttribute("data-opener", opener);
 }
@@ -342,14 +329,14 @@ export function initDNSRecordCancelModal(){
         if(!switcher){
                 return;
         }
+        
         if(switcher.isRecordType){
             switcher.switchForm(switcher.pending.recordId);
         }
         else{
-                switcher.resetPendingAndTarget();
+            switcher.resetPendingAndTarget();
         }
-        const focusId = getFocusId(switcher.pending, switcher.target);
-        modal.setAttribute('data-opener', focusId);
+
     }
     
     const modalOverallOverlays = document.querySelectorAll('.usa-modal-overlay:not([aria-controls="delete-dns-record-modal"])');
@@ -372,6 +359,7 @@ export function initDNSRecordCancelModal(){
             switcher.pending.fromConfirmButton = true;
 
             const focusId = getFocusId(switcher.pending, switcher.target);
+            console.log("lool", focusId)
         
             teardownForm(
             switcher,
