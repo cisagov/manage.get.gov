@@ -70,18 +70,12 @@ def available(request, domain=""):
     return json_response
 
 
-@transaction.non_atomic_requests
-@require_http_methods(["GET"])
-@login_not_required
-# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
 @ttl_cache(ttl=600)
-def rdap(request, domain=""):
-    """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
-    
-    Domain = apps.get_model("registrar.Domain")
-    domain = request.GET.get("domain", "").lower().strip()
+# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
+def get_rdap_data(domain):
+    """Fetch RDAP data for a domain from the Cloudflare API"""
     print(f"RDAP request for domain: {domain}")
-    
+    Domain = apps.get_model("registrar.Domain")
     if not domain:
         return JsonResponse({"error": DOMAIN_API_MESSAGES["required"]}, status=400)
 
@@ -93,7 +87,17 @@ def rdap(request, domain=""):
     if not domain.endswith(".gov") or not Domain.string_could_be_domain(domain):
         return JsonResponse({"error": DOMAIN_API_MESSAGES["invalid"]}, status=400)
     
-    rdap_data = requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
+    return requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
+
+
+@transaction.non_atomic_requests
+@require_http_methods(["GET"])
+@login_not_required
+def rdap(request, domain=""):
+    """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
+    domain = request.GET.get("domain", "").lower().strip()
+    
+    rdap_data = get_rdap_data(domain)
     return JsonResponse(rdap_data)
 
 
