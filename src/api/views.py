@@ -73,7 +73,11 @@ def available(request, domain=""):
 @ttl_cache(ttl=600)
 # Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
 def get_rdap_data(domain):
-    """Fetch RDAP data for a domain from the Cloudflare API"""
+    """Fetch RDAP data for a domain from the Cloudflare API
+    Used by the /api/v1/rdap endpoint; separated out
+    so that caching works properly.
+    Returns a JSON dictionary of the RDAP data.
+    """
     print(f"RDAP request for domain: {domain}")
     Domain = apps.get_model("registrar.Domain")
     if not domain:
@@ -98,6 +102,9 @@ def rdap(request, domain=""):
     domain = request.GET.get("domain", "").lower().strip()
     
     rdap_data = get_rdap_data(domain)
+    if rdap.isinstance(rdap_data, JsonResponse):
+        return rdap_data  # Return error response if domain is invalid or missing   
+    
     return JsonResponse(rdap_data)
 
 
