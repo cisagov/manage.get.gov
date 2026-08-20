@@ -15,7 +15,7 @@ data-open-modal
     class="usa-modal"
     id="domain-dns-record-type-switcher"
 >
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your record type?" modal_description="You have unsaved changes that will be lost." modal_button_id="record-type-switch-confirm-button" modal_button_class="usa-button--secondary js-confirm-button-dns-record-switcher" modal_button_text="Yes, cancel"  cancel_button_text="Go back" %}
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to change your record type?" modal_description="You have unsaved changes that will be lost." modal_button_id="record-type-switch-confirm-button" modal_button_class="js-confirm-button-dns-record-switcher" modal_button_text="Yes, cancel"  cancel_button_text="Go back" %}
 </div>
 
 
@@ -34,7 +34,7 @@ data-open-modal
     class="usa-modal"
     id="edit-dns-record-switcher"
 >
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost." modal_button_id="edit-dns-record-switcher-button" modal_button_class="usa-button js-confirm-button-dns-record-switcher" modal_button_text="Continue without saving"  cancel_button_text="Go back" %}
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost."  modal_button_id="edit-dns-record-switcher-button"  cancel_button_text="Go back" modal_button_text="Continue withuot saving"  modal_button_class="js-confirm-button-dns-record-switcher"%}
 </div>
 
 
@@ -55,6 +55,7 @@ data-open-modal
 >
     {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="" modal_button_id="confirm-delete-record-button" modal_button_class="usa-button--secondary" modal_button_text="Yes, delete"  %}
 </div>
+
 
 {# CANCEL modal opener #}
 <a
