@@ -77,12 +77,22 @@ def available(request, domain=""):
 @ttl_cache(ttl=600)
 def rdap(request, domain=""):
     """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
-    domain = request.GET.get("domain", "")
+    
+    Domain = apps.get_model("registrar.Domain")
+    domain = request.GET.get("domain", "").lower().strip()
+    print(f"RDAP request for domain: {domain}")
+    
+    if not domain:
+        return JsonResponse({"error": DOMAIN_API_MESSAGES["required"]}, status=400)
 
     # If inputted domain doesn't have a TLD, append .gov to it
     if "." not in domain:
         domain = f"{domain}.gov"
 
+    # If invalid domain, return error message
+    if not domain.endswith(".gov") or not Domain.string_could_be_domain(domain):
+        return JsonResponse({"error": DOMAIN_API_MESSAGES["invalid"]}, status=400)
+    
     rdap_data = requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
     return JsonResponse(rdap_data)
 
