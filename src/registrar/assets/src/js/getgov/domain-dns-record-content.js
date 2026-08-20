@@ -333,7 +333,7 @@ export function initDNSRecordCancelModal(){
             return;
     }
 
-    const resetSwitcherValues = (modal)=>{
+    const resetSwitcherValues = ()=>{
         const switcher = getSwitcher();
         if(!switcher){
                 return;
@@ -353,7 +353,7 @@ export function initDNSRecordCancelModal(){
     for(const modalOl of modalOverallOverlays){
         modalOl.addEventListener("keydown", (e)=>{
          if(e.key === "Escape"){
-            resetSwitcherValues(modalOl);
+            resetSwitcherValues();
         }}
         )
 
@@ -381,22 +381,22 @@ export function initDNSRecordCancelModal(){
 
             if(e.target.matches("[data-close-modal]")){
                 if(e.isTrusted){
-                    resetSwitcherValues(modalOl);
+                    resetSwitcherValues();
                 }
             }
 
             const recordTypeModalOverlay = recordTypeSwitcher.modalDict["toggle"];
             if(e.target.matches(`[aria-controls="${recordTypeModalOverlay}"`)){ 
-                resetSwitcherValues(modalOl);
+                resetSwitcherValues();
             }
 
             const editTypeModalOverlay = editFormSwitcher.modalDict["toggle"];
             if(e.target.matches(`[aria-controls="${editTypeModalOverlay}]"`)){
-                resetSwitcherValues(modalOl);
+                resetSwitcherValues();
             }
 
             if(e.target.matches('[aria-controls="toggle-cancel-add-dnsrecord"]')){
-                resetSwitcherValues(modalOl);
+                resetSwitcherValues();
              }
 
             }
