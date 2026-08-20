@@ -159,12 +159,13 @@ const refreshForm = (selector, url) =>
 function openCancelModal(refs, switcher){
     let modal = "open-cancel-add-dnsrecord-modal"
     let toggle = "toggle-cancel-add-dnsrecord"
+    let opener = refs.cancelButtonId;
     if(!switcher.pending.fromCancelButton){
         modal = switcher.modalDict["modal"];
         toggle = switcher.modalDict["toggle"];
+        opener = refs.focusId;
     }
   
-    const opener = switcher.pending.fromCancelButton ? refs.cancelButtonId : refs.focusId;
     document.getElementById(modal)?.click(); 
     document.getElementById(toggle)?.setAttribute("data-opener", opener);
 }
