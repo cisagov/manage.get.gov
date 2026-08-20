@@ -64,8 +64,6 @@ class DnsRecord(TimeStampedModel):
 
     comment = models.CharField(blank=True, null=True, max_length=500)
 
-    tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
-
     @property
     def ttl_display(self) -> str:
         return format_dns_ttl(self.ttl)
