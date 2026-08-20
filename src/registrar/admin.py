@@ -5777,7 +5777,6 @@ class DnsRecordAdmin(admin.ModelAdmin):
         "ttl",
         "content",
         "comment",
-        "tags",
         "created_at",
         "updated_at",
     )
@@ -5789,7 +5788,6 @@ class DnsRecordAdmin(admin.ModelAdmin):
         "ttl",
         "content",
         "comment",
-        "tags",
         "created_at",
         "updated_at",
     )
