@@ -4,7 +4,7 @@ import random
 from django.conf import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import RegistrySystemError
+from registrar.utility.errors import EnrollmentNotAllowedError, RegistrySystemError
 from registrar.models import (
     DnsVendor,
     DnsAccount,
@@ -476,9 +476,10 @@ class DnsHostService:
 
         The enrollment flag is only set if the entire operation succeeds.
         """
-        if settings.IS_PRODUCTION and domain.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
-            logger.warning("Only igorville.gov can be enrolled in DNS Hosting right now.")
-            return
+        if settings.IS_PRODUCTION and domain.name not in settings.DNS_HOSTING_PROD_ALLOWLIST:
+            raise EnrollmentNotAllowedError(
+                "This domain cannot be enrolled in DNS Hosting. Domain must be in the prod allowlist"
+            )
 
         if domain.is_enrolled_in_dns_hosting:
             logger.info("Domain %s already enrolled in DNS hosting.", domain.name, extra={"domain_name": domain.name})

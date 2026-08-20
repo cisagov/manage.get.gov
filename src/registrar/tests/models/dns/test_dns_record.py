@@ -488,3 +488,52 @@ class DnsRecordTest(TestCase):
         self.assertFalse(
             RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
         )
+
+    def test_records_ordered_alphanumerically_by_type_name_content(self):
+        """Records should be returned ordered by type, then name, then content."""
+        txt = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="TXT",
+            name="www",
+            ttl=300,
+            content="some text",
+        )
+
+        mx = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="MX",
+            name="www",
+            ttl=300,
+            content="mail.example.gov",
+            priority=10,
+        )
+
+        a_record = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="magic",
+            ttl=300,
+            content="192.1.1.1",
+        )
+
+        aaaa = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="AAAA",
+            name="www",
+            ttl=300,
+            content="2001:db8::1234:5678",
+        )
+
+        a_root = DnsRecord.objects.create(
+            dns_zone=self.dns_zone,
+            type="A",
+            name="www",
+            ttl=300,
+            content="192.0.2.10",
+        )
+
+        ordered = list(DnsRecord.get_ordered_for_zone(self.dns_zone))
+
+        # self.dns_record is blank per setUp, so it is ordered first
+        # Of the two A records, magic is before www, so...
+        self.assertEqual(ordered, [self.dns_record, a_record, a_root, aaaa, mx, txt])
