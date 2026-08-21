@@ -70,6 +70,7 @@ def available(request, domain=""):
     )
     return json_response
 
+
 # Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
 @ttl_cache(ttl=600)
 def get_rdap_data(domain):
