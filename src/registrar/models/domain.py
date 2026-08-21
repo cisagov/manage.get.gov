@@ -1326,10 +1326,16 @@ class Domain(TimeStampedModel, DomainHelper):
                     logger.info("Removing db DNS account data for %s.", self.name)
                     dns_account = dns_zone.dns_account
                     vendor_account = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account
+                    x_account_id = vendor_account.x_account_id
                     dns_account.delete()
                     vendor_account.delete()
                     logger.info("Removed db DNS account data for domain %s.", self.name)
 
+                    logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
+                    from registrar.services.dns_host_service import DnsHostService
+
+                    dns_host_service = DnsHostService()
+                    dns_host_service.delete_account(x_account_id)
             except Exception as e:
                 logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
                 raise e
