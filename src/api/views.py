@@ -15,6 +15,7 @@ from login_required import login_not_required
 from cachetools.func import ttl_cache
 
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
+from urllib.parse import quote
 
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
@@ -79,7 +80,7 @@ def get_rdap_data(domain):
     Returns a JSON dictionary of the RDAP data.
     """
     print(f"Will delete before merging, request for domain: {domain}")
-    return requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
+    return requests.get(RDAP_URL.format(domain=quote(domain, safe="")), timeout=5).json()
 
 
 @transaction.non_atomic_requests
