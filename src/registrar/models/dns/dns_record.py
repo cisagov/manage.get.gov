@@ -421,7 +421,6 @@ class DnsRecord(TimeStampedModel):
                     content=record_data["content"],
                     priority=record_data.get("priority"),
                     comment=record_data["comment"],
-                    tags=record_data["tags"],
                 )
 
                 RecordsJoin.objects.create(
