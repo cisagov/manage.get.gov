@@ -62,7 +62,6 @@ def available(request, domain=""):
     """
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "")
-    print("available request for domain: ", domain)
 
     _, json_response = Domain.validate_and_handle_errors(
         domain=domain,
@@ -74,12 +73,12 @@ def available(request, domain=""):
 @ttl_cache(ttl=600)
 # Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
 def get_rdap_data(domain):
-    """Fetch RDAP data for a domain from the Cloudflare API
+    """Fetch RDAP data for a domain from the Cloudflare API.
     Used by the /api/v1/rdap endpoint; separated out
     so that caching works properly.
     Returns a JSON dictionary of the RDAP data.
     """
-    print(f"RDAP request for domain: {domain}")
+    print(f"Will delete before merging, request for domain: {domain}")
     return requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
 
 
@@ -90,6 +89,7 @@ def rdap(request, domain=""):
     """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "").lower().strip()
+
     if not domain:
         return JsonResponse(
             {"errorCode": 400, "title": "Invalid domain", "description": [DOMAIN_API_MESSAGES["required"]]}, status=400
