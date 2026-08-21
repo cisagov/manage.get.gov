@@ -61,6 +61,7 @@ from registrar.views.utility.invitation_helper import (
     handle_invitation_exceptions,
 )
 from registrar.services.invitation_service import (
+    cancel_domain_invitation,
     create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
     get_requested_user,
@@ -140,6 +141,15 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             self.object = self.get_object()
         self._update_session_with_domain()
 
+    def _get_domain_force_reset_cache(self, request):
+        """
+        Get domain and always reset the cache for the domain object.
+        Used to get domain and reset cache in Nameservers, DNSSEC, and DS Data views.
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
     def _update_session_with_domain(self):
         """
         update domain in the session cache
@@ -156,7 +166,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             "registrar.full_access_permission"
         )
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
-        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["can_access_domain_via_portfolio"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
@@ -591,8 +601,11 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "We’re experiencing a connection error. Please wait a few minutes and try again. "
-                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
+                        mark_safe(  # nosec
+                            "We’re experiencing a connection error. Please wait a few minutes and try again. "
+                            'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                            "for assistance.",
+                        ),
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
@@ -1160,17 +1173,8 @@ class DomainNameserversView(DomainFormBaseView):
     form_class = NameserverFormset
     model = Domain
 
-    def _get_domain(self, request):
-        """
-        override get_domain for this view so that domain overview
-        always resets the cache for the domain object
-        """
-        self.session = request.session
-        self.object = self.get_object()
-        self._update_session_with_domain()
-
     def dispatch(self, request, *args, **kwargs):
-        self._get_domain(
+        self._get_domain_force_reset_cache(
             request
         )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
 
@@ -1308,6 +1312,19 @@ class DomainDNSSECView(DomainFormBaseView):
 
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
+    model = Domain
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain_force_reset_cache(
+            request
+        )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            logger.info("Domain is enrolled in DNS hosting. DNSSEC cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
@@ -1360,6 +1377,19 @@ class DomainDsDataView(DomainFormBaseView):
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
     form = DomainDsdataForm
+    model = Domain
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain_force_reset_cache(
+            request
+        )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            logger.info("Domain is enrolled in DNS hosting. DNSSEC cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [
@@ -1565,7 +1595,7 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store roles with an admin flag
         domain_manager_roles = []
 
-        for permission in self.object.permissions.all():
+        for permission in self.object.permissions.filter(user__isnull=False):
             # Determine if the user has the ORGANIZATION_ADMIN role
             has_admin_flag = any(
                 UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
@@ -1587,7 +1617,22 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store invitations with an admin flag
         invitations = []
 
-        for domain_invitation in self.object.invitations.all():
+        user_domain_role_invitations = (
+            self.object.permissions.filter(status=UserDomainRole.Status.INVITED)
+            .exclude(email__isnull=True)
+            .exclude(email="")
+        )
+        legacy_invitations = self.object.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
+        invited_emails = {invitation.email.lower() for invitation in user_domain_role_invitations}
+
+        for domain_invitation in chain(user_domain_role_invitations, legacy_invitations):
+            is_user_domain_role = isinstance(domain_invitation, UserDomainRole)
+
+            # The invitation service temporarily creates both models. Prefer the
+            # UserDomainRole so each invitation appears only once.
+            if not is_user_domain_role and domain_invitation.email.lower() in invited_emails:
+                continue
+
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
             has_admin_flag = False
 
@@ -1605,10 +1650,14 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list if the domain invitation
-            # if the status is not canceled
-            if domain_invitation.status != "canceled":
-                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+            invitations.append(
+                {
+                    "domain_invitation": domain_invitation,
+                    "has_admin_flag": has_admin_flag,
+                    "is_user_domain_role": is_user_domain_role,
+                    "can_cancel": True,
+                }
+            )
 
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
@@ -1800,19 +1849,23 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
     pk_url_kwarg = "domain_invitation_pk"
     fields = []
 
+    def get_object(self, queryset=None):
+        user_domain_role_pk = self.kwargs.get("user_domain_role_pk")
+        if user_domain_role_pk:
+            return get_object_or_404(UserDomainRole, pk=user_domain_role_pk)
+
+        return super().get_object(queryset)
+
     def post(self, request, *args, **kwargs):
-        """Override post method in order to error in the case when the
-        domain invitation status is RETRIEVED"""
+        """Return an error when the domain invitation is no longer pending."""
         self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
-            self.object.cancel_invitation()
-            self.object.save()
-            return self.form_valid(form)
+        if self.object.status == UserDomainRole.Status.INVITED:
+            cancel_domain_invitation(self.object.email, self.object.domain)
+            messages.success(request, self.get_success_message({}))
         else:
-            # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, "This invitation can't be canceled because it has already been retrieved.")
-            return HttpResponseRedirect(self.get_success_url())
+            messages.error(request, "This invitation can't be canceled because it is no longer pending.")
+
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})

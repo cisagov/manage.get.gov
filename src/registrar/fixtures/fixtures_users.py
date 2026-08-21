@@ -63,13 +63,6 @@ class UserFixture:
             "title": "Catlady",
         },
         {
-            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
-            "first_name": "Nicolle",
-            "last_name": "LeClair",
-            "email": "nicolle.leclair@ecstech.com",
-            "title": "Nightowl",
-        },
-        {
             "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
             "first_name": "Erin",
             "last_name": "Song",
@@ -102,13 +95,6 @@ class UserFixture:
             "last_name": "Abbitt",
             "email": "kaitlin.abbitt@cisa.dhs.gov",
             "title": "Product Manager",
-        },
-        {
-            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
-            "first_name": "Jaxon",
-            "last_name": "Silva",
-            "email": "jaxon.silva@cisa.dhs.gov",
-            "title": "Designer",
         },
         {
             "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
@@ -177,12 +163,6 @@ class UserFixture:
             "first_name": "Gaby-Analyst",
             "last_name": "DiSarli-Analyst",
             "email": "gaby+1@truss.works",
-        },
-        {
-            "username": "02f96e16-fff9-4eb1-bb7e-e61a17c63f3f",
-            "first_name": "Nicolle-Analyst",
-            "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair.gov@ecstech.com",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",

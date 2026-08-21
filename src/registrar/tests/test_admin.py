@@ -1212,6 +1212,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_user"')
         self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-user-or-email-autocomplete="true"')
         self.assertContains(response, 'data-placeholder="Search by email address"')
         self.assertContains(response, "or enter a new email address to send an invitation")
         self.assertContains(response, 'id="id_portfolio"')
@@ -1249,6 +1250,22 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["user"], self.testuser)
         self.assertEqual(form.cleaned_data["email"], self.testuser.email.lower())
+
+    def test_form_accepts_new_email_with_plus_addressing(self):
+        email = "test+1234@example.gov"
+        models.AllowedEmail.objects.create(email=email)
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["user"])
+        self.assertEqual(form.cleaned_data["email"], email)
 
     def test_form_rejects_email_with_multiple_users(self):
         User.objects.create(username="duplicate", email=self.testuser.email.upper())
@@ -1494,6 +1511,7 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_user"')
         self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-user-or-email-autocomplete="true"')
         self.assertContains(response, 'data-placeholder="Search by email address"')
         self.assertContains(response, "or enter a new email address to send an invitation")
         self.assertContains(response, 'id="id_domain"')
@@ -1515,6 +1533,21 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
             form.errors["user"],
             ["Enter an email address in the required format, like name@example.gov."],
         )
+
+    def test_form_accepts_new_email_with_plus_addressing(self):
+        email = "test+1234@example.gov"
+        models.AllowedEmail.objects.create(email=email)
+        form = UserDomainRoleForm(
+            data={
+                "user": email,
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["user"])
+        self.assertEqual(form.cleaned_data["email"], email)
 
     @less_console_noise_decorator
     @override_flag("user_domain_role_invitations", active=True)
