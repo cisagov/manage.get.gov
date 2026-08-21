@@ -15,6 +15,7 @@ from login_required import login_not_required
 from cachetools.func import ttl_cache
 
 from registrar.utility.s3_bucket import S3ClientError, S3ClientHelper
+from urllib.parse import quote
 
 RDAP_URL = "https://rdap.cloudflareregistry.com/rdap/domain/{domain}"
 
@@ -70,21 +71,42 @@ def available(request, domain=""):
     return json_response
 
 
+# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
+@ttl_cache(ttl=600)
+def get_rdap_data(domain):
+    """Fetch RDAP data for a domain from the Cloudflare API.
+    Used by the /api/v1/rdap endpoint; separated out
+    so that caching works properly.
+    Domain parameter is cleaned upstream in the rdap view function.
+    Returns a JSON dictionary of the RDAP data.
+    """
+    print(f"Will delete before merging, request for domain: {domain}")
+    return requests.get(RDAP_URL.format(domain=quote(domain, safe="")), timeout=5).json()
+
+
 @transaction.non_atomic_requests
 @require_http_methods(["GET"])
 @login_not_required
-# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
-@ttl_cache(ttl=600)
 def rdap(request, domain=""):
     """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
-    domain = request.GET.get("domain", "")
+    Domain = apps.get_model("registrar.Domain")
+    domain = request.GET.get("domain", "").lower().strip()
+
+    if not domain:
+        return JsonResponse(
+            {"errorCode": 400, "title": "Invalid domain", "description": [DOMAIN_API_MESSAGES["required"]]}, status=400
+        )
 
     # If inputted domain doesn't have a TLD, append .gov to it
     if "." not in domain:
         domain = f"{domain}.gov"
 
-    rdap_data = requests.get(RDAP_URL.format(domain=domain), timeout=5).json()
-    return JsonResponse(rdap_data)
+    # If invalid domain, return error message
+    if not domain.endswith(".gov") or not Domain.string_could_be_domain(domain):
+        return JsonResponse(
+            {"errorCode": 400, "title": "Invalid domain", "description": [DOMAIN_API_MESSAGES["invalid"]]}, status=400
+        )
+    return JsonResponse(get_rdap_data(domain))
 
 
 @transaction.non_atomic_requests
