@@ -63,9 +63,9 @@
   margin-top: unset;
 }
 
-@media (min-width: 35em) {
-  .usa-form--largest {
-      max-width: 35rem;
+@media (min-width: 30em) {
+  .usa-form--largest, .usa-form--large {
+      max-width: 72ex;
   }
 }
 
@@ -105,4 +105,8 @@ legend.float-left-tablet + button.float-right-tablet {
     position: relative;
     top: 2px;
   }
+}
+
+.usa-combo-box {
+  max-width: measure(4);
 }
