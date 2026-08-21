@@ -2558,7 +2558,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         try:
             requested_user = get_requested_user(requested_email) if requested_email else None
-            member_of_a_different_org = self._save_portfolio_membership_invitation(
+            member_of_a_different_org = self._save_portfolio_membership(
                 request,
                 obj.domain,
                 requested_email,
@@ -2580,7 +2580,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         return None
 
-    def _save_portfolio_membership_invitation(self, request, domain, requested_email, requested_user, form):
+    def _save_portfolio_membership(self, request, domain, requested_email, requested_user, form):
         try:
             domain_org = getattr(domain.domain_info, "portfolio", None)
         except ObjectDoesNotExist:
@@ -2595,31 +2595,31 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 requested_user,
             )
 
-        if not self._should_send_portfolio_membership_email(
+        if not self._should_create_portfolio_membership(
             request,
             domain_org,
             member_of_a_different_org,
             member_of_this_org,
-            form,
-            requested_user,
         ):
             return member_of_a_different_org
 
+        send_email = self._will_send_invitation_email(form, requested_user)
         if self._use_portfolio_permission_invitation_admin(request):
             create_portfolio_permission_or_invitation(
                 email=requested_email,
                 portfolio=domain_org,
                 requestor=request.user,
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                send_email=True,
+                send_email=send_email,
             )
         else:
-            send_portfolio_invitation_email(
-                email=requested_email,
-                requestor=request.user,
-                portfolio=domain_org,
-                is_admin_invitation=False,
-            )
+            if send_email:
+                send_portfolio_invitation_email(
+                    email=requested_email,
+                    requestor=request.user,
+                    portfolio=domain_org,
+                    is_admin_invitation=False,
+                )
             portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                 email=requested_email,
                 portfolio=domain_org,
@@ -2635,31 +2635,20 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def _use_portfolio_permission_invitation_admin(self, request):
         return flag_is_active(request, "user_portfolio_permission_invitations")
 
-    def _should_send_portfolio_membership_email(
+    def _should_create_portfolio_membership(
         self,
         request,
         domain_org,
         member_of_a_different_org,
         member_of_this_org,
-        form,
-        requested_user,
     ):
-        if not self._will_send_invitation_email(form, requested_user):
-            return False
-
-        if not request.user.is_org_user(request):
-            return False
-
-        if flag_is_active(request, "multiple_portfolios"):
-            return False
-
         if domain_org is None:
             return False
 
         if member_of_this_org:
             return False
 
-        if member_of_a_different_org:
+        if member_of_a_different_org and not flag_is_active(request, "multiple_portfolios"):
             return False
 
         return True
@@ -2962,11 +2951,9 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                 )
 
                 if (
-                    request.user.is_org_user(request)
-                    and not flag_is_active(request, "multiple_portfolios")
+                    (flag_is_active(request, "multiple_portfolios") or not member_of_a_different_org)
                     and domain_org is not None
                     and not member_of_this_org
-                    and not member_of_a_different_org
                 ):
                     send_portfolio_invitation_email(
                         email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
