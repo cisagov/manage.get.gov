@@ -15,8 +15,8 @@
   </script>
   {% endif %}
   <!-- Alpine's CSP-friendly Core -->
-  <script 
-    src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.15.2/dist/cdn.min.js" 
+  <script
+    src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.15.2/dist/cdn.min.js"
     integrity="sha512-x7LZ0F9zKiheQbYoVqHMSXFKubWkZPteJkX7RfEuZgBtrhlQ45CGPrTUScApH791NztglOHA+8fNe4HfREUlCw=="
     crossorigin="anonymous"
     defer></script>
@@ -34,19 +34,19 @@
   {% endblock %}
   {% block extra_meta %}{% endblock extra_meta %}
 
-  <link rel="icon" type="image/png" sizes="32x32" 
+  <link rel="icon" type="image/png" sizes="32x32"
         href="{% static 'img/registrar/favicons/favicon-32.png' %}"
   >
-  <link rel="icon" type="image/png" sizes="192x192" 
+  <link rel="icon" type="image/png" sizes="192x192"
         href="{% static 'img/registrar/favicons/favicon-192.png' %}"
   >
-  <link rel="icon" type="image/svg+xml" 
+  <link rel="icon" type="image/svg+xml"
         href="{% static 'img/registrar/favicons/favicon.svg' %}"
   >
   <link rel="shortcut icon" type="image/x-icon"
         href="{% static 'img/registrar/favicons/favicon.ico' %}"
   >
-  <link rel="apple-touch-icon" size="180x180" 
+  <link rel="apple-touch-icon" size="180x180"
         href="{% static 'img/registrar/favicons/favicon-180.png' %}"
   >
 
@@ -64,6 +64,7 @@
 
   {% block feeds %}{% endblock %}
   {% block extra_head %}{% endblock %}
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
 
   {# hat tip to USWDS... #}
   <!-- * * * * * ======================= -->
@@ -75,7 +76,7 @@
   <!-- ================================= -->
 </head>
 
-<body 
+<body
   id="{% block body_id %}default{% endblock %}"
   class="{% block body_class %}section_front{% endblock %}"
   hx-headers='{"x-csrftoken": "{{ csrf_token }}"}'
@@ -89,7 +90,7 @@
   {% comment %}
     <!-- Site banner / red alert banner / emergency banner / incident banner - Remove one of those includes and place outside the comment block to activate the banner.
     DO NOT FORGET TO EDIT THE BANNER CONTENT -->
-    
+
     <!-- Red banner with exclamation mark in a circle: -->
     {% include "includes/banner-error.html" %}
 
@@ -108,7 +109,7 @@
     {% include "includes/banner-info-inline.html" title="words in bold that start the sentence" aria_label="label for the screen reader" message="Words that appear after the title"%}
   {% endcomment %}
 
-  
+
 
 
   <section class="usa-banner" aria-label="Official website of the United States government">
