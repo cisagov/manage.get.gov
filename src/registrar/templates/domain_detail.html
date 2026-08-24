@@ -96,13 +96,13 @@
           {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
         {% endif %}
       {% endif %}
-    {% endif %}
 
-    {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
-    {% if domain.dnssecdata is not None %}
-      {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
-    {% else %}
-      {% include "includes/summary_item.html" with title='DNSSEC' value='Not enabled' edit_link=url editable=is_editable %}
+      {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
+      {% if domain.dnssecdata is not None %}
+        {% include "includes/summary_item.html" with title='DNSSEC' value='Enabled' edit_link=url editable=is_editable %}
+      {% else %}
+        {% include "includes/summary_item.html" with title='DNSSEC' value='Not enabled' edit_link=url editable=is_editable %}
+      {% endif %}
     {% endif %}
 
     {% if portfolio %}

@@ -372,8 +372,8 @@ class DnsRecord(TimeStampedModel):
 
     @classmethod
     def get_ordered_for_zone(cls, dns_zone: "DnsZone"):
-        """Return all records for a zone ordered by pk (matches counter assignment order)."""
-        return cls.objects.filter(dns_zone=dns_zone).order_by("pk")
+        """Return all records for a zone ordered by type, then name, then content."""
+        return cls.objects.filter(dns_zone=dns_zone).order_by("type", "name", "content")
 
     @classmethod
     def zone_has_records(cls, domain: Domain) -> bool:
