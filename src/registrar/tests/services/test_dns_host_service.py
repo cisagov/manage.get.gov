@@ -22,7 +22,7 @@ from registrar.models import (
     DomainInformation,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.utility.errors import APIError
+from registrar.utility.errors import APIError, EnrollmentNotAllowedError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
     create_dns_account,
@@ -413,7 +413,7 @@ class TestDnsHostService(TestCase):
         self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.example.gov", "ns2.example.gov"])
 
     @override_settings(IS_PRODUCTION=True)
-    def test_enroll_domain_gates_domain_enrollment_in_production(self):
+    def test_enroll_domain_allowed_domain_enrollment_in_production_succeeds(self):
         allowed_domain = create_domain(**{"domain_name": "igorville.gov"})
 
         mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
@@ -422,10 +422,18 @@ class TestDnsHostService(TestCase):
         self.service.dns_zone_setup = Mock()
         self.service.register_nameservers = Mock()
 
-        self.service.enroll_domain(allowed_domain)  # No error means igorville.gov was allowed to enroll
+        self.service.enroll_domain(allowed_domain)
+        self.service.dns_account_setup.assert_called()  # got past allowllist conditional
 
-        create_domain(**{"domain_name": "not-igorville.gov"})
-        self.service.dns_account_setup.assert_not_called()
+    @override_settings(IS_PRODUCTION=True)
+    def test_enroll_domain_disallowed_domain_enrollment_in_production_fails(self):
+        not_allowed_domain = create_domain(**{"domain_name": "not-igorville.gov"})
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
+        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
+        self.service.dns_account_setup = Mock(return_value="12345")
+
+        with self.assertRaises(EnrollmentNotAllowedError):
+            self.service.enroll_domain(not_allowed_domain)
 
 
 class TestDnsHostServiceDB(TestCase):

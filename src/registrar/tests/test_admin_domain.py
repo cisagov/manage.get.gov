@@ -527,6 +527,7 @@ class TestDomainAdminAsStaff(MockEppLib):
             filters = self.admin.get_list_filter(request)
 
             expected_filters = [
+                DomainAdmin.DnsEnrolledFilter,
                 DomainAdmin.GenericOrgFilter,
                 DomainAdmin.FederalTypeFilter,
                 DomainAdmin.ElectionOfficeFilter,
@@ -1118,6 +1119,7 @@ class TestDomainAdminWithClient(TestCase):
             filters = self.admin.get_list_filter(request)
 
             expected_filters = [
+                DomainAdmin.DnsEnrolledFilter,
                 DomainAdmin.GenericOrgFilter,
                 DomainAdmin.FederalTypeFilter,
                 DomainAdmin.ElectionOfficeFilter,

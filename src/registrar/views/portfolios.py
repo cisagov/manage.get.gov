@@ -30,7 +30,7 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
-from registrar.services.invitation_service import invite_to_portfolio
+from registrar.services.invitation_service import cancel_portfolio_invitation, invite_to_portfolio
 from registrar.utility.email import EmailSendingError
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
@@ -642,15 +642,29 @@ class PortfolioInvitedMemberDeleteView(View):
         except Exception as e:
             self._handle_exceptions(e)
 
-        portfolio_invitation.delete()
+        invitation_email = portfolio_invitation.email
+        canceled = cancel_portfolio_invitation(invitation_email, portfolio_invitation.portfolio)
+        return self._handle_cancellation_response(request, invitation_email, canceled)
 
-        success_message = f"{portfolio_invitation.email} has been removed from this organization."
-        # From the Members Table page Else the Member Page
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return JsonResponse({"success": success_message}, status=200)
+    def _handle_cancellation_response(self, request, invitation_email, canceled):
+        """Return response for an invitation cancellation."""
+        if canceled:
+            message = f"{invitation_email} has been removed from this organization."
+            message_type = "success"
+            status = 200
         else:
-            messages.success(request, success_message)
-            return redirect(reverse("members"))
+            message = f"The invitation for {invitation_email} could not be removed because it is no longer pending."
+            message_type = "error"
+            status = 400
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({message_type: message}, status=status)
+
+        if canceled:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+        return redirect(reverse("members"))
 
     def _handle_exceptions(self, exception):
         """Handle exceptions raised during the process."""
@@ -1309,7 +1323,7 @@ class PortfolioAddMemberView(DetailView, FormMixin):
             messages.error(
                 self.request,
                 mark_safe(  # nosec
-                    f"An unexpected error occurred: {str(exception)}. Please try again. If the problem persists, "
+                    f"An unexpected error occurred: {str(exception)} Please try again. If the problem persists, "
                     '<a href="https://get.gov/contact/">contact us</a> for assistance.'
                 ),
             )
