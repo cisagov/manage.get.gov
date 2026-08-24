@@ -764,3 +764,33 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
+
+    def test_delete_cf_account_success(self):
+        """Test successful create_cf_account call"""
+        account_id = "12345"
+        mock_response = self._setUpSuccessMockResponse(return_value={"result": {"id": "12345"}})
+        self.service.client.delete.return_value = mock_response
+
+        resp = self.service.delete_cf_account(account_id)
+        self.assertEqual(resp["result"]["id"], account_id)
+
+    def test_delete_cf_account_failure(self):
+        """Test delete_cf_account with API failure"""
+
+        for case in self.failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                account_id = "12345"
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+
+                self.service.client.delete.return_value = mock_response
+
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.delete_cf_account(account_id)
+
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self._assert_shared_http_status_errors_details(exc, case)
+                    self.assertEqual(exc.context["x_account_id"], account_id)
