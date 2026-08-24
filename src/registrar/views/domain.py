@@ -141,6 +141,15 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             self.object = self.get_object()
         self._update_session_with_domain()
 
+    def _get_domain_force_reset_cache(self, request):
+        """
+        Get domain and always reset the cache for the domain object.
+        Used to get domain and reset cache in Nameservers, DNSSEC, and DS Data views.
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
     def _update_session_with_domain(self):
         """
         update domain in the session cache
@@ -592,8 +601,11 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "We’re experiencing a connection error. Please wait a few minutes and try again. "
-                        'If the problem persists, <a href="https://get.gov/contact/">contact us</a> for assistance.',
+                        mark_safe(  # nosec
+                            "We’re experiencing a connection error. Please wait a few minutes and try again. "
+                            'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                            "for assistance.",
+                        ),
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
@@ -1008,6 +1020,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         dns_record.refresh_from_db()
         self._attach_form(dns_record)
         self.dns_record = dns_record
+
         return record_id
 
     def _handle_invalid_form(self, request, form, is_edit):
@@ -1062,7 +1075,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self._attach_form(dns_record)
             self.dns_record = dns_record
             return is_first_record, dns_record.id
-
         self.dns_record = None
         return is_first_record, None
 
@@ -1106,12 +1118,18 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 # EDIT
                 if is_edit:
                     record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+
                 # CREATE
                 else:
                     is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
         except DnsHostingError as e:
             messages.error(request, e.message)
+            if is_edit:
+                record_id = is_edit
+                dns_record = DnsRecord.objects.get(id=record_id)
+                self._attach_form(dns_record=dns_record)
+                self.dns_record = dns_record
         except GenericError:
             return self._error_response(request, status=400)
         finally:
@@ -1161,17 +1179,8 @@ class DomainNameserversView(DomainFormBaseView):
     form_class = NameserverFormset
     model = Domain
 
-    def _get_domain(self, request):
-        """
-        override get_domain for this view so that domain overview
-        always resets the cache for the domain object
-        """
-        self.session = request.session
-        self.object = self.get_object()
-        self._update_session_with_domain()
-
     def dispatch(self, request, *args, **kwargs):
-        self._get_domain(
+        self._get_domain_force_reset_cache(
             request
         )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
 
@@ -1309,6 +1318,19 @@ class DomainDNSSECView(DomainFormBaseView):
 
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
+    model = Domain
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain_force_reset_cache(
+            request
+        )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            logger.info("Domain is enrolled in DNS hosting. DNSSEC cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
@@ -1361,6 +1383,19 @@ class DomainDsDataView(DomainFormBaseView):
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
     form = DomainDsdataForm
+    model = Domain
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain_force_reset_cache(
+            request
+        )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            logger.info("Domain is enrolled in DNS hosting. DNSSEC cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [

@@ -17,6 +17,7 @@ import { initDynamicPortfolioFields } from './portfolio-form.js';
 import { initDynamicPortfolioPermissionFields } from './portfolio-permissions-form.js'
 import { initDynamicDomainInformationFields } from './domain-information-form.js';
 import { initDynamicDomainFields } from './domain-form.js';
+import { initDomainRoleFields } from './domain-role-form.js';
 import { initAnalyticsDashboard } from './analytics.js';
 import { initButtonLinks } from './button-utils.js';
 import { initAriaInjectionsForSelect2Dropdowns } from './andi.js'
@@ -43,6 +44,7 @@ initFilterFocusListeners();
 // Domain
 initDomainFormTargetBlankButtons();
 initDynamicDomainFields();
+initDomainRoleFields();
 
 // Portfolio
 initDynamicPortfolioFields();
