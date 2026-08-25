@@ -703,6 +703,103 @@ export function initDynamicDNSRecordFormFields() {
     }
 }
 
+function getDNSRecordTypeConfig(){
+    const typeField = document.getElementById('id_type');
+    if (!typeField) return {};
+    try {
+        return JSON.parse(typeField.dataset.typeConfig || "{}");
+    } catch {
+        return {};
+    }
+}
+
+function renderDNSRecordPreviewText(previewTextEl, template, values){
+    if (!previewTextEl) return;
+
+    previewTextEl.replaceChildren();
+
+    if (!template) return;
+
+    const placeholderPattern = /\(\w+)\}/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = placeholderPattern.exec(template)) != null) {
+        if (match.index > lastIndex) {
+            previewTextEl.appendChild(document.createTextNode(template.slice(lastIndex, match.index)));
+        }
+        
+        const span = document.createElement('span');
+        span.className = 'text-bold text-primary-dark';
+        span.textContent = values[match[1]] ?? `[${match[1]}]`;
+        previewTextEl.appendChild(span);
+
+        lastIndex = placeholderPattern.lastIndex
+    }
+
+    if (lastIndex < template.length) {
+        previewTextEl.appendChild(document.createTextNode(template.slice(lastIndex)));
+    }
+}
+
+function updateDNSRecordPreview(scope, config) {
+    if (!scope) return;
+
+    const previewText = scope.querySelector('.dns-record-preview-text');
+    if (!previewText) return;
+
+    const typeField = scope.querySelector('[name="type"]');
+    const info = typeField && config[typeField.value];
+
+    if (!info || !info.previewTemplate) {
+        renderDNSRecordPreviewText(previewText, "", {});
+        return;
+    }
+
+    const nameField = scope.querySelector('[name="name"]');
+    const contentField = scope.querySelector('[name="content"]');
+    const  contentPlaceholder = info.previewContentPlaceholder || "content";
+
+    const values = {
+        name: nameField?.value.trim() || "[name]",
+        content: contentField?.value.trim() || `[${contentPlaceholder}]`,
+    }
+
+    renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
+}
+
+export function initDNSRecordPreview() {
+    const config = getDNSRecordTypeConfig();
+
+    const scopes = [
+        document.getElementById('form-container'),
+        ...document.querySelectorAll('form[id^="dnsrecord-edit-form-"]'),
+    ];
+
+    scopes.forEach(scope => {
+        if (!scope) return;
+
+        if (!scope.dataset.dnsPreviewBound) {
+            scope.addEventListener('input', (e) => {
+                if (e.target.name == 'type') return;
+                updateDNSRecordPreview(scope, config);
+            });
+
+            scope.addEventListener('change', (e) => {
+                if (e.target.name == 'type') {
+                    setTimeout(() => updateDNSRecordPreview(scope, config), 0);
+                } else {
+                    updateDNSRecordPreview(scope, config);
+                }
+            });
+
+            scope.dataset.dnsPreviewBound = "true";
+        }
+
+        updateDNSRecordPreview(scope, config);
+    });
+}
+
 export function initDeleteDnsRecord() {
     const table = document.getElementById("dnsrecords-table");
 

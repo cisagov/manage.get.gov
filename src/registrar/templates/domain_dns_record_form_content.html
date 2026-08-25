@@ -16,6 +16,10 @@
 
 <div x-cloak x-show="recordType" x-cloak>
 
+    <div class="dns-record-preview margin-bottom-3">
+        <span class="dns-record-preview-text" aria-live="polite"></span>
+    </div>
+
     <template x-if="recordType !== 6 && recordType !== 4 ">
         <!-- Only show this for forms that are not txt or mx -->
         <div>

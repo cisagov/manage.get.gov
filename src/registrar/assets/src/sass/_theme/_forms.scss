@@ -106,3 +106,12 @@ legend.float-left-tablet + button.float-right-tablet {
     top: 2px;
   }
 }
+
+.dns-record-preview {
+  font-size: 1 rem;
+
+  &:empty,
+  &:has(.dns-record-preview-text:empty) {
+    display: none;
+  }
+}
