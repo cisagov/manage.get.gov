@@ -49,6 +49,7 @@ from .public_contact import get_id
 from .user_domain_role import UserDomainRole
 
 logger = logging.getLogger(__name__)
+from registrar.utility.waffle import flag_is_active_for_user
 
 
 class Domain(TimeStampedModel, DomainHelper):
@@ -1534,6 +1535,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
+        elif (
+            self.state == self.State.READY
+            and self.is_enrolled_in_dns_hosting
+            and flag_is_active_for_user(request, "dns_hosting")
+        ):
+            return "Active"
         return self.state.capitalize()
 
     def enrolled_hosting_display(self, request=None):
@@ -1985,6 +1992,7 @@ class Domain(TimeStampedModel, DomainHelper):
     def is_dns_needed(self) -> bool:
         """Double check that the nameservers we set are in fact on the registry"""
         nameserverList = self.nameservers
+        print("aditi", nameserverList)
         return len(nameserverList) < 2
 
     def dns_not_needed(self) -> bool:
