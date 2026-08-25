@@ -703,6 +703,8 @@ export function initDynamicDNSRecordFormFields() {
     }
 }
 
+// Reads per-type DNS config (preview template, placeholders, etc) off the 
+// id_type field's data attribute. Returns {} if missing/empty JSON. 
 function getDNSRecordTypeConfig(){
     const typeField = document.getElementById('id_type');
     if (!typeField) return {};
@@ -713,6 +715,11 @@ function getDNSRecordTypeConfig(){
     }
 }
 
+/* 
+Fills a template like "{name} points to {content}." with real values,
+bolding each one. Empty fields fall back to "[name]" style placeholders.
+Uses DOM nodes, not innerHTML, so that user input can't be rendered as markup. 
+*/ 
 function renderDNSRecordPreviewText(previewTextEl, template, values){
     if (!previewTextEl) return;
 
@@ -720,6 +727,7 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
 
     if (!template) return;
 
+    // regex to find every {placeholder} in this string -- {name} & {content}
     const placeholderPattern = /\{(\w+)\}/g;
     let lastIndex = 0;
     let match;
@@ -731,7 +739,14 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
         
         const span = document.createElement('span');
         span.className = 'text-bold text-primary-dark';
-        span.textContent = values[match[1]] ?? `[${match[1]}]`;
+        
+        // this grabs the match captured earlier (either name or content)
+        let text = values[match[1]]
+        if (text == null || text == undefined) {
+            text = "[" + match[1] + "]";
+        }
+        span.textContent = text;
+
         previewTextEl.appendChild(span);
 
         lastIndex = placeholderPattern.lastIndex
@@ -742,11 +757,17 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
     }
 }
 
+/*
+Recomputes the live preview sentence for one DNS record form.
+"@" is the root domain, so there's a conditional for that (via data-domain-name)
+*/
 function updateDNSRecordPreview(scope, config) {
     if (!scope) return;
 
     const previewText = scope.querySelector('.dns-record-preview-text');
     if (!previewText) return;
+
+    const domainName = previewText.closest('.dns-record-preview')?.dataset.domainName
 
     const typeField = scope.querySelector('[name="type"]');
     const info = typeField && config[typeField.value];
@@ -760,14 +781,27 @@ function updateDNSRecordPreview(scope, config) {
     const contentField = scope.querySelector('[name="content"]');
     const  contentPlaceholder = info.previewContentPlaceholder || "content";
 
+    const rawName = nameField?.value.trim();
+    let displayName = rawName;
+
+    if (rawName == "@" && domainName) {
+        displayName = domainName;
+    }
+
+    if (!displayName) {
+        displayName = "[name]"
+    }
     const values = {
-        name: nameField?.value.trim() || "[name]",
+        name: displayName,
         content: contentField?.value.trim() || `[${contentPlaceholder}]`,
     }
 
     renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
 }
-
+/* 
+Wires up the live preview on every DNS record form (for both add and edit row).
+Skips forms that are already bound so HTMX swaps don't double-attach listeners.
+*/
 export function initDNSRecordPreview() {
     const config = getDNSRecordTypeConfig();
 

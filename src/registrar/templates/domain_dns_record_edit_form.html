@@ -20,7 +20,7 @@
                 <input type="hidden" name="id" value="{{ record_id }}" />
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
-                <div class="dns-record-preview margin-bottom-3">
+                <div class="dns-record-preview margin-bottom-3" data-domain-name="{{ domain.name }}">
                     <span class="dns-record-preview-text" aria-live="polite"></span>
                 </div>
 

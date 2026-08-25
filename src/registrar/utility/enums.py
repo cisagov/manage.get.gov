@@ -145,7 +145,7 @@ class DNSRecordTypes(TextChoices):
     def preview_template(self):
         """
         Sentence template used to build the live text preview shown while a user
-        fills out a DNS record form. 
+        fills out a DNS record form.
         """
         return {
             DNSRecordTypes.A: "{name} points to {content}.",
@@ -153,7 +153,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.CNAME: "{name} is an alias of {content}.",
             DNSRecordTypes.MX: "{content} handles mail for {name}.",
             DNSRecordTypes.PTR: "{content} points to {name} in a reverse lookup.",
-            DNSRecordTypes.TXT: "{name} has a record with content {content}.",             
+            DNSRecordTypes.TXT: "{name} has a record with content {content}.",
         }.get(self, "{name} points to {content}.")
 
     @property
@@ -169,7 +169,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.CNAME: "target",
             DNSRecordTypes.MX: "mail server",
             DNSRecordTypes.PTR: "domain name",
-            DNSRecordTypes.TXT: "content",   
+            DNSRecordTypes.TXT: "content",
         }.get(self, "content")
 
     @property
