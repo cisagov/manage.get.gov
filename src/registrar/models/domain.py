@@ -1992,7 +1992,6 @@ class Domain(TimeStampedModel, DomainHelper):
     def is_dns_needed(self) -> bool:
         """Double check that the nameservers we set are in fact on the registry"""
         nameserverList = self.nameservers
-        print("aditi", nameserverList)
         return len(nameserverList) < 2
 
     def dns_not_needed(self) -> bool:
