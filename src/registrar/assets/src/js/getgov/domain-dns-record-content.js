@@ -720,7 +720,7 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
 
     if (!template) return;
 
-    const placeholderPattern = /\(\w+)\}/g;
+    const placeholderPattern = /\{(\w+)\}/g;
     let lastIndex = 0;
     let match;
 
