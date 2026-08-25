@@ -1,6 +1,7 @@
 """Test the domain rdap lookup API."""
 
 import json
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
@@ -41,6 +42,17 @@ class RdapViewTest(TestCase):
         self.assertContains(response, "errorCode", status_code=400)
         response_object = json.loads(response.content)
         self.assertIn("errorCode", response_object)
+
+    @patch("registrar.models.utility.domain_helper.check_domain_available")
+    def test_rdap_skips_availability_check(self, mock_check_available):
+        """RDAP validation must not call the registry availability check,
+        since registered domains are the expected lookup target"""
+        request = self.factory.get(API_BASE_PATH + "whitehouse.gov")
+        request.user = self.user
+        response = rdap(request, domain="whitehouse.gov")
+
+        mock_check_available.assert_not_called()
+        self.assertEqual(response.status_code, 200)
 
 
 class RdapAPITest(TestCase):

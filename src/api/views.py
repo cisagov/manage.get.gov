@@ -1,5 +1,7 @@
 """Internal API views"""
 
+import json
+
 from django.apps import apps
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
@@ -71,8 +73,9 @@ def available(request, domain=""):
     return json_response
 
 
-# Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
-@ttl_cache(ttl=600)
+# Since we cache domain RDAP data, cache time (ttl) may need to be re-evaluated this if we encounter any memory issues
+# maxsize is the number of domains to cache, oldest accessed domain names are removed when maxsize is reached.
+@ttl_cache(maxsize=128, ttl=600)
 def get_rdap_data(domain):
     """Fetch RDAP data for a domain from the Cloudflare API.
     Used by the /api/v1/rdap endpoint; separated out
@@ -92,21 +95,23 @@ def rdap(request, domain=""):
     Domain = apps.get_model("registrar.Domain")
     domain = request.GET.get("domain", "").lower().strip()
 
-    if not domain:
+    # validated will be None if the domain is invalid, and json_response will contain the error message
+    validated, json_response = Domain.validate_and_handle_errors(
+        domain=domain, return_type=ValidationReturnType.JSON_RESPONSE, check_availability=False
+    )
+
+    if validated is None:
+        # the RDAP response for the get.gov WHOIS page branches on errorCode and
+        # renders description as a joined array.
+        # This is why we can't return the json_response directly, it must be parsed & reformatted.
+        message = json.loads(json_response.content)["message"]
         return JsonResponse(
-            {"errorCode": 400, "title": "Invalid domain", "description": [DOMAIN_API_MESSAGES["required"]]}, status=400
+            {"errorCode": 400, "title": "Invalid domain", "description": [message]},
+            status=400,
         )
 
-    # If inputted domain doesn't have a TLD, append .gov to it
-    if "." not in domain:
-        domain = f"{domain}.gov"
-
-    # If invalid domain, return error message
-    if not domain.endswith(".gov") or not Domain.string_could_be_domain(domain):
-        return JsonResponse(
-            {"errorCode": 400, "title": "Invalid domain", "description": [DOMAIN_API_MESSAGES["invalid"]]}, status=400
-        )
-    return JsonResponse(get_rdap_data(domain))
+    # validated removes the '.gov' if present, must be re-added here.
+    return JsonResponse(get_rdap_data(f"{validated}.gov"))
 
 
 @transaction.non_atomic_requests
