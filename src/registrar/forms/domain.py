@@ -8,6 +8,14 @@ from django.core.validators import (
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory
 from registrar.forms.utility.combobox import ComboboxWidget
+from registrar.forms.utility.fields import MaxLengthFirstEmailField
+from registrar.validations import (
+    EMAIL_MAX,
+    TEXT_SHORT,
+    TEXT_EXTENDED,
+    get_max_length_attrs,
+    get_max_length_validator,
+)
 from registrar.models import DomainRequest, FederalAgency
 from registrar.models.dns.dns_record import DnsRecord
 from phonenumber_field.widgets import RegionalPhoneNumberWidget
@@ -36,7 +44,6 @@ from registrar.validations import (
     DUPLICATE_DNS_RECORD_ERROR_MESSAGE,
     DNS_RECORD_NAME_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
-    DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
     DNS_RECORD_CONTENT_REQUIREMENT,
     validate_dns_name_fqdn_length,
     get_error_message_from_requirement,
@@ -51,19 +58,14 @@ import re
 class DomainAddUserForm(forms.Form):
     """Form for adding a user to a domain."""
 
-    email = forms.EmailField(
+    email = MaxLengthFirstEmailField(
         label="Email",
-        max_length=None,
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
         error_messages={
             "invalid": ("Enter an email address in the required format, like name@example.com."),
             "required": ("Enter an email address in the required format, like name@example.com."),
         },
-        validators=[
-            MaxLengthValidator(
-                320,
-                message="Response must be less than 320 characters.",
-            )
-        ],
     )
 
     def clean(self):
@@ -87,7 +89,7 @@ class DomainNameserverForm(forms.Form):
         label="Name server",
         strip=True,
         required=True,
-        error_messages={"required": "At least two name servers are required."},
+        error_messages={"required": "Domains must have at least two name servers."},
     )
 
     ip = forms.CharField(
@@ -200,7 +202,7 @@ class DomainSuborganizationForm(forms.ModelForm):
 class BaseNameserverFormset(forms.BaseFormSet):
     def clean(self):
         """Check for duplicate entries in the formset and ensure at least two valid nameservers."""
-        error_message = "At least two name servers are required."
+        error_message = "Domains must have at least two name servers."
 
         valid_forms, invalid_forms, empty_forms = self._categorize_forms(error_message)
         self._enforce_minimum_nameservers(valid_forms, invalid_forms, empty_forms, error_message)
@@ -240,7 +242,7 @@ class BaseNameserverFormset(forms.BaseFormSet):
             self._remove_required_error_from_forms(error_message)
 
     def _add_required_error(self, empty_forms, error_message):
-        """Add 'At least two name servers' error to one form and remove duplicates."""
+        """Add 'Domains must have at least two name servers.' error to one form and remove duplicates."""
         error_added = False
 
         for form in empty_forms:
@@ -252,7 +254,10 @@ class BaseNameserverFormset(forms.BaseFormSet):
                 error_added = True
 
     def _remove_required_error_from_forms(self, error_message):
-        """Remove the 'At least two name servers' error from all forms if sufficient nameservers exist."""
+        """
+        Remove the 'Domains must have at least two name servers.' error from all forms
+        if sufficient nameservers exist.
+        """
         for form in self.forms:
             if form.errors.get("server") == [error_message]:
                 form.errors.pop("server")
@@ -347,7 +352,10 @@ class UserForm(forms.ModelForm):
 class ContactForm(forms.ModelForm):
     """Form for updating contacts."""
 
-    email = forms.EmailField(max_length=None)
+    email = MaxLengthFirstEmailField(
+        email_max_length=EMAIL_MAX,
+        email_max_length_message="Email address must be no more than 320 characters.",
+    )
 
     class Meta:
         model = Contact
@@ -371,10 +379,6 @@ class ContactForm(forms.ModelForm):
         # take off maxlength attribute for the phone number field
         # which interferes with out input_with_errors template tag
         self.fields["phone"].widget.attrs.pop("maxlength", None)
-
-        # Define a custom validator for the email field with a custom error message
-        email_max_length_validator = MaxLengthValidator(320, message="Response must be less than 320 characters.")
-        self.fields["email"].validators.append(email_max_length_validator)
 
         for field_name in self.required:
             self.fields[field_name].required = True
@@ -418,16 +422,31 @@ class SeniorOfficialContactForm(ContactForm):
 
         # Set custom error messages
         self.fields["first_name"].error_messages = {
-            "required": "Enter the first name / given name of your senior official."
+            "required": "Enter the first name / given name of your senior official.",
+            "max_length": "First name / given name must be no more than 50 characters.",
         }
         self.fields["last_name"].error_messages = {
-            "required": "Enter the last name / family name of your senior official."
+            "required": "Enter the last name / family name of your senior official.",
+            "max_length": "Last name / family name must be no more than 50 characters.",
         }
-        self.fields["title"].error_messages = {"required": "Enter the title or role your senior official has in your \
-            organization (e.g., Chief Information Officer)."}
+        self.fields["title"].error_messages = {
+            "required": "Enter the title or role your senior official has in your \
+            organization (e.g., Chief Information Officer).",
+            "max_length": "Title or role must be no more than 100 characters.",
+        }
         self.fields["email"].error_messages = {
-            "required": "Enter an email address in the required format, like name@example.com."
+            "required": "Enter an email address in the required format, like name@example.com.",
+            "invalid": "Enter an email address in the required format, like name@example.com.",
         }
+
+        self.fields["first_name"].validators.append(get_max_length_validator(TEXT_SHORT))
+        self.fields["first_name"].widget.attrs.update(get_max_length_attrs(TEXT_SHORT))
+
+        self.fields["last_name"].validators.append(get_max_length_validator(TEXT_SHORT))
+        self.fields["last_name"].widget.attrs.update(get_max_length_attrs(TEXT_SHORT))
+
+        self.fields["title"].validators.append(get_max_length_validator(TEXT_EXTENDED))
+        self.fields["title"].widget.attrs.update(get_max_length_attrs(TEXT_EXTENDED))
 
         # All fields should be disabled if the domain is federal or tribal
         if disable_fields:
@@ -479,6 +498,7 @@ class SeniorOfficialContactForm(ContactForm):
 class DomainSecurityEmailForm(forms.Form):
     """Form for adding or editing a security email to a domain."""
 
+    # This will need custom email field implemented in #4614 to correct.
     security_email = forms.EmailField(
         label="Security email (optional)",
         max_length=None,
@@ -489,7 +509,7 @@ class DomainSecurityEmailForm(forms.Form):
         validators=[
             MaxLengthValidator(
                 320,
-                message="Response must be less than 320 characters.",
+                message="Security email must be no more than 320 characters.",
             )
         ],
     )
@@ -649,7 +669,7 @@ class DomainDsdataForm(forms.Form):
     key_tag = forms.CharField(
         required=True,
         label="Key tag",
-        error_messages={"required": "Key tag is required."},
+        error_messages={"required": "Enter a key tag for this record."},
     )
 
     algorithm = forms.TypedChoiceField(
@@ -657,7 +677,7 @@ class DomainDsdataForm(forms.Form):
         label="Algorithm",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + ALGORITHM_CHOICES,  # type: ignore
-        error_messages={"required": ("Algorithm is required.")},
+        error_messages={"required": ("Select the algorithm for this record.")},
     )
 
     digest_type = forms.TypedChoiceField(
@@ -665,7 +685,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest type",
         coerce=int,  # need to coerce into int so dsData objects can be compared
         choices=[(None, "--Select--")] + DIGEST_TYPE_CHOICES,  # type: ignore
-        error_messages={"required": ("Digest type is required.")},
+        error_messages={"required": ("Select the digest type for this record.")},
     )
 
     digest = forms.CharField(
@@ -673,7 +693,7 @@ class DomainDsdataForm(forms.Form):
         label="Digest",
         validators=[validate_hexadecimal],
         error_messages={
-            "required": "Digest is required.",
+            "required": "Enter a digest value for this record.",
         },
         widget=forms.Textarea(
             attrs={
@@ -747,7 +767,9 @@ class BaseDsdataFormset(forms.BaseFormSet):
                 )
 
                 if ds_tuple in seen_ds_records:
-                    form.add_error("key_tag", "You already entered this DS record. DS records must be unique.")
+                    form.add_error(
+                        "key_tag", "This DS record is already associated with this domain. DS records must be unique."
+                    )
                     duplicate_found = True  # Track that we found at least one duplicate
 
                 seen_ds_records.add(ds_tuple)
@@ -810,8 +832,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt = DNSRecordTypes(record_type)
             self.fields["content"].label = rt.field_label
             self.fields["content"].help_text = rt.help_text
-            # Priority is required only for MX records
-            self.fields["priority"].required = record_type == DNSRecordTypes.MX
 
         config = {
             rt.value: {
@@ -861,7 +881,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             attrs={
                 "class": "usa-select",
                 "required": "required",
-                "x-model": "recordType",
             }
         ),
     )
@@ -879,14 +898,11 @@ class DomainDNSRecordForm(forms.ModelForm):
         ),
     )
 
-    priority = forms.IntegerField(
+    priority = forms.CharField(
         label="Priority",
         required=False,
-        min_value=0,
-        max_value=65535,
         help_text="0–65535",
         error_messages={
-            "required": DNS_RECORD_PRIORITY_REQUIRED_ERROR_MESSAGE,
             "invalid": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "min_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
             "max_value": DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE,
@@ -927,6 +943,23 @@ class DomainDNSRecordForm(forms.ModelForm):
         if record_type and DNSRecordTypes(record_type).cleaner:
             content = DNSRecordTypes(record_type).cleaner(content)
         return content
+
+    def clean_priority(self):
+        record_type = self.cleaned_data.get("type")
+        if record_type != DNSRecordTypes.MX:
+            return
+
+        priority = self.cleaned_data.get("priority")
+        if priority == "":
+            priority = None
+            return priority
+
+        try:
+            priority = int(priority)
+        except ValueError:
+            self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
+
+        return priority
 
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""

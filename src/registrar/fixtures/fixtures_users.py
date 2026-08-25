@@ -63,13 +63,6 @@ class UserFixture:
             "title": "Catlady",
         },
         {
-            "username": "f14433d8-f0e9-41bf-9c72-b99b110e665d",
-            "first_name": "Nicolle",
-            "last_name": "LeClair",
-            "email": "nicolle.leclair@ecstech.com",
-            "title": "Nightowl",
-        },
-        {
             "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
             "first_name": "Erin",
             "last_name": "Song",
@@ -79,7 +72,8 @@ class UserFixture:
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
-            "title": "Hufflepuff prefect",
+            "email": "kristina.yin@cisa.dhs.gov",
+            "title": "Sorcerer",
         },
         {
             "username": "63688d43-82c6-480c-8e49-8a1bfdd33b9f",
@@ -103,25 +97,11 @@ class UserFixture:
             "title": "Product Manager",
         },
         {
-            "username": "89f2db87-87a2-4778-a5ea-5b27b585b131",
-            "first_name": "Jaxon",
-            "last_name": "Silva",
-            "email": "jaxon.silva@cisa.dhs.gov",
-            "title": "Designer",
-        },
-        {
             "username": "d579b8eb-16cf-4830-9341-70ecf227a644",
             "first_name": "Kim",
             "last_name": "Allen",
             "email": "kim+dotgov@truss.works",
             "title": "Farmer",
-        },
-        {
-            "username": "0f784268-a481-445e-9e37-ea2be43ce318",
-            "first_name": "Daisy",
-            "last_name": "Gutierrez",
-            "email": "dgutierrez@guydo.com",
-            "title": "Lima",
         },
         {
             "username": "fb3671a7-4513-49d7-9723-4c41ed23f608",
@@ -176,18 +156,13 @@ class UserFixture:
             "username": "e474e7a9-71ca-449d-833c-8a6e094dd117",
             "first_name": "Rebecca-Analyst",
             "last_name": "Hsieh-Analyst",
+            "email": "rebecca.hsieh+1@truss.works",
         },
         {
             "username": "0eb6f326-a3d4-410f-a521-aa4c1fad4e47",
             "first_name": "Gaby-Analyst",
             "last_name": "DiSarli-Analyst",
             "email": "gaby+1@truss.works",
-        },
-        {
-            "username": "02f96e16-fff9-4eb1-bb7e-e61a17c63f3f",
-            "first_name": "Nicolle-Analyst",
-            "last_name": "LeClair-Analyst",
-            "email": "nicolle.leclair.gov@ecstech.com",
         },
         {
             "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
@@ -199,7 +174,8 @@ class UserFixture:
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
-            "email": "kristina.yin+1@gsa.gov",
+            "email": "kristina.yin@gwe.cisa.dhs.gov",
+            "title": "ANALYST",
         },
         {
             "username": "0c27b05d-0aa3-45fa-91bd-83ee307708df",
@@ -224,12 +200,6 @@ class UserFixture:
             "first_name": "Kim-Analyst",
             "last_name": "Allen-Analyst",
             "email": "kim+a@truss.works",
-        },
-        {
-            "username": "acb8e287-9b45-4993-8f76-12648b417b75",
-            "first_name": "Daisy-Analyst",
-            "last_name": "Gutierrez-Analyst",
-            "email": "daisy.gutierrez-ctr@ecstech.com",
         },
         {
             "username": "fa2ea396-0ec1-46e3-a296-a37670996f17",

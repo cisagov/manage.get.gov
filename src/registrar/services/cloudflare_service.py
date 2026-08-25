@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from django.conf import settings
 
+from registrar.logging_context import get_user_log_context
 from registrar.utility.errors import (
     DnsHostingError,
     DnsHostingErrorCodes,
@@ -46,10 +47,13 @@ def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
     if isinstance(e, HTTPStatusError):
         status = e.response.status_code
         details = _cf_error_detail(e.response)
+        request_id = get_user_log_context().get("request_id")
+
         ctx = {
             "cf_ray": e.response.headers.get("cf-ray"),
             "cf_error_code": details.get("cf_error_code"),
             "cf_error_message": details.get("cf_error_message"),
+            "request_id": request_id,
             **context,
         }
         log_only = {"response_body": e.response.text}
@@ -127,7 +131,24 @@ class CloudflareService:
         with self._dns_call(account_name=account_name):
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
-            logger.info(f"Created host account {account_name}")
+            logger.info("Created host account %s", account_name, extra={"account_name": account_name})
+
+            return resp.json()
+
+    def delete_cf_account(self, account_id: str):
+        """
+        Delete DNS account and subsequently the account's zones, records, and other resources.
+        Returns id of the deleted account.
+        """
+        appended_url = f"/accounts/{account_id}"
+        with self._dns_call(x_account_id=account_id):
+            resp = self.client.delete(appended_url, headers=self.headers)
+            resp.raise_for_status()
+            logger.info(
+                "Deleted dns account %s",
+                account_id,
+                extra={"account_id": account_id},
+            )
 
             return resp.json()
 
@@ -162,6 +183,7 @@ class CloudflareService:
                 account_id,
                 zone_mode,
                 nameservers_type,
+                extra={"account_id": account_id, "zone_mode": zone_mode, "nameservers_type": nameservers_type},
             )
 
             return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
@@ -172,7 +194,7 @@ class CloudflareService:
         with self._dns_call(x_account_id=x_account_id, zone_name=zone_name):
             resp = self.client.post(appended_url, json=data)
             resp.raise_for_status()
-            logger.info(f"Created zone {zone_name}")
+            logger.info("Created zone %s", zone_name, extra={"zone_name": zone_name})
             return resp.json()
 
     def update_zone_dns_settings(
@@ -194,10 +216,11 @@ class CloudflareService:
             resp = self.client.patch(appended_url, json=data)
             resp.raise_for_status()
             logger.info(
-                "Updated zone DNS settings for zone_id=%s (nameservers.type=%s, namservers.ns_set=%s)",
+                "Updated zone DNS settings for zone_id=%s (nameservers.type=%s, nameservers.ns_set=%s)",
                 zone_id,
                 nameservers_type,
                 ns_set,
+                extra={"zone_id": zone_id, "nameservers_type": nameservers_type, "ns_set": ns_set},
             )
 
             return CloudflareDnsSettingsUpdateResponse.from_json(resp.json())
@@ -207,7 +230,7 @@ class CloudflareService:
         with self._dns_call(x_zone_id=zone_id, record_data=record_data):
             resp = self.client.post(appended_url, json=record_data)
             resp.raise_for_status()
-            logger.info(f"Created dns record for zone {zone_id}")
+            logger.info("Created dns record for zone %s", zone_id, extra={"zone_id": zone_id})
 
             return resp.json()
 
@@ -216,7 +239,11 @@ class CloudflareService:
         appended_url = f"/tenants/{self.tenant_id}/accounts"
         params = {"name": account_name, "page": 1, "per_page": 1}
         with self._dns_call(account_name=account_name):
-            logger.info(f"Looking up tenant account by name: {account_name}")
+            logger.info(
+                "Looking up tenant account by name: %s",
+                account_name,
+                extra={"account_name": account_name},
+            )
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
 
@@ -229,7 +256,11 @@ class CloudflareService:
         appended_url = "/zones"
         params = f"account.id={x_account_id}"
         with self._dns_call(x_account_id=x_account_id):
-            logger.info("Getting all of the account's zones")
+            logger.info(
+                "Getting all of the account's zones for account %s",
+                x_account_id,
+                extra={"x_account_id": x_account_id},
+            )
             resp = self.client.get(appended_url, params=params)
             resp.raise_for_status()
 
@@ -239,7 +270,11 @@ class CloudflareService:
         """Get zone data given a Clouflare zone id"""
         appended_url = f"/zones/{x_zone_id}"
         with self._dns_call(x_zone_id=x_zone_id):
-            logger.info(f"Getting zone data from zone id: {x_zone_id}")
+            logger.info(
+                "Getting zone data from zone id, %s",
+                x_zone_id,
+                extra={"x_zone_id": x_zone_id},
+            )
             resp = self.client.get(appended_url)
             resp.raise_for_status()
 
@@ -250,7 +285,15 @@ class CloudflareService:
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
         with self._dns_call(x_zone_id=zone_id, x_record_id=record_id):
             resp = self.client.get(appended_url, headers=self.headers)
-            logger.info("Fetching dns record. . .")
+            logger.info(
+                "Fetching dns record %s in zone %s",
+                record_id,
+                zone_id,
+                extra={
+                    "zone_id": zone_id,
+                    "record_id": record_id,
+                },
+            )
             resp.raise_for_status()
 
             return resp.json()
@@ -260,7 +303,12 @@ class CloudflareService:
         with self._dns_call(x_zone_id=zone_id, x_record_id=record_id, record_data=record_data):
             resp = self.client.patch(appended_url, headers=self.headers, json=record_data)
             resp.raise_for_status()
-            logger.info(f"Updated dns record {record_id} in zone {zone_id}.")
+            logger.info(
+                "Updated dns record %s in zone %s",
+                record_id,
+                zone_id,
+                extra={"zone_id": zone_id, "record_id": record_id},
+            )
 
             return resp.json()
 
@@ -270,6 +318,11 @@ class CloudflareService:
         with self._dns_call(x_zone_id=zone_id, x_record_id=record_id):
             resp = self.client.delete(appended_url, headers=self.headers)
             resp.raise_for_status()
-            logger.info(f"Deleted dns record {record_id} in zone {zone_id}.")
+            logger.info(
+                "Deleted dns record %s in zone %s",
+                record_id,
+                zone_id,
+                extra={"record_id": record_id, "zone_id": zone_id},
+            )
 
             return resp.json()

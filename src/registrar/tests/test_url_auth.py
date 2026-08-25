@@ -21,6 +21,7 @@ SAMPLE_KWARGS = {
     "domain_pk": "1",
     "domain_request_pk": "1",
     "domain_invitation_pk": "1",
+    "user_domain_role_pk": "1",
     "pk": "1",
     "id": "1",
     "content_type_id": "2",
@@ -123,7 +124,6 @@ class TestURLAuth(TestCase):
         "/api/v1/rdap/",
         "/health",
         "/version",
-        "/admin/login/",
     ]
 
     # We will test that the following URLs are not protected by auth

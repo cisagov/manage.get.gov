@@ -157,6 +157,24 @@ class TestInvitationService(TestCase):
         self.assertEqual(saved_permission.email, self.user.email)
         self.assertTrue(admin_notifications_sent)
 
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    def test_create_portfolio_permission_rejects_duplicate_user_emails(self, mock_send_email):
+        """Duplicate user records produce a clear invitation error."""
+        User.objects.create(username="duplicate_invitee", email=self.user.email.upper())
+
+        with self.assertRaises(InvitationError) as context:
+            create_portfolio_permission_or_invitation(
+                email=self.user.email,
+                portfolio=self.portfolio,
+                requestor=self.requestor,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                send_email=False,
+            )
+
+        self.assertIn("More than one user account exists", str(context.exception))
+        self.assertFalse(UserPortfolioPermission.objects.filter(portfolio=self.portfolio).exists())
+        mock_send_email.assert_not_called()
+
     @patch("registrar.services.invitation_service." "send_portfolio_invitation_email")
     def test_create_portfolio_invitation_does_not_set_details_when_email_fails(self, mock_send_email):
         """create_portfolio_permission_or_invitation records invite details only after email succeeds."""
@@ -242,6 +260,24 @@ class TestInvitationService(TestCase):
         self.assertTrue(email_was_sent)
         mock_send_email.assert_not_called()
 
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    def test_create_domain_role_rejects_duplicate_user_emails(self, mock_send_email):
+        """Duplicate user records produce a clear invitation error."""
+        User.objects.create(username="duplicate_invitee", email=self.user.email.upper())
+
+        with self.assertRaises(InvitationError) as context:
+            create_domain_role_or_invitation(
+                email=self.user.email,
+                domain=self.domain,
+                requestor=self.requestor,
+                role=UserDomainRole.Roles.MANAGER,
+                send_email=False,
+            )
+
+        self.assertIn("More than one user account exists", str(context.exception))
+        self.assertFalse(UserDomainRole.objects.filter(domain=self.domain).exists())
+        mock_send_email.assert_not_called()
+
     @patch("registrar.utility.email_invitations._send_domain_invitation_update_emails_to_domain_managers")
     @patch("registrar.utility.email_invitations.send_templated_email")
     def test_create_domain_invitation_for_unknown_email_forces_email(
@@ -264,7 +300,7 @@ class TestInvitationService(TestCase):
         self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
         self.assertEqual(domain_role.invited_by, self.requestor)
         self.assertTrue(email_was_sent)
-        self.assertTrue(DomainInvitation.objects.filter(email=email, domain=self.domain).exists())
+        self.assertTrue(DomainInvitation.objects.filter(email__iexact=email, domain=self.domain).exists())
         mock_send_templated_email.assert_called_once()
         mock_send_manager_updates.assert_called_once()
 
@@ -360,7 +396,7 @@ class TestInvitationService(TestCase):
         result = cancel_domain_invitation(email, self.domain)
 
         self.assertTrue(result)
-        domain_role = UserDomainRole.objects.get(email=email, domain=self.domain)
+        domain_role = UserDomainRole.objects.get(email__iexact=email, domain=self.domain)
         self.assertEqual(domain_role.status, UserDomainRole.Status.REJECTED)
 
     def test_cancel_portfolio_invitation_updates_status(self):
@@ -377,7 +413,7 @@ class TestInvitationService(TestCase):
         result = cancel_portfolio_invitation(email, self.portfolio)
 
         self.assertTrue(result)
-        permission = UserPortfolioPermission.objects.get(email=email, portfolio=self.portfolio)
+        permission = UserPortfolioPermission.objects.get(email__iexact=email, portfolio=self.portfolio)
         self.assertEqual(permission.status, UserPortfolioPermission.Status.REJECTED)
 
     def test_reactivate_domain_invitation_updates_status(self):
@@ -394,7 +430,7 @@ class TestInvitationService(TestCase):
         result = reactivate_domain_invitation(email, self.domain)
 
         self.assertTrue(result)
-        domain_role = UserDomainRole.objects.get(email=email, domain=self.domain)
+        domain_role = UserDomainRole.objects.get(email__iexact=email, domain=self.domain)
         self.assertEqual(domain_role.status, UserDomainRole.Status.INVITED)
 
     def test_check_duplicate_domain_invitation_returns_true(self):
@@ -426,3 +462,94 @@ class TestInvitationService(TestCase):
         result = check_duplicate_portfolio_invitation(email, self.portfolio)
 
         self.assertTrue(result)
+
+    # ------ LEGACY TESTS ------
+    # These tests are for the legacy invitation models and
+    # can be removed once the legacy models are fully deprecated.
+    # (Created with github copilot)
+    def test_camelcase_portfolio_invitation(self):
+        """Test that get_pending_invitations finds legacy portfolio invitations
+        regardless of email case (camelCase vs lowercase)."""
+        # Create a camelcased invitation
+        PortfolioInvitation.objects.create(
+            email="InvitEe2@Example.com",  # camelCase
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        )
+
+        # User has lowercase email
+        user = User.objects.create(username="test_invitee2", email="invitee2@example.com")
+
+        # Should find the invitation despite case difference
+        result = get_pending_invitations(user)
+        self.assertEqual(len(result["legacy_portfolio_invitations"]), 1)
+
+        # User with lowercase email accepts
+        result = accept_portfolio_invitation(user, self.portfolio)
+
+        # Should successfully find and accept
+        self.assertIsNotNone(result)
+        invitation = PortfolioInvitation.objects.get(portfolio=self.portfolio)
+        self.assertEqual(invitation.status, PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
+
+    def test_camelcase_domain_invitation(self):
+        """Test that get_pending_invitations finds legacy domain invitations
+        regardless of email case."""
+        # Create a camelcased invitation
+        DomainInvitation.objects.create(
+            email="MaNaGeR@Example.com",  # mixed case
+            domain=self.domain,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        # User has lowercase email
+        user = User.objects.create(username="test_manager", email="manager@example.com")
+
+        # Should find the invitation despite case difference
+        pending_invites = get_pending_invitations(user)
+        self.assertEqual(len(pending_invites["legacy_domain_invitations"]), 1)
+
+        # User with lowercase email accepts
+        accepted_invite_user_domain_role = accept_domain_invitation(user, self.domain)
+
+        # Should successfully find and accept
+        self.assertIsNotNone(accepted_invite_user_domain_role)
+        invitation = DomainInvitation.objects.get(domain=self.domain)
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.RETRIEVED)
+
+    def test_cancel_portfolio_invitation_with_camelcase_email(self):
+        """Test that cancel_portfolio_invitation works with camelcased stored emails."""
+        # Create invitation with camelCase
+        PortfolioInvitation.objects.create(
+            email="MeMbEr2@Example.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        )
+
+        # Cancel with lowercase
+        result = cancel_portfolio_invitation("member2@example.com", self.portfolio)
+
+        # Note: PortfolioInvitation doesn't have CANCELED status
+        # so it is deleted instead
+        self.assertTrue(result)
+        with self.assertRaises(PortfolioInvitation.DoesNotExist):
+            PortfolioInvitation.objects.get(portfolio=self.portfolio)
+
+    def test_cancel_domain_invitation_with_camelcase_email(self):
+        """Test that cancel_portfolio_invitation works with camelcased stored emails."""
+        # Create invitation with camelCase
+        invite, _ = DomainInvitation.objects.get_or_create(
+            email="MaNaGeR2@Example.com",  # mixed case
+            domain=self.domain,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        )
+
+        # Cancel with lowercase
+        result = cancel_domain_invitation("manager2@example.com", self.domain)
+
+        # Should successfully find and cancel
+        self.assertTrue(result)
+        invitation = DomainInvitation.objects.get(pk=invite.pk)
+        self.assertEqual(invitation.status, DomainInvitation.DomainInvitationStatus.CANCELED)

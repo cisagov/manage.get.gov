@@ -306,9 +306,40 @@ class TestFormValidation(MockEppLib):
         self.assertEqual(
             form.errors["email"],
             [
-                "Enter an email address in the required format, like name@example.com.",
                 "Email must be no more than 320 characters.",
             ],
+        )
+
+    @less_console_noise_decorator
+    def test_email_invalid_format_failure(self):
+        """Test that invalid email format still shows the expected message."""
+
+        form = PortfolioNewMemberForm(data={"email": "invalid-email"})
+        self.assertEqual(
+            form.errors["email"],
+            ["Enter an email address in the required format, like name@example.com."],
+        )
+
+    @less_console_noise_decorator
+    def test_website_max_length_failure(self):
+        """Test that a website over 100 characters shows only the max-length message"""
+
+        long_website = "https://" + ("a" * 100) + ".com"
+        form = CurrentSitesForm(data={"website": long_website})
+        self.assertEqual(
+            form.errors["website"],
+            ["Website must be no more than 100 characters."],
+        )
+
+    @less_console_noise_decorator
+    def test_website_invalid_format_failure(self):
+        """Test that an invalid URL will show the expected messaging."""
+
+        invalid_website = "invalid url"
+        form = CurrentSitesForm(data={"website": invalid_website})
+        self.assertEqual(
+            form.errors["website"],
+            ["Enter your organization's current website in the required format, like example.com."],
         )
 
     @less_console_noise_decorator
@@ -356,7 +387,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["purpose"],
-            ["Response must be no more than 1000 characters."],
+            ["Purpose must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
@@ -403,7 +434,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["anything_else"],
-            ["Response must be no more than 1000 characters."],
+            ["Description must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
@@ -452,7 +483,7 @@ class TestFormValidation(MockEppLib):
         )
         self.assertEqual(
             form.errors["about_your_organization"],
-            ["Response must be no more than 1000 characters."],
+            ["Description must be no more than 1000 characters."],
         )
 
     @less_console_noise_decorator
@@ -468,7 +499,7 @@ class TestFormValidation(MockEppLib):
     def test_other_contact_phone_invalid(self):
         """Must be a valid phone number."""
         form = OtherContactsForm(data={"phone": "super@boss"})
-        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number."))
+        self.assertTrue(form.errors["phone"][0].startswith("Enter a valid 10-digit phone number including area code."))
 
     @less_console_noise_decorator
     def test_requirements_form_blank(self):

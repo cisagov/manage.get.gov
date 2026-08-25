@@ -5,6 +5,7 @@ from django.db import models
 from django_fsm import FSMField, transition
 from django.contrib.auth import get_user_model
 from registrar.models import DomainInvitation, UserPortfolioPermission
+from registrar.utility.errors import MultipleUsersWithEmailError
 from .utility.portfolio_helper import (
     UserPortfolioPermissionChoices,
     UserPortfolioRoleChoices,
@@ -182,21 +183,24 @@ class PortfolioInvitation(TimeStampedModel):
         return get_members_description_display(self.roles, self.additional_permissions)
 
     @transition(field="status", source=PortfolioInvitationStatus.INVITED, target=PortfolioInvitationStatus.RETRIEVED)
-    def retrieve(self):
+    def retrieve(self, user=None):
         """When an invitation is retrieved, create the corresponding permission.
 
         Raises:
             RuntimeError if no matching user can be found.
+            MultipleUsersWithEmailError if the email matches multiple users.
         """
 
-        # get a user with this email address
-        User = get_user_model()
-        try:
-            user = User.objects.get(email=self.email)
-        except User.DoesNotExist:
-            # should not happen because a matching user should exist before
-            # we retrieve this invitation
-            raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
+        if user is None:
+            User = get_user_model()
+            users = list(User.objects.filter(email__iexact=self.email).order_by("pk")[:2])
+            if len(users) > 1:
+                raise MultipleUsersWithEmailError(self.email)
+            if not users:
+                # should not happen because a matching user should exist before
+                # we retrieve this invitation
+                raise RuntimeError("Cannot find the user to retrieve this portfolio invitation.")
+            user = users[0]
 
         # and create a role for that user on this portfolio
         user_portfolio_permission, _ = UserPortfolioPermission.objects.get_or_create(
@@ -207,6 +211,7 @@ class PortfolioInvitation(TimeStampedModel):
         if self.additional_permissions and len(self.additional_permissions) > 0:
             user_portfolio_permission.additional_permissions = self.additional_permissions
         user_portfolio_permission.save()
+        return user_portfolio_permission
 
     def clean(self):
         """Extends clean method to perform additional validation, which can raise errors in django admin."""
@@ -226,7 +231,7 @@ class PortfolioInvitation(TimeStampedModel):
         if self.status == self.PortfolioInvitationStatus.INVITED:
 
             # Query the user by email
-            users = User.objects.filter(email=email)
+            users = User.objects.filter(email__iexact=email)
 
             if users.count() > 1:
                 # This should never happen, log an error if more than one object is returned

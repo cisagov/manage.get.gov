@@ -126,6 +126,11 @@ class MockCloudflareService:
             side_effect=self._mock_delete_dns_record_response
         )
 
+        # Mock the delete api with any account id
+        self._mock_context.delete(url__regex=r"/accounts/[\w-]+").mock(
+            side_effect=self._mock_delete_cf_account_response
+        )
+
         # PATCH account dns_settings
         self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_settings").mock(
             side_effect=self._mock_update_zone_dns_settings_response
@@ -206,6 +211,25 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": {"id": self.new_account_id, "name": account_name, "type": "standard", "created_on": created},
+            },
+        )
+
+    def _mock_delete_cf_account_response(self, request) -> httpx.Response:
+        logger.debug("🐟 mocking dns account delete")
+        # Get account id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        account_id = request_url.split("/accounts/")[1]
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": account_id,
+                },
+                "errors": [],
+                "messages": [],
             },
         )
 
@@ -435,7 +459,7 @@ class MockCloudflareService:
         except Exception as e:
             logger.error(f"Failed to get record zone name using request URL: {e}.")
 
-    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:
+    def _mock_cf_error_response(self, record_name: str, record_type: str) -> httpx.Response:  # noqa: C901
         """Return an error response for ``error-*`` record names. These represent actual CF error codes and messages"""
         if record_name.startswith("error-duplicate"):
             return httpx.Response(
@@ -509,7 +533,7 @@ class MockCloudflareService:
                 },
                 headers={"cf-ray": "BB12"},
             )
-        if record_name.startswith("error-400"):
+        if record_name.startswith("error-content"):
             return httpx.Response(
                 400,
                 json={
@@ -520,10 +544,39 @@ class MockCloudflareService:
                 },
                 headers={"cf-ray": "R2D2"},
             )
+        if record_name.startswith("error-400"):
+            return httpx.Response(
+                400,
+                json={
+                    "result": None,
+                    "success": False,
+                    "errors": [{"code": 0000, "message": "Unidentified 400 error"}],
+                    "messages": [],
+                },
+                headers={"cf-ray": "R2D2"},
+            )
+        if record_name.startswith("error-401"):
+            return httpx.Response(
+                401,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "AARD"},
+            )
         if record_name.startswith("error-403"):
             return httpx.Response(
                 403,
                 json={"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]},
                 headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-403"):
+            return httpx.Response(
+                404,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "C3PO"},
+            )
+        if record_name.startswith("error-429"):
+            return httpx.Response(
+                429,
+                # TBD what is returned by CF in json
+                headers={"cf-ray": "VARK"},
             )
         return httpx.Response(500)

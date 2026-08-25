@@ -271,6 +271,12 @@ class Domain(TimeStampedModel, DomainHelper):
             self.created_at_reference = self.created_at
         self._original_updated_at = self.updated_at
 
+    @property
+    def display_created_at(self):
+        """Creation date shown in the UI: the registry creation date, falling
+        back to the registrar record date for domains that never reached the registry (e.g. UNKNOWN)."""
+        return self.x_registry_created_at or self.created_at_reference
+
     @classmethod
     def available(cls, domain: str) -> bool:
         """Check if a domain is available.
@@ -1207,7 +1213,7 @@ class Domain(TimeStampedModel, DomainHelper):
             raise e
 
         logger.info(
-            "Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s",
+            "Deleting associated database objects (hosts, contacts, DNSSEC, dns host data) for domain %s",
             self.name,
         )
         self._delete_related_objects_from_db()
@@ -1275,9 +1281,70 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
+    def _delete_db_and_vendor_dns_data(self):
+        """
+        Delete DNS objects associated with this domain from database.
+        Includes:
+        - DnsAccount, VendorDnsAccount, DnsAccountVendorDnsAccount
+        - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
+        - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord
+
+        Deletes account from vendor
+        """
+        from registrar.models import DnsZone
+
+        if self.is_enrolled_in_dns_hosting and DnsZone.objects.filter(domain_id=self.id).exists():
+            from registrar.models import (
+                DnsRecord,
+                DnsAccount_VendorDnsAccount,
+                DnsZone_VendorDnsZone,
+                DnsRecord_VendorDnsRecord,
+                VendorDnsRecord,
+            )
+
+            logger.debug("Deleting DNS data for %s.", self.name)
+            try:
+                with transaction.atomic():
+                    dns_zone = DnsZone.objects.get(domain_id=self.id)
+                    logger.info("Removing db DNS records associated with %s.", self.name)
+                    records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                    logger.info("Removing %s db DNS records: %s.", self.name, str(records))
+                    # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
+                    # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
+                    for record in records:
+                        vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(dns_record=record).values_list(
+                            "vendor_dns_record_id", flat=True
+                        )
+                        vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
+                        if vendor_records:
+                            vendor_records.delete()
+                    records.delete()
+                    logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
+                    logger.info("Removing db DNS zone data for domain %s.", self.name)
+                    vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
+                    dns_zone.delete()
+                    vendor_zone.delete()
+                    logger.info("Removed db DNS zone data for domain %s.", self.name)
+                    logger.info("Removing db DNS account data for %s.", self.name)
+                    dns_account = dns_zone.dns_account
+                    vendor_account = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account
+                    x_account_id = vendor_account.x_account_id
+                    dns_account.delete()
+                    vendor_account.delete()
+                    logger.info("Removed db DNS account data for domain %s.", self.name)
+
+                    logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
+                    from registrar.services.dns_host_service import DnsHostService
+
+                    dns_host_service = DnsHostService()
+                    dns_host_service.delete_account(x_account_id)  # deletes account from vendor
+            except Exception as e:
+                logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
+                raise e
+
     def _delete_related_objects_from_db(self):
         """
-        Deletes related Host/HostIP records, and non-registrant contacts
+        Deletes related Host/HostIP records, and non-registrant contacts, and dns hosting data
         for this domain from the database after it's been deleted from EPP
         FYI there's no DNSSEC data stored in the DB
         """
@@ -1303,6 +1370,12 @@ class Domain(TimeStampedModel, DomainHelper):
                 c.delete()
         except Exception as e:
             logger.error("Error deleting contacts for domain %s: %s", self.name, str(e))
+
+        logger.info("Deleting db DNS data")
+        try:
+            self._delete_db_and_vendor_dns_data()
+        except Exception as e:
+            logger.error("Error deleting DNS data for domain %s: %s", self.name, str(e))
 
     def _domain_can_be_deleted(self, max_attempts=5, wait_interval=2) -> bool:
         """
@@ -1420,7 +1493,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     is_enrolled_in_dns_hosting = models.BooleanField(
         default=False,
-        help_text=("Indicates whether this domain is enrolled in internal DNS hosting."),
+        help_text=("Indicates whether the domain is enrolled in .gov DNS hosting."),
+        verbose_name=".gov DNS",
     )
 
     def isActive(self):
@@ -1461,6 +1535,9 @@ class Domain(TimeStampedModel, DomainHelper):
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
         return self.state.capitalize()
+
+    def enrolled_hosting_display(self, request=None):
+        return "Yes" if self.is_enrolled_in_dns_hosting else "No"
 
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""

@@ -73,8 +73,10 @@ CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
 TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
-HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE = "Enter content that ends with a domain name."
-DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "You already entered this DNS record. DNS records must be unique."
+DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "This DNS record is already associated with this domain. "
+"DNS records must be unique."
+MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE = "Combined content length of records with this name and "
+"type must not exceed 8192 characters."
 
 
 def get_content_type_label_by_record_type(record_type):
@@ -86,6 +88,21 @@ def get_content_type_label_by_record_type(record_type):
         DNSRecordTypes.PTR: "domain name",
     }
     return record_type_to_content_dict.get(record_type, "content")
+
+
+def get_trailing_number_message_by_record_type(field_type):
+    trailing_number_error_message = "that ends in a domain name"
+    requirement_dict = {
+        "target": f"{trailing_number_error_message}, like example.gov or www.example.gov",
+        "mail server": f"{trailing_number_error_message}, like mail.example.gov",
+    }
+
+    if field_type == "domain name":
+        field_type = "content"
+
+    requirement = requirement_dict.get(field_type, trailing_number_error_message)
+
+    return f"Enter {'a' if field_type != "content" else ''} {field_type} {requirement}."
 
 
 # For system level validation
@@ -148,7 +165,8 @@ def _validate_dns_hostname_structure(content: str, field_type) -> None:
         raise ValidationError(error_message)
     last_label = _get_non_wildcard_dns_name_labels(content)[-1]
     if last_label.isdigit():
-        raise ValidationError(HOSTNAME_CONTENT_TRAILING_NUMBER_ERROR_MESSAGE)
+        error_message = get_trailing_number_message_by_record_type(field_type)
+        raise ValidationError(error_message)
 
 
 def _validate_dns_name_characters(name: str, field_type="name") -> None:

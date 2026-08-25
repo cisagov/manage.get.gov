@@ -208,6 +208,14 @@ jobs:
       - name: run pa11y
         working-directory: ./src
         run: |
-          sleep 20;
           npm i -g pa11y-ci
-          pa11y-ci 
+          echo "Waiting for app to be ready..."
+          
+          timeout 180 bash -c 'until curl -sf http://localhost:8080/health > /dev/null; 
+          do 
+            echo "app not up yet, retrying..."; 
+            sleep 3; 
+          done'
+          
+          echo "App is up, running pa11y"
+          pa11y-ci

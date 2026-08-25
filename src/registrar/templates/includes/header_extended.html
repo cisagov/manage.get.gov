@@ -119,7 +119,7 @@
                     {% endif %}
                 </li>
 
-                {% if has_view_members_portfolio_permission %}
+                {% if is_portfolio_user %}
                 <li class="usa-nav__primary-item">
                     <a href="{% url 'members' %}" class="usa-nav-link {% if path|is_members_subpage %} usa-current{% endif %}">
                         Members

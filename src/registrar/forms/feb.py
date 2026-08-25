@@ -29,14 +29,9 @@ class ExecutiveNamingRequirementsDetailsForm(BaseDeletableRegistrarForm):
         max_length=2000,
         required=True,
         error_messages={
-            "required": ("Provide details on why your submission does not meet each domain naming requirement.")
+            "required": ("Provide details on why your submission does not meet each domain naming requirement."),
+            "max_length": "Reason for not meeting requirements must be no more than 2000 characters.",
         },  # noqa: E501
-        validators=[
-            MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
-            )
-        ],
         label="",
     )
 
@@ -81,12 +76,17 @@ class FEBTimeFrameYesNoForm(BaseDeletableRegistrarForm, BaseYesNoForm):
 class FEBTimeFrameDetailsForm(BaseDeletableRegistrarForm):
     time_frame_details = forms.CharField(
         label="time_frame_details",
-        widget=forms.Textarea(attrs={"aria-label": "Provide details on your target time frame. \
-                    Is there a special significance to this date (legal requirement, announcement, event, etc)?"}),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Provide details on your target time frame. \
+                Is there a special significance to this date (legal requirement, announcement, event, etc)?",
+                "maxlength": "1000",
+            }
+        ),
         validators=[
             MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
+                1000,
+                message="Context for target timeframe must be no more than 1000 characters.",
             )
         ],
         error_messages={"required": "Provide details on your target time frame."},
@@ -116,11 +116,16 @@ class FEBInteragencyInitiativeYesNoForm(BaseDeletableRegistrarForm, BaseYesNoFor
 class FEBInteragencyInitiativeDetailsForm(BaseDeletableRegistrarForm):
     interagency_initiative_details = forms.CharField(
         label="interagency_initiative_details",
-        widget=forms.Textarea(attrs={"aria-label": "Provide details on the nature of the interagency initiative."}),
+        widget=forms.Textarea(
+            attrs={
+                "aria-label": "Provide details on the nature of the interagency initiative.",
+                "maxlength": 1000,
+            }
+        ),
         validators=[
             MaxLengthValidator(
-                2000,
-                message="Response must be less than 2000 characters.",
+                1000,
+                message="Description of interagency engagement must be no more than 1000 characters.",
             )
         ],
         error_messages={"required": "Provide details on the nature of the interagency initiative."},
@@ -132,3 +137,6 @@ class FEBAnythingElseYesNoForm(BaseYesNoForm, BaseDeletableRegistrarForm):
 
     form_is_checked = property(lambda self: self.domain_request.has_anything_else_text)  # type: ignore
     field_name = "has_anything_else_text"
+    required_error_message = (
+        "Select “Yes” if there are additional details you’d like us to know. Select “No” if you have nothing to add."
+    )

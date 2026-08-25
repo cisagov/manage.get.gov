@@ -5,6 +5,8 @@ from registrar.models import Portfolio, SeniorOfficial
 from unittest.mock import MagicMock, patch
 from django_webtest import WebTest  # type: ignore
 from django.core.handlers.wsgi import WSGIRequest
+from django.core.exceptions import PermissionDenied
+from django.test import RequestFactory
 from registrar.models import (
     DomainRequest,
     Domain,
@@ -24,7 +26,13 @@ from registrar.models.utility.portfolio_helper import UserPortfolioPermissionCho
 from registrar.tests.test_views import TestWithUser
 from registrar.utility.email import EmailSendingError
 from registrar.utility.errors import MissingEmailError
-from registrar.views.portfolios import PortfolioOrganizationSelectView
+from registrar.views.portfolios import (
+    PortfolioMemberDeleteView,
+    PortfolioInvitedMemberDeleteView,
+    PortfolioInvitedMemberEditView,
+    PortfolioInvitedMemberDomainsEditView,
+    PortfolioOrganizationSelectView,
+)
 from .common import (
     MockEppLib,
     MockSESClient,
@@ -70,7 +78,7 @@ class TestPortfolio(WebTest):
 
     def set_session_portfolio(self, portfolio=None):
         session = self.client.session
-        session["portfolio"] = self.portfolio
+        session["portfolio"] = (portfolio or self.portfolio).id
         session.save()
 
     @less_console_noise_decorator
@@ -855,14 +863,10 @@ class TestPortfolio(WebTest):
         self.assertEqual(domain_requests.status_code, 200)
 
     @less_console_noise_decorator
-    def test_cannot_view_members_table(self):
-        """Test that user without proper permission is denied access to members view."""
-
-        # Users can only view the members table if they have
-        # Portfolio Permission "view_members" selected.
-        # NOTE: Admins, by default, DO have permission
-        # to view/edit members.
-        # Testing scenario: User is not admin and can view portfolio, but not the members table
+    def test_user_with_no_member_access_sees_self_view_only(self):
+        """A user with no Member access (no edit or view) can still reach
+        the Members page (self view only) to only their own record
+        and the text that only displays in Member table in self view"""
 
         # --- non-admin
         self.app.set_user(self.user.username)
@@ -879,8 +883,45 @@ class TestPortfolio(WebTest):
         # This will redirect the user to the members page.
         self.client.force_login(self.user)
         response = self.client.get(reverse("members"), follow=True)
-        # Assert the response is a 403 Forbidden
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "This organization may have other members, but your current permissions only allow "
+            "you to view your own membership details.",
+        )
+
+        # Search bar should not render
+        self.assertNotContains(response, "Search by member email address")
+        self.assertNotContains(response, 'id="members__search-field"')
+
+        # Export button should not render
+        self.assertNotContains(response, "Export as CSV")
+
+    @less_console_noise_decorator
+    def test_member_with_view_permission_does_not_see_self_view_text(self):
+        """A user with view Member access should not see self
+        view only text below in the Member table"""
+        self.app.set_user(self.user.username)
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+        self.set_session_portfolio()
+
+        members_page = self.app.get(reverse("members"))
+        self.assertNotContains(
+            members_page,
+            "This organization may have other members, but your current permissions only allow "
+            "you to view your own membership details.",
+        )
+
+        # Search + export should render
+        self.assertContains(members_page, "Search by member email address")
+        self.assertContains(members_page, 'id="members__search-field"')
+        self.assertContains(members_page, "Export as CSV")
 
     @less_console_noise_decorator
     def test_can_view_members_table(self):
@@ -1265,8 +1306,8 @@ class TestPortfolio(WebTest):
         self.assertNotContains(portfolio_landing_page, 'href="/requests/')
         # nav does not include link to create request
         self.assertNotContains(portfolio_landing_page, 'href="/request/')
-        # nav does not include link to members
-        self.assertNotContains(portfolio_landing_page, 'href="/members/')
+        # nav DOES include link to members (now that we have self view only)
+        self.assertContains(portfolio_landing_page, 'href="/members/')
 
     @less_console_noise_decorator
     def test_main_nav_when_user_has_all_permissions(self):
@@ -1722,6 +1763,7 @@ class TestPortfolioMemberDeleteView(WebTest):
     def setUp(self):
         super().setUp()
         self.client = Client()
+        self.factory = RequestFactory()
         self.user = create_test_user()
         self.domain, _ = Domain.objects.get_or_create(name="igorville.gov")
         self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
@@ -1730,6 +1772,16 @@ class TestPortfolioMemberDeleteView(WebTest):
         )
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
+        )
+        self.view_only_user = User.objects.create(
+            username="view_only_membmer_delete",
+            email="view_only_member_delete@example.com",
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
         )
 
     def tearDown(self):
@@ -1741,6 +1793,13 @@ class TestPortfolioMemberDeleteView(WebTest):
         Domain.objects.all().delete()
         User.objects.all().delete()
         super().tearDown()
+
+    def _add_middleware(self, request):
+        """Attach session middleware to a RequestFactory request."""
+        session_middleware = SessionMiddleware(lambda request: None)
+        session_middleware.process_request(request)
+        request.session.save()
+        return request
 
     @less_console_noise_decorator
     @patch("registrar.views.portfolios.send_portfolio_admin_removal_emails")
@@ -2150,6 +2209,25 @@ class TestPortfolioMemberDeleteView(WebTest):
                     response.headers["Location"], reverse("member", kwargs={"member_pk": admin_perm_user.pk})
                 )
 
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_member_delete(self, mock_decorator):
+        """MEMBER-DELETE: View layer check blocks view only user bypassing decorator"""
+        target_permission, _ = UserPortfolioPermission.objects.get_or_create(
+            user=self.user,
+            portfolio=self.portfolio,
+            defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]},
+        )
+        request = self.factory.post(
+            reverse("member-delete", kwargs={"member_pk": target_permission.pk}),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioMemberDeleteView.as_view()(request, member_pk=target_permission.pk)
+
 
 class TestPortfolioInvitedMemberDeleteView(WebTest):
     def setUp(self):
@@ -2198,6 +2276,12 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             portfolio=self.portfolio,
             roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
         )
+        permission = UserPortfolioPermission.objects.create(
+            email=invited_member_email,
+            portfolio=self.portfolio,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
 
         # Invited member removal email sent successfully
         send_invited_member_removal.return_value = True
@@ -2221,6 +2305,9 @@ class TestPortfolioInvitedMemberDeleteView(WebTest):
             # Location is used for a 3xx HTTP status code to indicate that the URL was redirected
             # and then confirm that we're now on Members Table page
             self.assertEqual(response.headers["Location"], reverse("members"))
+            permission.refresh_from_db()
+            self.assertEqual(permission.status, UserPortfolioPermission.Status.REJECTED)
+            self.assertFalse(PortfolioInvitation.objects.filter(pk=invitation.pk).exists())
 
             # assert send_portfolio_admin_removal_emails not called since invitation
             # is for a basic member
@@ -2497,7 +2584,21 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_own_member_domains(self):
-        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)."""
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)
+        - checks decorator"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_own_member_domains_view_layer(self, mock_decorator):
+        """Tests user with only VIEW_MEMBERS access can't edit their own domain assignment(s)
+        - bypasses decorator to check view layer specifically"""
         self.client.force_login(self.user_view_only)
         response = self.client.post(
             reverse("member-domains-edit", kwargs={"member_pk": self.view_only_permission.id}),
@@ -2508,7 +2609,21 @@ class TestPortfolioMemberDomainsView(TestWithUser, WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_other_member_domains(self):
-        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)."""
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)
+        - checks decorator"""
+        self.client.force_login(self.user_view_only)
+        response = self.client.post(
+            reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
+            {},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_other_member_domains_view_layer(self, mock_decorator):
+        """Tests user with only VIEW_MEMBERS access can't edit another members domain assignment(s)
+        - bypasses decorator to check view layer specifically"""
         self.client.force_login(self.user_view_only)
         response = self.client.post(
             reverse("member-domains-edit", kwargs={"member_pk": self.permission.id}),
@@ -3822,7 +3937,7 @@ class TestRequestingEntity(WebTest):
         form_data = [(key, value) for key, value in form_data if key != "portfolio_requesting_entity-sub_organization"]
         response = self.app.post(form_action, dict(form_data))
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        self.assertContains(response, "Suborganization is required.", status_code=200)
+        self.assertContains(response, "Select the suborganization who will use the domain.", status_code=200)
 
         # Test missing custom suborganization details
         form["portfolio_requesting_entity-requesting_entity_is_suborganization"] = True
@@ -4267,7 +4382,7 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
             mock_error.assert_called_once_with(
                 response.wsgi_request,
                 "An unexpected error occurred: Failed to send"
-                ' email.. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
+                ' email. Please try again. If the problem persists, <a href="https://get.gov/contact/">contact us</a>'
                 " for assistance.",
             )
             # assert that portfolio invitation is not created
@@ -4590,6 +4705,26 @@ class TestPortfolioInviteNewMemberView(MockEppLib, WebTest):
         # Assert no email triggered
         mock_invite_to_portfolio.assert_not_called()
 
+    @less_console_noise_decorator
+    @patch("registrar.views.portfolios.invite_to_portfolio")
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_invite_new_member_view_layer(self, mock_decorator, mock_invite_to_portfolio):
+        """Test user with only VIEW_MEMBERS cannot add a new member
+        - bypasses decorator and tests view layer specifically"""
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("new-member"),
+            {
+                "role": UserPortfolioRoleChoices.ORGANIZATION_MEMBER.value,
+                "email": "someone@example.com",
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        # Assert no email triggered
+        mock_invite_to_portfolio.assert_not_called()
+
 
 class TestPortfolioMemberEditView(WebTest):
     """Tests for the edit member page on portfolios"""
@@ -4707,7 +4842,22 @@ class TestPortfolioMemberEditView(WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_own_member_permissions(self):
-        """User with only VIEW_MEMBERS cannot edit their own permissions"""
+        """User with only VIEW_MEMBERS cannot edit their own permissions - checks decorator"""
+        view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": view_only_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_own_member_permissions_view_layer(self, mock_decorator):
+        """User with only VIEW_MEMBERS cannot edit their own permissions -
+        bypasses the decorator and checks the view layer specifically"""
         view_only_permission = UserPortfolioPermission.objects.get(user=self.view_only_user)
 
         self.client.force_login(self.view_only_user)
@@ -4720,7 +4870,25 @@ class TestPortfolioMemberEditView(WebTest):
 
     @less_console_noise_decorator
     def test_view_only_user_cannot_edit_other_member_permissions(self):
-        """User with only VIEW_MEMBERS cannot edit another members permissions either"""
+        """User with only VIEW_MEMBERS cannot edit another members permissions either
+        - checks decorator"""
+        other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
+
+        self.client.force_login(self.view_only_user)
+        response = self.client.post(
+            reverse("member-permissions", kwargs={"member_pk": other_member_permission.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        other_member_permission.refresh_from_db()
+        self.assertEqual(other_member_permission.roles, ["organization_admin"])
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_user_cannot_edit_other_member_permissions_view_layer(self, mock_decorator):
+        """User with only VIEW_MEMBERS cannot edit another members permissions either
+        - bypasses the decorator and checks the view layer specifically"""
         other_member_permission = UserPortfolioPermission.objects.get(user=self.user)
 
         self.client.force_login(self.view_only_user)
@@ -5386,6 +5554,94 @@ class TestPortfolioInvitedMemberEditView(WebTest):
         # Assert that addition and removal emails are not sent
         mock_send_addition_emails.assert_not_called()
         mock_send_removal_emails.assert_not_called()
+
+
+class TestPortfolioInvitedMemberView(WebTest):
+    """Tests that view layer perm checks block view only users on
+    invited member write endpoints
+
+    We are SPECIFICALLY bypassing the decorator to check the view layer
+    so we're using RequestFactory to skip the middleware, but then
+    we need to add the middleware back in bc we need a session for the
+    request
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.factory = RequestFactory()
+        self.user = create_test_user()
+        self.portfolio, _ = Portfolio.objects.get_or_create(requester=self.user, organization_name="Hotel California")
+        self.invitation = PortfolioInvitation.objects.create(
+            email="invited@member.com",
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        self.view_only_user = User.objects.create(
+            username="view_only_user",
+            email="view_only@user.com",
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.view_only_user,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            additional_permissions=[UserPortfolioPermissionChoices.VIEW_MEMBERS],
+        )
+
+    def tearDown(self):
+        PortfolioInvitation.objects.all().delete()
+        UserPortfolioPermission.objects.all().delete()
+        Portfolio.objects.all().delete()
+        User.objects.all().delete()
+        super().tearDown()
+
+    def _add_middleware(self, request):
+        """Attach session middleware to a RequestFactory request
+        (i took this from above and just put it into a helper)"""
+        session_middleware = SessionMiddleware(lambda request: None)
+        session_middleware.process_request(request)
+        request.session.save()
+        return request
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_invitedmember_delete(self, mock_perm):
+        """INVITEDMEMBER-DELETE: View layer check blocks view only user bypassing decorator"""
+        request = self.factory.post(
+            reverse("invitedmember-delete", kwargs={"invitedmember_pk": self.invitation.id}),
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioInvitedMemberDeleteView.as_view()(request, invitedmember_pk=self.invitation.id)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_invitedmember_permissions(self, mock_perm):
+        """INVITEDMEMBER-PERMISSIONS: View layer check blocks view only user bypassing decorator"""
+        request = self.factory.post(
+            reverse("invitedmember-permissions", kwargs={"invitedmember_pk": self.invitation.id}),
+            {"role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN},
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioInvitedMemberEditView.as_view()(request, invitedmember_pk=self.invitation.id)
+
+    @less_console_noise_decorator
+    @patch("registrar.decorators._user_has_permission", return_value=True)
+    def test_view_only_blocked_at_view_layer_invitedmember_domains_edit(self, mock_perm):
+        """INVITEDMEMBER-DOMAINS-EDIT: View layer check blocks view only user bypassing decorator"""
+        request = self.factory.post(
+            reverse("invitedmember-domains-edit", kwargs={"invitedmember_pk": self.invitation.id}),
+        )
+        request.user = self.view_only_user
+        request = self._add_middleware(request)
+
+        with self.assertRaises(PermissionDenied):
+            PortfolioInvitedMemberDomainsEditView.as_view()(request, invitedmember_pk=self.invitation.id)
 
 
 class TestPortfolioSelectOrganizationView(WebTest):

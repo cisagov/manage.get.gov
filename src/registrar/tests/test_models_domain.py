@@ -18,7 +18,7 @@ from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
 from registrar.utility.enums import DefaultEmail
-from registrar.utility.errors import ActionNotAllowed, NameserverError
+from registrar.utility.errors import ActionNotAllowed, NameserverError, NameserverErrorCodes
 
 from registrar.models.utility.contact_error import ContactError, ContactErrorCodes
 from registrar.utility import errors
@@ -32,6 +32,7 @@ from epplibwrapper import (
     RegistryError,
     ErrorCode,
 )
+from registrar.utility.errors import DnsHostingError
 from .common import DEFAULT_EPP_CR_DATE, MockEppLib, MockSESClient, less_console_noise
 import logging
 import boto3_mocking  # type: ignore
@@ -2702,6 +2703,22 @@ class TestRegistrantDNSSEC(MockEppLib):
                 domain.dnssecdata = self.dnssecExtensionWithDsData
                 self.assertTrue(err.is_client_error() or err.is_session_error() or err.is_server_error())
 
+    @less_console_noise_decorator
+    def test_nameserver_bad_data_error_message_success(self):
+        """
+        Scenario: The registry returns an unsuccessful response code
+            When the nameserver setter raises NameserverError BAD_DATA
+            Then the error message matches the approved copy
+        """
+        err = NameserverError(code=NameserverErrorCodes.BAD_DATA)
+
+        expected = (
+            "There's something wrong with the name server information you provided. "
+            "Please try again. If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
+        )
+        self.assertEqual(str(err), expected)
+
 
 class TestExpirationDate(MockEppLib):
     """User may renew expiration date by a number of units of time"""
@@ -3089,6 +3106,8 @@ class TestAnalystDelete(MockEppLib):
             And a domain exists in the registry
         """
         super().setUp()
+        # Reset hosts to account for unit tests that modify them (e.g., deleting hosts to make domains EPP deletable)
+        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
         self.domain, _ = Domain.objects.get_or_create(name="fake.gov", state=Domain.State.READY)
         self.domain_with_contacts, _ = Domain.objects.get_or_create(name="freeman.gov", state=Domain.State.READY)
         self.domain_on_hold, _ = Domain.objects.get_or_create(name="fake-on-hold.gov", state=Domain.State.ON_HOLD)
@@ -3278,7 +3297,7 @@ class TestAnalystDelete(MockEppLib):
             Then `commands.DeleteDomain` is sent to the registry
             And `state` is set to `DELETED`
         """
-        # Create a domain with DS data
+        # Create a domain with DNS data
         domain, _ = Domain.objects.get_or_create(name="dsdomain.gov", state=Domain.State.READY)
         # set domain to be on hold
         domain.place_client_hold()
@@ -3313,8 +3332,143 @@ class TestAnalystDelete(MockEppLib):
         # Check that the domain was deleted
         self.assertEqual(domain.state, Domain.State.DELETED)
 
-        # reset to avoid test pollution
-        self.mockDataInfoDomain.hosts = ["fake.host.com", "fake2.host.com"]
+    @less_console_noise_decorator
+    @patch("registrar.services.dns_host_service.DnsHostService.delete_account")
+    def test_delete_domain_in_epp_deletes_db_dns_data(self, mock_delete_account):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            VendorDnsAccount,
+            DnsAccount_VendorDnsAccount,
+            DnsZone,
+            VendorDnsZone,
+            DnsZone_VendorDnsZone,
+            DnsRecord,
+            VendorDnsRecord,
+            DnsRecord_VendorDnsRecord,
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+        mock_delete_account.return_value = "1"
+
+        vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).vendor_dns_record.id
+        self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+
+        # Delete the domain
+        domain.deleteInEpp()
+        domain.save()
+
+        self.assertFalse(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertFalse(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertFalse(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertFalse(DnsZone.objects.filter(domain=domain).exists())
+        self.assertFalse(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(VendorDnsZone.objects.filter(id=vendor_zone_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertFalse(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
+        self.assertFalse(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
+
+    @less_console_noise_decorator
+    @patch("registrar.services.cloudflare_service.CloudflareService.delete_cf_account")
+    def test_delete_domain_in_epp_preserves_db_dns_data_on_cf_delete_failure(self, mock_delete_account):
+        """
+        Deleting a domain from EPP removes the domain's DNS data from the database.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        # Set up DNS data for domain
+        from registrar.models import (
+            DnsAccount,
+            VendorDnsAccount,
+            DnsAccount_VendorDnsAccount,
+            DnsZone,
+            VendorDnsZone,
+            DnsZone_VendorDnsZone,
+            DnsRecord,
+            VendorDnsRecord,
+            DnsRecord_VendorDnsRecord,
+        )
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record
+
+        _, dns_account, dns_zone = create_initial_dns_setup(domain=domain)
+        dns_record = create_dns_record(dns_zone)
+        account_id, zone_id, record_id = dns_account.id, dns_zone.id, dns_record.id
+        # CloudflareService delete account raises Error
+        mock_delete_account.side_effect = DnsHostingError
+
+        # Delete the domain
+        domain.deleteInEpp()
+        domain.save()
+
+        vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
+        vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id
+        vendor_record_id = DnsRecord_VendorDnsRecord.objects.get(dns_record_id=record_id).vendor_dns_record.id
+
+        self.assertTrue(DnsAccount.objects.filter(id=account_id).exists())
+        self.assertTrue(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
+        self.assertTrue(VendorDnsAccount.objects.filter(id=vendor_account_id).exists())
+        self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
+        self.assertTrue(DnsZone_VendorDnsZone.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertTrue(VendorDnsZone.objects.filter(id=vendor_zone_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(dns_zone_id=zone_id).exists())
+        self.assertTrue(DnsRecord_VendorDnsRecord.objects.filter(dns_record_id=record_id).exists())
+        self.assertTrue(VendorDnsRecord.objects.filter(id=vendor_record_id).exists())
+
+    @less_console_noise_decorator
+    def test_delete_domain_in_epp_deletes_cf_account(self):
+        """
+        Deleting a domain in EPP should successfully request to delete the CF
+        account associated with the domain.
+        """
+        # Create a domain with DNS data
+        domain, _ = Domain.objects.get_or_create(name="dns.gov", state=Domain.State.READY)
+        # set domain to be on hold
+        domain.place_client_hold()
+        domain.save()
+
+        # Mock the InfoDomain command data to return a domain with no hosts
+        # This is needed to simulate the domain being able to be deleted
+        self.mockDataInfoDomain.hosts = []
+
+        from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup
+
+        create_initial_dns_setup(domain=domain, x_account_id="12345")
+
+        with patch(
+            "registrar.services.cloudflare_service.CloudflareService.delete_cf_account"
+        ) as mock_delete_cf_account:
+            domain.deleteInEpp()
+            domain.save()
+
+            # EPP deletion calls CloudflareService delete account on the x_account_id
+            mock_delete_cf_account.assert_called_once_with("12345")
 
     def test_delete_related_objects_cleans_database(self):
         """

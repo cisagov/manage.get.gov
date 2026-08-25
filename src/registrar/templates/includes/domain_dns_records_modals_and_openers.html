@@ -1,5 +1,44 @@
 {# This file includes hidden USWDS modal openers (aka triggers) and their respective modals.  The user clicks a button which triggers JS to click the opener vs anything htmx would re-render / swap. USWDS relocates it to the page body on init, so it's driven by data attributes + JS #}
 
+{# Record Type modal opener #}
+<a
+id="dns-record-type-modal-trigger"
+href="#dns-record-type-modal"
+class="usa-button usa-button--outline margin-top-1 display-none"
+aria-controls="domain-dns-record-type-switcher"
+data-open-modal
+>Trigger record type modal</a>
+
+
+{# Record type modal #}
+<div
+    class="usa-modal"
+    id="domain-dns-record-type-switcher"
+>
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to change the record type?" modal_description="You have unsaved changes that will be lost." modal_button_id="record-type-switch-confirm-button" modal_button_class="js-confirm-button-dns-record-switcher" modal_button_text="Yes, change record type"  cancel_button_text="Go back" %}
+</div>
+
+
+{# Edit form modal for switching forms #}
+<a
+id="dns-record-edit-form-modal-trigger"
+href="#dns-edit-form-modal"
+class="usa-button usa-button--outline margin-top-1 display-none"
+aria-controls="edit-dns-record-switcher"
+data-open-modal
+>Trigger edit dns record switcher form modal</a>
+
+
+{# Edit form modal #}
+<div
+    class="usa-modal"
+    id="edit-dns-record-switcher"
+>
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to continue?" modal_description="You have unsaved changes that will be lost."  modal_button_id="edit-dns-record-switcher-button"  cancel_button_text="Go back" modal_button_text="Continue without saving"  modal_button_class="js-confirm-button-dns-record-switcher"  modal_class="margin-0" %}
+</div>
+
+
+
 {# DELETE modal opener #}
 <a
 id="delete-dns-record-modal-trigger"
@@ -13,10 +52,10 @@ data-open-modal
 <div
     class="usa-modal"
     id="delete-dns-record-modal"
-    aria-labelledby="delete-dns-record-heading"
 >
-    {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="This action cannot be undone." modal_button_id="delete-click-button" modal_button_text="Yes, delete" modal_button_class="usa-button--secondary" %}
+    {% include 'includes/modal.html' with modal_heading_id="delete-dns-record-heading" modal_heading="Are you sure you want to delete this DNS record?" modal_description="" modal_button_id="confirm-delete-record-button" modal_button_class="usa-button--secondary" modal_button_text="Yes, delete"  %}
 </div>
+
 
 {# CANCEL modal opener #}
 <a
@@ -31,8 +70,6 @@ data-open-modal
 <div
     class="usa-modal"
     id="toggle-cancel-add-dnsrecord"
-    aria-labelledby="cancel-add-dnsrecord-heading"
-    aria-describedby="cancel-add-dnsrecord-description"
 >
-    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" modal_button_text="Yes, cancel" cancel_button_text="Go back" %}
+    {% include 'includes/modal.html' with modal_heading="Are you sure you want to cancel your changes?" modal_description="You have unsaved changes that will be lost." modal_heading_id="cancel-add-dnsrecord-heading" modal_description_id="cancel-add-dnsrecord-description" modal_button_id="cancel-add-dnsrecord-confirm" cancel_button_text="Go back" modal_button_text="Yes, cancel"  modal_button_class="js-confirm-button-dns-record-switcher"%}
 </div>
