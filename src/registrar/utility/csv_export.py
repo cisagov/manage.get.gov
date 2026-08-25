@@ -345,6 +345,7 @@ class MemberExport(BaseExport):
         # Permissions
         permissions = (
             UserPortfolioPermission.objects.filter(portfolio=portfolio, user__isnull=False)
+            .exclude(status=UserPortfolioPermission.Status.INVITED)
             .select_related("user")
             .annotate(
                 first_name=F("user__first_name"),
@@ -439,7 +440,9 @@ class MemberExport(BaseExport):
 
         invited_domains = cls.get_invited_domain_assignments(portfolio)
         members_by_email = {}
-        for member in [*invitations, *permissions, *permission_invitations]:
+        # New invitations take precedence over legacy invitations, and members
+        # take precedence over invitations for the same email.
+        for member in [*invitations, *permission_invitations, *permissions]:
             email = member.get("email_display")
             if not email:
                 continue
