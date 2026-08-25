@@ -1300,6 +1300,10 @@ class DomainNameserversView(DomainFormBaseView):
                 logger.error(f"Registry error: {Err}")
         else:
             if initial_state == Domain.State.READY:
+                for f in formset:
+                    logger.info(f"nameserver form changed: {f.changed_data}")
+                    logger.info(f"cleaned_data: {f.cleaned_data}" )
+                    logger.info(f"initial data {f.initial}")
                 self.send_update_notification(formset)
             messages.success(
                 self.request,
