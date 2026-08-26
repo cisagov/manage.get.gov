@@ -4,8 +4,8 @@
 This includes the content of the modal. Template needs to be wrapped in a <div class="usa-modal" id="my-modal-id" </div>
 {% endcomment %}
 <div class="usa-modal__content">
-    <div class="usa-modal__main">
-        <h2 class="usa-modal__heading"{% if modal_heading_id %} id="{{ modal_heading_id }}"{% endif %}>
+    <div class="usa-modal__main {% if modal_class %} {{modal_class}} {%endif%}">
+        <h2 class="usa-modal__heading" {% if modal_heading_id %} id="{{ modal_heading_id }}"{% endif %}>
             {{ modal_heading }}
             {%if domain_name_modal is not None %}
                 <span class="string-wrap">

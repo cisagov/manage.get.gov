@@ -881,7 +881,6 @@ class DomainDNSRecordForm(forms.ModelForm):
             attrs={
                 "class": "usa-select",
                 "required": "required",
-                "x-model": "recordType",
             }
         ),
     )

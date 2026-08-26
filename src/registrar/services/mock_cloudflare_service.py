@@ -126,6 +126,11 @@ class MockCloudflareService:
             side_effect=self._mock_delete_dns_record_response
         )
 
+        # Mock the delete api with any account id
+        self._mock_context.delete(url__regex=r"/accounts/[\w-]+").mock(
+            side_effect=self._mock_delete_cf_account_response
+        )
+
         # PATCH account dns_settings
         self._mock_context.patch(url__regex=r"/zones/[\w-]+/dns_settings").mock(
             side_effect=self._mock_update_zone_dns_settings_response
@@ -206,6 +211,25 @@ class MockCloudflareService:
             json={
                 "success": True,
                 "result": {"id": self.new_account_id, "name": account_name, "type": "standard", "created_on": created},
+            },
+        )
+
+    def _mock_delete_cf_account_response(self, request) -> httpx.Response:
+        logger.debug("🐟 mocking dns account delete")
+        # Get account id from request url to return back in response
+        request_url = str(request.url)
+        # Split string between "/dns_records/ and extract second partition
+        account_id = request_url.split("/accounts/")[1]
+        # Update response so it fits with whatever record we're returning
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "result": {
+                    "id": account_id,
+                },
+                "errors": [],
+                "messages": [],
             },
         )
 
