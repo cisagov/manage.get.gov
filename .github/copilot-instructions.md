@@ -184,14 +184,15 @@ Transition methods: `submit()`, `in_review()`, `in_review_omb()`, `action_needed
 | Model | Purpose |
 |---|---|
 | `DomainInformation` | Detailed org/contact info attached to an approved domain |
-| `Portfolio` | Groups domains under an organization; enforced by `multiple_portfolios` waffle flag |
+| `Portfolio` | Groups domains under an organization; active portfolio context is stored in session when `multiple_portfolios` is enabled |
 | `User` | Extends `AbstractUser`; `username` is the Login.gov UUID |
 | `UserDomainRole` | RBAC join: user ↔ domain with role=`MANAGER` |
 | `UserPortfolioPermission` | RBAC join: user ↔ portfolio with roles/permissions |
 | `UserGroup` | Three Django groups: `cisa_analysts_group`, `omb_analysts_group`, `full_access_group` |
 | `WaffleFlag` | Extends `AbstractUserFlag` — the model backing all waffle feature flags |
 | `AllowedEmail` | Email allowlist used in non-production environments |
-| `DnsRecord`, `DnsZone`, `DnsAccount` | DNS hosting models under `models/dns/` |
+| `DnsVendor`, `DnsAccount`, `VendorDnsAccount` | DNS account models under `models/dns/`, including vendor-specific records and join tables |
+| `DnsZone`, `VendorDnsZone`, `DnsRecord`, `VendorDnsRecord` | DNS zone and record models, with vendor abstractions linked through through-models |
 
 ---
 
@@ -206,9 +207,11 @@ Three permission groups (defined in `UserGroup`):
 
 `is_staff` (Django's flag) gates access to `/admin`. Superusers are not used — `full_access_permission` is the top permission level.
 
-### `@grant_access` decorator (`registrar/decorators.py`)
+### Authentication and authorization
 
-All views use this decorator instead of Django's built-in `@login_required`. Pass one or more permission constants:
+Authentication is enforced globally by `login_required.middleware.LoginRequiredMiddleware` in `src/registrar/config/settings.py`. Public endpoints explicitly opt out with `@login_not_required` (for example health, version, and selected API endpoints).
+
+Most application authorization is then layered on with `@grant_access` from `registrar/decorators.py`. Pass one or more permission constants:
 
 ```python
 from registrar.decorators import grant_access, IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN
@@ -220,7 +223,9 @@ class DomainNameserversView(DomainFormBaseView):
 
 Key constants: `IS_STAFF`, `IS_CISA_ANALYST`, `IS_OMB_ANALYST`, `IS_FULL_ACCESS`, `IS_DOMAIN_MANAGER`, `IS_DOMAIN_REQUEST_REQUESTER`, `IS_PORTFOLIO_MEMBER`, `HAS_PORTFOLIO_DOMAINS_ANY_PERM`, `HAS_PORTFOLIO_MEMBERS_EDIT`, and more. See `decorators.py` for the full list.
 
-URL-level permission requirements are documented in `registrar/permissions.py` (`URL_PERMISSIONS` dict).
+`registrar.registrar_middleware.RestrictAccessMiddleware` provides a deny-by-default layer on top of login enforcement, so new views should either use `@grant_access` or explicitly opt out with `@login_not_required` when they must be public.
+
+URL-level permission requirements are documented in `registrar/permissions.py` (`URL_PERMISSIONS` dict). Permission changes should stay in sync with that mapping and its regression tests in `src/registrar/tests/test_permissions.py` and `src/registrar/tests/test_url_auth.py`.
 
 ---
 
@@ -241,9 +246,11 @@ All registry calls must be wrapped in `try/except RegistryError`. In local dev t
 Business logic that spans multiple models lives here, not in views or models:
 
 - `invitation_service.py` — creates/validates portfolio invitations and domain invitations
-- `dns_host_service.py` — orchestrates DNS hosting operations
+- `dns_host_service.py` — primary orchestration layer for DNS hosting; coordinates registrar DNS models with vendor APIs
 - `cloudflare_service.py` — Cloudflare API client for DNS hosting
 - `mock_cloudflare_service.py` — test double for Cloudflare (enabled via `DNS_MOCK_EXTERNAL_APIS=True`)
+
+DNS hosting now uses a vendor abstraction layer in `registrar/models/dns/` (`DnsVendor`, `VendorDnsAccount`, `VendorDnsZone`, `VendorDnsRecord`, and join tables) in addition to the registrar-facing `DnsAccount`, `DnsZone`, and `DnsRecord` models.
 
 ---
 
@@ -263,6 +270,8 @@ Active flags in the codebase:
 
 Flags are managed via Django Admin (`/admin/registrar/waffleflag/`).
 
+When `multiple_portfolios` is enabled, the active portfolio is stored in session and request routing depends on that session state. `CheckPortfolioMiddleware` can redirect multi-org users to the organization-selection flow (`your-organizations` / `set-session-portfolio`) before they can access portfolio-scoped pages. Mixed legacy-domain + portfolio users have special routing behavior, so changes in this area should be checked against the portfolio middleware and regression tests.
+
 ---
 
 ## Views (`src/registrar/views/`)
@@ -271,6 +280,7 @@ Flags are managed via Django Admin (`/admin/registrar/waffleflag/`).
 - **HTMX** is used for the DNS records UI (`DomainDNSRecordsView`): form submissions and updates use `hx-post`, `hx-target`, and `HX-TRIGGER` response headers.
 - JSON views (`domains_json.py`, `domain_requests_json.py`, `portfolio_members_json.py`, etc.) power DataTables in the UI.
 - `DomainRequestWizard` is a multi-step wizard using session storage; steps are defined as `Step` enum values in `registrar/utility/enums.py`.
+- Portfolio request flows also use `PortfolioDomainRequestWizard` and `PortfolioDomainRequestStep`.
 
 ### DB query timeouts
 
@@ -318,7 +328,7 @@ Templates use Django's template language with USWDS 3.8.1 components.
 
 ## Writing tests
 
-All test files are in `src/registrar/tests/`. Use `src/registrar/tests/common.py` for shared helpers:
+Most application tests live in `src/registrar/tests/`, and API tests live in `src/api/tests/`. Use `src/registrar/tests/common.py` for shared registrar test helpers:
 
 | Helper | Purpose |
 |---|---|
@@ -333,6 +343,10 @@ All test files are in `src/registrar/tests/`. Use `src/registrar/tests/common.py
 | `MockUserLogin` | Middleware — bypasses Login.gov; add to `settings.MIDDLEWARE` for accessibility/security scans only, **never commit** |
 
 Most domain-related tests inherit from `MockEppLib` to avoid real registry calls.
+
+Many UI- and admin-heavy tests use `django_webtest.WebTest`, especially for form-driven flows.
+
+Auth and authorization regressions are covered by dedicated suites such as `src/registrar/tests/test_permissions.py` and `src/registrar/tests/test_url_auth.py`; update those expectations when changing access rules or public routes.
 
 ---
 
@@ -377,7 +391,7 @@ Main workflow: `test.yaml` — runs on push/PR to `main`.
 | `django-migrations-complete` | `makemigrations --check` to ensure no unmade migrations |
 | `pa11y-scan` | Injects `MockUserLogin` middleware, starts the stack, runs pa11y-ci |
 
-Other workflows: `deploy-sandbox.yaml` (auto-deploy on personal branches), `deploy-stable.yaml`, `deploy-staging.yaml`, `migrate.yaml`, `reset-db.yaml`, `security-check.yaml` (OWASP ZAP).
+Other workflows include deploy flows (`deploy-development.yaml`, `deploy-manual.yaml`, `deploy-sandbox.yaml`, `deploy-stable.yaml`, `deploy-staging.yaml`), database/fixture utilities (`createcachetable.yaml`, `load-fixtures.yaml`, `migrate.yaml`, `reset-db.yaml`, clone/delete DB helpers), scheduled jobs (`daily-*.yaml`, `staging-daily-csv-upload.yaml`), and `security-check.yaml` (OWASP ZAP).
 
 **All CI jobs build the Docker image.** Changes to `Dockerfile` or `Pipfile.lock` affect every job.
 
