@@ -329,7 +329,7 @@ def get_url_name(path):
         str or None: The URL name if it exists, otherwise None.
     """
     try:
-        path += "" if path.endsWith("/") else "/"
+        path += "" if path.endswith("/") else "/"
         match = resolve(path)
         return match.url_name
     except Resolver404:
