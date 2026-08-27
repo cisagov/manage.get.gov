@@ -119,7 +119,7 @@ class Command(BaseCommand):
 
         for start in range(0, len(pk_list), batch_size):
             batch_pks = pk_list[start : start + batch_size]
-            updated_count, error = self.update_batch(batch_pks, start)
+            updated_count, error = self.update_created_at_in_batches(batch_pks, start)
             if error:
                 errors.append(error)
                 continue
@@ -133,7 +133,7 @@ class Command(BaseCommand):
 
         return total_updated, errors
 
-    def update_batch(self, batch_pks, start):
+    def update_created_at_in_batches(self, batch_pks, start):
         """
         Updates the given batch of domains so that created_at_reference
         now equals created_at + does it inside of it's own transaction,
