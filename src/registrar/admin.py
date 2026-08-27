@@ -5760,7 +5760,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 class DnsRecordAdmin(admin.ModelAdmin):
     list_display = (
         "type",
-        "name",
+        "record_name",
         "domain_name",
         "ttl",
         "content",
@@ -5773,7 +5773,7 @@ class DnsRecordAdmin(admin.ModelAdmin):
     fields = (
         "dns_zone",
         "type",
-        "name",
+        "record_name",
         "ttl",
         "content",
         "comment",
@@ -5792,6 +5792,9 @@ class DnsRecordAdmin(admin.ModelAdmin):
 
     def domain_name(self, obj):
         return obj._resolve_domain_name()
+
+    def record_name(self, obj):
+        return obj.name
 
 
 class DraftDomainResource(resources.ModelResource):

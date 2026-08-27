@@ -54,7 +54,6 @@ class DnsRecord(TimeStampedModel):
         null=False,
         validators=[validate_dns_name],
         error_messages={"max_length": get_fqdn_error_message()},
-        verbose_name="Record name",
     )
 
     ttl = models.PositiveIntegerField(default=1)
