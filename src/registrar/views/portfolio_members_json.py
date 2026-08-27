@@ -6,7 +6,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.urls import reverse
 from django.views import View
 
-from registrar.decorators import HAS_PORTFOLIO_MEMBERS_ANY_PERM, grant_access
+from registrar.decorators import IS_PORTFOLIO_MEMBER, grant_access
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
@@ -15,7 +15,7 @@ from registrar.models.utility.orm_helper import ArrayRemoveNull
 from django.contrib.postgres.aggregates import StringAgg
 
 
-@grant_access(HAS_PORTFOLIO_MEMBERS_ANY_PERM)
+@grant_access(IS_PORTFOLIO_MEMBER)
 class PortfolioMembersJson(View):
 
     def get(self, request):
@@ -23,9 +23,19 @@ class PortfolioMembersJson(View):
 
         portfolio = request.GET.get("portfolio")
 
+        self_only = request.user.has_no_members_portfolio_permission(portfolio)
+
         # Two initial querysets which will be combined
         permissions = self.initial_permissions_search(portfolio)
         invitations = self.initial_invitations_search(portfolio)
+        if self_only:
+            # "No access" members can only see their own record
+            # and have no invitee identity so invs are excluded entirely
+            # .none() (rather than building a separate empty PortfolioInvitation
+            # queryset preserves the .values(...) column shape that
+            # initial_invitations_search() built then cleanly cleans it
+            permissions = permissions.filter(user=request.user)
+            invitations = invitations.none()
 
         # Get total across both querysets before applying filters
         unfiltered_total = permissions.count() + invitations.count()
@@ -58,7 +68,12 @@ class PortfolioMembersJson(View):
 
     def initial_permissions_search(self, portfolio):
         """Perform initial search for permissions before applying any filters."""
-        permissions = UserPortfolioPermission.objects.filter(portfolio=portfolio)
+        # Pending invitations have no user and are represented by the temporary
+        # legacy PortfolioInvitation row until that flow is removed.
+        permissions = UserPortfolioPermission.objects.filter(
+            portfolio=portfolio,
+            user__isnull=False,
+        ).exclude(status=UserPortfolioPermission.Status.INVITED)
         permissions = (
             permissions.select_related("user")
             .annotate(

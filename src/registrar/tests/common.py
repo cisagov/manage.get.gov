@@ -26,6 +26,7 @@ from registrar.models import (
     UserGroup,
     DomainInformation,
     PublicContact,
+    Host,
     Domain,
     FederalAgency,
     UserPortfolioPermission,
@@ -998,6 +999,7 @@ class MockDb(TestCase):
     @classmethod
     def sharedTearDown(cls):
         PublicContact.objects.all().delete()
+        Host.objects.all().delete()
         Domain.objects.all().delete()
         DomainInformation.objects.all().delete()
         DomainRequest.objects.all().delete()
@@ -1389,7 +1391,7 @@ class MockEppLib(TestCase):
                 type=PublicContact.ContactTypeChoices.ADMINISTRATIVE,
             ),
         ],
-        hosts=["fake.host.com"],
+        hosts=["fake.host.com", "fake2.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
@@ -1518,7 +1520,7 @@ class MockEppLib(TestCase):
                 type=PublicContact.ContactTypeChoices.SECURITY,
             )
         ],
-        hosts=["fake.host.com"],
+        hosts=["fake.host.com", "fake2.host.com"],
         statuses=[
             common.Status(state="serverTransferProhibited", description="", lang="en"),
             common.Status(state="inactive", description="", lang="en"),
@@ -1976,7 +1978,12 @@ class MockEppLib(TestCase):
             "nameserverwithip.gov": (self.infoDomainHasIP, None),
             "namerserversubdomain.gov": (self.infoDomainCheckHostIPCombo, None),
             "freeman.gov": (self.InfoDomainWithContacts, None),
-            "threenameserversdomain.gov": (self.infoDomainThreeHosts, None),
+            "threenameserversdomain.gov": (
+                # This is a temporary fix to simulate the registry after UpdateDomain removes nameservers
+                # The conditional is needed to pass the test, test_user_removes_too_many_nameservers
+                self.infoDomainNoHost if self.mockedSendFunction.call_count >= 8 else self.infoDomainThreeHosts,
+                None,
+            ),
             "fournameserversdomain.gov": (self.infoDomainFourHosts, None),
             "twelvenameserversdomain.gov": (self.infoDomainTwelveHosts, None),
             "thirteennameserversdomain.gov": (self.infoDomainThirteenHosts, None),

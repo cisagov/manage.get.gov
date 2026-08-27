@@ -1,4 +1,10 @@
 import { hideElement, showElement } from './helpers-admin.js';
+import { setUpUserInvitationFields } from './user-invitation-form.js';
+
+/**
+ * Admin behavior for UserPortfolioPermission and PortfolioInvitation forms.
+ * Shared invitation behavior lives in user-invitation-form.js.
+ */
 
 /**
  * A function for dynamically changing fields on the UserPortfolioPermissions
@@ -41,27 +47,6 @@ function handlePortfolioPermissionFields(){
         }
     }
 
-    function isSelectedUserIdValue(value) {
-        const normalizedValue = String(value ?? "");
-        return normalizedValue !== "" && Number.isInteger(Number(normalizedValue));
-    }
-
-    function updateSendEmailAvailability() {
-        if (!sendEmailCheckbox) {
-            return;
-        }
-
-        if (isSelectedUserIdValue(userField?.value)) {
-            sendEmailCheckbox.disabled = false;
-        } else {
-            // Typed emails always send an invitation email, so keep the
-            // checkbox checked while disabling it.
-            sendEmailCheckbox.checked = true;
-            sendEmailCheckbox.disabled = true;
-        }
-    }
-
-
     /**
      * Sets event listeners for key UI elements.
      */
@@ -72,25 +57,18 @@ function handlePortfolioPermissionFields(){
             })
         }
 
-        if (userField) {
-            if (typeof django !== "undefined" && django.jQuery) {
-                django.jQuery(userField).on("change select2:select select2:clear", function() {
-                    updateSendEmailAvailability();
-                });
-            }
-        }
     }
 
     // Run initial setup functions
     updatePortfolioPermissionsFormVisibility();
-    updateSendEmailAvailability();
+    setUpUserInvitationFields(userField, sendEmailCheckbox);
     setEventListeners();
 }
 
 export function initDynamicPortfolioPermissionFields() {
     document.addEventListener('DOMContentLoaded', function() {
         let isPortfolioPermissionPage = document.getElementById("userportfoliopermission_form");
-        let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form")
+        let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form");
         if (isPortfolioPermissionPage || isPortfolioInvitationPage) {
             handlePortfolioPermissionFields();
         }

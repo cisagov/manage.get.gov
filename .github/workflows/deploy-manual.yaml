@@ -36,6 +36,9 @@ on:
           - yellowstone
           - zion
 
+permissions:
+  contents: read
+
 jobs:
   variables:
     runs-on: ubuntu-latest

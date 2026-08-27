@@ -1,13 +1,19 @@
+{% load waffle_tags %}
+
 <p>
-    This table represents the managers who are assigned to each domain in the registrar. There are separate records for each domain/manager combination. 
+    This table represents the managers who are assigned to each domain in the registrar. There are separate records for each domain/manager combination.
     Managers can update information related to a domain, such as DNS data and security contact.
 </p>
 
 <p>
     The requester automatically becomes a manager for that domain.
-    Anyone who retrieves a domain invitation will also appear in this table as a manager. 
+    Anyone who retrieves a domain invitation will also appear in this table as a manager.
 </p>
 
 <p>
-    If you add or remove someone to a domain by using this table, those actions won’t trigger notification emails.
+    {% flag "user_domain_role_invitations" %}
+        Adding a new user domain role sends an invitation email if the user doesn't exist, and you have the option to send an email if the user does exist.
+    {% else %}
+        If you add or remove someone to a domain by using this table, those actions won't trigger notification emails.
+    {% endflag %}
 </p>

@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.db import IntegrityError
-from registrar.models import PortfolioInvitation, User, UserPortfolioPermission
+from django.db.models import Q
+from registrar.models import PortfolioInvitation, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
 import logging
 from registrar.utility.errors import (
@@ -29,34 +30,30 @@ def get_org_membership(org, email, user):
     - member_of_a_different_org: True if the user/email is associated with an organization other than the given org.
     - member_of_this_org: True if the user/email is associated with the given org.
 
-    Note: This implementation assumes single portfolio ownership for a user.
-    If the "multiple portfolios" feature is enabled, this logic may not account for
-    situations where a user or email belongs to multiple organizations.
+    Rejected and expired permissions do not count as portfolio membership.
     """
 
-    # Check for existing permissions or invitations for the user
-    existing_org_permission = UserPortfolioPermission.objects.filter(user=user).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email__iexact=email).first()
+    permission_identity = Q(email__iexact=email)
+    if user is not None:
+        permission_identity |= Q(user=user)
 
-    # Determine membership in a different organization
-    member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != org) or (
-        existing_org_invitation and existing_org_invitation.portfolio != org
+    active_permissions = UserPortfolioPermission.objects.filter(permission_identity).filter(
+        Q(status__in=[UserPortfolioPermission.Status.INVITED, UserPortfolioPermission.Status.ACCEPTED])
+        | Q(status__isnull=True)
+    )
+    active_invitations = PortfolioInvitation.objects.filter(
+        email__iexact=email,
+        status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
     )
 
-    # Determine membership in the same organization
-    member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == org) or (
-        existing_org_invitation and existing_org_invitation.portfolio == org
+    member_of_a_different_org = (
+        active_permissions.exclude(portfolio=org).exists() or active_invitations.exclude(portfolio=org).exists() or None
+    )
+    member_of_this_org = (
+        active_permissions.filter(portfolio=org).exists() or active_invitations.filter(portfolio=org).exists() or None
     )
 
     return member_of_a_different_org, member_of_this_org
-
-
-def get_requested_user(email):
-    """Retrieve a user by email or return None if the user doesn't exist."""
-    try:
-        return User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
-        return None
 
 
 def handle_invitation_exceptions(request, exception, email):
@@ -76,7 +73,7 @@ def handle_invitation_exceptions(request, exception, email):
     elif isinstance(exception, InvitationError):
         messages.error(request, str(exception))
     elif isinstance(exception, IntegrityError):
-        messages.error(request, f"An unexpected error occurred: {email} could not be added to this domain.")
+        messages.error(request, with_contact_link("A database error occurred while saving changes.")),
     else:
         logger.warning("Could not send email invitation (Other Exception)", exc_info=True)
         messages.error(
@@ -86,7 +83,8 @@ def handle_invitation_exceptions(request, exception, email):
 
 def with_contact_link(error_message: str, contact_url: str = "https://get.gov/contact") -> str:
     return format_html(
-        '{} Try again, and if the problem persists, <a href="{}" class="usa-link" target="_blank">contact us</a>.',
+        "{} Please try again. If the problem persists, "
+        '<a href="{}" class="usa-link" target="_blank">contact us</a> for assistance.',
         error_message,
         contact_url,
     )

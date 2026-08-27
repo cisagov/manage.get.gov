@@ -6,6 +6,9 @@ on:
     # Runs every day at 14:00 UTC/7:00AM PT/10:00AM ET
     - cron: "0 14 * * *"
 
+permissions:
+  contents: read
+
 jobs:
   run-notifications:
     runs-on: ubuntu-latest

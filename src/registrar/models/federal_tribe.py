@@ -1,6 +1,7 @@
 import logging
 
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 from .utility.time_stamped_model import TimeStampedModel
 from .domain_request import DomainRequest
@@ -90,10 +91,12 @@ class FederalTribe(TimeStampedModel):
         null=True,
         blank=True,
     )
-    email = models.EmailField(
-        max_length=320,
+    email = ArrayField(
+        models.EmailField(max_length=320),
         null=True,
         blank=True,
+        default=list,
+        help_text="List of email addresses for the tribal leader or designated contact",
     )
     website = models.CharField(
         max_length=255,
@@ -116,8 +119,8 @@ class FederalTribe(TimeStampedModel):
     )
 
     class Meta:
-        verbose_name = "Federal Tribe"
-        verbose_name_plural = "Federal Tribes"
+        verbose_name = "Federal tribe"
+        verbose_name_plural = "Federal tribes"
         ordering = ["tribe_full_name"]
 
     def __str__(self):

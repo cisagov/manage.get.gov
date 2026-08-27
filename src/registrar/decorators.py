@@ -30,10 +30,10 @@ HAS_PORTFOLIO_DOMAINS_ANY_PERM = "has_portfolio_domains_any_perm"
 HAS_PORTFOLIO_DOMAINS_VIEW_ALL = "has_portfolio_domains_view_all"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_ANY_PERM = "has_portfolio_domain_requests_any_perm"
 HAS_PORTFOLIO_DOMAIN_REQUESTS_EDIT = "has_portfolio_domain_requests_edit"
-HAS_PORTFOLIO_MEMBERS_ANY_PERM = "has_portfolio_members_any_perm"
 HAS_PORTFOLIO_MEMBERS_EDIT = "has_portfolio_members_edit"
 HAS_PORTFOLIO_MEMBERS_VIEW = "has_portfolio_members_view"
 HAS_LEGACY_AND_ORG_USER = "has_legacy_and_org_user"
+IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY = "is_portfolio_member_viewing_self_only"
 
 
 def grant_access(*rules):
@@ -187,15 +187,6 @@ def _user_has_permission(user, request, rules, **kwargs):
             and _domain_request_exists_under_portfolio(portfolio, kwargs.get("domain_request_pk")),
         ),
         (
-            HAS_PORTFOLIO_MEMBERS_ANY_PERM,
-            lambda: is_org
-            and (
-                user.has_view_members_portfolio_permission(portfolio)
-                or user.has_edit_members_portfolio_permission(portfolio)
-            )
-            and _member_checks(portfolio, kwargs),
-        ),
-        (
             HAS_PORTFOLIO_MEMBERS_EDIT,
             lambda: is_org
             and user.has_edit_members_portfolio_permission(portfolio)
@@ -208,6 +199,10 @@ def _user_has_permission(user, request, rules, **kwargs):
             and _member_checks(portfolio, kwargs),
         ),
         (HAS_LEGACY_AND_ORG_USER, lambda: user.has_legacy_domain() and user.is_any_org_user()),
+        (
+            IS_PORTFOLIO_MEMBER_VIEWING_SELF_ONLY,
+            lambda: is_org and _is_self_view_member(user, portfolio, kwargs.get("member_pk")),
+        ),
     ]
     # Check conditions iteratively
     return any(check() for rule, check in permission_checks if rule in rules)
@@ -225,8 +220,9 @@ def _is_domain_manager(user, **kwargs):
 
     - First, it checks if 'domain_pk' is present in the URL parameters.
     - If 'domain_pk' exists, it verifies if the user has a domain role for that domain.
-    - If 'domain_pk' is absent, it checks for 'domain_invitation_pk' to determine if the user
-      has domain permissions through an invitation.
+    - If 'domain_pk' is absent, it resolves the domain from either 'user_domain_role_pk'
+      or the legacy 'domain_invitation_pk', then verifies that the user has a role for
+      that domain.
 
     Returns:
         bool: True if the user is a domain manager, False otherwise.
@@ -234,6 +230,12 @@ def _is_domain_manager(user, **kwargs):
     domain_id = kwargs.get("domain_pk")
     if domain_id:
         return UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
+    user_domain_role_id = kwargs.get("user_domain_role_pk")
+    if user_domain_role_id:
+        return UserDomainRole.objects.filter(
+            id=user_domain_role_id,
+            domain__permissions__user=user,
+        ).exists()
     domain_invitation_id = kwargs.get("domain_invitation_pk")
     if domain_invitation_id:
         return DomainInvitation.objects.filter(id=domain_invitation_id, domain__permissions__user=user).exists()
@@ -294,6 +296,20 @@ def _member_exists_under_portfolio(portfolio, member_pk):
     return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk).exists()
 
 
+def _is_self_view_member(user, portfolio, member_pk):
+    """Checks whether the given member_pk refers to the requesting users own
+    UserPortfolioPermission under the current portfolio
+
+    Used to allow a basic member (NO view or edit members perms) to view
+    ONLY THEIR OWN entry on the Members pages, and nothing else
+
+    Returns False if member_pk is missing / deny access
+    """
+    if not portfolio or not member_pk:
+        return False
+    return UserPortfolioPermission.objects.filter(portfolio=portfolio, id=member_pk, user=user).exists()
+
+
 def _member_invitation_exists_under_portfolio(portfolio, invitedmember_pk):
     """Checks to see if the given PortfolioInvitation exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
@@ -338,7 +354,8 @@ def _is_staff_managing_domain(request, **kwargs):
 
     Process:
     - First, the function retrieves the `domain_pk` from the URL parameters.
-    - If `domain_pk` is not provided, it attempts to resolve the domain via `domain_invitation_pk`.
+    - If `domain_pk` is not provided, it attempts to resolve the domain via
+      `user_domain_role_pk` or the legacy `domain_invitation_pk`.
     - It checks if the user has the required permissions.
     - It verifies that the user has an active 'analyst action' session for the domain.
     - Finally, it ensures that the domain is in a status that allows management.
@@ -349,10 +366,16 @@ def _is_staff_managing_domain(request, **kwargs):
 
     domain_id = kwargs.get("domain_pk")
     if not domain_id:
-        domain_invitation_id = kwargs.get("domain_invitation_pk")
-        domain_invitation = DomainInvitation.objects.filter(id=domain_invitation_id).first()
-        if domain_invitation:
-            domain_id = domain_invitation.domain_id
+        user_domain_role_id = kwargs.get("user_domain_role_pk")
+        if user_domain_role_id:
+            domain_role = UserDomainRole.objects.filter(id=user_domain_role_id).first()
+            if domain_role:
+                domain_id = domain_role.domain_id
+        else:
+            domain_invitation_id = kwargs.get("domain_invitation_pk")
+            domain_invitation = DomainInvitation.objects.filter(id=domain_invitation_id).first()
+            if domain_invitation:
+                domain_id = domain_invitation.domain_id
 
     # Check if the request user is permissioned...
     user_is_analyst_or_superuser = request.user.has_perm(

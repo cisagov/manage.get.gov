@@ -40,6 +40,9 @@ on:
           - rh
           - sm
 
+permissions:
+  contents: read
+
 jobs:
   createcachetable:
     runs-on: ubuntu-latest

@@ -1,9 +1,11 @@
-from login_required import login_not_required
 from django.shortcuts import render
 import os
+from django.db import transaction
+from registrar.decorators import grant_access, IS_STAFF
 
 
-@login_not_required
+@grant_access(IS_STAFF)
+@transaction.non_atomic_requests
 def version_info(request):
     context = {
         "git_branch": os.getenv("GIT_BRANCH"),

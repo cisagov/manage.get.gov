@@ -13,6 +13,9 @@ on:
     tags:
       - staging-*
 
+permissions:
+  contents: read
+
 jobs:
   deploy-staging:
     if: ${{ github.ref_type == 'tag' }}

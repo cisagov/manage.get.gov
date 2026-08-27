@@ -30,6 +30,10 @@ on:
             - sm
             - yellowstone
             - zion
+
+permissions:
+  contents: read
+
 jobs:
   clone-test-database:
     runs-on: ubuntu-24.04

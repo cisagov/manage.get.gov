@@ -5,6 +5,7 @@ import logging
 import argparse
 from django.utils import timezone
 from registrar.utility.email import EmailSendingError, send_templated_email
+from registrar.utility.errors import ActionNotAllowed
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
@@ -15,11 +16,12 @@ class Command(BaseCommand):
     are marked "DELETED" in the registrar and deleted in the registry."""
 
     def handle(self, *args, **options):
+        alert_email = options.get("alert_email")
         domains_to_be_deleted = self.get_domains()
         dry_run = options.get("dry_run", False)
 
         if not dry_run:
-            deleted_domains = self.delete_domains_and_send_notif_emails(domains_to_be_deleted)
+            deleted_domains = self.delete_domains_and_send_notif_emails(domains_to_be_deleted, alert_email)
             self.logging_message(dry_run, deleted_domains)
         else:
             self.logging_message(dry_run, domains_to_be_deleted)
@@ -44,6 +46,11 @@ class Command(BaseCommand):
             action=argparse.BooleanOptionalAction,
             help="Show what would be changed without making any database modifications.",
         )
+
+        parser.add_argument(
+            "--alert-email",
+            help="Email address to send deletion alert notifications to.",
+        )
         return super().add_arguments(parser)
 
     def get_domains(self):
@@ -66,6 +73,15 @@ class Command(BaseCommand):
 
         for domain in domains_in_expired_state:
             if domain.expiration_date is None:
+                if domain.created_at_reference is None:
+                    # Can't derive a default expiration without a creation date; don't delete a domain we can't date
+                    logger.warning(
+                        "Domain %s (id: %s) has a null created_at_reference; skipping.",
+                        domain.name,
+                        domain.id,
+                    )
+                    domains_in_expired_state = domains_in_expired_state.exclude(id=domain.id)
+                    continue
                 logger.warning(
                     "Domain %s (id: %s) has a null expiration date in state %s. "
                     "Using creation date + 1 yr as default expiration instead.",
@@ -73,21 +89,38 @@ class Command(BaseCommand):
                     domain.id,
                     domain.state,
                 )
-                default_expiration = domain.created_at + timedelta(days=365)
+                default_expiration = domain.created_at_reference + timedelta(days=365)
                 if default_expiration != today_date:
                     domains_in_expired_state = domains_in_expired_state.exclude(id=domain.id)
 
         return domains_in_expired_state
 
-    def delete_domains_and_send_notif_emails(self, domains):
+    def delete_domains_and_send_notif_emails(self, domains, alert_email=None):
         deleted_domains = []
         for domain in domains:
             try:
-                domain.deleteInEpp()
-                domain.save()
+                domain.delete_with_no_dns()
                 deleted_domains.append(domain)
-            except Exception:
-                logger.error(f"Failed to delete {domain.name}")
+            except ActionNotAllowed as action_not_allowed_msg:
+                logger.error(f"Failed to delete {domain.name}: {action_not_allowed_msg}")
+                if alert_email:
+                    try:
+                        send_templated_email(
+                            template_name="emails/domain_deletion_failed_body.txt",
+                            subject_template_name="emails/domain_deletion_failed_subject.txt",
+                            to_addresses=[alert_email],
+                            context={"domain": domain.name},
+                        )
+                    except EmailSendingError as email_err:
+                        logger.error(
+                            f"Failed to send deletion alert email for {domain.name}: {email_err}", exc_info=True
+                        )
+                else:
+                    logger.warning(
+                        f"alert_email not configured, no Slack notification for failed deletion of {domain.name}"
+                    )
+            except Exception as e:
+                logger.error(f"Failed to delete {domain.name}: {e}", exc_info=True)
 
         if len(deleted_domains) > 0:
             self.send_domain_notifications_emails(deleted_domains)

@@ -1,15 +1,21 @@
 {% extends 'django/admin/email_clipboard_change_form.html' %}
 {% load custom_filters %}
 {% load i18n static %}
+{% load waffle_tags %}
 
 {% block content_subtitle %}
     <div class="usa-alert usa-alert--info usa-alert--slim">
         <div class="usa-alert__body margin-left-1 maxw-none">
             <p class="usa-alert__text maxw-none">
-                If you add someone to a domain here, it won't trigger any email notifications. To trigger emails, use the
-                <a class="usa-link" href="{% url 'admin:registrar_domaininvitation_changelist' %}">
-                    Domain Invitations
-                </a> table instead.
+                {% flag "user_domain_role_invitations" %}
+                    When adding someone to a domain here, use the email checkbox to send an invitation email. New email
+                    addresses that do not belong to an existing user will always receive an invitation email.
+                {% else %}
+                    If you add someone to a domain here, it won't trigger any email notifications. To trigger emails, use the
+                    <a class="usa-link" href="{% url 'admin:registrar_domaininvitation_changelist' %}">
+                        Domain Invitations
+                    </a> table instead.
+                {% endflag %}
             </p>
         </div>
     </div>

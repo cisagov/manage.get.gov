@@ -6,6 +6,7 @@ from django.http import HttpResponse, JsonResponse
 
 from registrar.utility.enums import ValidationReturnType
 from registrar.utility.errors import GenericError, GenericErrorCodes
+from django.db import transaction
 
 import requests
 
@@ -50,6 +51,7 @@ def check_domain_available(domain):
         return Domain.available(domain + ".gov")
 
 
+@transaction.non_atomic_requests
 @require_http_methods(["GET"])
 @login_not_required
 def available(request, domain=""):
@@ -68,6 +70,7 @@ def available(request, domain=""):
     return json_response
 
 
+@transaction.non_atomic_requests
 @require_http_methods(["GET"])
 @login_not_required
 # Since we cache domain RDAP data, cache time may need to be re-evaluated this if we encounter any memory issues
@@ -84,6 +87,7 @@ def rdap(request, domain=""):
     return JsonResponse(rdap_data)
 
 
+@transaction.non_atomic_requests
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_full(request, file_name="current-full.csv"):
@@ -93,6 +97,7 @@ def get_current_full(request, file_name="current-full.csv"):
     return serve_file(file_name)
 
 
+@transaction.non_atomic_requests
 @require_http_methods(["GET"])
 @login_not_required
 def get_current_federal(request, file_name="current-federal.csv"):

@@ -1,8 +1,8 @@
 import logging
 
 from enum import IntEnum
-
-from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
+from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +39,21 @@ class InvitationError(Exception):
     pass
 
 
-class AlreadyDomainManagerError(InvitationError):
-    """Raised when the user is already a manager for the domain."""
+class MultipleUsersWithEmailError(InvitationError):
+    """Raised when an email address cannot identify one user account."""
 
     def __init__(self, email):
-        super().__init__(f"{email} is already a manager for this domain.")
+        super().__init__(
+            f"More than one user account exists for {email}. "
+            "The invitation could not be created. Contact support to resolve the duplicate accounts."
+        )
+
+
+class AlreadyDomainManagerError(InvitationError):
+    """Raised when the user is already a manager of the domain."""
+
+    def __init__(self, email):
+        super().__init__(f"{email} is already a manager of this domain.")
 
 
 class AlreadyDomainInvitedError(InvitationError):
@@ -103,10 +113,11 @@ class GenericError(Exception):
     """
 
     _error_mapping = {
-        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: (
-            "We’re experiencing a system error. Please wait a few minutes "
-            "and try again. If you continue to get this error, "
-            "contact help@get.gov."
+        GenericErrorCodes.CANNOT_CONTACT_REGISTRY: mark_safe(  # nosec
+            "We're experiencing a connection error. Please wait a few minutes "
+            "and try again. If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> "
+            "for assistance."
         ),
         GenericErrorCodes.GENERIC_ERROR: ("Value entered was wrong."),
     }
@@ -205,18 +216,23 @@ class NameserverError(Exception):
     """
 
     _error_mapping = {
-        NameserverErrorCodes.MISSING_IP: ("Using your domain for a name server requires an IP address."),
+        NameserverErrorCodes.MISSING_IP: (
+            "Enter an IP address for this name server. That's required because it uses the domain name."
+        ),
         NameserverErrorCodes.GLUE_RECORD_NOT_ALLOWED: ("Name server address does not match domain name"),
-        NameserverErrorCodes.INVALID_IP: ("{}: Enter an IP address in the required format."),
-        NameserverErrorCodes.TOO_MANY_HOSTS: ("You can't have more than 13 nameservers."),
-        NameserverErrorCodes.MISSING_HOST: ("You must provide a name server to enter an IP address."),
+        NameserverErrorCodes.INVALID_IP: ("Enter an IP address in the required format for IPv4 or IPv6."),
+        NameserverErrorCodes.TOO_MANY_HOSTS: (
+            "Domains can have no more than 13 name servers. Remove one before adding another."
+        ),
+        NameserverErrorCodes.MISSING_HOST: ("Enter a name server before entering an IP address."),
         NameserverErrorCodes.INVALID_HOST: ("Enter a name server in the required format, like ns1.example.com"),
         NameserverErrorCodes.DUPLICATE_HOST: (
-            "You already entered this name server address. Name server addresses must be unique."
+            "This name server is already associated with this domain. Name servers must be unique."
         ),
-        NameserverErrorCodes.BAD_DATA: (
-            "There’s something wrong with the name server information you provided. "
-            "If you need help email us at help@get.gov."
+        NameserverErrorCodes.BAD_DATA: mark_safe(  # nosec
+            "There's something wrong with the name server information you provided. "
+            "Please try again. If the problem persists, "
+            '<a class="usa-link" href="https://get.gov/contact/" target="_blank">contact us</a> for assistance.'
         ),
     }
 
@@ -263,14 +279,16 @@ class DsDataError(Exception):
     """
 
     _error_mapping = {
-        DsDataErrorCodes.BAD_DATA: (
-            "There’s something wrong with the DS data you provided. If you need help email us at help@get.gov."
+        DsDataErrorCodes.BAD_DATA: mark_safe(  # nosec
+            "There’s something wrong with the DS data you provided. If the problem persists, "
+            "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a>"
+            " for assistance."
         ),
         DsDataErrorCodes.INVALID_DIGEST_SHA1: ("SHA-1 digest must be exactly 40 characters."),
         DsDataErrorCodes.INVALID_DIGEST_SHA256: ("SHA-256 digest must be exactly 64 characters."),
-        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Digest must contain only alphanumeric characters (0-9, a-f)."),
-        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a number between 0 and 65535."),
-        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Key tag must be numeric (0-9)."),
+        DsDataErrorCodes.INVALID_DIGEST_CHARS: ("Enter a digest value using only numbers (0-9) and letters (a-f)."),
+        DsDataErrorCodes.INVALID_KEYTAG_SIZE: ("Enter a key tag number between 0 and 65535."),
+        DsDataErrorCodes.INVALID_KEYTAG_CHARS: ("Enter a key tag number between 0 and 65535."),
     }
 
     def __init__(self, *args, code=None, **kwargs):
@@ -322,19 +340,17 @@ class APIError(Exception):
 class DnsHostingErrorCodes(IntEnum):
     """Error codes for DNS-hosting failures."""
 
-    ZONE_NOT_FOUND = 1
-    RECORD_CONFLICT = 2
-    VALIDATION_FAILED = 3
-    RATE_LIMIT_EXCEEDED = 4
-    AUTH_FAILED = 5
-    UPSTREAM_TIMEOUT = 6
-    UPSTREAM_ERROR = 7
-    UNKNOWN = 8
+    NOT_FOUND = 1
+    VALIDATION_FAILED = 2
+    RATE_LIMIT_EXCEEDED = 3
+    AUTH_FAILED = 4
+    UPSTREAM_TIMEOUT = 5
+    UPSTREAM_ERROR = 6
+    UNKNOWN = 7
 
 
 _DNS_WIRE_CODES = {
-    DnsHostingErrorCodes.ZONE_NOT_FOUND: "DNS_ZONE_NOT_FOUND",
-    DnsHostingErrorCodes.RECORD_CONFLICT: "DNS_RECORD_CONFLICT",
+    DnsHostingErrorCodes.NOT_FOUND: "DNS_NOT_FOUND",
     DnsHostingErrorCodes.VALIDATION_FAILED: "DNS_VALIDATION_FAILED",
     DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: "DNS_RATE_LIMIT_EXCEEDED",
     DnsHostingErrorCodes.AUTH_FAILED: "DNS_AUTH_FAILED",
@@ -352,22 +368,15 @@ def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, con
 class DnsHostingError(Exception):
     """Typed base exception for DNS-hosting failures."""
 
-    _error_mapping = {
-        DnsHostingErrorCodes.ZONE_NOT_FOUND: (
-            "We couldn’t find the DNS zone for this domain. It may not be enrolled in DNS hosting yet."
-        ),
-        DnsHostingErrorCodes.RECORD_CONFLICT: DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
-        DnsHostingErrorCodes.VALIDATION_FAILED: (
-            "The DNS record couldn’t be saved because one of its fields wasn’t valid."
-        ),
-        DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: (
-            "You’re making changes too quickly. Please wait a moment and try again."
-        ),
-        DnsHostingErrorCodes.AUTH_FAILED: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UPSTREAM_TIMEOUT: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UPSTREAM_ERROR: ("We couldn’t reach our DNS provider. Please try again in a moment."),
-        DnsHostingErrorCodes.UNKNOWN: ("Something went wrong while updating DNS. Please try again in a moment."),
-    }
+    GENERIC_ERROR_MESSAGE = mark_safe(
+        "An unexpected error occurred: Please try again. If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )  # nosec
+    GENERIC_VALIDATION_ERROR_MESSAGE = mark_safe(
+        "There’s something wrong with the DNS record information you provided. Please try again. "
+        "If the problem persists, "
+        "<a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
+    )  # nosec
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         self.code = code if code is not None else DnsHostingErrorCodes.UNKNOWN
@@ -376,16 +385,36 @@ class DnsHostingError(Exception):
         self.context = dict(context) if context else {}
         super().__init__(self.message)
 
+    def _build_error_mapping(self, request_id):
+        validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
+        error_msg = self.GENERIC_ERROR_MESSAGE
+        if request_id:
+            error_msg = format_html(
+                self.GENERIC_ERROR_MESSAGE[:-1] + " and share this ID {}.",
+                request_id,
+            )  # format_html also marks safe
+
+        return {
+            DnsHostingErrorCodes.NOT_FOUND: error_msg,
+            DnsHostingErrorCodes.VALIDATION_FAILED: validation_msg,
+            DnsHostingErrorCodes.RATE_LIMIT_EXCEEDED: error_msg,
+            DnsHostingErrorCodes.AUTH_FAILED: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_TIMEOUT: error_msg,
+            DnsHostingErrorCodes.UPSTREAM_ERROR: error_msg,
+            DnsHostingErrorCodes.UNKNOWN: error_msg,
+        }
+
     @property
     def message(self):
-        """User-facing text: explicit caller message, else the code-level default."""
         if self._explicit_message:
             return self._explicit_message
-        return self._error_mapping.get(self.code) or "DNS operation failed."
+        request_id = self.context.get("request_id")
+        error_mapping = self._build_error_mapping(request_id)
+        return error_mapping.get(self.code) or DnsHostingError.GENERIC_ERROR_MESSAGE
 
     @property
     def wire_code(self):
-        """Stable wire name for this error's code (e.g. 'DNS_ZONE_NOT_FOUND')."""
+        """Stable wire name for this error's code (e.g. 'DNS_NOT_FOUND')."""
         return _DNS_WIRE_CODES.get(self.code, "DNS_UNKNOWN")
 
     def __str__(self):
@@ -405,7 +434,7 @@ class DnsNotFoundError(DnsHostingError):
 
     def __init__(self, *, code=None, message=None, upstream_status=None, context=None):
         super().__init__(
-            code=code or DnsHostingErrorCodes.ZONE_NOT_FOUND,
+            code=code or DnsHostingErrorCodes.NOT_FOUND,
             message=message,
             upstream_status=upstream_status,
             context=context,

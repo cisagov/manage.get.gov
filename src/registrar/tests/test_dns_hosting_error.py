@@ -11,14 +11,14 @@ from registrar.utility.errors import (
     DnsAuthError,
     DnsTransportError,
     DnsUpstreamError,
+    _DNS_WIRE_CODES,
 )
-from registrar.validations import DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE
 
 # (subclass, default code, sample upstream_status) for each row of the
 # wire-code reference. The base class is included with its UNKNOWN default.
 DNS_ERROR_ROWS = [
     (DnsHostingError, codes.UNKNOWN, None),
-    (DnsNotFoundError, codes.ZONE_NOT_FOUND, 404),
+    (DnsNotFoundError, codes.NOT_FOUND, 404),
     (DnsValidationError, codes.VALIDATION_FAILED, 400),
     (DnsRateLimitError, codes.RATE_LIMIT_EXCEEDED, 429),
     (DnsAuthError, codes.AUTH_FAILED, 401),
@@ -36,19 +36,27 @@ class TestDnsHostingError(TestCase):
                 self.assertEqual(exc.code, default_code)
 
     def test_message_resolves_from_error_mapping(self):
-        """A user-facing message is resolved from `_error_mapping` for every code."""
+        """A user-facing message is resolved from `_build_error_mapping` for every code."""
+        request_id = None
         for code in codes:
             with self.subTest(code=code.name):
                 exc = DnsHostingError(code=code)
-                self.assertEqual(exc.message, DnsHostingError._error_mapping[code])
+                self.assertEqual(exc.message, exc._build_error_mapping(request_id)[code])
                 self.assertEqual(str(exc), exc.message)
 
-    def test_record_conflict_reuses_model_validation_string(self):
-        """RECORD_CONFLICT reuses the existing model-level validation copy, not a new string."""
-        self.assertEqual(
-            DnsValidationError(code=codes.RECORD_CONFLICT).message,
-            DNS_RECORD_NAME_CONFLICT_ERROR_MESSAGE,
-        )
+    def test_message_resolves_from_error_mapping_with_request_id(self):
+        """A user-facing message is resolved from `_build_error_mapping` for every code."""
+        request_id = "123EASYASABC"
+        for code in codes:
+            with self.subTest(code=code.name):
+                exc = DnsHostingError(code=code, context={"request_id": request_id})
+                self.assertEqual(exc.message, exc._build_error_mapping(request_id)[code])
+                self.assertEqual(str(exc), exc.message)
+                if code != codes.VALIDATION_FAILED:
+                    self.assertIn(request_id, exc.message)
+
+    def test_all_dns_hosting_error_codes_are_wired(self):
+        self.assertLessEqual(set(codes), set(_DNS_WIRE_CODES))
 
     def test_explicit_message_wins_over_mapping(self):
         """A caller-supplied message overrides the code-level default."""
@@ -57,7 +65,7 @@ class TestDnsHostingError(TestCase):
 
     def test_wire_code_is_stable_name(self):
         """`wire_code` returns the stable wire name for the error's code."""
-        self.assertEqual(DnsNotFoundError().wire_code, "DNS_ZONE_NOT_FOUND")
+        self.assertEqual(DnsNotFoundError().wire_code, "DNS_NOT_FOUND")
         self.assertEqual(DnsHostingError(code=codes.UNKNOWN).wire_code, "DNS_UNKNOWN")
 
     def test_context_is_copied_to_plain_dict(self):

@@ -47,7 +47,6 @@
       </h2>
       <p class="margin-top-0 margin-bottom-0">Review, add, and edit DNS nameservers.</p>
     </li>
-    {% endif %}
 
     <li>
       {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
@@ -63,6 +62,7 @@
       </h2>
       <p class="margin-top-0 margin-bottom-0">Enable digital signatures to DNS records.</p>
     </li>
+    {% endif %}
   </ul>
 
 {% endblock %}  {# domain_content #}

@@ -133,7 +133,7 @@ def create_initial_dns_setup(domain=None, domain_manager=None, **kwargs):
     When given a domain manager, assigns that domain manager to the domain.
     """
     domain = domain or create_domain()
-    dns_account = kwargs.get("dns_account", create_dns_account(domain))
+    dns_account = kwargs.get("dns_account", create_dns_account(domain, **kwargs))
     dns_zone = create_dns_zone(domain=domain, account=dns_account, **kwargs)
     domain.is_enrolled_in_dns_hosting = True
     domain.save()
@@ -153,7 +153,7 @@ def create_dns_record(zone, **kwargs):
     x_created_at = kwargs.get("record_x_created_at", default_datetime)
     x_updated_at = kwargs.get("record_x_updated_at", default_datetime)
     ttl = kwargs.get("ttl", 300)
-    priority = kwargs.get("priority", None)
+    priority = kwargs.get("priority", 1 if record_type == "MX" else None)
     dns_record = DnsRecord.objects.create(
         dns_zone=zone,
         name=record_name,

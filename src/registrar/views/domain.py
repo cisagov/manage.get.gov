@@ -1,7 +1,7 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import Client, RequestError
+from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -11,13 +11,13 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
 from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
-from registrar.utility.errors import APIError, EnrollmentNotAllowedError
 from registrar.decorators import (
     HAS_PORTFOLIO_DOMAINS_VIEW_ALL,
     IS_DOMAIN_MANAGER,
@@ -49,14 +49,23 @@ from registrar.utility.errors import (
     DsDataErrorCodes,
     SecurityEmailError,
     SecurityEmailErrorCodes,
+    DnsHostingError,
+    APIError,
+    EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
 from registrar.utility.db_helpers import get_portfolio_from_session
 from registrar.views.utility.invitation_helper import (
     get_org_membership,
-    get_requested_user,
     handle_invitation_exceptions,
+)
+from registrar.services.invitation_service import (
+    cancel_domain_invitation,
+    create_domain_role_or_invitation,
+    create_portfolio_permission_or_invitation,
+    get_requested_user,
+    invite_to_portfolio,
 )
 
 from registrar.services.dns_host_service import DnsHostService
@@ -84,7 +93,6 @@ from ..utility.email import send_templated_email, EmailSendingError
 from ..utility.email_invitations import (
     send_domain_invitation_email,
     send_domain_manager_removal_emails_to_domain_managers,
-    send_portfolio_invitation_email,
     send_domain_manager_on_hold_email_to_domain_managers,
     send_domain_renewal_notification_emails,
 )
@@ -133,6 +141,15 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             self.object = self.get_object()
         self._update_session_with_domain()
 
+    def _get_domain_force_reset_cache(self, request):
+        """
+        Get domain and always reset the cache for the domain object.
+        Used to get domain and reset cache in Nameservers, DNSSEC, and DS Data views.
+        """
+        self.session = request.session
+        self.object = self.get_object()
+        self._update_session_with_domain()
+
     def _update_session_with_domain(self):
         """
         update domain in the session cache
@@ -149,7 +166,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
             "registrar.full_access_permission"
         )
         context["is_domain_manager"] = UserDomainRole.objects.filter(user=user, domain=self.object).exists()
-        context["is_portfolio_user"] = self.can_access_domain_via_portfolio(self.object.pk)
+        context["can_access_domain_via_portfolio"] = self.can_access_domain_via_portfolio(self.object.pk)
         context["is_editable"] = self.is_editable()
         context["domain_deletion_flag"] = flag_is_active_for_user(user, "domain_deletion")
         context["domain_is_expiring_or_expired"] = domain.is_expiring() or domain.is_expired()
@@ -584,8 +601,11 @@ class DomainRenewalView(DomainBaseView):
                 except Exception:
                     messages.error(
                         request,
-                        "This domain has not been renewed for one year, "
-                        "please email help@get.gov if this problem persists.",
+                        mark_safe(  # nosec
+                            "We’re experiencing a connection error. Please wait a few minutes and try again. "
+                            'If the problem persists, <a href="https://get.gov/contact/">contact us</a> '
+                            "for assistance.",
+                        ),
                     )
             return HttpResponseRedirect(reverse("domain", kwargs={"domain_pk": domain_pk}))
 
@@ -830,8 +850,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def __init__(self):
         self.dns_record = None
-        self.client = Client()
-        self.dns_host_service = DnsHostService(client=self.client)
+        self.dns_host_service = DnsHostService()
 
     def _get_domain(self, request):
         """
@@ -987,6 +1006,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
             dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
+
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
@@ -1000,6 +1020,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         dns_record.refresh_from_db()
         self._attach_form(dns_record)
         self.dns_record = dns_record
+
         return record_id
 
     def _handle_invalid_form(self, request, form, is_edit):
@@ -1054,18 +1075,18 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self._attach_form(dns_record)
             self.dns_record = dns_record
             return is_first_record, dns_record.id
-
         self.dns_record = None
         return is_first_record, None
 
-    def post(self, request, *args, **kwargs):
-        """Handle form submission (create + update) for DNS records via htmx."""
+    def post(self, request, *args, **kwargs):  # noqa: C901
+        """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
         form = self.get_form()
         is_edit = self._parse_dns_record_id(request)
+        delete_record = request.POST.get("delete_record")
         self._get_domain(request)
 
-        if not form.is_valid():
+        if not delete_record and not form.is_valid():
             return self._handle_invalid_form(request, form, is_edit)
 
         nameservers = None
@@ -1073,13 +1094,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
         record_id = None
 
         try:
-            if settings.IS_PRODUCTION and self.object.name in settings.DNS_HOSTING_PROD_ALLOWLIST:
+            allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
+            if settings.IS_PRODUCTION and self.object.name not in allowlist:
+                verb = "is" if len(allowlist) == 1 else "are"
+                allowed_domains_string = f"{', '.join(allowlist)} {verb}"
                 raise EnrollmentNotAllowedError(
-                    f"Create/update dns record called for domain {self.object.name}. "
-                    "Only igorville.gov is allowed in production right now."
+                    f"Create/update/delete dns record called for domain {self.object.name}. "
+                    f"Only {allowed_domains_string} is allowed in production right now."
                 )
 
-            form_record_data = self._build_dns_record_form_data(form)
             x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if not x_zone_id:
                 return JsonResponse(
@@ -1087,20 +1110,39 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     status=400,
                 )
 
-            if is_edit:
-                record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+            # DELETE
+            if delete_record:
+                self._handle_delete(request, x_zone_id)
             else:
-                is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
+                form_record_data = self._build_dns_record_form_data(form)
+                # EDIT
+                if is_edit:
+                    record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
 
-        except (APIError, RequestError) as e:
-            logger.error(f"DNS record create/update failed, API error in view {e}")
-            messages.error(request, "Failed to save DNS record.")
-            self.dns_record = None
-            record_id = None
+                # CREATE
+                else:
+                    is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
+
+        except DnsHostingError as e:
+            messages.error(request, e.message)
+            if is_edit:
+                record_id = is_edit
+                dns_record = DnsRecord.objects.get(id=record_id)
+                self._attach_form(dns_record=dns_record)
+                self.dns_record = dns_record
         except GenericError:
             return self._error_response(request, status=400)
         finally:
-            self.client.close()
+            self.dns_host_service.client.close()
+
+        if delete_record:
+            return TemplateResponse(
+                request,
+                "empty_response.html",
+                {"dns_record": None},
+                headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+                status=200,
+            )
 
         return TemplateResponse(
             request,
@@ -1119,6 +1161,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
+    def _handle_delete(self, request, x_zone_id: int):
+        """Handle deletion for DNS records via htmx."""
+        self.object = self.get_object()
+        record_id = self._parse_dns_record_id(request)
+        self._get_domain(request)
+
+        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        messages.success(request, "The DNS record for this domain has been deleted.")
+
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
@@ -1128,17 +1179,8 @@ class DomainNameserversView(DomainFormBaseView):
     form_class = NameserverFormset
     model = Domain
 
-    def _get_domain(self, request):
-        """
-        override get_domain for this view so that domain overview
-        always resets the cache for the domain object
-        """
-        self.session = request.session
-        self.object = self.get_object()
-        self._update_session_with_domain()
-
     def dispatch(self, request, *args, **kwargs):
-        self._get_domain(
+        self._get_domain_force_reset_cache(
             request
         )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
 
@@ -1212,6 +1254,9 @@ class DomainNameserversView(DomainFormBaseView):
     def form_valid(self, formset):
         """The formset is valid, perform something with it."""
 
+        # messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
+        # return self.form_invalid(formset)
+
         self.request.session["nameservers_form_domain"] = self.object.id
         initial_state = self.object.state
 
@@ -1273,6 +1318,19 @@ class DomainDNSSECView(DomainFormBaseView):
 
     template_name = "domain_dnssec.html"
     form_class = DomainDnssecForm
+    model = Domain
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain_force_reset_cache(
+            request
+        )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            logger.info("Domain is enrolled in DNS hosting. DNSSEC cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [{"label": "DNS", "url": reverse("domain-dns", kwargs={"domain_pk": self.object.id})}]
@@ -1305,7 +1363,14 @@ class DomainDNSSECView(DomainFormBaseView):
                 except RegistryError as err:
                     errmsg = "Error removing existing DNSSEC record(s)."
                     logger.error(errmsg + ": " + err)
-                    messages.error(self.request, errmsg)
+                    messages.error(
+                        self.request,
+                        mark_safe(  # nosec
+                            "An unexpected error occurred: Could not remove existing DNSSEC record(s). "
+                            "Please try again. If the problem persists, "
+                            '<a href="https://get.gov/contact/">contact us</a> for assistance.'
+                        ),
+                    )
                 else:
                     self.send_update_notification(form, force_send=True)
         return self.form_valid(form)
@@ -1318,6 +1383,19 @@ class DomainDsDataView(DomainFormBaseView):
     template_name = "domain_dsdata.html"
     form_class = DomainDsdataFormset
     form = DomainDsdataForm
+    model = Domain
+
+    def dispatch(self, request, *args, **kwargs):
+        self._get_domain_force_reset_cache(
+            request
+        )  # Ensure the domain is reset in the session cache. Sets self.object to the domain object.
+
+        if flag_is_active(request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            logger.info("Domain is enrolled in DNS hosting. DNSSEC cannot be edited in this case.")
+            redirect_url = reverse("domain-dns-records", kwargs={"domain_pk": self.object.pk})
+            return redirect(redirect_url)
+
+        return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [
@@ -1523,7 +1601,7 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store roles with an admin flag
         domain_manager_roles = []
 
-        for permission in self.object.permissions.all():
+        for permission in self.object.permissions.filter(user__isnull=False):
             # Determine if the user has the ORGANIZATION_ADMIN role
             has_admin_flag = any(
                 UserPortfolioRoleChoices.ORGANIZATION_ADMIN in portfolio_permission.roles
@@ -1545,7 +1623,22 @@ class DomainUsersView(DomainBaseView):
         # Prepare a list to store invitations with an admin flag
         invitations = []
 
-        for domain_invitation in self.object.invitations.all():
+        user_domain_role_invitations = (
+            self.object.permissions.filter(status=UserDomainRole.Status.INVITED)
+            .exclude(email__isnull=True)
+            .exclude(email="")
+        )
+        legacy_invitations = self.object.invitations.filter(status=DomainInvitation.DomainInvitationStatus.INVITED)
+        invited_emails = {invitation.email.lower() for invitation in user_domain_role_invitations}
+
+        for domain_invitation in chain(user_domain_role_invitations, legacy_invitations):
+            is_user_domain_role = isinstance(domain_invitation, UserDomainRole)
+
+            # The invitation service temporarily creates both models. Prefer the
+            # UserDomainRole so each invitation appears only once.
+            if not is_user_domain_role and domain_invitation.email.lower() in invited_emails:
+                continue
+
             # Check if there are any PortfolioInvitations linked to the same portfolio with the ORGANIZATION_ADMIN role
             has_admin_flag = False
 
@@ -1563,10 +1656,14 @@ class DomainUsersView(DomainBaseView):
                     has_admin_flag = True
                     break  # Once we find one match, no need to check further
 
-            # Add the role along with the computed flag to the list if the domain invitation
-            # if the status is not canceled
-            if domain_invitation.status != "canceled":
-                invitations.append({"domain_invitation": domain_invitation, "has_admin_flag": has_admin_flag})
+            invitations.append(
+                {
+                    "domain_invitation": domain_invitation,
+                    "has_admin_flag": has_admin_flag,
+                    "is_user_domain_role": is_user_domain_role,
+                    "can_cancel": True,
+                }
+            )
 
         # Pass roles_with_flags to the context
         context["invitations"] = invitations
@@ -1605,9 +1702,6 @@ class DomainAddUserView(DomainFormBaseView):
         """Add the specified user to this domain."""
         requested_email = form.cleaned_data["email"]
         requestor = self.request.user
-
-        # Look up a user with that email
-        requested_user = get_requested_user(requested_email)
         domain_org = self.object.domain_info.portfolio
 
         # requestor can only send portfolio invitations if they are staff or if they are a member
@@ -1616,33 +1710,28 @@ class DomainAddUserView(DomainFormBaseView):
             domain_org and UserPortfolioPermission.objects.filter(user=requestor, portfolio=domain_org).exists()
         )
 
-        member_of_a_different_org, member_of_this_org = get_org_membership(domain_org, requested_email, requested_user)
         try:
-            # determine portfolio of the domain
-            # if requested_email/user is not member or invited member of this portfolio
-            #   send portfolio invitation email
-            #   create portfolio invitation
-            #   create message to view
-            if domain_org and requestor_can_update_portfolio and not member_of_this_org:
-                send_portfolio_invitation_email(
-                    email=requested_email,
+            # Look up a user with that email
+            requested_user = get_requested_user(requested_email)
+            member_of_a_different_org, member_of_this_org = get_org_membership(
+                domain_org, requested_email, requested_user
+            )
+            self._ensure_portfolio_membership(
+                requested_email=requested_email,
+                requested_user=requested_user,
+                requestor=requestor,
+                domain_org=domain_org,
+                requestor_can_update_portfolio=requestor_can_update_portfolio,
+                member_of_this_org=member_of_this_org,
+            )
+
+            if flag_is_active(self.request, "user_domain_role_invitations"):
+                self._handle_service_invitation(
+                    requested_email=requested_email,
                     requestor=requestor,
-                    portfolio=domain_org,
-                    is_admin_invitation=False,
+                    member_of_different_org=member_of_a_different_org,
                 )
-                portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
-                    email=requested_email,
-                    portfolio=domain_org,
-                    roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                )
-                # if user exists for email, immediately retrieve portfolio invitation upon creation
-                if requested_user is not None:
-                    portfolio_invitation.retrieve()
-                    portfolio_invitation.save()
-
-                messages.success(self.request, f"{requested_email} has been invited to become a member of {domain_org}")
-
-            if requested_user is None:
+            elif requested_user is None:
                 self._handle_new_user_invitation(requested_email, requestor, member_of_a_different_org)
             else:
                 self._handle_existing_user(
@@ -1650,14 +1739,79 @@ class DomainAddUserView(DomainFormBaseView):
                     requestor,
                     requested_user,
                     member_of_a_different_org,
-                    domain_org=domain_org,
-                    member_of_this_org=member_of_this_org,
                 )
 
         except Exception as e:
             handle_invitation_exceptions(self.request, e, requested_email)
 
         return redirect(self.get_success_url())
+
+    def _ensure_portfolio_membership(
+        self,
+        *,
+        requested_email,
+        requested_user,
+        requestor,
+        domain_org,
+        requestor_can_update_portfolio,
+        member_of_this_org,
+    ):
+        """Ensure a domain invitee also has portfolio membership when the domain belongs to an org."""
+        if domain_org is None or member_of_this_org:
+            return
+
+        if requestor_can_update_portfolio:
+            invite_to_portfolio(
+                email=requested_email,
+                portfolio=domain_org,
+                requestor=requestor,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            )
+            return
+
+        if requested_user is None:
+            return
+
+        if flag_is_active(self.request, "user_portfolio_permission_invitations"):
+            create_portfolio_permission_or_invitation(
+                email=requested_email,
+                portfolio=domain_org,
+                requestor=requestor,
+                roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+                send_email=False,
+            )
+            return
+
+        portfolio_invitation = PortfolioInvitation.objects.filter(
+            email__iexact=requested_email,
+            portfolio=domain_org,
+            status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
+        ).first()
+
+        if portfolio_invitation:
+            portfolio_invitation.retrieve()
+            portfolio_invitation.save()
+            return
+
+        UserPortfolioPermission.objects.get_or_create(
+            user=requested_user,
+            portfolio=domain_org,
+            defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
+        )
+
+    def _handle_service_invitation(self, *, requested_email, requestor, member_of_different_org):
+        """Create a domain invitation and/or any manager notification warning."""
+        _, email_was_sent = create_domain_role_or_invitation(
+            email=requested_email,
+            domain=self.object,
+            requestor=requestor,
+            role=UserDomainRole.Roles.MANAGER,
+            send_email=True,
+            is_member_of_different_org=member_of_different_org,
+        )
+        if not email_was_sent:
+            messages.warning(self.request, "Could not send email notification to existing domain managers.")
+        messages.success(self.request, f"{requested_email} has been invited to this domain.")
 
     def _handle_new_user_invitation(self, email, requestor, member_of_different_org):
         """Handle invitation for a new user who does not exist in the system."""
@@ -1677,9 +1831,6 @@ class DomainAddUserView(DomainFormBaseView):
         requestor,
         requested_user,
         member_of_different_org,
-        *,
-        domain_org=None,
-        member_of_this_org=False,
     ):
         """Handle adding an existing user to the domain."""
         if not send_domain_invitation_email(
@@ -1695,27 +1846,7 @@ class DomainAddUserView(DomainFormBaseView):
             domain=self.object,
             role=UserDomainRole.Roles.MANAGER,
         )
-
-        # If the domain belongs to a portfolio, ensure the user is a Basic member of that portfolio too.
-        if domain_org and not member_of_this_org:
-            # retrieving an existing invitation or permission.
-            portfolio_invitation = PortfolioInvitation.objects.filter(
-                email__iexact=email,
-                portfolio=domain_org,
-                status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
-            ).first()
-
-            if portfolio_invitation:
-                portfolio_invitation.retrieve()
-                portfolio_invitation.save()
-            else:
-                UserPortfolioPermission.objects.get_or_create(
-                    user=requested_user,
-                    portfolio=domain_org,
-                    defaults={"roles": [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]},
-                )
-
-        messages.success(self.request, f"Added user {email}.")
+        messages.success(self.request, f"{email} has been invited to this domain.")
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1724,25 +1855,29 @@ class DomainInvitationCancelView(SuccessMessageMixin, UpdateView):
     pk_url_kwarg = "domain_invitation_pk"
     fields = []
 
+    def get_object(self, queryset=None):
+        user_domain_role_pk = self.kwargs.get("user_domain_role_pk")
+        if user_domain_role_pk:
+            return get_object_or_404(UserDomainRole, pk=user_domain_role_pk)
+
+        return super().get_object(queryset)
+
     def post(self, request, *args, **kwargs):
-        """Override post method in order to error in the case when the
-        domain invitation status is RETRIEVED"""
+        """Return an error when the domain invitation is no longer pending."""
         self.object = self.get_object()
-        form = self.get_form()
-        if form.is_valid() and self.object.status == self.object.DomainInvitationStatus.INVITED:
-            self.object.cancel_invitation()
-            self.object.save()
-            return self.form_valid(form)
+        if self.object.status == UserDomainRole.Status.INVITED:
+            cancel_domain_invitation(self.object.email, self.object.domain)
+            messages.success(request, self.get_success_message({}))
         else:
-            # Produce an error message if the domain invatation status is RETRIEVED
-            messages.error(request, f"Invitation to {self.object.email} has already been retrieved.")
-            return HttpResponseRedirect(self.get_success_url())
+            messages.error(request, "This invitation can't be canceled because it is no longer pending.")
+
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("domain-users", kwargs={"domain_pk": self.object.domain.id})
 
     def get_success_message(self, cleaned_data):
-        return f"Canceled invitation to {self.object.email}."
+        return f"The invitation for {self.object.email} has been canceled."
 
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
@@ -1782,9 +1917,9 @@ class DomainDeleteUserView(DeleteView):
         # If the user is deleting themselves, return a specific message.
         # If not, return something more generic.
         if self.delete_self:
-            message = f"You are no longer managing the domain {self.object.domain}."
+            message = "You've been removed from this domain."
         else:
-            message = f"Removed {email_or_name} as a manager for this domain."
+            message = f"{email_or_name} has been removed from this domain."
 
         return message
 
@@ -1819,8 +1954,8 @@ class DomainDeleteUserView(DeleteView):
             if self.delete_self:
                 messages.error(
                     request,
-                    "Domains must have at least one domain manager. "
-                    "To remove yourself, the domain needs another domain manager.",
+                    "You can’t remove yourself because you’re the only domain manager. "
+                    "To remove yourself, you’ll need to add another domain manager.",
                 )
             else:
                 messages.error(request, "Domains must have at least one domain manager.")

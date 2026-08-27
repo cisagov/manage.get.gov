@@ -309,7 +309,7 @@ class BaseExport(ABC):
 
 class MemberExport(BaseExport):
     """CSV export for the MembersTable. The members table combines the content
-    of three tables: PortfolioInvitation, UserPortfolioPermission, and DomainInvitation."""
+    of PortfolioInvitation, UserPortfolioPermission, DomainInvitation, and UserDomainRole."""
 
     @classmethod
     def model(self):
@@ -321,18 +321,12 @@ class MemberExport(BaseExport):
 
     @classmethod
     def get_model_annotation_dict(cls, request=None, **kwargs):
-        """Combines the permissions and invitation model annotations for
-        the final returned csv export which combines both of these contexts.
-        Returns a dictionary of a union between:
-        - UserPortfolioPermissionModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
-        - PortfolioInvitationModelAnnotation.get_annotated_queryset(portfolio, csv_report=True)
-        """
+        """Combine portfolio members and invitations for the CSV export."""
         portfolio = get_portfolio_from_session(request.session)
         if not portfolio:
             return {}
 
-        # Union the two querysets to combine UserPortfolioPermission + invites.
-        # Unions cannot have a col mismatch, so we must clamp what is returned here.
+        # Clamp the fields returned by each model so they can be combined.
         shared_columns = [
             "id",
             "first_name",
@@ -350,7 +344,8 @@ class MemberExport(BaseExport):
 
         # Permissions
         permissions = (
-            UserPortfolioPermission.objects.filter(portfolio=portfolio)
+            UserPortfolioPermission.objects.filter(portfolio=portfolio, user__isnull=False)
+            .exclude(status=UserPortfolioPermission.Status.INVITED)
             .select_related("user")
             .annotate(
                 first_name=F("user__first_name"),
@@ -388,24 +383,18 @@ class MemberExport(BaseExport):
                     default=Value([], output_field=ArrayField(CharField())),
                 ),
                 type=Value("member", output_field=CharField()),
-                joined_date=Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
-                invited_by_user=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query()),
+                joined_date=Coalesce(
+                    Func(F("accepted_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
+                    Func(F("created_at"), Value("YYYY-MM-DD"), function="to_char", output_field=CharField()),
+                ),
+                invited_by_user=cls.get_permission_invited_by(
+                    default=cls.get_invited_by_query(object_id_query=cls.get_portfolio_invitation_id_query())
+                ),
             )
             .values(*shared_columns)
         )
 
-        # Invitations
-        domain_invitations = Subquery(
-            DomainInvitation.objects.filter(
-                email=OuterRef("email"),
-                domain__domain_info__portfolio=portfolio,
-                status=DomainInvitation.DomainInvitationStatus.INVITED,
-            )
-            .values("email")  # Select a stable field
-            .annotate(domain_list=ArrayAgg("domain__name", distinct=True))  # Aggregate within subquery
-            .values("domain_list")  # Ensure only one value is returned
-        )
-
+        # Legacy invitations
         invitations = (
             PortfolioInvitation.objects.exclude(status=PortfolioInvitation.PortfolioInvitationStatus.RETRIEVED)
             .filter(portfolio=portfolio)
@@ -416,9 +405,7 @@ class MemberExport(BaseExport):
                 last_active=Value("Invited", output_field=CharField()),
                 additional_permissions_display=F("additional_permissions"),
                 member_display=F("email"),
-                # when a member has no invitations / null,
-                # Coalesce normalizes to empty list for parse_row.
-                domain_info=Coalesce(domain_invitations, Value([], output_field=ArrayField(CharField()))),
+                domain_info=Value([], output_field=ArrayField(CharField())),
                 type=Value("invitedmember", output_field=CharField()),
                 joined_date=Value("Unretrieved", output_field=CharField()),
                 invited_by_user=cls.get_invited_by_query(
@@ -428,11 +415,94 @@ class MemberExport(BaseExport):
             .values(*shared_columns)
         )
 
-        # Adding a order_by increases output predictability.
-        # Doesn't matter as much for normal use, but makes tests easier.
-        # We should also just be ordering by default anyway.
-        members = permissions.union(invitations).order_by("email_display", "member_display", "first_name", "last_name")
+        # Invitations stored on UserPortfolioPermission take precedence over
+        # legacy PortfolioInvitation rows for the same email.
+        permission_invitations = (
+            UserPortfolioPermission.objects.filter(
+                portfolio=portfolio,
+                status=UserPortfolioPermission.Status.INVITED,
+                email__isnull=False,
+            )
+            .annotate(
+                first_name=Value(None, output_field=CharField()),
+                last_name=Value(None, output_field=CharField()),
+                email_display=F("email"),
+                last_active=Value("Invited", output_field=CharField()),
+                additional_permissions_display=F("additional_permissions"),
+                member_display=F("email"),
+                domain_info=Value([], output_field=ArrayField(CharField())),
+                type=Value("invitedmember", output_field=CharField()),
+                joined_date=Value("Unretrieved", output_field=CharField()),
+                invited_by_user=cls.get_permission_invited_by(),
+            )
+            .values(*shared_columns)
+        )
+
+        invited_domains = cls.get_invited_domain_assignments(portfolio)
+        members_by_email = {}
+        # New invitations take precedence over legacy invitations, and members
+        # take precedence over invitations for the same email.
+        for member in [*invitations, *permission_invitations, *permissions]:
+            email = member.get("email_display")
+            if not email:
+                continue
+            if member.get("type") == "invitedmember":
+                member["domain_info"] = invited_domains.get(email.casefold(), [])
+            members_by_email[email.casefold()] = member
+
+        members = sorted(
+            members_by_email.values(),
+            key=lambda member: (
+                member["email_display"],
+                member["member_display"],
+                member["first_name"] or "",
+                member["last_name"] or "",
+            ),
+        )
         return convert_queryset_to_dict(members, is_model=False, key="email_display")
+
+    @classmethod
+    def get_permission_invited_by(cls, default=None):
+        """Return the display email for a UserPortfolioPermission inviter."""
+        if default is None:
+            default = Value(DefaultUserValues.SYSTEM.value)
+
+        return Case(
+            When(
+                Exists(
+                    UserGroup.objects.filter(
+                        name__in=["cisa_analysts_group", "full_access_group"],
+                        user=OuterRef("invited_by"),
+                    )
+                ),
+                then=Value(DefaultUserValues.HELP_EMAIL.value),
+            ),
+            When(invited_by__isnull=False, then=F("invited_by__email")),
+            default=default,
+            output_field=CharField(),
+        )
+
+    @classmethod
+    def get_invited_domain_assignments(cls, portfolio):
+        """Return invited domains by email, preferring UserDomainRole rows."""
+        assignments = defaultdict(dict)
+
+        legacy_invitations = DomainInvitation.objects.filter(
+            domain__domain_info__portfolio=portfolio,
+            status=DomainInvitation.DomainInvitationStatus.INVITED,
+        ).values_list("email", "domain__name")
+        for email, domain in legacy_invitations:
+            assignments[email.casefold()][domain] = domain
+
+        role_invitations = UserDomainRole.objects.filter(
+            domain__domain_info__portfolio=portfolio,
+            status=UserDomainRole.Status.INVITED,
+            email__isnull=False,
+        ).values_list("email", "domain__name")
+        for email, domain in role_invitations:
+            assignments[email.casefold()][domain] = domain
+
+        return {email: sorted(domains.values()) for email, domains in assignments.items()}
 
     @classmethod
     def get_invited_by_query(cls, object_id_query):
@@ -761,10 +831,24 @@ class DomainExport(BaseExport):
     @classmethod
     def get_all_domain_invitations(cls):
         """
-        Fetch all DomainInvitation entries and return a mapping of domain to email.
+        Fetch invitations and return domain/email pairs, preferring UserDomainRole.
         """
-        domain_invitations = DomainInvitation.objects.filter(status="invited").values_list("domain__name", "email")
-        return list(domain_invitations)
+        invitations = {}
+
+        domain_invitations = DomainInvitation.objects.filter(
+            status=DomainInvitation.DomainInvitationStatus.INVITED
+        ).values_list("domain__name", "email")
+        for domain, email in domain_invitations:
+            invitations[(domain, email.casefold())] = (domain, email)
+
+        user_domain_roles = UserDomainRole.objects.filter(
+            status=UserDomainRole.Status.INVITED,
+            email__isnull=False,
+        ).values_list("domain__name", "email")
+        for domain, email in user_domain_roles:
+            invitations[(domain, email.casefold())] = (domain, email)
+
+        return list(invitations.values())
 
     @classmethod
     def get_all_user_domain_roles(cls):
@@ -772,7 +856,8 @@ class DomainExport(BaseExport):
         Fetch all UserDomainRole entries and return a mapping of domain to user__email.
         """
         user_domain_roles = (
-            UserDomainRole.objects.select_related("user")
+            UserDomainRole.objects.filter(user__isnull=False)
+            .select_related("user")
             .order_by("domain__name", "user__email")
             .values_list("domain__name", "user__email")
         )
@@ -850,7 +935,8 @@ class DomainExport(BaseExport):
             "SO": model.get("converted_so_name"),
             "SO email": model.get("converted_so_email"),
             "Security contact email": model.get("security_contact_email"),
-            "Created at": model.get("domain__created_at"),
+            # Registrar record date fills in for UNKNOWN domains, which have no registry date (matches old created_at)
+            "Created at": model.get("domain__x_registry_created_at") or model.get("domain__created_at_reference"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
@@ -1051,7 +1137,8 @@ class DomainDataType(DomainExport):
             "domain__state",
             "domain__first_ready",
             "domain__expiration_date",
-            "domain__created_at",
+            "domain__x_registry_created_at",
+            "domain__created_at_reference",
             "domain__deleted",
             "domain__security_contact_registry_id",
             "senior_official__email",
@@ -1103,7 +1190,7 @@ class DomainDataFull(DomainExport):
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
-            "Created at": model.get("domain__created_at"),
+            "Created at": model.get("domain__x_registry_created_at") or model.get("domain__created_at_reference"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
@@ -1230,7 +1317,7 @@ class DomainDataFederal(DomainExport):
             "SO": model.get("so_name"),
             "SO email": model.get("senior_official__email"),
             "Security contact email": model.get("security_contact_email"),
-            "Created at": model.get("domain__created_at"),
+            "Created at": model.get("domain__x_registry_created_at") or model.get("domain__created_at_reference"),
             "Deleted": model.get("domain__deleted"),
             "Domain managers": model.get("managers"),
             "Invited domain managers": model.get("invited_users"),
@@ -1416,7 +1503,8 @@ class DomainGrowth(DomainExport):
             "domain__state",
             "domain__first_ready",
             "domain__expiration_date",
-            "domain__created_at",
+            "domain__x_registry_created_at",
+            "domain__created_at_reference",
             "domain__deleted",
             "federal_agency__agency",
         ]

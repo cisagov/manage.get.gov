@@ -9,7 +9,7 @@ from registrar.models import (
     PortfolioInvitation,
     User,
 )
-from registrar.models import Portfolio, DraftDomain
+from registrar.models import Portfolio, DraftDomain, DomainInformation
 from registrar.models.user_portfolio_permission import UserPortfolioPermission
 from registrar.models.utility.portfolio_helper import UserPortfolioRoleChoices
 from registrar.utility.csv_export import (
@@ -328,6 +328,11 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         self.domain_1.domain_info.save()
         self.domain_3.domain_info.save()
 
+        # User manages this domain (VIEW_MANAGED_DOMAINS) AND it's in the portfolio
+        domain_4, _ = Domain.objects.get_or_create(name="fourthdomain.gov")
+        DomainInformation.objects.get_or_create(requester=self.user, domain=domain_4, portfolio=portfolio)
+        UserDomainRole.objects.get_or_create(user=self.user, domain=domain_4, role=UserDomainRole.Roles.MANAGER)
+
         # Set up user permissions
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_ADMIN]
         portfolio_permission.save()
@@ -342,12 +347,14 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         # We expect only domains associated with the user's portfolio
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
+        self.assertIn(domain_4.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
         self.assertIn(self.domain_1.name, csv_content)
         self.assertIn(self.domain_3.name, csv_content)
+        self.assertIn(domain_4.name, csv_content)
         self.assertNotIn(self.domain_2.name, csv_content)
 
         portfolio_permission.roles = [UserPortfolioRoleChoices.ORGANIZATION_MEMBER]
@@ -356,12 +363,17 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
 
         # Get the csv content
         csv_content = self._run_domain_data_type_user_export(request)
+        # domain_1/domain_3: in portfolio, BUT user has no UserDomainRole -> excluded
         self.assertNotIn(self.domain_1.name, csv_content)
         self.assertNotIn(self.domain_3.name, csv_content)
-        self.assertIn(self.domain_2.name, csv_content)
+        # domain_2: user has UserDomainRole, BUT not in this portfolio -> excluded
+        self.assertNotIn(self.domain_2.name, csv_content)
+        # domain_4: user has UserDomainRole AND it's in this portfolio -> included
+        self.assertIn(domain_4.name, csv_content)
         self.domain_1.delete()
         self.domain_2.delete()
         self.domain_3.delete()
+        domain_4.delete()
         portfolio.delete()
 
     def _run_domain_data_type_user_export(self, request):
@@ -807,6 +819,70 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         """Override of the base setUp to add a request factory"""
         super().setUp()
         self.factory = RequestFactory()
+
+    def get_exported_members(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        request = GenericTestHelper._mock_user_request_for_factory(request)
+        request.session["portfolio"] = self.portfolio_1.id
+        return MemberExport.get_model_annotation_dict(request=request)
+
+    def test_member_export_includes_new_model_invitation(self):
+        email = "new_model_invitee@igorville.gov"
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            email=email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            invited_by=self.lebowski_user,
+        )
+        UserDomainRole.objects.create(
+            domain=self.domain_1,
+            email=email,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        member = self.get_exported_members()[email]
+
+        self.assertEqual(member["type"], "invitedmember")
+        self.assertEqual(member["invited_by_user"], self.lebowski_user.email)
+        self.assertEqual(member["domain_info"], [self.domain_1.name])
+
+    def test_member_export_prefers_member_over_duplicate_invitation(self):
+        member_user = User.objects.create(username="export_member", email="export_member@igorville.gov")
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            user=member_user,
+            email=member_user.email,
+            status=UserPortfolioPermission.Status.ACCEPTED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            email=member_user.email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        member = self.get_exported_members()[member_user.email]
+
+        self.assertEqual(member["type"], "member")
+        self.assertEqual(member["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+    def test_member_export_treats_invited_permission_with_user_as_invitation(self):
+        invited_user = User.objects.create(username="invited_export_user", email="invited_export_user@igorville.gov")
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            user=invited_user,
+            email=invited_user.email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        member = self.get_exported_members()[invited_user.email]
+
+        self.assertEqual(member["type"], "invitedmember")
 
     @less_console_noise_decorator
     def test_member_export(self):

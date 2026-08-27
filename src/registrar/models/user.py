@@ -221,6 +221,15 @@ class User(AbstractUser):
     def has_edit_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(portfolio, UserPortfolioPermissionChoices.EDIT_PORTFOLIO)
 
+    def has_no_members_portfolio_permission(self, portfolio):
+        """
+        True: If user has NO view or edit members perms on the portfolio
+        """
+        return not (
+            self.has_view_members_portfolio_permission(portfolio)
+            or self.has_edit_members_portfolio_permission(portfolio)
+        )
+
     def has_any_domains_portfolio_permission(self, portfolio):
         return self._has_portfolio_permission(
             portfolio, UserPortfolioPermissionChoices.VIEW_ALL_DOMAINS
@@ -312,7 +321,7 @@ class User(AbstractUser):
         # We need to check for this condition.
         if verification_type == User.VerificationTypeChoices.INVITED:
             invitation = (
-                DomainInvitation.objects.filter(email=email_or_username, status=retrieved)
+                DomainInvitation.objects.filter(email__iexact=email_or_username, status=retrieved)
                 .order_by("created_at")
                 .first()
             )
@@ -329,15 +338,15 @@ class User(AbstractUser):
         """Retrieves the verification type based off of a provided email address"""
 
         verification_type = None
-        if TransitionDomain.objects.filter(Q(username=email) | Q(email=email)).exists():
+        if TransitionDomain.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).exists():
             # A new incoming user who is a domain manager for one of the domains
             # that we inputted from Verisign (that is, their email address appears
             # in the username field of a TransitionDomain)
             verification_type = cls.VerificationTypeChoices.GRANDFATHERED
-        elif VerifiedByStaff.objects.filter(email=email).exists():
+        elif VerifiedByStaff.objects.filter(email__iexact=email).exists():
             # New users flagged by Staff to bypass ial2
             verification_type = cls.VerificationTypeChoices.VERIFIED_BY_STAFF
-        elif DomainInvitation.objects.filter(email=email, status=invitation_status).exists():
+        elif DomainInvitation.objects.filter(email__iexact=email, status=invitation_status).exists():
             # A new incoming user who is being invited to be a domain manager (that is,
             # their email address is in DomainInvitation for an invitation that is not yet "retrieved").
             verification_type = cls.VerificationTypeChoices.INVITED
@@ -349,17 +358,35 @@ class User(AbstractUser):
     def check_domain_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any domain
         invitations that match their email address."""
-        for invitation in DomainInvitation.objects.filter(
+        from registrar.services.invitation_service import accept_domain_invitation
+
+        pending_legacy_invitations = DomainInvitation.objects.filter(
             email__iexact=self.email, status=DomainInvitation.DomainInvitationStatus.INVITED
-        ):
+        ).select_related("domain")
+        pending_new_roles = UserDomainRole.objects.filter(
+            email__iexact=self.email,
+            status=UserDomainRole.Status.INVITED,
+        ).select_related("domain")
+
+        pending_domains = []
+        seen_domain_ids = set()
+
+        for invitation in pending_legacy_invitations:
+            if invitation.domain_id not in seen_domain_ids:
+                seen_domain_ids.add(invitation.domain_id)
+                pending_domains.append(invitation.domain)
+
+        for domain_role in pending_new_roles:
+            if domain_role.domain_id not in seen_domain_ids:
+                seen_domain_ids.add(domain_role.domain_id)
+                pending_domains.append(domain_role.domain)
+
+        for domain in pending_domains:
             try:
-                invitation.retrieve()
-                invitation.save()
-            except RuntimeError:
-                # retrieving should not fail because of a missing user, but
-                # if it does fail, log the error so a new user can continue
-                # logging in
-                logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
+                accept_domain_invitation(self, domain)
+            except Exception:
+                # Invitation retrieval should not block the user from logging in.
+                logger.warning("Failed to retrieve invitation for %s", domain, exc_info=True)
 
     def create_domain_and_invite(self, transition_domain: TransitionDomain):
         transition_domain_name = transition_domain.domain_name
@@ -383,25 +410,44 @@ class User(AbstractUser):
     def check_portfolio_invitations_on_login(self):
         """When a user first arrives on the site, we need to retrieve any portfolio
         invitations that match their email address."""
-        for invitation in PortfolioInvitation.objects.filter(
+        from registrar.services.invitation_service import accept_portfolio_invitation
+
+        pending_legacy_invitations = PortfolioInvitation.objects.filter(
             email__iexact=self.email, status=PortfolioInvitation.PortfolioInvitationStatus.INVITED
-        ):
+        ).select_related("portfolio")
+        pending_new_permissions = UserPortfolioPermission.objects.filter(
+            email__iexact=self.email,
+            status=UserPortfolioPermission.Status.INVITED,
+        ).select_related("portfolio")
+
+        pending_portfolios = []
+        seen_portfolio_ids = set()
+
+        for invitation in pending_legacy_invitations:
+            if invitation.portfolio_id not in seen_portfolio_ids:
+                seen_portfolio_ids.add(invitation.portfolio_id)
+                pending_portfolios.append(invitation.portfolio)
+
+        for permission in pending_new_permissions:
+            if permission.portfolio_id not in seen_portfolio_ids:
+                seen_portfolio_ids.add(permission.portfolio_id)
+                pending_portfolios.append(permission.portfolio)
+
+        for portfolio in pending_portfolios:
             only_single_portfolio = (
-                not flag_is_active_for_user(self, "multiple_portfolios") and self.get_first_portfolio() is None
+                not flag_is_active_for_user(self, "multiple_portfolios")
+                and not self.portfolio_permissions.filter(
+                    Q(status=UserPortfolioPermission.Status.ACCEPTED) | Q(status__isnull=True)
+                ).exists()
             )
             if only_single_portfolio or flag_is_active(None, "multiple_portfolios"):
                 try:
-                    invitation.retrieve()
-                    invitation.save()
-                except RuntimeError:
-                    # retrieving should not fail because of a missing user, but
-                    # if it does fail, log the error so a new user can continue
-                    # logging in
-                    logger.warning("Failed to retrieve invitation %s", invitation, exc_info=True)
+                    accept_portfolio_invitation(self, portfolio)
+                except Exception:
+                    # Invitation retrieval should not block the user from logging in.
+                    logger.warning("Failed to retrieve portfolio invitation for %s", portfolio, exc_info=True)
             else:
-                logger.warning(
-                    "User already has a portfolio, did not retrieve invitation %s", invitation, exc_info=True
-                )
+                logger.warning("User already has a portfolio, did not retrieve invitation for %s", portfolio)
 
     def on_each_login(self):
         """Callback each time the user is authenticated.
@@ -463,6 +509,11 @@ class User(AbstractUser):
         portfolio = get_portfolio_from_session(request.session)
         if self.is_org_user(request) and self.has_view_all_domains_portfolio_permission(portfolio):
             return DomainInformation.objects.filter(portfolio=portfolio).values_list("domain_id", flat=True)
+        # Restricted to domains the user has access to, limited to curr portfolio
+        elif portfolio:
+            return UserDomainRole.objects.filter(user=self, domain__domain_info__portfolio=portfolio).values_list(
+                "domain_id", flat=True
+            )
         else:
             return UserDomainRole.objects.filter(user=self).values_list("domain_id", flat=True)
 
