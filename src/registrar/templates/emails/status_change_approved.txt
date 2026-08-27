@@ -11,7 +11,7 @@ STATUS: Approved
 You can manage your approved domain on the .gov registrar <{{ manage_url }}>.
 
 
-Ready to get started? Learn how to set up your approved .gov domain. <https://get.gov/domains/setting-up/>
+Ready to get started? Learn how to set up your approved .gov domain <https://get.gov/domains/setting-up/>.
 
 
 COMING IN LATE 2026: DNS HOSTING

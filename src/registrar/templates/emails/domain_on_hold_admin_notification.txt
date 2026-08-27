@@ -3,9 +3,9 @@ Hi, domain managers,
 
 On {{ date|date }}, the following domain was placed on hold: {{ domain.name }}
 
-You can view this status update in the .gov registrar {{ manage_url }}
+You can view this status update in the .gov registrar <{{ manage_url }}>.
 
-Learn how a hold affects your domain and what to expect while it remains in this state <https://get.gov/help/faq/#on-hold>
+Learn how a hold affects your domain and what to expect while it remains in this state <https://get.gov/help/faq/#on-hold>.
 
 ----------------------------------------------------------------
 
