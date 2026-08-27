@@ -329,12 +329,15 @@ def get_url_name(path):
         str or None: The URL name if it exists, otherwise None.
     """
     try:
-        path += "" if path.endswith("/") else "/"
         match = resolve(path)
         return match.url_name
     except Resolver404:
-        logger.error(f"No matching URL name found for path: {path}")
-        return None
+        try:
+            match = resolve(path + "/")
+            return match.url_name
+        except Resolver404:
+            logger.error(f"No matching URL name found for path: {path}")
+            return None
 
 
 def value_of_attribute(obj, attribute_name: str):
