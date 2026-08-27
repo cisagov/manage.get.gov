@@ -135,8 +135,9 @@ class Command(BaseCommand):
 
     def update_batch(self, batch_pks, start):
         """
-        Updates a single batch inside its own transaction, so one failed batch
-        can't break the ones before or after it
+        Updates the given batch of domains so that created_at_reference
+        now equals created_at + does it inside of it's own transaction,
+        so one failed batch can't break the ones before or after it
 
         Returns (updated_count, error_msg_or_None)
         """
