@@ -820,6 +820,70 @@ class MemberExportTest(MockDbForIndividualTests, MockEppLib):
         super().setUp()
         self.factory = RequestFactory()
 
+    def get_exported_members(self):
+        request = self.factory.get("/")
+        request.user = self.user
+        request = GenericTestHelper._mock_user_request_for_factory(request)
+        request.session["portfolio"] = self.portfolio_1.id
+        return MemberExport.get_model_annotation_dict(request=request)
+
+    def test_member_export_includes_new_model_invitation(self):
+        email = "new_model_invitee@igorville.gov"
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            email=email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            invited_by=self.lebowski_user,
+        )
+        UserDomainRole.objects.create(
+            domain=self.domain_1,
+            email=email,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+        )
+
+        member = self.get_exported_members()[email]
+
+        self.assertEqual(member["type"], "invitedmember")
+        self.assertEqual(member["invited_by_user"], self.lebowski_user.email)
+        self.assertEqual(member["domain_info"], [self.domain_1.name])
+
+    def test_member_export_prefers_member_over_duplicate_invitation(self):
+        member_user = User.objects.create(username="export_member", email="export_member@igorville.gov")
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            user=member_user,
+            email=member_user.email,
+            status=UserPortfolioPermission.Status.ACCEPTED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            email=member_user.email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+        )
+
+        member = self.get_exported_members()[member_user.email]
+
+        self.assertEqual(member["type"], "member")
+        self.assertEqual(member["roles"], [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+
+    def test_member_export_treats_invited_permission_with_user_as_invitation(self):
+        invited_user = User.objects.create(username="invited_export_user", email="invited_export_user@igorville.gov")
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio_1,
+            user=invited_user,
+            email=invited_user.email,
+            status=UserPortfolioPermission.Status.INVITED,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+        )
+
+        member = self.get_exported_members()[invited_user.email]
+
+        self.assertEqual(member["type"], "invitedmember")
+
     @less_console_noise_decorator
     def test_member_export(self):
         """Tests the member export report by comparing the csv output."""

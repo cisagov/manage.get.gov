@@ -51,7 +51,7 @@ class Command(BaseCommand):
             | Q(
                 expiration_date__isnull=True,
                 state__in=[Domain.State.UNKNOWN],
-                created_at_reference__in=[today + timedelta(days=d) - timedelta(days=365) for d in days_to_check],
+                created_at_reference__date__in=[today + timedelta(days=d) - timedelta(days=365) for d in days_to_check],
             )
         )
         logger.info(f"Found {expiring_domains.count()} domains expiring in 30, 7, or 1 days")
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 | Q(
                     expiration_date__isnull=True,
                     state__in=[Domain.State.UNKNOWN],
-                    created_at_reference=forecast_expiration_date - timedelta(days=365),
+                    created_at_reference__date=forecast_expiration_date - timedelta(days=365),
                 )
             )
             logger.info(f"Found {domains.count()} domains expiring in {days_remaining} days")

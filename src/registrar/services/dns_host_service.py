@@ -190,6 +190,19 @@ class DnsHostService:
 
         return x_account_id
 
+    def delete_account(self, x_account_id) -> str:
+        """
+        For now, we only delete an account on Cloudflare and handle db DNS data deletion separately.
+        Consider refactoring if we scope db DNS data deletion beyond EPP deletion.
+        If we do introduce dns db deletion in DnsHostService, consider:
+        1. moving db cleanup logic from EPP deletion to Domain model class method.
+        2. changing params from account to domain/zone.
+        3. adding/modifying tests to verify DnsHostService deletes DNS data in db.
+        """
+        account_data = self.dns_vendor_service.delete_cf_account(x_account_id)
+        x_account_id = account_data["result"]["id"]
+        return x_account_id
+
     def _configure_new_account_dns_settings(self, x_account_id: str, account_name: str):
         """Apply required DNS settings to a newly created account.
 
