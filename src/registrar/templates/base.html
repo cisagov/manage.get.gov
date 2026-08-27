@@ -33,6 +33,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% endblock %}
   {% block extra_meta %}{% endblock extra_meta %}
+  {% comment %} This fixes csp violation of inline styles: htmx-indicator styles moved to stylesheet {% endcomment %}
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
 
   <link rel="icon" type="image/png" sizes="32x32"
         href="{% static 'img/registrar/favicons/favicon-32.png' %}"
@@ -64,7 +66,6 @@
 
   {% block feeds %}{% endblock %}
   {% block extra_head %}{% endblock %}
-  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
 
   {# hat tip to USWDS... #}
   <!-- * * * * * ======================= -->
