@@ -333,7 +333,7 @@ def get_url_name(path):
         return match.url_name
     except Resolver404:
         try:
-            logger.error(f"Path {path} not resolved. Rechecking with a trailing slash")
+            logger.info(f"Path {path} not resolved. Rechecking with a trailing slash")
             match = resolve(path + "/")
             return match.url_name
         except Resolver404:
