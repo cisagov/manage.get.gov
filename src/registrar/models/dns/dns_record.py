@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class DnsRecord(TimeStampedModel):
     """DNS record model with record type constraints."""
+
     class Meta:
         verbose_name_plural = "DNS Records"
         verbose_name = "DNS Record"
@@ -53,7 +54,7 @@ class DnsRecord(TimeStampedModel):
         null=False,
         validators=[validate_dns_name],
         error_messages={"max_length": get_fqdn_error_message()},
-        verbose_name="Record name"
+        verbose_name="Record name",
     )
 
     ttl = models.PositiveIntegerField(default=1)

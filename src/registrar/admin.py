@@ -5755,6 +5755,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         return HttpResponseRedirect(".")
 
+
 @admin.register(DnsRecord)
 class DnsRecordAdmin(admin.ModelAdmin):
     list_display = (
@@ -5786,7 +5787,7 @@ class DnsRecordAdmin(admin.ModelAdmin):
     list_filter = ("type", "created_at", "updated_at")
 
     search_fields = ("name", "content")
-  
+
     search_help_text = "Search by domain or record name."
 
     def domain_name(self, obj):
