@@ -473,17 +473,15 @@ class DomainView(DomainBaseView):
         return None
 
     def get_dns_records_message(self):
-        domain = self.object
-        if not domain.is_enrolled_in_dns_hosting:
-            return 
-        zone = DnsZone.objects.get(domain=domain)
-        num_dns_records = DnsRecord.objects.filter(dns_zone=zone).count()
-        if num_dns_records == 0:
-            return "No records"
-        elif num_dns_records == 1:
-            return "1 record"
-        else:
-            return f"{num_dns_records} records"
+        zone = DnsZone.objects.filter(domain=self.object).first()
+        if zone:
+            num_dns_records = DnsRecord.objects.filter(dns_zone=zone).count()
+            if num_dns_records == 0:
+                return "No records"
+            elif num_dns_records == 1:
+                return "1 record"
+            else:
+                return f"{num_dns_records} records"
 
     def get_context_data(self, **kwargs):
         """If we don't reference security email in context for older deleted domains
@@ -498,7 +496,8 @@ class DomainView(DomainBaseView):
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
-        context["num_of_dns_records_message"] = self.get_dns_records_message()
+        if flag_is_active(self.request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            context["num_of_dns_records_message"] = self.get_dns_records_message()
 
         if self.object.state != self.object.State.DELETED:
             security_email = self.object.get_security_email()
