@@ -9,6 +9,7 @@ from registrar.models import Domain
 
 logger = logging.getLogger(__name__)
 
+# Arbitrary number, arg can be edited see below
 BATCH_SIZE = 1000
 SAMPLE_DRYRUN_SIZE = 10
 
