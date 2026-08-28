@@ -472,7 +472,7 @@ class DomainView(DomainBaseView):
     def get_breadcrumb_current_label(self):
         return None
 
-    def get_dns_records(self):
+    def get_dns_records_message(self):
         zone = DnsZone.objects.get(domain=self.get_object())
         num_dns_records = DnsRecord.objects.filter(dns_zone=zone).count()
         if num_dns_records == 0:
@@ -495,7 +495,7 @@ class DomainView(DomainBaseView):
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
-        context["num_of_dns_records_message"] = self.get_dns_records()
+        context["num_of_dns_records_message"] = self.get_dns_records_message()
 
         if self.object.state != self.object.State.DELETED:
             security_email = self.object.get_security_email()

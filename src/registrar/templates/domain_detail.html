@@ -82,7 +82,7 @@
       {% endif %}
     {% endif %}
 
-    {% url 'domain-dns-records' domain_pk=domain.id as url %}
+    {% url 'domain-dns' domain_pk=domain.id as url %}
     {% if domain.is_enrolled_in_dns_hosting %} 
       {% include "includes/summary_item.html" with title='DNS Records' value=num_of_dns_records_message edit_link=url editable=is_editable %}
      {% endif %}
@@ -90,7 +90,7 @@
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
       {% if domain.nameservers|length > 0 %}
-        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=editable%}
+        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable%}
       {% else %}
         {% if is_editable %}
           <h3 class="margin-top-3"> DNS name servers </h3>
