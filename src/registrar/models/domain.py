@@ -246,7 +246,6 @@ class Domain(TimeStampedModel, DomainHelper):
             super().__delete__(obj)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
-        is_adding = self._state.adding
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -263,19 +262,13 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
 
         super().save(force_insert, force_update, using, update_fields)
-
-        if is_adding and not self.created_at_reference:
-            type(self).objects.filter(pk=self.pk, created_at_reference__isnull=True).update(
-                created_at_reference=self.created_at
-            )
-            self.created_at_reference = self.created_at
         self._original_updated_at = self.updated_at
 
     @property
     def display_created_at(self):
         """Creation date shown in the UI: the registry creation date, falling
         back to the registrar record date for domains that never reached the registry (e.g. UNKNOWN)."""
-        return self.x_registry_created_at or self.created_at_reference
+        return self.x_registry_created_at or self.created_at
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -1449,13 +1442,6 @@ class Domain(TimeStampedModel, DomainHelper):
     expiration_date = DateField(
         null=True,
         help_text=("Date the domain expires in the registry"),
-    )
-
-    created_at_reference = models.DateTimeField(
-        null=True,
-        blank=True,
-        editable=True,
-        help_text=("Date the domain record was created in the registrar"),
     )
 
     x_registry_created_at = models.DateTimeField(

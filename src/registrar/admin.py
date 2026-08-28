@@ -5334,7 +5334,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
     @admin.display(
         description=_("Created at"),
-        ordering=Coalesce("x_registry_created_at", "created_at_reference"),
+        ordering=Coalesce("x_registry_created_at", "created_at"),
     )
     def created_at_display(self, obj):
         """Registry creation date, falling back to the registrar record date so UNKNOWN domains

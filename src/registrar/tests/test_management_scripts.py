@@ -2887,7 +2887,7 @@ class TestPopulateDomainCreatedAtColumns(TestCase):
         # Drop the entries auditlog created automatically so each test controls its own trail.
         LogEntry.objects.filter(content_type=self.domain_ct, object_pk=str(domain.pk)).delete()
         # Simulate a legacy row whose reference columns were never populated.
-        Domain.objects.filter(pk=domain.pk).update(created_at_reference=None, x_registry_created_at=None)
+        Domain.objects.filter(pk=domain.pk).update(x_registry_created_at=None)
         return Domain.objects.get(pk=domain.pk)
 
     def add_log_entry(self, domain, action, created_at_change):
@@ -2916,31 +2916,11 @@ class TestPopulateDomainCreatedAtColumns(TestCase):
     def test_backfills_non_unknown(self):
         """Recovers the registrar date from the audit log and copies created_at into x_registry."""
         domain = self.make_domain("backfillready.gov", Domain.State.READY, self.registry_created)
-        self.add_log_entry(domain, LogEntry.Action.CREATE, [None, self.naive(self.registrar_created)])
-        self.add_log_entry(
-            domain, LogEntry.Action.UPDATE, [self.naive(self.registrar_created), self.naive(self.registry_created)]
-        )
 
         self.run_script()
 
         # Re-query rather than refresh_from_db as state is an FSM field and rejects direct setattr.
         refreshed = Domain.objects.get(pk=domain.pk)
-        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
-        # Copied from the current created_at column.
-        self.assertEqual(refreshed.x_registry_created_at, self.registry_created)
-
-    @less_console_noise_decorator
-    def test_recovers_from_update_entry_only(self):
-        """Uses the old value of the first created_at change when there is no create entry."""
-        domain = self.make_domain("updateonly.gov", Domain.State.READY, self.registry_created)
-        self.add_log_entry(
-            domain, LogEntry.Action.UPDATE, [self.naive(self.registrar_created), self.naive(self.registry_created)]
-        )
-
-        self.run_script()
-
-        refreshed = Domain.objects.get(pk=domain.pk)
-        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
         self.assertEqual(refreshed.x_registry_created_at, self.registry_created)
 
     @less_console_noise_decorator
@@ -2951,19 +2931,7 @@ class TestPopulateDomainCreatedAtColumns(TestCase):
         self.run_script()
 
         refreshed = Domain.objects.get(pk=domain.pk)
-        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
         self.assertIsNone(refreshed.x_registry_created_at)
-
-    @less_console_noise_decorator
-    def test_falls_back_to_created_at_without_audit_history(self):
-        """A non-unknown domain with no audit history falls back to its current created_at."""
-        domain = self.make_domain("nohistory.gov", Domain.State.READY, self.registry_created)
-
-        self.run_script()
-
-        refreshed = Domain.objects.get(pk=domain.pk)
-        self.assertEqual(refreshed.created_at_reference, self.registry_created)
-        self.assertEqual(refreshed.x_registry_created_at, self.registry_created)
 
     @less_console_noise_decorator
     def test_does_not_modify_updated_at(self):
@@ -2976,7 +2944,7 @@ class TestPopulateDomainCreatedAtColumns(TestCase):
 
         refreshed = Domain.objects.get(pk=domain.pk)
         self.assertEqual(refreshed.updated_at, updated_at_before)
-        self.assertEqual(refreshed.created_at_reference, self.registrar_created)
+        self.assertEqual(refreshed.x_registry_created_at, self.registrar_created)
 
     @less_console_noise_decorator
     def test_dry_run_makes_no_changes(self):
@@ -2987,20 +2955,4 @@ class TestPopulateDomainCreatedAtColumns(TestCase):
         self.run_script(dry_run=True)
 
         refreshed = Domain.objects.get(pk=domain.pk)
-        self.assertIsNone(refreshed.created_at_reference)
         self.assertIsNone(refreshed.x_registry_created_at)
-
-    @less_console_noise_decorator
-    def test_reports_approval_mismatch(self):
-        """A created_at_reference that does not match the approval date is reported with id and name."""
-        domain = self.make_domain("mismatch.gov", Domain.State.READY, self.registry_created)
-        self.add_log_entry(domain, LogEntry.Action.CREATE, [None, self.naive(self.registrar_created)])
-        approval = datetime(2021, 1, 1, 12, 0, tzinfo=dt_timezone.utc)  # different day than registrar_created
-
-        command_path = "registrar.management.commands.populate_domain_created_at_columns"
-        with patch(f"{command_path}.Command.get_approval_datetime", return_value=approval):
-            output = self.run_script()
-
-        self.assertIn("mismatch.gov", output)
-        mismatch_row = next(line for line in output.splitlines() if "mismatch.gov" in line)
-        self.assertIn(str(domain.id), mismatch_row)
