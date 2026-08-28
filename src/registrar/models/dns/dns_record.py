@@ -4,7 +4,6 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
@@ -63,8 +62,6 @@ class DnsRecord(TimeStampedModel):
     )
 
     comment = models.CharField(blank=True, null=True, max_length=500)
-
-    tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
 
     @property
     def ttl_display(self) -> str:
@@ -372,8 +369,8 @@ class DnsRecord(TimeStampedModel):
 
     @classmethod
     def get_ordered_for_zone(cls, dns_zone: "DnsZone"):
-        """Return all records for a zone ordered by pk (matches counter assignment order)."""
-        return cls.objects.filter(dns_zone=dns_zone).order_by("pk")
+        """Return all records for a zone ordered by type, then name, then content."""
+        return cls.objects.filter(dns_zone=dns_zone).order_by("type", "name", "content")
 
     @classmethod
     def zone_has_records(cls, domain: Domain) -> bool:
@@ -424,7 +421,6 @@ class DnsRecord(TimeStampedModel):
                     content=record_data["content"],
                     priority=record_data.get("priority"),
                     comment=record_data["comment"],
-                    tags=record_data["tags"],
                 )
 
                 RecordsJoin.objects.create(
