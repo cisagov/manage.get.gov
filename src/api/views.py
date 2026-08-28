@@ -78,7 +78,7 @@ def available(request, domain=""):
 def rdap(request, domain=""):
     """Returns JSON dictionary of a domain's RDAP data from Cloudflare API"""
     domain = request.GET.get("domain", "")
-
+    print("RDAP request for domain: ", domain)
     # If inputted domain doesn't have a TLD, append .gov to it
     if "." not in domain:
         domain = f"{domain}.gov"
