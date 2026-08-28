@@ -472,6 +472,16 @@ class DomainView(DomainBaseView):
     def get_breadcrumb_current_label(self):
         return None
 
+    def get_dns_records(self):
+        zone = DnsZone.objects.get(domain=self.get_object())
+        num_dns_records = DnsRecord.objects.filter(dns_zone=zone).count()
+        if num_dns_records == 0:
+            return "No records"
+        elif num_dns_records == 1:
+            return "1 record"
+        else:
+            return f"{num_dns_records} records"
+
     def get_context_data(self, **kwargs):
         """If we don't reference security email in context for older deleted domains
         there wont be a 500 error (bc it was referencing something that didn't exist
@@ -479,13 +489,13 @@ class DomainView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         default_emails = DefaultEmail.get_all_emails()
-
         context["breadcrumb_domain_is_current"] = True
         context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
+        context["num_of_dns_records_message"] = self.get_dns_records()
 
         if self.object.state != self.object.State.DELETED:
             security_email = self.object.get_security_email()
