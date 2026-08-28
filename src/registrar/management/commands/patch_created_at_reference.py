@@ -1,5 +1,3 @@
-# src/registrar/management/commands/patch_created_at_from_reference.py
-
 import argparse
 import logging
 
@@ -12,6 +10,7 @@ from registrar.models import Domain
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 1000
+SAMPLE_DRYRUN_SIZE = 10
 
 
 class Command(BaseCommand):
@@ -40,7 +39,7 @@ class Command(BaseCommand):
         How to run:
             ./manage.py patch_created_at_reference (dry run is ON by default)
             ./manage.py patch_created_at_reference --no-dry-run
-            ./manage.py patch_created_at_from_reference --no-dry-run --batch-size 10000
+            ./manage.py patch_created_at_reference --no-dry-run --batch-size 10000
         """
         dry_run = options["dry_run"]
         batch_size = options["batch_size"]
@@ -97,21 +96,23 @@ class Command(BaseCommand):
         """
         self.stdout.write(self.style.WARNING("Dry run ON (default) — no changes will be written."))
         self.stdout.write("Sample of rows that would be updated:")
-        for domain in mismatched_qs.only("id", "created_at", "created_at_reference")[:10]:
+        for domain in mismatched_qs.only("id", "created_at", "created_at_reference")[:SAMPLE_DRYRUN_SIZE]:
             self.stdout.write(f"  id={domain.id}  created_at={domain.created_at} -> {domain.created_at_reference}")
-        if total_mismatched > 10:
-            self.stdout.write(f"  ... and {total_mismatched - 10} more row(s).")
+        if total_mismatched > SAMPLE_DRYRUN_SIZE:
+            self.stdout.write(f"  ... and {total_mismatched - SAMPLE_DRYRUN_SIZE} more row(s).")
         self.print_warnings(warnings)
         self.stdout.write(self.style.WARNING(f"Dry run complete. {total_mismatched} row(s) would be updated."))
 
     def run_live_update(self, mismatched_qs, batch_size, total_mismatched):
         """
+        Does an actual "live" run (non dry run)
+        Actually matches created_at_reference to created_at in the DB columns
         Batches through pks so we're not holding one giant lock, and so a failure
         partway through doesn't lose all prior progress
-
-        flat=True grabs just the ids into a list ie [1, 2, 3] instead of [(1,), (2,), (3,)]
-        list() runs the query once so it's stored and not requeried on every slice
         """
+
+        # flat=True grabs just the ids into a list ie [1, 2, 3] instead of [(1,), (2,), (3,)]
+        # list() runs the query once so it's stored and not requeried on every slice
         pk_list = list(mismatched_qs.order_by("pk").values_list("pk", flat=True))
 
         total_updated = 0
