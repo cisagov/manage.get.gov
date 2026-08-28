@@ -84,7 +84,7 @@
 
     {% url 'domain-dns' domain_pk=domain.id as url %}
     {% if domain.is_enrolled_in_dns_hosting %} 
-      {% include "includes/summary_item.html" with title='DNS Records' value=num_of_dns_records_message edit_link=url editable=is_editable %}
+      {% include "includes/summary_item.html" with title='DNS records' value=num_of_dns_records_message edit_link=url editable=is_editable %}
      {% endif %}
 
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}

@@ -473,7 +473,10 @@ class DomainView(DomainBaseView):
         return None
 
     def get_dns_records_message(self):
-        zone = DnsZone.objects.get(domain=self.get_object())
+        domain = self.object
+        if not domain.is_enrolled_in_dns_hosting:
+            return 
+        zone = DnsZone.objects.get(domain=domain)
         num_dns_records = DnsRecord.objects.filter(dns_zone=zone).count()
         if num_dns_records == 0:
             return "No records"
