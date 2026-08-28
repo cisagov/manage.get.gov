@@ -49,8 +49,7 @@ DNS_NAME_INVALID_CHARS = frozenset("@():;")
 
 # DNS field requirements, included in error messages when requirements not met.
 DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons"
-DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
-DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
+DNS_NAME_DOTS_REQUIREMENT = "without consecutive periods or leading or trailing periods"
 DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
 DNS_RECORD_CONTENT_REQUIREMENT = "for this record"
 DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
@@ -147,21 +146,15 @@ def _validate_dns_name_spaces(name: str, field_type="name") -> None:
 
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
-    if ".." in name:
-        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
-        raise ValidationError(error_message)
-    if name.startswith(".") or name.endswith("."):
-        error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+    if ".." in name or name.startswith(".") or name.endswith("."):
+        error_message = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         raise ValidationError(error_message)
 
 
 def _validate_dns_hostname_structure(content: str, field_type) -> None:
     """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
-    if ".." in content:
-        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
-        raise ValidationError(error_message)
-    if content.startswith("."):
-        error_message = get_error_message_from_requirement(DNS_HOSTNAME_LEADING_DOT_REQUIREMENT, field_type)
+    if ".." in content or content.startswith("."):
+        error_message = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT, field_type)
         raise ValidationError(error_message)
     last_label = _get_non_wildcard_dns_name_labels(content)[-1]
     if last_label.isdigit():
