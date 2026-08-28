@@ -1020,6 +1020,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         dns_record.refresh_from_db()
         self._attach_form(dns_record)
         self.dns_record = dns_record
+
         return record_id
 
     def _handle_invalid_form(self, request, form, is_edit):
@@ -1074,7 +1075,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self._attach_form(dns_record)
             self.dns_record = dns_record
             return is_first_record, dns_record.id
-
         self.dns_record = None
         return is_first_record, None
 
@@ -1118,12 +1118,18 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 # EDIT
                 if is_edit:
                     record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+
                 # CREATE
                 else:
                     is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
 
         except DnsHostingError as e:
             messages.error(request, e.message)
+            if is_edit:
+                record_id = is_edit
+                dns_record = DnsRecord.objects.get(id=record_id)
+                self._attach_form(dns_record=dns_record)
+                self.dns_record = dns_record
         except GenericError:
             return self._error_response(request, status=400)
         finally:

@@ -1212,6 +1212,7 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_user"')
         self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-user-or-email-autocomplete="true"')
         self.assertContains(response, 'data-placeholder="Search by email address"')
         self.assertContains(response, "or enter a new email address to send an invitation")
         self.assertContains(response, 'id="id_portfolio"')
@@ -1249,6 +1250,22 @@ class TestUserPortfolioPermissionAdmin(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["user"], self.testuser)
         self.assertEqual(form.cleaned_data["email"], self.testuser.email.lower())
+
+    def test_form_accepts_new_email_with_plus_addressing(self):
+        email = "test+1234@example.gov"
+        models.AllowedEmail.objects.create(email=email)
+        form = UserPortfolioPermissionsForm(
+            data={
+                "user": email,
+                "portfolio": self.portfolio.id,
+                "role": UserPortfolioRoleChoices.ORGANIZATION_ADMIN,
+                "send_email": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["user"])
+        self.assertEqual(form.cleaned_data["email"], email)
 
     def test_form_rejects_email_with_multiple_users(self):
         User.objects.create(username="duplicate", email=self.testuser.email.upper())
@@ -1494,6 +1511,7 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_user"')
         self.assertContains(response, 'data-tags="true"')
+        self.assertContains(response, 'data-user-or-email-autocomplete="true"')
         self.assertContains(response, 'data-placeholder="Search by email address"')
         self.assertContains(response, "or enter a new email address to send an invitation")
         self.assertContains(response, 'id="id_domain"')
@@ -1516,11 +1534,33 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
             ["Enter an email address in the required format, like name@example.gov."],
         )
 
+    def test_form_accepts_new_email_with_plus_addressing(self):
+        email = "test+1234@example.gov"
+        models.AllowedEmail.objects.create(email=email)
+        form = UserDomainRoleForm(
+            data={
+                "user": email,
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.cleaned_data["user"])
+        self.assertEqual(form.cleaned_data["email"], email)
+
     @less_console_noise_decorator
     @override_flag("user_domain_role_invitations", active=True)
+    @override_flag("user_portfolio_permission_invitations", active=True)
     @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
     @patch("django.contrib.messages.success")
-    def test_save_unknown_email_forces_invitation_email(self, mock_messages_success, mock_send_email):
+    def test_save_unknown_email_forces_invitation_email(
+        self,
+        mock_messages_success,
+        mock_send_portfolio_email,
+        mock_send_domain_email,
+    ):
         admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
         models.AllowedEmail.objects.create(email="new.person@example.gov")
         form = UserDomainRoleForm(
@@ -1544,9 +1584,139 @@ class TestUserDomainRoleInvitationAdmin(TestCase):
         self.assertEqual(role.role, UserDomainRole.Roles.MANAGER)
         self.assertEqual(role.status, UserDomainRole.Status.INVITED)
         self.assertEqual(role.invited_by, self.superuser)
-        mock_send_email.assert_called_once()
+        mock_send_domain_email.assert_called_once_with(
+            email="new.person@example.gov",
+            requestor=self.superuser,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=None,
+            skip_existing_invitation_check=True,
+        )
+        mock_send_portfolio_email.assert_called_once_with(
+            email="new.person@example.gov",
+            requestor=self.superuser,
+            portfolio=self.portfolio,
+            is_admin_invitation=False,
+        )
+        mock_messages_success.assert_has_calls(
+            [
+                call(
+                    request,
+                    f"new.person@example.gov has been invited to become a member of {self.portfolio}",
+                ),
+                call(request, "new.person@example.gov has been invited to the domain: test.gov"),
+            ]
+        )
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    @override_flag("user_domain_role_invitations", active=True)
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_analyst_save_existing_user_email_adds_user_to_domain_portfolio_without_email(
+        self,
+        mock_messages_success,
+        mock_send_portfolio_email,
+        mock_send_domain_email,
+    ):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        analyst = create_omb_analyst_user()
+        other_portfolio = Portfolio.objects.create(
+            organization_name="Other Portfolio",
+            requester=self.superuser,
+        )
+        UserPortfolioPermission.objects.create(
+            user=self.testuser,
+            portfolio=other_portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+        form = UserDomainRoleForm(
+            data={
+                "user": self.testuser.email,
+                "domain": self.domain.id,
+                "send_email": "",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = analyst
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        portfolio_permission = UserPortfolioPermission.objects.get(
+            user=self.testuser,
+            portfolio=self.portfolio,
+        )
+        self.assertEqual(role.user, self.testuser)
+        self.assertEqual(role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(portfolio_permission.roles, [UserPortfolioRoleChoices.ORGANIZATION_MEMBER])
+        self.assertEqual(portfolio_permission.status, UserPortfolioPermission.Status.ACCEPTED)
+        mock_send_domain_email.assert_not_called()
+        mock_send_portfolio_email.assert_not_called()
+
+    @less_console_noise_decorator
+    @override_flag("multiple_portfolios", active=True)
+    @override_flag("user_domain_role_invitations", active=True)
+    @override_flag("user_portfolio_permission_invitations", active=True)
+    @patch("registrar.services.invitation_service.send_domain_invitation_email")
+    @patch("registrar.services.invitation_service.send_portfolio_invitation_email")
+    @patch("django.contrib.messages.success")
+    def test_analyst_save_existing_portfolio_member_with_email_sends_only_domain_email(
+        self,
+        mock_messages_success,
+        mock_send_portfolio_email,
+        mock_send_domain_email,
+    ):
+        admin_instance = UserDomainRoleAdmin(UserDomainRole, admin_site=AdminSite())
+        analyst = create_omb_analyst_user()
+        models.AllowedEmail.objects.create(email=self.testuser.email)
+        UserPortfolioPermission.objects.create(
+            user=self.testuser,
+            portfolio=self.portfolio,
+            roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
+            status=UserPortfolioPermission.Status.ACCEPTED,
+        )
+        form = UserDomainRoleForm(
+            data={
+                "user": self.testuser.email,
+                "domain": self.domain.id,
+                "send_email": "on",
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        role = form.save(commit=False)
+        request = self.factory.post("/admin/registrar/userdomainrole/add/")
+        request.user = analyst
+        request.session = SessionStore()
+
+        admin_instance.save_model(request, role, form, False)
+
+        role.refresh_from_db()
+        self.assertEqual(role.user, self.testuser)
+        self.assertEqual(role.status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(role.invited_by, analyst)
+        self.assertEqual(
+            UserPortfolioPermission.objects.filter(user=self.testuser, portfolio=self.portfolio).count(),
+            1,
+        )
+        mock_send_domain_email.assert_called_once_with(
+            email=self.testuser.email,
+            requestor=analyst,
+            domains=self.domain,
+            is_member_of_different_org=None,
+            requested_user=self.testuser,
+            skip_existing_invitation_check=True,
+        )
+        mock_send_portfolio_email.assert_not_called()
         mock_messages_success.assert_called_once_with(
-            request, "new.person@example.gov has been invited to the domain: test.gov"
+            request,
+            f"{self.testuser.email} has been added to the domain: {self.domain}",
         )
 
     @override_flag("user_domain_role_invitations", active=False)

@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.db import IntegrityError
+from django.db.models import Q
 from registrar.models import PortfolioInvitation, UserPortfolioPermission
 from registrar.utility.email import EmailSendingError
 import logging
@@ -29,27 +30,27 @@ def get_org_membership(org, email, user):
     - member_of_a_different_org: True if the user/email is associated with an organization other than the given org.
     - member_of_this_org: True if the user/email is associated with the given org.
 
-    Note: This implementation assumes single portfolio ownership for a user.
-    If the "multiple portfolios" feature is enabled, this logic may not account for
-    situations where a user or email belongs to multiple organizations.
+    Rejected and expired permissions do not count as portfolio membership.
     """
 
-    # Check for existing permissions or invitations for the user
-    existing_org_permission = None
+    permission_identity = Q(email__iexact=email)
     if user is not None:
-        existing_org_permission = UserPortfolioPermission.objects.filter(user=user).first()
-    if existing_org_permission is None:
-        existing_org_permission = UserPortfolioPermission.objects.filter(email__iexact=email).first()
-    existing_org_invitation = PortfolioInvitation.objects.filter(email__iexact=email).first()
+        permission_identity |= Q(user=user)
 
-    # Determine membership in a different organization
-    member_of_a_different_org = (existing_org_permission and existing_org_permission.portfolio != org) or (
-        existing_org_invitation and existing_org_invitation.portfolio != org
+    active_permissions = UserPortfolioPermission.objects.filter(permission_identity).filter(
+        Q(status__in=[UserPortfolioPermission.Status.INVITED, UserPortfolioPermission.Status.ACCEPTED])
+        | Q(status__isnull=True)
+    )
+    active_invitations = PortfolioInvitation.objects.filter(
+        email__iexact=email,
+        status=PortfolioInvitation.PortfolioInvitationStatus.INVITED,
     )
 
-    # Determine membership in the same organization
-    member_of_this_org = (existing_org_permission and existing_org_permission.portfolio == org) or (
-        existing_org_invitation and existing_org_invitation.portfolio == org
+    member_of_a_different_org = (
+        active_permissions.exclude(portfolio=org).exists() or active_invitations.exclude(portfolio=org).exists() or None
+    )
+    member_of_this_org = (
+        active_permissions.filter(portfolio=org).exists() or active_invitations.filter(portfolio=org).exists() or None
     )
 
     return member_of_a_different_org, member_of_this_org

@@ -1,34 +1,10 @@
 import { hideElement, showElement } from './helpers-admin.js';
+import { setUpUserInvitationFields } from './user-invitation-form.js';
 
-function isSelectedUserIdValue(value) {
-    const normalizedValue = String(value ?? "");
-    return normalizedValue !== "" && Number.isInteger(Number(normalizedValue));
-}
-
-function setUpSendEmailAvailability(userField, sendEmailCheckbox) {
-    function updateSendEmailAvailability() {
-        if (!sendEmailCheckbox) {
-            return;
-        }
-
-        if (isSelectedUserIdValue(userField?.value)) {
-            sendEmailCheckbox.disabled = false;
-        } else {
-            // Typed emails always send an invitation email, so keep the
-            // checkbox checked while disabling it.
-            sendEmailCheckbox.checked = true;
-            sendEmailCheckbox.disabled = true;
-        }
-    }
-
-    if (userField && typeof django !== "undefined" && django.jQuery) {
-        django.jQuery(userField).on("change select2:select select2:clear", function() {
-            updateSendEmailAvailability();
-        });
-    }
-
-    updateSendEmailAvailability();
-}
+/**
+ * Admin behavior for UserPortfolioPermission and PortfolioInvitation forms.
+ * Shared invitation behavior lives in user-invitation-form.js.
+ */
 
 /**
  * A function for dynamically changing fields on the UserPortfolioPermissions
@@ -85,27 +61,16 @@ function handlePortfolioPermissionFields(){
 
     // Run initial setup functions
     updatePortfolioPermissionsFormVisibility();
-    setUpSendEmailAvailability(userField, sendEmailCheckbox);
+    setUpUserInvitationFields(userField, sendEmailCheckbox);
     setEventListeners();
-}
-
-function handleDomainRoleFields() {
-    const userField = document.getElementById("id_user");
-    const sendEmailCheckbox = document.getElementById("id_send_email");
-
-    setUpSendEmailAvailability(userField, sendEmailCheckbox);
 }
 
 export function initDynamicPortfolioPermissionFields() {
     document.addEventListener('DOMContentLoaded', function() {
         let isPortfolioPermissionPage = document.getElementById("userportfoliopermission_form");
         let isPortfolioInvitationPage = document.getElementById("portfolioinvitation_form");
-        let isDomainRolePage = document.getElementById("userdomainrole_form");
         if (isPortfolioPermissionPage || isPortfolioInvitationPage) {
             handlePortfolioPermissionFields();
-        }
-        if (isDomainRolePage) {
-            handleDomainRoleFields();
         }
     });
 }
