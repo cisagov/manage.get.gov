@@ -5773,7 +5773,7 @@ class DnsRecordAdmin(admin.ModelAdmin):
     fields = (
         "dns_zone",
         "type",
-        "record_name",
+        "name",
         "ttl",
         "content",
         "comment",
