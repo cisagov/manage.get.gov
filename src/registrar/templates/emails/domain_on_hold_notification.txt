@@ -11,17 +11,9 @@ We placed the domain on hold for seven days as a precautionary measure before de
 
 If you would like to release the hold and cancel the deletion, reply to this email.
 
+Learn how a hold affects your domain and what to expect while it remains in this state <https://get.gov/help/faq/#on-hold>.
+
 ----------------------------------------------------------------
-
-WHAT DOES “ON HOLD” MEAN?
-When a domain is placed on hold: 
-
-- The domain and its subdomains no longer resolve in DNS. 
-- Any email or websites using the domain could become unavailable.
-- Domain managers can’t edit domain information.
-
-The domain is still registered to your organization until it’s officially deleted.
-
 
 NEED ASSISTANCE?
 If you’re not affiliated with this .gov domain or think you received this message in error, reply to this email. 
