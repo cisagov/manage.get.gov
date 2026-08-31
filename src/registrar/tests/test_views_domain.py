@@ -441,6 +441,30 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "DNS name servers")
             self.assertContains(detail_page, "DNSSEC")
 
+    def test_domain_detail_dns_hosting_active_status(self):
+        def custom_is_not_expiring(self):
+            return False
+
+        with less_console_noise() and override_flag("dns_hosting", active=True):
+            with patch.object(Domain, "is_expiring", custom_is_not_expiring), patch.object(
+                Domain, "is_expired", custom_is_not_expiring
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+
+                self.assertContains(detail_page, "Active")
+
+        with less_console_noise() and override_flag("dns_hosting", active=False):
+            with patch.object(Domain, "is_expiring", custom_is_not_expiring), patch.object(
+                Domain, "is_expired", custom_is_not_expiring
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+
+                self.assertNotContains(detail_page, "Active")
+
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain request exist"""
