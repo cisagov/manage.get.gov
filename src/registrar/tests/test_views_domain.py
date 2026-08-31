@@ -442,6 +442,8 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "DNSSEC")
 
     def test_domain_detail_dns_hosting_active_status(self):
+        # added patches to override the is_expiring and is_expired checks for the domain
+        # the is_expired and is_expiring statuses on the domain overview page takes precedent over the "active" status
         def custom_is_not_expiring(self):
             return False
 
