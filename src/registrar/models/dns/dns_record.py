@@ -4,7 +4,6 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.core.validators import MinValueValidator, MaxValueValidator
 from ..utility.time_stamped_model import TimeStampedModel
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
@@ -28,6 +27,10 @@ logger = logging.getLogger(__name__)
 
 class DnsRecord(TimeStampedModel):
     """DNS record model with record type constraints."""
+
+    class Meta:
+        verbose_name_plural = "DNS records"
+        verbose_name = "DNS record"
 
     # CNAME records cannot coexist with other record types.
     # DNS also prevents multiple CNAME records at the same name (only one CNAME per label).
@@ -63,8 +66,6 @@ class DnsRecord(TimeStampedModel):
     )
 
     comment = models.CharField(blank=True, null=True, max_length=500)
-
-    tags = ArrayField(models.CharField(), null=True, blank=True, default=list)
 
     @property
     def ttl_display(self) -> str:
@@ -424,7 +425,6 @@ class DnsRecord(TimeStampedModel):
                     content=record_data["content"],
                     priority=record_data.get("priority"),
                     comment=record_data["comment"],
-                    tags=record_data["tags"],
                 )
 
                 RecordsJoin.objects.create(
