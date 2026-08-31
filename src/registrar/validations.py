@@ -48,7 +48,8 @@ MX_CONTENT_MAX_LENGTH = 253
 DNS_NAME_INVALID_CHARS = frozenset("@():;")
 
 # DNS field requirements, included in error messages when requirements not met.
-DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons. If you use @, it must be the only character"
+DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons. "
+"If you use @, it must be the only character"
 DNS_NAME_DOTS_REQUIREMENT = "without consecutive periods or leading or trailing periods"
 DNS_RECORD_CONTENT_REQUIREMENT = "for this record"
 DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
