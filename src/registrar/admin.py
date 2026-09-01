@@ -418,7 +418,18 @@ class UserOrEmailChoiceField(forms.ModelChoiceField):
 
 
 class UserOrEmailAutocompleteSelect(AutocompleteSelectWithPlaceholder):
-    """Autocomplete widget that differentiates emails from Users."""
+    """Select an existing User from Select2 AJAX results or accept a typed email tag.
+
+    Django's autocomplete widget normally submits only model IDs. Select2's
+    tagging support lets this widget also submit a new email address, but its
+    AJAX results can lag behind the text being typed. The data attribute enables
+    the client-side code that commits the live email on Enter, Tab, or close
+    instead of selecting an older rendered AJAX tag.
+    """
+
+    def __init__(self, field, admin_site, attrs=None, choices=(), using=None):
+        super().__init__(field, admin_site, attrs, choices, using)
+        self.attrs["data-user-or-email-autocomplete"] = "true"
 
     def optgroups(self, name, value, attr=None):
         # Autocomplete assumes selected values for this field are
@@ -2547,7 +2558,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         try:
             requested_user = get_requested_user(requested_email) if requested_email else None
-            member_of_a_different_org = self._save_portfolio_membership_invitation(
+            member_of_a_different_org = self._save_portfolio_membership(
                 request,
                 obj.domain,
                 requested_email,
@@ -2569,7 +2580,7 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 
         return None
 
-    def _save_portfolio_membership_invitation(self, request, domain, requested_email, requested_user, form):
+    def _save_portfolio_membership(self, request, domain, requested_email, requested_user, form):
         try:
             domain_org = getattr(domain.domain_info, "portfolio", None)
         except ObjectDoesNotExist:
@@ -2584,31 +2595,31 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 requested_user,
             )
 
-        if not self._should_send_portfolio_membership_email(
+        if not self._should_create_portfolio_membership(
             request,
             domain_org,
             member_of_a_different_org,
             member_of_this_org,
-            form,
-            requested_user,
         ):
             return member_of_a_different_org
 
+        send_email = self._will_send_invitation_email(form, requested_user)
         if self._use_portfolio_permission_invitation_admin(request):
             create_portfolio_permission_or_invitation(
                 email=requested_email,
                 portfolio=domain_org,
                 requestor=request.user,
                 roles=[UserPortfolioRoleChoices.ORGANIZATION_MEMBER],
-                send_email=True,
+                send_email=send_email,
             )
         else:
-            send_portfolio_invitation_email(
-                email=requested_email,
-                requestor=request.user,
-                portfolio=domain_org,
-                is_admin_invitation=False,
-            )
+            if send_email:
+                send_portfolio_invitation_email(
+                    email=requested_email,
+                    requestor=request.user,
+                    portfolio=domain_org,
+                    is_admin_invitation=False,
+                )
             portfolio_invitation, _ = PortfolioInvitation.objects.get_or_create(
                 email=requested_email,
                 portfolio=domain_org,
@@ -2624,31 +2635,20 @@ class UserDomainRoleAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     def _use_portfolio_permission_invitation_admin(self, request):
         return flag_is_active(request, "user_portfolio_permission_invitations")
 
-    def _should_send_portfolio_membership_email(
+    def _should_create_portfolio_membership(
         self,
         request,
         domain_org,
         member_of_a_different_org,
         member_of_this_org,
-        form,
-        requested_user,
     ):
-        if not self._will_send_invitation_email(form, requested_user):
-            return False
-
-        if not request.user.is_org_user(request):
-            return False
-
-        if flag_is_active(request, "multiple_portfolios"):
-            return False
-
         if domain_org is None:
             return False
 
         if member_of_this_org:
             return False
 
-        if member_of_a_different_org:
+        if member_of_a_different_org and not flag_is_active(request, "multiple_portfolios"):
             return False
 
         return True
@@ -2951,11 +2951,9 @@ class DomainInvitationAdmin(BaseInvitationAdmin):
                 )
 
                 if (
-                    request.user.is_org_user(request)
-                    and not flag_is_active(request, "multiple_portfolios")
+                    (flag_is_active(request, "multiple_portfolios") or not member_of_a_different_org)
                     and domain_org is not None
                     and not member_of_this_org
-                    and not member_of_a_different_org
                 ):
                     send_portfolio_invitation_email(
                         email=requested_email, requestor=requestor, portfolio=domain_org, is_admin_invitation=False
@@ -5762,11 +5760,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 class DnsRecordAdmin(admin.ModelAdmin):
     list_display = (
         "type",
-        "name",
+        "record_name",
+        "domain_name",
         "ttl",
         "content",
         "comment",
-        "tags",
         "created_at",
         "updated_at",
     )
@@ -5778,7 +5776,6 @@ class DnsRecordAdmin(admin.ModelAdmin):
         "ttl",
         "content",
         "comment",
-        "tags",
         "created_at",
         "updated_at",
     )
@@ -5787,7 +5784,15 @@ class DnsRecordAdmin(admin.ModelAdmin):
 
     list_filter = ("type", "created_at", "updated_at")
 
-    search_fields = ("name", "content", "comment")
+    search_fields = ("name", "content")
+
+    search_help_text = "Search by domain or record name."
+
+    def domain_name(self, obj):
+        return obj._resolve_domain_name()
+
+    def record_name(self, obj):
+        return obj.name
 
 
 class DraftDomainResource(resources.ModelResource):

@@ -881,7 +881,7 @@ class DomainDNSRecordForm(forms.ModelForm):
             attrs={
                 "class": "usa-select",
                 "required": "required",
-                "x-model": "recordType",
+                "x-on:change": "recordType = $event.target.selectedIndex",
             }
         ),
     )

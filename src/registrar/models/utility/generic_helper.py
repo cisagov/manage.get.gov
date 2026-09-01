@@ -332,8 +332,13 @@ def get_url_name(path):
         match = resolve(path)
         return match.url_name
     except Resolver404:
-        logger.error(f"No matching URL name found for path: {path}")
-        return None
+        try:
+            logger.info(f"Path {path} not resolved. Rechecking with a trailing slash")
+            match = resolve(path + "/")
+            return match.url_name
+        except Resolver404:
+            logger.error(f"No matching URL name found for path: {path}")
+            return None
 
 
 def value_of_attribute(obj, attribute_name: str):

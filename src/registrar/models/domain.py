@@ -1213,7 +1213,7 @@ class Domain(TimeStampedModel, DomainHelper):
             raise e
 
         logger.info(
-            "Deleting associated database objects (hosts, contacts, DNSSEC) for domain %s",
+            "Deleting associated database objects (hosts, contacts, DNSSEC, dns host data) for domain %s",
             self.name,
         )
         self._delete_related_objects_from_db()
@@ -1281,13 +1281,15 @@ class Domain(TimeStampedModel, DomainHelper):
                 e.note = "Error deleting ds data for %s" % self.name
                 raise e
 
-    def _delete_db_dns_data(self):
+    def _delete_db_and_vendor_dns_data(self):
         """
         Delete DNS objects associated with this domain from database.
         Includes:
         - DnsAccount, VendorDnsAccount, DnsAccountVendorDnsAccount
         - DnsZone, VendorDnsZone, DnsZoneVendorDnsZone,
-        - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord,
+        - DnsRecord, VendorDnsRecord, DnsRecordVendorDnsRecord
+
+        Deletes account from vendor
         """
         from registrar.models import DnsZone
 
@@ -1335,14 +1337,14 @@ class Domain(TimeStampedModel, DomainHelper):
                     from registrar.services.dns_host_service import DnsHostService
 
                     dns_host_service = DnsHostService()
-                    dns_host_service.delete_account(x_account_id)
+                    dns_host_service.delete_account(x_account_id)  # deletes account from vendor
             except Exception as e:
                 logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
                 raise e
 
     def _delete_related_objects_from_db(self):
         """
-        Deletes related Host/HostIP records, and non-registrant contacts
+        Deletes related Host/HostIP records, and non-registrant contacts, and dns hosting data
         for this domain from the database after it's been deleted from EPP
         FYI there's no DNSSEC data stored in the DB
         """
@@ -1371,7 +1373,7 @@ class Domain(TimeStampedModel, DomainHelper):
 
         logger.info("Deleting db DNS data")
         try:
-            self._delete_db_dns_data()
+            self._delete_db_and_vendor_dns_data()
         except Exception as e:
             logger.error("Error deleting DNS data for domain %s: %s", self.name, str(e))
 
