@@ -444,8 +444,7 @@ class TestDomainDetail(TestDomainOverview):
     def test_domain_detail_dns_hosting_active_status(self):
         # added patches to override the is_expiring and is_expired checks for the domain
         # the is_expired and is_expiring statuses on the domain overview page takes precedent over the "active" status
-        custom_is_expiring_or_expired =  lambda self, **kwargs: False
-
+        custom_is_expiring_or_expired = lambda self, **kwargs: False
 
         with less_console_noise() and override_flag("dns_hosting", active=True):
             with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
