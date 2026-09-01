@@ -16,6 +16,7 @@ assignees: ''
 
 - [ ] E-mail leads your GitHub handle so we can add you to GitHub and assign this ticket to you
 - [ ] Follow the [.gov onboarding dev setup instructions](https://docs.google.com/document/d/1SPe-pS8hGIaVOvFiLJLliGq0J4MY-3X4BzC-D2E2BO8/edit?tab=t.izb6sye9wyul#heading=h.fj87qaux1lx8).
+- [ ] Complete this a11y familiarity survey: https://docs.google.com/forms/d/e/1FAIpQLSfDAUQ5DG_dOdOJSwxjkyNMinjcoLAz8xRP0hTitn6ESJGPkQ/viewform?usp=header
 
 ### Steps for the onboarder
 
