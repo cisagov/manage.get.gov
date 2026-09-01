@@ -7,6 +7,7 @@ from api.tests.common import less_console_noise_decorator
 
 from registrar.forms.domain_request_wizard import (
     AlternativeDomainForm,
+    AlternativeDomainFormSet,
     CurrentSitesForm,
     DotGovDomainForm,
     SeniorOfficialForm,
@@ -74,6 +75,23 @@ class TestFormValidation(MockEppLib):
         self.assertEqual(len(form.errors), 0)
         form = CurrentSitesForm(data={"website": "https://hyphens-rule.gov.uk"})
         self.assertEqual(len(form.errors), 0)
+
+    def test_formset_rejects_initial_count_greater_than_total_count(self):
+        """Tests a fix to a prod issue that raised IndexError"""
+        formset = AlternativeDomainFormSet(
+            data={
+                "dotgov_domain-TOTAL_FORMS": "1",
+                "dotgov_domain-INITIAL_FORMS": "2",
+                "dotgov_domain-0-alternative_domain": "",
+            },
+            prefix="dotgov_domain",
+        )
+
+        self.assertFalse(formset.is_valid())
+        self.assertEqual(
+            list(formset.non_form_errors()),
+            ["The submitted form data is inconsistent. Reload the page and try again."],
+        )
 
     @less_console_noise_decorator
     def test_requested_domain_valid(self):
