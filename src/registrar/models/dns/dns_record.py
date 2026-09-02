@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 class DnsRecord(TimeStampedModel):
     """DNS record model with record type constraints."""
 
+    class Meta:
+        verbose_name_plural = "DNS records"
+        verbose_name = "DNS record"
+
     # CNAME records cannot coexist with other record types.
     # DNS also prevents multiple CNAME records at the same name (only one CNAME per label).
     CONFLICTING_RECORD_TYPES = {

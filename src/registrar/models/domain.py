@@ -47,6 +47,7 @@ from .public_contact import PublicContact
 from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -1534,6 +1535,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
+        elif (
+            self.state == self.State.READY
+            and self.is_enrolled_in_dns_hosting
+            and flag_is_active_for_user(request, "dns_hosting")
+        ):
+            return "Active"
         return self.state.capitalize()
 
     def enrolled_hosting_display(self, request=None):
