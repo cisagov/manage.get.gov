@@ -54,7 +54,7 @@ jobs:
             cg-manage-rds clone getgov-$SOURCE_ENVIRONMENT-database getgov-$DESTINATION_ENVIRONMENT-database
         
         - name: Run Django migrations
-          uses: cloud-gov/cg-cli-tools@main
+          uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # No releases published so this is pinning to a SHA on main
           with:
             cf_username: ${{ secrets.CF_STAGING_USERNAME }}
             cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
@@ -63,7 +63,7 @@ jobs:
             cf_command: "run-task getgov-staging --command 'python manage.py migrate' --name migrate"
 
         - name: Load Fixtures
-          uses: cloud-gov/cg-cli-tools@main
+          uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # No releases published so this is pinning to a SHA on main
           with:
             cf_username: ${{ secrets.CF_STAGING_USERNAME }}
             cf_password: ${{ secrets.CF_STAGING_PASSWORD }}
