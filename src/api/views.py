@@ -73,7 +73,7 @@ def available(request, domain=""):
     return json_response
 
 
-# Since we cache domain RDAP data, cache time (ttl) may need to be re-evaluated this if we encounter any memory issues
+# Since we cache domain RDAP data, cache time (ttl) may need to be re-evaluated if we encounter any memory issues
 # maxsize is the number of domains to cache, oldest accessed domain names are removed when maxsize is reached.
 @ttl_cache(maxsize=128, ttl=600)
 def get_rdap_data(domain):
