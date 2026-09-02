@@ -1,29 +1,17 @@
 import httpx
 import respx
 from unittest import mock
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from registrar.services.dns_http_client import DNS_TIMEOUT, MAX_ATTEMPTS, RetryTransport, build_dns_client
 from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.utility.errors import DnsHostingErrorCodes, DnsTransportError
 
-
+@override_settings(DNS_MOCK_EXTERNAL_APIS=False)
 class TestDnsHttpClient(SimpleTestCase):
     """Timeout and retry policy for the shared DNS httpx client."""
 
     base_url = "https://api.cloudflare.com/client/v4"
-
-    def setUp(self):
-        # The app starts a shared mock at boot that grabs all DNS requests.
-        # Turn it off so this test's fake responses are used.
-        self.global_mock = MockCloudflareService()
-        self._mock_was_active = self.global_mock.is_active
-        if self._mock_was_active:
-            self.global_mock.stop()
-
-    def tearDown(self):
-        if self._mock_was_active:
-            self.global_mock.start()
 
     @respx.mock
     @mock.patch("registrar.services.dns_http_client.time.sleep")

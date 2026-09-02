@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.http import Http404
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -3806,21 +3807,9 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         self.assertNotContains(page, "DNS Records")
         self.assertContains(page, "DNSSEC")
 
-
+@override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     mock_api_service = MockCloudflareService()
-
-    @classmethod
-    def setUpClass(cls):
-        """Start mock service once for all tests in this class"""
-        super().setUpClass()
-        cls.mock_api_service.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop mock service after all tests"""
-        cls.mock_api_service.stop()
-        super().tearDownClass()
 
     def tearDown(self):
         delete_all_dns_data()
