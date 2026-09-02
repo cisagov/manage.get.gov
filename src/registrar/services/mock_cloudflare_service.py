@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timezone
 from faker import Faker
 import re
+from respx.patterns import M
 
 from registrar.models import DnsZone, VendorDnsZone
 from registrar.services.cloudflare_service import CloudflareService
@@ -55,7 +56,10 @@ class MockCloudflareService:
         if self.is_active:
             self.stop()  # to ensure clean start
         base_url = CloudflareService.base_url
-        self._mock_context = respx.mock(base_url=base_url, assert_all_called=False, assert_all_mocked=False)
+        self._mock_context = respx.mock(base_url=base_url, assert_all_called=False, assert_all_mocked=True)
+        # Anything that isn't Cloudflare goes to the real network. Without this,
+        # every httpx call in the process is auto-mocked with an empty 200.
+        self._mock_context.route(~M(host="api.cloudflare.com")).pass_through()
         self._mock_context.start()
 
         # Register all mock routes
