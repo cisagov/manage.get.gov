@@ -19,6 +19,7 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.services.dns_http_client import build_dns_client
+from epplibwrapper.errors import  RegistryError
 
 logger = logging.getLogger(__name__)
 
@@ -375,6 +376,9 @@ class DnsHostService:
     def register_nameservers(self, domain_name, nameservers):
         domain = Domain.objects.get(name=domain_name)
         # TODO: first check domain state? or status? to ensure it's in the registry?
+
+        # if its deleted from the registry what's the response?
+        # it would be a registry error?
         nameserver_tups = [tuple([n]) for n in nameservers]
 
         try:
@@ -384,8 +388,13 @@ class DnsHostService:
                 extra={"domain_name": domain_name, "nameservers": nameservers},
             )
             domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
-        except (RegistrySystemError, Exception):
-            raise
+        except RegistryError as e:
+                logger.error(
+                            "Error happened %s",
+                            domain_name,
+                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class": type(e).__name__},
+                )
+                raise
 
     def create_db_account(self, vendor_account_data):
         """
