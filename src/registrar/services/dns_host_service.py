@@ -228,17 +228,8 @@ class DnsHostService:
         zone_data = self.dns_vendor_service.get_zone_by_id(x_zone_id)
 
         # Create and save zone in registrar db
-        try:
-            self.create_db_zone(zone_data, domain_name)
-            logger.info("Successfully saved zone '%s' to database", domain_name, extra={"domain_name": domain_name})
-        except Exception:
-            logger.error(
-                "Failed to save zone for %s in database.",
-                domain_name,
-                extra={"domain_name": domain_name, "x_account_id": x_account_id},
-                exc_info=True,
-            )
-            raise
+        self.create_db_zone(zone_data, domain_name)
+        logger.info("Successfully saved zone '%s' to database", domain_name, extra={"domain_name": domain_name})
 
         return zone_data
 
@@ -423,7 +414,6 @@ class DnsHostService:
         x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
 
-        # TODO: handle transaction failure
         try:
             with transaction.atomic():
                 vendor_acc = VendorDnsAccount.objects.create(
@@ -456,7 +446,6 @@ class DnsHostService:
         zone_account_name = zone_data["account"]["name"]
         nameservers = zone_data["vanity_name_servers"] or zone_data["name_servers"]
 
-        # TODO: handle transaction failure
         try:
             with transaction.atomic():
                 vendor_dns_zone = VendorDnsZone.objects.create(
