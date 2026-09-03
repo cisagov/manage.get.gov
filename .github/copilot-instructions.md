@@ -205,7 +205,7 @@ Three permission groups (defined in `UserGroup`):
 - **`omb_analysts_group`** — can transition requests to `IN_REVIEW_OMB`
 - **`full_access_group`** — has `full_access_permission`; full admin access
 
-`is_staff` (Django's flag) gates access to `/admin`. Superusers are not used — `full_access_permission` is the top permission level.
+`is_staff` (Django's flag) gates access to `/admin`.  The `superuser` setting is applied on dev/sandbox-only (fixtures set is_superuser for ADMINS); in production, `full_access_permission` is the top permission level.
 
 ### Authentication and authorization
 
