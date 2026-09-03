@@ -77,7 +77,8 @@ class TestFormValidation(MockEppLib):
         self.assertEqual(len(form.errors), 0)
 
     def test_formset_rejects_initial_count_greater_than_total_count(self):
-        """Tests a fix to a prod issue that raised IndexError"""
+        """Programmatically tests that when adding multiple alt domains and then deleting some, the formset raises an
+        error if the initial count is greater than the total count."""
         formset = AlternativeDomainFormSet(
             data={
                 "dotgov_domain-TOTAL_FORMS": "1",

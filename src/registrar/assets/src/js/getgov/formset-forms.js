@@ -91,6 +91,9 @@ function markDotgovForm(e) {
   let formToRemove = e.target.closest(".repeatable-form");
   let deleteInput = formToRemove?.querySelector('input[name$="-DELETE"]');
   if (deleteInput) {
+    if (deleteInput.type === 'checkbox') {
+      deleteInput.checked = true;
+    }
     deleteInput.value = 'on';
     formToRemove.style.display = 'none';
   }
@@ -223,14 +226,16 @@ export function initFormsetsForms() {
       newForm.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
     
       let formNumberRegex = RegExp(`${formIdentifier}-(\\d+)-`,'g');
-      let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
+      let formLabelRegex = RegExp(`${formLabel} (\\d+)`, 'g');
       // For the eample on Nameservers
-      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
+      let formExampleRegex = RegExp(`ns(\\d+)`, 'g');
 
       // Assign the next form index and make the new form visible.
       if (isDotgovDomain) {
         // Keep all existing indices, including forms marked for deletion. The
         // new form gets the next unused management-form index.
+        // The radix 10 parses TOTAL_FORMS as decimal; adding one converts its
+        // zero-based next-form index into the new one-based total form count.
         formNum = parseInt(totalForms.value, 10) + 1;
         newForm.classList.remove('display-none'); 
       } else {
