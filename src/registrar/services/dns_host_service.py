@@ -75,7 +75,7 @@ class DnsHostService:
             extra={"domain_name": domain_name},
         )
         account_name = make_dns_account_name(domain_name)
-        logger.debug(
+        logger.info(
             "Derived account name %s from domain name %s",
             account_name,
             domain_name,
@@ -142,16 +142,7 @@ class DnsHostService:
         if zone_data:
             self.create_db_zone({"result": zone_data}, domain_name)
         else:
-            try:
-                zone_data = self.create_and_save_zone(domain_name, x_account_id)
-            except Exception:
-                logger.error(
-                    "dnsSetup for zone failed for %s",
-                    domain_name,
-                    extra={"domain_name": domain_name},
-                    exc_info=True,
-                )
-                raise
+            self.create_and_save_zone(domain_name, x_account_id)
 
         logger.info(
             "Zone setup completed successfully for domain %s",
