@@ -60,7 +60,8 @@ All work runs inside Docker. The `db` image pulls from Docker Hub on first run.
 
 ```bash
 cd src
-cp .env-example .env     # minimum: set DJANGO_SECRET_KEY=""  (any non-empty value works locally)
+cp .env-example .env     # minimum: set DJANGO_SECRET_KEY="some-value"  (any non-empty value works locally)
+# DJANGO_SECRET_LOGIN_KEY must be set to use any webpages locally as this allows for integration with identity sandbox (the login.gov test env)
 docker compose build
 docker compose up         # app:8080, db:5432, node watcher
 ```
