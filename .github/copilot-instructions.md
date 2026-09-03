@@ -189,7 +189,7 @@ Transition methods: `submit()`, `in_review()`, `in_review_omb()`, `action_needed
 | `User` | Extends `AbstractUser`; `username` is the Login.gov UUID |
 | `UserDomainRole` | RBAC join: user ↔ domain with role=`MANAGER` |
 | `UserPortfolioPermission` | RBAC join: user ↔ portfolio with roles/permissions |
-| `UserGroup` | Three Django groups: `cisa_analysts_group`, `omb_analysts_group`, `full_access_group` |
+| `UserGroup` | Three Django groups: `cisa_analysts_group`, `omb_analysts_group`, `full_access_group.` Permissions changed in here require a new migration to be made|
 | `WaffleFlag` | Extends `AbstractUserFlag` — the model backing all waffle feature flags |
 | `AllowedEmail` | Email allowlist used in non-production environments |
 | `DnsVendor`, `DnsAccount`, `VendorDnsAccount` | DNS account models under `models/dns/`, including vendor-specific records and join tables |
