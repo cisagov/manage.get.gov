@@ -5733,10 +5733,10 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         except EnrollmentNotAllowedError as e:
             logger.warning("DNS enrollment blocked: %s", e)
             self.message_user(request, str(e), messages.WARNING)
-        except DnsHostingError:
+        except DnsHostingError as e:
             self.message_user(
                 request,
-                failed_enrollment_message,
+                f"{failed_enrollment_message}: {e}",
                 messages.ERROR,
             )
         except Exception as e:
