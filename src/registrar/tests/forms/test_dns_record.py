@@ -4,9 +4,8 @@ from registrar.forms.domain import DomainDNSRecordForm
 from registrar.models import Domain, DnsAccount, DnsZone, DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.validations import (
-    DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
+    DNS_NAME_DOTS_REQUIREMENT,
     DNS_NAME_FORMAT_REQUIREMENT,
-    DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
     DNS_RECORD_CONTENT_REQUIREMENT,
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
@@ -146,17 +145,17 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_name_with_consecutive_dots_throws_error(self):
         """Consecutive dots should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         self.assert_dns_name_errors("ab..cd", [expected_error])
 
     def test_dns_name_with_leading_dot_throws_error(self):
         """Leading dot should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         self.assert_dns_name_errors(".abc", [expected_error])
 
     def test_dns_name_with_trailing_dot_throws_error(self):
         """Trailing dot should be rejected."""
-        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         self.assert_dns_name_errors("abc.", [expected_error])
 
     def test_dns_name_with_invalid_special_characters_throws_error(self):
@@ -226,11 +225,11 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
             "TXT": ('"I should not include surrounding double quotes"', TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE),
             "CNAME": (
                 "invalid..hostname",
-                get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "target"),
+                get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT, "target"),
             ),
             "PTR": (
                 "invalid..hostname",
-                get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, "domain name"),
+                get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT, "domain name"),
             ),
         }
         for record_type, (bad_content, expected_error) in invalid_content_by_type.items():
