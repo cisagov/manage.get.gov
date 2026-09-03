@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   variables: 
-    if: | 
+    if: |
       startsWith(github.head_ref, 'cw/')
         || startsWith(github.head_ref, 'product/')
         || startsWith(github.head_ref, 'bl/')
@@ -71,7 +71,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+      - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         env:
           ENVIRONMENT: ${{ needs.variables.outputs.environment }}
         with:
