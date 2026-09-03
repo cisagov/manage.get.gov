@@ -1,13 +1,11 @@
 from datetime import date
 from itertools import chain
 import json
-from django.db.models import ObjectDoesNotExist
-from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -51,7 +49,6 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
     DnsHostingError,
-    APIError,
     EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
@@ -1096,8 +1093,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 )
 
             x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
-            if x_zone_id == None:
-                messages.error(request, e.message)
+            if x_zone_id is None:
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
 
             # DELETE
             if delete_record:
