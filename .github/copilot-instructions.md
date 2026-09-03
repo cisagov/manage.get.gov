@@ -173,9 +173,9 @@ Domain properties (nameservers, expiration_date, etc.) are **lazily loaded** fro
 
 Uses `django-fsm`. The `status` FSMField has these values:
 - `STARTED` → `SUBMITTED` → `IN_REVIEW` → `APPROVED`
-- `IN_REVIEW` → `IN_REVIEW_OMB` (federal executive branch requests via OMB)
-- `IN_REVIEW` / `APPROVED` → `ACTION_NEEDED`, `REJECTED`, `INELIGIBLE`
-- Any active state → `WITHDRAWN`
+- `SUBMITTED` → `IN_REVIEW_OMB` (federal executive branch requests routed to OMB)
+- `IN_REVIEW` / `IN_REVIEW_OMB` / `APPROVED` → `ACTION_NEEDED`, `REJECTED`, `INELIGIBLE`
+- `SUBMITTED` / `IN_REVIEW` / `IN_REVIEW_OMB` / `ACTION_NEEDED` → `WITHDRAWN`
 
 Transition methods: `submit()`, `in_review()`, `in_review_omb()`, `action_needed()`, `approve()`, `reject()`, `reject_with_prejudice()`, `withdraw()`. Approving a request creates a `Domain`, `DomainInformation`, and `UserDomainRole` in one transaction.
 
