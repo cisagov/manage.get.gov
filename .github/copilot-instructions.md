@@ -416,7 +416,8 @@ Non-production environments enforce an email allowlist (`AllowedEmail` model). A
 | Situation | Action |
 |---|---|
 | `Domain.available(domain)` calls the EPP registry. When `settings.IS_LOCAL` is true (base URL contains "localhost"), it skips the registry check and returns `True` automatically. No code change is needed for local testing. Never edit the method body to `return True`; that guard already exists and a hand-edit must not be committed. |
-| EPP `Connection refused` / OIDC `RSA key format` errors in logs | Expected in local dev — not failures, just missing external service config |
+| EPP `Connection refused` errors in logs | Expected in local development, as static IPs are required to integrate with the OT&E registry test env. This should be fixed on any sandbox by updating the environment variables.|
+|OIDC `RSA key format` errors in logs | Indicates the DJANGO_SECRET_LOGIN_KEY is not set correctly. This should be set for all local and sandbox environments and each key expires after a year which can cause this error.|
 | `database "test_app" already exists` prompt when running tests | Type `yes`; or pass `--noinput` for non-interactive runs |
 | Stale test DB causes second error after accepting cleanup | Run `docker compose down` then re-start the stack cleanly |
 | `db Pulling` hangs when running `docker compose run --rm app ...` | Use `--no-deps` to skip pulling the db image if it's not needed: `docker compose run --rm --no-deps app ./manage.py lint` |
