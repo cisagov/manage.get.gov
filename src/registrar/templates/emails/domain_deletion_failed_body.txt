@@ -4,6 +4,6 @@ Attempted to delete domain {{ domain }} and there were already hosts...did not d
 
 Check out the playbook here for next steps: 
 
-<https://docs.google.com/document/d/1BNL9IwrOIKmKcyueCh1386DJUGNpLvAfaHALbPZkhp4/edit?tab=t.0>
+https://docs.google.com/document/d/1BNL9IwrOIKmKcyueCh1386DJUGNpLvAfaHALbPZkhp4/edit?tab=t.0
 
 {% endautoescape %}
