@@ -826,12 +826,12 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(hosts) > 13:
             raise NameserverError(code=nsErrorCodes.TOO_MANY_HOSTS)
 
-        if self.state not in [
-            self.State.DNS_NEEDED,
-            self.State.READY,
-            self.State.UNKNOWN,
-        ]:
-            raise ActionNotAllowed("Nameservers can not be " "set in the current state")
+        # if self.state not in [
+        #     self.State.DNS_NEEDED,
+        #     self.State.READY,
+        #     self.State.UNKNOWN,
+        # ]:
+        #     raise ActionNotAllowed("Nameservers can not be " "set in the current state")
 
         logger.info("Setting nameservers")
         logger.info(hosts)

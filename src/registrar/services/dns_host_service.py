@@ -392,7 +392,7 @@ class DnsHostService:
                 logger.error(
                             "Register nameservers error %s",
                             domain_name,
-                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class": e},
+                            extra={"domain_name": domain_name, "nameservers": nameservers},
                 )
                 raise
 
