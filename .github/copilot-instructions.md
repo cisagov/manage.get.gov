@@ -163,7 +163,7 @@ Uses `django-fsm`. The `state` FSMField has these values:
 - `ON_HOLD` — manually suspended by registrar staff
 - `DELETED` — removed from the EPP registry
 
-Transition methods: `activate_hold()`, `remove_hold()`, `expunge()`, `set_nameservers()`. **Never set `domain.state` directly — always call the transition method.**
+Transition methods: `place_client_hold()`, `revert_client_hold()`, `deleteInEpp()`, `ready()`, `dns_needed()`, `dns_needed_from_unknown()`. Nameservers are set via the `nameservers` property setter (not a transition). **Never set `domain.state` directly — always call the transition method.**
 
 `Domain.available(domain)` calls the EPP registry. Locally it will always fail with `Connection refused`. Work around this by temporarily making the method `return True` for local testing.
 
