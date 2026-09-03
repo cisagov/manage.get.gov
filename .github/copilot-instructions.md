@@ -256,7 +256,7 @@ DNS hosting now uses a vendor abstraction layer in `registrar/models/dns/` (`Dns
 
 ## Feature flags (waffle)
 
-Feature flags are checked with `flag_is_active(request, flag_name)` (when a request is available) or `flag_is_active_for_user(user, flag_name)` (no request). Both are in `registrar/utility/waffle.py`.
+Feature flags are checked with `flag_is_active(request, flag_name)` (when a request is available) or `flag_is_active_for_user(user, flag_name)` (no request). `flag_is_active` comes from the django `waffle` package; while, `flag_is_active_for_user` and `flag_is_active_anywhere` live in `registrar/utility/waffle.py`.
 
 Active flags in the codebase:
 
