@@ -827,6 +827,16 @@ export function initDNSRecordPreview() {
                 }
             });
 
+            scope.addEventListener('focusout', (e) => {
+                if (!['name', 'content', 'type'].includes(e.target.name)) return;
+
+                const previewText = scope.querySelector('.dns-record-preview-text');
+                const accountEl = scope.querySelector('.dns-record-preview-announce');
+                if (previewText && announceEl) {
+                    accountEl.textContent = previewText.textContent;
+                }
+            });
+
             scope.dataset.dnsPreviewBound = "true";
         }
 
