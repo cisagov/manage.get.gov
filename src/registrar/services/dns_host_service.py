@@ -390,9 +390,9 @@ class DnsHostService:
             domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
         except RegistryError as e:
                 logger.error(
-                            "Error happened %s",
+                            "Register nameservers error %s",
                             domain_name,
-                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class": type(e).__name__},
+                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class": e},
                 )
                 raise
 
