@@ -1,6 +1,6 @@
 # DNS Error Handling
 
-**Last updated** 2026-07-01
+**Last updated** 2026-09-03
 
 ## Intro
 
@@ -103,7 +103,7 @@ Log it with a request_id (unique ID for this whole operation)
 Tell user what happened (friendly message + request_id)
 ```
 
-Every request gets a unique `request_id` from `RequestLoggingMiddleware` (#4924). The same ID flows into every log line for the request and into the JSON error response returned to the browser, so a user-reported reference ID can be traced back to the exact server-side events.
+Every request gets a unique `request_id` from `RequestLoggingMiddleware` (#4924). The same ID flows into every log line for the request and into the error message returned to the browser, so a user-reported reference ID can be traced back to the exact server-side events.
 
 ---
 
@@ -138,23 +138,12 @@ except DnsHostingError as exc:
     # The view catches on purpose to handle the user-facing business logic:
     # which message to show, which HTTP status, which template to render, etc.
     # No logger call here as the service already logged.
-    return dns_error_response(exc)
+    messages.error(request, exc.message). # displays the desired error message to the client
 ```
 
 Services log and raise. Views catch and render. A DNS failure produces exactly one log line — at the service, where the error is born, with full Cloudflare context.
 
-`dns_error_response(exc)` reads `exc.code`, looks up the HTTP status in the Severity column of the [Wire-code reference](#wire-code-reference), and sends this JSON response back to the browser. Every DNS endpoint uses the same response:
-
-```json
-{
-  "status": "error",
-  "code": "DNS_NOT_FOUND",
-  "message": "We couldn't find the DNS resource for this domain.",
-  "request_id": "1a2b3c4d-..."
-}
-```
-
-Every DNS endpoint returns this same response on failure. HTMX templates (views) read the `code` to render the right inline / page-level message; `request_id` is what the user shares with support, what we will use to track the request.
+HTMX templates (views) render the right page-level message; `request_id` is what the user shares with support, what we will use to track the request.
 
 **What about exceptions that aren't `DnsHostingError`?** Don't add a fallback `except Exception` in the view as that will swallow actual bugs. Anything that isn't a `DnsHostingError` (a `DatabaseError`, a programming bug, anything unexpected) propagates up to Django's default 500 handling. The user sees the `500.html` page with the `request_id` shown (sub-ticket [#4928](https://github.com/cisagov/manage.get.gov/issues/4928)) and engineers find the full traceback in OpenSearch by that same ID. After [#4922](https://github.com/cisagov/manage.get.gov/issues/4922) ships, `APIError` is gone — the `DnsHostingError` hierarchy replaces it, so you won't see it listed alongside `DatabaseError` above.
 
@@ -296,7 +285,7 @@ def create_dns_record(self, x_zone_id, form_record_data):
     ...
 ```
 
-**Layer 3 — the view catches and renders the JSON response** (sub-ticket [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)):
+**Layer 3 — the view catches and renders the error message** (sub-ticket [#4925](https://github.com/cisagov/manage.get.gov/issues/4925)):
 
 ```python
 try:
@@ -305,7 +294,7 @@ except DnsHostingError as exc:
     # The view handles the user-facing business logic:
     # look up the message in our error mapping, pick the HTTP status from
     # the Severity column, decides which to render.
-    return dns_error_response(exc, request=request)
+    messages.error(request, exc.message)
 ```
 
 The view does **not** log again. The service's log line already captured everything (Cloudflare-side fields from `extra={}` + middleware-injected fields like `request_id` and `user_email`). `dns_error_response` returns the JSON response shown in [Rule #2](#2-catch-errors-in-views-only).
@@ -412,17 +401,19 @@ With `DNS_MOCK_EXTERNAL_APIS` on, save a DNS record whose name starts with `time
 
 ## User-Facing Error Messages
 
-Approved copy is owned by Product/Content under [#4999](https://github.com/cisagov/manage.get.gov/issues/4999). Until that ticket closes, the messages in this section and in the [Error Types](#error-types) table are **TBD** — the one exception is the duplicate-record message, which reuses the existing model-level validation string.
+Approved copy is owned by Product/Content under [#4999](https://github.com/cisagov/manage.get.gov/issues/4999).
 
-### When it's the user's fault (4xx — shown inline)
+### When it's the user's fault (4xx — shown at page level, DNS record form stays open)
 
-> "A record with that name already exists. Names must be unique." (existing model-level validation string)
+> "There’s something wrong with the DNS record information you provided. Please try again. If the problem persists, <a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance and share this ID <request_id>."
 
-> *The other 4xx messages — `DNS_NOT_FOUND`, `DNS_VALIDATION_FAILED`, `DNS_RATE_LIMIT_EXCEEDED` — are **TBD** in #4999.*
+OR
 
-### When it's our fault (5xx — shown at page level)
+A custom validation message based on specific violation if known (TBD)
 
-> *TBD in #4999. The pattern is: a generic "couldn't reach our DNS provider, try again" message that always includes the reference ID for support.*
+### When it's our fault (5xx — shown at page level, DNS record form closes)
+
+> "An unexpected error occurred: Please try again. If the problem persists, <a class='usa-link' href='https://get.gov/contact/' target='_blank'>contact us</a> for assistance."
 
 ---
 
