@@ -14,7 +14,6 @@ on:
           - el
           - aa
           - ad
-          - litterbox
           - hotgov
           - meoward
           - backup
@@ -29,11 +28,9 @@ on:
           - potato
           - product
           - es
-          - nl
           - rh
           - sm
           - kma
-          - dg
 
 permissions:
   contents: read

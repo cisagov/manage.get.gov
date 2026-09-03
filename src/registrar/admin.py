@@ -5760,11 +5760,11 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
 class DnsRecordAdmin(admin.ModelAdmin):
     list_display = (
         "type",
-        "name",
+        "record_name",
+        "domain_name",
         "ttl",
         "content",
         "comment",
-        "tags",
         "created_at",
         "updated_at",
     )
@@ -5776,7 +5776,6 @@ class DnsRecordAdmin(admin.ModelAdmin):
         "ttl",
         "content",
         "comment",
-        "tags",
         "created_at",
         "updated_at",
     )
@@ -5785,7 +5784,15 @@ class DnsRecordAdmin(admin.ModelAdmin):
 
     list_filter = ("type", "created_at", "updated_at")
 
-    search_fields = ("name", "content", "comment")
+    search_fields = ("name", "content")
+
+    search_help_text = "Search by domain or record name."
+
+    def domain_name(self, obj):
+        return obj._resolve_domain_name()
+
+    def record_name(self, obj):
+        return obj.name
 
 
 class DraftDomainResource(resources.ModelResource):
