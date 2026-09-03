@@ -425,7 +425,7 @@ Non-production environments enforce an email allowlist (`AllowedEmail` model). A
 | Custom image not tracked by git | `git add --force <path>` (the `/img/` directory is gitignored) |
 | Login time `Issued in the future` error | Re-sync system clock: `sudo sntp -sS time.nist.gov` |
 | Can't access `/admin` | Add Login.gov UUID to `ADMINS` or `STAFF` in `fixtures_users.py`, then `./manage.py load` |
-| Email not delivered in sandbox | Add address to `AllowedEmail` via Django Admin |
+| Email not delivered in sandbox | Add address to `AllowedEmail` via Django Admin, turn off  the `disable_email_sending` waffle flag, ensure AWS SES creds are configured correctly on the sandbox and not expired. (AWS SES creds  are `AWS_ACCESS_KEY_ID` &`AWS_SECRET_ACCESS_KEY`)|
 
 ---
 
