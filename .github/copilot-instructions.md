@@ -437,4 +437,4 @@ DJANGO_SECRET_KEY=""           # any non-empty string works locally
 DJANGO_SECRET_LOGIN_KEY=""     # base64-encoded private key; required only for Login.gov auth flows
 ```
 
-Put them in `src/.env` (copy from `src/.env-example`). AWS SES, S3, registry, and DNS credentials are optional for unit testing and most development work.
+Put them in `src/.env` (copy from `src/.env-example`). AWS SES, S3, registry, and DNS credentials are optional for running the test suite and most development work. AWS SES creds are often added locally to test features regarding email sending. 
