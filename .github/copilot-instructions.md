@@ -415,7 +415,7 @@ Non-production environments enforce an email allowlist (`AllowedEmail` model). A
 
 | Situation | Action |
 |---|---|
-| `Domain.available()` fails locally with connection error | Temporarily change the method body to `return True` for manual local testing |
+| `Domain.available(domain)` calls the EPP registry. When `settings.IS_LOCAL` is true (base URL contains "localhost"), it skips the registry check and returns `True` automatically. No code change is needed for local testing. Never edit the method body to `return True`; that guard already exists and a hand-edit must not be committed. |
 | EPP `Connection refused` / OIDC `RSA key format` errors in logs | Expected in local dev — not failures, just missing external service config |
 | `database "test_app" already exists` prompt when running tests | Type `yes`; or pass `--noinput` for non-interactive runs |
 | Stale test DB causes second error after accepting cleanup | Run `docker compose down` then re-start the stack cleanly |
