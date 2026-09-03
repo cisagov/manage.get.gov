@@ -354,8 +354,7 @@ class DnsHostService:
 
         return zone_data
 
-    def get_x_zone_id_if_zone_exists(self, domain_name) -> tuple[str | None, list[str] | None]:
-        # returns x_zone_id (and temporarily returns nameservers)
+    def get_x_zone_id_if_zone_exists(self, domain_name) -> str | None:
         try:
             zone = DnsZone.objects.get(name=domain_name)
         except DnsZone.DoesNotExist:
@@ -364,13 +363,23 @@ class DnsHostService:
                 domain_name,
                 extra={"domain_name": domain_name},
             )
-            return None, None
+            return None
 
         x_zone_id = zone.get_active_x_zone_id()
-        nameservers = zone.nameservers or []
 
-        # temporarily returning nameservers until we retrieve nameservers directly
-        return x_zone_id, nameservers
+        return x_zone_id
+
+    def get_nameservers_from_zone(self, domain_name) -> list[str] | None:
+        try:
+            zone = DnsZone.objects.get(name=domain_name)
+        except DnsZone.DoesNotExist:
+            logger.debug(
+                "Zone for domain %s does not exist",
+                domain_name,
+                extra={"domain_name": domain_name},
+            )
+            raise
+        return zone.nameservers or []
 
     def register_nameservers(self, domain_name, nameservers):
         domain = Domain.objects.get(name=domain_name)
@@ -508,7 +517,7 @@ class DnsHostService:
                 self.dns_zone_setup(domain_name, x_account_id)
 
                 # Fetch nameservers from DB zone
-                _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
+                nameservers = self.get_nameservers_from_zone(domain_name)
                 if not nameservers:
                     raise RuntimeError("Zone exists but nameservers not found")
 
