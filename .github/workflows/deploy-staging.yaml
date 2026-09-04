@@ -21,7 +21,7 @@ jobs:
     if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Compile USWDS assets
         working-directory: ./src
         run: |
@@ -32,7 +32,7 @@ jobs:
         working-directory: ./src
         run: docker compose run app python manage.py collectstatic --no-input
       - name: Deploy to cloud.gov sandbox and setting env for '/version' endpoint
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # No releases published so this is pinning to a SHA on main
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
           GIT_TAG: ${{ github.ref_name }}
@@ -47,7 +47,7 @@ jobs:
             --var GIT_TAG="$GIT_TAG"
             --strategy rolling
       - name: Run Django migrations
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # No releases published so this is pinning to a SHA on main
         with:
           cf_username: ${{ secrets.CF_STAGING_USERNAME }}
           cf_password: ${{ secrets.CF_STAGING_PASSWORD }}

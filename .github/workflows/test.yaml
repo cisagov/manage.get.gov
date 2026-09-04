@@ -29,7 +29,7 @@ jobs:
   python-linting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
@@ -116,7 +116,7 @@ jobs:
   python-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
@@ -163,7 +163,7 @@ jobs:
 
       - name: "Upload test log"
         if: ${{ steps.tests.outputs.test_status != '0' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-log
           path: src/test.out
@@ -177,7 +177,7 @@ jobs:
   django-migrations-complete:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.CHECKOUT_REF }}
 
@@ -190,7 +190,7 @@ jobs:
   pa11y-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.CHECKOUT_REF }}
 

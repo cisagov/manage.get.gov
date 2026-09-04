@@ -34,12 +34,12 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Scan Django settings for security issues
         id: check
         uses: ./.github/actions/django-security-check
       - name: Upload output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: security-check-output
           path: ./src/output.txt
@@ -50,7 +50,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: MockUserLogin should not be in settings.MIDDLEWARE
         run: "! grep -rwn * --exclude-dir=node_modules -e registrar.tests.common.MockUserLogin"
         working-directory: ./src
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Disable Login
         # by adding MockUserLogin to settings.MIDDLEWARE
@@ -77,7 +77,7 @@ jobs:
 
       - name: Upload OWASP ZAP report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: zap-report
           path: src/zap_report.html

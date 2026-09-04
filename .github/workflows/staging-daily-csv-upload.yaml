@@ -17,7 +17,7 @@ jobs:
       CF_PASSWORD: CF_${{ secrets.CF_REPORT_ENV_STAGING }}_PASSWORD
     steps:
       - name: Generate current-federal.csv
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # No releases published so this is pinning to a SHA on main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
@@ -26,7 +26,7 @@ jobs:
           cf_command: "run-task getgov-${{ secrets.CF_REPORT_ENV_STAGING }} --command 'python manage.py generate_current_federal_report' --name federal"
 
       - name: Generate current-full.csv
-        uses: cloud-gov/cg-cli-tools@main
+        uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # No releases published so this is pinning to a SHA on main
         with:
           cf_username: ${{ secrets[env.CF_USERNAME] }}
           cf_password: ${{ secrets[env.CF_PASSWORD] }}
