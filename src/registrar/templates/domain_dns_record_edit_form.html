@@ -22,7 +22,9 @@
 
                 <div class="dns-record-preview margin-bottom-3" data-domain-name="{{ domain.name }}">
                     <span class="dns-record-preview-text"></span>
-                    <span class="usa-sr-only dns-record-preview-announce" aria-live="polite" aria-label="DNS record preview text"></span>
+                    <span class="usa-sr-only dns-record-preview-announce" aria-live="polite">
+                        <span class="usa-sr-only">DNS record preview text: </span>
+                    </span>
                 </div>
 
                 {% include dns_record.form_template with form=dns_record.form %}
