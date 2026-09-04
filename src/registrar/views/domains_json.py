@@ -148,7 +148,7 @@ def apply_state_filter(queryset, request):
             expired_domain_ids = [domain.id for domain in queryset if domain.state_display(request) == "Expiring soon"]
             queryset = queryset.exclude(id__in=expired_domain_ids)
         if "active" not in custom_states:
-            active_domain_ids  = [domain.id for domain in queryset if domain.state_display(request) == "Active"]
+            active_domain_ids = [domain.id for domain in queryset if domain.state_display(request) == "Active"]
             queryset = queryset.exclude(id__in=active_domain_ids)
 
     return queryset
