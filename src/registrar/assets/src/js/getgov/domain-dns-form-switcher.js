@@ -155,5 +155,8 @@ export class RecordSelectTypeSwitcher extends DNSFormSwitcher{
        this.setRecordType(value);
        this.updateSelectedType(value);  
        this.resetPendingAndTarget();
+
+       const previewText = this.container.querySelector('.dns-record-preview-text');
+       if (previewText) previewText.replaceChildren();
     }
 }
