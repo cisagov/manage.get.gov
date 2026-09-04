@@ -16,6 +16,11 @@
 
 <div x-cloak x-show="recordType" x-cloak>
 
+    <div class="dns-record-preview margin-top-3" data-domain-name="{{ domain.name }}">
+        <span class="dns-record-preview-text"></span>
+        <span class="usa-sr-only dns-record-preview-announce" aria-live="polite"></span>
+    </div>
+
     <template x-if="recordType !== 6 && recordType !== 4 ">
         <!-- Only show this for forms that are not txt or mx -->
         <div>

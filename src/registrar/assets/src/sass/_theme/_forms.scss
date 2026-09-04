@@ -106,3 +106,18 @@ legend.float-left-tablet + button.float-right-tablet {
     top: 2px;
   }
 }
+
+.dns-record-preview {
+  font-size: 1.06 rem;
+  margin-top: 1.5 rem;
+  margin-bottom: 1.5 rem;
+
+  & + .usa-form-group {
+    margin-top: 0;
+  }
+
+  &:empty,
+  &:has(.dns-record-preview-text:empty) {
+    display: none;
+  }
+}
