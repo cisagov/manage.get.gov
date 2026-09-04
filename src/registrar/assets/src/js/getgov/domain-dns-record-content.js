@@ -821,6 +821,8 @@ export function initDNSRecordPreview() {
 
             scope.addEventListener('change', (e) => {
                 if (e.target.name == 'type') {
+                    const previewText = scope.querySelector('.dns-record-preview-text');
+                    if (previewText) previewText.replaceChildren();
                     setTimeout(() => updateDNSRecordPreview(scope, config), 0);
                 } else {
                     updateDNSRecordPreview(scope, config);
