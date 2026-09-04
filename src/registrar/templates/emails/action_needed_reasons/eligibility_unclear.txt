@@ -14,8 +14,9 @@ ORGANIZATION MAY NOT MEET ELIGIBILITY REQUIREMENTS
 We've reviewed your domain request, but we need more information about the organization you represent:
 - {{ domain_request.organization_name }}
 
-.Gov domains are only available to official US-based government organizations, not simply those that provide a public benefit. We lack clear documentation that demonstrates your organization is eligible for a .gov domain. 
+.Gov domains are only available to official US-based government organizations, not simply those that provide a public benefit. We lack clear documentation that demonstrates your organization is eligible for a .gov domain.
 
+Learn more about eligibility for .gov domains <https://get.gov/domains/eligibility/>.
 
 ACTION NEEDED
 Reply to this email with links to (or copies of) your authorizing legislation, your founding charter or bylaws, recent election results, or other similar documentation. Without this, we can’t continue our review and your request will likely be rejected.
