@@ -1288,6 +1288,7 @@ class DomainNameserversView(DomainFormBaseView):
             messages.error(self.request, NameserverError(code=nsErrorCodes.BAD_DATA))
             logger.error(f"Nameservers error: {Err}")
         # TODO: registry is not throwing an error when no connection
+        # OTHER REGISTRY ERROR
         except RegistryError as Err:
             if Err.is_connection_error():
                 messages.error(
