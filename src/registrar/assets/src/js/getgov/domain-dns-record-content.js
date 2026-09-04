@@ -831,9 +831,9 @@ export function initDNSRecordPreview() {
                 if (!['name', 'content', 'type'].includes(e.target.name)) return;
 
                 const previewText = scope.querySelector('.dns-record-preview-text');
-                const accountEl = scope.querySelector('.dns-record-preview-announce');
+                const announceEl = scope.querySelector('.dns-record-preview-announce');
                 if (previewText && announceEl) {
-                    accountEl.textContent = previewText.textContent;
+                    announceEl.textContent = previewText.textContent;
                 }
             });
 

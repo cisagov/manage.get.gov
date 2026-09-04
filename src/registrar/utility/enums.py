@@ -142,7 +142,7 @@ class DNSRecordTypes(TextChoices):
         }.get(self, "")
 
     @property
-    def preview_template(self):
+    def preview_template(self) -> str:
         """
         Sentence template used to build the live text preview shown while a user
         fills out a DNS record form.
