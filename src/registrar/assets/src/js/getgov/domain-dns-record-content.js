@@ -833,7 +833,7 @@ export function initDNSRecordPreview() {
                 const previewText = scope.querySelector('.dns-record-preview-text');
                 const announceEl = scope.querySelector('.dns-record-preview-announce');
                 if (previewText && announceEl) {
-                    announceEl.textContent = previewText.textContent;
+                    announceEl.textContent = `DNS record preview text: ${previewText.textContent}`;
                 }
             });
 
