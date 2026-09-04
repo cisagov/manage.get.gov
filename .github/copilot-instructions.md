@@ -2,7 +2,7 @@
 
 ## Project overview
 
-This repository is the **.gov domain registrar** — the Django web application through which U.S. government organizations request and manage `.gov` domains. It is a Django 5.2 app deployed on Cloud.gov (Cloud Foundry), backed by PostgreSQL, authenticating via Login.gov (OIDC), and communicating with a `.gov` EPP registry (fred-epplib).
+This repository is the **.gov domain registrar** — the Django web application through which government organizations in the United States request and manage `.gov` domains. It is a Django 5.2 app deployed on Cloud.gov (Cloud Foundry), backed by PostgreSQL, authenticating via Login.gov (OIDC), and communicating with a `.gov` EPP registry (fred-epplib).
 
 All application source code lives under `src/`. Documentation lives under `docs/`.
 
