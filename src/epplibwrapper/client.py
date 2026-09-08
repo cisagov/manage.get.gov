@@ -5,8 +5,8 @@ from time import sleep
 import os
 from django.conf import settings
 from .cert import Cert, Key
-from .errors import ErrorCode, LoginError, RegistryError
-from .utility.pool import PoolExhausted, EPPConnectionPool
+from .errors import ErrorCode, LoginError, RegistryError, RegistryErrorMessage
+from .utility.pool import PoolExhausted, EPPConnectionPool, ConnectionNotLoggedIn
 
 try:
     from epplib.client import Client
@@ -116,6 +116,14 @@ class EPPLibWrapper:
             raise LoginError(response.msg)  # type: ignore
         logger.info(f"{_worker_tag()} EPP connection established")
 
+    @staticmethod
+    def _is_not_logged_in(response) -> bool:
+        """True when the registry answered that this connection's session is no longer logged in."""
+        return (
+            response.code == ErrorCode.COMMAND_USE_ERROR
+            and response.msg == RegistryErrorMessage.REGISTRAR_NOT_LOGGED_IN.value
+        )
+
     def _send(self, command):
         """Helper function used by `send` handles the actual sending of a message
         this utilizes the pool to get a connection and automatically closes the connection
@@ -134,6 +142,11 @@ class EPPLibWrapper:
             # put back into the Q once the with finishes
             with self._pool.connection() as clientConnection:
                 response = clientConnection.send(command)
+                if self._is_not_logged_in(response):
+                    # Raised while the connection is still checked out so the pool discards it.
+                    # It is a RegistryError, so the except below re-raises it for send() to retry.
+                    raise ConnectionNotLoggedIn(response.msg, code=response.code, response=response)
+
         except PoolExhausted as err:
 
             # Every connection stayed checked out for the whole wait.
