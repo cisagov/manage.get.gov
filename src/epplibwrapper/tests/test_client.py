@@ -207,8 +207,11 @@ class TestClient(TestCase):
         result = wrapper.send(self.fake_command(), cleaned=True)
 
         self.assertIs(result, command_success)
-        # login at init + failed command + retried command
-        self.assertEqual(mock_client.return_value.send.call_count, 3)
+        # login at init + failed command + re-login on the replacement + retried command
+        self.assertEqual(mock_client.return_value.send.call_count, 4)
+        # the connection that answered 2002 was closed and a second client was built
+        mock_client.return_value.close.assert_called_once()
+        self.assertEqual(mock_client.call_count, 2)
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.sleep", MagicMock())
