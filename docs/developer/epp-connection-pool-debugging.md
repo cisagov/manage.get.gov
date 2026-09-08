@@ -13,7 +13,7 @@ is using it) or **in the idle queue**. A request borrows a connection through th
 LIFO queue, so the most recently used (warmest) connection is reused first.
 
 A background maintenance thread (`epp-pool-maintenance`) periodically pings
-idle connections with an EPP `Hello` so silently dropped sockets are found and
+idle connections with an EPP `CheckDomain` (see `_is_healthy`) so silently dropped sockets and logged-out sessions are found and
 replaced before a request touches them (`EPP_POOL_HEARTBEAT_INTERVAL`), then
 replenishes the pool with fresh connections.
 
@@ -46,7 +46,7 @@ connections — look at registry availability and login errors.
 
 | Log line (grep for) | Level | Meaning | Where |
 |---|---|---|---|
-| `Discarding stale pooled EPP connection; will replace` | INFO | A borrowed connection failed its `Hello` health check; it was closed and the borrow loop got a different/fresh one. The caller never saw the dead connection. Occasional occurrences are normal housekeeping; continuous back-to-back occurrences warrant investigation. | `pool.py` `_borrow` |
+| `Discarding stale pooled EPP connection; will replace` | INFO | A borrowed connection failed its `_is_healthy` check (the `CheckDomain` ping raised or answered with an error code); it was closed and the borrow loop got a different/fresh one. The caller never saw the dead connection. Occasional occurrences are normal housekeeping; continuous back-to-back occurrences warrant investigation. | `pool.py` `_borrow` |
 | `Heartbeat replaced a dead idle EPP connection` | INFO | The maintenance pass pinged an idle connection, got no valid answer, and discarded it; the replenish step builds its replacement. | `pool.py` `_maintain_idle_connections` |
 | `Replenish hit an error & failed to build a connection` | INFO | A top-up connection build (connect + login) failed; the pool defers the rest to the next pass instead of retrying immediately. Persistent occurrences mean the registry is down or refusing logins. | `pool.py` `_replenish` |
 | `EPP pool heartbeat pass failed` | WARNING | The whole maintenance pass hit an unexpected error. The thread survives and runs again next interval. Once is fine; repeated back-to-back occurrences warrant investigation. | `pool.py` `_maintenance_loop` |
@@ -55,7 +55,7 @@ connections — look at registry availability and login errors.
 | `failed to execute due to a registry login error` | ERROR | The registry rejected the login while a new connection was being built for this command. | `client.py` `_send` / `_create_connection` |
 | `failed to execute due to some syntax error` | ERROR | Malformed command or unparseable response (`ValueError` / `ParsingError`) — a code problem, not infrastructure. Retrying won't help. | `client.py` `_send` |
 | `failed to execute due to an unknown error` | ERROR | Catch-all: something other than the categorized failures above. Read the attached traceback. | `client.py` `_send` |
-| `failed and will be retried` | INFO | `send()` caught a retryable `RegistryError` and is retrying (up to 3 attempts with a short backoff). | `client.py` `send` |
+| `failed and will be retried` | INFO | `send()` caught a retryable `RegistryError` and is retrying (up to 3 attempts with a short pause between-- note the initial message+ 3 retries= a max total of 4 attempts). | `client.py` `send` |
 | `registry client initialized` | INFO | The wrapper (and its pool) constructed successfully at worker startup. | `client.py` module level |
 | `Unable to configure epplib` | WARNING | The wrapper failed to construct at startup; the registrar cannot contact the registry from this worker. | `client.py` module level |
 
@@ -73,7 +73,7 @@ environment:
 |---|---|---|
 | `EPP_CONNECTION_POOL_SIZE` | 1 | Max connections per worker process. Environments that share registry credentials also share the registry's connection allowance, so keep non-production sizes small. |
 | `EPP_POOL_BORROW_TIMEOUT` | 10 | Seconds a request waits for a connection before `PoolExhausted`. |
-| `EPP_POOL_IDLE_PING_SECONDS` | 60 | A connection idle longer than this must answer a `Hello` before reuse. |
+| `EPP_POOL_IDLE_PING_SECONDS` | 60 | A connection idle longer than this must pass the `_is_healthy` `CheckDomain` ping before reuse. |
 | `EPP_POOL_HEARTBEAT_INTERVAL` | 30 | Cadence of the background maintenance pass. 0 disables pinging. |
 
 **Regarding the connection pool size**: There are a max of 100 connections allowed at the same time & with the same login credentials. This means 100 connections total allowed on stable and 100 connections allowed on OT&E across **all** non-production sandboxes. To have more than 100 on OT&E we would need to use different credentials or request an increase in the number of connections allowed.
