@@ -17,6 +17,7 @@ on:
           - staging
           - development
           - backup
+          - amt
           - ab
           - cw
           - testdb
