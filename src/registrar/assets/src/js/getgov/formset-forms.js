@@ -82,6 +82,22 @@ function markForm(e, formLabel){
     });
   });
 }
+
+/**
+ * Mark an alternative-domain form for deletion without removing it from the
+ * submitted formset. Keeping its index preserves Django's management counts.
+ */
+function markDotgovForm(e) {
+  let formToRemove = e.target.closest(".repeatable-form");
+  let deleteInput = formToRemove?.querySelector('input[name$="-DELETE"]');
+  if (deleteInput) {
+    if (deleteInput.type === 'checkbox') {
+      deleteInput.checked = true;
+    }
+    deleteInput.value = 'on';
+    formToRemove.style.display = 'none';
+  }
+}
   
 /**
  * Prepare the Other Contacts formsets' delete button
@@ -91,6 +107,7 @@ function markForm(e, formLabel){
 function prepareNewDeleteButton(btn, formLabel) {
   let formIdentifier = "form"
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
+  let isDotgovDomain = document.querySelector(".dotgov-domain-form");
   let addButton = document.querySelector("#add-form");
 
   if (isOtherContactsForm) {
@@ -99,6 +116,8 @@ function prepareNewDeleteButton(btn, formLabel) {
     btn.addEventListener('click', function(e) {
       markForm(e, formLabel);
     });
+  } else if (isDotgovDomain) {
+    btn.addEventListener('click', markDotgovForm);
   } else {
     // We will remove the forms and re-order the formset
     btn.addEventListener('click', function(e) {
@@ -116,6 +135,7 @@ function prepareDeleteButtons(formLabel) {
   let formIdentifier = "form"
   let deleteButtons = document.querySelectorAll(".delete-record");
   let isOtherContactsForm = document.querySelector(".other-contacts-form");
+  let isDotgovDomain = document.querySelector(".dotgov-domain-form");
   let addButton = document.querySelector("#add-form");
   if (isOtherContactsForm) {
     formIdentifier = "other_contacts";
@@ -128,6 +148,8 @@ function prepareDeleteButtons(formLabel) {
       deleteButton.addEventListener('click', function(e) {
         markForm(e, formLabel);
       });
+    } else if (isDotgovDomain) {
+      deleteButton.addEventListener('click', markDotgovForm);
     } else {
       // We will remove the forms and re-order the formset
       deleteButton.addEventListener('click', function(e) {
@@ -203,15 +225,18 @@ export function initFormsetsForms() {
       newForm.removeAttribute('style');
       newForm.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
     
-      let formNumberRegex = RegExp(`${formIdentifier}-(\\d){1}-`,'g');
-      let formLabelRegex = RegExp(`${formLabel} (\\d){1}`, 'g');
+      let formNumberRegex = RegExp(`${formIdentifier}-(\\d+)-`,'g');
+      let formLabelRegex = RegExp(`${formLabel} (\\d+)`, 'g');
       // For the eample on Nameservers
-      let formExampleRegex = RegExp(`ns(\\d){1}`, 'g');
+      let formExampleRegex = RegExp(`ns(\\d+)`, 'g');
 
-      // Make sure it's counting visible forms and remove display-none to make new form visible
+      // Assign the next form index and make the new form visible.
       if (isDotgovDomain) {
-        let visibleForms = document.querySelectorAll(`.repeatable-form:not(.display-none):not([style*="display: none"])`).length;
-        formNum = visibleForms + 1;
+        // Keep all existing indices, including forms marked for deletion. The
+        // new form gets the next unused management-form index.
+        // The radix 10 parses TOTAL_FORMS as decimal; adding one converts its
+        // zero-based next-form index into the new one-based total form count.
+        formNum = parseInt(totalForms.value, 10) + 1;
         newForm.classList.remove('display-none'); 
       } else {
         formNum++;
@@ -264,6 +289,9 @@ export function initFormsetsForms() {
         } else if (input.type === "checkbox" || input.type === "radio") {
           input.checked = false; // Uncheck checkboxes and radios
         }
+      });
+      newForm.querySelectorAll('input[name$="-DELETE"]').forEach((input) => {
+        input.value = '';
       });
 
       // Reset any existing validation classes

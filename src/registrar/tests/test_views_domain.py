@@ -441,6 +441,34 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "DNS name servers")
             self.assertContains(detail_page, "DNSSEC")
 
+    def test_domain_detail_dns_hosting_active_status(self):
+        # added patches to override the is_expiring and is_expired checks for the domain
+        # the is_expired and is_expiring statuses on the domain overview page takes precedent over the "active" status
+        def custom_is_expiring_or_expired(self):
+            return False
+
+            with less_console_noise() and override_flag("dns_hosting", active=True):
+                with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                    Domain, "is_expired", custom_is_expiring_or_expired
+                ):
+                    detail_page = self.app.get(
+                        reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                    )
+
+                    self.assertContains(detail_page, "Active")
+                    self.assertNotContains(detail_page, "Ready")
+
+            with less_console_noise() and override_flag("dns_hosting", active=False):
+                with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                    Domain, "is_expired", custom_is_expiring_or_expired
+                ):
+                    detail_page = self.app.get(
+                        reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                    )
+
+                    self.assertNotContains(detail_page, "Active")
+                    self.assertContains(detail_page, "Ready")
+
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain request exist"""
