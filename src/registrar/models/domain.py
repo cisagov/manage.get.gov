@@ -1444,6 +1444,14 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Date the domain expires in the registry"),
     )
 
+    # Follow on TODO for 4440: Delete this + migration for deletion
+    created_at_reference = models.DateTimeField(
+        null=True,
+        blank=True,
+        editable=True,
+        help_text=("Date the domain record was created in the registrar"),
+    )
+
     x_registry_created_at = models.DateTimeField(
         null=True,
         blank=True,

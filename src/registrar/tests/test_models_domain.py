@@ -2839,14 +2839,15 @@ class TestCreationDate(MockEppLib):
         self.domain.statuses
         self.assertEqual(self.domain.created_at, self.creation_date)
 
-    def test_x_registry_created_at_set_from_epp(self):
-        """assert x_registry_created_at is set from EPP when fetch_cache is called"""
+    def test_x_registry_created_at_and_created_at(self):
+        """assert x_registry_created_at is set from EPP and created_at is preserved"""
         # force fetch_cache to be called
         self.domain.statuses
-        x_registry_created_at = (
-            Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", flat=True).get()
+        x_registry_created_at, created_at = (
+            Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at").get()
         )
         self.assertEqual(x_registry_created_at, self.creation_date)
+        self.assertEqual(created_at, self.creation_date)
 
 
 class TestAnalystClientHold(MockEppLib):

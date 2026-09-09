@@ -647,7 +647,6 @@ class SendExpirationEmailsTests(TestCase):
         # Override the auto-set creation date
         creation_date = self.fixed_today - timedelta(days=365 - 30)
         domain_unknown.created_at = creation_date
-        domain_unknown.created_at = creation_date
         domain_unknown.save(update_fields=["created_at"])
 
         portfolio = Portfolio.objects.create(requester=self.admin, organization_name="Null Expirations Portfolio")
