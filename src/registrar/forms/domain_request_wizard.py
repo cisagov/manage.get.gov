@@ -572,10 +572,11 @@ class AlternativeDomainForm(RegistrarForm):
 
 class BaseAlternativeDomainFormSet(RegistrarFormSet):
     JOIN = "alternative_domains"
+    deletion_widget = forms.HiddenInput
 
     def should_delete(self, cleaned):
         domain = cleaned.get("alternative_domain", "")
-        return domain.strip() == ""
+        return cleaned.get("DELETE", False) or domain.strip() == ""
 
     def pre_update(self, db_obj, cleaned):
         domain = cleaned.get("alternative_domain", None)
@@ -607,6 +608,7 @@ AlternativeDomainFormSet = forms.formset_factory(
     AlternativeDomainForm,
     extra=1,
     absolute_max=1500,  # django default; use `max_num` to limit entries
+    can_delete=True,
     formset=BaseAlternativeDomainFormSet,
 )
 
