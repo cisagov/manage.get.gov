@@ -12,6 +12,10 @@
 
   <h1>DNS</h1>
 
+  {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
+    {% include "includes/banner-external-dns-hosting.html" with banner_external_hosting_class="margin-top-205" %}
+  {% endif %}
+
   <p>The Domain Name System (DNS) is the internet service that translates your domain name into an IP address. Before your .gov domain can be used, you'll need to connect it to a DNS hosting service and provide us with your name server information.</p>
 
   <p>You can enter your name servers, as well as other DNS-related information, in the following sections:</p>
