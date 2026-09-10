@@ -1,8 +1,9 @@
+import re
 from unittest import skip
 from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
@@ -4023,6 +4024,33 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(dns_record.content, "192.168.1.1")
         self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(response.headers["HX-TRIGGER"], '{"messagesRefresh": ""}')
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_dns_record_save_returns_alert_message_with_request_id(self):
+        create_initial_dns_setup(
+                domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+            )
+
+        response = self.client.post(
+            reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+            data={
+                "type": "A",
+                "name": "api",
+                "content": "203.0.113.20",
+                "ttl": 3600,
+                "comment": "",
+            },
+        )
+        with patch.object(self.client, 'post') as mock_post:
+            mock_post.return_value = HttpResponse(status=500)
+            response = self.client.post(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+            self.assertEqual(response.status_code, 500)
+
+            page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+            content = page.content.decode()
+            match = re.search(r"and share this ID ([0-9a-fA-F-]{36})", content)  # UUID regex
+            self.assertIsNotNone(match, "Expected message with UUID not found")
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
