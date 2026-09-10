@@ -1,6 +1,7 @@
 import httpx
 import json
 import respx
+from respx.patterns import M
 import logging
 from datetime import datetime, timezone
 from faker import Faker
@@ -40,7 +41,8 @@ class MockCloudflareService:
         if not hasattr(self, "initialized"):
             self.initialized = True
             self.is_active = False
-        self.__initial_state()
+        if not self.is_active:
+            self.__initial_state()
 
     def __initial_state(self):
         # using deepcopy to create copy of initial values
@@ -55,7 +57,9 @@ class MockCloudflareService:
         if self.is_active:
             self.stop()  # to ensure clean start
         base_url = CloudflareService.base_url
-        self._mock_context = respx.mock(base_url=base_url, assert_all_called=False, assert_all_mocked=False)
+        self._mock_context = respx.mock(base_url=base_url, assert_all_called=False, assert_all_mocked=True)
+        cloudflare_host = httpx.URL(base_url).host
+        self._mock_context.route(~M(host=cloudflare_host)).pass_through()
         self._mock_context.start()
 
         # Register all mock routes

@@ -1,4 +1,6 @@
 from django.test import SimpleTestCase, TestCase
+import httpx
+import respx
 from httpx import Client
 
 from registrar.services.mock_cloudflare_service import MockCloudflareService
@@ -54,6 +56,24 @@ class TestMockCloudflareServiceBasics(SimpleTestCase):
         self.mock_api_service.stop()  # Should not error
 
         self.assertFalse(self.mock_api_service.is_active)
+
+    def test_non_cloudflare_requests_are_passed_through(self):
+        self.mock_api_service.start()
+        request = httpx.Request("GET", "https://example.com/example")
+
+        pass_through_routes = [
+            route
+            for route in self.mock_api_service._mock_context.routes
+            if route.pattern.match(request) and route._pass_through
+        ]
+
+        self.assertEqual(len(pass_through_routes), 1)
+
+    def test_unregistered_cloudflare_requests_fail(self):
+        self.mock_api_service.start()
+
+        with self.assertRaises(respx.models.AllMockedAssertionError):
+            httpx.get(f"{CloudflareService.base_url}/unregistered")
 
 
 class TestMockCloudflareServiceEndpoints(SimpleTestCase):
