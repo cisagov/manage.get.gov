@@ -59,7 +59,7 @@ class DnsZone(TimeStampedModel):
         super().clean()
         # Zone must have at least 2 nameservers
         if len(self.nameservers) < 2:
-            return ValidationError({"nameservers": "DNS zone must have at least 2 nameservers."})
+            raise ValidationError({"nameservers": "DNS zone must have at least 2 nameservers."})
 
     def get_active_x_zone_id(self):
         try:
@@ -78,7 +78,7 @@ class DnsZone(TimeStampedModel):
         but may not have the instance fully initialized (e.g., when creating new records).
 
         Args:
-            domain_name: The domain name to look up.
+            domain_name: The name of the domain to look up.
 
         Returns:
             The DNS zone ID if found, None otherwise.
