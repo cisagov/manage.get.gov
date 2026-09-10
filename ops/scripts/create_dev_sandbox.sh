@@ -130,6 +130,10 @@ sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/load-fixtures.yaml
 
+sed -i '' '/          - backup/ {a\
+          - '"$1"'
+}' .github/workflows/clone-test-db.yaml
+
 echo "Creating space deployer for Github deploys..."
 cf create-service cloud-gov-service-account space-deployer github-cd-account
 cf create-service-key github-cd-account github-cd-key

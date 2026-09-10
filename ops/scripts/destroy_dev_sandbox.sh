@@ -54,11 +54,13 @@ sed -i '' "/|| startsWith(github.head_ref, '$1\/')/d" .github/workflows/deploy-s
 sed -i '' "/- $1/d" .github/workflows/createcachetable.yaml
 sed -i '' "/- $1/d" .github/workflows/delete-and-recreate-db.yaml
 sed -i '' "/- $1/d" .github/workflows/load-fixtures.yaml
+sed -i '' "/- $1/d" .github/workflows/clone-test-db.yaml
 
 echo "Cleaning up services, applications, and the Cloud.gov space for $1..."
 cf delete getgov-$1
 cf delete-service getgov-$1-database
 cf delete-service getgov-credentials
+# This next line will often fail because the database hasn't been deleted yet
 cf delete-space $1
 
 echo "Now you will need to update some things for Login. Please sign-in to https://dashboard.int.identitysandbox.gov/."

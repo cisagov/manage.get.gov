@@ -8,8 +8,7 @@ from registrar.models import (
     DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 from registrar.validations import (
-    DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
-    DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
+    DNS_NAME_DOTS_REQUIREMENT,
 )
 
 
@@ -169,7 +168,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, str(ctx.exception))
+        self.assertIn(DNS_NAME_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_with_leading_dot_raises(self):
         """DNS record name with leading dot should fail validation."""
@@ -185,7 +184,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
+        self.assertIn(DNS_NAME_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_with_trailing_dot_raises(self):
         """DNS record name with trailing dot should fail validation."""
@@ -201,7 +200,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
+        self.assertIn(DNS_NAME_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_exceeds_per_label_limit_raises(self):
         """DNS record name with a label exceeding 63 characters should fail validation."""

@@ -893,7 +893,6 @@ ALLOWED_HOSTS = [
     "getgov-sm.app.cloud.gov",
     "getgov-ab.app.cloud.gov",
     "getgov-cw.app.cloud.gov",
-    "getgov-cw.app.cloud.gov",
     "getgov-testdb.app.cloud.gov",
     "getgov-acadia.app.cloud.gov",
     "getgov-glacier.app.cloud.gov",
@@ -905,15 +904,12 @@ ALLOWED_HOSTS = [
     "getgov-aa.app.cloud.gov",
     "getgov-el.app.cloud.gov",
     "getgov-ad.app.cloud.gov",
-    "getgov-litterbox.app.cloud.gov",
     "getgov-hotgov.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
     "getgov-es.app.cloud.gov",
-    "getgov-nl.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
     "getgov-kma.app.cloud.gov",
-    "getgov-dg.app.cloud.gov",
     "manage.get.gov",
 ]
 

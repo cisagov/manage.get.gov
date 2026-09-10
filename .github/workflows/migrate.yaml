@@ -29,16 +29,13 @@ on:
           - aa
           - el
           - ad
-          - litterbox
           - hotgov
           - meoward
           - backup
           - es
-          - nl
           - rh
           - sm
           - kma
-          - dg
 
 permissions:
   contents: read
