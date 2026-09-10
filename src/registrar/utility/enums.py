@@ -180,5 +180,13 @@ DNS_TTL_CHOICES = [
 
 
 def format_dns_ttl(ttl: int) -> str:
-    """Render a TTL value using the form's notation."""
-    return dict(DNS_TTL_CHOICES)[ttl]
+    """Render a TTL value using the form's notation.
+
+    Falls back to a plain seconds label for values outside DNS_TTL_CHOICES
+    (such as the model default of 1, or values synced from the vendor), so
+    rendering a record never raises KeyError.
+    """
+    label = dict(DNS_TTL_CHOICES).get(ttl)
+    if label is not None:
+        return label
+    return f"{ttl} second" if ttl == 1 else f"{ttl} seconds"
