@@ -313,7 +313,10 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
     all_emails_sent = True
     # Get domain manager emails
     domain_manager_emails = list(
-        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+        UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+        .exclude(user__email="")
+        .values_list("user__email", flat=True)
+        .distinct()
     )
     requestor_email = _get_requestor_email(requestor, domains=domain)
 
@@ -861,7 +864,10 @@ def send_domain_renewal_notification_emails(domain: Domain):
 
     # Get all the domain manager for this domain
     domain_manager_emails = list(
-        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+        UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+        .exclude(user__email="")
+        .values_list("user__email", flat=True)
+        .distinct()
     )
 
     # Get organization admins if the domain belongs to a portfolio

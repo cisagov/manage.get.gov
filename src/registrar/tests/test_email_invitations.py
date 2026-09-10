@@ -1477,7 +1477,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
     def test_send_email_success(self, mock_filter, mock_send_templated_email, mock_get_requestor_email):
         """Test successful sending of domain manager removal emails."""
 
-        mock_filter.return_value.values_list.return_value = self.mock_values_list_qs
+        mock_filter.return_value.exclude.return_value.values_list.return_value = self.mock_values_list_qs
         mock_send_templated_email.return_value = None  # No exception means success
 
         mock_get_requestor_email.return_value = "requestor_success@example.com"
@@ -1487,7 +1487,8 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             domain=self.domain,
             requestor=mock_requestor,
         )
-        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_send_templated_email.assert_any_call(
             "emails/domain_on_hold_notification.txt",
             "emails/domain_on_hold_notification_subject.txt",
@@ -1507,7 +1508,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     def test_send_email_failure(self, mock_filter, mock_send_templated_email, mock_get_requestor_email):
-        mock_filter.return_value.values_list.return_value = self.mock_values_list_qs
+        mock_filter.return_value.exclude.return_value.values_list.return_value = self.mock_values_list_qs
 
         mock_get_requestor_email.return_value = "requestor_fail@example.com"
         mock_requestor = MagicMock()
@@ -1517,7 +1518,8 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
         )
 
         self.assertFalse(result)
-        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_send_templated_email.assert_any_call(
             "emails/domain_on_hold_notification.txt",
             "emails/domain_on_hold_notification_subject.txt",
@@ -1566,7 +1568,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
         # Mock the domain manager query chain
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.user_1.email]
-        mock_domain_role_filter.return_value.values_list.return_value = mock_values_list_qs
+        mock_domain_role_filter.return_value.exclude.return_value.values_list.return_value = mock_values_list_qs
 
         # Mock the domain information query
         mock_queryset_domain_info = MagicMock()
@@ -1601,7 +1603,8 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_domain_role_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1629,7 +1632,8 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_domain_role_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1655,7 +1659,8 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_domain_role_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1681,7 +1686,8 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_domain_role_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
