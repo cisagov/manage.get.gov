@@ -47,6 +47,7 @@ from .public_contact import PublicContact
 from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -1538,6 +1539,12 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def enrolled_hosting_display(self, request=None):
         return "Yes" if self.is_enrolled_in_dns_hosting else "No"
+
+    def is_using_external_hosting(self,request):
+        if not flag_is_active_for_user(request, "dns_hosting") and self.state in [self.State.READY, self.State.ON_HOLD]:
+            return True
+        else:
+            return False
 
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""

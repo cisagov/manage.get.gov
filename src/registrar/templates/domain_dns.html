@@ -12,7 +12,7 @@
 
   <h1>DNS</h1>
 
-  {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
+   {% if domain.is_using_external_hosting %}
     {% include "includes/banner-external-dns-hosting.html" with banner_external_hosting_class="margin-top-205" %}
   {% endif %}
 
