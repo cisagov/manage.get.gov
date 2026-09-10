@@ -16,6 +16,7 @@ from django.db.models import (
 from django.db.models.functions import Concat, Coalesce
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
+from registrar.logging_context import get_user_log_context
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.invitation_service import (
@@ -5726,7 +5727,19 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
     def do_enroll_dns_hosting(self, request, obj):
-        failed_enrollment_message = "Failed to enroll domain in DNS hosting."
+        def get_failed_enrollment_message (request_id, wire_code):
+            if request_id and wire_code:
+                return (
+                    "This domain could not be enrolled. Please try again. "
+                    f"If the problem persists, contact an admin for assistance and share this ID {request_id} "
+                    f"and wire code {wire_code}."
+                )
+            else:
+                return (
+                    "This domain could not be enrolled. Please try again. "
+                    "If the problem persists, contact an admin for assistance."
+                )
+
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
@@ -5736,14 +5749,14 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         except DnsHostingError as e:
             self.message_user(
                 request,
-                f"{failed_enrollment_message}: {e}",
+                get_failed_enrollment_message(e.context.get("request_id"), e.wire_code),
                 messages.ERROR,
             )
         except Exception as e:
             logger.exception(e)
             self.message_user(
                 request,
-                failed_enrollment_message,
+                get_failed_enrollment_message(e.context.get("request_id"), e.wire_code),
                 messages.ERROR,
             )
         else:
