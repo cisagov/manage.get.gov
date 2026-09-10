@@ -78,7 +78,7 @@ class DnsZone(TimeStampedModel):
         but may not have the instance fully initialized (e.g., when creating new records).
 
         Args:
-            domain_name: The name of the domain to look up.
+            domain_name: The domain name to look up.
 
         Returns:
             The DNS zone ID if found, None otherwise.
