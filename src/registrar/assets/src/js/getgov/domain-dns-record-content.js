@@ -429,13 +429,17 @@ export function initDNSRecordCancelModal(){
             if(!e.isTrusted){
                 return;
             }
+            // Inspect the current form before Alpine's target listener changes
+            // recordType and replaces its fields. Synthetic changes from the
+            // switcher still reach Alpine after the user confirms or cancels.
+            e.stopPropagation();
             const index = e.target.selectedIndex;
             recordTypeSwitcher.setTarget(index);
             recordTypeSwitcher.attemptOpen();
             recordTypeSwitcher.updateSelectedType(recordTypeSwitcher.pending.recordId);
             onCancel(recordTypeSwitcher)
             }
-    })
+    }, { capture: true })
 
     document.getElementById('add-dnsrecord-button').addEventListener("click", (e) => {
             editFormSwitcher.setTarget(0);

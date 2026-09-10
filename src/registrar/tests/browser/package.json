@@ -1,0 +1,11 @@
+{
+  "name": "registrar-browser-regressions",
+  "private": true,
+  "scripts": {
+    "test": "playwright test --workers=1"
+  },
+  "devDependencies": {
+    "@alpinejs/csp": "3.15.2",
+    "@playwright/test": "1.61.1"
+  }
+}
