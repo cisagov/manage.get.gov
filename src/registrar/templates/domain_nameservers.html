@@ -37,7 +37,7 @@
       </button>
     </div>
   </div>
-{% if domain.is_using_external_hosting %}
+{% if domain.is_using_external_hosting and is_domain_manager %}
   {% include "includes/banner-external-dns-hosting.html" with banner_external_hosting_class="margin-top-2" %}
   {% endif %}
   <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
