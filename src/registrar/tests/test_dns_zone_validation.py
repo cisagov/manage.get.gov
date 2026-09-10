@@ -39,19 +39,13 @@ class DnsZoneNameserverValidationTests(SimpleTestCase):
     def test_form_rejects_fewer_than_two_nameservers(self):
         for nameservers in ("", "ns1.example.org"):
             with self.subTest(nameservers=nameservers):
-                form = DnsZoneNameserversForm(
-                    data={"nameservers": nameservers}, instance=DnsZone(soa_id=1)
-                )
+                form = DnsZoneNameserversForm(data={"nameservers": nameservers}, instance=DnsZone(soa_id=1))
                 self.assertFalse(form.is_valid())
-                self.assertEqual(
-                    form.errors["nameservers"], ["DNS zone must have at least 2 nameservers."]
-                )
+                self.assertEqual(form.errors["nameservers"], ["DNS zone must have at least 2 nameservers."])
 
     def test_form_accepts_two_or_more_nameservers(self):
         for count in (2, 3):
             with self.subTest(count=count):
                 nameservers = ",".join(f"ns{index}.example.org" for index in range(1, count + 1))
-                form = DnsZoneNameserversForm(
-                    data={"nameservers": nameservers}, instance=DnsZone(soa_id=1)
-                )
+                form = DnsZoneNameserversForm(data={"nameservers": nameservers}, instance=DnsZone(soa_id=1))
                 self.assertTrue(form.is_valid(), form.errors)
