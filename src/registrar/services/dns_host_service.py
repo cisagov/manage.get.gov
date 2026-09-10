@@ -375,10 +375,7 @@ class DnsHostService:
 
     def register_nameservers(self, domain_name, nameservers):
         domain = Domain.objects.get(name=domain_name)
-        # TODO: first check domain state? or status? to ensure it's in the registry?
 
-        # if its deleted from the registry what's the response?
-        # it would be a registry error?
         nameserver_tups = [tuple([n]) for n in nameservers]
 
         try:
@@ -392,7 +389,7 @@ class DnsHostService:
                 logger.error(
                             "Register nameservers error %s",
                             domain_name,
-                            extra={"domain_name": domain_name, "nameservers": nameservers},
+                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class" : e.code},
                 )
                 raise
 
@@ -522,8 +519,8 @@ class DnsHostService:
                     raise RuntimeError("Zone exists but nameservers not found")
 
                 # Register nameservers with registry
-                if not settings.IS_LOCAL:
-                    self.register_nameservers(domain_name, nameservers)
+                # if not settings.IS_LOCAL:
+                self.register_nameservers(domain_name, nameservers)
 
                 # Mark domain as enrolled
                 domain.is_enrolled_in_dns_hosting = True
