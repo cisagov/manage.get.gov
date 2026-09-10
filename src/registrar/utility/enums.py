@@ -139,6 +139,7 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.CNAME: "Examples: example.gov, www.example.gov",
             DNSRecordTypes.MX: "Example: mail.example.gov",
             DNSRecordTypes.PTR: "Example: example.gov, www.example.gov",
+            DNSRecordTypes.TXT: "Content cannot begin or end with quotation marks.",
         }.get(self, "")
 
     @property
