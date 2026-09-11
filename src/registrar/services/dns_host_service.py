@@ -389,7 +389,7 @@ class DnsHostService:
                 logger.error(
                             "Register nameservers error %s",
                             domain_name,
-                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class" : e.code},
+                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class" : type(e).__name__},
                 )
                 raise
 
@@ -519,8 +519,8 @@ class DnsHostService:
                     raise RuntimeError("Zone exists but nameservers not found")
 
                 # Register nameservers with registry
-                # if not settings.IS_LOCAL:
-                self.register_nameservers(domain_name, nameservers)
+                if not settings.IS_LOCAL:
+                    self.register_nameservers(domain_name, nameservers)
 
                 # Mark domain as enrolled
                 domain.is_enrolled_in_dns_hosting = True
