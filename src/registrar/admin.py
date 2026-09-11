@@ -16,7 +16,6 @@ from django.db.models import (
 from django.db.models.functions import Concat, Coalesce
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
-from registrar.logging_context import get_user_log_context
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.invitation_service import (
@@ -5727,7 +5726,8 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
     def do_enroll_dns_hosting(self, request, obj):
-        def get_failed_enrollment_message (request_id, wire_code):
+
+        def get_failed_enrollment_message(request_id, wire_code):
             if request_id and wire_code:
                 return (
                     "This domain could not be enrolled. Please try again. "

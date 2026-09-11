@@ -1,9 +1,8 @@
-import re
 from unittest import skip
 from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
