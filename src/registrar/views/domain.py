@@ -1014,8 +1014,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_edit(self, request, x_zone_id: str, form_record_data: dict, record_id: int | None) -> int | None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
-        dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
-
+        try:
+            dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
+        except ValueError as e:
+            messages.error(request, str(e))
+            raise GenericError(GenericErrorCodes.GENERIC_ERROR)
+        
         messages.success(request, "The DNS record for this domain has been updated.")
 
         # Refresh with db instance for templating (edit form requires BoundFields)
