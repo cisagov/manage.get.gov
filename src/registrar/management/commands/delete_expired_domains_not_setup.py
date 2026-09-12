@@ -73,10 +73,10 @@ class Command(BaseCommand):
 
         for domain in domains_in_expired_state:
             if domain.expiration_date is None:
-                if domain.created_at_reference is None:
+                if domain.created_at is None:
                     # Can't derive a default expiration without a creation date; don't delete a domain we can't date
                     logger.warning(
-                        "Domain %s (id: %s) has a null created_at_reference; skipping.",
+                        "Domain %s (id: %s) has a null created_at; skipping.",
                         domain.name,
                         domain.id,
                     )
@@ -89,7 +89,7 @@ class Command(BaseCommand):
                     domain.id,
                     domain.state,
                 )
-                default_expiration = domain.created_at_reference + timedelta(days=365)
+                default_expiration = domain.created_at + timedelta(days=365)
                 if default_expiration != today_date:
                     domains_in_expired_state = domains_in_expired_state.exclude(id=domain.id)
 
