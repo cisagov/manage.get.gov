@@ -19,7 +19,7 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.services.dns_http_client import build_dns_client
-from epplibwrapper.errors import  RegistryError
+from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
 
@@ -386,12 +386,12 @@ class DnsHostService:
             )
             domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
         except RegistryError as e:
-                logger.error(
-                            "Register nameservers error %s",
-                            domain_name,
-                            extra={"domain_name": domain_name, "nameservers": nameservers, "error_class" : type(e).__name__},
-                )
-                raise
+            logger.error(
+                "Register nameservers error %s",
+                domain_name,
+                extra={"domain_name": domain_name, "nameservers": nameservers, "error_class": type(e).__name__},
+            )
+            raise
 
     def create_db_account(self, vendor_account_data):
         """
