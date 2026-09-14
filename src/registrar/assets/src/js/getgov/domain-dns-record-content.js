@@ -784,8 +784,14 @@ function updateDNSRecordPreview(scope, config) {
     const rawName = nameField?.value.trim();
     let displayName = rawName;
 
-    if (rawName == "@" && domainName) {
+    if (domainName) {
+        if (rawName == "@") {
         displayName = domainName;
+    } else if (rawName) {
+        const suffix = `.${domainName}`.toLowerCase();
+        displayName = rawName.toLowerCase().endsWith(suffix)
+            ? rawName
+            : `${rawName}.${domainName}`;
     }
 
     if (!displayName) {
