@@ -139,20 +139,17 @@ class DomainFixture(DomainRequestFixture):
             if not domain.is_legacy and use_mock_dns:
                 # Enroll some in dns hosting
                 domain.is_enrolled_in_dns_hosting = random.choice([True, False])  # nosec
-                
                 if domain.is_enrolled_in_dns_hosting:
                     x_account_id = fake.uuid4().replace("-", "")
                     x_zone_id = fake.uuid4().replace("-", "")
                     ns = fake.random_number(digits=1)
                     ns2 = ns + 1
-                    nameservers = [f"n{ns}.rainbow.gov", f"n{ns2}.rainbow.gov"]
                     create_initial_dns_setup(
                         domain,
                         x_account_id=x_account_id,
                         x_zone_id=x_zone_id,
-                        vanity_nameservers=nameservers,
+                        vanity_nameservers=[f"n{ns}.rainbow.gov", f"n{ns2}.rainbow.gov"],
                     )
-                    domain.nameservers = nameservers
 
         # Perform bulk update for the domains
         cls._bulk_update_domains(domains_to_update)
