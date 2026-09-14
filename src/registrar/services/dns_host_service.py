@@ -4,7 +4,7 @@ import random
 from django.conf import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import EnrollmentNotAllowedError, RegistrySystemError
+from registrar.utility.errors import EnrollmentNotAllowedError
 from registrar.models import (
     DnsVendor,
     DnsAccount,
