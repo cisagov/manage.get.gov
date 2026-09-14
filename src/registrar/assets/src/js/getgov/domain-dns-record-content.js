@@ -787,11 +787,12 @@ function updateDNSRecordPreview(scope, config) {
     if (domainName) {
         if (rawName == "@") {
         displayName = domainName;
-    } else if (rawName) {
-        const suffix = `.${domainName}`.toLowerCase();
-        displayName = rawName.toLowerCase().endsWith(suffix)
-            ? rawName
-            : `${rawName}.${domainName}`;
+        } else if (rawName) {
+            const suffix = `.${domainName}`.toLowerCase();
+            displayName = rawName.toLowerCase().endsWith(suffix)
+                ? rawName
+                : `${rawName}.${domainName}`;
+        }
     }
 
     if (!displayName) {
