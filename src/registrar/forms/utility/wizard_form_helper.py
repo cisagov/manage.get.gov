@@ -58,13 +58,18 @@ class RegistrarFormSet(forms.BaseFormSet):
         # save a reference to an domain_request object
         self.domain_request = kwargs.pop("domain_request", None)
         super(RegistrarFormSet, self).__init__(*args, **kwargs)
-        # quick workaround to ensure that the HTML `required`
-        # attribute shows up on required fields for any forms
-        # in the formset which have data already (stated another
-        # way: you can leave a form in the formset blank, but
-        # if you opt to fill it out, you must fill it out _right_)
-        for index in range(self.initial_form_count()):
-            self.forms[index].use_required_attribute = True
+        # Require fields on forms representing existing records while leaving
+        # extra blank forms optional. Use Django's safe initial_forms collection.
+        for form in self.initial_forms:
+            form.use_required_attribute = True
+
+    def clean(self):
+        """Reject inconsistent management-form counts before anything is saved."""
+        super().clean()
+        initial_count = self.initial_form_count()
+        total_count = self.total_form_count()
+        if not 0 <= initial_count <= total_count:
+            raise forms.ValidationError("The submitted form data is inconsistent. Reload the page and try again.")
 
     def should_delete(self, cleaned):
         """Should this entry be deleted from the database?"""

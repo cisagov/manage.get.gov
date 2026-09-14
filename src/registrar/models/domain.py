@@ -47,6 +47,7 @@ from .public_contact import PublicContact
 from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +247,6 @@ class Domain(TimeStampedModel, DomainHelper):
             super().__delete__(obj)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
-        is_adding = self._state.adding
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -263,19 +263,13 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
 
         super().save(force_insert, force_update, using, update_fields)
-
-        if is_adding and not self.created_at_reference:
-            type(self).objects.filter(pk=self.pk, created_at_reference__isnull=True).update(
-                created_at_reference=self.created_at
-            )
-            self.created_at_reference = self.created_at
         self._original_updated_at = self.updated_at
 
     @property
     def display_created_at(self):
         """Creation date shown in the UI: the registry creation date, falling
         back to the registrar record date for domains that never reached the registry (e.g. UNKNOWN)."""
-        return self.x_registry_created_at or self.created_at_reference
+        return self.x_registry_created_at or self.created_at
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -1451,6 +1445,7 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Date the domain expires in the registry"),
     )
 
+    # Follow on TODO for 4440: Delete this + migration for deletion
     created_at_reference = models.DateTimeField(
         null=True,
         blank=True,
@@ -1534,6 +1529,12 @@ class Domain(TimeStampedModel, DomainHelper):
             return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
+        elif (
+            self.state == self.State.READY
+            and self.is_enrolled_in_dns_hosting
+            and flag_is_active_for_user(request, "dns_hosting")
+        ):
+            return "Active"
         return self.state.capitalize()
 
     def enrolled_hosting_display(self, request=None):
@@ -2747,7 +2748,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(self.nameservers) >= 2 or self.host.all().count() >= 2:
             logger.error(
                 f"Domain {self.name} has {len(self.nameservers)} nameservers "
-                f"and {len(self.host.all().count())} hosts "
+                f"and {self.host.all().count()} hosts "
                 f"but is in state {self.state}. Aborting deletion."
             )
             raise ActionNotAllowed(f"Domain {self.name} has active nameservers. Cannot delete.")
