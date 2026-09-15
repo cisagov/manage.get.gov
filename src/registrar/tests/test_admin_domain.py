@@ -1362,8 +1362,13 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         with patch("registrar.admin.DnsHostService.dns_account_setup", return_value="x_account_id_123"), patch(
             "registrar.admin.DnsHostService.get_x_zone_id_if_zone_exists",
-            return_value=("zone_id_123", ["ns1.example.gov", "ns2.example.gov"]),
-        ), patch("registrar.admin.DnsHostService.dns_zone_setup", return_value=None), patch(
+            return_value=("zone_id_123"),
+        ), patch(
+            "registrar.admin.DnsHostService.get_nameservers_from_zone",
+            return_value=(["ns1.example.gov", "ns2.example.gov"]),
+        ), patch(
+            "registrar.admin.DnsHostService.dns_zone_setup", return_value=None
+        ), patch(
             "django.contrib.messages.add_message"
         ) as mock_add_message:
 
@@ -1429,7 +1434,8 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
         # Ensure an error message was sent to the user
         mock_message_user.assert_called_once_with(
             ANY,
-            "Failed to enroll domain in DNS hosting.",
+            "This domain could not be enrolled. Please try again. If the problem persists, "
+            "contact an admin for assistance.",
             messages.ERROR,
         )
 
