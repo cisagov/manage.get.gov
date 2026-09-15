@@ -21,6 +21,8 @@ jobs:
         || startsWith(github.head_ref, 'es/')
         || startsWith(github.head_ref, 'el/')
         || startsWith(github.head_ref, 'aa/')
+        || startsWith(github.head_ref, 'ab/')
+        || startsWith(github.head_ref, 'amt/')
 
     outputs:
       environment: ${{ steps.var.outputs.environment}}

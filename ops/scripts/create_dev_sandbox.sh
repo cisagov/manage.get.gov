@@ -82,7 +82,7 @@ open -a Docker
 cd src/
 ./build.sh
 cd ..
-cf push getgov-$1 -f ops/manifests/manifest-$1.yaml
+cf push getgov-$1 -f ops/manifests/manifest-$1.yaml --var GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)" --var GIT_COMMIT_SHA="$(git rev-parse HEAD)"
 
 echo "Creating cache table..."
 cf run-task getgov-$1 --command 'python manage.py createcachetable' --name createcachetable

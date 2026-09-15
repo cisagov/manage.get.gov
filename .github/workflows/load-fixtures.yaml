@@ -11,6 +11,7 @@ on:
         type: 'choice'
         options:
           - backup
+          - amt
           - ab
           - cw
           - testdb
