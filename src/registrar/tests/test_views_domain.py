@@ -561,7 +561,7 @@ class TestDomainDetail(TestDomainOverview):
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
 
-    def test_domain_external_hosting_detial_banner_message(self):
+    def test_domain_external_hosting_detail_banner_message(self):
         """
         Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
         - is ready or on hold state
