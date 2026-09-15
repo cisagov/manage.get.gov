@@ -86,6 +86,9 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
         self.domain_no_nameserver, _ = Domain.objects.get_or_create(name="nonameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
+        self.domain_ready_state, _ = Domain.objects.get_or_create(
+            name="domainwithexternalhosting.gov", state=Domain.State.READY
+        )
         self.domain_on_hold, _ = Domain.objects.get_or_create(
             name="on-hold.gov",
             state=Domain.State.ON_HOLD,
@@ -147,6 +150,7 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_deleted)
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dns_needed)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_ready_state)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -208,6 +212,9 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_deleted, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_ready_state, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
@@ -588,6 +595,38 @@ class TestDomainDetail(TestDomainOverview):
         # Check that invited domain manager is displayed
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
+
+    def test_domain_external_hosting_detail_banner_message(self):
+        """
+        Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
+        - is ready or on hold state
+        - not enrolled in dns hosting
+        - flag for dns hosting is turned off
+        """
+        banner_message = "This domain's name servers"
+
+        with less_console_noise() and override_flag("dns_hosting", active=False):
+            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+            self.assertContains(on_hold_detail_page, banner_message)
+
+            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+            self.assertContains(ready_state_detail_page, banner_message)
+
+            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
+
+            dns_needed_page = self.client.get(f"/domain/{self.domain_dns_needed.id}")
+            self.assertNotContains(dns_needed_page, banner_message)
+
+        with less_console_noise() and override_flag("dns_hosting", active=True):
+            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+            self.assertNotContains(on_hold_detail_page, banner_message)
+
+            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+            self.assertNotContains(ready_state_detail_page, banner_message)
+
+            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
 
 
 class TestDomainDetailDomainRenewal(TestDomainOverview):
@@ -2218,6 +2257,13 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
+    def test_domain_nameservers_banner_view(self):
+        detail_page = self.client.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_ready_state.id})
+        )
+        self.assertContains(detail_page, "This domain's name servers")
+
 
 class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
     def test_domain_external_dns_pages_redirect_when_dns_hosting_flag_enabled_and_enrolled(self):
@@ -3833,6 +3879,17 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         self.assertContains(page, "Name servers")
         self.assertNotContains(page, "DNS Records")
         self.assertContains(page, "DNSSEC")
+
+    @override_flag("dns_hosting", active=False)
+    def test_domain_dns_banner_for_external_dns_hosting(self):
+        domain = Domain.objects.create(name="domainwithexternalhosting.gov", state=Domain.State.READY)
+        DomainInformation.objects.create(requester=self.user, domain=domain)
+        UserDomainRole.objects.create(domain=domain, user=self.user, role=UserDomainRole.Roles.MANAGER)
+        page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": domain.id}))
+        self.assertContains(
+            page,
+            "This domain's name servers",
+        )
 
 
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
