@@ -587,6 +587,9 @@ class TestDomainDetail(TestDomainOverview):
             domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
             self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
 
+            dns_needed_page = self.client.get(f"/domain/{self.domain_dns_needed}")
+            self.assertNotContains(dns_needed_page, banner_message)
+
         with less_console_noise() and override_flag("dns_hosting", active=True):
             on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
             self.assertNotContains(on_hold_detail_page, banner_message)
