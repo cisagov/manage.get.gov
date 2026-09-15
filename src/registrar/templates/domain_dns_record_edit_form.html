@@ -25,7 +25,10 @@
                     <span class="usa-sr-only dns-record-preview-announce" aria-live="polite"></span>
                 </div>
 
-                {% include dns_record.form_template with form=dns_record.form %}
+                <div class="dns-record-fields">
+                    {% include dns_record.form_template with form=dns_record.form %}
+                </div>
+                
                 <div class="margin-bottom-2">
                     {% with add_group_class="usa-form-group--unstyled-error" %}
                         {% input_with_errors dns_record.form.comment %}
