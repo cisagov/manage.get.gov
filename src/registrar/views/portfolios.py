@@ -49,6 +49,7 @@ from registrar.utility.enums import DefaultUserValues
 from django.views.generic import View, DetailView, ListView
 from django.views.generic.edit import FormMixin
 from django.db import IntegrityError
+from registrar.utility.waffle import flag_is_active_for_user
 
 from registrar.views.utility.invitation_helper import get_org_membership
 
@@ -65,6 +66,7 @@ class PortfolioDomainsView(View):
         if self.request and self.request.user and self.request.user.is_authenticated:
             context["user_domain_count"] = self.request.user.get_user_domain_ids(request).count()
             context["num_expiring_domains"] = request.user.get_num_expiring_domains(request)
+            context["dns_hosting"] = flag_is_active_for_user(request.user, "dns_hosting")
 
         return render(request, "portfolio_domains.html", context)
 
