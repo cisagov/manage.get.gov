@@ -62,13 +62,13 @@
     </div>
 
     {% include "includes/domain_dates.html" %}
-    {% if domain.is_using_external_hosting and is_domain_manager %}
+    {% if is_using_external_hosting and is_domain_manager %}
         {% include "includes/banner-external-dns-hosting.html" %}
     {% endif %}
     
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
       {% if can_access_domain_via_portfolio and not is_domain_manager %}
-      <div class="usa-alert usa-alert--info usa-alert--slim {% if domain.is_using_external_hosting and is_domain_manager %} margin-top-105 {%endif%}">
+      <div class="usa-alert usa-alert--info usa-alert--slim {% if is_using_external_hosting and is_domain_manager %} margin-top-105 {%endif%}">
         <div class="usa-alert__body">
           {% if not is_portfolio_admin %}
           <p class="usa-alert__text ">

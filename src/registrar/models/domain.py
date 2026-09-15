@@ -1541,14 +1541,11 @@ class Domain(TimeStampedModel, DomainHelper):
         return "Yes" if self.is_enrolled_in_dns_hosting else "No"
 
     def is_using_external_hosting(self, request=None):
-        if (
+        return (
             not flag_is_active_for_user(request, "dns_hosting")
             and not self.is_enrolled_in_dns_hosting
             and self.state in [self.State.READY, self.State.ON_HOLD]
-        ):
-            return True
-        else:
-            return False
+        )
 
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""
