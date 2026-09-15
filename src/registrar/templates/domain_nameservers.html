@@ -37,6 +37,9 @@
       </button>
     </div>
   </div>
+{% if is_using_external_hosting and is_domain_manager %}
+  {% include "includes/banner-external-dns-hosting.html" with banner_external_hosting_class="margin-top-2" %}
+  {% endif %}
   <p>Before your domain can be used we’ll need information about your domain name servers. Name server records indicate which DNS server is authoritative for your domain.</p>
 
   <p>Add a name server record by clicking “Add name servers.” You must add at least two name servers (13 max).</p>
