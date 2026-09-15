@@ -108,16 +108,16 @@ legend.float-left-tablet + button.float-right-tablet {
 }
 
 .dns-record-preview {
-  font-size: 1.06 rem;
-  margin-top: 1.5 rem;
-  margin-bottom: 1.5 rem;
+  font-size: 1.06rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
 
-  & + .usa-form-group {
-    margin-top: 0;
-  }
+.dns-record-fields > .usa-form-group:first-child,
+.dns-record-fields > .grid-row:first-child .usa-form-group:first-child {
+  margin-top: 0;
+}
 
-  &:empty,
-  &:has(.dns-record-preview-text:empty) {
-    display: none;
-  }
+.dns-record-preview:empty, .dns-record-preview:has(.dns-record-preview-text:empty) {
+  display:none;
 }

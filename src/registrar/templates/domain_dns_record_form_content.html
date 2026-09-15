@@ -23,17 +23,17 @@
 
     <template x-if="recordType !== 6 && recordType !== 4 ">
         <!-- Only show this for forms that are not txt or mx -->
-        <div>
+        <div class="dns-record-fields">
               {% include "dns_record_forms/base_record_form.html" with form=form %}
         </div>
     </template>
     <template x-if="recordType === 4 ">
-        <div>
+        <div class="dns-record-fields">
               {% include "dns_record_forms/mx_record_form.html" with form=form %}
         </div>
     </template>
     <template x-if="recordType === 6 ">
-        <div>
+        <div class="dns-record-fields">
               {% include "dns_record_forms/txt_record_form.html" with form=form %}
         </div>
     </template>
