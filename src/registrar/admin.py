@@ -5747,16 +5747,18 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             logger.warning("DNS enrollment blocked: %s", e)
             self.message_user(request, str(e), messages.WARNING)
         except DnsHostingError as e:
+            request_id = e.context.get("request_id")
             self.message_user(
                 request,
-                get_failed_enrollment_message(e.context.get("request_id"), e.wire_code),
+                get_failed_enrollment_message(request_id, e.wire_code),
                 messages.ERROR,
             )
         except Exception as e:
             logger.exception(e)
+            request_id = None
             self.message_user(
                 request,
-                get_failed_enrollment_message(e.context.get("request_id"), e.wire_code),
+                get_failed_enrollment_message(request_id, e.wire_code),
                 messages.ERROR,
             )
         else:
