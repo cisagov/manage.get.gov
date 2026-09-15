@@ -180,7 +180,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
         context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
-        context["is_using_external_hosting"] = self.object.is_using_external_hosting(self.request)
+        context["is_using_external_hosting"] = domain.is_using_external_hosting(self.request)
 
         # Stored in a variable for the linter
         action = "analyst_action"
