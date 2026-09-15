@@ -106,3 +106,18 @@ legend.float-left-tablet + button.float-right-tablet {
     top: 2px;
   }
 }
+
+.dns-record-preview {
+  font-size: 1.06rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dns-record-fields > .usa-form-group:first-child,
+.dns-record-fields > .grid-row:first-child .usa-form-group:first-child {
+  margin-top: 0;
+}
+
+.dns-record-preview:empty, .dns-record-preview:has(.dns-record-preview-text:empty) {
+  display:none;
+}
