@@ -822,7 +822,7 @@ EPP_CONNECTION_POOL_SIZE = env.int("EPP_CONNECTION_POOL_SIZE", default=1)
 # Seconds a request will wait for a pooled connection before failing.
 EPP_POOL_BORROW_TIMEOUT = env.int("EPP_POOL_BORROW_TIMEOUT", default=10)
 
-# A connection idle longer than this is health-checked (EPP Hello)
+# A connection idle longer than this is health-checked (EPP CheckDomain, see EPPConnectionPool._is_healthy)
 # before reuse, and replaced if it fails.
 EPP_POOL_IDLE_PING_SECONDS = env.int("EPP_POOL_IDLE_PING_SECONDS", default=60)
 
