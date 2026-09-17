@@ -1106,7 +1106,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         nameservers = None
         is_first_record = False
         record_id = None
-        response_form = form
+        response_form = None
         headers = None
 
         try:
@@ -1148,7 +1148,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             if is_edit:
                 record_id = is_edit
                 dns_record = DnsRecord.objects.get(id=record_id)
-                self._attach_form(dns_record=dns_record)
+                self._attach_form(dns_record=dns_record, form=form)
                 self.dns_record = dns_record
         except GenericError:
             return self._error_response(request, status=400)
