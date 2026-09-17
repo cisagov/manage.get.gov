@@ -440,7 +440,7 @@ class TestDnsHostService(TestCase):
     def test_logging_for_registry_error_for_register_nameservers(self):
         """
         Tests that the RegistryError is raised when it occurs on the register_nameservers method
-
+        MockEppLib(Registry) is not setup for this test. It should always throw a RegistryError.
         """
         domain = create_domain(**{"domain_name": "not-igorville.gov"})
 
