@@ -138,7 +138,7 @@ except DnsHostingError as exc:
     # The view catches on purpose to handle the user-facing business logic:
     # which message to show, which HTTP status, which template to render, etc.
     # No logger call here as the service already logged.
-    messages.error(request, exc.message). # displays the desired error message to the client
+    messages.error(request, exc.message)  # displays the desired error message to the client
 ```
 
 Services log and raise. Views catch and render. A DNS failure produces exactly one log line — at the service, where the error is born, with full Cloudflare context.

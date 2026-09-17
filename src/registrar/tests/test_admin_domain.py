@@ -1362,7 +1362,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         with patch("registrar.admin.DnsHostService.dns_account_setup", return_value="x_account_id_123"), patch(
             "registrar.admin.DnsHostService.get_x_zone_id_if_zone_exists",
-            return_value=("zone_id_123"),
+            return_value="zone_id_123",
         ), patch(
             "registrar.admin.DnsHostService.get_nameservers_from_zone",
             return_value=(["ns1.example.gov", "ns2.example.gov"]),

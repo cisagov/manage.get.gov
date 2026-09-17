@@ -5755,10 +5755,9 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             )
         except Exception as e:
             logger.exception(e)
-            request_id = None
             self.message_user(
                 request,
-                get_failed_enrollment_message(request_id, e.wire_code),
+                get_failed_enrollment_message(None, None),
                 messages.ERROR,
             )
         else:
