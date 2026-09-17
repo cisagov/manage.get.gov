@@ -31,7 +31,6 @@ from registrar.tests.helpers.dns_data_generator import (
     create_dns_zone,
 )
 from epplibwrapper import RegistryError
-from unittest.mock import patch
 
 
 class TestDnsHostService(TestCase):
