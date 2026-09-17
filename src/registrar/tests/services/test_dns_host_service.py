@@ -437,7 +437,11 @@ class TestDnsHostService(TestCase):
             self.service.enroll_domain(not_allowed_domain)
 
     @override_settings(IS_LOCAL=False)
-    def test_logging_for_registry_error(self):
+    def test_logging_for_registry_error_for_register_nameservers(self):
+        """
+        Tests that the RegistryError is raised when it occurs on the register_nameservers method
+
+        """
         domain = create_domain(**{"domain_name": "not-igorville.gov"})
 
         create_initial_dns_setup(domain=domain)
