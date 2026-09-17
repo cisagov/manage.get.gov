@@ -52,6 +52,8 @@ from registrar.utility.errors import (
     DnsHostingError,
     APIError,
     EnrollmentNotAllowedError,
+    DnsHostingErrorCodes,
+    _DNS_WIRE_CODES
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
@@ -1137,6 +1139,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         except DnsHostingError as e:
             messages.error(request, e.message)
+            is_validation_error = e.wire_code == _DNS_WIRE_CODES.get(DnsHostingErrorCodes.VALIDATION_FAILED)
+            print("is validation error: ", is_validation_error)
+            # if is_validation_error keep form open
             if is_edit:
                 record_id = is_edit
                 dns_record = DnsRecord.objects.get(id=record_id)
@@ -1156,13 +1161,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200,
             )
 
+        response_form = form if is_validation_error else DomainDNSRecordForm()
+        print("response form: ", response_form)
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
             {
                 "dns_record": self.dns_record,
                 "domain": self.object,
-                "form": DomainDNSRecordForm(),
+                "form": response_form,
                 "record_id": record_id,
                 "nameservers": nameservers,
                 "is_edit": is_edit,
