@@ -1106,6 +1106,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         nameservers = None
         is_first_record = False
         record_id = None
+        response_form = form
+        headers = None
 
         try:
             allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
@@ -1123,6 +1125,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     {"status": "error", "message": "DNS zone not found. Domain may not be enrolled."},
                     status=400,
                 )
+            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+            response_form = DomainDNSRecordForm()
 
             # DELETE
             if delete_record:
@@ -1139,9 +1143,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         except DnsHostingError as e:
             messages.error(request, e.message)
-            is_validation_error = e.wire_code == _DNS_WIRE_CODES.get(DnsHostingErrorCodes.VALIDATION_FAILED)
-            print("is validation error: ", is_validation_error)
-            # if is_validation_error keep form open
+            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": ""})}
+            response_form = form # retain form data when experiencing external DNS service error
             if is_edit:
                 record_id = is_edit
                 dns_record = DnsRecord.objects.get(id=record_id)
@@ -1161,8 +1164,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200,
             )
 
-        response_form = form if is_validation_error else DomainDNSRecordForm()
-        print("response form: ", response_form)
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
@@ -1176,7 +1177,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "is_first_record": is_first_record,
                 "update_cells": is_edit and self.dns_record is not None,
             },
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+            headers=headers,
             status=200,
         )
 
