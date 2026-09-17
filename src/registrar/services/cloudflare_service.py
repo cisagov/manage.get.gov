@@ -49,7 +49,6 @@ def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
         status = e.response.status_code
         details = _cf_error_detail(e.response)
 
-
         ctx = {
             "cf_ray": e.response.headers.get("cf-ray"),
             "cf_error_code": details.get("cf_error_code"),
