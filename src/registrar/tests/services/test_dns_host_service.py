@@ -447,7 +447,10 @@ class TestDnsHostService(TestCase):
             with self.assertRaises(RegistryError):
                 self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
 
-        assert any("Register nameservers" in log for log in log_msg.output)
+        self.assertTrue(
+            any("Register nameservers" in log for log in log_msg.output),
+            "Expected log for register nameserver error not found",
+        )
 
 
 class TestDnsHostServiceDB(TestCase):
