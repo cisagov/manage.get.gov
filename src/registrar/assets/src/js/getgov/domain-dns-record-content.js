@@ -203,6 +203,9 @@ const teardownForm = (switcher) => {
                 refreshForm(refs.form, form.getAttribute("hx-post"));
             } else if(req.hasUnsavedChanges){
                 form.reset();
+                form.querySelectorAll(FIELD_SELECTOR).forEach(el => {
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                });
             }
         }
     } else {
