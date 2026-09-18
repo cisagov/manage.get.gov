@@ -361,7 +361,7 @@ _DNS_WIRE_CODES = {
 
 _DNS_VALIDATION_MSG = {
     # Map Cloudflare validation error code to registrar error message content
-    83011: "Combined content length of records with this name and type must not exceed 8192 characters."
+    9015: "Combined content length of records with this name and type must not exceed 8192 characters."
 }
 
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
