@@ -53,7 +53,7 @@ from registrar.utility.errors import (
     APIError,
     EnrollmentNotAllowedError,
     DnsHostingErrorCodes,
-    _DNS_WIRE_CODES
+    _DNS_WIRE_CODES,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
@@ -1125,7 +1125,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     {"status": "error", "message": "DNS zone not found. Domain may not be enrolled."},
                     status=400,
                 )
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
             response_form = DomainDNSRecordForm()
 
             # DELETE
@@ -1143,8 +1143,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         except DnsHostingError as e:
             messages.error(request, e.message)
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": ""})}
-            response_form = form # retain form data when experiencing external DNS service error
+            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": ""})}
+            response_form = form  # retain form data when experiencing external DNS service error
             if is_edit:
                 record_id = is_edit
                 dns_record = DnsRecord.objects.get(id=record_id)
