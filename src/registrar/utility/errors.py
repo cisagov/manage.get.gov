@@ -359,6 +359,11 @@ _DNS_WIRE_CODES = {
     DnsHostingErrorCodes.UNKNOWN: "DNS_UNKNOWN",
 }
 
+_DNS_VALIDATION_MSG = {
+    # Map Cloudflare validation error code to registrar error message content
+    83011: "Combined content length of records with this name and type must not exceed 8192 characters."
+}
+
 
 def _rebuild_dns_hosting_error(cls, code, explicit_message, upstream_status, context):
     # Module-level rebuilder so __reduce__ stays picklable by name.
@@ -387,6 +392,11 @@ class DnsHostingError(Exception):
 
     def _build_error_mapping(self, request_id):
         validation_msg = self.GENERIC_VALIDATION_ERROR_MESSAGE
+        cf_error_code = self.context.get("cf_error_code")
+
+        if self.wire_code == _DNS_WIRE_CODES.get(DnsHostingErrorCodes.VALIDATION_FAILED) and cf_error_code:
+            validation_msg = _DNS_VALIDATION_MSG.get(cf_error_code) or validation_msg
+
         error_msg = self.GENERIC_ERROR_MESSAGE
         if request_id:
             error_msg = format_html(
