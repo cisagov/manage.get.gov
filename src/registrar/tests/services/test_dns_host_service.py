@@ -452,7 +452,7 @@ class TestDnsHostService(TestCase):
                 self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
 
         self.assertTrue(
-            any("Registry Error: an error occured when registering nameservers" in log for log in log_msg.output),
+            any("Registry Error: an error occurred when registering nameservers for" in log for log in log_msg.output),
             "Expected log for register nameserver error not found",
         )
 
