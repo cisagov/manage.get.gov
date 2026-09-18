@@ -75,7 +75,7 @@ class DnsHostService:
             extra={"domain_name": domain_name},
         )
         account_name = make_dns_account_name(domain_name)
-        logger.debug(
+        logger.info(
             "Derived account name %s from domain name %s",
             account_name,
             domain_name,
@@ -142,16 +142,7 @@ class DnsHostService:
         if zone_data:
             self.create_db_zone({"result": zone_data}, domain_name)
         else:
-            try:
-                zone_data = self.create_and_save_zone(domain_name, x_account_id)
-            except Exception:
-                logger.error(
-                    "dnsSetup for zone failed for %s",
-                    domain_name,
-                    extra={"domain_name": domain_name},
-                    exc_info=True,
-                )
-                raise
+            self.create_and_save_zone(domain_name, x_account_id)
 
         logger.info(
             "Zone setup completed successfully for domain %s",
@@ -228,17 +219,8 @@ class DnsHostService:
         zone_data = self.dns_vendor_service.get_zone_by_id(x_zone_id)
 
         # Create and save zone in registrar db
-        try:
-            self.create_db_zone(zone_data, domain_name)
-            logger.info("Successfully saved zone '%s' to database", domain_name, extra={"domain_name": domain_name})
-        except Exception:
-            logger.error(
-                "Failed to save zone for %s in database.",
-                domain_name,
-                extra={"domain_name": domain_name, "x_account_id": x_account_id},
-                exc_info=True,
-            )
-            raise
+        self.create_db_zone(zone_data, domain_name)
+        logger.info("Successfully saved zone '%s' to database", domain_name, extra={"domain_name": domain_name})
 
         return zone_data
 
@@ -354,8 +336,7 @@ class DnsHostService:
 
         return zone_data
 
-    def get_x_zone_id_if_zone_exists(self, domain_name) -> tuple[str | None, list[str] | None]:
-        # returns x_zone_id (and temporarily returns nameservers)
+    def get_x_zone_id_if_zone_exists(self, domain_name) -> str | None:
         try:
             zone = DnsZone.objects.get(name=domain_name)
         except DnsZone.DoesNotExist:
@@ -364,13 +345,23 @@ class DnsHostService:
                 domain_name,
                 extra={"domain_name": domain_name},
             )
-            return None, None
+            return None
 
         x_zone_id = zone.get_active_x_zone_id()
-        nameservers = zone.nameservers or []
 
-        # temporarily returning nameservers until we retrieve nameservers directly
-        return x_zone_id, nameservers
+        return x_zone_id
+
+    def get_nameservers_from_zone(self, domain_name) -> list[str] | None:
+        try:
+            zone = DnsZone.objects.get(name=domain_name)
+        except DnsZone.DoesNotExist:
+            logger.debug(
+                "Zone for domain %s does not exist",
+                domain_name,
+                extra={"domain_name": domain_name},
+            )
+            raise
+        return zone.nameservers or []
 
     def register_nameservers(self, domain_name, nameservers):
         domain = Domain.objects.get(name=domain_name)
@@ -414,7 +405,6 @@ class DnsHostService:
         x_account_id = result["id"]
         dns_vendor = DnsVendor.objects.get(name=CURRENT_DNS_VENDOR)
 
-        # TODO: handle transaction failure
         try:
             with transaction.atomic():
                 vendor_acc = VendorDnsAccount.objects.create(
@@ -447,7 +437,6 @@ class DnsHostService:
         zone_account_name = zone_data["account"]["name"]
         nameservers = zone_data["vanity_name_servers"] or zone_data["name_servers"]
 
-        # TODO: handle transaction failure
         try:
             with transaction.atomic():
                 vendor_dns_zone = VendorDnsZone.objects.create(
@@ -508,7 +497,7 @@ class DnsHostService:
                 self.dns_zone_setup(domain_name, x_account_id)
 
                 # Fetch nameservers from DB zone
-                _, nameservers = self.get_x_zone_id_if_zone_exists(domain_name)
+                nameservers = self.get_nameservers_from_zone(domain_name)
                 if not nameservers:
                     raise RuntimeError("Zone exists but nameservers not found")
 
