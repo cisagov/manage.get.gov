@@ -14,16 +14,16 @@ assignees: abroddrick
 
 ## Installation
 
-There are several tools we use locally that you will need to have. 
+There are several tools we use locally that you will need to have.
 
-- [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac) 
+- [ ] [Cloudfoundry CLI](https://docs.cloudfoundry.org/cf-cli/install-go-cli.html#pkg-mac)
   - If you are using Windows the cli will be under `cf8` or `cf7` depending on which version you install.
   - If you are using Windows, installation information can be found [here](https://github.com/cloudfoundry/cli/wiki/V8-CLI-Installation-Guide#installers-and-compressed-binaries)
   - Alternatively, for Windows, [consider using chocolately](https://community.chocolatey.org/packages/cloudfoundry-cli/7.2.0)
 - [ ] GPG or SSH to set up commit signing
   - [GPG](https://gnupg.org/download/) if you are using GPG to sign commits.
   - Make sure you have `gpg` >2.1.7. Run `gpg --version` to check. If not, [install gnupg](https://formulae.brew.sh/formula/gnupg)
-  - This may not work on DHS devices. 
+  - This may not work on DHS devices.
   - Alternatively, you can [use ssh keys](#setting-up-commit-signing-with-ssh) instead.
 - [ ] Docker Community Edition*
 - [ ] Git*
@@ -61,7 +61,7 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] Login.gov account to access stable
 
 ### Steps for the onboarder
-- [ ] Add the onboardee to cloud.gov org (cisa-dotgov) 
+- [ ] Add the onboardee to cloud.gov org (cisa-dotgov)
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
@@ -70,6 +70,8 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] [Team Onboarding](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing)
 - [ ] [Architecture Decision Records](https://github.com/cisagov/dotgov/tree/main/docs/architecture/decisions)
 - [ ] [Contributing Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
+- [ ] Fill out the most recent "Accessibility familiarity survey" in [this folder](https://drive.google.com/drive/u/0/folders/1GIBkaDiNceOnNBqkB1lHBc93_Fcltt7f)
+
 
 ## Setting up commit signing with GPG
 
@@ -115,12 +117,12 @@ source ~/.zshrc
 
 ### Troubleshooting GPG on Windows
 If GPG doesn't work out of the box with git for you:
-- You can [download the GPG binary directly](https://gnupg.org/download/). 
-- It may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html). 
+- You can [download the GPG binary directly](https://gnupg.org/download/).
+- It may be helpful to use [gpg4win](https://www.gpg4win.org/get-gpg4win.html).
 
-From there, you should be able to access gpg through the terminal. 
+From there, you should be able to access gpg through the terminal.
 
-Additionally, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup. 
+Additionally, consider a gpg key manager like Kleopatra if you run into issues with environment variables or with the gpg service not running on startup.
 
 ## Setting up commit signing with SSH
 
@@ -140,9 +142,9 @@ Now test commit signing is working by checking out a branch (`yourinitials/test-
 
 ## Setting up developer sandbox
 
-We have three types of environments: stable, staging, and sandbox. Stable (production)and staging (pre-prod) get deployed via tagged release, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer. 
+We have three types of environments: stable, staging, and sandbox. Stable (production)and staging (pre-prod) get deployed via tagged release, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer.
 
-All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
+All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox.
 
 ## Known Issues
 
