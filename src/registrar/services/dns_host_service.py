@@ -383,6 +383,7 @@ class DnsHostService:
                 "Attempting to register nameservers for domain %s",
                 domain_name,
                 extra={"domain_name": domain_name, "nameservers": nameservers},
+                exc_info=True,
             )
             domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
         except RegistryError as e:
