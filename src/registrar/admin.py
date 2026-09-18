@@ -5726,24 +5726,38 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return form
 
     def do_enroll_dns_hosting(self, request, obj):
-        failed_enrollment_message = "Failed to enroll domain in DNS hosting."
+
+        def get_failed_enrollment_message(request_id, wire_code):
+            if request_id and wire_code:
+                return (
+                    "This domain could not be enrolled. Please try again. "
+                    f"If the problem persists, contact an admin for assistance and share this ID {request_id} "
+                    f"and wire code {wire_code}."
+                )
+            else:
+                return (
+                    "This domain could not be enrolled. Please try again. "
+                    "If the problem persists, contact an admin for assistance."
+                )
+
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
         except EnrollmentNotAllowedError as e:
             logger.warning("DNS enrollment blocked: %s", e)
             self.message_user(request, str(e), messages.WARNING)
-        except DnsHostingError:
+        except DnsHostingError as e:
+            request_id = e.context.get("request_id")
             self.message_user(
                 request,
-                failed_enrollment_message,
+                get_failed_enrollment_message(request_id, e.wire_code),
                 messages.ERROR,
             )
         except Exception as e:
             logger.exception(e)
             self.message_user(
                 request,
-                failed_enrollment_message,
+                get_failed_enrollment_message(None, None),
                 messages.ERROR,
             )
         else:
