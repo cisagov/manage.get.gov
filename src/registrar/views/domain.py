@@ -50,8 +50,6 @@ from registrar.utility.errors import (
     SecurityEmailErrorCodes,
     DnsHostingError,
     EnrollmentNotAllowedError,
-    DnsHostingErrorCodes,
-    _DNS_WIRE_CODES,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
