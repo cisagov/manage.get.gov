@@ -142,7 +142,8 @@ Now test commit signing is working by checking out a branch (`yourinitials/test-
 
 ## Setting up developer sandbox
 
-We have three types of environments: stable, staging, and sandbox. Stable (production)and staging (pre-prod) get deployed via tagged release, and developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer.
+We have four types of environments: stable, staging, development, and sandbox. Stable (production) and staging (pre-prod) get deployed via tagged release, development is automatically updated with any merge to main and represents the current state on the `main` branch. Developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer.
+(see more documentation [here](https://github.com/cisagov/manage.get.gov/blob/main/docs/operations/README.md#deploy) if interested)
 
 All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox.
 
