@@ -494,7 +494,7 @@ class DnsHostService:
         domain_name = domain.name
         with dns_log_context(domain_name):
             if domain.is_enrolled_in_dns_hosting:
-                logger.info("Domain %s already enrolled in DNS hosting.", domain.name)
+                logger.info("Domain %s already enrolled in DNS hosting.", domain_name)
                 return
 
             try:
