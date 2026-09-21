@@ -266,6 +266,12 @@ class CloudflareService:
 
             return resp.json()
 
+    def get_tenant_accounts(self):
+        accounts = []
+        # GET list accounts by page until all pages are gotten
+
+        return accounts
+
     def get_zone_by_id(self, x_zone_id: str):
         """Get zone data given a Clouflare zone id"""
         appended_url = f"/zones/{x_zone_id}"
