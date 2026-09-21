@@ -389,7 +389,7 @@ class DnsHostService:
             logger.error(
                 "Registry Error: an error occurred when registering nameservers for %s",
                 domain_name,
-                extra={"domain_name": domain_name, "nameservers": nameservers, "error_class": type(e).__name__},
+                extra={"domain_name": domain_name, "nameservers": nameservers, "exc_class": type(e).__name__},
             )
             raise
 
