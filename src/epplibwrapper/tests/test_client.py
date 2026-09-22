@@ -205,7 +205,7 @@ class TestClient(TestCase):
         for client in original_clients:
             client.close.assert_called_once()
 
-        # the clients are created on the .send, 3 inititially 
+        # the clients are created on the .send, 3 initially
         # plus the one new connection created after the error
         self.assertEqual(len(created_clients), 4)
 
