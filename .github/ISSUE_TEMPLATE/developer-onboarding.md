@@ -70,7 +70,7 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] [Team Onboarding](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?usp=sharing)
 - [ ] [Architecture Decision Records](https://github.com/cisagov/dotgov/tree/main/docs/architecture/decisions)
 - [ ] [Contributing Policy](https://github.com/cisagov/dotgov/tree/main/CONTRIBUTING.md)
-- [ ] Fill out the most recent "Accessibility familiarity survey" in [this folder](https://drive.google.com/drive/u/0/folders/1GIBkaDiNceOnNBqkB1lHBc93_Fcltt7f)
+- [ ] Fill out the most recent "Accessibility familiarity survey" in [this folder](https://drive.google.com/drive/u/0/folders/1CahX3ca_wbwAoNRV8TeJM7MmrwbZ8qBN)
 
 
 ## Setting up commit signing with GPG

@@ -39,7 +39,7 @@ Welcome to the .gov team! We're excited to have you here. Please follow the step
 - [ ] OPTIONAL: Request access to our [analytics tools](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.9q334hs4lbks).
 - [ ] OPTIONAL: If you would like to manage content updates by running code locally rather than through GitHub, follow the steps in the [dev onboarding ticket](https://github.com/cisagov/getgov/issues/new?assignees=loganmeetsworld&labels=dev%2C+onboarding&template=developer-onboarding.md&title=Developer+Onboarding%3A+GH_HANDLE).
   - [ ] If you would like to run code locally on a CISA laptop, reference the "[Setting up a developer environment on CISA laptops](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.2ctyba51d1zp)" section of the onboarding doc.
-- [ ] Fill out the most recent "Accessibility familiarity survey" in [this folder](https://drive.google.com/drive/u/0/folders/1GIBkaDiNceOnNBqkB1lHBc93_Fcltt7f)
+- [ ] Fill out the most recent "Accessibility familiarity survey" in [this folder](https://drive.google.com/drive/u/0/folders/1CahX3ca_wbwAoNRV8TeJM7MmrwbZ8qBN)
 
 ### Access
 By following the steps, you should have access / been added to the following:
