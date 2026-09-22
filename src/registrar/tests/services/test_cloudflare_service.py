@@ -586,25 +586,23 @@ class TestCloudflareService(SimpleTestCase):
                     "created_on": "2026-06-09T18:25:46.427351Z",
                 },
             ],
-
             "result_info": {"count": 3, "page": 1, "per_page": 2, "total_count": 3},
         }
 
         return_value2 = {
-                    "errors": [],
-                    "messages": [],
-                    "success": True,
-                    "result": [
-                        {
-                            "account_tag": "543453",
-                            "account_pubname": "Account for sea.gov",
-                            "account_type": "enterprise",
-                            "created_on": "2026-06-09T18:25:46.427351Z",
-                        }
-                    ],
-
-                    "result_info": {"count": 1, "page": 2, "per_page": 2, "total_count": 3},
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {
+                    "account_tag": "543453",
+                    "account_pubname": "Account for sea.gov",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
                 }
+            ],
+            "result_info": {"count": 1, "page": 2, "per_page": 2, "total_count": 3},
+        }
 
         mock_response1 = self._setUpSuccessMockResponse(return_value1)
         mock_response2 = self._setUpSuccessMockResponse(return_value2)
@@ -635,10 +633,18 @@ class TestCloudflareService(SimpleTestCase):
             "messages": [],
             "success": True,
             "result": [
-                {"account_tag": "54345", "account_pubname": "Account for stream.us",
-                "account_type": "enterprise", "created_on": "2026-06-09T18:25:46.427351Z"},
-                {"account_tag": "54346", "account_pubname": "Account for river.us",
-                "account_type": "enterprise", "created_on": "2026-06-09T18:25:46.427351Z"},
+                {
+                    "account_tag": "54345",
+                    "account_pubname": "Account for stream.us",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+                {
+                    "account_tag": "54346",
+                    "account_pubname": "Account for river.us",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
             ],
             "result_info": {"count": 2, "page": 1, "per_page": 2, "total_count": 4},
         }

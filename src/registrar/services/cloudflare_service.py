@@ -267,43 +267,43 @@ class CloudflareService:
             return resp.json()
 
     def get_tenant_accounts(self, per_page: int = 50) -> List[dict]:
-            """Fetch all accounts under the tenant with pagination"""
-            all_accounts = []
-            page = 1
-            is_last_page = False
+        """Fetch all accounts under the tenant with pagination"""
+        all_accounts = []
+        page = 1
+        is_last_page = False
 
-            while True:
-                appended_url = f"/tenants/{self.tenant_id}/accounts"
-                params = {"page": page, "per_page": per_page}
+        while True:
+            appended_url = f"/tenants/{self.tenant_id}/accounts"
+            params = {"page": page, "per_page": per_page}
 
-                with self._dns_call():
-                    logger.info(
-                        "Looking up tenant accounts by page: %s",
-                        page,
-                    )
-                    resp = self.client.get(appended_url, params=params)
-                    resp.raise_for_status()
+            with self._dns_call():
+                logger.info(
+                    "Looking up tenant accounts by page: %s",
+                    page,
+                )
+                resp = self.client.get(appended_url, params=params)
+                resp.raise_for_status()
 
-                accounts_data = resp.json()
+            accounts_data = resp.json()
 
-                accounts = accounts_data.get("result", [])
+            accounts = accounts_data.get("result", [])
 
-                if not accounts:
-                    # No more accounts to fetch
-                    break
+            if not accounts:
+                # No more accounts to fetch
+                break
 
-                all_accounts.extend(accounts)
+            all_accounts.extend(accounts)
 
-                # Check if there are more pages
-                result_info = accounts_data.get("result_info", {})
-                total_count = result_info.get("total_count", 1)
-                is_last_page = total_count <= page * per_page
-                if is_last_page:
-                    break
+            # Check if there are more pages
+            result_info = accounts_data.get("result_info", {})
+            total_count = result_info.get("total_count", 1)
+            is_last_page = total_count <= page * per_page
+            if is_last_page:
+                break
 
-                page += 1
+            page += 1
 
-            return all_accounts
+        return all_accounts
 
     def get_zone_by_id(self, x_zone_id: str):
         """Get zone data given a Clouflare zone id"""
