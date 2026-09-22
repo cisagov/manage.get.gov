@@ -567,6 +567,53 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
 
+    def test_get_tenant_accounts_success(self):
+        return_value1 = {
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {
+                    "account_tag": "543451",
+                    "account_pubname": "Account for stream.gov",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+                {
+                    "account_tag": "543452",
+                    "account_pubname": "Account for river.gov",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+            ],
+
+            "result_info": {"count": 3, "page": 1, "per_page": 2, "total_count": 3},
+        }
+
+        return_value2 = {
+                    "errors": [],
+                    "messages": [],
+                    "success": True,
+                    "result": [
+                        {
+                            "account_tag": "543453",
+                            "account_pubname": "Account for sea.gov",
+                            "account_type": "enterprise",
+                            "created_on": "2026-06-09T18:25:46.427351Z",
+                        }
+                    ],
+
+                    "result_info": {"count": 1, "page": 2, "per_page": 2, "total_count": 3},
+                }
+
+        mock_response1 = self._setUpSuccessMockResponse(return_value1)
+        mock_response2 = self._setUpSuccessMockResponse(return_value2)
+        self.service.client.get.side_effect = [mock_response1, mock_response2]
+
+        result = self.service.get_tenant_accounts(2)
+        self.assertEqual(result, return_value1["result"] + return_value2["result"])
+        self.assertEqual(self.service.client.get.call_count, 2)
+
     def test_get_account_zones_success(self):
         """Test successful get_account_zones call"""
         account_id = "55555"
