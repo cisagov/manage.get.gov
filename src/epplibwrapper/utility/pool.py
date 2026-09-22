@@ -107,11 +107,19 @@ class EPPConnectionPool:
         conn = self._borrow()
         try:
             yield conn.client
-        except (TransportError, ConnectionNotLoggedIn):
+        except (TransportError, ConnectionNotLoggedIn) as e:
             # the socket is likely dead. Discard it and let the pool create a new one.
             self._discard(conn)
 
+            # In the case of a transport error, we usually see that all connections are
+            # terminated at once.
+            # This may be caused by a new deployment or something interrupting the socket
+            # connection upstream. Remove all socket connections, so they can get remade.
+            if isinstance(e, TransportError):
+                self._discard_remaining_idle()
+
             # Raise error to enforce a retry
+            # a new connection will likely be made upon retry
             raise
 
         except Exception:
@@ -355,6 +363,16 @@ class EPPConnectionPool:
             # ignore any errors during close, we are discarding the connection anyway
 
         self._release_slot()
+
+    def _discard_remaining_idle(self):
+        """Close and drop every idle connection.
+        Used after a transport failure."""
+        while True:
+            try:
+                idle_conn = self._idle.get_nowait()
+            except queue.Empty:
+                return
+            self._discard(idle_conn)
 
     def _retire(self, conn: PooledConnection):
         """Dispose of a HEALTHY connection we simply no longer need.
