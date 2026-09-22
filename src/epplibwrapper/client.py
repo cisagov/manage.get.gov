@@ -85,13 +85,13 @@ class EPPLibWrapper:
             self._connect(client=client)
         except TransportError as err:
             message = "_create_connection failed to execute due to a connection error."
-            logger.error(f"{_worker_tag()} {message} Error: {err}")
+            logger.error(f"{_worker_tag()} {message} Error: {err}", exc_info=True)
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
         except LoginError as err:
             raise err
         except Exception as err:
             message = "_create_connection failed to execute due to an unknown error."
-            logger.error(f"{_worker_tag()} {message} Error: {err}")
+            logger.error(f"{_worker_tag()} {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
 
         # Client is stored as a connection inside the pool
@@ -148,7 +148,6 @@ class EPPLibWrapper:
                     raise ConnectionNotLoggedIn(response.msg, code=response.code, response=response)
 
         except PoolExhausted as err:
-
             # Every connection stayed checked out for the whole wait.
             # The registry/socket may be fine - this is a capacity signal.
             message = f"{cmd_type} failed: all pooled EPP connections are busy."
@@ -157,19 +156,19 @@ class EPPLibWrapper:
 
         except (ValueError, ParsingError) as err:
             message = f"{cmd_type} failed to execute due to some syntax error."
-            logger.error(f"{_worker_tag()} {message} Error: {err}")
+            logger.error(f"{_worker_tag()} {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
 
         except TransportError as err:
             message = f"{cmd_type} failed to execute due to a connection error."
-            logger.error(f"{_worker_tag()} EPP connection lost. {message} Error: {err}")
+            logger.error(f"{_worker_tag()} EPP connection lost. {message} Error: {err}", exc_info=True)
             raise RegistryError(message, code=ErrorCode.TRANSPORT_ERROR) from err
 
         except LoginError as err:
             # For linter due to it not liking this line length
             text = "failed to execute due to a registry login error."
             message = f"{cmd_type} {text}"
-            logger.error(f"{_worker_tag()}: msg: {message} Error: {err}")
+            logger.error(f"{_worker_tag()}: msg: {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
         except RegistryError:
             # _create_connection is called by the "self._pool.connection() as clientConnection"
@@ -177,7 +176,7 @@ class EPPLibWrapper:
             raise
         except Exception as err:
             message = f"{cmd_type} failed to execute due to an unknown error."
-            logger.error(f"{_worker_tag()}: msg: {message} Error: {err}")
+            logger.error(f"{_worker_tag()}: msg: {message} Error: {err}", exc_info=True)
             raise RegistryError(message) from err
 
         else:
