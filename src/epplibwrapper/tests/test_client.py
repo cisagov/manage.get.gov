@@ -6,6 +6,7 @@ heartbeat pass are covered in test_pool.py.
 """
 
 import datetime
+import ssl
 from dateutil.tz import tzlocal  # type: ignore
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -14,6 +15,7 @@ from django.test import TestCase, override_settings
 from api.tests.common import less_console_noise_decorator
 from epplibwrapper.client import EPPLibWrapper
 from epplibwrapper.errors import ErrorCode, RegistryError, LoginError
+from epplibwrapper.utility.pool import EPPConnectionPool
 import logging
 
 try:
@@ -118,6 +120,102 @@ class TestClient(TestCase):
         with self.assertRaises(RegistryError) as command_response:
             wrapper._create_connection()
         self.assertIsNone(command_response.exception.code)
+
+    @less_console_noise_decorator
+    @patch("epplibwrapper.client.sleep")
+    @patch("epplibwrapper.client.Client")
+    def test_create_connection_ssl_error_is_retried(self, mock_client, mock_sleep):
+        """
+        Scenario: Building a new pooled connection fails with an SSL error
+            Given the registry handshake fails with an SSLError at startup and on the first send attempt
+            When a command is sent
+            Then the failed creation is retried
+            And the retry builds a connection, logs in, and the command succeeds
+        """
+        mock_client.return_value.connect = MagicMock(
+            side_effect=[
+                ssl.SSLError("handshake failed"),  # prefill at init
+                ssl.SSLError("handshake failed"),  # first send attempt
+                None,  # retry succeeds
+            ]
+        )
+        mock_client.return_value.send = MagicMock(return_value=self.fake_success_result())
+
+        wrapper = EPPLibWrapper()
+        # prefill failed, so the pool starts empty
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 0, "idle": 0, "in use": 0})
+
+        _ = wrapper.send(self.fake_command(), cleaned=True)
+
+        # 1st .connect() is the prefill that fails
+        # 2nd .connect() is from the .send() being called above
+        # 3rd .connect() is from when #2 fails it retries
+        self.assertEqual(mock_client.return_value.connect.call_count, 3)
+
+        # login on the connection that finally succeeded + the command itself
+        self.assertEqual(mock_client.return_value.send.call_count, 2)
+        self.assertEqual(wrapper._pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    @override_settings(EPP_CONNECTION_POOL_SIZE=3)
+    @patch("epplibwrapper.client.sleep", MagicMock())
+    @patch("epplibwrapper.client.Client")
+    def test_transport_error_discards_all_idle_connections_then_retries(self, mock_client):
+        """
+        Scenario: A checked-out connection hits a TransportError while other connections sit idle
+            Given a prefilled pool of three logged-in connections
+            When the first command sent raises a TransportError
+            Then the failing connection and every idle connection are closed and discarded
+            And send() retries on a newly created connection and succeeds
+        """
+        created_clients = []
+        fail_next_command = [True]
+
+        def send_side_effect(command, *args, **kwargs):
+            if isinstance(command, commands.Login):
+                return self.fake_success_result()
+            if fail_next_command[0]:
+                fail_next_command[0] = False
+                raise TransportError("Socket closed.")
+            return self.fake_success_result()
+
+        def make_client(*args, **kwargs):
+            client = MagicMock()
+            client.send.side_effect = send_side_effect
+            created_clients.append(client)
+            return client
+
+        mock_client.side_effect = make_client
+
+        with patch.object(
+            EPPConnectionPool,
+            "_discard_remaining_idle",
+            autospec=True,
+            side_effect=EPPConnectionPool._discard_remaining_idle,
+        ) as spy_discard_remaining_idle:
+            wrapper = EPPLibWrapper()
+            self.assertEqual(wrapper._pool.stats(), {"size": 3, "connections created": 3, "idle": 3, "in use": 0})
+            original_clients = list(created_clients)
+
+            _ = wrapper.send(self.fake_command(), cleaned=True)
+
+        spy_discard_remaining_idle.assert_called_once()
+
+        # the failing connection plus both idle ones were closed
+        for client in original_clients:
+            client.close.assert_called_once()
+
+        # the clients are created on the .send, 3 inititially 
+        # plus the one new connection created after the error
+        self.assertEqual(len(created_clients), 4)
+
+        retry_client = created_clients[3]
+        # the newly created connection is 1 logged in &
+        # 2 the command is retried on the new connection
+        self.assertEqual(retry_client.send.call_count, 2)
+
+        # assert the 3 original clients were closed
+        self.assertEqual(wrapper._pool.stats(), {"size": 3, "connections created": 1, "idle": 1, "in use": 0})
 
     @less_console_noise_decorator
     @patch("epplibwrapper.client.Client")
