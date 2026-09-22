@@ -1,7 +1,7 @@
 import httpx
 import os
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 from typing import Any
@@ -612,6 +612,51 @@ class TestCloudflareService(SimpleTestCase):
 
         result = self.service.get_tenant_accounts(2)
         self.assertEqual(result, return_value1["result"] + return_value2["result"])
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_tenant_accounts_http_error(self):
+        mock_response = MagicMock()
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "500 Server Error",
+            request=MagicMock(),
+            response=MagicMock(status_code=500),
+        )
+
+        self.service.client.get.return_value = mock_response
+
+        with self.assertRaises(DnsHostingError):
+            self.service.get_tenant_accounts(per_page=2)
+
+        self.service.client.get.assert_called_once()
+
+    def test_get_tenant_accounts_http_error_on_second_page(self):
+        return_value1 = {
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {"account_tag": "54345", "account_pubname": "Account for stream.us",
+                "account_type": "enterprise", "created_on": "2026-06-09T18:25:46.427351Z"},
+                {"account_tag": "54346", "account_pubname": "Account for river.us",
+                "account_type": "enterprise", "created_on": "2026-06-09T18:25:46.427351Z"},
+            ],
+            "result_info": {"count": 2, "page": 1, "per_page": 2, "total_count": 4},
+        }
+
+        mock_response1 = self._setUpSuccessMockResponse(return_value1)
+
+        mock_response2 = MagicMock()
+        mock_response2.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "503 Service Unavailable",
+            request=MagicMock(),
+            response=MagicMock(status_code=503),
+        )
+
+        self.service.client.get.side_effect = [mock_response1, mock_response2]
+
+        with self.assertRaises(DnsHostingError):
+            self.service.get_tenant_accounts(per_page=2)
+
         self.assertEqual(self.service.client.get.call_count, 2)
 
     def test_get_account_zones_success(self):
