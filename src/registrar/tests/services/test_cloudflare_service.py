@@ -735,6 +735,42 @@ class TestCloudflareService(SimpleTestCase):
                     self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
 
+    def test_get_zone_records_success(self):
+        zone_id = "2468appreciate"
+        return_value = {
+            "result": [
+                {"id": 1, "name": "A", "content": "198.22.333.4", "ttl": 3600},
+                {"id": 2, "name": "AAAA", "content": "2001:db8::1234:5678", "ttl": 300},
+                {"id": 3, "name": "TXT", "content": "I am your content", "ttl": 3600},
+                {"id": 4, "name": "MX", "content": "mail.mytest.gov", "ttl": 3600},
+                {"id": 5, "name": "PTR", "content": "blog.mytest.gov", "ttl": 3600},
+            ]
+        }
+
+        mock_response = self._setUpSuccessMockResponse(return_value)
+        self.service.client.get.return_value = mock_response
+        result = self.service.get_zone_records(zone_id)
+
+        self.assertEqual(result, return_value)
+
+    def test_get_zone_records_failure(self):
+        x_zone_id = "3579fine"
+        for case in self.failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+                self.service.client.get.return_value = mock_response
+
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.get_zone_records(x_zone_id)
+
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self._assert_shared_http_status_errors_details(exc, case)
+                    self.assertEqual(exc.context["x_zone_id"], x_zone_id)
+
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""
         zone_id = "1234"

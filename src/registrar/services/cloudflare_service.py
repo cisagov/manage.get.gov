@@ -320,6 +320,19 @@ class CloudflareService:
         logger.info(f"Retrieved zone: {resp}")
         return resp.json()
 
+    def get_zone_records(self, x_zone_id: str):
+        appended_url = f"/zones/{x_zone_id}/dns_records"
+        with self._dns_call(x_zone_id=x_zone_id):
+            logger.info(
+                "Getting all of the dns records for zone %s",
+                x_zone_id,
+                extra={"x_zone_id": x_zone_id},
+            )
+            resp = self.client.get(appended_url)
+            resp.raise_for_status()
+
+            return resp.json()
+
     def get_dns_record(self, zone_id: str, record_id: str):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
         with self._dns_call(x_zone_id=zone_id, x_record_id=record_id):
