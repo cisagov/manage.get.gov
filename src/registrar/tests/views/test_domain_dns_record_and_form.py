@@ -168,7 +168,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         the Edit button id the modal returns focus to on close."""
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             created = {}
 
@@ -247,7 +247,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -296,7 +296,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             with self.subTest(record_type=data["type"]):
                 with patch("registrar.views.domain.DnsHostService") as MockSvc:
                     svc = MockSvc.return_value
-                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+                    svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
                     # Create the DnsRecord row inside the mocked service call, not before the POST.
                     # Otherwise the new duplicate-record validator flags the POST as a dup of the
@@ -347,7 +347,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
             svc.create_dns_record.side_effect = DnsHostingError()
 
             response = self.client.post(
@@ -595,7 +595,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
             svc.update_dns_record.return_value = existing
 
             response = self.client.post(
@@ -640,7 +640,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -673,7 +673,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -706,7 +706,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -739,7 +739,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -772,7 +772,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             # Submit with full domain name instead of @
             response = self.client.post(
@@ -810,7 +810,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -840,7 +840,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         """
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -878,7 +878,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         """
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -951,7 +951,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
