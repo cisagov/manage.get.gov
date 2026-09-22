@@ -46,7 +46,7 @@ By following the steps, you should have access / been added to the following:
 - [ ] The [.gov team](https://github.com/orgs/cisagov/teams/gov) under cisagov on GitHub
 - [ ] [Slack](https://dhscisa.enterprise.slack.com), and have been added to the necessary channels
 - [ ] [Google Drive Project folder](https://drive.google.com/drive/folders/1qkoFQBlzXA7axi9CZ_OBhlJqRcqlNfpW?usp=drive_link)
-- [ ] [.gov team on Figma](https://www.figma.com/files/1287135731043703282/team/1299882813146449644) (as an editor if you have a license)
+- [ ] [.gov team on Figma](https://figma-gov.com/files/1509223959794292234/team/1509957721294554214) (as an editor if you have a license)
 - [ ] [Team meetings](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.h62kzew057p1)
 
 
