@@ -790,7 +790,7 @@ function updateDNSRecordPreview(scope, config) {
     if (domainName) {
         const lowerRaw = rawName?.toLowerCase();
         const lowerDomain = domainName.toLowerCase();
-        const suffix = `.{lowerDomain}`;
+        const suffix = `.${lowerDomain}`;
 
         if (rawName == "@") {
         displayName = domainName;
