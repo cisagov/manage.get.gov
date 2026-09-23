@@ -13,7 +13,7 @@ from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.domain import DomainDNSRecordsView
-from .common import GenericTestHelper, MockEppLib, create_test_user, create_user, form_with_field, get_ap_style_month  # type: ignore
+from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
@@ -3922,12 +3922,12 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @override_flag("dns_hosting", active=True)
     def test_dns_records_denies_non_manager_before_touching_domain(self):
         random_user = get_user_model().objects.create(
-            username = "random_user",
-            first_name = "First",
-            last_name = "Last",
-            email = "info@example.com",
-            phone = "8003111234",
-            title = "test title",
+            username="random_user",
+            first_name="First",
+            last_name="Last",
+            email="info@example.com",
+            phone="8003111234",
+            title="test title",
         )
         self.client.force_login(random_user)
         domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
