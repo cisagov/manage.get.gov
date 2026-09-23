@@ -17,6 +17,7 @@ on:
           - hotgov
           - meoward
           - backup
+          - amt
           - ab
           - cw
           - testdb

@@ -30,6 +30,7 @@ from registrar.tests.helpers.dns_data_generator import (
     delete_all_dns_data,
     create_dns_zone,
 )
+from epplibwrapper import RegistryError
 
 
 class TestDnsHostService(TestCase):
@@ -400,26 +401,28 @@ class TestDnsHostService(TestCase):
         domain_name = "test.gov"
         domain = create_domain(**{"domain_name": domain_name})
 
-        mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
         self.service.dns_zone_setup = Mock()
+        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
         self.service.register_nameservers = Mock()
 
         self.service.enroll_domain(domain)
 
         self.service.dns_account_setup.assert_called_once_with(domain_name)
         self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
-        self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.example.gov", "ns2.example.gov"])
+        self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.rainbow.gov", "ns2.rainbow.gov"])
 
     @override_settings(IS_PRODUCTION=True)
     def test_enroll_domain_allowed_domain_enrollment_in_production_succeeds(self):
         allowed_domain = create_domain(**{"domain_name": "igorville.gov"})
 
-        mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
         self.service.dns_zone_setup = Mock()
+        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
         self.service.register_nameservers = Mock()
 
         self.service.enroll_domain(allowed_domain)
@@ -428,12 +431,32 @@ class TestDnsHostService(TestCase):
     @override_settings(IS_PRODUCTION=True)
     def test_enroll_domain_disallowed_domain_enrollment_in_production_fails(self):
         not_allowed_domain = create_domain(**{"domain_name": "not-igorville.gov"})
-        mock_get_x_zone_id_if_zone_exists = Mock(return_value=(None, ["ns1.example.gov", "ns2.example.gov"]))
+        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
 
         with self.assertRaises(EnrollmentNotAllowedError):
             self.service.enroll_domain(not_allowed_domain)
+
+    @override_settings(IS_LOCAL=False)
+    def test_logging_for_registry_error_for_register_nameservers(self):
+        """
+        Tests that the RegistryError is raised when it occurs on the register_nameservers method
+        MockEppLib(Registry) is not setup for this test. It should always throw a RegistryError.
+        """
+        domain = create_domain(**{"domain_name": "not-igorville.gov"})
+
+        create_initial_dns_setup(domain=domain)
+        nameservers = DnsZone.objects.get(domain=domain).nameservers
+
+        with self.assertLogs("registrar.services.dns_host_service", level="ERROR") as log_msg:
+            with self.assertRaises(RegistryError):
+                self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
+
+        self.assertTrue(
+            any("Registry Error: an error occurred when registering nameservers for" in log for log in log_msg.output),
+            "Expected log for register nameserver error not found",
+        )
 
 
 class TestDnsHostServiceDB(TestCase):
@@ -587,20 +610,46 @@ class TestDnsHostServiceDB(TestCase):
             domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
         )
 
-        found_x_zone_id, found_nameservers = self.service.get_x_zone_id_if_zone_exists(zone_name)
+        found_x_zone_id = self.service.get_x_zone_id_if_zone_exists(zone_name)
 
         self.assertEqual(found_x_zone_id, x_zone_id)
-        self.assertEqual(found_nameservers, expected_nameservers)
 
     def test_find_existing_zone_in_db_does_not_exist_returns_none(self):
         zone_name = "missing.gov"
 
-        x_zone_id, nameservers = self.service.get_x_zone_id_if_zone_exists(
-            zone_name,
-        )
+        x_zone_id = self.service.get_x_zone_id_if_zone_exists(zone_name)
 
         self.assertIsNone(x_zone_id)
-        self.assertIsNone(nameservers)
+
+    def test_get_nameservers_from_zone_success(self):
+        zone_name = "example.gov"
+        test_x_account_id = "12345"
+        x_zone_id = "zone-999"
+        expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
+
+        domain = create_domain(domain_name=zone_name)
+        create_initial_dns_setup(
+            domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
+        )
+
+        nameservers = self.service.get_nameservers_from_zone(zone_name)
+
+        self.assertEqual(expected_nameservers, nameservers)
+
+    def test_get_nameservers_from_zone_failure(self):
+        zone_name = "example.gov"
+        test_x_account_id = "12345"
+        x_zone_id = "zone-999"
+        expected_nameservers = ["ns1.example.gov", "ns2.example.gov"]
+
+        domain = create_domain(domain_name=zone_name)
+        create_initial_dns_setup(
+            domain, x_account_id=test_x_account_id, x_zone_id=x_zone_id, nameservers=expected_nameservers
+        )
+        DnsZone.objects.get(name="example.gov").delete()
+
+        with self.assertRaises(DnsZone.DoesNotExist):
+            self.service.get_nameservers_from_zone(zone_name)
 
     def test_create_db_zone_success(self):
         """Successfully creates registrar db zone objects."""

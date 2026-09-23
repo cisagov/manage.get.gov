@@ -1,12 +1,11 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -50,7 +49,6 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
     DnsHostingError,
-    APIError,
     EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
@@ -180,6 +178,7 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
         context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
+        context["is_using_external_hosting"] = domain.is_using_external_hosting(self.request)
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -1018,13 +1017,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
             dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
-
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
-        except RequestError as e:
-            logger.error(f"DNS record edit failed, network error: {e}")
-            raise APIError(str(e))
 
         messages.success(request, "The DNS record for this domain has been updated.")
 
@@ -1101,7 +1096,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not delete_record and not form.is_valid():
             return self._handle_invalid_form(request, form, is_edit)
 
-        nameservers = None
         is_first_record = False
         record_id = None
 
@@ -1115,12 +1109,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     f"Only {allowed_domains_string} is allowed in production right now."
                 )
 
-            x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
-            if not x_zone_id:
-                return JsonResponse(
-                    {"status": "error", "message": "DNS zone not found. Domain may not be enrolled."},
-                    status=400,
-                )
+            x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
+            if x_zone_id is None:
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                return self._error_response(request, status=400)
 
             # DELETE
             if delete_record:
@@ -1142,6 +1134,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 dns_record = DnsRecord.objects.get(id=record_id)
                 self._attach_form(dns_record=dns_record)
                 self.dns_record = dns_record
+
         except GenericError:
             return self._error_response(request, status=400)
         finally:
@@ -1164,7 +1157,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "domain": self.object,
                 "form": DomainDNSRecordForm(),
                 "record_id": record_id,
-                "nameservers": nameservers,
                 "is_edit": is_edit,
                 "is_first_record": is_first_record,
                 "update_cells": is_edit and self.dns_record is not None,
