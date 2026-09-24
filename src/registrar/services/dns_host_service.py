@@ -507,13 +507,13 @@ class DnsHostService:
                     if not nameservers:
                         raise RuntimeError("Zone exists but nameservers not found")
 
-                        # Register nameservers with registry
-                        if not settings.IS_LOCAL:
-                            self.register_nameservers(domain_name, nameservers)
+                    # Register nameservers with registry
+                    if not settings.IS_LOCAL:
+                        self.register_nameservers(domain_name, nameservers)
 
-                        # Mark domain as enrolled
-                        domain.is_enrolled_in_dns_hosting = True
-                        domain.save(update_fields=["is_enrolled_in_dns_hosting"])
+                    # Mark domain as enrolled
+                    domain.is_enrolled_in_dns_hosting = True
+                    domain.save(update_fields=["is_enrolled_in_dns_hosting"])
 
             except Exception:
                 logger.exception(
