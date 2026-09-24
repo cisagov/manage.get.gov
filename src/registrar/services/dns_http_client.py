@@ -84,7 +84,7 @@ class RetryTransport(httpx.HTTPTransport):
 def build_dns_client():
     transport = RetryTransport(retries=CONNECT_RETRIES)
     client = httpx.Client(timeout=DNS_TIMEOUT, transport=transport)
-    if settings.DNS_MOCK_EXTERNAL_APIS:
+    if settings.DNS_MOCK_EXTERNAL_APIS and not settings.IS_PRODUCTION:
         from registrar.services.mock_cloudflare_service import MockCloudflareService
         mock = MockCloudflareService()
         if not mock.is_active:
