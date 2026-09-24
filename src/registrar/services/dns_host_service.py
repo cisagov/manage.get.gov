@@ -139,10 +139,10 @@ class DnsHostService:
 
             zone_data = self._find_existing_zone_in_cf(domain_name, x_account_id)
 
-        if zone_data:
-            self.create_db_zone({"result": zone_data}, domain_name)
-        else:
-            self.create_and_save_zone(domain_name, x_account_id)
+            if zone_data:
+                self.create_db_zone({"result": zone_data}, domain_name)
+            else:
+                self.create_and_save_zone(domain_name, x_account_id)
 
             logger.info(
                 "Zone setup completed successfully for domain %s",
