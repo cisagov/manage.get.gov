@@ -139,7 +139,39 @@ class DNSRecordTypes(TextChoices):
             DNSRecordTypes.CNAME: "Examples: example.gov, www.example.gov",
             DNSRecordTypes.MX: "Example: mail.example.gov",
             DNSRecordTypes.PTR: "Example: example.gov, www.example.gov",
+            DNSRecordTypes.TXT: "Content cannot begin or end with quotation marks.",
         }.get(self, "")
+
+    @property
+    def preview_template(self) -> str:
+        """
+        Sentence template used to build the live text preview shown while a user
+        fills out a DNS record form.
+        """
+        return {
+            DNSRecordTypes.A: "{name} points to {content}.",
+            DNSRecordTypes.AAAA: "{name} points to {content}.",
+            DNSRecordTypes.CNAME: "{name} is an alias of {content}.",
+            DNSRecordTypes.MX: "{content} handles mail for {name}.",
+            DNSRecordTypes.PTR: "{content} points to {name} in a reverse lookup.",
+            DNSRecordTypes.TXT: "{name} has a record with content {content}.",
+        }.get(self, "{name} points to {content}.")
+
+    @property
+    def preview_content_placeholder(self) -> str:
+        """
+        Bracketed placeholder word for the content field in the preview sentence
+        above, e.g. "mail server" for MX. This is separate from field_label because
+        the Figma copy uses different casing/wording than the field_label
+        """
+        return {
+            DNSRecordTypes.A: "IPv4 address",
+            DNSRecordTypes.AAAA: "IPv6 address",
+            DNSRecordTypes.CNAME: "target",
+            DNSRecordTypes.MX: "mail server",
+            DNSRecordTypes.PTR: "domain name",
+            DNSRecordTypes.TXT: "content",
+        }.get(self, "content")
 
     @property
     def cleaner(self):

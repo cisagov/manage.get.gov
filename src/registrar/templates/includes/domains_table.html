@@ -90,6 +90,33 @@
         <h2>Status</h2>
         <fieldset class="usa-fieldset margin-top-0">
           <legend class="usa-legend">Select to apply <span class="sr-only">status</span> filter</legend>
+
+          {% if dns_hosting %}
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-active"
+              type="checkbox"
+              name="filter-status"
+              value="active"
+            />
+            <label class="usa-checkbox__label" for="filter-status-active"
+              >Active</label>
+          </div>
+          {% endif %}
+                <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-deleted"
+              type="checkbox"
+              name="filter-status"
+              value="deleted"
+            />
+            <label class="usa-checkbox__label" for="filter-status-deleted"
+              >Deleted</label
+            >
+          </div>
+
           <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"
@@ -99,34 +126,10 @@
               value="unknown"
             />
             <label class="usa-checkbox__label" for="filter-status-dns-needed"
-              >DNS Needed</label
+              >DNS needed</label
             >
           </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-ready"
-              type="checkbox"
-              name="filter-status"
-              value="ready"
-            />
-            <label class="usa-checkbox__label" for="filter-status-ready"
-              >Ready</label
-            >
-          </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
-              id="filter-status-on-hold"
-              type="checkbox"
-              name="filter-status"
-              value="on hold"
-            />
-            <label class="usa-checkbox__label" for="filter-status-on-hold"
-              >On hold</label
-            >
-          </div>
-          <div class="usa-checkbox">
+            <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"
               id="filter-status-expired"
@@ -141,18 +144,6 @@
           <div class="usa-checkbox">
             <input
               class="usa-checkbox__input"
-              id="filter-status-deleted"
-              type="checkbox"
-              name="filter-status"
-              value="deleted"
-            />
-            <label class="usa-checkbox__label" for="filter-status-deleted"
-              >Deleted</label
-            >
-          </div>
-          <div class="usa-checkbox">
-            <input
-              class="usa-checkbox__input"
               id="filter-status-expiring"
               type="checkbox"
               name="filter-status"
@@ -161,6 +152,31 @@
             <label class="usa-checkbox__label" for="filter-status-expiring"
               >Expiring soon</label>
           </div>
+            <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-on-hold"
+              type="checkbox"
+              name="filter-status"
+              value="on hold"
+            />
+            <label class="usa-checkbox__label" for="filter-status-on-hold"
+              >On hold</label
+            >
+          </div>
+          <div class="usa-checkbox">
+            <input
+              class="usa-checkbox__input"
+              id="filter-status-ready"
+              type="checkbox"
+              name="filter-status"
+              value="ready"
+            />
+            <label class="usa-checkbox__label" for="filter-status-ready"
+              >Ready</label
+            >
+          </div>
+  
         </fieldset>
       </div>
     </div>
