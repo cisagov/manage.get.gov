@@ -4,9 +4,9 @@ import random
 from django.conf import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
+from registrar.utility.errors import EnrollmentNotAllowedError
 from registrar.services.dns_http_client import build_dns_client
 from registrar.logging_context import dns_log_context
-from registrar.utility.errors import EnrollmentNotAllowedError, RegistrySystemError
 from registrar.models import (
     DnsVendor,
     DnsAccount,
@@ -20,6 +20,8 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.services.dns_http_client import build_dns_client
+from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
 
@@ -366,7 +368,6 @@ class DnsHostService:
     def register_nameservers(self, domain_name, nameservers):
         with dns_log_context(domain_name):
             domain = Domain.objects.get(name=domain_name)
-            # TODO: first check domain state? or status? to ensure it's in the registry?
             nameserver_tups = [tuple([n]) for n in nameservers]
 
             try:
@@ -376,7 +377,12 @@ class DnsHostService:
                     extra={"nameservers": nameservers},
                 )
                 domain.nameservers = nameserver_tups  # calls EPP service to post nameservers to registry
-            except (RegistrySystemError, Exception):
+            except RegistryError as e:
+                logger.error(
+                    "Registry Error: an error occurred when registering nameservers for %s",
+                    domain_name,
+                    extra={"nameservers": nameservers, "exc_class": type(e).__name__},
+                )
                 raise
 
     def create_db_account(self, vendor_account_data):
