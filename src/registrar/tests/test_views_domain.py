@@ -3895,7 +3895,6 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
 
 @override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
-    mock_api_service = MockCloudflareService()
 
     def tearDown(self):
         delete_all_dns_data()
@@ -3904,7 +3903,6 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.cf_service = CloudflareService(self.client)
         self.user = create_user()
         self.client.force_login(self.user)
 
