@@ -42,12 +42,12 @@ from contextlib import contextmanager
 @contextmanager
 def _capture_json_logs(logger_name="registrar.services.dns_host_service", level=logging.DEBUG):
     """
-    Temporarily attach a JsonFormatter-backed handler to a logger so log lines emitted 
+    Temporarily attach a JsonFormatter-backed handler to a logger so log lines emitted
     inside this block can be inspected as structured JSON afterwards.
 
-    This is needed specifically because JsonFormatter reads domain_name from the contextvar's 
+    This is needed specifically because JsonFormatter reads domain_name from the contextvar's
     *current* value at format() time -- dns_log_context resets that value as soon as
-    the wrapped method body finishes. Capturing raw records via assertLogs and 
+    the wrapped method body finishes. Capturing raw records via assertLogs and
     reformatting them after the call returns would find domain_name already cleared...
     producing a false failure.
     """
@@ -65,6 +65,7 @@ def _capture_json_logs(logger_name="registrar.services.dns_host_service", level=
         logger.setLevel(original_level)
         handler.close()
 
+
 def _json_log_entries(stream, containing=None):
     """
     Parse everything captured by _capture_json_logs into a list of dictionaries.
@@ -80,7 +81,6 @@ def _json_log_entries(stream, containing=None):
             continue
         entries.append(json.loads(line))
     return entries
-
 
 
 class TestDnsHostService(TestCase):
@@ -519,7 +519,6 @@ class TestDnsHostService(TestCase):
         with _capture_json_logs() as stream:
             with self.assertRaises(RegistryError):
                 self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
-
 
         log_entries = _json_log_entries(stream, containing="Registry Error")
         self.assertTrue(log_entries, "Expected a 'Registry Error' log line")
