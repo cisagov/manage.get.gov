@@ -322,7 +322,7 @@ class EPPConnectionPool:
                 self._put_back(PooledConnection(self._connection_factory()))
             except Exception:
                 self._release_slot()
-                logger.error("Replenish hit an error & failed to build a connection. Stats: %s", self.stats())
+                logger.error("Replenish hit an error & failed to build a connection. Stats: %s", self.stats(), exc_info=True)
                 # Exit the loop if we can't form a connection
                 # log in creds could be invalid
                 # or the registry system is down

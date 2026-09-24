@@ -383,7 +383,7 @@ class TestClient(TestCase):
             if isinstance(command, commands.Login):
                 return self.fake_success_result()
             command_calls["count"] += 1
-            if command_calls["count"] == 1:
+            if command_calls["count"]   == 1:
                 raise TransportError("connection dropped")
             return command_success
 
