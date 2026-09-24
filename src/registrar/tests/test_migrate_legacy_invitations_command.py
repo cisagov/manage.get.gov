@@ -41,8 +41,8 @@ class TestMigrateLegacyInvitationsCommand(TestCase):
         invited_at = timezone.now() - timedelta(days=30)
         DomainInvitation.objects.filter(pk=self.domain_invitation.pk).update(created_at=invited_at)
         PortfolioInvitation.objects.filter(pk=self.portfolio_invitation.pk).update(created_at=invited_at)
-        self.domain_invitation.refresh_from_db()
-        self.portfolio_invitation.refresh_from_db()
+        self.domain_invitation.refresh_from_db(fields=["created_at"])
+        self.portfolio_invitation.refresh_from_db(fields=["created_at"])
 
         self._create_admin_log(self.domain_invitation)
         self._create_admin_log(self.portfolio_invitation)
