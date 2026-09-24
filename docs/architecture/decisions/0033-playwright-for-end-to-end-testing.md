@@ -12,7 +12,7 @@ We would like to incorporate end to end testing within the manage.gov applicatio
 
 ## Decision
 
-To use Playwright for end to end testing.
+To use Playwright for end to end testing. We also considered using Cypress but ultimately went with Playwright as it offers better browser compatibility (Cypress does not cover Safari) as well as functioning better for non-SPA applications. Playwright also has better performance metrics and includes parrelelization which Cypress charges extra for.
 
 ## Consequences
 
