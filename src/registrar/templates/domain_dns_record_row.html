@@ -1,5 +1,5 @@
-<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ record_id }}' || openComments.includes('{{record_id}}')? 'hide-td-borders' : ''">
-    <td id="dns-type-{{ record_id }}" data-label="Type">
+<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ dns_record.id}}' || openComments.includes('{{dns_record.id}}')? 'hide-td-borders' : ''">
+    <td id="dns-type-{{ dns_record.id}}" data-label="Type">
         <div class="tablet:display-flex tablet:flex-align-baseline">
             <span>
                 {{dns_record.type}}
@@ -13,26 +13,26 @@
         </div>
 
     </td>
-    <td id="dns-name-{{ record_id }}" data-label="Name">
+    <td id="dns-name-{{ dns_record.id}}" data-label="Name">
         {{dns_record.name}}
     </td>
-    <td id="dns-content-{{ record_id }}" data-label="Content">
+    <td id="dns-content-{{ dns_record.id}}" data-label="Content">
         {{dns_record.content|truncatechars:37}}
     </td>
-    <td id="dns-ttl-{{ record_id }}" data-label="TTL">
+    <td id="dns-ttl-{{ dns_record.id}}" data-label="TTL">
         {{ dns_record.ttl_display }}
     </td>
     <td class="padding-right-0" data-label="Action">
         <div class="tablet:display-flex tablet:flex-row">
             <button
             type="button"
-            id="dnsrecord-edit-button-{{ record_id }}"
+            id="dnsrecord-edit-button-{{ dns_record.id}}"
             class="usa-button usa-button--unstyled margin-right-05"
             aria-expanded="false"
-            :aria-expanded="showFormId == '{{ record_id }}' ? 'true' : 'false'"
-            aria-controls="dnsrecord-edit-row-{{ record_id }}"
+            :aria-expanded="showFormId == '{{ dns_record.id}}' ? 'true' : 'false'"
+            aria-controls="dnsrecord-edit-row-{{ dns_record.id}}"
             aria-label="Edit {{ dns_record.name }}"
-            data-record-id="{{ record_id }}"
+            data-record-id="{{ dns_record.id}}"
             data-action="edit"
             >
                 <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" width="24">
@@ -46,8 +46,8 @@
                         focusable="false"
                         role="img"
                        >
-                        <use x-show="showFormId !='{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_more" ></use>
-                        <use x-show="showFormId == '{{ record_id }}' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
+                        <use x-show="showFormId !='{{ dns_record.id}}' " xlink:href="/public/img/sprite.svg#expand_more" ></use>
+                        <use x-show="showFormId == '{{ dns_record.id}}' " xlink:href="/public/img/sprite.svg#expand_less" ></use>
                     </svg>
 
             </button>
@@ -55,28 +55,28 @@
             <button
                 type="button"
                 hx-post="{% url 'domain-dns-records' domain_pk=domain.pk %}"
-                hx-include="#delete-submit-{{ record_id }} input"
+                hx-include="#delete-submit-{{ dns_record.id}} input"
                 hx-target="closest tr"
                 hx-swap="outerHTML"
-                id="delete-submit-{{ record_id }}"
+                id="delete-submit-{{ dns_record.id}}"
                 class="display-none"
                 aria-hidden="true"
                 tabindex="-1"
             >
                 {% csrf_token %}
-                <input type="hidden" name="id" value="{{ record_id }}">
+                <input type="hidden" name="id" value="{{ dns_record.id}}">
                 <input type="hidden" name="delete_record" value="1">
             </button>
 
             <!-- visible delete button that triggers modal -->
             <button
                     type="button"
-                    id="row-delete-button-{{ record_id }}"
+                    id="row-delete-button-{{ dns_record.id}}"
                     class="usa-button usa-button--unstyled usa-button--with-icon margin-top-2px text-secondary js-dnsrecord-delete"
-                    data-record-id="{{ record_id }}"
+                    data-record-id="{{ dns_record.id}}"
                 >
-                    <svg class="usa-icon" role="img" aria-labelledby="row-delete-img-{{ record_id }}" focusable="false" role="img" width="24">
-                        <title id="row-delete-img-{{ record_id }}">Delete {{ dns_record.name }}</title>
+                    <svg class="usa-icon" role="img" aria-labelledby="row-delete-img-{{ dns_record.id}}" focusable="false" role="img" width="24">
+                        <title id="row-delete-img-{{ dns_record.id}}">Delete {{ dns_record.name }}</title>
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
                     </svg>
             </button>

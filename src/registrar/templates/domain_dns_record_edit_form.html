@@ -1,23 +1,22 @@
 {% load static field_helpers url_helpers %}
 {% load custom_filters %}
 
-{# Inline edit form row for a DNS record. `record_id` is the record pk used for DOM targeting. #}
-<tr id="dnsrecord-edit-row-{{ record_id }}" x-show="showFormId == '{{ record_id }}'" class="hide-td-borders">
+<tr id="dnsrecord-edit-row-{{ dns_record.id}}" x-show="showFormId == '{{ dns_record.id}}'" class="hide-td-borders">
     <td colspan="5" class="no-padding-right padding-top-0 padding-bottom-0">
         <div class="border radius-lg border-base-lighter padding-3">
             <form
-                id="dnsrecord-edit-form-{{ record_id }}"
+                id="dnsrecord-edit-form-{{ dns_record.id}}"
                 method="post"
                 class="usa-form usa-form--extra-large"
                 novalidate
                 hx-post="{% url 'domain-dns-records' domain.pk %}"
-                hx-target="#dnsrecord-edit-form-{{ record_id }}"
+                hx-target="#dnsrecord-edit-form-{{ dns_record.id}}"
                 {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}
             >
                 <h3 class="margin-top-0">Edit record</h3>
                 {% csrf_token %}
 
-                <input type="hidden" name="id" value="{{ record_id }}" />
+                <input type="hidden" name="id" value="{{ dns_record.id}}" />
                 <input type="hidden" name="type" value="{{ dns_record.type }}" />
 
                 <div class="dns-record-preview margin-top-3 margin-bottom-3" data-domain-name="{{ domain.name }}">
@@ -42,9 +41,9 @@
                 {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <button
                     type="button"
-                    id="dnsrecord-edit-cancel-button-{{ record_id }}"
+                    id="dnsrecord-edit-cancel-button-{{ dns_record.id}}"
                     class="usa-button usa-button--outline js-dnsrecord-edit-cancel"
-                    data-record-id="{{ record_id }}"
+                    data-record-id="{{ dns_record.id}}"
                 >
                     Cancel
                 </button>
@@ -55,14 +54,14 @@
 
                 <!-- visible delete button that triggers modal -->
                 <button
-                    id="dnsrecord-delete-button-{{ record_id }}"
+                    id="dnsrecord-delete-button-{{ dns_record.id}}"
                     class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center padding-bottom-05"
                     type="button"
                     role="button"
                     tabindex="0"
                     aria-label="Delete DNS record"
                     data-action="form-delete"
-                    data-record-id="{{ record_id }}"
+                    data-record-id="{{ dns_record.id}}"
                 >
                     <svg class="usa-icon margin-right-05" aria-hidden="true" focusable="false" role="img">
                         <use xlink:href="/public/img/sprite.svg#delete"></use>
@@ -75,10 +74,10 @@
 </tr>
 
 <!-- Comment row -->
-<tr x-show="openComments.includes('{{ record_id }}')" class="hide-td-borders">
+<tr x-show="openComments.includes('{{ dns_record.id}}')" class="hide-td-borders">
     <td colspan="5" class="no-padding-right padding-top-0 padding-bottom-0">
           <div class="border radius-lg border-base-lighter padding-3">
-             <span id="dns-comment-{{record_id}}-text">
+             <span id="dns-comment-{{dns_record.id}}-text">
                 <!-- added this span to swap the text when the form is updated with a new comment-->
                 {{ dns_record.comment }}
              </span>

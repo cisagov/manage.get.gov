@@ -47,6 +47,7 @@ from .public_contact import PublicContact
 from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
 

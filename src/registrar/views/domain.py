@@ -1030,7 +1030,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         return record_id
 
-    def _handle_invalid_form(self, request, form, is_edit):
+    def _handle_invalid_form(self, request, form, dns_record):
         """Return the appropriate error response for an invalid form submission."""
         # If the form set a banner-level (non-field) error, show only that as the banner;
         # otherwise show each unique field error.
@@ -1039,15 +1039,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
         for error in dict.fromkeys(errors):
             messages.error(request, error)
 
-        if is_edit:
-            try:
-                dns_record = DnsRecord.objects.get(id=is_edit)
-            except DnsRecord.DoesNotExist:
-                dns_record = None
-            if dns_record:
-                self._attach_form(dns_record, form=form)
-                hx_trigger_events = json.dumps({"messagesRefresh": ""})
-                return TemplateResponse(
+     
+        if dns_record:
+            self._attach_form(dns_record, form=form)
+            hx_trigger_events = json.dumps({"messagesRefresh": ""})
+            return TemplateResponse(
                     request,
                     "domain_dns_record_form_response.html",
                     {
@@ -1055,14 +1051,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         "domain": self.object,
                         "form": DomainDNSRecordForm(),
                         "nameservers": None,
-                        "record_id": is_edit,
                         "is_edit": True,
                         "is_first_record": False,
                         "update_cells": False,
                     },
                     headers={"HX-TRIGGER": hx_trigger_events},
                     status=200,
-                )
+            )
 
         return TemplateResponse(
             request,
@@ -1081,9 +1076,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if dns_record:
             self._attach_form(dns_record)
             self.dns_record = dns_record
-            return is_first_record, dns_record.id
+            return is_first_record
         self.dns_record = None
-        return is_first_record, None
+        return is_first_record
 
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
@@ -1092,12 +1087,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_edit = self._parse_dns_record_id(request)
         delete_record = request.POST.get("delete_record")
         self._get_domain(request)
+        if is_edit:
+            self.dns_record = DnsRecord.get_for_domain(self.object, is_edit)
 
         if not delete_record and not form.is_valid():
             return self._handle_invalid_form(request, form, is_edit)
 
         is_first_record = False
-        record_id = None
 
         try:
             allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
@@ -1121,20 +1117,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
                 if is_edit:
-                    record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
-
+                    self._handle_edit(request, x_zone_id, form_record_data, self.dns_record.id)
                 # CREATE
                 else:
-                    is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
+                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
 
         except DnsHostingError as e:
             messages.error(request, e.message)
-            if is_edit:
-                record_id = is_edit
-                dns_record = DnsRecord.objects.get(id=record_id)
-                self._attach_form(dns_record=dns_record)
-                self.dns_record = dns_record
-
+            if self.dns_record:
+                self._attach_form(dns_record=self.dns_record)
         except GenericError:
             return self._error_response(request, status=400)
         finally:
@@ -1156,10 +1147,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "dns_record": self.dns_record,
                 "domain": self.object,
                 "form": DomainDNSRecordForm(),
-                "record_id": record_id,
                 "is_edit": is_edit,
                 "is_first_record": is_first_record,
-                "update_cells": is_edit and self.dns_record is not None,
+                "update_cells": self.dns_record is not None,
             },
             headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
             status=200,
