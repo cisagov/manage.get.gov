@@ -196,8 +196,9 @@ class Command(BaseCommand):
         )
 
     def _get_invited_by_id(self, invitation):
-        # Legacy invitations do not have an invited_by field. When available, use the user from
-        # the Django admin creation log, which is also how member exports find the inviter.
+        # Legacy invitations do not have an invited_by field. Follow
+        # MemberExport.get_invited_by_query() by using the user
+        # from the Django admin creation log when available.
         content_type = ContentType.objects.get_for_model(invitation)
         return (
             LogEntry.objects.filter(
