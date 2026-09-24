@@ -20,7 +20,6 @@ from registrar.models import (
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
-from registrar.services.dns_http_client import build_dns_client
 from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
@@ -503,18 +502,18 @@ class DnsHostService:
                     # Save Zone
                     self.dns_zone_setup(domain_name, x_account_id)
 
-                # Fetch nameservers from DB zone
-                nameservers = self.get_nameservers_from_zone(domain_name)
-                if not nameservers:
-                    raise RuntimeError("Zone exists but nameservers not found")
+                    # Fetch nameservers from DB zone
+                    nameservers = self.get_nameservers_from_zone(domain_name)
+                    if not nameservers:
+                        raise RuntimeError("Zone exists but nameservers not found")
 
-                    # Register nameservers with registry
-                    if not settings.IS_LOCAL:
-                        self.register_nameservers(domain_name, nameservers)
+                        # Register nameservers with registry
+                        if not settings.IS_LOCAL:
+                            self.register_nameservers(domain_name, nameservers)
 
-                    # Mark domain as enrolled
-                    domain.is_enrolled_in_dns_hosting = True
-                    domain.save(update_fields=["is_enrolled_in_dns_hosting"])
+                        # Mark domain as enrolled
+                        domain.is_enrolled_in_dns_hosting = True
+                        domain.save(update_fields=["is_enrolled_in_dns_hosting"])
 
             except Exception:
                 logger.exception(
