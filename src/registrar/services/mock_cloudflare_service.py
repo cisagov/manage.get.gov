@@ -41,7 +41,7 @@ class MockCloudflareService:
         if not hasattr(self, "initialized"):
             self.initialized = True
             self.is_active = False
-        self.__initial_state()
+            self.__initial_state()
 
     def __initial_state(self):
         # using deepcopy to create copy of initial values
