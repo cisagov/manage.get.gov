@@ -172,8 +172,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         in the modal header on the submit page.
         """
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government
-        SKIPPED_PAGES = 3
+        # type_of_work, tribal_government
+        SKIPPED_PAGES = 2
         num_pages = len(self.TITLES) - SKIPPED_PAGES
 
         intro_page = self.app.get(reverse("domain-request:start"))
@@ -795,8 +795,8 @@ class DomainRequestTests(TestWithUser, WebTest):
     @skip("WIP")
     def test_domain_request_form_started_allsteps(self):
         num_pages_tested = 0
-        # elections, type_of_work, tribal_government
-        SKIPPED_PAGES = 3
+        # type_of_work, tribal_government
+        SKIPPED_PAGES = 2
         DASHBOARD_PAGE = 1
         num_pages = len(self.TITLES) - SKIPPED_PAGES + DASHBOARD_PAGE
 
@@ -847,7 +847,6 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # the conditional step titles shouldn't appear initially
         self.assertNotContains(type_page, self.TITLES["organization_federal"])
-        self.assertNotContains(type_page, self.TITLES["organization_election"])
         type_form = type_page.forms[0]
         type_form["generic_org_type-generic_org_type"] = "federal"
 
@@ -865,7 +864,6 @@ class DomainRequestTests(TestWithUser, WebTest):
         federal_page = type_result.follow()
         self.assertContains(federal_page, self.TITLES["organization_federal"])
         self.assertContains(federal_page, self.TITLES["generic_org_type"])
-        self.assertNotContains(federal_page, self.TITLES["organization_election"])
 
         # Validating messaging
         self.assertContains(federal_page, "You aren't authorized to continue")
@@ -880,61 +878,6 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         self.assertEqual(blocked_response.status_code, 302)
         self.assertIn("organization_federal", blocked_response["Location"])
-
-    @less_console_noise_decorator
-    def test_domain_request_form_conditional_elections(self):
-        """Election question is shown for other organizations."""
-        intro_page = self.app.get(reverse("domain-request:start"))
-        # django-webtest does not handle cookie-based sessions well because it keeps
-        # resetting the session key on each new request, thus destroying the concept
-        # of a "session". We are going to do it manually, saving the session ID here
-        # and then setting the cookie on each request.
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        intro_form = intro_page.forms[0]
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        intro_result = intro_form.submit()
-
-        # follow first redirect
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_page = intro_result.follow()
-        session_id = self.app.cookies[settings.SESSION_COOKIE_NAME]
-
-        # ---- TYPE PAGE  ----
-
-        # the conditional step titles shouldn't appear initially
-        self.assertNotContains(type_page, self.TITLES["organization_federal"])
-        self.assertNotContains(type_page, self.TITLES["organization_election"])
-        type_form = type_page.forms[0]
-        type_form["generic_org_type-generic_org_type"] = "county"
-
-        # set the session ID before .submit()
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        type_result = type_form.submit()
-
-        # the post request should return a redirect to the elections question
-        self.assertEqual(type_result.status_code, 302)
-        self.assertIn("organization_election", type_result["Location"])
-
-        # and the step label should appear in the sidebar of the resulting page
-        # but the step label for the elections page should not appear
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
-        self.assertContains(election_page, self.TITLES["organization_election"])
-        self.assertNotContains(election_page, self.TITLES["organization_federal"])
-
-        # continuing on in the flow we need to NOT see top-level agency on the
-        # contact page
-        election_page.forms[0]["organization_election-is_election_board"] = "True"
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_result = election_page.forms[0].submit()
-        # the post request should return a redirect to the contact
-        # question
-        self.assertEqual(election_result.status_code, 302)
-        self.assertIn("organization_contact", election_result["Location"])
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        contact_page = election_result.follow()
-        self.assertNotContains(contact_page, "Federal agency")
 
     @less_console_noise_decorator
     def test_domain_request_form_section_skipping(self):
@@ -964,24 +907,29 @@ class DomainRequestTests(TestWithUser, WebTest):
 
         # follow first redirect to the next section
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
+        contact_page = type_result.follow()
 
-        # we need to fill out the election section so it stays unlocked
-        election_form = election_page.forms[0]
-        election_form["organization_election-is_election_board"] = "True"
+        # we need to fill out the organization contact section so it stays unlocked
+        org_contact_form = contact_page.forms[0]
+        # minimal fields that must be filled out
+        org_contact_form["organization_contact-organization_name"] = "Testorg"
+        org_contact_form["organization_contact-address_line1"] = "address 1"
+        org_contact_form["organization_contact-city"] = "NYC"
+        org_contact_form["organization_contact-state_territory"] = "NY"
+        org_contact_form["organization_contact-zipcode"] = "10002"
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_form.submit()
+        org_contact_form.submit()
 
         # Now click back to the organization type
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        new_page = election_page.click(str(self.TITLES["generic_org_type"]), index=0)
-        # Should be a link to the organization_election page since it is now unlocked
+        new_page = contact_page.click(str(self.TITLES["generic_org_type"]), index=0)
+        # Should be a link to the organization_contact page since it is now unlocked
         all_domain_requests = DomainRequest.objects.all()
         self.assertEqual(all_domain_requests.count(), 1)
 
         new_request_id = all_domain_requests.first().id
         self.assertGreater(
-            len(new_page.html.find_all("a", href=f"/request/{new_request_id}/organization_election/")),
+            len(new_page.html.find_all("a", href=f"/request/{new_request_id}/organization_contact/")),
             0,
         )
 
@@ -2394,10 +2342,9 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
 
         # Navigate to the org page as that is the step right before senior_official
-        org_page = election_page.click(str(self.TITLES["organization_contact"]), index=0)
+        org_page = type_page.click(str(self.TITLES["organization_contact"]), index=0)
         org_contact_form = org_page.forms[0]
         org_contact_form["organization_contact-organization_name"] = "Testorg"
         org_contact_form["organization_contact-address_line1"] = "address 1"
@@ -2503,10 +2450,8 @@ class DomainRequestTests(TestWithUser, WebTest):
         type_form["generic_org_type-generic_org_type"] = "city"
         type_result = type_form.submit()
         self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        election_page = type_result.follow()
 
-        self.app.set_cookie(settings.SESSION_COOKIE_NAME, session_id)
-        current_websites = election_page.click(str(self.TITLES["current_sites"]), index=0)
+        current_websites = type_page.click(str(self.TITLES["current_sites"]), index=0)
         current_sites_form = current_websites.forms[0]
         current_sites_form["current_sites-0-website"] = "www.city.com"
         current_sites_result = current_sites_form.submit().follow()
@@ -3255,11 +3200,11 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
             # Now 'detail_page' contains the response after following the redirect
             self.assertEqual(detail_page.status_code, 200)
 
-            # 10 unlocked steps, one active step, the review step will have link_usa but not check_circle
-            self.assertContains(detail_page, "#check_circle", count=9)
+            # 9 unlocked steps, one active step, the review step will have link_usa but not check_circle
+            self.assertContains(detail_page, "#check_circle", count=8)
             # Type of organization
             self.assertContains(detail_page, "usa-current", count=2)
-            self.assertContains(detail_page, "link_usa-checked", count=10)
+            self.assertContains(detail_page, "link_usa-checked", count=9)
 
         else:
             self.fail(f"Expected a redirect, but got a different response: {response}")
