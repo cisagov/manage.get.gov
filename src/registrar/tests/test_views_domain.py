@@ -3921,7 +3921,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
-        """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
+        """Can load a domain's DNS records page when enrolled and dns hosting is enabled."""
         domain, _, _ = create_initial_dns_setup(domain_manager=self.user)  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "DNS records")
