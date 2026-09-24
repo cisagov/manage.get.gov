@@ -44,10 +44,10 @@ def _cf_error_detail(response) -> dict:
 
 def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
     """Map an HTTP error to the right DnsHostingError subclass and log once."""
+    request_id = get_user_log_context().get("request_id")
     if isinstance(e, HTTPStatusError):
         status = e.response.status_code
         details = _cf_error_detail(e.response)
-        request_id = get_user_log_context().get("request_id")
 
         ctx = {
             "cf_ray": e.response.headers.get("cf-ray"),
@@ -66,7 +66,7 @@ def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
 
     else:  # RequestError -> no response, transport failure
         status = None
-        ctx = {"exc_class": type(e).__name__, **context}
+        ctx = {"exc_class": type(e).__name__, "request_id": request_id, **context}
         log_only = {}
         exc_cls, code = DnsTransportError, DnsHostingErrorCodes.UPSTREAM_TIMEOUT
 
