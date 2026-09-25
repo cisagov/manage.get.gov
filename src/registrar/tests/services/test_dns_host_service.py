@@ -30,6 +30,7 @@ from registrar.tests.helpers.dns_data_generator import (
     delete_all_dns_data,
     create_dns_zone,
 )
+from epplibwrapper import RegistryError
 
 
 class TestDnsHostService(TestCase):
@@ -436,6 +437,26 @@ class TestDnsHostService(TestCase):
 
         with self.assertRaises(EnrollmentNotAllowedError):
             self.service.enroll_domain(not_allowed_domain)
+
+    @override_settings(IS_LOCAL=False)
+    def test_logging_for_registry_error_for_register_nameservers(self):
+        """
+        Tests that the RegistryError is raised when it occurs on the register_nameservers method
+        MockEppLib(Registry) is not setup for this test. It should always throw a RegistryError.
+        """
+        domain = create_domain(**{"domain_name": "not-igorville.gov"})
+
+        create_initial_dns_setup(domain=domain)
+        nameservers = DnsZone.objects.get(domain=domain).nameservers
+
+        with self.assertLogs("registrar.services.dns_host_service", level="ERROR") as log_msg:
+            with self.assertRaises(RegistryError):
+                self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
+
+        self.assertTrue(
+            any("Registry Error: an error occurred when registering nameservers for" in log for log in log_msg.output),
+            "Expected log for register nameserver error not found",
+        )
 
 
 class TestDnsHostServiceDB(TestCase):
