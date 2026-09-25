@@ -203,6 +203,9 @@ const teardownForm = (switcher) => {
                 refreshForm(refs.form, form.getAttribute("hx-post"));
             } else if(req.hasUnsavedChanges){
                 form.reset();
+                form.querySelectorAll(FIELD_SELECTOR).forEach(el => {
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                });
             }
         }
     } else {
@@ -785,13 +788,16 @@ function updateDNSRecordPreview(scope, config) {
     let displayName = rawName;
 
     if (domainName) {
+        const lowerRaw = rawName?.toLowerCase();
+        const lowerDomain = domainName.toLowerCase();
+        const suffix = `.${lowerDomain}`;
+
         if (rawName == "@") {
         displayName = domainName;
+        } else if (rawName && (lowerRaw == lowerDomain || lowerRaw.endsWith(suffix))) {
+            displayName = rawName;
         } else if (rawName) {
-            const suffix = `.${domainName}`.toLowerCase();
-            displayName = rawName.toLowerCase().endsWith(suffix)
-                ? rawName
-                : `${rawName}.${domainName}`;
+            displayName = `${rawName}.${domainName}`;
         }
     }
 
