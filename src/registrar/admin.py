@@ -5798,7 +5798,7 @@ class DnsRecordAdmin(admin.ModelAdmin):
 
     list_filter = ("type", "created_at", "updated_at")
 
-    search_fields = ("name", "content")
+    search_fields = ("name")
 
     search_help_text = "Search by domain or record name."
 
