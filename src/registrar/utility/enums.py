@@ -2,10 +2,15 @@
 
 from enum import Enum
 from registrar.utility import StrEnum
-from registrar.validations import validate_mx_content, validate_cname_content, validate_ptr_content
-from django.core.validators import validate_ipv4_address, validate_ipv6_address
+from registrar.validations import (
+    validate_ipv4_address,
+    validate_ipv6_address,
+    validate_mx_content, 
+    validate_cname_content, 
+    validate_ptr_content,
+    validate_txt_content
+)
 from django.db.models import TextChoices
-from registrar.validations import validate_txt_content
 from registrar.cleaners import clean_hostname_content, clean_txt_content
 
 
