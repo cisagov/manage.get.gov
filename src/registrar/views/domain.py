@@ -916,9 +916,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # uniqueness validators (name-conflict, full-duplicate) can exclude the record
         # being edited via self.instance.pk. get_for_domain scopes the lookup to this
         # domain's zone so we don't trust arbitrary PKs from the request.
-        record_id = self._parse_dns_record_id(self.request)
-        if record_id and self.object:
-            existing = DnsRecord.get_for_domain(self.object, record_id)
+
+        if self.dns_record and self.object:
+            existing = self.dns_record
             if existing:
                 kwargs["instance"] = existing
         return kwargs
@@ -958,12 +958,17 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def _parse_dns_record_id(self, request) -> int | None:
+    def _get_dns_record(self, request) -> int | None:
         """Parse the DNS record id from POST data."""
-        raw = request.POST.get("id")
         try:
-            return int(raw) if raw not in (None, "") else None
+            raw = request.POST.get("id")
+            dns_record_id = int(raw)
         except (TypeError, ValueError):
+            return None
+
+        try: 
+            return DnsRecord.get_for_domain(self.object, dns_record_id)
+        except DnsRecord.DoesNotExist:
             return None
 
     def _build_dns_record_form_data(self, form) -> dict:
@@ -1006,17 +1011,16 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "dns_record": None,
                 "domain": self.object,
                 "form": form or DomainDNSRecordForm(),
-                "is_edit": False,
                 "is_first_record": False,
             },
             headers={"HX-TRIGGER": json.dumps({"messagesRefresh": ""})},
             status=status,
         )
 
-    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict, record_id: int | None) -> int | None:
+    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict, dns_record: DnsRecord | None) -> int | None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
-            dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
+            self.dns_host_service.update_dns_record(x_zone_id, dns_record, form_record_data)
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
@@ -1026,9 +1030,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # Refresh with db instance for templating (edit form requires BoundFields)
         dns_record.refresh_from_db()
         self._attach_form(dns_record)
-        self.dns_record = dns_record
 
-        return record_id
+        return dns_record
 
     def _handle_invalid_form(self, request, form, dns_record):
         """Return the appropriate error response for an invalid form submission."""
@@ -1038,8 +1041,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         errors = non_field_errors if non_field_errors else self.get_form_errors(form)
         for error in dict.fromkeys(errors):
             messages.error(request, error)
+            print("ERRRO", error)
 
-     
         if dns_record:
             self._attach_form(dns_record, form=form)
             hx_trigger_events = json.dumps({"messagesRefresh": ""})
@@ -1050,10 +1053,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                         "dns_record": dns_record,
                         "domain": self.object,
                         "form": DomainDNSRecordForm(),
-                        "nameservers": None,
                         "is_edit": True,
-                        "is_first_record": False,
-                        "update_cells": False,
                     },
                     headers={"HX-TRIGGER": hx_trigger_events},
                     status=200,
@@ -1062,7 +1062,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
-            {"dns_record": None, "domain": self.object, "form": form, "is_edit": False, "is_first_record": False},
+            {"dns_record": None, "domain": self.object, "form": form,"is_first_record": False},
             headers={"HX-TRIGGER": "messagesRefresh"},
             status=200,
         )
@@ -1084,14 +1084,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
         form = self.get_form()
-        is_edit = self._parse_dns_record_id(request)
+        self.dns_record = self._get_dns_record(request)
         delete_record = request.POST.get("delete_record")
         self._get_domain(request)
-        if is_edit:
-            self.dns_record = DnsRecord.get_for_domain(self.object, is_edit)
 
         if not delete_record and not form.is_valid():
-            return self._handle_invalid_form(request, form, is_edit)
+            return self._handle_invalid_form(request, form, self.dns_record)
 
         is_first_record = False
 
@@ -1116,8 +1114,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             else:
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
-                if is_edit:
-                    self._handle_edit(request, x_zone_id, form_record_data, self.dns_record.id)
+                if self.dns_record:
+                    self._handle_edit(request, x_zone_id, form_record_data, self.dns_record)
                 # CREATE
                 else:
                     is_first_record = self._handle_create(request, x_zone_id, form_record_data)
@@ -1147,7 +1145,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "dns_record": self.dns_record,
                 "domain": self.object,
                 "form": DomainDNSRecordForm(),
-                "is_edit": is_edit,
                 "is_first_record": is_first_record,
                 "update_cells": self.dns_record is not None,
             },
@@ -1155,13 +1152,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
-    def _handle_delete(self, request, x_zone_id: int):
+    def _handle_delete(self, request, x_zone_id: int, dns_record: DnsRecord):
         """Handle deletion for DNS records via htmx."""
         self.object = self.get_object()
-        record_id = self._parse_dns_record_id(request)
         self._get_domain(request)
 
-        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        self.dns_host_service.delete_dns_record(x_zone_id, dns_record)
         messages.success(request, "The DNS record for this domain has been deleted.")
 
 

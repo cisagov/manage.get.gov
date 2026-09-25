@@ -1,4 +1,4 @@
-<tr id="dnsrecord-row-{{record_id}}" :class="showFormId == '{{ dns_record.id}}' || openComments.includes('{{dns_record.id}}')? 'hide-td-borders' : ''">
+<tr id="dnsrecord-row-{{dns_record.id }}" :class="showFormId == '{{ dns_record.id}}' || openComments.includes('{{dns_record.id}}')? 'hide-td-borders' : ''">
     <td id="dns-type-{{ dns_record.id}}" data-label="Type">
         <div class="tablet:display-flex tablet:flex-align-baseline">
             <span>

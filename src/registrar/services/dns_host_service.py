@@ -255,16 +255,12 @@ class DnsHostService:
 
         return DnsRecord.get_by_x_record_id(x_record_id) if x_record_id else None
 
-    def update_dns_record(self, x_zone_id: str, record_id: int, form_record_data: dict) -> DnsRecord:
+    def update_dns_record(self, x_zone_id: str, dns_record: DnsRecord, form_record_data: dict) -> DnsRecord:
         """Look up the record by pk and update it via the vendor service.
 
         Returns the updated DnsRecord.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-        try:
-            dns_record = DnsRecord.objects.get(pk=record_id)
-        except DnsRecord.DoesNotExist:
-            raise ValueError("Could not find the DNS record to update.")
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
@@ -292,16 +288,12 @@ class DnsHostService:
             raise
         return vendor_record_data
 
-    def delete_dns_record(self, x_zone_id: str, record_id: int) -> str:
+    def delete_dns_record(self, x_zone_id: str, dns_record: DnsRecord) -> str:
         """Look up the record by pk and delete it via the vendor service.
 
         Returns the deleted DnsRecord's vendor id.
-        Raises ValueError if the record or its vendor id cannot be resolved.
+        Raises ValueError if its vendor id cannot be resolved.
         """
-        try:
-            dns_record = DnsRecord.objects.get(pk=record_id)
-        except DnsRecord.DoesNotExist:
-            raise ValueError("Could not find the DNS record in registrar db to delete.")
 
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
