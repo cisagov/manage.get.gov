@@ -3,11 +3,13 @@ It allows you to set and retrieve user-specific information that can be included
 without having to pass this information explicitly through function parameters."""
 
 from contextvars import ContextVar
+from contextlib import contextmanager
 
 user_email_var = ContextVar("user_email")  # type: ignore
 ip_address_var = ContextVar("ip_address")  # type: ignore
 request_path_var = ContextVar("request_path")  # type: ignore
 request_id_var = ContextVar("request_id")  # type: ignore
+domain_name_var = ContextVar("domain_name")  # type: ignore
 
 
 def set_user_log_context(user_email=None, ip_address=None, request_path=None, request_id=None):
@@ -21,12 +23,23 @@ def set_user_log_context(user_email=None, ip_address=None, request_path=None, re
         request_id_var.set(request_id)
 
 
+@contextmanager
+def dns_log_context(domain_name):
+    """Attach domain_name to every log line emitted inside this block."""
+    token = domain_name_var.set(domain_name)
+    try:
+        yield
+    finally:
+        domain_name_var.reset(token)
+
+
 def get_user_log_context():
     return {
         "user_email": user_email_var.get(None) or "Anonymous",
         "ip_address": ip_address_var.get(None) or "Unknown IP",
         "request_path": request_path_var.get(None),
         "request_id": request_id_var.get(None),
+        "domain_name": domain_name_var.get(None),
     }
 
 
