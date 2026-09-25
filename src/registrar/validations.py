@@ -288,6 +288,21 @@ def check_has_invalid_quoted_string(content: str) -> bool:
 
     return first_item_char_is_double_quote or last_item_is_double_quote
 
+def validate_ipv4_address(content: str) -> None:
+    try:
+        _validate_ipv4_address(content)
+    except ValidationError:
+        raise ValidationError(
+            _("Enter a valid IPv6 address using numbers and periods."), code="invalid", params={"value": content}
+        )
+
+def validate_ipv6_address(content: str) -> None:
+    try:
+        _validate_ipv6_address(content)
+    except ValidationError:
+        raise ValidationError(
+            _("Enter a valid IPv6 address using numbers and colons."), code="invalid", params={"value": content}
+        )
 
 def validate_txt_content(content: str) -> None:
     if check_has_invalid_quoted_string(content):
