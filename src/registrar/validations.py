@@ -3,6 +3,7 @@ from django.core.validators import (
     validate_ipv4_address as _validate_ipv4_address,
     validate_ipv6_address as _validate_ipv6_address)
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 """
 Centralized character length "buckets" to keep server-side validation and
