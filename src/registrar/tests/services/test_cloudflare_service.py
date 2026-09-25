@@ -1,7 +1,7 @@
 import httpx
 import os
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 from typing import Any
@@ -567,6 +567,104 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
 
+    def test_get_tenant_accounts_success(self):
+        return_value1 = {
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {
+                    "account_tag": "543451",
+                    "account_pubname": "Account for stream.gov",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+                {
+                    "account_tag": "543452",
+                    "account_pubname": "Account for river.gov",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+            ],
+            "result_info": {"count": 3, "page": 1, "per_page": 2, "total_count": 3},
+        }
+
+        return_value2 = {
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {
+                    "account_tag": "543453",
+                    "account_pubname": "Account for sea.gov",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                }
+            ],
+            "result_info": {"count": 1, "page": 2, "per_page": 2, "total_count": 3},
+        }
+
+        mock_response1 = self._setUpSuccessMockResponse(return_value1)
+        mock_response2 = self._setUpSuccessMockResponse(return_value2)
+        self.service.client.get.side_effect = [mock_response1, mock_response2]
+
+        result = self.service.get_tenant_accounts(2)
+        self.assertEqual(result, return_value1["result"] + return_value2["result"])
+        self.assertEqual(self.service.client.get.call_count, 2)
+
+    def test_get_tenant_accounts_http_error(self):
+        mock_response = MagicMock()
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "500 Server Error",
+            request=MagicMock(),
+            response=MagicMock(status_code=500),
+        )
+
+        self.service.client.get.return_value = mock_response
+
+        with self.assertRaises(DnsHostingError):
+            self.service.get_tenant_accounts(per_page=2)
+
+        self.service.client.get.assert_called_once()
+
+    def test_get_tenant_accounts_http_error_on_second_page(self):
+        return_value1 = {
+            "errors": [],
+            "messages": [],
+            "success": True,
+            "result": [
+                {
+                    "account_tag": "54345",
+                    "account_pubname": "Account for stream.us",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+                {
+                    "account_tag": "54346",
+                    "account_pubname": "Account for river.us",
+                    "account_type": "enterprise",
+                    "created_on": "2026-06-09T18:25:46.427351Z",
+                },
+            ],
+            "result_info": {"count": 2, "page": 1, "per_page": 2, "total_count": 4},
+        }
+
+        mock_response1 = self._setUpSuccessMockResponse(return_value1)
+
+        mock_response2 = MagicMock()
+        mock_response2.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "503 Service Unavailable",
+            request=MagicMock(),
+            response=MagicMock(status_code=503),
+        )
+
+        self.service.client.get.side_effect = [mock_response1, mock_response2]
+
+        with self.assertRaises(DnsHostingError):
+            self.service.get_tenant_accounts(per_page=2)
+
+        self.assertEqual(self.service.client.get.call_count, 2)
+
     def test_get_account_zones_success(self):
         """Test successful get_account_zones call"""
         account_id = "55555"
@@ -642,6 +740,42 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_zone_id"], zone_id)
+
+    def test_get_zone_records_success(self):
+        zone_id = "2468appreciate"
+        return_value = {
+            "result": [
+                {"id": 1, "name": "A", "content": "198.22.333.4", "ttl": 3600},
+                {"id": 2, "name": "AAAA", "content": "2001:db8::1234:5678", "ttl": 300},
+                {"id": 3, "name": "TXT", "content": "I am your content", "ttl": 3600},
+                {"id": 4, "name": "MX", "content": "mail.mytest.gov", "ttl": 3600},
+                {"id": 5, "name": "PTR", "content": "blog.mytest.gov", "ttl": 3600},
+            ]
+        }
+
+        mock_response = self._setUpSuccessMockResponse(return_value)
+        self.service.client.get.return_value = mock_response
+        result = self.service.get_zone_records(zone_id)
+
+        self.assertEqual(result, return_value)
+
+    def test_get_zone_records_failure(self):
+        x_zone_id = "3579fine"
+        for case in self.failure_cases:
+            with self.subTest(msg=case["test_name"], **case):
+                error = case["error"]
+                mock_response = self._setUpFailureMockResponse(error, case.get("status_code"))
+                self.service.client.get.return_value = mock_response
+
+                with self.assertRaises(error["raised_error"]) as context:
+                    self.service.get_zone_records(x_zone_id)
+
+                exc = context.exception
+                self.assertEqual(exc.code, case["error"]["code"])
+
+                if case["error"]["exception"] == HTTPStatusError:
+                    self._assert_shared_http_status_errors_details(exc, case)
+                    self.assertEqual(exc.context["x_zone_id"], x_zone_id)
 
     def test_get_dns_record_success(self):
         """Test get_dns_record with API success"""
