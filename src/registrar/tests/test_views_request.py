@@ -498,7 +498,7 @@ class DomainRequestTests(TestWithUser, WebTest):
     @less_console_noise_decorator
     def test_domain_request_form_submission_incomplete(self):
         num_pages_tested = 0
-        # skipping elections, type_of_work, tribal_government
+        # skipping type_of_work, tribal_government
 
         intro_page = self.app.get(reverse("domain-request:start"))
         # django-webtest does not handle cookie-based sessions well because it keeps
