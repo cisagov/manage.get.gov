@@ -1,4 +1,7 @@
-from django.core.validators import MaxLengthValidator
+from django.core.validators import (
+    MaxLengthValidator,
+    validate_ipv4_address as _validate_ipv4_address,
+    validate_ipv6_address as _validate_ipv6_address)
 from django.core.exceptions import ValidationError
 
 """
