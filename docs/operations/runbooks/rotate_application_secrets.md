@@ -124,43 +124,101 @@ The private key is protected by a passphrase for safer transport and storage.
 
 Note this must be reset once a year.
 
-These were generated with the following steps:
+Rotate them in `getgov-stable` with the following steps:
 
-### Step 1: Generate an unencrypted private key with a named curve
+### Step 1: Back up the current credentials
+
+Save what is currently on stable before changing anything.
+
+1. Go to the [cloud.gov dashboard](https://dashboard.fr.cloud.gov/home)
+2. Under `Applications` click `getgov-stable`
+3. Click `Services`
+4. Click the three dots next to `getgov-credentials` and select `edit`
+5. Highlight and copy all the credentials shown, and save locally as `credentials-stable-backup.json`. Remember to delete this once all steps are done.
+6. Close the edit window without making changes
+
+
+### Step 2: Generate an unencrypted private key with a named curve
 
 ```bash
 openssl ecparam -name prime256v1 -genkey -out client_unencrypted.key
 ```
 
-### Step 2: Create an encrypted private key with a passphrase
+### Step 3: Generate a passphrase
+
+Generate a strong password, ideally with KeePass or another password manager. This becomes the new `REGISTRY_KEY_PASSPHRASE`.
+
+### Step 4: Create an encrypted private key with the passphrase
 
 ```bash
 openssl pkcs8 -topk8 -v2 aes-256-cbc -in client_unencrypted.key -out client.key
 ```
 
-### Step 3: Generate the certificate
+When prompted for a password, enter the passphrase from Step 3.
+
+### Step 5: Generate the certificate
 
 ```bash
-openssl req -new -x509 -days 365 -key client.key -out client.crt -subj "/C=US/ST=DC/L=Washington/O=GSA/OU=18F/CN=GOV Prototype Registrar"
+openssl req -new -x509 -days 365 -key client.key -out client.crt -subj "/C=US/ST=DC/L=DC/O=DHS/OU=CISA/CN=manage.get.gov"
 ```
+
+You will be prompted for a password. Enter the passphrase from Step 3.
 
 (If you can't use openssl on your computer directly, you can access it using Docker as `docker run --platform=linux/amd64 -it --rm -v $(pwd):/apps -w /apps alpine/openssl`.)
 
-Encode them using:
+### Step 6: Encode the certificate and key
 
 ```bash
-base64 client.key
-base64 client.crt
-```
-
-Note depending on your system you may need to instead run:
-
-```bash
-base64 -i client.key
 base64 -i client.crt
+base64 -i client.key
 ```
 
-You'll need to give the new certificate to the registry vendor _before_ rotating it in production. Once it has been accepted by the vendor, make sure to update [the KBDX](https://docs.google.com/document/d/1_BbJmjYZNYLNh4jJPPnUEG9tFCzJrOc0nMrZrnSKKyw) file on Google Drive.
+### Step 7: Save the new credentials in the KDBX file
+
+- create a new entry in your local copy of the KDBX file.
+- save `client.crt` & `client.key`
+- save the passphrase from Step 3 as REGISTRY_PASSPHRASE
+- save the base64 of client.crt as REGISTRY_CERT
+- save the base64 of client.key as REGISTRY_KEY
+
+### Step 8: Upload the certificate to the registry
+
+Go to https://portal.cloudflareregistry.com/settings and upload `client.crt`.
+
+At this point stable still has the old cert info, but the registry will accept either the old or the new cert.
+
+### Step 9: Update the registrar's environment variables
+
+1. Go to the [cloud.gov dashboard](https://dashboard.fr.cloud.gov/home)
+2. Under `Applications` click `getgov-stable`
+3. Click `Services`
+4. Click the three dots next to `getgov-credentials` and select `edit`
+5. Update these fields:
+   - `REGISTRY_CERT`: the base64 output of `client.crt`
+   - `REGISTRY_KEY`: the base64 output of `client.key`
+   - `REGISTRY_KEY_PASSPHRASE`: the passphrase from Step 3
+6. Do **NOT** change `REGISTRY_CL_ID` or `REGISTRY_PASSWORD`
+7. Click `Finish` to save
+
+### Step 10: Restage
+
+Saving does not reach the running app, it has to be restaged. In terminal run:
+
+```bash
+cf target -o cisa-dotgov -s stable
+cf restage getgov-stable --strategy rolling
+```
+
+### Step 11: Confirm everything is running
+
+1. Open up the logs for stable
+2. Once the restage finishes, log in to https://manage.get.gov/ to confirm login still works
+3. Open admin and navigate to a domain. Click `Get status`.
+4. Check the logs for any errors communicating with the registry.
+
+### Step 12: Upload the KDBX file
+
+Upload the updated KDBX file to [Google Drive](https://docs.google.com/document/d/1_BbJmjYZNYLNh4jJPPnUEG9tFCzJrOc0nMrZrnSKKyw), then delete `credentials-stable-backup.json`.
 
 ## REGISTRY_HOSTNAME
 
