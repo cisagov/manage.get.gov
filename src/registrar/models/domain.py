@@ -1534,7 +1534,8 @@ class Domain(TimeStampedModel, DomainHelper):
 
     def is_using_external_hosting(self, request=None):
         return (
-            not self.is_enrolled_in_dns_hosting
+            not flag_is_active_for_user(request, "dns_hosting")
+            and not self.is_enrolled_in_dns_hosting
             and self.state in [self.State.READY, self.State.ON_HOLD]
         )
 
