@@ -4,8 +4,10 @@ import threading
 import time
 from contextlib import contextmanager
 
+from ..errors import RegistryError
+
 try:
-    from epplib.commands import Hello, Logout
+    from epplib.commands import Logout, CheckDomain
     from epplib.exceptions import TransportError
 except ImportError:
     pass
@@ -20,6 +22,11 @@ class PoolExhausted(Exception):
 
     Translates into a RegistryError. Investigate this one when seen.
     """
+
+
+class ConnectionNotLoggedIn(RegistryError):
+    """Raised when a checked-out connection answers a command with "Registrar is not logged in."
+    The pool discards that connection; the caller's retry gets a freshly logged-in one."""
 
 
 class PooledConnection:
@@ -90,6 +97,8 @@ class EPPConnectionPool:
         Exception handling:
         - TransportError: socket connection is likely bad -> discard it! The next borrow
         call will create a new connection to replace it.
+        - ConnectionNotLoggedIn: the registry no longer recognizes this connection's
+        session -> discard it for the same reason.
         - Any other exception (command rejected, parsing problem, LoginError, etc):
         the transport is presumed fine -> connection will be returned to the pool for reuse.
         In these cases, look for credential or command logic errors.
@@ -98,11 +107,19 @@ class EPPConnectionPool:
         conn = self._borrow()
         try:
             yield conn.client
-        except TransportError:
+        except (TransportError, ConnectionNotLoggedIn) as e:
             # the socket is likely dead. Discard it and let the pool create a new one.
             self._discard(conn)
 
+            # In the case of a transport error, we usually see that all connections are
+            # terminated at once.
+            # This may be caused by a new deployment or something interrupting the socket
+            # connection upstream. Remove all socket connections, so they can get remade.
+            if isinstance(e, TransportError):
+                self._discard_remaining_idle()
+
             # Raise error to enforce a retry
+            # a new connection will likely be made upon retry
             raise
 
         except Exception:
@@ -211,16 +228,25 @@ class EPPConnectionPool:
 
         - Recently-used connections are trusted as-is.
         - A connection idle past the idle max seconds must answer an
-        EPP `Hello` first-> idle sockets can be silently dropped, hello checks for this.
+        EPP `CheckDomain` first-> idle sockets can be silently dropped, sending CheckDomain checks this as
+        an idle socket, will throw an exception, and a not-logged-in socket will return a 2002 error code.
+        In both cases it will return false.
         """
         if time.monotonic() - conn.last_ping < self.idle_ping_seconds:
             return True
         try:
             # we just want to check once if the connection is alive, and if not, chuck it.
             # _borrow() handles the actual discard/replacement logic.
-            conn.client.send(Hello())
+            # call CheckDomain as it requires the system to be logged with a valid certificate.
+            response = conn.client.send(
+                CheckDomain(
+                    ["igorville.gov"],
+                )
+            )  # type: ignore
+            if response.code >= 2000:
+                return False
+
             conn.last_ping = time.monotonic()
-            # add print here
             return True
         except Exception:
             return False
@@ -296,7 +322,9 @@ class EPPConnectionPool:
                 self._put_back(PooledConnection(self._connection_factory()))
             except Exception:
                 self._release_slot()
-                logger.error("Replenish hit an error & failed to build a connection. Stats: %s", self.stats())
+                logger.error(
+                    "Replenish hit an error & failed to build a connection. Stats: %s", self.stats(), exc_info=True
+                )
                 # Exit the loop if we can't form a connection
                 # log in creds could be invalid
                 # or the registry system is down
@@ -337,6 +365,16 @@ class EPPConnectionPool:
             # ignore any errors during close, we are discarding the connection anyway
 
         self._release_slot()
+
+    def _discard_remaining_idle(self):
+        """Close and drop every idle connection.
+        Used after a transport failure."""
+        while True:
+            try:
+                idle_conn = self._idle.get_nowait()
+            except queue.Empty:
+                return
+            self._discard(idle_conn)
 
     def _retire(self, conn: PooledConnection):
         """Dispose of a HEALTHY connection we simply no longer need.

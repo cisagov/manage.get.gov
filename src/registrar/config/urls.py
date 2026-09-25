@@ -55,7 +55,6 @@ for step, view in [
     (Step.ORGANIZATION_TYPE, views.OrganizationType),
     (Step.TRIBAL_GOVERNMENT, views.TribalGovernment),
     (Step.ORGANIZATION_FEDERAL, views.OrganizationFederal),
-    (Step.ORGANIZATION_ELECTION, views.OrganizationElection),
     (Step.ORGANIZATION_CONTACT, views.OrganizationContact),
     (Step.ABOUT_YOUR_ORGANIZATION, views.AboutYourOrganization),
     (Step.SENIOR_OFFICIAL, views.SeniorOfficial),

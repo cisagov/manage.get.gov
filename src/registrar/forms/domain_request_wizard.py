@@ -299,29 +299,6 @@ class TribalGovernmentForm(RegistrarForm):
             )
 
 
-class OrganizationElectionForm(RegistrarForm):
-    is_election_board = forms.NullBooleanField(
-        widget=forms.RadioSelect(
-            choices=[
-                (True, "Yes"),
-                (False, "No"),
-            ],
-        ),
-        label="Is your organization an election office?",
-    )
-
-    def clean_is_election_board(self):
-        """This box must be checked to proceed but offer a clear error."""
-        # already converted to a boolean
-        is_election_board = self.cleaned_data["is_election_board"]
-        if is_election_board is None:
-            raise forms.ValidationError(
-                ("Select “Yes” if you represent an election office. Select “No” if you don’t."),
-                code="required",
-            )
-        return is_election_board
-
-
 class OrganizationContactForm(RegistrarForm):
     # for federal agencies we also want to know the top-level agency.
     excluded_agencies = ["gov Administration", "Non-Federal Agency"]

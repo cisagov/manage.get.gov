@@ -80,7 +80,6 @@ class Step(StrEnum):
     ORGANIZATION_TYPE = "generic_org_type"
     TRIBAL_GOVERNMENT = "tribal_government"
     ORGANIZATION_FEDERAL = "organization_federal"
-    ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
     ABOUT_YOUR_ORGANIZATION = "about_your_organization"
     SENIOR_OFFICIAL = "senior_official"
