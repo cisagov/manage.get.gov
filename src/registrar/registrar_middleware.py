@@ -328,7 +328,9 @@ class RestrictAccessMiddleware:
         # Attempt to resolve the request path to a view function
         try:
             resolver_match = resolve(request.path_info)
+            # print("resolver match: ", resolver_match) # for proto testing purposes
             view_func = resolver_match.func
+            url_name = resolver_match.url_name
             app_name = resolver_match.app_name  # Get the app name of the resolved view
         except Exception:
             # If resolution fails, allow the request to proceed (avoid blocking non-view routes)
@@ -340,6 +342,10 @@ class RestrictAccessMiddleware:
 
         # Allow access if the view explicitly opts out of login requirements
         if getattr(view_func, "login_required", True) is False:
+            return self.get_response(request)
+
+        # Allow access if calling our messages path
+        if url_name == "get-messages":
             return self.get_response(request)
 
         # Restrict access to views that do not explicitly declare access rules

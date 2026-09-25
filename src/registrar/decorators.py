@@ -1,5 +1,6 @@
 import logging
 import functools
+import re
 from django.apps import apps
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
@@ -19,6 +20,7 @@ IS_CISA_ANALYST = "is_cisa_analyst"
 IS_OMB_ANALYST = "is_omb_analyst"
 IS_FULL_ACCESS = "is_full_access"
 IS_DOMAIN_MANAGER = "is_domain_manager"
+IS_DOMAIN_MANAGER_OF_CURRENT_PATH = "is_domain_manager_of_current_path"
 IS_DOMAIN_REQUEST_REQUESTER = "is_domain_request_requester"
 IS_STAFF_MANAGING_DOMAIN = "is_staff_managing_domain"
 HAS_DOMAIN_REQUESTS_VIEW_ALL = "has_domain_requests_view_all"
@@ -134,6 +136,8 @@ def _user_has_permission(user, request, rules, **kwargs):
                 )
             ),
         ),
+        (IS_DOMAIN_MANAGER_OF_CURRENT_PATH, lambda: _is_domain_manager_of_current_path(request, user, **kwargs))
+        ,
         (IS_STAFF_MANAGING_DOMAIN, lambda: _is_staff_managing_domain(request, **kwargs)),
         (IS_PORTFOLIO_MEMBER, lambda: is_org),
         (IS_MULTIPLE_PORTFOLIOS_MEMBER, lambda: user.is_multiple_orgs_user(request)),
@@ -213,6 +217,16 @@ def _has_portfolio_domain_requests_edit(user, portfolio, domain_request_id):
         return False
     return bool(portfolio) and user.has_edit_request_portfolio_permission(portfolio)
 
+def _is_domain_manager_of_current_path(request, user, **kwargs):
+    current_url = request.META['HTTP_REFERER']
+    domain_path = current_url.split("/domain")[1]
+    # print("domain path: ", domain_path) # for proto testing purposes
+    if domain_path:
+        domain_id_match = re.search('/(.*)/dns/records', domain_path)
+        if domain_id_match:
+            domain_id = domain_id_match.group(1)
+        # print("domain id: ", domain_id) # for proto testing purposes
+    return _is_domain_manager(user, domain_pk=domain_id)
 
 def _is_domain_manager(user, **kwargs):
     """
