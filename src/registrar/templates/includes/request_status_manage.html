@@ -151,12 +151,6 @@
                     {% include "includes/summary_item.html" with title='Federal government branch' value=DomainRequest.get_federal_type_display %}
                 {% endif %}
 
-                {% if DomainRequest.is_election_board %}
-                    {% with value=DomainRequest.is_election_board|yesno:"Yes,No,Incomplete" %}
-                        {% include "includes/summary_item.html" with title='Election office' value=value %}
-                    {% endwith %}
-                {% endif %}
-
                 {% if DomainRequest.organization_name %}
                     {% include "includes/summary_item.html" with title='Organization' value=DomainRequest  address='true' %}
                 {% endif %}

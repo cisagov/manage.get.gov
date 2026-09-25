@@ -11,10 +11,7 @@ Tribal government:
 Federally-recognized tribe
 {% endif %}{% if domain_request.state_recognized_tribe %}
 State-recognized tribe
-{% endif %}{% endif %}{% if domain_request.show_organization_election %}
-Election office:
-{{ domain_request.is_election_board|yesno:"Yes,No,Incomplete" }}
-{% endif %}
+{% endif %}{% endif %}
 Organization:
 {% spaceless %}
 {% if domain_request.show_organization_federal %}{{ domain_request.federal_agency }}{% endif %}
