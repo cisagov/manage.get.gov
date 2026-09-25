@@ -9,6 +9,7 @@ from registrar.decorators import (
     IS_OMB_ANALYST,
     IS_STAFF,
     IS_DOMAIN_MANAGER,
+    IS_DOMAIN_MANAGER_OF_CURRENT_PATH,
     grant_access,
 )
 from registrar.models import FederalAgency, SeniorOfficial, DomainRequest
@@ -168,7 +169,7 @@ def get_rejection_email_for_user_json(request):
     return JsonResponse({"email": email}, status=200)
 
 
-@grant_access(IS_STAFF, IS_DOMAIN_MANAGER)
+@grant_access(IS_STAFF, IS_DOMAIN_MANAGER_OF_CURRENT_PATH)
 def get_alert_messages(request):
     """Serve all Django messages."""
     messages = django_get_messages(request)
