@@ -4,8 +4,8 @@ from unittest import mock
 from django.test import SimpleTestCase, override_settings
 
 from registrar.services.dns_http_client import DNS_TIMEOUT, MAX_ATTEMPTS, RetryTransport, build_dns_client
-from registrar.services.mock_cloudflare_service import MockCloudflareService
 from registrar.utility.errors import DnsHostingErrorCodes, DnsTransportError
+
 
 @override_settings(DNS_MOCK_EXTERNAL_APIS=False)
 class TestDnsHttpClient(SimpleTestCase):

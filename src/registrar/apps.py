@@ -1,5 +1,4 @@
 from django.apps import AppConfig
-from django.conf import settings
 
 
 class RegistrarConfig(AppConfig):
@@ -11,4 +10,3 @@ class RegistrarConfig(AppConfig):
         import registrar.signals  # noqa
 
         from . import checks  # noqa: F401  # imported to register system checks, flake8 can ignore 'unused import'
-

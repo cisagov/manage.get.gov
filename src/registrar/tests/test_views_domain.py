@@ -8,8 +8,6 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
-from registrar.services.mock_cloudflare_service import MockCloudflareService
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -3892,6 +3890,7 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
             page,
             "This domain's name servers",
         )
+
 
 @override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):

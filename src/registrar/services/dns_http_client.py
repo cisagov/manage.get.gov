@@ -86,6 +86,7 @@ def build_dns_client():
     client = httpx.Client(timeout=DNS_TIMEOUT, transport=transport)
     if settings.DNS_MOCK_EXTERNAL_APIS and not settings.IS_PRODUCTION:
         from registrar.services.mock_cloudflare_service import MockCloudflareService
+
         mock = MockCloudflareService()
         if not mock.is_active:
             mock.start()
