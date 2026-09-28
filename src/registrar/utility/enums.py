@@ -11,7 +11,6 @@ from registrar.validations import (
     validate_txt_content,
 )
 from django.db.models import TextChoices
-from registrar.validations import validate_txt_content
 from registrar.cleaners import clean_hostname_content, clean_txt_content
 
 
