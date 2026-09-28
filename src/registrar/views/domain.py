@@ -957,7 +957,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def _get_dns_record(self, request) -> int | None:
+    def _get_dns_record(self, request) -> DnsRecord | None:
         """Parse the DNS record id from POST data."""
         raw = request.POST.get("id")
         try:
