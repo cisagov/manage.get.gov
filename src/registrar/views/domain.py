@@ -1122,7 +1122,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 # EDIT
                 if self.dns_record:
                     is_edit = True
-                    print("in here")
                     self._handle_edit(request, x_zone_id, form_record_data)
 
                 # CREATE
@@ -1131,7 +1130,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except DnsHostingError as e:
             messages.error(request, e.message)
             response_form = form  # retain form data when experiencing external DNS service error
-            is_edit = True
             if self.dns_record:
                 self._attach_form(dns_record=self.dns_record, form=form)
 
