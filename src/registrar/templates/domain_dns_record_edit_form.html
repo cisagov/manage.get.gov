@@ -41,7 +41,7 @@
                 </div>
                 {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <div class="grid-row">
-                    <div class="grid-col order-first display-flex">
+                    <div class="grid-col-auto">
                         <button
                             type="button"
                             id="dnsrecord-edit-cancel-button-{{ record_id }}"
@@ -49,11 +49,12 @@
                             data-record-id="{{ record_id }}"
                         >
                             Cancel
-                        </button>
-
+                        </button>               
+                    </div>
+                    <div class="grid-col-auto">
                         <button type="submit" class="usa-button">
                             Save
-                        </button>                            
+                        </button>    
                     </div>
 
                     <div class="grid-col order-last">
