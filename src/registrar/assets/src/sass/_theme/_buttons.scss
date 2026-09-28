@@ -250,8 +250,12 @@ a.text-secondary:hover {
   }
 }
 
-.delete-icon {
+.delete-button-icon {
   margin-top: 0.3rem; // offset USWDS delete trash icon size unalignment
+}
+
+.row-delete-icon {
+  margin-bottom: 0.1rem; // offset USWDS delete trash icon size unalignment
 }
 
 .dns-edit-button {
