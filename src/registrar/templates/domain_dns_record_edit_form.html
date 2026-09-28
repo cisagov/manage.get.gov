@@ -41,18 +41,20 @@
                 </div>
                 {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
                 <div class="display-flex-row">
-                    <button
-                        type="button"
-                        id="dnsrecord-edit-cancel-button-{{ record_id }}"
-                        class="usa-button usa-button--outline js-dnsrecord-edit-cancel margin-right-105"
-                        data-record-id="{{ record_id }}"
-                    >
-                        Cancel
-                    </button>
+                    <div class="display-flex">
+                        <button
+                            type="button"
+                            id="dnsrecord-edit-cancel-button-{{ record_id }}"
+                            class="usa-button usa-button--outline js-dnsrecord-edit-cancel margin-right-105"
+                            data-record-id="{{ record_id }}"
+                        >
+                            Cancel
+                        </button>
 
-                    <button type="submit" class="usa-button">
-                        Save
-                    </button>
+                        <button type="submit" class="usa-button">
+                            Save
+                        </button>
+                    </div>
                 
                     <!-- visible delete button that triggers modal -->
                     <button
