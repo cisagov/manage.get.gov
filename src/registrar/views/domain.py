@@ -918,8 +918,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # domain's zone so we don't trust arbitrary PKs from the request.
         dns_record = self._get_dns_record(self.request)
         if dns_record and self.object:
-                kwargs["instance"] = dns_record
-                self.dns_record = dns_record
+            kwargs["instance"] = dns_record
+            self.dns_record = dns_record
         return kwargs
 
     def attach_edit_form(self, dns_records):
@@ -965,12 +965,11 @@ class DomainDNSRecordsView(DomainFormBaseView):
             dns_record_id = int(raw)
         except (TypeError, ValueError):
             return None
-        
-        try: 
+
+        try:
             return DnsRecord.get_for_domain(self.object, dns_record_id)
         except DnsRecord.DoesNotExist:
             return None
-
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""
@@ -1022,7 +1021,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def _handle_edit(self, request, x_zone_id: str, form_record_data: dict | None) -> int | None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
-           self.dns_host_service.update_dns_record(x_zone_id, self.dns_record, form_record_data)
+            self.dns_host_service.update_dns_record(x_zone_id, self.dns_record, form_record_data)
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
@@ -1030,6 +1029,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         messages.success(request, "The DNS record for this domain has been updated.")
 
         # Refresh with db instance for templating (edit form requires BoundFields)
+        self.dns_record.refresh_from_db()
         self._attach_form(self.dns_record)
 
         return None
@@ -1043,23 +1043,23 @@ class DomainDNSRecordsView(DomainFormBaseView):
         for error in dict.fromkeys(errors):
             messages.error(request, error)
         if self.dns_record:
-                self._attach_form(self.dns_record, form=form)
-                hx_trigger_events = json.dumps({"messagesRefresh": ""})
-                return TemplateResponse(
-                    request,
-                    "domain_dns_record_form_response.html",
-                    {
-                        "dns_record": self.dns_record,
-                        "domain": self.object,
-                        "form": DomainDNSRecordForm(),
-                        "nameservers": None,
-                        "is_edit": True,
-                        "is_first_record": False,
-                        "update_cells": False,
-                    },
-                    headers={"HX-TRIGGER": hx_trigger_events},
-                    status=200,
-                )
+            self._attach_form(self.dns_record, form=form)
+            hx_trigger_events = json.dumps({"messagesRefresh": ""})
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": DomainDNSRecordForm(),
+                    "nameservers": None,
+                    "is_edit": True,
+                    "is_first_record": False,
+                    "update_cells": False,
+                },
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
+            )
 
         return TemplateResponse(
             request,
@@ -1155,7 +1155,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 "form": response_form,
                 "is_first_record": is_first_record,
                 "update_cells": is_edit and self.dns_record,
-                "is_edit": is_edit
+                "is_edit": is_edit,
             },
             headers=headers,
             status=200,

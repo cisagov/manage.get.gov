@@ -18,7 +18,7 @@
 
         </div>
             </td>
-            <td id="dns-name-{{ dns_record.id }}" data-label="Name" hx-swap-oob="outerHTML">rr{{ dns_record.name }}</td>
+            <td id="dns-name-{{ dns_record.id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
             <td id="dns-content-{{ dns_record.id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content|truncatechars:37 }}</td>
             <td id="dns-ttl-{{ dns_record.id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl_display }}</td>
             <span id="dns-comment-{{dns_record.id}}-text" hx-swap-oob="textContent">{{ dns_record.comment }}</span>
