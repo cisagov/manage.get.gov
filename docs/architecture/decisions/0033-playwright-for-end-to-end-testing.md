@@ -8,7 +8,7 @@ In Review
 
 ## Context
 
-We would like to incorporate end to end testing within the manage.gov application. The framework should be able to complete the domain registration flow (login -> domain creation -> domain approval) and be run as part of the CI/CD process through GitHub Actions. Playwright offers a comprehensive test suite allowing for cross-browswer support with parallel execution capabilities for increased performance.
+We would like to incorporate in-browser end to end testing within the manage.gov application, with a focus on testing Javascript interactions and sessions. The framework should be able to complete the domain registration flow (login -> domain creation -> domain approval) and be run as part of the CI/CD process through GitHub Actions. Playwright offers a comprehensive test suite allowing for cross-browswer support with parallel execution capabilities for increased performance.
 
 ## Decision
 
