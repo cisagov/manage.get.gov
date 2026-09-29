@@ -966,10 +966,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
         except (TypeError, ValueError):
             return None
 
-        try:
-            return DnsRecord.get_for_domain(self.object, dns_record_id)
-        except DnsRecord.DoesNotExist:
-            return None
+        dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
+        if dns_record:
+            return dns_record
+        else:
+            raise Http404("DNS Record Not Found")
+            
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""
