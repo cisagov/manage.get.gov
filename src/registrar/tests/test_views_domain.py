@@ -27,6 +27,7 @@ from registrar.utility.errors import (
     GenericErrorCodes,
     DsDataError,
     DsDataErrorCodes,
+    DnsHostingError
 )
 
 from registrar.models import (
@@ -4132,3 +4133,36 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
 
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
         self.assertNotContains(page, record_name)
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_delete_dns_record_failure_preserves_record_row(self):
+        """After a failed deletion, the response signals form close and keep the deleted row"""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-close-123"
+        )
+        record_name = "delete.me"
+        dns_record = create_dns_record(dns_zone, x_record_id="record-close-123", record_name=record_name)
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertContains(page, record_name)
+
+        with patch("registrar.services.cloudflare_service.CloudflareService.delete_dns_record") as mock_cf_delete_dns_record:
+            mock_cf_delete_dns_record.side_effect = DnsHostingError
+            response = self.client.post(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+                data={
+                    "id": dns_record.id,
+                    "delete_record": True,
+                },
+            )
+
+        self.assertEqual(response.status_code, 200) # DNS record page successfully responds even with Cloudflare error 
+        self.assertJSONEqual(
+            response.headers["HX-Trigger-After-Settle"],
+            {"messagesRefresh": ""},
+        )
+
+        page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
+        self.assertContains(page, record_name)
+
+
