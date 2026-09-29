@@ -82,6 +82,7 @@ class RetryTransport(httpx.HTTPTransport):
 
 
 def build_dns_client():
+    """Build the shared httpx client for Cloudflare DNS calls with timeout and retries."""
     transport = RetryTransport(retries=CONNECT_RETRIES)
     client = httpx.Client(timeout=DNS_TIMEOUT, transport=transport)
     if settings.DNS_MOCK_EXTERNAL_APIS and not settings.IS_PRODUCTION:
