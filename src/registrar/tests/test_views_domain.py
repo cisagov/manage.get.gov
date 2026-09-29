@@ -3920,7 +3920,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.client.force_login(self.user)
 
     @override_flag("dns_hosting", active=True)
-    def test_dns_records_permissions_access_for_non_domain_manager(self):
+    def test_dns_records_denies_non_manager_before_touching_domain(self):
         random_user = get_user_model().objects.create(
             username="random_user",
             first_name="First",
@@ -3930,9 +3930,8 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
             title="test title",
         )
         self.client.force_login(random_user)
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
 
-        domain, _, zone = create_initial_dns_setup(domain_manager=self.user)
-        dns_record = create_dns_record(zone)
         with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
             response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertEqual(response.status_code, 403)
