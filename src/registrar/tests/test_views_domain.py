@@ -606,10 +606,10 @@ class TestDomainDetail(TestDomainOverview):
         banner_message = "This domain's name servers"
 
         on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-        self.assertNotContains(on_hold_detail_page, banner_message)
+        self.assertContains(on_hold_detail_page, banner_message)
 
         ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-        self.assertNotContains(ready_state_detail_page, banner_message)
+        self.assertContains(ready_state_detail_page, banner_message)
 
         domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
         self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
