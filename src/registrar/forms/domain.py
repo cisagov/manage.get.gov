@@ -837,6 +837,8 @@ class DomainDNSRecordForm(forms.ModelForm):
             rt.value: {
                 "label": getattr(rt, "field_label", "Content"),
                 "help_text": getattr(rt, "help_text"),
+                "previewTemplate": rt.preview_template,
+                "previewContentPlaceholder": rt.preview_content_placeholder,
             }
             for rt in DNSRecordTypes
         }
