@@ -12,6 +12,7 @@ from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.views.domain import DomainDNSRecordsView
 from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -3918,10 +3919,27 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.user = create_user()
         self.client.force_login(self.user)
 
+    @override_flag("dns_hosting", active=True)
+    def test_dns_records_denies_non_manager_before_touching_domain(self):
+        random_user = get_user_model().objects.create(
+            username="random_user",
+            first_name="First",
+            last_name="Last",
+            email="info@example.com",
+            phone="8003111234",
+            title="test title",
+        )
+        self.client.force_login(random_user)
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
+        with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
+            response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertEqual(response.status_code, 403)
+        mock_get.assert_not_called()
+
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
-        """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
+        """Can load a domain's DNS records page when enrolled and dns hosting is enabled."""
         domain, _, _ = create_initial_dns_setup(domain_manager=self.user)  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "DNS records")
