@@ -299,7 +299,7 @@ def validate_ipv4_address(content: str) -> None:
         _validate_ipv4_address(content)
     except ValidationError:
         raise ValidationError(
-            _("Enter a valid IPv6 address using numbers and periods."), code="invalid", params={"value": content}
+            _("Enter a valid IPv4 address using numbers and periods."), code="invalid", params={"value": content}
         )
 
 
