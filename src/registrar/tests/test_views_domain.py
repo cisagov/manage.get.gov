@@ -4118,6 +4118,10 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(DnsRecord.objects.filter(id=dns_record.id).count(), 0)
+        self.assertJSONEqual(
+            response.headers["HX-Trigger-After-Settle"],
+            {"messagesRefresh": "", "recordSubmitSuccess": ""},
+        )
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
