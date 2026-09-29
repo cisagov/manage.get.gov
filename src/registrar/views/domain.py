@@ -1098,6 +1098,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         is_first_record = False
         record_id = None
+        response_form = None
+        headers = None
 
         try:
             allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
@@ -1113,6 +1115,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
             if x_zone_id is None:
                 messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
                 return self._error_response(request, status=400)
+            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+            response_form = DomainDNSRecordForm()
 
             # DELETE
             if delete_record:
@@ -1129,10 +1133,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
         except DnsHostingError as e:
             messages.error(request, e.message)
+            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": ""})}
+            response_form = form  # retain form data when experiencing external DNS service error
             if is_edit:
                 record_id = is_edit
                 dns_record = DnsRecord.objects.get(id=record_id)
-                self._attach_form(dns_record=dns_record)
+                self._attach_form(dns_record=dns_record, form=form)
                 self.dns_record = dns_record
 
         except GenericError:
@@ -1155,13 +1161,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
             {
                 "dns_record": self.dns_record,
                 "domain": self.object,
-                "form": DomainDNSRecordForm(),
+                "form": response_form,
                 "record_id": record_id,
                 "is_edit": is_edit,
                 "is_first_record": is_first_record,
                 "update_cells": is_edit and self.dns_record is not None,
             },
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+            headers=headers,
             status=200,
         )
 
