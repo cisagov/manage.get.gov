@@ -971,7 +971,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             return dns_record
         else:
             raise Http404("DNS Record Not Found")
-            
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""

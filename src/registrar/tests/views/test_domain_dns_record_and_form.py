@@ -9,7 +9,12 @@ from waffle.testutils import override_flag
 from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import DnsHostingError
-from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
+from registrar.tests.helpers.dns_data_generator import (
+    create_initial_dns_setup,
+    create_dns_record,
+    delete_all_dns_data,
+    create_domain,
+)
 from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,
     CNAME_NAME_INLINE_ERROR_MESSAGE,
@@ -23,6 +28,7 @@ from registrar.validations import (
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
+from ..common import create_user
 
 
 class TestWithDNSRecordPermissions(TestWithUser):
@@ -108,7 +114,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_add_record_resets_record_type_alpine_state(self):
+    def test_add_record_resets_record_type_alpne_state(self):
         """Issue #4688: Add record kept the last picked type drawn after a submit
         or when switched to from an edit form with errors. The wrapper x-effect
         clears recordType when showFormId is null or 0, and x-model on the type
@@ -981,3 +987,83 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
             self.assertEqual(response_too.status_code, 200)
             self.assertNotContains(response_too, DNSRecordTypes(record_type).error_message)
+
+    @override_flag("dns_hosting", active=True)
+    def test_domains_dns_record_permissions(self):
+        """
+        A post request for dns records from a domain out of scope of that record returns a 404
+        Scenarios
+            - Invalid Forms
+            - Valid Forms
+            - Delete Requests
+        """
+        record_data_one = self.RECORD_TEST_CASES[0]
+        record_data_two = self.RECORD_TEST_CASES[1]
+        comment = "a different comment"
+
+        record = create_dns_record(
+            self.dns_zone,
+            record_type=record_data_one["type"],
+            record_name=record_data_one["name"],
+            record_content=record_data_one["content"],
+            record_comment=comment,
+        )
+
+        another_user = create_user()
+        domain = create_domain(domain_name="testing.gov")
+        _, _, dns_zone = create_initial_dns_setup(domain=domain, domain_manager=another_user)
+
+        create_dns_record(
+            dns_zone,
+            record_type=record_data_two["type"],
+            record_name=record_data_two["name"],
+            record_content=record_data_two["content"],
+            record_comment=record_data_two["comment"],
+        )
+
+        self.client.force_login(another_user)
+
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+
+            invalid_response = self.client.post(
+                reverse("domain-dns-records", kwargs={"domain_pk": domain.id}),
+                {
+                    "id": record.id,
+                    "type": record_data_two["type"],
+                    "name": record_data_two["name"],
+                    "content": "",
+                    "ttl": record_data_two["ttl"],
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(invalid_response.status_code, 404)
+            self.assertNotContains(invalid_response, comment)
+            MockService.update_dns_record.assert_not_called()
+
+            delete_response = self.client.post(
+                reverse("domain-dns-records", kwargs={"domain_pk": domain.id}),
+                data={
+                    "id": record.id,
+                    "delete_record": True,
+                },
+            )
+
+            self.assertEqual(delete_response.code, 404)
+            MockService.delete_dns_record.assert_not_called()
+
+            success_response = self.client.post(
+                self._url(),
+                {
+                    "id": record.id,
+                    "type": record_data_two["type"],
+                    "name": record_data_two["name"],
+                    "content": record_data_two["content"],
+                    "ttl": record_data_two["ttl"],
+                    "comment": "",
+                },
+            )
+
+            self.assertEqual(success_response.status_code, 404)
+            self.assertNotContains(success_response, comment)
+            MockService.update_dns_record.assert_not_called()

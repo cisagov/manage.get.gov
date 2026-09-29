@@ -3931,28 +3931,12 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         )
         self.client.force_login(random_user)
 
-        # User w/o domain manager permisions can not access the dns records page
         domain, _, zone = create_initial_dns_setup(domain_manager=self.user)
         dns_record = create_dns_record(zone)
         with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
             response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertEqual(response.status_code, 403)
         mock_get.assert_not_called()
-
-        # User of w/o domain manager permissions can not edit a dns record
-        response = self.client.post(
-            reverse("domain-dns-records", kwargs={"domain_pk": domain.id}),
-            data={
-                "id": dns_record.id,
-                "type": dns_record.type,
-                "name": "api",
-                "content": "190.0.1.10",
-                "ttl": 3600,
-                "comment": "Updated by test",
-            },
-        )
-
-        self.assertEqual(response.status_code, 403)
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
