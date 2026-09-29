@@ -1146,7 +1146,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
             self.dns_host_service.client.close()
 
         if delete_record:
-            headers = headers or {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+            headers = headers or {
+                "HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})
+            }
             return TemplateResponse(
                 request,
                 "empty_response.html",

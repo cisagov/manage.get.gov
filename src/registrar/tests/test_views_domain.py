@@ -27,7 +27,7 @@ from registrar.utility.errors import (
     GenericErrorCodes,
     DsDataError,
     DsDataErrorCodes,
-    DnsHostingError
+    DnsHostingError,
 )
 
 from registrar.models import (
@@ -4146,7 +4146,9 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
         self.assertContains(page, record_name)
 
-        with patch("registrar.services.cloudflare_service.CloudflareService.delete_dns_record") as mock_cf_delete_dns_record:
+        with patch(
+            "registrar.services.cloudflare_service.CloudflareService.delete_dns_record"
+        ) as mock_cf_delete_dns_record:
             mock_cf_delete_dns_record.side_effect = DnsHostingError
             response = self.client.post(
                 reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
@@ -4156,7 +4158,7 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
                 },
             )
 
-        self.assertEqual(response.status_code, 200) # DNS record page successfully responds even with Cloudflare error 
+        self.assertEqual(response.status_code, 200)  # DNS record page successfully responds even with Cloudflare error
         self.assertJSONEqual(
             response.headers["HX-Trigger-After-Settle"],
             {"messagesRefresh": ""},
@@ -4164,5 +4166,3 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
 
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}))
         self.assertContains(page, record_name)
-
-
