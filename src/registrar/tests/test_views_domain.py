@@ -3931,7 +3931,6 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         )
         self.client.force_login(random_user)
         domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
-
         with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
             response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertEqual(response.status_code, 403)
