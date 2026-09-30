@@ -68,7 +68,7 @@ from registrar.services.invitation_service import (
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
-from registrar.logging_context import dns_log_context
+from registrar.logging_context import set_dns_log_context
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -881,7 +881,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
-        with dns_log_context(self.object.name):
+        with set_dns_log_context(self.object.name):
             return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):

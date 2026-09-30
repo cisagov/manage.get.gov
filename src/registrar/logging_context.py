@@ -24,7 +24,7 @@ def set_user_log_context(user_email=None, ip_address=None, request_path=None, re
 
 
 @contextmanager
-def dns_log_context(domain_name):
+def set_dns_log_context(domain_name):
     """Attach domain_name to every log line emitted inside this block."""
     token = domain_name_var.set(domain_name)
     try:
