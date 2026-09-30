@@ -468,8 +468,10 @@ class DnsRecord(TimeStampedModel):
             with transaction.atomic():
                 vendor_dns_record = dns_record.vendor_dns_record.get(x_record_id=x_record_id)
 
+                # Delete a fresh copy of the dns record, model delete clears the pk on the instance, rollback does not restore the instance
+                fresh_dns_record = cls.objects.get(id=dns_record.id, dns_zone_id=dns_record.dns_zone_id)
                 # DnsRecordVendorDnsRecord object is deleted on cascade
-                dns_record.delete()  # type: ignore
+                fresh_dns_record.delete()  # type: ignore
                 vendor_dns_record.delete()  # type: ignore
         except Exception:
             logger.exception("Failed to delete record objects in database.")
