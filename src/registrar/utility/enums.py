@@ -2,10 +2,15 @@
 
 from enum import Enum
 from registrar.utility import StrEnum
-from registrar.validations import validate_mx_content, validate_cname_content, validate_ptr_content
-from django.core.validators import validate_ipv4_address, validate_ipv6_address
+from registrar.validations import (
+    validate_ipv4_address,
+    validate_ipv6_address,
+    validate_mx_content,
+    validate_cname_content,
+    validate_ptr_content,
+    validate_txt_content,
+)
 from django.db.models import TextChoices
-from registrar.validations import validate_txt_content
 from registrar.cleaners import clean_hostname_content, clean_txt_content
 
 
@@ -80,7 +85,6 @@ class Step(StrEnum):
     ORGANIZATION_TYPE = "generic_org_type"
     TRIBAL_GOVERNMENT = "tribal_government"
     ORGANIZATION_FEDERAL = "organization_federal"
-    ORGANIZATION_ELECTION = "organization_election"
     ORGANIZATION_CONTACT = "organization_contact"
     ABOUT_YOUR_ORGANIZATION = "about_your_organization"
     SENIOR_OFFICIAL = "senior_official"

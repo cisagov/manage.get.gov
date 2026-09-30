@@ -34,12 +34,6 @@
         {% endwith %}
     {% endif %}
 
-    {% if step == Step.ORGANIZATION_ELECTION %}
-        {% with title=form_titles|get_item:step value=domain_request.is_election_board|yesno:"Yes,No,Incomplete" %}
-            {% include "includes/summary_item.html" with title=title value=value heading_level=heading_level editable=is_editable edit_link=domain_request_url %}
-        {% endwith %}
-    {% endif %}
-
     {% if step == Step.ORGANIZATION_CONTACT %}
         {% if domain_request.unlock_organization_contact %}
             {% with title=form_titles|get_item:step value=domain_request %}
