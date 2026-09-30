@@ -40,35 +40,42 @@
 
                 </div>
                 {# Cancel opens the shared confirm modal; on "Yes, cancel" the JS resets this form back to its saved values. #}
-                <button
-                    type="button"
-                    id="dnsrecord-edit-cancel-button-{{ record_id }}"
-                    class="usa-button usa-button--outline js-dnsrecord-edit-cancel"
-                    data-record-id="{{ record_id }}"
-                >
-                    Cancel
-                </button>
+                <div class="grid-row">
+                    <div class="grid-col-auto">
+                        <button
+                            type="button"
+                            id="dnsrecord-edit-cancel-button-{{ record_id }}"
+                            class="usa-button usa-button--outline js-dnsrecord-edit-cancel margin-right-105"
+                            data-record-id="{{ record_id }}"
+                        >
+                            Cancel
+                        </button>               
+                    </div>
+                    <div class="grid-col-auto">
+                        <button type="submit" class="usa-button">
+                            Save
+                        </button>    
+                    </div>
 
-                <button type="submit" class="usa-button">
-                    Save
-                </button>
-
-                <!-- visible delete button that triggers modal -->
-                <button
-                    id="dnsrecord-delete-button-{{ record_id }}"
-                    class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-center padding-bottom-05"
-                    type="button"
-                    role="button"
-                    tabindex="0"
-                    aria-label="Delete DNS record"
-                    data-action="form-delete"
-                    data-record-id="{{ record_id }}"
-                >
-                    <svg class="usa-icon margin-right-05" aria-hidden="true" focusable="false" role="img">
-                        <use xlink:href="/public/img/sprite.svg#delete"></use>
-                    </svg>
-                    <span class="font-sans-sm">Delete</span>
-                </button>
+                    <div class="grid-col order-last">
+                        <!-- visible delete button that triggers modal -->
+                        <button
+                            id="dnsrecord-delete-button-{{ record_id }}"
+                            class="margin-top-5 line-height-sans-5 text-secondary float-right font-sans-sm usa-button--unstyled js-dnsrecord-delete display-flex flex-align-self-end padding-bottom-05"
+                            type="button"
+                            role="button"
+                            tabindex="0"
+                            aria-label="Delete DNS record"
+                            data-action="form-delete"
+                            data-record-id="{{ record_id }}"
+                        >
+                            <svg class="usa-icon margin-right-05 delete-button-icon" aria-hidden="true" focusable="false" role="img">
+                                <use xlink:href="/public/img/sprite.svg#delete"></use>
+                            </svg>
+                            <span class="font-sans-sm">Delete</span>
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
     </td>

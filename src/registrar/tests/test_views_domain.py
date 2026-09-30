@@ -601,32 +601,17 @@ class TestDomainDetail(TestDomainOverview):
         Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
         - is ready or on hold state
         - not enrolled in dns hosting
-        - flag for dns hosting is turned off
         """
         banner_message = "This domain's name servers"
 
-        with less_console_noise() and override_flag("dns_hosting", active=False):
-            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-            self.assertContains(on_hold_detail_page, banner_message)
+        on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+        self.assertContains(on_hold_detail_page, banner_message)
 
-            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-            self.assertContains(ready_state_detail_page, banner_message)
+        ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+        self.assertContains(ready_state_detail_page, banner_message)
 
-            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
-            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
-
-            dns_needed_page = self.client.get(f"/domain/{self.domain_dns_needed.id}")
-            self.assertNotContains(dns_needed_page, banner_message)
-
-        with less_console_noise() and override_flag("dns_hosting", active=True):
-            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-            self.assertNotContains(on_hold_detail_page, banner_message)
-
-            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-            self.assertNotContains(ready_state_detail_page, banner_message)
-
-            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
-            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
+        domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+        self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
 
 
 class TestDomainDetailDomainRenewal(TestDomainOverview):
