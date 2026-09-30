@@ -8,6 +8,7 @@ reuses the new role or permission. Creating the new records sends no email.
 
 - In dry-run mode, only logs what would be created
 - With --no-dry-run, creates UserDomainRole and UserPortfolioPermission invitations
+- Use --portfolio-id, --domain-id, or --email to migrate only those pending invitations attached to that portfolio, domain, or email.
 """
 
 import argparse
@@ -15,12 +16,19 @@ import logging
 
 from django.contrib.admin.models import ADDITION, LogEntry
 from django.contrib.contenttypes.models import ContentType
-from django.core.management import BaseCommand
+from django.core.management import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Q
 
 from registrar.management.commands.utility.terminal_helper import TerminalColors, TerminalHelper
-from registrar.models import DomainInvitation, PortfolioInvitation, UserDomainRole, UserPortfolioPermission
+from registrar.models import (
+    Domain,
+    DomainInvitation,
+    Portfolio,
+    PortfolioInvitation,
+    UserDomainRole,
+    UserPortfolioPermission,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +37,21 @@ class Command(BaseCommand):
     help = "Migrates pending DomainInvitation and PortfolioInvitations to the new role/permission models."
 
     def add_arguments(self, parser):
+        selection = parser.add_mutually_exclusive_group()
+        selection.add_argument(
+            "--portfolio-id",
+            type=int,
+            help="Migrate pending portfolio invitations for this portfolio id only.",
+        )
+        selection.add_argument(
+            "--domain-id",
+            type=int,
+            help="Migrate pending domain invitations for this domain id only.",
+        )
+        selection.add_argument(
+            "--email",
+            help="Migrate pending domain and portfolio invitations matching this email (case-insensitive).",
+        )
         parser.add_argument(
             "--dry-run",
             "--dry_run",
@@ -53,8 +76,13 @@ class Command(BaseCommand):
             .order_by("id")
         )
 
+        domain_invitations, portfolio_invitations, selection = self._select_invitations(
+            domain_invitations, portfolio_invitations, options
+        )
+
         proposed = (
             "==Proposed Changes==\n"
+            f"Selection: {selection}\n"
             f"Pending domain invitations: {domain_invitations.count()}\n"
             f"Pending portfolio invitations: {portfolio_invitations.count()}\n"
             f"Dry run: {dry_run}\n\n"
@@ -92,6 +120,31 @@ class Command(BaseCommand):
         if summary["failed"]:
             logger.warning("Failed: %s", summary["failed"])
 
+    def _select_invitations(self, domain_invitations, portfolio_invitations, options):
+        selection = "All pending invitations"
+        if options.get("portfolio_id") is not None:
+            portfolio_id = options["portfolio_id"]
+            if not Portfolio.objects.filter(pk=portfolio_id).exists():
+                raise CommandError(f"Portfolio id={portfolio_id} does not exist.")
+            domain_invitations = domain_invitations.none()
+            portfolio_invitations = portfolio_invitations.filter(portfolio_id=portfolio_id)
+            selection = f"Portfolio id={portfolio_id} (portfolio invitations only)"
+        elif options.get("domain_id") is not None:
+            domain_id = options["domain_id"]
+            if not Domain.objects.filter(pk=domain_id).exists():
+                raise CommandError(f"Domain id={domain_id} does not exist.")
+            domain_invitations = domain_invitations.filter(domain_id=domain_id)
+            portfolio_invitations = portfolio_invitations.none()
+            selection = f"Domain id={domain_id} (domain invitations only)"
+        elif options.get("email") is not None:
+            email = options["email"].strip()
+            if not email:
+                raise CommandError("--email cannot be empty.")
+            domain_invitations = domain_invitations.filter(email__iexact=email)
+            portfolio_invitations = portfolio_invitations.filter(email__iexact=email)
+            selection = f"Email: {email} (both invitation types)"
+        return domain_invitations, portfolio_invitations, selection
+
     def _check_dry_run_and_prompt(self, dry_run, proposed):
         if dry_run:
             logger.info(
@@ -104,7 +157,10 @@ class Command(BaseCommand):
             TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=True,
                 prompt_message=proposed,
-                prompt_title="Migrate pending legacy domain and portfolio invitations to user domain role and user portfolio permission, respectively",
+                prompt_title=(
+                    "Migrate pending legacy domain and portfolio invitations to "
+                    "user domain role and user portfolio permission, respectively"
+                ),
             )
 
     def _migrate_domain_invitation(self, invitation, dry_run, duplicate_legacy_invitation):

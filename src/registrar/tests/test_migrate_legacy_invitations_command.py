@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.admin.models import ADDITION, LogEntry
 from django.contrib.contenttypes.models import ContentType
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 from django.utils import timezone
 from auditlog.models import LogEntry as AuditLogEntry
@@ -166,6 +166,61 @@ class TestMigrateLegacyInvitationsCommand(TestCase):
         self.assertEqual(
             UserPortfolioPermission.objects.filter(status=UserPortfolioPermission.Status.INVITED).count(), 1
         )
+
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
+        return_value=True,
+    )
+    def test_portfolio_id_migrates_only_selected_portfolio_invitations(self, _mock_prompt):
+        shiny_portfolio = Portfolio.objects.create(requester=self.user, organization_name="Shiny Organization")
+        PortfolioInvitation.objects.create(email=self.portfolio_invitation.email, portfolio=shiny_portfolio)
+
+        with less_console_noise():
+            call_command("migrate_legacy_invitations", dry_run=False, portfolio_id=self.portfolio.pk)
+
+        self.assertFalse(UserDomainRole.objects.exists())
+        self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+        self.assertEqual(UserPortfolioPermission.objects.get().portfolio, self.portfolio)
+
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
+        return_value=True,
+    )
+    def test_domain_id_migrates_only_selected_domain_invitations(self, _mock_prompt):
+        shiny_domain = Domain.objects.create(name="shiny.gov")
+        DomainInvitation.objects.create(email=self.domain_invitation.email, domain=shiny_domain)
+
+        with less_console_noise():
+            call_command("migrate_legacy_invitations", dry_run=False, domain_id=self.domain.pk)
+
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserDomainRole.objects.get().domain, self.domain)
+        self.assertFalse(UserPortfolioPermission.objects.exists())
+
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
+        return_value=True,
+    )
+    def test_email_migrates_matching_invitations_across_both_types(self, _mock_prompt):
+        self.portfolio_invitation.email = self.domain_invitation.email.upper()
+        self.portfolio_invitation.save()
+        DomainInvitation.objects.create(email="invitee@shiny.gov", domain=self.domain)
+        PortfolioInvitation.objects.create(email="invitee@shiny.gov", portfolio=self.portfolio)
+
+        with less_console_noise():
+            call_command("migrate_legacy_invitations", dry_run=False, email=self.domain_invitation.email)
+
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+        self.assertEqual(UserDomainRole.objects.get().email, self.domain_invitation.email)
+        self.assertEqual(UserPortfolioPermission.objects.get().email, self.domain_invitation.email)
+
+    def test_unknown_selection_does_not_migrate_all_invitations(self):
+        with self.assertRaisesMessage(CommandError, "Portfolio id=9999 does not exist"):
+            call_command("migrate_legacy_invitations", portfolio_id=9999)
+
+        self.assertFalse(UserDomainRole.objects.exists())
+        self.assertFalse(UserPortfolioPermission.objects.exists())
 
     @patch(
         "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
