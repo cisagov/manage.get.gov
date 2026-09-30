@@ -99,7 +99,7 @@ class Command(BaseCommand):
             TerminalHelper.prompt_for_execution(
                 system_exit_on_terminate=True,
                 prompt_message=proposed,
-                prompt_title="Migrate pending legacy domain and portfolio invitations",
+                prompt_title="Migrate pending legacy domain and portfolio invitations to user domain role and user portfolio permission, respectively",
             )
 
     def _migrate_domain_invitation(self, invitation, dry_run, duplicate_legacy_invitation):
