@@ -39,6 +39,7 @@ class Command(BaseCommand):
         """Get list of domain manager email addresses for a domain"""
         return list(
             UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+            .exclude(user__email="")
             .values_list("user__email", flat=True)
             .distinct()
         )
@@ -53,6 +54,7 @@ class Command(BaseCommand):
                 portfolio=portfolio,
                 roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             )
+            .exclude(user__email="")
             .values_list("user__email", flat=True)
             .distinct()
         )

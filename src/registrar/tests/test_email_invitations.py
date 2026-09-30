@@ -1530,6 +1530,38 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             },
         )
 
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_pending_invite_is_not_sent_for_on_hold_email(self, mock_send_templated_email):
+        """Create a db record to confirm a pending inv does NOT receives an on hold email"""
+        pending_inv_domain = Domain.objects.create(name="pendinginvonhold.gov")
+        pending_inv_manager = User.objects.create_user(
+            username="pendinginvonholdmanager", email="pendinginvonhold@manager.gov"
+        )
+        UserDomainRole.objects.create(
+            user=pending_inv_manager, domain=pending_inv_domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(
+            user=None,
+            domain=pending_inv_domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+            email="pending-onhold@email.gov",
+        )
+        onholduser = User.objects.create_user(username="onholduser", email="onholduser@email.gov")
+
+        mock_send_templated_email.return_value = None
+
+        result = send_domain_manager_on_hold_email_to_domain_managers(domain=pending_inv_domain, requestor=onholduser)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+        _, kwargs = mock_send_templated_email.call_args
+
+        self.assertIn(pending_inv_manager.email, kwargs["to_addresses"])
+        self.assertNotIn("pending-onhold@email.gov", kwargs["to_addresses"])
+        self.assertEqual(len(kwargs["to_addresses"]), 1)
+
 
 class TestDomainRenewalNotificationEmail(unittest.TestCase):
     """
@@ -1721,6 +1753,38 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
         )
         self.assertTrue(result)
 
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_pending_invite_is_not_emailed_on_renewal(self, mock_send_templated_email):
+        """Create a db record to confirm a pending inv
+        (UserDomainRole with user=None) does NOT get a renewal email"""
+        pending_inv_domain = Domain.objects.create(name="pendinginvrenewal.gov")
+        pending_inv_manager = User.objects.create_user(
+            username="pendinginvrenewalmanager", email="pendinginvrenewal@manager.gov"
+        )
+        UserDomainRole.objects.create(
+            user=pending_inv_manager, domain=pending_inv_domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(
+            user=None,
+            domain=pending_inv_domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+            email="pending-inv@email.gov",
+        )
+
+        mock_send_templated_email.return_value = None
+
+        result = send_domain_renewal_notification_emails(domain=pending_inv_domain)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+        _, kwargs = mock_send_templated_email.call_args
+
+        self.assertIn(pending_inv_manager.email, kwargs["to_addresses"])
+        self.assertNotIn("pending-inv@email.gov", kwargs["to_addresses"])
+        self.assertEqual(len(kwargs["to_addresses"]), 1)
+
 
 class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
     """Unit tests for send_domain_deleted_email_to_managers_and_admins function."""
@@ -1784,6 +1848,7 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
             roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             user__isnull=False,
         )
+        mock_portfolio_permission_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_deleted_notification.txt",
             "emails/domain_deleted_notification_subject.txt",
@@ -1922,6 +1987,38 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         self.assertFalse(result)
         mock_send_templated_email.assert_called_once()
 
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_pending_invite_is_not_emailed_on_deletion(self, mock_send_templated_email):
+        """Create a db record to confirm a pending
+        inv does NOT get a domain is deleted notification email"""
+        pending_inv_domain = Domain.objects.create(name="pendinginvdeleted.gov")
+        pending_inv_manager = User.objects.create_user(
+            username="pendinginvdeletedmanager", email="pendinginvdeleted@manager.gov"
+        )
+        UserDomainRole.objects.create(
+            user=pending_inv_manager, domain=pending_inv_domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(
+            user=None,
+            domain=pending_inv_domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+            email="pending-deleted@email.gov",
+        )
+
+        mock_send_templated_email.return_value = None
+
+        result = send_domain_deleted_email_to_managers_and_admins(domain=pending_inv_domain)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+        _, kwargs = mock_send_templated_email.call_args
+
+        self.assertIn(pending_inv_manager.email, kwargs["to_addresses"])
+        self.assertNotIn("pending-deleted@email.gov", kwargs["to_addresses"])
+        self.assertEqual(len(kwargs["to_addresses"]), 1)
+
 
 class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
     """Unit tests for send_domain_on_hold_admin_email_to_managers_and_admins function."""
@@ -1986,6 +2083,7 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
             roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
             user__isnull=False,
         )
+        mock_portfolio_permission_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_on_hold_admin_notification.txt",
             "emails/domain_on_hold_admin_notification_subject.txt",
