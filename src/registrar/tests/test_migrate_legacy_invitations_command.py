@@ -17,6 +17,7 @@ from registrar.models import (
     UserPortfolioPermission,
 )
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.services.invitation_service import accept_domain_invitation, accept_portfolio_invitation
 
 from .common import create_user, less_console_noise
 
@@ -69,8 +70,15 @@ class TestMigrateLegacyInvitationsCommand(TestCase):
         return_value=True,
     )
     def test_migrates_pending_invitations(self, _mock_prompt):
-        with less_console_noise():
+        self.assertEqual(UserDomainRole.objects.count(), 0)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 0)
+
+        with patch("registrar.utility.email_invitations.send_templated_email") as mock_send_email, less_console_noise():
             call_command("migrate_legacy_invitations", dry_run=False)
+
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+        mock_send_email.assert_not_called()
 
         domain_role = UserDomainRole.objects.get(domain=self.domain)
         self.assertIsNone(domain_role.user)
@@ -102,6 +110,62 @@ class TestMigrateLegacyInvitationsCommand(TestCase):
 
         self.assertEqual(UserDomainRole.objects.count(), 1)
         self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
+        return_value=True,
+    )
+    def test_different_case_creates_one_role_and_permission(self, _mock_prompt):
+        # Compares against the lowercase setUp 'domain-invitee@exmaple.gov' with an upper()
+        DomainInvitation.objects.create(email=self.domain_invitation.email.upper(), domain=self.domain)
+        PortfolioInvitation.objects.create(
+            email=self.portfolio_invitation.email.upper(),
+            portfolio=self.portfolio,
+            roles=self.portfolio_invitation.roles,
+            additional_permissions=self.portfolio_invitation.additional_permissions,
+        )
+
+        with patch("registrar.utility.email_invitations.send_templated_email") as mock_send_email, less_console_noise():
+            call_command("migrate_legacy_invitations", dry_run=False)
+
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+        mock_send_email.assert_not_called()
+
+        domain_invitee = create_user(username="domain_invitee", email=self.domain_invitation.email)
+        portfolio_invitee = create_user(username="portfolio_invitee", email=self.portfolio_invitation.email)
+        accept_domain_invitation(domain_invitee, self.domain)
+        accept_portfolio_invitation(portfolio_invitee, self.portfolio)
+
+        self.assertEqual(UserDomainRole.objects.count(), 1)
+        self.assertEqual(UserPortfolioPermission.objects.count(), 1)
+        self.assertEqual(UserDomainRole.objects.get().status, UserDomainRole.Status.ACCEPTED)
+        self.assertEqual(UserPortfolioPermission.objects.get().status, UserPortfolioPermission.Status.ACCEPTED)
+
+    @patch(
+        "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",
+        return_value=True,
+    )
+    def test_rejected_and_expired_records_do_not_block_migration(self, _mock_prompt):
+        UserDomainRole.objects.create(
+            domain=self.domain,
+            email=self.domain_invitation.email,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.REJECTED,
+        )
+        UserPortfolioPermission.objects.create(
+            portfolio=self.portfolio,
+            email=self.portfolio_invitation.email,
+            status=UserPortfolioPermission.Status.EXPIRED,
+        )
+
+        with less_console_noise():
+            call_command("migrate_legacy_invitations", dry_run=False)
+
+        self.assertEqual(UserDomainRole.objects.filter(status=UserDomainRole.Status.INVITED).count(), 1)
+        self.assertEqual(
+            UserPortfolioPermission.objects.filter(status=UserPortfolioPermission.Status.INVITED).count(), 1
+        )
 
     @patch(
         "registrar.management.commands.utility.terminal_helper.TerminalHelper.prompt_for_execution",

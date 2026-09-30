@@ -2,6 +2,9 @@
 
 This command only handles invitations which are still pending. Retrieved and
 canceled invitations are in the legacy domaininvitation and portfolioinvitation tables for historical reference.
+The pending legacy invitations remain in place after migration. On login, the
+invitation service accepts both records for the same domain or portfolio and
+reuses the new role or permission. Creating the new records sends no email.
 
 - In dry-run mode, only logs what would be created
 - With --no-dry-run, creates UserDomainRole and UserPortfolioPermission invitations
@@ -81,8 +84,10 @@ class Command(BaseCommand):
 
         header = "FINISHED (DRY RUN): Migrate legacy invitations" if dry_run else "FINISHED: Migrate legacy invitations"
         logger.info("============= %s =============", header)
-        logger.info("Created: %s", summary["created"])
-        logger.info("Would create: %s", summary["would_create"])
+        if dry_run:
+            logger.info("Would create: %s", summary["would_create"])
+        else:
+            logger.info("Created: %s", summary["created"])
         logger.info("Skipped: %s", summary["skipped"])
         if summary["failed"]:
             logger.warning("Failed: %s", summary["failed"])
@@ -185,6 +190,7 @@ class Command(BaseCommand):
         return (
             UserDomainRole.objects.filter(domain=invitation.domain)
             .filter(Q(email__iexact=invitation.email) | Q(user__email__iexact=invitation.email))
+            .exclude(status__in=[UserDomainRole.Status.REJECTED, UserDomainRole.Status.EXPIRED])
             .exists()
         )
 
@@ -192,6 +198,7 @@ class Command(BaseCommand):
         return (
             UserPortfolioPermission.objects.filter(portfolio=invitation.portfolio)
             .filter(Q(email__iexact=invitation.email) | Q(user__email__iexact=invitation.email))
+            .exclude(status__in=[UserPortfolioPermission.Status.REJECTED, UserPortfolioPermission.Status.EXPIRED])
             .exists()
         )
 
