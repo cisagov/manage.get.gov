@@ -8,7 +8,9 @@ reuses the new role or permission. Creating the new records sends no email.
 
 - In dry-run mode, only logs what would be created
 - With --no-dry-run, creates UserDomainRole and UserPortfolioPermission invitations
-- Use --portfolio-id, --domain-id, or --email to migrate only those pending invitations attached to that portfolio, domain, or email.
+- Use --portfolio-id or --domain-id for invitations attached to one record.
+- Use --portfolio-id, --domain-id, or --email to migrate only those pending invitations 
+  attached to that portfolio, domain, or email.
 """
 
 import argparse
