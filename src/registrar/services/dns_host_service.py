@@ -289,7 +289,7 @@ class DnsHostService:
         return vendor_record_data
 
     def delete_dns_record(self, x_zone_id: str, dns_record: DnsRecord) -> str:
-        """Look up the record by pk and delete it via the vendor service.
+        """Look up the record by pk and dns record and delete it via the vendor service.
 
         Returns the deleted DnsRecord's vendor id.
         Raises ValueError if the record or its vendor id cannot be resolved.
