@@ -959,7 +959,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _get_dns_record(self, request) -> DnsRecord | None:
         """Parse the DNS record id from POST data."""
-        raw = request.POST.get("id")
+
         try:
             raw = request.POST.get("id")
             dns_record_id = int(raw)
@@ -1164,8 +1164,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def _handle_delete(self, request, x_zone_id: int, dns_record: DnsRecord):
         """Handle deletion for DNS records via htmx."""
-        self.object = self.get_object()
-        self._get_domain(request)
 
         self.dns_host_service.delete_dns_record(x_zone_id, dns_record)
         messages.success(request, "The DNS record for this domain has been deleted.")

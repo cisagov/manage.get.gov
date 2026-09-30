@@ -462,13 +462,12 @@ class DnsRecord(TimeStampedModel):
             raise
 
     @classmethod
-    def delete_by_x_record_id(cls, x_record_id: str):
+    def delete_by_x_record_id(cls, x_record_id: str, dns_record: DnsRecord):
         """Delete an existing DnsRecord and its associated VendorRecord and DnsRecordVendorDnsRecord."""
         try:
             with transaction.atomic():
                 vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-                dns_record = cls.get_by_x_record_id(x_record_id)
-
+                
                 # DnsRecordVendorDnsRecord object is deleted on cascade
                 dns_record.delete()  # type: ignore
                 vendor_dns_record.delete()  # type: ignore
