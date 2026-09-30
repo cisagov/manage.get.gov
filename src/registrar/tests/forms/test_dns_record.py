@@ -220,8 +220,8 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
 
     def test_dns_record_with_invalid_content_throws_error(self):
         invalid_content_by_type = {
-            "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address."),
-            "AAAA": ("192.0.2.10", "Enter a valid IPv6 address."),
+            "A": ("2008:db8:1234:5678", "Enter a valid IPv4 address using numbers and periods."),
+            "AAAA": ("192.0.2.10", "Enter a valid IPv6 address using numbers and colons."),
             "TXT": ('"I should not include surrounding double quotes"', TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE),
             "CNAME": (
                 "invalid..hostname",

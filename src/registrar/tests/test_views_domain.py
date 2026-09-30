@@ -3,12 +3,11 @@ from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.http import Http404
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
-from registrar.services.mock_cloudflare_service import MockCloudflareService
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
@@ -602,32 +601,17 @@ class TestDomainDetail(TestDomainOverview):
         Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
         - is ready or on hold state
         - not enrolled in dns hosting
-        - flag for dns hosting is turned off
         """
         banner_message = "This domain's name servers"
 
-        with less_console_noise() and override_flag("dns_hosting", active=False):
-            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-            self.assertContains(on_hold_detail_page, banner_message)
+        on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+        self.assertContains(on_hold_detail_page, banner_message)
 
-            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-            self.assertContains(ready_state_detail_page, banner_message)
+        ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+        self.assertContains(ready_state_detail_page, banner_message)
 
-            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
-            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
-
-            dns_needed_page = self.client.get(f"/domain/{self.domain_dns_needed.id}")
-            self.assertNotContains(dns_needed_page, banner_message)
-
-        with less_console_noise() and override_flag("dns_hosting", active=True):
-            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-            self.assertNotContains(on_hold_detail_page, banner_message)
-
-            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-            self.assertNotContains(ready_state_detail_page, banner_message)
-
-            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
-            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
+        domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+        self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
 
 
 class TestDomainDetailDomainRenewal(TestDomainOverview):
@@ -3893,20 +3877,8 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         )
 
 
+@override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
-    mock_api_service = MockCloudflareService()
-
-    @classmethod
-    def setUpClass(cls):
-        """Start mock service once for all tests in this class"""
-        super().setUpClass()
-        cls.mock_api_service.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop mock service after all tests"""
-        cls.mock_api_service.stop()
-        super().tearDownClass()
 
     def tearDown(self):
         delete_all_dns_data()
@@ -3915,7 +3887,6 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.cf_service = CloudflareService(self.client)
         self.user = create_user()
         self.client.force_login(self.user)
 
