@@ -59,12 +59,11 @@ class TestMockCloudflareServiceBasics(SimpleTestCase):
 class TestMockCloudflareServiceEndpoints(SimpleTestCase):
     """Test that mocked endpoints return correct data"""
 
-    mock_api_service = MockCloudflareService()
-
     @classmethod
     def setUpClass(cls):
         """Start mock service once for all tests in this class"""
         super().setUpClass()
+        cls.mock_api_service = MockCloudflareService()
         cls.mock_api_service.start()
 
     @classmethod
