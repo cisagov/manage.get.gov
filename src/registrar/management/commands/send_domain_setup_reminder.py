@@ -53,6 +53,7 @@ class Command(BaseCommand):
             UserPortfolioPermission.objects.filter(
                 portfolio=portfolio,
                 roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                user__isnull=False,
             )
             .exclude(user__email="")
             .values_list("user__email", flat=True)

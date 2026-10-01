@@ -1,4 +1,3 @@
-import unittest
 from unittest.mock import patch, MagicMock, ANY
 from datetime import date
 from registrar.models.domain import Domain
@@ -35,7 +34,7 @@ from django.conf import settings
 from registrar.models import DomainInvitation, DomainInformation
 
 
-class DomainInvitationEmail(unittest.TestCase):
+class DomainInvitationEmail(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -536,7 +535,7 @@ class DomainInvitationEmail(unittest.TestCase):
         )
 
 
-class PortfolioInvitationEmailTests(unittest.TestCase):
+class PortfolioInvitationEmailTests(TestCase):
 
     def setUp(self):
         """Setup common test data for all test cases"""
@@ -644,7 +643,7 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
         mock_send_admin_emails.assert_called_once_with(self.email, "requestor@example.com", self.portfolio)
 
 
-class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
+class SendPortfolioAdminAdditionEmailsTests(TestCase):
     """Unit tests for _send_portfolio_admin_addition_emails_to_portfolio_admins function."""
 
     def setUp(self):
@@ -766,7 +765,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         )
 
 
-class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
+class SendPortfolioAdminRemovalEmailsToAdminsTests(TestCase):
     """Unit tests for _send_portfolio_admin_removal_emails_to_portfolio_admins function."""
 
     def setUp(self):
@@ -888,7 +887,7 @@ class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
         )
 
 
-class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
+class SendPortfolioAdminRemovalEmailsTests(TestCase):
     """Unit tests for send_portfolio_admin_removal_emails function."""
 
     def setUp(self):
@@ -945,7 +944,7 @@ class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
         self.assertFalse(result)
 
 
-class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
+class TestSendPortfolioMemberPermissionUpdateEmail(TestCase):
     """Unit tests for send_portfolio_member_permission_update_email function."""
 
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -1024,7 +1023,7 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
 
 
-class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
+class TestSendPortfolioMemberPermissionRemoveEmail(TestCase):
     """Unit tests for send_portfolio_member_permission_remove_email function."""
 
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -1101,7 +1100,7 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
 
 
-class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
+class TestSendPortfolioInvitationRemoveEmail(TestCase):
     """Unit tests for send_portfolio_invitation_remove_email function."""
 
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -1176,7 +1175,7 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
 
 
-class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
+class SendDomainManagerRemovalEmailsToManagersTests(TestCase):
     """Unit tests for send_domain_manager_removal_emails_to_domain_managers function."""
 
     def setUp(self):
@@ -1336,7 +1335,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
         mock_filter.assert_called_once_with(domain=self.domain)
 
 
-class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
+class TestSendPortfolioOrganizationUpdateEmail(TestCase):
     """Unit tests for send_portfolio_update_emails_to_portfolio_admins function."""
 
     def setUp(self):
@@ -1450,7 +1449,7 @@ class TestDomainInvitationCleanupSignal(TestCase):
         self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
 
-class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
+class TestSendDomainManagerOnHoldEmail(TestCase):
     """Unit tests for send_domain_manager_on_hold_email_to_domain_managers function."""
 
     def setUp(self):
@@ -1563,7 +1562,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
         self.assertEqual(len(kwargs["to_addresses"]), 1)
 
 
-class TestDomainRenewalNotificationEmail(unittest.TestCase):
+class TestDomainRenewalNotificationEmail(TestCase):
     """
     Unit tests for send_domain_renewal_notification_emails function
     """
@@ -1786,7 +1785,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
         self.assertEqual(len(kwargs["to_addresses"]), 1)
 
 
-class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
+class TestSendDomainDeletedEmailToManagerAndAdmins(TestCase):
     """Unit tests for send_domain_deleted_email_to_managers_and_admins function."""
 
     def setUp(self):
@@ -2020,7 +2019,7 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         self.assertEqual(len(kwargs["to_addresses"]), 1)
 
 
-class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
+class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(TestCase):
     """Unit tests for send_domain_on_hold_admin_email_to_managers_and_admins function."""
 
     def setUp(self):
