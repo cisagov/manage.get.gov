@@ -4,7 +4,7 @@ Date: 2026-07-10
 
 ## Status
 
-Under Review
+Approved
 
 ## Context
 
@@ -39,7 +39,7 @@ Key properties of the new pool (`src/epplibwrapper/utility/pool.py`):
   worker class the python 'threads' are monkey-patched into greenlets. If we ever change our worker
   class to gthread no code changes will be needed as the python thread library is natively
   thread-safe. The pool works under either worker class with no code changes.
-- **Background maintenance thread** that periodically pings idle connections (EPP `Hello`) and
+- **Background maintenance thread** that periodically pings idle connections (an EPP `CheckDomain` on a domain we own, which only succeeds on a logged-in session) and
   retires connections that have gone too long without doing real work, replacing them with fresh
   ones.
 - **Per-connection blast radius.** A transport failure discards only the affected connection;
