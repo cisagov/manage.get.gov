@@ -22,6 +22,7 @@ from registrar.models import (
     DomainInformation,
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
 from registrar.utility.errors import APIError, EnrollmentNotAllowedError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
@@ -83,12 +84,12 @@ class TestDnsHostService(TestCase):
         for case in account_test_cases:
             with self.subTest(msg=case["test_name"]):
                 mock_find_existing_account_in_db.return_value = case["db_account_id"]
-
                 mock_find_existing_account_in_cf.return_value = case["cf_account_data"]
                 mock_create_db_account.return_value = case["expected_account_id"]
                 mock_create_and_save_account.return_value = case["expected_account_id"]
 
-                x_account_id = self.service.dns_account_setup(case["domain_name"])
+                with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                    x_account_id = self.service.dns_account_setup(case["domain_name"])
 
                 self.assertEqual(x_account_id, case["expected_account_id"])
 
@@ -103,6 +104,12 @@ class TestDnsHostService(TestCase):
                 else:
                     mock_create_and_save_account.assert_called_once()
                     mock_create_db_account.assert_called_once()
+
+                log_entries = json_log_entries(stream)
+                self.assertTrue(log_entries, "Expected at least one log line")
+
+                for entry in log_entries:
+                    self.assertEqual(entry.get("domain_name"), case["domain_name"])
 
     @patch("registrar.services.dns_host_service.DnsHostService._find_existing_zone_in_cf")
     @patch("registrar.services.dns_host_service.DnsHostService.create_and_save_zone")
@@ -175,7 +182,8 @@ class TestDnsHostService(TestCase):
 
                 mock_find_existing_zone_in_cf.return_value = case["cf_zone_data"]
 
-                self.service.dns_zone_setup(case["domain_name"], case["x_account_id"])
+                with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                    self.service.dns_zone_setup(case["domain_name"], case["x_account_id"])
 
                 # Behavioral assertions
                 if case["db_zone"]:
@@ -188,6 +196,11 @@ class TestDnsHostService(TestCase):
                 else:
                     mock_create_and_save_zone.assert_called_once()
                     mock_create_db_zone.assert_called_once()
+
+            log_entries = json_log_entries(stream)
+            self.assertTrue(log_entries, "Expected at least one log line")
+            for entry in log_entries:
+                self.assertEqual(entry.get("domain_name"), case["domain_name"])
 
     @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
@@ -408,11 +421,17 @@ class TestDnsHostService(TestCase):
         self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
         self.service.register_nameservers = Mock()
 
-        self.service.enroll_domain(domain)
+        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+            self.service.enroll_domain(domain)
 
         self.service.dns_account_setup.assert_called_once_with(domain_name)
         self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
         self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.rainbow.gov", "ns2.rainbow.gov"])
+
+        log_entries = json_log_entries(stream, containing="Successfully enrolled")
+        self.assertTrue(log_entries, "Expected a 'Successfully enrolled' log line")
+        for entry in log_entries:
+            self.assertEqual(entry.get("domain_name"), domain_name)
 
     @override_settings(IS_PRODUCTION=True)
     def test_enroll_domain_allowed_domain_enrollment_in_production_succeeds(self):
@@ -445,18 +464,21 @@ class TestDnsHostService(TestCase):
         MockEppLib(Registry) is not setup for this test. It should always throw a RegistryError.
         """
         domain = create_domain(**{"domain_name": "not-igorville.gov"})
-
         create_initial_dns_setup(domain=domain)
         nameservers = DnsZone.objects.get(domain=domain).nameservers
 
-        with self.assertLogs("registrar.services.dns_host_service", level="ERROR") as log_msg:
+        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
             with self.assertRaises(RegistryError):
                 self.service.register_nameservers(domain_name=domain.name, nameservers=nameservers)
 
-        self.assertTrue(
-            any("Registry Error: an error occurred when registering nameservers for" in log for log in log_msg.output),
-            "Expected log for register nameserver error not found",
-        )
+        log_entries = json_log_entries(stream, containing="Registry Error")
+        self.assertTrue(log_entries, "Expected a 'Registry Error' log line")
+        for entry in log_entries:
+            self.assertIn(
+                "Registry Error: an error occurred when registering nameservers for",
+                entry.get("message", ""),
+            )
+            self.assertEqual(entry.get("domain_name"), domain.name)
 
 
 class TestDnsHostServiceDB(TestCase):
@@ -648,8 +670,14 @@ class TestDnsHostServiceDB(TestCase):
         )
         DnsZone.objects.get(name="example.gov").delete()
 
-        with self.assertRaises(DnsZone.DoesNotExist):
-            self.service.get_nameservers_from_zone(zone_name)
+        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+            with self.assertRaises(DnsZone.DoesNotExist):
+                self.service.get_nameservers_from_zone(zone_name)
+
+        log_entries = json_log_entries(stream)
+        self.assertTrue(log_entries, "Expected a 'does not exist' log line")
+        for entry in log_entries:
+            self.assertEqual(entry.get("domain_name"), zone_name)
 
     def test_create_db_zone_success(self):
         """Successfully creates registrar db zone objects."""
