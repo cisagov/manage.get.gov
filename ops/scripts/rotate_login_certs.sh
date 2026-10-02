@@ -8,11 +8,30 @@ if [ -z "$1" ]; then
     echo 'Please specify a space to update (i.e. lmm)' >&2
     exit 1
 fi
-echo "You need access to the Login partner dashboard, otherwise you will not be able to complete the steps in this script (https://dashboard.int.identitysandbox.gov/service_providers/2640)"
-read -p " Do you have access to the partner dashboard mentioned above? (y/n)  " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
+# Production is generate-only. This script never updates or restages the production app.
+space=$(echo "$1" | sed 's/^getgov-//' | tr '[:upper:]' '[:lower:]')
+is_prod=false
+if [ "$space" = "stable" ]; then
+    is_prod=true
+fi
+
+if [ "$is_prod" = true ]; then
+    echo "$1 is production. This script will only generate the new key, cert, and credentials file."
+    echo "It will NOT run uups or restage against production."
+    echo "You need access to the production Login partner dashboard (https://dashboard.login.gov) to finish this rotation."
+    echo "Follow the 'Production only' section of docs/operations/runbooks/rotate_application_secrets.md for every step after this script."
+    read -p "Do you have access to the production partner dashboard mentioned above? (y/n)  " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+else
+    echo "You need access to the Login partner dashboard, otherwise you will not be able to complete the steps in this script (https://dashboard.int.identitysandbox.gov/service_providers/2640)"
+    read -p " Do you have access to the partner dashboard mentioned above? (y/n)  " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
 fi
 
 if [ ! $(command -v jq) ] || [ ! $(command -v cf) ]; then
@@ -31,6 +50,12 @@ fi
 echo "Targeting space"
 cf target -o cisa-dotgov -s $1
 
+if [ "$is_prod" = true ]; then
+    echo "Backing up the current production credentials before anything new is generated"
+    cf env getgov-$1 | awk '/VCAP_SERVICES: /,/^$/' | sed s/VCAP_SERVICES:// | jq '."user-provided"[0].credentials' > credentials-$1-backup.json
+    echo "Backup written to credentials-$1-backup.json"
+fi
+
 echo "Creating new login.gov credentials for $1..."
 django_key=$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')
 openssl req -noenc -x509 -days 365 -newkey rsa:2048 -keyout private-$1.pem -out public-$1.crt
@@ -39,13 +64,19 @@ login_key=$(base64 -i private-$1.pem)
 echo "Creating the final json"
 cf env getgov-$1 | awk '/VCAP_SERVICES: /,/^$/' | sed s/VCAP_SERVICES:// | jq '."user-provided"[0].credentials' | jq --arg django_key "$django_key" --arg login_key "$login_key" '. + {"DJANGO_SECRET_KEY":$django_key, "DJANGO_SECRET_LOGIN_KEY":$login_key}' > credentials-$1.json
 
-echo "Updating creds on the sandbox" 
-cf uups getgov-credentials -p credentials-$1.json
-cf restage getgov-$1 --strategy rolling
+if [ "$is_prod" = true ]; then
+    echo "\n\n\nFiles were generated but stable was not updated with new secrets or restaged."
+    echo "credentials-$1-backup.json is your rollback copy of the current production credentials."
+    echo "Next steps are in the 'Production only' section of docs/operations/runbooks/rotate_application_secrets.md."
+else
+    echo "Updating creds on the sandbox" 
+    cf uups getgov-credentials -p credentials-$1.json
+    cf restage getgov-$1 --strategy rolling
 
-echo "\n\n\nNow you will need to update some things for Login. Please sign-in to https://dashboard.int.identitysandbox.gov/."
-echo "Navigate to our application config: https://dashboard.int.identitysandbox.gov/service_providers/2640/edit?"
-echo "There are two things to update."
-echo "1. Remove the old cert associated with the user's email (under Public Certificates)"
-echo "2. You need to upload the public-$1.crt file generated as part of the previous command. See the "choose cert file" button under Public Certificates."
-echo "Then, tell the developer to update their local .env file by retrieving their credentials from the sandbox"
+    echo "\n\n\nNow you will need to update some things for Login. Please sign-in to https://dashboard.int.identitysandbox.gov/."
+    echo "Navigate to our application config: https://dashboard.int.identitysandbox.gov/service_providers/2640/edit?"
+    echo "There are two things to update."
+    echo "1. Remove the old cert associated with the user's email (under Public Certificates)"
+    echo "2. You need to upload the public-$1.crt file generated as part of the previous command. See the "choose cert file" button under Public Certificates."
+    echo "Then, tell the developer to update their local .env file by retrieving their credentials from the sandbox"
+fi
