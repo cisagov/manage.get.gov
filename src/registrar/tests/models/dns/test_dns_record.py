@@ -480,7 +480,7 @@ class DnsRecordTest(TestCase):
             is_active=True,
         )
 
-        DnsRecord.delete_by_x_record_id(x_record_id)
+        DnsRecord.delete_by_x_record_id(x_record_id, record)
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
