@@ -1,4 +1,3 @@
-import unittest
 from unittest.mock import patch, MagicMock, ANY
 from datetime import date
 from registrar.models.domain import Domain
@@ -35,7 +34,7 @@ from django.conf import settings
 from registrar.models import DomainInvitation, DomainInformation
 
 
-class DomainInvitationEmail(unittest.TestCase):
+class DomainInvitationEmail(TestCase):
 
     @less_console_noise_decorator
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -536,7 +535,7 @@ class DomainInvitationEmail(unittest.TestCase):
         )
 
 
-class PortfolioInvitationEmailTests(unittest.TestCase):
+class PortfolioInvitationEmailTests(TestCase):
 
     def setUp(self):
         """Setup common test data for all test cases"""
@@ -644,7 +643,7 @@ class PortfolioInvitationEmailTests(unittest.TestCase):
         mock_send_admin_emails.assert_called_once_with(self.email, "requestor@example.com", self.portfolio)
 
 
-class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
+class SendPortfolioAdminAdditionEmailsTests(TestCase):
     """Unit tests for _send_portfolio_admin_addition_emails_to_portfolio_admins function."""
 
     def setUp(self):
@@ -766,7 +765,7 @@ class SendPortfolioAdminAdditionEmailsTests(unittest.TestCase):
         )
 
 
-class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
+class SendPortfolioAdminRemovalEmailsToAdminsTests(TestCase):
     """Unit tests for _send_portfolio_admin_removal_emails_to_portfolio_admins function."""
 
     def setUp(self):
@@ -888,7 +887,7 @@ class SendPortfolioAdminRemovalEmailsToAdminsTests(unittest.TestCase):
         )
 
 
-class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
+class SendPortfolioAdminRemovalEmailsTests(TestCase):
     """Unit tests for send_portfolio_admin_removal_emails function."""
 
     def setUp(self):
@@ -945,7 +944,7 @@ class SendPortfolioAdminRemovalEmailsTests(unittest.TestCase):
         self.assertFalse(result)
 
 
-class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
+class TestSendPortfolioMemberPermissionUpdateEmail(TestCase):
     """Unit tests for send_portfolio_member_permission_update_email function."""
 
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -1024,7 +1023,7 @@ class TestSendPortfolioMemberPermissionUpdateEmail(unittest.TestCase):
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
 
 
-class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
+class TestSendPortfolioMemberPermissionRemoveEmail(TestCase):
     """Unit tests for send_portfolio_member_permission_remove_email function."""
 
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -1101,7 +1100,7 @@ class TestSendPortfolioMemberPermissionRemoveEmail(unittest.TestCase):
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
 
 
-class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
+class TestSendPortfolioInvitationRemoveEmail(TestCase):
     """Unit tests for send_portfolio_invitation_remove_email function."""
 
     @patch("registrar.utility.email_invitations.send_templated_email")
@@ -1176,7 +1175,7 @@ class TestSendPortfolioInvitationRemoveEmail(unittest.TestCase):
         mock_logger.warning.assert_not_called()  # Function should fail before logging email failure
 
 
-class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
+class SendDomainManagerRemovalEmailsToManagersTests(TestCase):
     """Unit tests for send_domain_manager_removal_emails_to_domain_managers function."""
 
     def setUp(self):
@@ -1336,7 +1335,7 @@ class SendDomainManagerRemovalEmailsToManagersTests(unittest.TestCase):
         mock_filter.assert_called_once_with(domain=self.domain)
 
 
-class TestSendPortfolioOrganizationUpdateEmail(unittest.TestCase):
+class TestSendPortfolioOrganizationUpdateEmail(TestCase):
     """Unit tests for send_portfolio_update_emails_to_portfolio_admins function."""
 
     def setUp(self):
@@ -1450,7 +1449,7 @@ class TestDomainInvitationCleanupSignal(TestCase):
         self.assertTrue(UserDomainRole.objects.filter(user=self.user, domain=self.domain).exists())
 
 
-class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
+class TestSendDomainManagerOnHoldEmail(TestCase):
     """Unit tests for send_domain_manager_on_hold_email_to_domain_managers function."""
 
     def setUp(self):
@@ -1477,7 +1476,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
     def test_send_email_success(self, mock_filter, mock_send_templated_email, mock_get_requestor_email):
         """Test successful sending of domain manager removal emails."""
 
-        mock_filter.return_value.values_list.return_value = self.mock_values_list_qs
+        mock_filter.return_value.exclude.return_value.values_list.return_value = self.mock_values_list_qs
         mock_send_templated_email.return_value = None  # No exception means success
 
         mock_get_requestor_email.return_value = "requestor_success@example.com"
@@ -1487,7 +1486,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             domain=self.domain,
             requestor=mock_requestor,
         )
-        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
         mock_send_templated_email.assert_any_call(
             "emails/domain_on_hold_notification.txt",
             "emails/domain_on_hold_notification_subject.txt",
@@ -1507,7 +1506,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
     @patch("registrar.utility.email_invitations.send_templated_email", side_effect=EmailSendingError)
     @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
     def test_send_email_failure(self, mock_filter, mock_send_templated_email, mock_get_requestor_email):
-        mock_filter.return_value.values_list.return_value = self.mock_values_list_qs
+        mock_filter.return_value.exclude.return_value.values_list.return_value = self.mock_values_list_qs
 
         mock_get_requestor_email.return_value = "requestor_fail@example.com"
         mock_requestor = MagicMock()
@@ -1517,7 +1516,7 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
         )
 
         self.assertFalse(result)
-        mock_filter.assert_called_once_with(domain=self.domain)
+        mock_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
         mock_send_templated_email.assert_any_call(
             "emails/domain_on_hold_notification.txt",
             "emails/domain_on_hold_notification_subject.txt",
@@ -1530,8 +1529,40 @@ class TestSendDomainManagerOnHoldEmail(unittest.TestCase):
             },
         )
 
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_pending_invite_is_not_sent_for_on_hold_email(self, mock_send_templated_email):
+        """Create a db record to confirm a pending inv does NOT receives an on hold email"""
+        pending_inv_domain = Domain.objects.create(name="pendinginvonhold.gov")
+        pending_inv_manager = User.objects.create_user(
+            username="pendinginvonholdmanager", email="pendinginvonhold@manager.gov"
+        )
+        UserDomainRole.objects.create(
+            user=pending_inv_manager, domain=pending_inv_domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(
+            user=None,
+            domain=pending_inv_domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+            email="pending-onhold@email.gov",
+        )
+        onholduser = User.objects.create_user(username="onholduser", email="onholduser@email.gov")
 
-class TestDomainRenewalNotificationEmail(unittest.TestCase):
+        mock_send_templated_email.return_value = None
+
+        result = send_domain_manager_on_hold_email_to_domain_managers(domain=pending_inv_domain, requestor=onholduser)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+        _, kwargs = mock_send_templated_email.call_args
+
+        self.assertIn(pending_inv_manager.email, kwargs["to_addresses"])
+        self.assertNotIn("pending-onhold@email.gov", kwargs["to_addresses"])
+        self.assertEqual(len(kwargs["to_addresses"]), 1)
+
+
+class TestDomainRenewalNotificationEmail(TestCase):
     """
     Unit tests for send_domain_renewal_notification_emails function
     """
@@ -1563,12 +1594,12 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             mock_domain_role_filter: Mock for UserDomainRole.objects.filter
             has_portfolio: Whether the domain should have an associated portfolio
         """
-        # Mock the domain manager query chain
+        # Mock the domain manager query chain: filter(...).exclude(...).values_list(...).distinct()
         mock_values_list_qs = MagicMock()
         mock_values_list_qs.distinct.return_value = [self.user_1.email]
-        mock_domain_role_filter.return_value.values_list.return_value = mock_values_list_qs
+        mock_domain_role_filter.return_value.exclude.return_value.values_list.return_value = mock_values_list_qs
 
-        # Mock the domain information query
+        # Mock the domain information query: portfolio_admin_users.exclude(...).values_list(...).distinct()
         mock_queryset_domain_info = MagicMock()
         mock_queryset_domain_info.first.return_value = self.domain_info
         mock_domain_information_filter.return_value = mock_queryset_domain_info
@@ -1579,7 +1610,8 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             mock_admins_qs.distinct.return_value = [self.user_2.email]
             mock_portfolio_user_qs = MagicMock()
             mock_portfolio_user_qs.values_list.return_value = mock_admins_qs
-            self.portfolio.portfolio_admin_users = mock_portfolio_user_qs
+            self.portfolio.portfolio_admin_users = MagicMock()
+            self.portfolio.portfolio_admin_users.exclude.return_value = mock_portfolio_user_qs
             self.domain_info.portfolio = self.portfolio
         else:
             # Domain has no assocated portfolio
@@ -1601,7 +1633,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1629,7 +1661,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1655,7 +1687,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1681,7 +1713,7 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
             domain=self.domain,
         )
 
-        mock_domain_role_filter.assert_called_once_with(domain=self.domain)
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
         mock_domain_information_filter.assert_called_once_with(domain=self.domain)
         mock_send_templated_email.assert_any_call(
             template_name="emails/domain_renewal_success.txt",
@@ -1692,8 +1724,68 @@ class TestDomainRenewalNotificationEmail(unittest.TestCase):
         )
         self.assertFalse(result)
 
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    @patch("registrar.utility.email_invitations.UserDomainRole.objects.filter")
+    @patch("registrar.utility.email_invitations.DomainInformation.objects.filter")
+    def test_send_email_excludes_pending_invites_and_blank_emails(
+        self, mock_domain_information_filter, mock_domain_role_filter, mock_send_templated_email
+    ):
+        """Test that domain manager emails excludes UserDomainRole rows with no user
+        (pending invs) and users with a blank email"""
+        self._setup_mocks(mock_domain_information_filter, mock_domain_role_filter, has_portfolio=False)
+        mock_send_templated_email.return_value = None  # No exception means success
 
-class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
+        result = send_domain_renewal_notification_emails(
+            domain=self.domain,
+        )
+
+        mock_domain_role_filter.assert_called_once_with(domain=self.domain, user__isnull=False)
+        mock_domain_role_filter.return_value.exclude.assert_called_once_with(user__email="")
+        mock_domain_information_filter.assert_called_once_with(domain=self.domain)
+        mock_send_templated_email.assert_any_call(
+            template_name="emails/domain_renewal_success.txt",
+            subject_template_name="emails/domain_renewal_success_subject.txt",
+            to_addresses=[self.user_1.email],
+            cc_addresses=[],
+            context={"domain": self.domain, "expiration_date": self.domain.expiration_date},
+        )
+        self.assertTrue(result)
+
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_pending_invite_is_not_emailed_on_renewal(self, mock_send_templated_email):
+        """Create a db record to confirm a pending inv
+        (UserDomainRole with user=None) does NOT get a renewal email"""
+        pending_inv_domain = Domain.objects.create(name="pendinginvrenewal.gov")
+        pending_inv_manager = User.objects.create_user(
+            username="pendinginvrenewalmanager", email="pendinginvrenewal@manager.gov"
+        )
+        UserDomainRole.objects.create(
+            user=pending_inv_manager, domain=pending_inv_domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(
+            user=None,
+            domain=pending_inv_domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+            email="pending-inv@email.gov",
+        )
+
+        mock_send_templated_email.return_value = None
+
+        result = send_domain_renewal_notification_emails(domain=pending_inv_domain)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+        _, kwargs = mock_send_templated_email.call_args
+
+        self.assertIn(pending_inv_manager.email, kwargs["to_addresses"])
+        self.assertNotIn("pending-inv@email.gov", kwargs["to_addresses"])
+        self.assertEqual(len(kwargs["to_addresses"]), 1)
+
+
+class TestSendDomainDeletedEmailToManagerAndAdmins(TestCase):
     """Unit tests for send_domain_deleted_email_to_managers_and_admins function."""
 
     def setUp(self):
@@ -1742,8 +1834,9 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         # Mock portfolio admin emails
         mock_portfolio_values_list_qs = MagicMock()
         mock_portfolio_values_list_qs.distinct.return_value = [self.admin_email_1, self.admin_email_2]
-        mock_portfolio_permission_filter.return_value.values_list.return_value = mock_portfolio_values_list_qs
-
+        mock_portfolio_permission_filter.return_value.exclude.return_value.values_list.return_value = (
+            mock_portfolio_values_list_qs
+        )
         mock_send_templated_email.return_value = None
 
         result = send_domain_deleted_email_to_managers_and_admins(domain=self.domain)
@@ -1752,7 +1845,9 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         mock_portfolio_permission_filter.assert_called_once_with(
             portfolio=ANY,
             roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            user__isnull=False,
         )
+        mock_portfolio_permission_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_deleted_notification.txt",
             "emails/domain_deleted_notification_subject.txt",
@@ -1826,8 +1921,9 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         # Mock portfolio admin emails
         mock_portfolio_values_list_qs = MagicMock()
         mock_portfolio_values_list_qs.distinct.return_value = [self.admin_email_1]
-        mock_portfolio_permission_filter.return_value.values_list.return_value = mock_portfolio_values_list_qs
-
+        mock_portfolio_permission_filter.return_value.exclude.return_value.values_list.return_value = (
+            mock_portfolio_values_list_qs
+        )
         mock_send_templated_email.return_value = None
 
         result = send_domain_deleted_email_to_managers_and_admins(domain=self.domain)
@@ -1890,8 +1986,40 @@ class TestSendDomainDeletedEmailToManagerAndAdmins(unittest.TestCase):
         self.assertFalse(result)
         mock_send_templated_email.assert_called_once()
 
+    @less_console_noise_decorator
+    @patch("registrar.utility.email_invitations.send_templated_email")
+    def test_pending_invite_is_not_emailed_on_deletion(self, mock_send_templated_email):
+        """Create a db record to confirm a pending
+        inv does NOT get a domain is deleted notification email"""
+        pending_inv_domain = Domain.objects.create(name="pendinginvdeleted.gov")
+        pending_inv_manager = User.objects.create_user(
+            username="pendinginvdeletedmanager", email="pendinginvdeleted@manager.gov"
+        )
+        UserDomainRole.objects.create(
+            user=pending_inv_manager, domain=pending_inv_domain, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.create(
+            user=None,
+            domain=pending_inv_domain,
+            role=UserDomainRole.Roles.MANAGER,
+            status=UserDomainRole.Status.INVITED,
+            email="pending-deleted@email.gov",
+        )
 
-class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
+        mock_send_templated_email.return_value = None
+
+        result = send_domain_deleted_email_to_managers_and_admins(domain=pending_inv_domain)
+
+        self.assertTrue(result)
+        mock_send_templated_email.assert_called_once()
+        _, kwargs = mock_send_templated_email.call_args
+
+        self.assertIn(pending_inv_manager.email, kwargs["to_addresses"])
+        self.assertNotIn("pending-deleted@email.gov", kwargs["to_addresses"])
+        self.assertEqual(len(kwargs["to_addresses"]), 1)
+
+
+class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(TestCase):
     """Unit tests for send_domain_on_hold_admin_email_to_managers_and_admins function."""
 
     def setUp(self):
@@ -1940,8 +2068,9 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         # Mock portfolio admin emails
         mock_portfolio_values_list_qs = MagicMock()
         mock_portfolio_values_list_qs.distinct.return_value = [self.admin_email_1, self.admin_email_2]
-        mock_portfolio_permission_filter.return_value.values_list.return_value = mock_portfolio_values_list_qs
-
+        mock_portfolio_permission_filter.return_value.exclude.return_value.values_list.return_value = (
+            mock_portfolio_values_list_qs
+        )
         mock_send_templated_email.return_value = None
 
         result = send_domain_on_hold_admin_email_to_managers_and_admins(domain=self.domain)
@@ -1951,7 +2080,9 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         mock_portfolio_permission_filter.assert_called_once_with(
             portfolio=ANY,
             roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+            user__isnull=False,
         )
+        mock_portfolio_permission_filter.return_value.exclude.assert_called_once_with(user__email="")
         mock_send_templated_email.assert_called_once_with(
             "emails/domain_on_hold_admin_notification.txt",
             "emails/domain_on_hold_admin_notification_subject.txt",
@@ -2025,8 +2156,9 @@ class TestSendDomainOnHoldAdminEmailToManagersAndAdmins(unittest.TestCase):
         # Mock portfolio admin emails
         mock_portfolio_values_list_qs = MagicMock()
         mock_portfolio_values_list_qs.distinct.return_value = [self.admin_email_1]
-        mock_portfolio_permission_filter.return_value.values_list.return_value = mock_portfolio_values_list_qs
-
+        mock_portfolio_permission_filter.return_value.exclude.return_value.values_list.return_value = (
+            mock_portfolio_values_list_qs
+        )
         mock_send_templated_email.return_value = None
 
         result = send_domain_on_hold_admin_email_to_managers_and_admins(domain=self.domain)
