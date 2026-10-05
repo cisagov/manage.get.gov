@@ -3,15 +3,15 @@ from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.http import Http404
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
-from registrar.services.mock_cloudflare_service import MockCloudflareService
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.views.domain import DomainDNSRecordsView
 from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -601,32 +601,17 @@ class TestDomainDetail(TestDomainOverview):
         Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
         - is ready or on hold state
         - not enrolled in dns hosting
-        - flag for dns hosting is turned off
         """
         banner_message = "This domain's name servers"
 
-        with less_console_noise() and override_flag("dns_hosting", active=False):
-            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-            self.assertContains(on_hold_detail_page, banner_message)
+        on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+        self.assertContains(on_hold_detail_page, banner_message)
 
-            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-            self.assertContains(ready_state_detail_page, banner_message)
+        ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+        self.assertContains(ready_state_detail_page, banner_message)
 
-            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
-            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
-
-            dns_needed_page = self.client.get(f"/domain/{self.domain_dns_needed.id}")
-            self.assertNotContains(dns_needed_page, banner_message)
-
-        with less_console_noise() and override_flag("dns_hosting", active=True):
-            on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
-            self.assertNotContains(on_hold_detail_page, banner_message)
-
-            ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
-            self.assertNotContains(ready_state_detail_page, banner_message)
-
-            domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
-            self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
+        domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+        self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
 
 
 class TestDomainDetailDomainRenewal(TestDomainOverview):
@@ -3892,20 +3877,8 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         )
 
 
+@override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
-    mock_api_service = MockCloudflareService()
-
-    @classmethod
-    def setUpClass(cls):
-        """Start mock service once for all tests in this class"""
-        super().setUpClass()
-        cls.mock_api_service.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop mock service after all tests"""
-        cls.mock_api_service.stop()
-        super().tearDownClass()
 
     def tearDown(self):
         delete_all_dns_data()
@@ -3914,14 +3887,30 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.cf_service = CloudflareService(self.client)
         self.user = create_user()
         self.client.force_login(self.user)
+
+    @override_flag("dns_hosting", active=True)
+    def test_dns_records_denies_non_manager_before_touching_domain(self):
+        random_user = get_user_model().objects.create(
+            username="random_user",
+            first_name="First",
+            last_name="Last",
+            email="info@example.com",
+            phone="8003111234",
+            title="test title",
+        )
+        self.client.force_login(random_user)
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
+        with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
+            response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertEqual(response.status_code, 403)
+        mock_get.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
-        """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
+        """Can load a domain's DNS records page when enrolled and dns hosting is enabled."""
         domain, _, _ = create_initial_dns_setup(domain_manager=self.user)  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "DNS records")

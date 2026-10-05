@@ -130,6 +130,13 @@ class UserFixture:
             "email": "samir.mishra@ecstech.com",
             "title": "Code Mage",
         },
+        {
+            "username": "413803a4-ac88-4e68-a441-93535c4648d1",
+            "first_name": "Amir",
+            "last_name": "Tawfik",
+            "email": "amr.tawfik@ecstech.com",
+            "title": "Software Engineer",
+        },
     ]
 
     STAFF = [
