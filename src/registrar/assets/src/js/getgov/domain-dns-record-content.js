@@ -214,12 +214,12 @@ const teardownForm = (switcher) => {
         const hadError = !!form?.querySelector(".usa-error-message");
         clearRecordForm(form);
         if(hadError){
-            refreshForm(refs.form, form.getAttribute("hx-post"));
             didHtmxSwapHappen = true;
             const target = switcher.target;
             document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
                 switcher.switchForm(target);
          }, { once: true})  
+          refreshForm(refs.form, form.getAttribute("hx-post"));
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
