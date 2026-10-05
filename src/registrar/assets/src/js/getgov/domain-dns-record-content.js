@@ -432,13 +432,15 @@ export function initDNSRecordCancelModal(){
             if(!e.isTrusted){
                 return;
             }
+            
+            e.stopPropagation()
             const index = e.target.selectedIndex;
             recordTypeSwitcher.setTarget(index);
             recordTypeSwitcher.attemptOpen();
             recordTypeSwitcher.updateSelectedType(recordTypeSwitcher.pending.recordId);
             onCancel(recordTypeSwitcher)
             }
-    })
+    }, true)
 
     document.getElementById('add-dnsrecord-button').addEventListener("click", (e) => {
             editFormSwitcher.setTarget(0);
