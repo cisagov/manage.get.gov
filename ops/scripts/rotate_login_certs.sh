@@ -18,7 +18,7 @@ fi
 if [ "$is_prod" = true ]; then
     echo "$1 is production. This script will only generate the new key, cert, and credentials file."
     echo "It will NOT run uups or restage against production."
-    echo "You need access to the production Login partner dashboard (https://dashboard.login.gov) to finish this rotation."
+    echo "You need access to the production Login partner dashboard (https://portal.int.identitysandbox.gov/) to finish this rotation."
     echo "Follow the 'Production only' section of docs/operations/runbooks/rotate_application_secrets.md for every step after this script."
     read -p "Do you have access to the production partner dashboard mentioned above? (y/n)  " -n 1 -r
     echo

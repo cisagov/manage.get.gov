@@ -87,7 +87,7 @@ The script never updates or restages production. Run with `stable` it backs up t
 
 #### (Prod) Step 1: Run the script
 
-Make sure you are logged in to the cf cli and have access to the production [Login Partner Dashboard](https://dashboard.login.gov/). From the root directory of our app run:
+Make sure you are logged in to the cf cli and have access to the production [Login Partner Dashboard](https://portal.int.identitysandbox.gov/). From the root directory of our app run:
 
 ```bash
 ops/scripts/rotate_login_certs.sh stable
@@ -164,7 +164,7 @@ Save `private-stable.pem`, `public-stable.crt`, the new `DJANGO_SECRET_KEY`, and
 
 🚨 Do NOT delete the old cert🚨. Production keeps authenticating with it until Login.gov applies the new one, so both need to exist side by side for now.
 
-1.) Sign in to the production Login Partner Dashboard at https://dashboard.login.gov/
+1.) Sign in to the production Login Partner Dashboard at https://portal.int.identitysandbox.gov/
 2.) Open our production config (named `get.gov` currently)
 3.) Click edit, and under "Public Certificates" use the "choose cert file" button to upload `public-stable.crt`
 4.) Leave the existing cert in place and save
@@ -173,11 +173,9 @@ Unlike the sandbox, saving does not apply the change. Login.gov has to apply it,
 
 #### (Prod) Step 5: Submit a ticket
 
-Open a ticket with Login.gov partner support asking them to apply the new cert. Include:
-
-1.) Our issuer: `urn:gov:cisa:openidconnect.profiles:sp:sso:cisa:dotgov_registrar`
-2.) The environment: production (`manage.get.gov`)
-3.) That the uploaded cert needs to be applied, and that the old cert should stay until we confirm the new one works
+1.) Open a ticket with [Login.gov partner support](https://zendesk.login.gov/hc/en-us/requests/new) asking them to apply the new cert.
+2.) Select I want to update to my existing configuration in production.
+3.) Fill out the fields as directed
 
 Then WAIT for their reply. Updating our side first breaks logins for everyone.
 
