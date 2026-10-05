@@ -215,11 +215,11 @@ const teardownForm = (switcher) => {
         clearRecordForm(form);
         if(hadError){
             refreshForm(refs.form, form.getAttribute("hx-post"));
+            didHtmxSwapHappen = true;
             const target = switcher.target;
             document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
-                didHtmxSwapHappen = true;
                 switcher.switchForm(target);
-         })  
+         }, { once: true})  
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
