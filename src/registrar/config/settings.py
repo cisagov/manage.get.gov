@@ -551,6 +551,9 @@ class JsonFormatter(logging.Formatter):
         request_id = context.get("request_id")
         if request_id:
             log_record["request_id"] = request_id
+        domain_name = context.get("domain_name")
+        if domain_name:
+            log_record["domain_name"] = domain_name
         if record.exc_info:
             log_record["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
