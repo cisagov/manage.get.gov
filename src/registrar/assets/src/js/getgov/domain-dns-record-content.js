@@ -1,5 +1,4 @@
 import { EditFormSwitcher, RecordSelectTypeSwitcher } from "./domain-dns-form-switcher";
-import { showElement } from "./helpers";
 
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
@@ -299,7 +298,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    const deleteButton = document.getElementById("confirm-delete-record-button");
+
     if(!container || !confirmButton) return;
     
     const editFormSwitcher = new EditFormSwitcher(container);
