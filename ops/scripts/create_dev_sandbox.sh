@@ -131,7 +131,7 @@ sed -i '' '/          - backup/ {a\
 }' .github/workflows/load-fixtures.yaml
 
 sed -i '' '/          - backup/ {a\
-          - '"$1"'
+            - '"$1"'
 }' .github/workflows/clone-test-db.yaml
 
 echo "Creating space deployer for Github deploys..."
