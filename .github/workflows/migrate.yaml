@@ -16,6 +16,7 @@ on:
           - stable
           - staging
           - development
+          - cp
           - amt
           - ab
           - cw
