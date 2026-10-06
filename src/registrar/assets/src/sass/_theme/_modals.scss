@@ -3,3 +3,13 @@
 .usa-modal__main {
     padding: 0 2rem 2rem;
 }
+
+/* Hide all modals until USWDS initializes them */
+.usa-modal {
+  display: none;
+}
+
+/* Show modals once USWDS has initialized them */
+.usa-modal.is-visible {
+  display: block;
+}
