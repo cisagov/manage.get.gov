@@ -112,7 +112,7 @@ const getFocusId = (req, target)=>{
         }
 
         if(req.fromConfirmButton && target){
-            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
+            return target == 0 ? addRecordbtn : editButtonId(target)
         }
 
         if(target == 0){
@@ -368,7 +368,6 @@ export function initDNSRecordCancelModal(){
 
 
             switcher.pending.fromConfirmButton = true;
-
             const focusId = getFocusId(switcher.pending, switcher.target);
         
             teardownForm(
