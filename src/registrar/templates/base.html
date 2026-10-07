@@ -54,7 +54,7 @@
 
   {% block css %}
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-  <script src="{% static 'js/uswds-init.min.js' %}" defer></script>
+  <script src="{% static 'js/uswds-init.min.js' %}"></script>
   <!-- We override with our own copy to make some classes accessible in our JS -->
   <script src="{% static 'js/uswds-edited.js' %}" defer></script>
   <script src="{% static 'js/getgov.min.js' %}" defer></script>
@@ -132,7 +132,7 @@
           </button>
         </div>
       </header>
-      <div class="usa-banner__content usa-accordion__content padding-x--widescreen margin-x-0" id="gov-banner-default">
+      <div class="usa-banner__content usa-accordion__content padding-x--widescreen margin-x-0h" id="gov-banner-default" hidden>
         <div class="grid-row grid-gap-lg">
           <div class="usa-banner__guidance tablet:grid-col-6">
             <img class="usa-banner__icon usa-media-block__img" src="{% static 'img/icon-dot-gov.svg' %}" role="img"
