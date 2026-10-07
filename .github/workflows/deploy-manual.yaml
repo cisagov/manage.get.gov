@@ -16,6 +16,7 @@ on:
           - acadia
           - ad
           - backup
+          - cp
           - amt
           - ab
           - cw

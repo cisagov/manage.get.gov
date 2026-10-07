@@ -17,6 +17,7 @@ on:
           - hotgov
           - meoward
           - backup
+          - cp
           - amt
           - ab
           - cw

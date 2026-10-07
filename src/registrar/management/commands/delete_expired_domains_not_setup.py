@@ -134,7 +134,10 @@ class Command(BaseCommand):
 
         for domain in domains:
             user_domain_roles_emails = list(
-                UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+                UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+                .exclude(user__email="")
+                .values_list("user__email", flat=True)
+                .distinct()
             )
 
             try:
