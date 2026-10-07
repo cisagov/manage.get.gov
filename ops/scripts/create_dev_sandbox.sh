@@ -114,8 +114,8 @@ sed -i '' '/          - backup/ {a\
           - '"$1"'
 }' .github/workflows/deploy-manual.yaml
 
-sed -i '' "/startsWith(github.head_ref, \'backup/ {a\\
-        || startsWith(github.head_ref, '"$1"')
+sed -i '' "/startsWith(github.head_ref, 'product\/')/ {a\\
+        || startsWith(github.head_ref, '$1/')
 }" .github/workflows/deploy-sandbox.yaml
 
 sed -i '' '/          - backup/ {a\
@@ -131,7 +131,7 @@ sed -i '' '/          - backup/ {a\
 }' .github/workflows/load-fixtures.yaml
 
 sed -i '' '/          - backup/ {a\
-          - '"$1"'
+            - '"$1"'
 }' .github/workflows/clone-test-db.yaml
 
 echo "Creating space deployer for Github deploys..."

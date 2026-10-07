@@ -58,7 +58,9 @@ class Command(BaseCommand):
                 UserPortfolioPermission.objects.filter(
                     portfolio_id=portfolio_id,
                     roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                    user__isnull=False,
                 )
+                .exclude(user__email="")
                 .values_list("user__email", flat=True)
                 .distinct()
             )
@@ -92,7 +94,10 @@ class Command(BaseCommand):
 
             # -- GRAB DOMAIN MANAGER EMAILS --
             domain_manager_emails = list(
-                UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+                UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+                .exclude(user__email="")
+                .values_list("user__email", flat=True)
+                .distinct()
             )
 
             # -- GRAB PORTFOLIO ADMIN EMAILS --
