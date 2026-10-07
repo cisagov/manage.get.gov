@@ -300,7 +300,7 @@ class DnsHostService:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
 
         with transaction.atomic():
-            DnsRecord.delete_by_x_record_id(x_record_id=x_record_id, dns_record=dns_record)
+            DnsRecord.delete_by_record(dns_record=dns_record)
             self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
 
         return x_record_id

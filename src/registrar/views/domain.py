@@ -915,10 +915,14 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # uniqueness validators (name-conflict, full-duplicate) can exclude the record
         # being edited via self.instance.pk. get_for_domain scopes the lookup to this
         # domain's zone so we don't trust arbitrary PKs from the request.
-        dns_record = self._get_dns_record(self.request)
+        dns_record_id = self._parse_dns_record_id(self.request)
+        dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
+        
         if dns_record and self.object:
             kwargs["instance"] = dns_record
             self.dns_record = dns_record
+
+        
         return kwargs
 
     def attach_edit_form(self, dns_records):
@@ -956,20 +960,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def _get_dns_record(self, request) -> DnsRecord | None:
-        """Parse the DNS record id from POST data."""
-
+    def _parse_dns_record_id(self, request):
         try:
             raw = request.POST.get("id")
-            dns_record_id = int(raw)
+            return int(raw)
         except (TypeError, ValueError):
             return None
-
-        dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
-        if dns_record:
-            return dns_record
-        else:
-            raise Http404("DNS Record Not Found")
 
     def _build_dns_record_form_data(self, form) -> dict:
         """Build the vendor request body from a validated form."""
@@ -1042,6 +1038,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         errors = non_field_errors if non_field_errors else self.get_form_errors(form)
         for error in dict.fromkeys(errors):
             messages.error(request, error)
+        # Edit record form
         if self.dns_record:
             self._attach_form(self.dns_record, form=form)
             hx_trigger_events = json.dumps({"messagesRefresh": ""})
@@ -1061,6 +1058,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 status=200,
             )
 
+        # Add record form
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",

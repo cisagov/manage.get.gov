@@ -457,8 +457,8 @@ class DnsRecordTest(TestCase):
             record.clean()
         self.assertIn("name", ctx.exception.message_dict)
 
-    def test_delete_by_x_record_id_success(self):
-        """delete_by_x_record_id deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
+    def test_delete_by_record_success(self):
+        """delete_by_record deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
         x_record_id = "1234"
         vendor_dns_record = VendorDnsRecord.objects.create(
             x_record_id=x_record_id,
@@ -480,7 +480,7 @@ class DnsRecordTest(TestCase):
             is_active=True,
         )
 
-        DnsRecord.delete_by_x_record_id(x_record_id, record)
+        DnsRecord.delete_by_record(record)
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
