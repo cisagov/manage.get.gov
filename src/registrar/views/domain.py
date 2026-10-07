@@ -68,6 +68,7 @@ from registrar.services.invitation_service import (
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
+from registrar.logging_context import set_dns_log_context
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -178,7 +179,6 @@ class DomainBaseView(PermissionRequiredMixin, DetailView):
         context["breadcrumb_aria_label"] = "Domain breadcrumb"
         context["portfolio"] = self.get_portfolio()
         context["enterprise_mode"] = flag_is_active(self.request, "multiple_portfolios")
-        context["is_using_external_hosting"] = domain.is_using_external_hosting(self.request)
 
         # Stored in a variable for the linter
         action = "analyst_action"
@@ -880,7 +880,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
-        return super().dispatch(request, *args, **kwargs)
+        with set_dns_log_context(self.object.name):
+            return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [

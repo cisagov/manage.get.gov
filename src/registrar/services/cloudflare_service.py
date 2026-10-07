@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from httpx import RequestError, HTTPStatusError, HTTPError
-from typing import Any
+from typing import Any, List
 import logging
 from dataclasses import dataclass
 from django.conf import settings
@@ -44,7 +44,9 @@ def _cf_error_detail(response) -> dict:
 
 def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
     """Map an HTTP error to the right DnsHostingError subclass and log once."""
-    request_id = get_user_log_context().get("request_id")
+    log_context = get_user_log_context()
+    request_id = log_context.get("request_id")
+    domain_name = log_context.get("domain_name")
     if isinstance(e, HTTPStatusError):
         status = e.response.status_code
         details = _cf_error_detail(e.response)
@@ -54,6 +56,7 @@ def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
             "cf_error_code": details.get("cf_error_code"),
             "cf_error_message": details.get("cf_error_message"),
             "request_id": request_id,
+            "domain_name": domain_name,
             **context,
         }
         log_only = {"response_body": e.response.text}
@@ -66,7 +69,7 @@ def _typed_dns_error(e: HTTPError, **context) -> DnsHostingError:
 
     else:  # RequestError -> no response, transport failure
         status = None
-        ctx = {"exc_class": type(e).__name__, "request_id": request_id, **context}
+        ctx = {"exc_class": type(e).__name__, "request_id": request_id, "domain_name": domain_name, **context}
         log_only = {}
         exc_cls, code = DnsTransportError, DnsHostingErrorCodes.UPSTREAM_TIMEOUT
 
@@ -266,6 +269,45 @@ class CloudflareService:
 
             return resp.json()
 
+    def get_tenant_accounts(self, per_page: int = 50) -> List[dict]:
+        """Fetch all accounts under the tenant with pagination"""
+        all_accounts = []
+        page = 1
+        is_last_page = False
+
+        while True:
+            appended_url = f"/tenants/{self.tenant_id}/accounts"
+            params = {"page": page, "per_page": per_page}
+
+            with self._dns_call():
+                logger.info(
+                    "Looking up tenant accounts by page: %s",
+                    page,
+                )
+                resp = self.client.get(appended_url, params=params)
+                resp.raise_for_status()
+
+            accounts_data = resp.json()
+
+            accounts = accounts_data.get("result", [])
+
+            if not accounts:
+                # No more accounts to fetch
+                break
+
+            all_accounts.extend(accounts)
+
+            # Check if there are more pages
+            result_info = accounts_data.get("result_info", {})
+            total_count = result_info.get("total_count", 1)
+            is_last_page = total_count <= page * per_page
+            if is_last_page:
+                break
+
+            page += 1
+
+        return all_accounts
+
     def get_zone_by_id(self, x_zone_id: str):
         """Get zone data given a Clouflare zone id"""
         appended_url = f"/zones/{x_zone_id}"
@@ -280,6 +322,19 @@ class CloudflareService:
 
         logger.info(f"Retrieved zone: {resp}")
         return resp.json()
+
+    def get_zone_records(self, x_zone_id: str):
+        appended_url = f"/zones/{x_zone_id}/dns_records"
+        with self._dns_call(x_zone_id=x_zone_id):
+            logger.info(
+                "Getting all of the dns records for zone %s",
+                x_zone_id,
+                extra={"x_zone_id": x_zone_id},
+            )
+            resp = self.client.get(appended_url)
+            resp.raise_for_status()
+
+            return resp.json()
 
     def get_dns_record(self, zone_id: str, record_id: str):
         appended_url = f"/zones/{zone_id}/dns_records/{record_id}"
