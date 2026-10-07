@@ -22,7 +22,6 @@ on:
           - cw
           - testdb
           - el
-          - es
           - glacier
           - hotgov
           - kma
