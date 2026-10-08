@@ -17,6 +17,7 @@ on:
           - staging
           - development
           - backup
+          - cp
           - amt
           - ab
           - cw
@@ -33,7 +34,6 @@ on:
           - aa
           - ad
           - el
-          - es
           - kma
           - rh
           - sm

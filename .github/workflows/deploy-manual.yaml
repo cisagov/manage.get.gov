@@ -16,12 +16,12 @@ on:
           - acadia
           - ad
           - backup
+          - cp
           - amt
           - ab
           - cw
           - testdb
           - el
-          - es
           - glacier
           - hotgov
           - kma
