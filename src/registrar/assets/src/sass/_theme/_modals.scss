@@ -3,3 +3,8 @@
 .usa-modal__main {
     padding: 0 2rem 2rem;
 }
+
+/* Hide modals until USWDS moves them into .usa-modal-wrapper > .usa-modal-overlay */
+:not(.usa-modal-overlay) > .usa-modal {
+  display: none;
+}
