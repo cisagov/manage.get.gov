@@ -495,6 +495,7 @@ class DomainView(DomainBaseView):
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
+        context["dns_hosting_flag"] = flag_is_active(self.request, "dns_hosting")
         if flag_is_active(self.request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
             context["num_of_dns_records_message"] = self.get_dns_records_message()
 

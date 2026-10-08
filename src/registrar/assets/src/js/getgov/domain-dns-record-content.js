@@ -1,5 +1,4 @@
 import { EditFormSwitcher, RecordSelectTypeSwitcher } from "./domain-dns-form-switcher";
-import { showElement } from "./helpers";
 
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
@@ -113,7 +112,7 @@ const getFocusId = (req, target)=>{
         }
 
         if(req.fromConfirmButton && target){
-            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
+            return target == 0 ? addRecordbtn : editButtonId(target)
         }
 
         if(target == 0){
@@ -214,12 +213,12 @@ const teardownForm = (switcher) => {
         const hadError = !!form?.querySelector(".usa-error-message");
         clearRecordForm(form);
         if(hadError){
-            refreshForm(refs.form, form.getAttribute("hx-post"));
+            didHtmxSwapHappen = true;
             const target = switcher.target;
             document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
-                didHtmxSwapHappen = true;
                 switcher.switchForm(target);
-         })  
+         }, { once: true})  
+          refreshForm(refs.form, form.getAttribute("hx-post"));
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
@@ -299,7 +298,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    const deleteButton = document.getElementById("confirm-delete-record-button");
+
     if(!container || !confirmButton) return;
     
     const editFormSwitcher = new EditFormSwitcher(container);
@@ -369,7 +368,6 @@ export function initDNSRecordCancelModal(){
 
 
             switcher.pending.fromConfirmButton = true;
-
             const focusId = getFocusId(switcher.pending, switcher.target);
         
             teardownForm(
@@ -432,13 +430,15 @@ export function initDNSRecordCancelModal(){
             if(!e.isTrusted){
                 return;
             }
+            // pause the select form swap so unsaved changes can be captured first.
+            e.stopPropagation()
             const index = e.target.selectedIndex;
             recordTypeSwitcher.setTarget(index);
             recordTypeSwitcher.attemptOpen();
             recordTypeSwitcher.updateSelectedType(recordTypeSwitcher.pending.recordId);
             onCancel(recordTypeSwitcher)
             }
-    })
+    }, true)
 
     document.getElementById('add-dnsrecord-button').addEventListener("click", (e) => {
             editFormSwitcher.setTarget(0);
