@@ -13,10 +13,10 @@ on:
             - acadia
             - ad
             - backup
+            - cp
             - amt
             - bob
             - el
-            - es
             - glacier
             - hotgov
             - kma
