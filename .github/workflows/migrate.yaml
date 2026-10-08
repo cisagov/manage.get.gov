@@ -34,7 +34,6 @@ on:
           - hotgov
           - meoward
           - backup
-          - es
           - rh
           - sm
           - kma
