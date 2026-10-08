@@ -918,12 +918,13 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # being edited via self.instance.pk. get_for_domain scopes the lookup to this
         # domain's zone so we don't trust arbitrary PKs from the request.
         dns_record_id = self._parse_dns_record_id(self.request)
-        dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
-        
-        if dns_record and self.object:
-            kwargs["instance"] = dns_record
-            self.dns_record = dns_record
-
+        if dns_record_id:
+            dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
+            if dns_record is None:
+                raise Http404("DNS Record Not Found")
+            if self.object:
+                kwargs["instance"] = dns_record
+                self.dns_record = dns_record
         
         return kwargs
 
