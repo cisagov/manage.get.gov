@@ -1087,11 +1087,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
-        try:
-            form = self.get_form()
-        except Http404:
-            messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
-            return self._error_response(request=request, status=404)
+        form = self.get_form()
 
         delete_record = request.POST.get("delete_record")
         self._get_domain(request)
