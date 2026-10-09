@@ -2040,7 +2040,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "other_contacts",
             "current_websites",
             "alternative_domains",
-            "is_election_board",
             "status_history",
             "id",
             "created_at",
@@ -2121,7 +2120,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "is_election_board",
                 "status_history",
                 "federal_agency",
                 "requester",
@@ -2161,7 +2159,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "is_election_board",
                 "status_history",
             ]
 
@@ -2189,7 +2186,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "other_contacts",
                 "current_websites",
                 "alternative_domains",
-                "is_election_board",
                 "status_history",
                 "federal_agency",
                 "requester",
@@ -2226,7 +2222,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 "portfolio_city",
                 "portfolio_zipcode",
                 "portfolio_urbanization",
-                "is_election_board",
                 "organization_type",
                 "federal_type",
                 "federal_agency",
@@ -2521,7 +2516,6 @@ class TestDomainRequestAdmin(MockEppLib):
                 DomainRequestAdmin.StatusListFilter,
                 DomainRequestAdmin.GenericOrgFilter,
                 DomainRequestAdmin.FederalTypeFilter,
-                DomainRequestAdmin.ElectionOfficeFilter,
                 "rejection_reason",
                 DomainRequestAdmin.InvestigatorFilter,
             )
