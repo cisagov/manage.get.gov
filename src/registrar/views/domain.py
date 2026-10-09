@@ -884,7 +884,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if dns_record_id:
             self.dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
             if self.dns_record is None:
-                raise Http404("DNS Record Not Found")
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                return self._error_response(request, status=404)
 
         with set_dns_log_context(self.object.name):
             return super().dispatch(request, *args, **kwargs)
