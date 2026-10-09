@@ -3,7 +3,7 @@
         {# OOB-swap individual cells to preserve the action column (Edit button) DOM for ANDI #}
         <template>
         {% if update_cells %}
-            <td id="dns-type-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">
+            <td id="dns-type-{{ dns_record.id }}" data-label="Type" hx-swap-oob="outerHTML">
                     <div class="tablet:display-flex tablet:flex-align-baseline">
             <span>
                 {{dns_record.type}}
@@ -18,13 +18,13 @@
 
         </div>
             </td>
-            <td id="dns-name-{{ record_id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
-            <td id="dns-content-{{ record_id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content|truncatechars:37 }}</td>
-            <td id="dns-ttl-{{ record_id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl_display }}</td>
-            <span id="dns-comment-{{record_id}}-text" hx-swap-oob="textContent">{{ dns_record.comment }}</span>
+            <td id="dns-name-{{ dns_record.id }}" data-label="Name" hx-swap-oob="outerHTML">{{ dns_record.name }}</td>
+            <td id="dns-content-{{ dns_record.id }}" data-label="TTL" hx-swap-oob="outerHTML">{{ dns_record.content|truncatechars:37 }}</td>
+            <td id="dns-ttl-{{ dns_record.id }}" data-label="Type" hx-swap-oob="outerHTML">{{ dns_record.ttl_display }}</td>
+            <span id="dns-comment-{{dns_record.id}}-text" hx-swap-oob="textContent">{{ dns_record.comment }}</span>
         {% endif %}
         {# Always OOB swap the edit form row so errors are shown/cleared #}
-        {% include "domain_dns_record_edit_form.html" with record_id=record_id dns_record=dns_record oob_swap=True %}
+        {% include "domain_dns_record_edit_form.html" with dns_record=dns_record oob_swap=True %}
 
         </template>
     {% else %}
@@ -48,8 +48,8 @@
             </thead>
             {% endif %}
             <tbody id="dnsrecords-table-body" hx-swap-oob="afterbegin:#dnsrecords-table-body">
-                {% include "domain_dns_record_row.html" with record_id=record_id dns_record=dns_record %}
-                {% include "domain_dns_record_edit_form.html" with record_id=record_id dns_record=dns_record %}
+                {% include "domain_dns_record_row.html" with  dns_record=dns_record %}
+                {% include "domain_dns_record_edit_form.html" with dns_record=dns_record %}
             </tbody>
         </template>
 

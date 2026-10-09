@@ -462,15 +462,18 @@ class DnsRecord(TimeStampedModel):
             raise
 
     @classmethod
-    def delete_by_x_record_id(cls, x_record_id: str):
+    def delete_by_record(cls, dns_record: DnsRecord):
         """Delete an existing DnsRecord and its associated VendorRecord and DnsRecordVendorDnsRecord."""
         try:
             with transaction.atomic():
-                vendor_dns_record = VendorDnsRecord.objects.get(x_record_id=x_record_id)
-                dns_record = cls.get_by_x_record_id(x_record_id)
+                x_record_id = dns_record.get_active_x_record_id()
+                vendor_dns_record = dns_record.vendor_dns_record.get(x_record_id=x_record_id)
 
+                # Delete a fresh copy of the dns record, model delete clears the pk on the instance,
+                # rollback does not restore the instance
+                fresh_dns_record = cls.objects.get(id=dns_record.id, dns_zone_id=dns_record.dns_zone_id)
                 # DnsRecordVendorDnsRecord object is deleted on cascade
-                dns_record.delete()  # type: ignore
+                fresh_dns_record.delete()  # type: ignore
                 vendor_dns_record.delete()  # type: ignore
         except Exception:
             logger.exception("Failed to delete record objects in database.")
