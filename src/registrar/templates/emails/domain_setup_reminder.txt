@@ -8,12 +8,9 @@ Before your .gov domain can be used, you’ll first need to connect it to a Doma
 
 Find more guidance on setting up your domain <https://get.gov/domains/setting-up/>.
 
-COMING IN LATE 2026: DNS HOSTING
-Reply to this email if you're interested in using our upcoming DNS hosting service. We're looking for volunteers who can contribute feedback and participate in user research.
-
 Learn more about: 
 
-- Set up DNS hosting services <https://get.gov/domains/moving/#set-up-dns-hosting-services>
+- Setting up DNS hosting services <https://get.gov/domains/moving/#set-up-dns-hosting-services>
 - Adding name servers <https://get.gov/help/domain-management/#manage-dns-name-servers>.
 
 ----------------------------------------------------------------

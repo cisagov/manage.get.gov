@@ -19,7 +19,6 @@ jobs:
         || startsWith(github.head_ref, 'rh/')
         || startsWith(github.head_ref, 'sm/')
         || startsWith(github.head_ref, 'kma/')
-        || startsWith(github.head_ref, 'es/')
         || startsWith(github.head_ref, 'el/')
         || startsWith(github.head_ref, 'aa/')
         || startsWith(github.head_ref, 'ab/')

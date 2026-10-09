@@ -29,6 +29,9 @@ Welcome to the .gov team! We're excited to have you here. Please follow the step
 - [ ] Make sure you have been invited to our [team meetings](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit#heading=h.emgtp2hgvabr) on Google Meet.
 - [ ] Review our [design tools](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.aprurp3z4gmv).
 - [ ] Accept invitation to our [Figma workspace](https://www.figma.com/files/1287135731043703282/team/1299882813146449644).
+- [ ] Set up and explore our [accessibility testing tools](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?tab=t.0#heading=h.b49mjz9i9yh4)
+    - [ ] ANDI
+    - [ ] NVDA (Windows) / VoiceOver (MacBook)
 - [ ] Follow the steps in [preparing for your sandbox](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.au66hq5e0l8s) section on the onboarding doc.
 - [ ] Schedule coffee chats with Design Leads and other teammates ([team directory](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.1vq6r8e52e9f)).
 - [ ] Look over [recommended reading](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.7ox9ee7v5q5n) and [relevant links](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?pli=1#heading=h.d9pac1gc751t).
