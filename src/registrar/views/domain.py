@@ -880,6 +880,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
+        dns_record_id = self._parse_dns_record_id(request)
+        if dns_record_id:
+            self.dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
+            if self.dns_record is None:
+                raise Http404("DNS Record Not Found")
+
         with set_dns_log_context(self.object.name):
             return super().dispatch(request, *args, **kwargs)
 
@@ -917,15 +923,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # uniqueness validators (name-conflict, full-duplicate) can exclude the record
         # being edited via self.instance.pk. get_for_domain scopes the lookup to this
         # domain's zone so we don't trust arbitrary PKs from the request.
-        dns_record_id = self._parse_dns_record_id(self.request)
-        if dns_record_id:
-            dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
-            if dns_record is None:
-                raise Http404("DNS Record Not Found")
-            if self.object:
-                kwargs["instance"] = dns_record
-                self.dns_record = dns_record
-        
+
+        if self.object:
+            kwargs["instance"] = self.dns_record
+
         return kwargs
 
     def attach_edit_form(self, dns_records):
@@ -1086,7 +1087,12 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
-        form = self.get_form()
+        try:
+            form = self.get_form()
+        except Http404:
+            messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+            return self._error_response(request=request, status=404)
+
         delete_record = request.POST.get("delete_record")
         self._get_domain(request)
 
