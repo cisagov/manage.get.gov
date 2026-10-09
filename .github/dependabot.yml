@@ -1,0 +1,23 @@
+version: 2
+
+multi-ecosystem-groups:
+  weekly-dependencies:
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+
+updates:
+  - package-ecosystem: "pip"
+    directory: "/src"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
+
+  - package-ecosystem: "npm"
+    directory: "/src"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
