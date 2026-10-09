@@ -530,7 +530,6 @@ class TestDomainAdminAsStaff(MockEppLib):
                 DomainAdmin.DnsEnrolledFilter,
                 DomainAdmin.GenericOrgFilter,
                 DomainAdmin.FederalTypeFilter,
-                DomainAdmin.ElectionOfficeFilter,
                 "state",
             ]
 
@@ -1122,7 +1121,6 @@ class TestDomainAdminWithClient(TestCase):
                 DomainAdmin.DnsEnrolledFilter,
                 DomainAdmin.GenericOrgFilter,
                 DomainAdmin.FederalTypeFilter,
-                DomainAdmin.ElectionOfficeFilter,
                 "state",
             ]
 
