@@ -1113,7 +1113,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
             x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if x_zone_id is None:
-                messages.error(request, DnsHostingError.GENERIC_VALIDATION_ERROR_MESSAGE)
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
                 return self._error_response(request, status=400)
             headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
             response_form = DomainDNSRecordForm()
