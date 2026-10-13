@@ -925,6 +925,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         coerce=int,
         choices=DNS_TTL_CHOICES,
         initial=300,
+        empty_value=300,
         required=False,
         widget=forms.Select(
             attrs={
