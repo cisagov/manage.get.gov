@@ -430,7 +430,7 @@ export function initDNSRecordCancelModal(){
             if(!e.isTrusted){
                 return;
             }
-            // pause the select form swap so unsaved changes can be captured first.
+            // Pauses the swap until unsaved changes are handled from the user, then programmatically updates the type.
             e.stopPropagation()
             const index = e.target.selectedIndex;
             recordTypeSwitcher.setTarget(index);
