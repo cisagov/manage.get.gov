@@ -880,13 +880,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
-        dns_record_id = self._parse_dns_record_id(request)
-        if dns_record_id:
-            self.dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
-            if self.dns_record is None:
-                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
-                return self._error_response(request, status=404)
-
         with set_dns_log_context(self.object.name):
             return super().dispatch(request, *args, **kwargs)
 
@@ -1088,6 +1081,14 @@ class DomainDNSRecordsView(DomainFormBaseView):
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
+
+        dns_record_id = self._parse_dns_record_id(request)
+        if dns_record_id:
+            self.dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
+            if self.dns_record is None:
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                return self._error_response(request, status=404)
+
         form = self.get_form()
 
         delete_record = request.POST.get("delete_record")
