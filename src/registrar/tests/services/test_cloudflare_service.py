@@ -6,7 +6,8 @@ from django.test import SimpleTestCase
 from httpx import Client, HTTPStatusError, RequestError
 from typing import Any
 
-from registrar.services.cloudflare_service import CloudflareService
+from registrar.services.cloudflare_service import CloudflareService, _typed_dns_error
+from registrar.logging_context import set_dns_log_context, set_user_log_context, clear_user_log_context
 from registrar.utility.errors import (
     APIError,
     DnsTransportError,
@@ -928,3 +929,35 @@ class TestCloudflareService(SimpleTestCase):
                 if case["error"]["exception"] == HTTPStatusError:
                     self._assert_shared_http_status_errors_details(exc, case)
                     self.assertEqual(exc.context["x_account_id"], account_id)
+
+    def test_typed_dns_error_includes_domain_name_and_request_id_in_logs_success(self):
+        """
+        _typed_dns_error attaches domain_name (from the logging contextvar) to the
+        raised DnsHostingError's context, the same way it already does for request_id.
+        """
+
+        domain_name = "test.gov"
+        request_id = "req-12345"
+
+        set_user_log_context(request_id=request_id)
+        self.addCleanup(clear_user_log_context)
+
+        # HTTPStatusError branch
+        mock_response = httpx.Response(400, headers={"cf-ray": "135"}, json={"errors": []})
+        http_error = HTTPStatusError(request="something", response=mock_response, message="bad request")
+
+        with set_dns_log_context(domain_name):
+            exc = _typed_dns_error(http_error)
+
+        # assert log lines
+        self.assertEqual(exc.context["domain_name"], domain_name)
+        self.assertEqual(exc.context["request_id"], request_id)
+
+        # RequestError branch (no response, transport failure)
+        request_error = RequestError(request="something", message="timeout")
+        with set_dns_log_context(domain_name):
+            exc = _typed_dns_error(request_error)
+
+        # assert log lines
+        self.assertEqual(exc.context["domain_name"], domain_name)
+        self.assertEqual(exc.context["request_id"], request_id)

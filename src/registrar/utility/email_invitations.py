@@ -78,7 +78,9 @@ def _check_user_org_admin(requestor_email, domains) -> bool:
                 UserPortfolioPermission.objects.filter(
                     portfolio=domain_info.portfolio,
                     roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                    user__isnull=False,
                 )
+                .exclude(user__email="")
                 .values_list("user__email", flat=True)
                 .distinct()
             )
@@ -313,7 +315,10 @@ def send_domain_manager_on_hold_email_to_domain_managers(domain: Domain, request
     all_emails_sent = True
     # Get domain manager emails
     domain_manager_emails = list(
-        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+        UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+        .exclude(user__email="")
+        .values_list("user__email", flat=True)
+        .distinct()
     )
     requestor_email = _get_requestor_email(requestor, domains=domain)
 
@@ -371,7 +376,9 @@ def send_domain_deleted_email_to_managers_and_admins(domain: Domain):
             UserPortfolioPermission.objects.filter(
                 portfolio=domain_info.portfolio,
                 roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                user__isnull=False,
             )
+            .exclude(user__email="")
             .values_list("user__email", flat=True)
             .distinct()
         )
@@ -439,7 +446,9 @@ def send_domain_on_hold_admin_email_to_managers_and_admins(domain: Domain):
             UserPortfolioPermission.objects.filter(
                 portfolio=domain_info.portfolio,
                 roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                user__isnull=False,
             )
+            .exclude(user__email="")
             .values_list("user__email", flat=True)
             .distinct()
         )
@@ -860,8 +869,13 @@ def send_domain_renewal_notification_emails(domain: Domain):
     context = {"domain": domain, "expiration_date": domain.expiration_date}
 
     # Get all the domain manager for this domain
+    # Skipping roles with no user yet (pending invs) + blank emails
+    # Grab the emails and skip duplicates
     domain_manager_emails = list(
-        UserDomainRole.objects.filter(domain=domain).values_list("user__email", flat=True).distinct()
+        UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+        .exclude(user__email="")
+        .values_list("user__email", flat=True)
+        .distinct()
     )
 
     # Get organization admins if the domain belongs to a portfolio
@@ -870,7 +884,7 @@ def send_domain_renewal_notification_emails(domain: Domain):
     org_admins_emails = []
 
     if portfolio:
-        emails = list(portfolio.portfolio_admin_users.values_list("email", flat=True).distinct())
+        emails = list(portfolio.portfolio_admin_users.exclude(email="").values_list("email", flat=True).distinct())
         org_admins_emails.extend(emails)
 
     try:

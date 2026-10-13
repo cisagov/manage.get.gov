@@ -17,6 +17,7 @@ on:
           - hotgov
           - meoward
           - backup
+          - cp
           - amt
           - ab
           - cw
@@ -28,7 +29,6 @@ on:
           - zion
           - potato
           - product
-          - es
           - rh
           - sm
           - kma
