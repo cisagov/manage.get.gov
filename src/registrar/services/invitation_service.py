@@ -352,7 +352,7 @@ def create_domain_role_or_invitation(
                 user=requested_user,
                 role=role,
             )
-            
+
             # Temporary support for legacy invitations
             if flag_is_active_for_user(requestor, "legacy_invitations"):
                 _save_legacy_domain_invitation(
