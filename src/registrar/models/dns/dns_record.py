@@ -73,11 +73,9 @@ class DnsRecord(TimeStampedModel):
 
     def _validate_ttl(self, errors):
         """Validate TTL is within allowed range."""
-        # TTL must be between 60 and 86400.
-        # If we add proxy field to records in the future, we can also allow TTL=1 as below:
-        # if self.ttl == 1: return self.proxy
-        if self.ttl < 60 or self.ttl > 86400:
-            errors["ttl"] = ["TTL for unproxied records must be between 60 and 86400."]
+        # TTL must be 1 (Cloudflare's "auto" value) or between 60 and 86400.
+        if self.ttl != 1 and (self.ttl < 60 or self.ttl > 86400):
+            errors["ttl"] = ["TTL must be 1 (auto) or between 60 and 86400."]
 
     def _clean_content(self, record_type):
         """Clean content based on record type."""
@@ -440,7 +438,9 @@ class DnsRecord(TimeStampedModel):
     def update_from_vendor_data(cls, x_zone_id: str, x_record_id: str, vendor_record_data: dict) -> None:
         """Update an existing DnsRecord from vendor API response data."""
         record_data = vendor_record_data["result"]
-        excluded_fields = ["id", "type", "created_on"]
+        # Only these fields are copied from the Cloudflare respond. "type" is 
+        # intentionally absent (immutable once created).
+        allowed_fields = ["name", "content", "ttl", "priority", "comment"]
         # Real Cloudflare lowercases names on save; mirror that here so all call sites
         # (including any that read the vendor payload directly) see a consistent value.
         if record_data.get("name"):
@@ -454,7 +454,7 @@ class DnsRecord(TimeStampedModel):
                 dns_record = cls.objects.get(vendor_dns_record=vendor_dns_record, dns_zone=dns_zone)
 
                 for record_field, record_value in record_data.items():
-                    if record_field not in excluded_fields:
+                    if record_field in allowed_fields:
                         setattr(dns_record, record_field, record_value)
                 dns_record.save()
         except Exception:
