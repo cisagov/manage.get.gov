@@ -13,11 +13,6 @@ You can manage your approved domain on the .gov registrar <{{ manage_url }}>.
 
 Ready to get started? Learn how to set up your approved .gov domain <https://get.gov/domains/setting-up/>.
 
-
-COMING IN LATE 2026: DNS HOSTING
-Reply to this email if you're interested in using our upcoming DNS hosting service. We're looking for volunteers who can contribute feedback and participate in user research. 
-
-
 ----------------------------------------------------------------
 
 The .gov team

@@ -16,6 +16,7 @@ on:
         options:
           - staging
           - development
+          - cp
           - amt
           - ab
           - cw
@@ -33,7 +34,6 @@ on:
           - hotgov
           - meoward
           - backup
-          - es
           - rh
           - sm
           - kma
