@@ -39,7 +39,7 @@
                                         <span class="ellipsis usa-nav__username">{{ user.email }}</span>
                                     </button>
                                 </div>
-                                <div id="user-profile-submenu" class="usa-nav__submenu">
+                                <div id="user-profile-submenu" class="usa-nav__submenu" hidden>
                                     <div class="usa-nav__submenu-item">
                                         {% url 'user-profile' as user_profile_url %}
                                         {% url 'finish-user-profile-setup' as finish_setup_url %}
@@ -92,7 +92,7 @@
                         >
                             <span>Domain requests</span>
                         </button>
-                        <ul id="basic-nav-section-two" class="usa-nav__submenu">
+                        <ul id="basic-nav-section-two" class="usa-nav__submenu" hidden>
                             <li class="usa-nav__submenu-item">
                                 <a href="{{ url }}"
                                 ><span>Domain requests</span></a
