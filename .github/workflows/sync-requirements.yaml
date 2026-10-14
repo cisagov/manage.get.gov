@@ -23,11 +23,11 @@ jobs:
       - run: pip install pipenv
       - run: pipenv requirements > requirements.txt
         working-directory: src
-            - name: Commit via API (GitHub-signed)
+      - name: Commit via API (GitHub-signed)
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
-      - run: |
+        run: |
           if git diff --quiet src/requirements.txt; then
             echo "requirements.txt already in sync"; exit 0
           fi
