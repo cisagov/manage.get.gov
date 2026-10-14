@@ -33,8 +33,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% endblock %}
   {% block extra_meta %}{% endblock extra_meta %}
-  {% comment %} This fixes csp violation of inline styles: htmx-indicator styles moved to stylesheet {% endcomment %}
-  <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+  {% comment %} includeIndicatorStyles setting fixes csp violation of inline styles: htmx-indicator styles moved to stylesheet. responseHandling tells client whether to swap the html or not {% endcomment %}
+  <meta name="htmx-config" content='{
+    "includeIndicatorStyles": false,
+    "responseHandling": [
+      {"code": "204", "swap": false},
+      {"code": "[23]..", "swap": true},
+      {"code": "500", "swap": true, "error": false},
+      {"code": "[45]..", "swap": false, "error": true}
+    ]
+  }'>
 
   <link rel="icon" type="image/png" sizes="32x32"
         href="{% static 'img/registrar/favicons/favicon-32.png' %}"
@@ -170,7 +178,7 @@
     </div>
   </section>
 
-  
+
   <div class="usa-overlay"></div>
   {% block header %}
     {% include "includes/header_selector.html" with logo_clickable=True hide_portfolio_navbar=hide_portfolio_navbar%}

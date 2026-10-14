@@ -28,7 +28,12 @@ def custom_500_error_view(request, context=None):
     elif request_id:
         context["log_identifier"] = request_id
 
-    return render(request, "500.html", context=context, status=500)
+    response = render(request, "500.html", context=context, status=500)
+    # If page is using htmx, update the headers so the custom error view can be swapped
+    if request.headers.get("HX-Request"):
+        response["HX-Retarget"] = "body"
+        response["HX-Reswap"] = "innerHTML"
+    return response
 
 
 def custom_401_error_view(request, context=None):
