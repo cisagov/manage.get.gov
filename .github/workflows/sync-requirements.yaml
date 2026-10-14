@@ -23,9 +23,17 @@ jobs:
       - run: pip install pipenv
       - run: pipenv requirements > requirements.txt
         working-directory: src
+            - name: Commit via API (GitHub-signed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
       - run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/requirements.txt
-          git diff --cached --quiet || git commit -m "Regenerate requirements.txt from Pipfile.lock"
-          git push
+          if git diff --quiet src/requirements.txt; then
+            echo "requirements.txt already in sync"; exit 0
+          fi
+          SHA=$(git rev-parse "HEAD:src/requirements.txt")
+          gh api -X PUT "/repos/${GITHUB_REPOSITORY}/contents/src/requirements.txt" \
+            -f message="Regenerate requirements.txt from Pipfile.lock" \
+            -f branch="$BRANCH" \
+            -f sha="$SHA" \
+            -f content="$(base64 -w0 src/requirements.txt)"
