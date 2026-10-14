@@ -1086,8 +1086,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if dns_record_id:
             self.dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
             if self.dns_record is None:
-                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
-                return self._error_response(request, status=404)
+                raise Http404("Dns Record can not be found")
 
         form = self.get_form()
 
