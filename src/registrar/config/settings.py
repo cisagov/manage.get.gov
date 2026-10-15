@@ -912,7 +912,6 @@ ALLOWED_HOSTS = [
     "getgov-hotgov.app.cloud.gov",
     "getgov-meoward.app.cloud.gov",
     "getgov-backup.app.cloud.gov",
-    "getgov-es.app.cloud.gov",
     "getgov-rh.app.cloud.gov",
     "getgov-kma.app.cloud.gov",
     "manage.get.gov",
