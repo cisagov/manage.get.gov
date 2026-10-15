@@ -30,6 +30,10 @@ There are several tools we use locally that you will need to have.
 - [ ] VSCode (our preferred editor)*
 - [ ] Github Desktop* or the Github CLI*
 
+We also have [accessibility tools needed for testing](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?tab=t.0#heading=h.b49mjz9i9yh4):
+- [ ] ANDI
+- [ ] NVDA and/or VoiceOver
+
 The following tools are optional  but recommended. For DHS devices, these can be requested through the DHS IT portal:
 - [ ] Slack Desktop App**
 - [ ] Python 3.14*
