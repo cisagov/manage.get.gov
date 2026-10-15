@@ -115,7 +115,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
-    def test_add_record_resets_record_type_alpne_state(self):
+    def test_add_record_resets_record_type_alpine_state(self):
         """Issue #4688: Add record kept the last picked type drawn after a submit
         or when switched to from an edit form with errors. The wrapper x-effect
         clears recordType when showFormId is null or 0, and x-model on the type

@@ -958,7 +958,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         """Find an item by name in a list of dictionaries."""
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
-    def _parse_dns_record_id(self, request):
+    def _parse_dns_record_id(self, request) -> int | None:
         try:
             raw = request.POST.get("id")
             return int(raw)
@@ -1012,7 +1012,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=status,
         )
 
-    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict | None) -> int | None:
+    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict | None) -> None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
             self.dns_host_service.update_dns_record(x_zone_id, self.dns_record, form_record_data)
@@ -1165,7 +1165,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
-    def _handle_delete(self, request, x_zone_id: int, dns_record: DnsRecord):
+    def _handle_delete(self, request, x_zone_id: str, dns_record: DnsRecord):
         """Handle deletion for DNS records via htmx."""
 
         self.dns_host_service.delete_dns_record(x_zone_id, dns_record)
