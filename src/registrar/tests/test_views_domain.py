@@ -4081,10 +4081,12 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
 
         # Return the 500 response instead of re-raising the view's exception in the test
         self.client.raise_request_exception = False
+
         # WebTest forces DEBUG_PROPAGATE_EXCEPTIONS=True, which skips handler500 entirely.
         # Turns it off so Django renders the custom 500 page, and let the client return it.
-        with (override_settings(DEBUG_PROPAGATE_EXCEPTIONS=False),
-            patch.object(DnsHostService, "update_and_save_dns_record", side_effect=Exception("simulated"))
+        with (
+            override_settings(DEBUG_PROPAGATE_EXCEPTIONS=False),
+            patch.object(DnsHostService, "update_and_save_dns_record", side_effect=Exception("simulated")),
         ):
             response = self.client.post(
                 reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
@@ -4096,15 +4098,13 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
                     "ttl": 3600,
                     "comment": "Should display 500 page",
                 },
-                headers={"HX-Request": True}
+                headers={"HX-Request": True},
             )
-
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.headers["HX-Retarget"], "body")
         self.assertEqual(response.headers["HX-Reswap"], "innerHTML")
         self.assertContains(response, "Here's a unique identifier for this error", status_code=500)
-
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
