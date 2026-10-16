@@ -1181,6 +1181,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=200,
         )
 
+
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
     """Domain nameserver editing view."""
