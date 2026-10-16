@@ -861,7 +861,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
 
     def __init__(self):
         self.dns_record = None
-        self.dns_host_service = DnsHostService()
 
     def _get_domain(self, request):
         """
@@ -1102,6 +1101,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
         response_form = None
         headers = None
 
+        self.dns_host_service = DnsHostService()
         try:
             allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
             if settings.IS_PRODUCTION and self.object.name not in allowlist:
