@@ -14,13 +14,26 @@ Rather than dealing with that, we keep everything centralized in one location.
 """
 
 from django.shortcuts import render
+from registrar.logging_context import get_user_log_context
 
 
 def custom_500_error_view(request, context=None):
     """Used to redirect 500 errors to a custom view"""
+    log_context = get_user_log_context()
+    request_id = log_context.get("request_id")
     if context is None:
         context = {}
-    return render(request, "500.html", context=context, status=500)
+        if request_id:
+            context["log_identifier"] = request_id
+    elif request_id:
+        context["log_identifier"] = request_id
+
+    response = render(request, "500.html", context=context, status=500)
+    # If page is using htmx, update the headers so the custom error view can be swapped
+    if request.headers.get("HX-Request"):
+        response["HX-Retarget"] = "body"
+        response["HX-Reswap"] = "innerHTML"
+    return response
 
 
 def custom_401_error_view(request, context=None):
