@@ -26,7 +26,7 @@ export function handlePortfolioSelection(
     const cisaRepresentativeFirstNameField = document.querySelector(".field-cisa_representative_first_name");
     const cisaRepresentativeLastNameField = document.querySelector(".field-cisa_representative_last_name");
     const cisaRepresentativeEmailField = document.querySelector(".field-cisa_representative_email");
-    const orgTypeFieldSet = document.querySelector(".field-is_election_board").parentElement;
+    const orgTypeFieldSet = document.querySelector(".field-organization_type").parentElement;
     const orgTypeFieldSetDetails = orgTypeFieldSet.nextElementSibling;
     const orgNameFieldSet = document.querySelector(".field-organization_name").parentElement;
     const orgNameFieldSetDetails = orgNameFieldSet.nextElementSibling;
