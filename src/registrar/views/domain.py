@@ -1085,6 +1085,15 @@ class DomainDNSRecordsView(DomainFormBaseView):
         self.dns_record = None
         return is_first_record, None
 
+    def _handle_delete(self, request, x_zone_id: int):
+        """Handle deletion for DNS records via htmx."""
+        self.object = self.get_object()
+        record_id = self._parse_dns_record_id(request)
+        self._get_domain(request)
+
+        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        messages.success(request, "The DNS record for this domain has been deleted.")
+
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
@@ -1171,16 +1180,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
             headers=headers,
             status=200,
         )
-
-    def _handle_delete(self, request, x_zone_id: int):
-        """Handle deletion for DNS records via htmx."""
-        self.object = self.get_object()
-        record_id = self._parse_dns_record_id(request)
-        self._get_domain(request)
-
-        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
-        messages.success(request, "The DNS record for this domain has been deleted.")
-
 
 @grant_access(IS_DOMAIN_MANAGER, IS_STAFF_MANAGING_DOMAIN)
 class DomainNameserversView(DomainFormBaseView):
