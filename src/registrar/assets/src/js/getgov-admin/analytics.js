@@ -96,7 +96,7 @@ function createComparativeColumnChart(id, title, labelOne, labelTwo) {
     var listTwo = JSON.parse(canvas.getAttribute('data-list-two'));
 
     var data = {
-        labels: ["Total", "Federal", "Interstate", "State/Territory", "Tribal", "County", "City", "Special District", "School District"],
+        labels: ["Total", "Federal", "Interstate", "State/Territory", "Tribal", "County", "City", "Special District", "School District", "Election Board"],
         datasets: [
             {
                 label: labelOne,
