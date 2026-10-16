@@ -237,6 +237,33 @@ class TestDnsHostService(TestCase):
         self.assertEqual(settings_response.result["zone_defaults"]["zone_mode"], "dns_only")
         self.assertEqual(settings_response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
 
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_get_all_accounts_success(self, mock_get_tenant_accounts):
+        mock_accounts = [
+            {
+                "account_tag": "54345",
+                "account_pubname": "Account for stream.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "54346",
+                "account_pubname": "Account for river.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "98765",
+                "account_pubname": "Account for sea.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+        ]
+        mock_get_tenant_accounts.return_value = mock_accounts
+
+        accounts = self.service.get_all_accounts()
+        self.assertEqual(accounts, mock_accounts)
+
     @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService._configure_new_account_dns_settings")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
@@ -368,6 +395,21 @@ class TestDnsHostService(TestCase):
         self.assertEqual(response.result["zone_defaults"]["zone_mode"], "dns_only")
         self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
         self.assertEqual(response.errors, [])
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_zone_records")
+    def test_get_records_by_zone_success(self, mock_get_zone_records):
+        x_zone_id = "1357"
+        mock_records = [
+            {"id": 1, "name": "A", "content": "198.22.333.4", "ttl": 3600},
+            {"id": 2, "name": "AAAA", "content": "2001:db8::1234:5678", "ttl": 300},
+            {"id": 3, "name": "TXT", "content": "I am your content", "ttl": 3600},
+            {"id": 4, "name": "MX", "content": "mail.mytest.gov", "ttl": 3600},
+            {"id": 5, "name": "PTR", "content": "blog.mytest.gov", "ttl": 3600},
+        ]
+
+        mock_get_zone_records.return_value = mock_records
+        records = self.service.get_records_for_zone(x_zone_id)
+        self.assertEqual(records, mock_records)
 
     def test_update_account_dns_settings_failure(self):
         x_account_id = "12345"
