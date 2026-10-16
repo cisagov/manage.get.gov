@@ -1088,7 +1088,7 @@ class DomainDNSRecordsView(DomainFormBaseView):
             if self.dns_record is None:
                 messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
                 return self._error_response(request, status=404)
-            
+
         form = self.get_form()
 
         delete_record = request.POST.get("delete_record")
