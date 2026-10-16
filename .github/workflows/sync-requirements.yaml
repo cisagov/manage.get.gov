@@ -1,0 +1,39 @@
+# This workflow syncs the pipfile.lock and requirements.txt
+# dependabot will only update the pipfile.lock 
+# This can result in pipfile.lock and requirements.txt being
+# out of sync.
+
+name: Sync requirements.txt
+on:
+  pull_request:
+    paths: ["src/Pipfile", "src/Pipfile.lock"]
+permissions:
+  contents: write
+jobs:
+  sync:
+    # if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install pipenv
+      - run: pipenv requirements > requirements.txt
+        working-directory: src
+      - name: Commit via API (GitHub-signed)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet src/requirements.txt; then
+            echo "requirements.txt already in sync"; exit 0
+          fi
+          SHA=$(git rev-parse "HEAD:src/requirements.txt")
+          gh api -X PUT "/repos/${GITHUB_REPOSITORY}/contents/src/requirements.txt" \
+            -f message="Regenerate requirements.txt from Pipfile.lock" \
+            -f branch="$BRANCH" \
+            -f sha="$SHA" \
+            -f content="$(base64 -w0 src/requirements.txt)"
