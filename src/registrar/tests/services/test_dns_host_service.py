@@ -240,25 +240,25 @@ class TestDnsHostService(TestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
     def test_get_all_accounts_success(self, mock_get_tenant_accounts):
         mock_accounts = [
-                {
-                    "account_tag": "54345",
-                    "account_pubname": "Account for stream.us",
-                    "account_type": "enterprise",
-                    "created_on": "2026-06-09T18:25:46.427351Z",
-                },
-                {
-                    "account_tag": "54346",
-                    "account_pubname": "Account for river.us",
-                    "account_type": "enterprise",
-                    "created_on": "2026-06-09T18:25:46.427351Z",
-                },
-                {
-                    "account_tag": "98765",
-                    "account_pubname": "Account for sea.us",
-                    "account_type": "enterprise",
-                    "created_on": "2026-06-09T18:25:46.427351Z",
-                },
-            ]
+            {
+                "account_tag": "54345",
+                "account_pubname": "Account for stream.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "54346",
+                "account_pubname": "Account for river.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "98765",
+                "account_pubname": "Account for sea.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+        ]
         mock_get_tenant_accounts.return_value = mock_accounts
 
         accounts = self.service.get_all_accounts()
