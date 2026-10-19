@@ -65,7 +65,7 @@ class DnsRecord(TimeStampedModel):
         validators=[MinValueValidator(0), MaxValueValidator(65535)],
     )
 
-    comment = models.CharField(blank=True, null=True, max_length=500)
+    comment = models.CharField(blank=True, null=True, max_length=100)
 
     @property
     def ttl_display(self) -> str:

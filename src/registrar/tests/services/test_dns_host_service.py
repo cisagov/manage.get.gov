@@ -951,7 +951,8 @@ class TestDnsHostServiceDB(TestCase):
         # Record data should still preserve original vendor record data on failed update
         self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
         self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
-        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        # Cloudflare "auto" (1) will be stored as 300 in our DB
+        self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
     def test_update_db_record_with_bad_data_fails(self):

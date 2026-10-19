@@ -846,7 +846,7 @@ class DomainDNSRecordForm(forms.ModelForm):
         self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
 
         ttl = self.initial.get("ttl")
-        # elgacy Cloudflare "auto" rows should be treated as 300
+        # legacy Cloudflare "auto" rows should be treated as 300
         if ttl == 1:
             ttl = self.initial["ttl"] = 300
         if ttl is not None and ttl not in dict(DNS_TTL_CHOICES):
