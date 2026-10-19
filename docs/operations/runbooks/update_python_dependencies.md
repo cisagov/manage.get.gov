@@ -10,10 +10,10 @@
 
 ```bash
 cd src
-docker compose run app bash -c "pipenv lock && pipenv requirements > requirements.txt"
+docker compose run app bash -c "pipenv lock && { echo --require-hashes; pipenv requirements --hash | grep -v ' @ git+'; } > requirements.txt && pipenv requirements | grep ' @ git+' > requirements-git.txt"
 ```
 
-This will generate a new [Pipfile.lock](../../../src/Pipfile.lock) and create a new [requirements.txt](../../../src/requirements.txt). It will not install anything.
+This will generate a new [Pipfile.lock](../../../src/Pipfile.lock) a hash-pinned [requirements.txt](../../../src/requirements.txt), and [requirements-git.txt](../../../src/requirements-git.txt) for git-sourced packages (which can't carry hashes; installed by [bin/post_compile](../../../src/bin/post_compile)). It will not install anything.
 
 It is necessary to use `bash -c` because `run pipenv requirements` will not recognize that it is running non-interactively and will include garbage formatting characters.
 
@@ -43,7 +43,7 @@ If you're updating the Python version, follow these steps:
 
 ```bash
 cd src
-docker compose run app bash -c "pipenv lock && pipenv requirements > requirements.txt"
+docker compose run app bash -c "pipenv lock && { echo --require-hashes; pipenv requirements --hash | grep -v ' @ git+'; } > requirements.txt && pipenv requirements | grep ' @ git+' > requirements-git.txt"
 ```
 
 7. Run `docker compose build` a second time to pick up the freshly generated lock file.
