@@ -539,8 +539,6 @@ class DnsRecordTest(TestCase):
 
     def test_ttl_of_one_is_saved_as_300(self):
         """Cloudflare's auto TTL (1) is stored in our DB as 300."""
-        record = DnsRecord.objects.create(
-            dns_zone=self.dns_zone, type="A", name="www", ttl=1, content="192.0.2.1"
-        )
+        record = DnsRecord.objects.create(dns_zone=self.dns_zone, type="A", name="www", ttl=1, content="192.0.2.1")
         record.refresh_from_db()
         self.assertEqual(record.ttl, 300)
