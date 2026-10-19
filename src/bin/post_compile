@@ -1,0 +1,8 @@
+#!/bin/bash
+# Cloud Foundry python_buildpack hook: runs after requirements.txt is installed.
+# Git-sourced dependencies can't carry pip hashes, so they install from their own file.
+
+set -o errexit
+set -o pipefail
+
+python -m pip install --no-deps --disable-pip-version-check -r requirements-git.txt
