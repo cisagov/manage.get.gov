@@ -75,7 +75,7 @@ class DnsRecord(TimeStampedModel):
         """Validate TTL is within allowed range."""
         # TTL must be 1 (Cloudflare's "auto" value) or between 60 and 86400.
         if self.ttl != 1 and (self.ttl < 60 or self.ttl > 86400):
-            errors["ttl"] = ["TTL must be 1 (auto) or between 60 and 86400."]
+            errors["ttl"] = ["TTL must be between 60 and 86400."]
 
     def _clean_content(self, record_type):
         """Clean content based on record type."""
@@ -135,11 +135,16 @@ class DnsRecord(TimeStampedModel):
         Names are always lowercased. Content is only lowercased for CNAME
         records, where the content is itself a hostname. Other record types
         (such as TXT) keep their content as-is.
+
+        Additionally, set TTL to the default value of 300 (Cloudflare has an auto
+        value of 1).
         """
         if self.name:
             self.name = self.name.lower()
         if self.content and self.type == DNSRecordTypes.CNAME:
             self.content = self.content.lower()
+        if self.ttl == 1:
+            self.ttl = 300
 
     def full_clean(self, *args, **kwargs):
         # Lowercase before validation runs so every check compares values the same way.
@@ -438,7 +443,7 @@ class DnsRecord(TimeStampedModel):
     def update_from_vendor_data(cls, x_zone_id: str, x_record_id: str, vendor_record_data: dict) -> None:
         """Update an existing DnsRecord from vendor API response data."""
         record_data = vendor_record_data["result"]
-        # Only these fields are copied from the Cloudflare respond. "type" is 
+        # Only these fields are copied from the Cloudflare response. "type" is
         # intentionally absent (immutable once created).
         allowed_fields = ["name", "content", "ttl", "priority", "comment"]
         # Real Cloudflare lowercases names on save; mirror that here so all call sites
