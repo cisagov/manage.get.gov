@@ -74,7 +74,7 @@ class DnsRecord(TimeStampedModel):
     def _validate_ttl(self, errors):
         """Validate TTL is within allowed range."""
         # TTL must be 1 (Cloudflare's "auto" value) or between 60 and 86400.
-        if self.ttl != 1 and (self.ttl < 60 or self.ttl > 86400):
+        if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL must be between 60 and 86400."]
 
     def _clean_content(self, record_type):
