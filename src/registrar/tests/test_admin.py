@@ -2882,7 +2882,6 @@ class TestDomainInformationAdmin(TestCase):
                 "portfolio_zipcode",
                 "portfolio_urbanization",
                 "other_contacts",
-                "is_election_board",
                 "federal_agency",
                 "requester",
                 "type_of_work",

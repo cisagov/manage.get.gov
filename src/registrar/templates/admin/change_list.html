@@ -20,13 +20,7 @@
         {% if filters %}
             filtered by
                 {% for filter_param in filters %}
-                    {% if filter_param.parameter_name == 'is_election_board' %}
-                        {%if filter_param.parameter_value == '0' %}
-                            election office = No
-                        {% else %}
-                            election office = Yes
-                        {% endif %}
-                    {% elif filter_param.parameter_name == 'status__in' %}
+                    {% if filter_param.parameter_name == 'status__in' %}
                         status in [{{ filter_param.parameter_value }}]
                     {% else %}
                         {{ filter_param.parameter_name }} = {{ filter_param.parameter_value }}
