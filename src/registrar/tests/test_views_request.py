@@ -3447,9 +3447,7 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
     def test_org_type_change_to_federal(self):
         """Test changing org type to federal."""
         # Create a domain request with city org type
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user
-        )
+        domain_request = completed_domain_request(status=DomainRequest.DomainRequestStatus.STARTED, user=self.user)
         domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_request.save()
 

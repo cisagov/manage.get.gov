@@ -37,7 +37,7 @@ class Timer:
         self.duration = self.end - self.start
         logger.info(f"Execution time: {self.duration} seconds")
 
-# TODO: Remove the entire helper function (Ticket #5493)
+
 class CreateOrUpdateOrganizationTypeHelper:
     """Synchronize organization_type with generic_org_type for domain records."""
 
@@ -128,13 +128,13 @@ class CreateOrUpdateOrganizationTypeHelper:
 
     def _update_org_type_from_generic_org(self):
         self.instance.organization_type = (
-                str(self.instance.generic_org_type) if self.instance.generic_org_type is not None else None
-            )
+            str(self.instance.generic_org_type) if self.instance.generic_org_type is not None else None
+        )
 
     def _update_generic_org_from_org_type(self):
         self.instance.generic_org_type = (
-                str(self.instance.organization_type) if self.instance.organization_type is not None else None
-            )
+            str(self.instance.organization_type) if self.instance.organization_type is not None else None
+        )
 
     def _validate_new_instance(self) -> bool:
         """

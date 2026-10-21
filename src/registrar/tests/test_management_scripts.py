@@ -327,6 +327,7 @@ class TestPopulateOrganizationType(MockEppLib):
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
 
+
 class TestPopulateFirstReady(TestCase):
     """Tests for the populate_first_ready script"""
 

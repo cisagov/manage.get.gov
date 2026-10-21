@@ -3,6 +3,7 @@
 
 from django.db import migrations, models
 
+
 def normalize_organization_types(apps, schema_editor):
     models = [
         "DomainInformation",
@@ -28,10 +29,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(
-            normalize_organization_types, 
-            migrations.RunPython.noop
-        ),
+        migrations.RunPython(normalize_organization_types, migrations.RunPython.noop),
         migrations.RemoveField(
             model_name="domaininformation",
             name="is_election_board",

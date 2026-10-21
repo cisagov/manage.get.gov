@@ -1856,17 +1856,13 @@ class TestDomainRequestCustomSave(TestCase):
             name="startedTribal.gov",
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
         )
-        self.assertEqual(
-            domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL
-        )
+        self.assertEqual(domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL)
 
         # Change the org type
         domain_request_tribal.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         domain_request_tribal.save()
 
-        self.assertEqual(
-            domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
-        )
+        self.assertEqual(domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY)
 
     @less_console_noise_decorator
     def test_create_or_update_organization_type_no_update(self):
@@ -1889,6 +1885,7 @@ class TestDomainRequestCustomSave(TestCase):
         self.assertEqual(domain_request.city, "Fudge")
         self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
+
 
 class TestDomainInformationCustomSave(TestCase):
     """Tests custom save behaviour on the DomainInformation object"""
@@ -1945,9 +1942,7 @@ class TestDomainInformationCustomSave(TestCase):
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
         )
         domain_information_tribal = DomainInformation.create_from_dr(domain_request_tribal)
-        self.assertEqual(
-            domain_information_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL
-        )
+        self.assertEqual(domain_information_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL)
 
         # Change the org type
         domain_information_tribal.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
