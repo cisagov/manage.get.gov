@@ -1822,10 +1822,9 @@ class TestDomainRequestCustomSave(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
         )
 
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_create_or_update_organization_type_new_instance_federal_does_nothing(self):
@@ -1834,56 +1833,8 @@ class TestDomainRequestCustomSave(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
         )
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
-        self.assertEqual(domain_request.is_election_board, None)
-
-    @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_election_board(self):
-        """Test create_or_update_organization_type for an existing instance."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
-        )
-        domain_request.is_election_board = True
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, True)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value
-        domain_request.is_election_board = False
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, False)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-    @less_console_noise_decorator
-    def test_existing_instance_updates_election_board_to_none(self):
-        """Test create_or_update_organization_type for an existing instance, first to True and then to None.
-        Start our with is_election_board as none to simulate a situation where the request was started, but
-        only completed to the point of filling out the generic_org_type."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=None,
-        )
-        domain_request.is_election_board = True
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, True)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value.
-        domain_request.is_election_board = None
-        domain_request.save()
-
-        self.assertEqual(domain_request.is_election_board, None)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
     @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
@@ -1892,34 +1843,29 @@ class TestDomainRequestCustomSave(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
         )
 
         domain_request.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         domain_request.save()
 
-        # Election board should be None because interstate cannot have an election board.
-        self.assertEqual(domain_request.is_election_board, None)
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.INTERSTATE)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.INTERSTATE)
 
-        # Try changing the org Type to something that CAN have an election board.
+        # Try changing the org Type to tribal.
         domain_request_tribal = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="startedTribal.gov",
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            is_election_board=True,
         )
         self.assertEqual(
-            domain_request_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
+            domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL
         )
 
         # Change the org type
         domain_request_tribal.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         domain_request_tribal.save()
 
-        self.assertEqual(domain_request_tribal.is_election_board, True)
         self.assertEqual(
-            domain_request_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.STATE_OR_TERRITORY_ELECTION
+            domain_request_tribal.organization_type, DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         )
 
     @less_console_noise_decorator
@@ -1927,55 +1873,22 @@ class TestDomainRequestCustomSave(TestCase):
         """Test create_or_update_organization_type when there are no values to update."""
 
         # Test for when both generic_org_type and organization_type is declared,
-        # and are both non-election board
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
         )
         domain_request.save()
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_request.is_election_board, False)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for when both generic_org_type and organization_type is declared,
-        # and are both election board
-        domain_request_election = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="startedElection.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
-            organization_type=DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION,
-        )
-
-        self.assertEqual(
-            domain_request_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_request_election.is_election_board, True)
-        self.assertEqual(domain_request_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
 
         # Modify an unrelated existing value for both, and ensure that everything is still consistent
         domain_request.city = "Fudge"
-        domain_request_election.city = "Caramel"
         domain_request.save()
-        domain_request_election.save()
 
         self.assertEqual(domain_request.city, "Fudge")
-        self.assertEqual(domain_request_election.city, "Caramel")
-
-        # Test for non-election
-        self.assertEqual(domain_request.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_request.is_election_board, False)
+        self.assertEqual(domain_request.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for election
-        self.assertEqual(
-            domain_request_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_request_election.is_election_board, True)
-        self.assertEqual(domain_request_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
 
 class TestDomainInformationCustomSave(TestCase):
     """Tests custom save behaviour on the DomainInformation object"""
@@ -1993,11 +1906,10 @@ class TestDomainInformationCustomSave(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
         )
 
         domain_information = DomainInformation.create_from_dr(domain_request)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_create_or_update_organization_type_new_instance_federal_does_nothing(self):
@@ -2006,62 +1918,10 @@ class TestDomainInformationCustomSave(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
         )
 
         domain_information = DomainInformation.create_from_dr(domain_request)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.FEDERAL)
-        self.assertEqual(domain_information.is_election_board, None)
-
-    @less_console_noise_decorator
-    def test_create_or_update_organization_type_existing_instance_updates_election_board(self):
-        """Test create_or_update_organization_type for an existing instance."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-        domain_information.is_election_board = True
-        domain_information.save()
-
-        self.assertEqual(domain_information.is_election_board, True)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value
-        domain_information.is_election_board = False
-        domain_information.save()
-        domain_information.refresh_from_db()
-
-        self.assertEqual(domain_information.is_election_board, False)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-
-    @less_console_noise_decorator
-    def test_existing_instance_update_election_board_to_none(self):
-        """Test create_or_update_organization_type for an existing instance, first to True and then to None.
-        Start our with is_election_board as none to simulate a situation where the request was started, but
-        only completed to the point of filling out the generic_org_type."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="started.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=None,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-        domain_information.is_election_board = True
-        domain_information.save()
-
-        self.assertEqual(domain_information.is_election_board, True)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION)
-
-        # Try reverting the election board value
-        domain_information.is_election_board = None
-        domain_information.save()
-        domain_information.refresh_from_db()
-
-        self.assertEqual(domain_information.is_election_board, None)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.FEDERAL)
 
     @less_console_noise_decorator
     def test_create_or_update_organization_type_existing_instance_updates_generic_org_type(self):
@@ -2070,37 +1930,32 @@ class TestDomainInformationCustomSave(TestCase):
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
 
         domain_information.generic_org_type = DomainRequest.OrganizationChoices.INTERSTATE
         domain_information.save()
 
-        # Election board should be None because interstate cannot have an election board.
-        self.assertEqual(domain_information.is_election_board, None)
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.INTERSTATE)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.INTERSTATE)
 
-        # Try changing the org Type to something that CAN have an election board.
+        # Try changing the org Type to tribal.
         domain_request_tribal = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="startedTribal.gov",
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            is_election_board=True,
         )
         domain_information_tribal = DomainInformation.create_from_dr(domain_request_tribal)
         self.assertEqual(
-            domain_information_tribal.organization_type, DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
+            domain_information_tribal.organization_type, DomainRequest.OrganizationChoices.TRIBAL
         )
 
         # Change the org type
         domain_information_tribal.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
         domain_information_tribal.save()
 
-        self.assertEqual(domain_information_tribal.is_election_board, True)
         self.assertEqual(
             domain_information_tribal.organization_type,
-            DomainRequest.OrgChoicesElectionOffice.STATE_OR_TERRITORY_ELECTION,
+            DomainRequest.OrganizationChoices.STATE_OR_TERRITORY,
         )
 
     @less_console_noise_decorator
@@ -2108,56 +1963,23 @@ class TestDomainInformationCustomSave(TestCase):
         """Test create_or_update_organization_type when there are no values to update."""
 
         # Test for when both generic_org_type and organization_type is declared,
-        # and are both non-election board
         domain_request = completed_domain_request(
             status=DomainRequest.DomainRequestStatus.STARTED,
             name="started.gov",
             generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=False,
         )
         domain_information = DomainInformation.create_from_dr(domain_request)
         domain_information.save()
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_information.is_election_board, False)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for when both generic_org_type and organization_type is declared,
-        # and are both election board
-        domain_request_election = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="startedElection.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
-            organization_type=DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION,
-        )
-        domain_information_election = DomainInformation.create_from_dr(domain_request_election)
-
-        self.assertEqual(
-            domain_information_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_information_election.is_election_board, True)
-        self.assertEqual(domain_information_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
 
         # Modify an unrelated existing value for both, and ensure that everything is still consistent
         domain_information.city = "Fudge"
-        domain_information_election.city = "Caramel"
         domain_information.save()
-        domain_information_election.save()
 
         self.assertEqual(domain_information.city, "Fudge")
-        self.assertEqual(domain_information_election.city, "Caramel")
-
-        # Test for non-election
-        self.assertEqual(domain_information.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY)
-        self.assertEqual(domain_information.is_election_board, False)
+        self.assertEqual(domain_information.organization_type, DomainRequest.OrganizationChoices.CITY)
         self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-        # Test for election
-        self.assertEqual(
-            domain_information_election.organization_type, DomainRequest.OrgChoicesElectionOffice.CITY_ELECTION
-        )
-        self.assertEqual(domain_information_election.is_election_board, True)
-        self.assertEqual(domain_information_election.generic_org_type, DomainRequest.OrganizationChoices.CITY)
 
     @less_console_noise_decorator
     def test_clear_irrelevant_fields_federal_to_city(self):
@@ -2218,28 +2040,6 @@ class TestDomainInformationCustomSave(TestCase):
         self.assertIsNone(domain_information.federally_recognized_tribe)
         self.assertIsNone(domain_information.state_recognized_tribe)
         self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.CITY)
-
-    @less_console_noise_decorator
-    def test_clear_irrelevant_fields_city_to_federal_clears_election_board(self):
-        """Test that changing org type to federal clears is_election_board."""
-        domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED,
-            name="city-to-federal.gov",
-            generic_org_type=DomainRequest.OrganizationChoices.CITY,
-            is_election_board=True,
-        )
-        domain_information = DomainInformation.create_from_dr(domain_request)
-
-        # Verify election board is set
-        self.assertTrue(domain_information.is_election_board)
-
-        # Change org type to federal
-        domain_information.generic_org_type = DomainRequest.OrganizationChoices.FEDERAL
-        domain_information.save()
-
-        # Verify is_election_board was cleared
-        self.assertIsNone(domain_information.is_election_board)
-        self.assertEqual(domain_information.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
 
     @less_console_noise_decorator
     def test_clear_irrelevant_fields_special_district_to_city_clears_about_org(self):
@@ -2337,7 +2137,6 @@ class TestDomainRequestIncomplete(TestCase):
             federal_type="executive",
             federal_agency=FederalAgency.objects.get(agency="AMTRAK"),
             about_your_organization="Some description",
-            is_election_board=True,
             tribe_name="Some tribe name",
             organization_name="Some organization",
             address_line1="address 1",
@@ -2395,7 +2194,6 @@ class TestDomainRequestIncomplete(TestCase):
     @less_console_noise_decorator
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
-        self.domain_request.is_election_board = None
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
 
@@ -2403,7 +2201,6 @@ class TestDomainRequestIncomplete(TestCase):
     def test_is_tribal_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
         self.domain_request.tribe_name = "Tribe Name"
-        self.domain_request.is_election_board = None
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.tribe_name = None
@@ -2413,14 +2210,12 @@ class TestDomainRequestIncomplete(TestCase):
     @less_console_noise_decorator
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
-        self.domain_request.is_election_board = None
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
-        self.domain_request.is_election_board = None
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
 
@@ -2428,7 +2223,6 @@ class TestDomainRequestIncomplete(TestCase):
     def test_is_special_district_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.domain_request.about_your_organization = "Something something about your organization"
-        self.domain_request.is_election_board = None
         self.domain_request.save()
         self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None

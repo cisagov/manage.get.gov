@@ -3444,11 +3444,11 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         domain_request.delete()
 
     @less_console_noise_decorator
-    def test_org_type_change_clears_election_board_for_federal(self):
-        """Test that changing org type to federal clears is_election_board."""
-        # Create a domain request with city org type and election board set
+    def test_org_type_change_to_federal(self):
+        """Test changing org type to federal."""
+        # Create a domain request with city org type
         domain_request = completed_domain_request(
-            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user, is_election_board=True
+            status=DomainRequest.DomainRequestStatus.STARTED, user=self.user
         )
         domain_request.organization_type = DomainRequest.OrganizationChoices.CITY
         domain_request.save()
@@ -3464,10 +3464,9 @@ class TestDomainRequestWizard(TestWithUser, WebTest):
         form["generic_org_type-generic_org_type"] = DomainRequest.OrganizationChoices.FEDERAL
         form.submit()
 
-        # Refresh from DB and verify is_election_board was cleared
+        # Refresh from DB
         domain_request.refresh_from_db()
         self.assertEqual(domain_request.generic_org_type, DomainRequest.OrganizationChoices.FEDERAL)
-        self.assertIsNone(domain_request.is_election_board)
 
         # Clean up
         domain_request.delete()
