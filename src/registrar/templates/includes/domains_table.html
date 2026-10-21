@@ -13,7 +13,7 @@
   <div class="usa-alert">
     <div class="usa-alert__body">
       <p class="usa-alert__text maxw-none">
-        {% if num_expiring_domains == 1%}  
+        {% if num_expiring_domains == 1%}
         One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domain.">Show expiring domain.</a>
         {% else%}
         Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domains.">Show expiring domains.</a>
@@ -57,7 +57,7 @@
     <div class="usa-alert">
       <div class="usa-alert__body">
         <p class="usa-alert__text maxw-none">
-          {% if num_expiring_domains == 1%}  
+          {% if num_expiring_domains == 1%}
           One domain will expire soon. Go to "Manage" to renew the domain. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domain.">Show expiring domain.</a>
           {% else%}
           Multiple domains will expire soon. Go to "Manage" to renew the domains. <a href="#" id="link-expiring-domains" class="usa-link" tabindex="0" aria-label="Show expiring domains. This will filter the Domains table to only show the expiring domains.">Show expiring domains.</a>
@@ -68,7 +68,7 @@
   </section>
   {% endif %}
 
-  <div class="display-flex flex-align-center"> 
+  <div class="display-flex flex-align-center">
     <span class="margin-right-2 margin-top-neg-1 usa-prose text-base-darker">Filter by</span>
     <div class="usa-accordion usa-accordion--select margin-right-2">
       <div class="usa-accordion__heading">
@@ -86,7 +86,7 @@
           </svg>
         </button>
       </div>
-      <div id="filter-status" class="usa-accordion__content usa-prose shadow-1">
+      <div id="filter-status" class="usa-accordion__content usa-prose shadow-1" hidden>
         <h2>Status</h2>
         <fieldset class="usa-fieldset margin-top-0">
           <legend class="usa-legend">Select to apply <span class="sr-only">status</span> filter</legend>
@@ -176,7 +176,7 @@
               >Ready</label
             >
           </div>
-  
+
         </fieldset>
       </div>
     </div>
@@ -202,9 +202,9 @@
           {% if portfolio and has_view_portfolio_permission %}
             <th data-sortable="domain_info__sub_organization" scope="col" role="columnheader">Suborganization</th>
           {% endif %}
-          <th 
-            scope="col" 
-            role="columnheader" 
+          <th
+            scope="col"
+            role="columnheader"
           >
             Action
           </th>
