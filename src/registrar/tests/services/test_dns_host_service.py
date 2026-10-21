@@ -237,6 +237,33 @@ class TestDnsHostService(TestCase):
         self.assertEqual(settings_response.result["zone_defaults"]["zone_mode"], "dns_only")
         self.assertEqual(settings_response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
 
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_get_all_accounts_success(self, mock_get_tenant_accounts):
+        mock_accounts = [
+            {
+                "account_tag": "54345",
+                "account_pubname": "Account for stream.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "54346",
+                "account_pubname": "Account for river.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "98765",
+                "account_pubname": "Account for sea.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+        ]
+        mock_get_tenant_accounts.return_value = mock_accounts
+
+        accounts = self.service.get_all_accounts()
+        self.assertEqual(accounts, mock_accounts)
+
     @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService._configure_new_account_dns_settings")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
@@ -368,6 +395,21 @@ class TestDnsHostService(TestCase):
         self.assertEqual(response.result["zone_defaults"]["zone_mode"], "dns_only")
         self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
         self.assertEqual(response.errors, [])
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_zone_records")
+    def test_get_records_by_zone_success(self, mock_get_zone_records):
+        x_zone_id = "1357"
+        mock_records = [
+            {"id": 1, "name": "A", "content": "198.22.333.4", "ttl": 3600},
+            {"id": 2, "name": "AAAA", "content": "2001:db8::1234:5678", "ttl": 300},
+            {"id": 3, "name": "TXT", "content": "I am your content", "ttl": 3600},
+            {"id": 4, "name": "MX", "content": "mail.mytest.gov", "ttl": 3600},
+            {"id": 5, "name": "PTR", "content": "blog.mytest.gov", "ttl": 3600},
+        ]
+
+        mock_get_zone_records.return_value = mock_records
+        records = self.service.get_records_for_zone(x_zone_id)
+        self.assertEqual(records, mock_records)
 
     def test_update_account_dns_settings_failure(self):
         x_account_id = "12345"
@@ -1037,16 +1079,16 @@ class TestDnsHostServiceDB(TestCase):
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
         DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
-        record_db_id = DnsRecord.objects.get(dns_zone=zone, name=self.vendor_record_data["result"].get("name")).id
+        record_db = DnsRecord.objects.get(dns_zone=zone, name=self.vendor_record_data["result"].get("name"))
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
 
-        self.service.delete_dns_record(x_zone_id, record_db_id)
+        self.service.delete_dns_record(x_zone_id, record_db)
 
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
-        self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())
+        self.assertFalse(DnsRecord.objects.filter(id=record_db.id).exists())
         self.assertFalse(
-            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
         )
 
     def test_delete_db_record_with_db_error_fails(self):
@@ -1058,21 +1100,21 @@ class TestDnsHostServiceDB(TestCase):
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
         DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
-        record_db_id = DnsRecord.objects.get(dns_zone=zone, name=self.vendor_record_data["result"].get("name")).id
+        record_db = DnsRecord.objects.get(dns_zone=zone, name=self.vendor_record_data["result"].get("name"))
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
 
         with patch("registrar.models.DnsRecord.delete", side_effect=IntegrityError("simulated failure")):
             self.service.dns_vendor_service.delete_dns_record = Mock(return_value="1234")
             with self.assertRaises(Exception):
-                self.service.delete_dns_record(x_zone_id, record_db_id)
+                self.service.delete_dns_record(x_zone_id, record_db)
             # Vendor service deletion not called on database deletion failure
             self.service.dns_vendor_service.delete_dns_record.assert_not_called()
 
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord preserved
         self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
-        self.assertTrue(DnsRecord.objects.filter(id=record_db_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(id=record_db.id).exists())
         self.assertTrue(
-            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
         )
 
     def test_delete_db_record_with_vendor_error_fails(self):
@@ -1084,16 +1126,16 @@ class TestDnsHostServiceDB(TestCase):
             nameservers=self.vendor_zone_data["result"].get("name_servers"),
         )
         DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
-        record_db_id = DnsRecord.get_by_x_record_id(x_record_id).id
+        record_db = DnsRecord.get_by_x_record_id(x_record_id)
         vendor_record_db_id = VendorDnsRecord.objects.get(x_record_id=x_record_id).id
         self.service.dns_vendor_service.delete_dns_record = Mock(side_effect=APIError("simulated error"))
 
         with self.assertRaises(APIError):
-            self.service.delete_dns_record(x_zone_id, record_db_id)
+            self.service.delete_dns_record(x_zone_id, record_db)
 
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord preserved
         self.assertTrue(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
-        self.assertTrue(DnsRecord.objects.filter(id=record_db_id).exists())
+        self.assertTrue(DnsRecord.objects.filter(id=record_db.id).exists())
         self.assertTrue(
-            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db_id).exists()
+            RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
         )
