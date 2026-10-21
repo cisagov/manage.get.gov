@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ed17acf34234ed5e21824487792cbe0137e5b1b41001e89879c9a2913429dcb8"
+            "sha256": "5d2ff774ef92d6d8b20195e480ce78ad0721f747efe53a7498650d78414caf40"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -560,11 +560,11 @@
                 "phonenumberslite"
             ],
             "hashes": [
-                "sha256:19c606fda7bb25630c4913f7ac83c1824186ea17e2e4c6dc9aa9373e8f5843c5",
-                "sha256:a6dd71250f7fd0724aad995df01bdb4ac457a65622f120d0d623792fe8283798"
+                "sha256:53731bf139ba82004aff6087ccdd55f8ba5c4e11c623557cc1873eeed46eba2a",
+                "sha256:b4a641fc8ae3fdec7aeaf28e3af92bb8d36aefad085b955420807de7e8d37abe"
             ],
-            "markers": "python_version >= '3.10'",
-            "version": "==8.5.0"
+            "markers": "python_version >= '3.11'",
+            "version": "==9.0.0"
         },
         "django-stubs-ext": {
             "hashes": [
@@ -2049,12 +2049,12 @@
         },
         "boto3-stubs": {
             "hashes": [
-                "sha256:4d25cffe799c48758bab00a179b7340d35dd1c73487e289423099bae426d348d",
-                "sha256:85c0cdcbfad9b270a65cfa5247cd8dfc44dd43de54ffe3654b79e1f260013971"
+                "sha256:4cc6d2380c616e1658f85292d8081b118a4da78757ad5432e77370a1ca55181b",
+                "sha256:9aea6f96e33cc5d7e548cf6ad726ff8690dbf9a8d037bb8bd6a52777ce8a6662"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==1.43.116"
+            "version": "==1.43.117"
         },
         "botocore": {
             "hashes": [
@@ -2128,12 +2128,12 @@
         },
         "django-debug-toolbar": {
             "hashes": [
-                "sha256:329dfd6e1c26d9b4501a5cc69294c8bb734206ccb1bd36e96afc4d14128b630a",
-                "sha256:cae32d3e441e608f39f3f1ca6b3f028c38d5d04d74c98d8ab96d46022dee3163"
+                "sha256:656161388ce48384276342eeb16d532113ec670816fa1546cc3753730aa51b3d",
+                "sha256:ef7494c5b459c149e87cc2da88d86e944064945e86bd7b2d879093586b5fefbf"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.10'",
-            "version": "==8.0.0"
+            "version": "==7.0.0"
         },
         "django-model2puml": {
             "hashes": [
