@@ -526,3 +526,14 @@ class DnsHostService:
                 "Successfully enrolled %s in DNS hosting",
                 domain_name,
             )
+
+    def get_account_comparison_betw_vendor_and_db(self):
+        # get all the CF accounts (name and id)
+        # get all the db dnsaccounts (name and x_account_id)
+        # compare by name and x_account_id
+            # if there's > 1 with the same name, push into duplicate list
+        # spit out lists: cf only, db only, and matches (list includes items {account.name, x_account_id})
+        # for matches, find any that don't have matching x zone id in cf and db.
+            # If no cf zone, append to list of db only
+            # if cf zone and no db zone, append to list of cf only
+            # if cf zone and db zone but they don't match, another list
