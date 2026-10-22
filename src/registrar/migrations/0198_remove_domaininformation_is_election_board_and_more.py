@@ -17,10 +17,23 @@ def normalize_organization_types(apps, schema_editor):
         "special_district_election": "special_district",
     }
 
-    for modelname in models:
-        model = apps.get_model("registrar", modelname)
+    for model_name in models:
+        model = apps.get_model("registrar", model_name)
+        updated_total = 0
         for election_org_type, organization_type in election_org_types.items():
-            model.objects.filter(organization_type=election_org_type).update(organization_type=organization_type)
+            records = model.objects.filter(organization_type=election_org_type)
+            updated_total += records.update(organization_type=organization_type)
+
+        remaining_total = model.objects.filter(organization_type__in=election_org_type).count()
+        if remaining_total:
+            raise RuntimeError(
+                f"Migration failed to update all {model_name}.organization_type values: "
+                f"Found {remaining_total} records remaining with election values."
+            )
+        print(
+            f"Migration updated: {updated_total} records. "
+            f"{model_name}.organization_type with election values: {remaining_total}"
+        )
 
 
 class Migration(migrations.Migration):
