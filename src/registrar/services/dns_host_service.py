@@ -1,8 +1,10 @@
+from collections import Counter
 import logging
 import random
 from typing import List
 
 from django.conf import settings
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.utility.errors import EnrollmentNotAllowedError
@@ -529,10 +531,21 @@ class DnsHostService:
 
     def get_account_comparison_betw_vendor_and_db(self):
         # get all the CF accounts (name and id)
+        vendor_accounts = self.get_all_accounts()
+        vendor_accounts_data = [(a["name"], a["id"]) for a in vendor_accounts]
+        counts = Counter(vendor_accounts)
+        duplicates = [item for item, count in counts.items() if count > 1]
+        # Only get db accounts for the current active vendor
         # get all the db dnsaccounts (name and x_account_id)
+        db_account_data = list(DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
+            "dns_account__name", "vendor_dns_account__account_id"
+        ))
         # compare by name and x_account_id
-            # if there's > 1 with the same name, push into duplicate list
-        # spit out lists: cf only, db only, and matches (list includes items {account.name, x_account_id})
+        # if there's > 1 with the same name, push into duplicate list
+        vendor_only = [x for x in vendor_accounts_data if x not in db_account_data]
+        db_only = [x for x in db_account_data if x not in vendor_accounts_data]
+
+        # spit out lists: cf only, db only, and matches (list includes items account.name, x_account_id})
         # for matches, find any that don't have matching x zone id in cf and db.
             # If no cf zone, append to list of db only
             # if cf zone and no db zone, append to list of cf only
