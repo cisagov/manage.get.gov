@@ -1022,7 +1022,7 @@ if DEBUG and not RUNNING_TESTS:
     ]
 
     # allow dev laptop and docker-compose network to connect
-    ALLOWED_HOSTS += ("localhost", "app")
+    ALLOWED_HOSTS += ("localhost", "app", "getgov-test")
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_PRELOAD = False
 
