@@ -3298,7 +3298,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "is_election_board",
                     "organization_type",
                 ]
             },
@@ -3391,7 +3390,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "portfolio_zipcode",
         "portfolio_urbanization",
         "other_contacts",
-        "is_election_board",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -3685,24 +3683,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             else:
                 return queryset.filter(investigator__id__exact=self.value())
 
-    class ElectionOfficeFilter(admin.SimpleListFilter):
-        """Define a custom filter for is_election_board"""
-
-        title = _("election office")
-        parameter_name = "is_election_board"
-
-        def lookups(self, request, model_admin):
-            return (
-                ("1", _("Yes")),
-                ("0", _("No")),
-            )
-
-        def queryset(self, request, queryset):
-            if self.value() == "1":
-                return queryset.filter(is_election_board=True)
-            if self.value() == "0":
-                return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
-
     class PortfolioFilter(admin.SimpleListFilter):
         """Define a custom filter for portfolio"""
 
@@ -3720,13 +3700,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 return queryset.filter(Q(portfolio__isnull=False))
             if self.value() == "0":
                 return queryset.filter(Q(portfolio__isnull=True))
-
-    # ------ Custom fields ------
-    def custom_election_board(self, obj):
-        return "Yes" if obj.is_election_board else "No"
-
-    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
 
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
@@ -3862,7 +3835,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "last_submitted_date",
         "last_status_update",
         "status",
-        "custom_election_board",
         "converted_generic_org_type",
         "converted_organization_name",
         "converted_federal_agency",
@@ -3882,7 +3854,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         StatusListFilter,
         GenericOrgFilter,
         FederalTypeFilter,
-        ElectionOfficeFilter,
         "rejection_reason",
         InvestigatorFilter,
     )
@@ -3968,7 +3939,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "is_election_board",
                     "organization_type",
                 ]
             },
@@ -4063,7 +4033,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "other_contacts",
         "current_websites",
         "alternative_domains",
-        "is_election_board",
         "status_history",
     )
 
@@ -4121,7 +4090,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "portfolio_city",
         "portfolio_zipcode",
         "portfolio_urbanization",
-        "is_election_board",
         "organization_type",
         "federal_type",
         "federal_agency",
@@ -4989,24 +4957,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     resource_classes = [DomainResource]
 
     # ------- FILTERS
-    class ElectionOfficeFilter(admin.SimpleListFilter):
-        """Define a custom filter for is_election_board"""
-
-        title = _("election office")
-        parameter_name = "is_election_board"
-
-        def lookups(self, request, model_admin):
-            return (
-                ("1", _("Yes")),
-                ("0", _("No")),
-            )
-
-        def queryset(self, request, queryset):
-            if self.value() == "1":
-                return queryset.filter(domain_info__is_election_board=True)
-            if self.value() == "0":
-                return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
-
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
@@ -5203,7 +5153,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         )
 
     # Filters
-    list_filter = [DnsEnrolledFilter, GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
+    list_filter = [DnsEnrolledFilter, GenericOrgFilter, FederalTypeFilter, "state"]
 
     # ------- END FILTERS
 
@@ -5218,7 +5168,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_federal_type",
         "converted_federal_agency",
         "converted_organization_name",
-        "custom_election_board",
         "converted_city",
         "converted_state_territory",
         "state",
@@ -5380,15 +5329,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return "\n".join(formatted_nameservers)
 
     nameservers.short_description = "Name servers"  # type: ignore
-
-    def custom_election_board(self, obj):
-        domain_info = getattr(obj, "domain_info", None)
-        if domain_info:
-            return "Yes" if domain_info.is_election_board else "No"
-        return "No"
-
-    custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
 
     # Search
     search_fields = ["name"]
