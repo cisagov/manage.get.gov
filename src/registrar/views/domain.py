@@ -1103,15 +1103,6 @@ class DomainDNSRecordsView(DomainFormBaseView):
         is_edit = False
 
         try:
-            allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
-            if settings.IS_PRODUCTION and self.object.name not in allowlist:
-                verb = "is" if len(allowlist) == 1 else "are"
-                allowed_domains_string = f"{', '.join(allowlist)} {verb}"
-                raise EnrollmentNotAllowedError(
-                    f"Create/update/delete dns record called for domain {self.object.name}. "
-                    f"Only {allowed_domains_string} is allowed in production right now."
-                )
-
             x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
             if x_zone_id is None:
                 messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)

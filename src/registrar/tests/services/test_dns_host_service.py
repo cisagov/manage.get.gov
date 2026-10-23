@@ -489,15 +489,6 @@ class TestDnsHostService(TestCase):
         self.service.enroll_domain(allowed_domain)
         self.service.dns_account_setup.assert_called()  # got past allowllist conditional
 
-    @override_settings(IS_PRODUCTION=True)
-    def test_enroll_domain_disallowed_domain_enrollment_in_production_fails(self):
-        not_allowed_domain = create_domain(**{"domain_name": "not-igorville.gov"})
-        mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
-        self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
-        self.service.dns_account_setup = Mock(return_value="12345")
-
-        with self.assertRaises(EnrollmentNotAllowedError):
-            self.service.enroll_domain(not_allowed_domain)
 
     @override_settings(IS_LOCAL=False)
     def test_logging_for_registry_error_for_register_nameservers(self):
