@@ -5776,6 +5776,7 @@ class DnsRecordAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
     import/export file"""
