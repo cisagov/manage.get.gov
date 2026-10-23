@@ -5770,6 +5770,11 @@ class DnsRecordAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
