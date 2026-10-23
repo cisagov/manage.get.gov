@@ -5767,6 +5767,9 @@ class DnsRecordAdmin(admin.ModelAdmin):
             fields.remove("priority")
         return fields
 
+    def has_add_permission(self, request):
+        return False
+
 
 class DraftDomainResource(resources.ModelResource):
     """defines how each field in the referenced model should be mapped to the corresponding fields in the
