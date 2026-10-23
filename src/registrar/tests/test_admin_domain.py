@@ -1341,7 +1341,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         domain = Domain.objects.create(
             name="enrolltest.gov",
-            state=Domain.State.READY,
+            state=Domain.State.DNS_NEEDED,
             is_enrolled_in_dns_hosting=False,
         )
 
@@ -1478,7 +1478,7 @@ class TestDomainAdminWebTest(MockEppLib, WebTest):
 
         domain = Domain.objects.create(
             name="flagtest.gov",
-            state=Domain.State.READY,
+            state=Domain.State.DNS_NEEDED,
             is_enrolled_in_dns_hosting=False,
         )
 
