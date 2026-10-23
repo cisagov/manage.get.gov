@@ -35,6 +35,13 @@ class DomainRequest(TimeStampedModel):
             models.Index(fields=["status"]),
         ]
 
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(state_tribe__isnull=True) | models.Q(federal_tribe__isnull=True),
+                name="domain_request_single_tribe_reference",
+            ),
+        ]
+
     # https://django-auditlog.readthedocs.io/en/latest/usage.html#object-history
     # history = AuditlogHistoryField()
 
@@ -430,6 +437,24 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
+    state_tribe = models.ForeignKey(
+        "registrar.StateTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_requests",
+        verbose_name="State recognized tribe",
+    )
+
+    federal_tribe = models.ForeignKey(
+        "registrar.FederalTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_requests",
+        verbose_name="Federally recognized tribe",
+    )
+
     federal_type = models.CharField(
         max_length=50,
         choices=BranchChoices.choices,
@@ -799,7 +824,8 @@ class DomainRequest(TimeStampedModel):
 
         When generic_org_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
-        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
+        -  tribe_name, state_tribe, federal_tribe, federally_recognized_tribe,
+        state_recognized_tribe: Only for Tribal orgs
         - is_election_board: Not applicable to Federal, Interstate, or School District
         - about_your_organization: Only for Special District or Interstate orgs
         """
@@ -815,6 +841,8 @@ class DomainRequest(TimeStampedModel):
                 self.federally_recognized_tribe = None
                 self.state_recognized_tribe = None
                 self.tribe_name = None
+                self.state_tribe = None
+                self.federal_tribe = None
 
             excluded_from_election = [
                 DomainRequest.OrganizationChoices.FEDERAL,
@@ -1636,6 +1664,17 @@ class DomainRequest(TimeStampedModel):
         """Returns the cisa representatives name in Western order."""
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
+
+    @property
+    def tribe_display_name(self):
+        """Name to show for this request's tribe
+        (Idt we need this now, but making it here for posteritys sake)
+        """
+        if self.federal_tribe_id:
+            return self.federal_tribe.tribe_full_name
+        if self.state_tribe_id:
+            return self.state_tribe.tribe_name
+        return self.tribe_name
 
     """The following converted_ property methods get field data from this domain request's portfolio,
     if there is an associated portfolio. If not, they return data from the domain request model."""

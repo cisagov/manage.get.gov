@@ -20,6 +20,13 @@ class Portfolio(TimeStampedModel):
     class Meta:
         ordering = ["organization_name"]
 
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(state_tribe__isnull=True) | Q(federal_tribe__isnull=True),
+                name="portfolio_single_tribe_reference",
+            ),
+        ]
+
     # use the short names in Django admin
     OrganizationChoices = DomainRequest.OrganizationChoices
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
@@ -57,6 +64,24 @@ class Portfolio(TimeStampedModel):
         on_delete=models.PROTECT,
         unique=False,
         default=FederalAgency.get_non_federal_agency,
+    )
+
+    state_tribe = models.ForeignKey(
+        "registrar.StateTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="portfolios",
+        verbose_name="State recognized tribe",
+    )
+
+    federal_tribe = models.ForeignKey(
+        "registrar.FederalTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="portfolios",
+        verbose_name="Federally recognized tribe",
     )
 
     senior_official = models.ForeignKey(
@@ -141,6 +166,14 @@ class Portfolio(TimeStampedModel):
             and self.federal_agency.agency
         ):
             self.organization_name = self.federal_agency.agency
+
+        # If the org type is tribal and a tribe is linked, overwrite the
+        # org name with the OfficialTM tribe record name
+        if self.organization_type == self.OrganizationChoices.TRIBAL:
+            if self.federal_tribe and self.federal_tribe.tribe_full_name:
+                self.organization_name = self.federal_tribe.tribe_full_name
+            elif self.state_tribe and self.state_tribe.tribe_name:
+                self.organization_name = self.state_tribe.tribe_name
 
         super().save(*args, **kwargs)
 
