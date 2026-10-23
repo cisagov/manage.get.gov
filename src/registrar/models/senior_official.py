@@ -6,6 +6,28 @@ from django.db.models import Q
 from .utility.time_stamped_model import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
+"""
+!QUESTION SECTION!
+
+For the model:
+1. For state_tribe and federal_tribe do we want PROTECT instead of SET_NULL?
+If the Tribe goes away, PROTECT would block the delete
+Do we want the the tribe <> senior official link to not be able to be borked?
+
+2. Do we want is_editable field? If so, is this name okay
+(Assuming Federal is False so not editable, State is True and editable)
+
+3. For tribal_leader_updated_at - what model type would we want this to be?
+We want to update the tribal leader contact info if there are any updates to the record
+A. Will/should Analysts be able to edit these records?
+(Iirc currently Federal Tribes Analysts cannot edit, State Tribes Analysts can)
+B. If not, what if we have tribal_leader_updated_at be a JSON blob so it can compare per field
+(maybe we rename that variable too)
+C. We should just always overwrite bc they should be editing it on the Federal/State Tribe field
+anyway which is our source of truth
+
+"""
+
 
 class SeniorOfficial(TimeStampedModel):
     """
@@ -94,6 +116,13 @@ class SeniorOfficial(TimeStampedModel):
         help_text="When this record was last updated from the linked tribe's leader information",
     )
 
+    # QUESTION: Do we want this, is this name ok
+    # Assuming Federal is False, State would be True
+    # is_editable = models.BooleanField(
+    #     default=True,
+    #     verbose_name="Editable",
+    # )
+
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
         names = [n for n in [self.first_name, self.last_name] if n]
@@ -115,7 +144,7 @@ class SeniorOfficial(TimeStampedModel):
         return self.federal_tribe or self.state_tribe
 
     """
-    QUESITION:
+    QUESTION:
     We want to update the tribal leader contact info if there are any updates to the record
     1. Will/should Analysts be able to edit these records?
     (Iirc currently Federal Tribes Analysts cannot edit, State Tribes Analysts can)
