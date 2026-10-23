@@ -217,4 +217,7 @@ DNS_TTL_CHOICES = [
 
 def format_dns_ttl(ttl: int) -> str:
     """Render a TTL value using the form's notation."""
-    return dict(DNS_TTL_CHOICES)[ttl]
+    # Cloudflare's "auto"; stored as 300 (see DnsRecord._normalize_fields)
+    if ttl == 1:
+        ttl = 300
+    return dict(DNS_TTL_CHOICES).get(ttl, f"{ttl} seconds")
