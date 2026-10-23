@@ -5402,3 +5402,11 @@ class TestDnsRecordAdmin(TestCase):
             fields = self.admin.get_fields(self.request, record)
             readonly = self.admin.get_readonly_fields(self.request, record)
             self.assertEqual(set(fields) - set(readonly), set())
+
+    def test_mx_record_displays_priority_success(self):
+        fields = self.admin.get_fields(self.request, self.mx_record)
+        self.assertIn("priority", fields)
+
+    def test_a_record_does_not_display_priority_success(self):
+        fields = self.admin.get_fields(self.request, self.a_record)
+        self.assertNotIn("priority", fields)
