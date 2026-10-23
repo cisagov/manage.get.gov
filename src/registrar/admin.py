@@ -5385,8 +5385,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 domain.expiration_date if domain.expiration_date is not None else self._get_current_date()
             )
             extra_context["dns_hosting_enabled"] = flag_is_active(request, "dns_hosting")
-            extra_context["has_nameservers"] = len(domain.nameservers) > 0
-            
+
         return super().changeform_view(request, object_id, form_url, extra_context)
 
     def response_change(self, request, obj):
