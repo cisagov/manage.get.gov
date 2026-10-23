@@ -73,7 +73,8 @@ class DnsRecord(TimeStampedModel):
 
     def _validate_ttl(self, errors):
         """Validate TTL is within allowed range."""
-        # TTL must be 1 (Cloudflare's "auto" value) or between 60 and 86400.
+        # TTL must be between 60 and 86400. A value of "1" from our vendor is
+        # automatically cleaned to be 300 before it reaches this conditional.
         if self.ttl < 60 or self.ttl > 86400:
             errors["ttl"] = ["TTL must be between 60 and 86400."]
 
@@ -136,7 +137,7 @@ class DnsRecord(TimeStampedModel):
         records, where the content is itself a hostname. Other record types
         (such as TXT) keep their content as-is.
 
-        Additionally, set TTL to the default value of 300 (Cloudflare has an auto
+        Additionally, set TTL to the default value of 300 (our vendor has an auto
         value of 1).
         """
         if self.name:
@@ -404,7 +405,7 @@ class DnsRecord(TimeStampedModel):
         """Create and save a DnsRecord and its join row from vendor API response data."""
         record_data = vendor_record_data["result"]
         x_record_id = record_data["id"]
-        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # Our vendor lowercases names on save; mirror that here so all call sites
         # (including any that read the vendor payload directly) see a consistent value.
         if record_data.get("name"):
             record_data["name"] = record_data["name"].lower()
@@ -443,10 +444,10 @@ class DnsRecord(TimeStampedModel):
     def update_from_vendor_data(cls, x_zone_id: str, x_record_id: str, vendor_record_data: dict) -> None:
         """Update an existing DnsRecord from vendor API response data."""
         record_data = vendor_record_data["result"]
-        # Only these fields are copied from the Cloudflare response. "type" is
+        # Only these fields are copied from our vendor's response. "type" is
         # intentionally absent (immutable once created).
         allowed_fields = ["name", "content", "ttl", "priority", "comment"]
-        # Real Cloudflare lowercases names on save; mirror that here so all call sites
+        # Our vendor lowercases names on save; mirror that here so all call sites
         # (including any that read the vendor payload directly) see a consistent value.
         if record_data.get("name"):
             record_data["name"] = record_data["name"].lower()

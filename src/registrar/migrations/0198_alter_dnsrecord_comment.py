@@ -8,6 +8,16 @@ COMMENT_MAX_LENGTH = 100
 
 
 def truncate_long_comments(apps, schema_editor) -> Any:
+    """
+    See comments in #4977 -- We decided to limit the field in the db 
+    to 100 characters so that we are not out of alignment with the 
+    max limit as defined by our vendor. 
+
+    The test instances have comment data that may exceed this limit,
+    so we need to clean this up. As the production instance does not have 
+    existing comments (DNS hosting has not launched yet to the public), 
+    those comments will not be affected.
+    """
     DnsRecord = apps.get_model("registrar", "DnsRecord")
 
     records_with_comments = DnsRecord.objects.exclude(comment__isnull=True)
