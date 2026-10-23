@@ -132,9 +132,7 @@ class DomainRequest(TimeStampedModel):
 
     class OrganizationChoices(models.TextChoices):
         """
-        Primary organization choices:
-        For use in the domain request experience
-        Keys need to match OrgChoicesElectionOffice and OrganizationChoicesVerbose
+        Primary organization choices for use in the domain request experience.
         """
 
         FEDERAL = "federal", "Federal"
@@ -159,79 +157,6 @@ class DomainRequest(TimeStampedModel):
             org_names = org_name.split("_election")
             if len(org_names) > 0:
                 org_name = org_names[0]
-            return cls(org_name).label if org_name else None
-
-    class OrgChoicesElectionOffice(models.TextChoices):
-        """
-        Primary organization choices for Django admin:
-        Keys need to match OrganizationChoices and OrganizationChoicesVerbose.
-
-        The enums here come in two variants:
-        Regular (matches the choices from OrganizationChoices)
-        Election (Appends " - Election" to the string)
-
-        When adding the election variant, you must append "_election" to the end of the string.
-        """
-
-        # We can't inherit OrganizationChoices due to models.TextChoices being an enum.
-        # We can redefine these values instead.
-        FEDERAL = "federal", "Federal"
-        INTERSTATE = "interstate", "Interstate"
-        STATE_OR_TERRITORY = "state_or_territory", "State or territory"
-        TRIBAL = "tribal", "Tribal"
-        COUNTY = "county", "County"
-        CITY = "city", "City"
-        SPECIAL_DISTRICT = "special_district", "Special district"
-        SCHOOL_DISTRICT = "school_district", "School district"
-
-        # Election variants
-        STATE_OR_TERRITORY_ELECTION = "state_or_territory_election", "State or territory - Election"
-        TRIBAL_ELECTION = "tribal_election", "Tribal - Election"
-        COUNTY_ELECTION = "county_election", "County - Election"
-        CITY_ELECTION = "city_election", "City - Election"
-        SPECIAL_DISTRICT_ELECTION = "special_district_election", "Special district - Election"
-
-        @classmethod
-        def get_org_election_to_org_generic(cls):
-            """
-            Creates and returns a dictionary mapping from election-specific organization
-            choice enums to their corresponding general organization choice enums.
-
-            If no such mapping exists, it is simple excluded from the map.
-            """
-            # This can be mapped automatically but its harder to read.
-            # For clarity reasons, we manually define this.
-            org_election_map = {
-                cls.STATE_OR_TERRITORY_ELECTION: cls.STATE_OR_TERRITORY,
-                cls.TRIBAL_ELECTION: cls.TRIBAL,
-                cls.COUNTY_ELECTION: cls.COUNTY,
-                cls.CITY_ELECTION: cls.CITY,
-                cls.SPECIAL_DISTRICT_ELECTION: cls.SPECIAL_DISTRICT,
-            }
-            return org_election_map
-
-        @classmethod
-        def get_org_generic_to_org_election(cls):
-            """
-            Creates and returns a dictionary mapping from general organization
-            choice enums to their corresponding election-specific organization enums.
-
-            If no such mapping exists, it is simple excluded from the map.
-            """
-            # This can be mapped automatically but its harder to read.
-            # For clarity reasons, we manually define this.
-            org_election_map = {
-                cls.STATE_OR_TERRITORY: cls.STATE_OR_TERRITORY_ELECTION,
-                cls.TRIBAL: cls.TRIBAL_ELECTION,
-                cls.COUNTY: cls.COUNTY_ELECTION,
-                cls.CITY: cls.CITY_ELECTION,
-                cls.SPECIAL_DISTRICT: cls.SPECIAL_DISTRICT_ELECTION,
-            }
-            return org_election_map
-
-        @classmethod
-        def get_org_label(cls, org_name: str):
-            # Translating the key that is given to the direct readable value
             return cls(org_name).label if org_name else None
 
     class OrganizationChoicesVerbose(models.TextChoices):
@@ -402,19 +327,12 @@ class DomainRequest(TimeStampedModel):
         blank=True,
     )
 
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        verbose_name="election office",
-    )
-
     # TODO - Ticket #1911: stub this data from DomainRequest
     organization_type = models.CharField(
         max_length=255,
-        choices=OrgChoicesElectionOffice.choices,
+        choices=OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -691,28 +609,11 @@ class DomainRequest(TimeStampedModel):
 
     def sync_organization_type(self):
         """
-        Updates the organization_type (without saving) to match
-        the is_election_board and generic_organization_type fields.
+        Keeps organization_type and generic_org_type synchronized (without saving).
         """
-        # Define mappings between generic org and election org.
-        # These have to be defined here, as you'd get a cyclical import error
-        # otherwise.
-
-        # For any given organization type, return the "_ELECTION" enum equivalent.
-        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
-        generic_org_map = self.OrgChoicesElectionOffice.get_org_generic_to_org_election()
-
-        # For any given "_election" variant, return the base org type.
-        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
-        election_org_map = self.OrgChoicesElectionOffice.get_org_election_to_org_generic()
-
-        # Manages the "organization_type" variable and keeps in sync with
-        # "is_election_office" and "generic_organization_type"
         org_type_helper = CreateOrUpdateOrganizationTypeHelper(
             sender=self.__class__,
             instance=self,
-            generic_org_to_org_map=generic_org_map,
-            election_org_to_generic_org_map=election_org_map,
         )
 
         # Actually updates the organization_type field
@@ -800,7 +701,6 @@ class DomainRequest(TimeStampedModel):
         When generic_org_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
         - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
-        - is_election_board: Not applicable to Federal, Interstate, or School District
         - about_your_organization: Only for Special District or Interstate orgs
         """
         old_org_type = getattr(self, "_cached_generic_org_type", None)
@@ -815,14 +715,6 @@ class DomainRequest(TimeStampedModel):
                 self.federally_recognized_tribe = None
                 self.state_recognized_tribe = None
                 self.tribe_name = None
-
-            excluded_from_election = [
-                DomainRequest.OrganizationChoices.FEDERAL,
-                DomainRequest.OrganizationChoices.INTERSTATE,
-                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-            ]
-            if new_org_type in excluded_from_election:
-                self.is_election_board = None
 
             about_org_types = [
                 DomainRequest.OrganizationChoices.SPECIAL_DISTRICT,
@@ -1549,20 +1441,6 @@ class DomainRequest(TimeStampedModel):
         """Show this step if the answer to the first question was "tribal"."""
         user_choice = self.generic_org_type
         return user_choice == DomainRequest.OrganizationChoices.TRIBAL
-
-    def show_organization_election(self) -> bool:
-        """Show this step if the answer to the first question implies it.
-
-        This shows for answers that aren't "Federal" or "Interstate".
-        This also doesnt show if user selected "School District" as well (#524)
-        """
-        user_choice = self.generic_org_type
-        excluded = [
-            DomainRequest.OrganizationChoices.FEDERAL,
-            DomainRequest.OrganizationChoices.INTERSTATE,
-            DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-        ]
-        return bool(user_choice and user_choice not in excluded)
 
     def show_about_your_organization(self) -> bool:
         """Show this step if this is a special district or interstate."""
