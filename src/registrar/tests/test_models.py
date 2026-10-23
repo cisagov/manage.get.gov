@@ -2395,23 +2395,17 @@ class TestDomainRequestIncomplete(TestCase):
     @less_console_noise_decorator
     def test_is_state_or_territory_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.STATE_OR_TERRITORY
-        self.domain_request.is_election_board = True
-        self.domain_request.save()
-        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_tribal_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.TRIBAL
         self.domain_request.tribe_name = "Tribe Name"
-        self.domain_request.is_election_board = False
-        self.domain_request.save()
-        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.tribe_name = None
         self.domain_request.save()
         self.assertFalse(self.wizard.form_is_complete())
@@ -2419,33 +2413,24 @@ class TestDomainRequestIncomplete(TestCase):
     @less_console_noise_decorator
     def test_is_county_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.COUNTY
-        self.domain_request.is_election_board = False
-        self.domain_request.save()
-        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_city_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.CITY
-        self.domain_request.is_election_board = False
-        self.domain_request.save()
-        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
+        self.assertTrue(self.wizard.form_is_complete())
 
     @less_console_noise_decorator
     def test_is_special_district_complete(self):
         self.domain_request.generic_org_type = DomainRequest.OrganizationChoices.SPECIAL_DISTRICT
         self.domain_request.about_your_organization = "Something something about your organization"
-        self.domain_request.is_election_board = False
-        self.domain_request.save()
-        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.is_election_board = None
         self.domain_request.save()
-        self.assertFalse(self.wizard.form_is_complete())
+        self.assertTrue(self.wizard.form_is_complete())
         self.domain_request.about_your_organization = None
         self.domain_request.save()
         self.assertFalse(self.wizard.form_is_complete())

@@ -17,6 +17,7 @@ from registrar.models.domain_information import DomainInformation
 from registrar.models.draft_domain import DraftDomain
 from registrar.models.public_contact import PublicContact, get_id
 from registrar.models.user import User
+from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
 from registrar.utility.enums import DefaultEmail
 from registrar.utility.errors import ActionNotAllowed, NameserverError, NameserverErrorCodes
 
@@ -2839,28 +2840,15 @@ class TestCreationDate(MockEppLib):
         self.domain.statuses
         self.assertEqual(self.domain.created_at, self.creation_date)
 
-    def test_x_registry_created_at_and_created_at_reference(self):
-        """assert x_registry_created_at is set from EPP and created_at_reference is preserved"""
-        original_created_at = self.domain.created_at
+    def test_x_registry_created_at_and_created_at(self):
+        """assert x_registry_created_at is set from EPP and created_at is preserved"""
         # force fetch_cache to be called
         self.domain.statuses
-        x_registry_created_at, created_at_reference = (
-            Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at_reference").get()
+        x_registry_created_at, created_at = (
+            Domain.objects.filter(pk=self.domain.pk).values_list("x_registry_created_at", "created_at").get()
         )
         self.assertEqual(x_registry_created_at, self.creation_date)
-        self.assertEqual(created_at_reference, original_created_at)
-
-
-class TestDomainCreatedAtReference(TestCase):
-    def test_created_at_reference_populated_on_create(self):
-        domain = Domain.objects.create(name="created-at-ref.gov")
-        created_at_reference, created_at, x_registry_created_at = (
-            Domain.objects.filter(pk=domain.pk)
-            .values_list("created_at_reference", "created_at", "x_registry_created_at")
-            .get()
-        )
-        self.assertEqual(created_at_reference, created_at)
-        self.assertIsNone(x_registry_created_at)
+        self.assertEqual(created_at, self.creation_date)
 
 
 class TestAnalystClientHold(MockEppLib):
@@ -3373,9 +3361,14 @@ class TestAnalystDelete(MockEppLib):
         self.assertTrue(DnsAccount.objects.filter(name=dns_account.name).exists())
         self.assertTrue(DnsZone.objects.filter(domain=domain).exists())
 
-        # Delete the domain
-        domain.deleteInEpp()
-        domain.save()
+        # Delete the domain (with logging)
+        with capture_json_logs(logger_name="registrar.models.domain") as stream:
+            domain.deleteInEpp()
+            domain.save()
+
+        entries = json_log_entries(stream, containing="Deleting DNS data for")
+        self.assertTrue(entries, "Expected at least one 'Deleting DNS data for' log line")
+        self.assertEqual(entries[0]["domain_name"], "dns.gov")
 
         self.assertFalse(DnsAccount.objects.filter(id=account_id).exists())
         self.assertFalse(DnsAccount_VendorDnsAccount.objects.filter(dns_account_id=account_id).exists())
@@ -3423,9 +3416,14 @@ class TestAnalystDelete(MockEppLib):
         # CloudflareService delete account raises Error
         mock_delete_account.side_effect = DnsHostingError
 
-        # Delete the domain
-        domain.deleteInEpp()
-        domain.save()
+        # Delete the domain (and check logs)
+        with capture_json_logs(logger_name="registrar.models.domain") as stream:
+            domain.deleteInEpp()
+            domain.save()
+
+        entries = json_log_entries(stream, containing="Error deleting DNS data for")
+        self.assertTrue(entries, "Expected an 'Error deleting DNS data for' log line")
+        self.assertEqual(entries[0]["domain_name"], "dns.gov")
 
         vendor_account_id = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account.id
         vendor_zone_id = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone.id

@@ -8,8 +8,7 @@ from registrar.models import (
     DnsRecord_VendorDnsRecord as RecordsJoin,
 )
 from registrar.validations import (
-    DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
-    DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
+    DNS_NAME_DOTS_REQUIREMENT,
 )
 
 
@@ -169,7 +168,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, str(ctx.exception))
+        self.assertIn(DNS_NAME_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_with_leading_dot_raises(self):
         """DNS record name with leading dot should fail validation."""
@@ -185,7 +184,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
+        self.assertIn(DNS_NAME_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_with_trailing_dot_raises(self):
         """DNS record name with trailing dot should fail validation."""
@@ -201,7 +200,7 @@ class DnsRecordTest(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             record.full_clean()
         self.assertIn("name", ctx.exception.message_dict)
-        self.assertIn(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT, str(ctx.exception))
+        self.assertIn(DNS_NAME_DOTS_REQUIREMENT, str(ctx.exception))
 
     def test_dns_record_name_exceeds_per_label_limit_raises(self):
         """DNS record name with a label exceeding 63 characters should fail validation."""
@@ -458,8 +457,8 @@ class DnsRecordTest(TestCase):
             record.clean()
         self.assertIn("name", ctx.exception.message_dict)
 
-    def test_delete_by_x_record_id_success(self):
-        """delete_by_x_record_id deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
+    def test_delete_by_record_success(self):
+        """delete_by_record deletes DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord."""
         x_record_id = "1234"
         vendor_dns_record = VendorDnsRecord.objects.create(
             x_record_id=x_record_id,
@@ -481,7 +480,7 @@ class DnsRecordTest(TestCase):
             is_active=True,
         )
 
-        DnsRecord.delete_by_x_record_id(x_record_id)
+        DnsRecord.delete_by_record(record)
         # DnsRecord, VendorDnsRecord, and DnsRecordVendorDnsRecord deleted
         self.assertFalse(VendorDnsRecord.objects.filter(x_record_id=x_record_id).exists())
         self.assertFalse(DnsRecord.objects.filter(id=record_db_id).exists())

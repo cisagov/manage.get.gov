@@ -9,7 +9,12 @@ from waffle.testutils import override_flag
 from registrar.models import DnsRecord
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import DnsHostingError
-from registrar.tests.helpers.dns_data_generator import create_initial_dns_setup, create_dns_record, delete_all_dns_data
+from registrar.tests.helpers.dns_data_generator import (
+    create_initial_dns_setup,
+    create_dns_record,
+    delete_all_dns_data,
+    create_domain,
+)
 from registrar.validations import (
     DNS_NAME_FORMAT_REQUIREMENT,
     CNAME_NAME_INLINE_ERROR_MESSAGE,
@@ -23,6 +28,7 @@ from registrar.validations import (
 
 from registrar.tests.test_views import TestWithUser
 from api.tests.common import less_console_noise_decorator
+from ..common import create_user
 
 
 class TestWithDNSRecordPermissions(TestWithUser):
@@ -38,66 +44,67 @@ class TestWithDNSRecordPermissions(TestWithUser):
 
         self.client.force_login(self.user)
 
+        self.RECORD_TEST_CASES = [
+            {
+                "id": "test1",
+                "name": "www",
+                "type": "A",
+                "content": "192.0.2.10",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test1",
+                "name": "www",
+                "type": "AAAA",
+                "content": "2001:db8::1",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test-cname",
+                "name": "test",  # CNAME record must use different name than A/AAAA records
+                "type": "CNAME",
+                "content": "www.example.com",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test-ptr",
+                "name": "www",
+                "type": "PTR",
+                "content": "www.example.com",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test-mx",
+                "name": "www",
+                "type": "MX",
+                "content": "mail.example.com",
+                "ttl": 300,
+                "priority": 5,
+                "comment": "Mocked record created",
+            },
+            {
+                "id": "test1",
+                "name": "www",
+                "type": "TXT",
+                "content": "test record info",
+                "ttl": 300,
+                "comment": "Mocked record created",
+            },
+        ]
+
+    def _url(self):
+        return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
+
     def tearDown(self):
         delete_all_dns_data()
         super().tearDown()
 
 
 class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
-    RECORD_TEST_CASES = [
-        {
-            "id": "test1",
-            "name": "www",
-            "type": "A",
-            "content": "192.0.2.10",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test1",
-            "name": "www",
-            "type": "AAAA",
-            "content": "2001:db8::1",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test-cname",
-            "name": "test",  # CNAME record must use different name than A/AAAA records
-            "type": "CNAME",
-            "content": "www.example.com",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test-ptr",
-            "name": "www",
-            "type": "PTR",
-            "content": "www.example.com",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test-mx",
-            "name": "www",
-            "type": "MX",
-            "content": "mail.example.com",
-            "ttl": 300,
-            "priority": 5,
-            "comment": "Mocked record created",
-        },
-        {
-            "id": "test1",
-            "name": "www",
-            "type": "TXT",
-            "content": "test record info",
-            "ttl": 300,
-            "comment": "Mocked record created",
-        },
-    ]
-
-    def _url(self):
-        return reverse("domain-dns-records", kwargs={"domain_pk": self.domain.id})
 
     @override_flag("dns_hosting", active=True)
     @less_console_noise_decorator
@@ -168,7 +175,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         the Edit button id the modal returns focus to on close."""
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             created = {}
 
@@ -247,7 +254,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -296,7 +303,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
             with self.subTest(record_type=data["type"]):
                 with patch("registrar.views.domain.DnsHostService") as MockSvc:
                     svc = MockSvc.return_value
-                    svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+                    svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
                     # Create the DnsRecord row inside the mocked service call, not before the POST.
                     # Otherwise the new duplicate-record validator flags the POST as a dup of the
@@ -347,7 +354,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
             svc.create_dns_record.side_effect = DnsHostingError()
 
             response = self.client.post(
@@ -595,7 +602,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
             svc.update_dns_record.return_value = existing
 
             response = self.client.post(
@@ -640,7 +647,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -673,7 +680,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -706,7 +713,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -739,7 +746,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -772,7 +779,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             # Submit with full domain name instead of @
             response = self.client.post(
@@ -810,7 +817,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -840,7 +847,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         """
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -878,7 +885,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
         """
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -951,7 +958,7 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
         with patch("registrar.views.domain.DnsHostService") as MockSvc:
             svc = MockSvc.return_value
-            svc.get_x_zone_id_if_zone_exists.return_value = ("zone-123", ["ex1.dns.gov"])
+            svc.get_x_zone_id_if_zone_exists.return_value = "zone-123"
 
             response = self.client.post(
                 self._url(),
@@ -981,3 +988,91 @@ class TestDomainDNSRecordsView(TestWithDNSRecordPermissions, WebTest):
 
             self.assertEqual(response_too.status_code, 200)
             self.assertNotContains(response_too, DNSRecordTypes(record_type).error_message)
+
+
+class TestDnsRecordCrossTenant(TestWithDNSRecordPermissions, WebTest):
+
+    def setUp(self):
+        super().setUp()
+        case_own, case_other = self.RECORD_TEST_CASES[0], self.RECORD_TEST_CASES[1]
+        self.case_own = dict(case_own)
+        self.case_other = dict(case_other)
+
+        # The logged-in user's own record, in their own zone
+        self.own_record = create_dns_record(
+            self.dns_zone,
+            record_type=case_own["type"],
+            record_name=case_own["name"],
+            record_content=case_own["content"],
+            record_comment="own record comment",
+        )
+
+        # Another tenant's domain, zone and record (the victim)
+        other_user = create_user()
+        other_domain = create_domain(domain_name="testingthistest.gov")
+        _, _, other_zone = create_initial_dns_setup(
+            domain=other_domain, domain_manager=other_user, x_account_id="some-account-id"
+        )
+        self.comment = "only comment"
+        self.other_record = create_dns_record(
+            other_zone,
+            record_type=case_other["type"],
+            record_name=case_other["name"],
+            record_content=case_other["content"],
+            record_comment=self.comment,
+        )
+
+    def _payload(self, record_id, case, **overrides):
+        data = {
+            "id": record_id,
+            "type": case["type"],
+            "name": case["name"],
+            "content": case["content"],
+            "ttl": case["ttl"],
+            "comment": "",
+        }
+        data.update(overrides)
+        return data
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_control_edit_own_record_reaches_service(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), self._payload(self.own_record.id, self.case_own))
+
+        self.assertEqual(resp.status_code, 200)
+        service.update_dns_record.assert_called_once()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_other_zone_record_valid_form(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), self._payload(self.other_record.id, self.case_other))
+
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotContains(resp, self.comment, status_code=404)
+        service.update_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_edit_other_zone_record_invalid_form(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), self._payload(self.other_record.id, self.case_other, content=""))
+
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotContains(resp, self.comment, status_code=404)
+        service.update_dns_record.assert_not_called()
+
+    @override_flag("dns_hosting", active=True)
+    @less_console_noise_decorator
+    def test_delete_other_zone_record(self):
+        with patch("registrar.views.domain.DnsHostService") as MockService:
+            service = MockService.return_value
+            resp = self.client.post(self._url(), {"id": self.other_record.id, "delete_record": True})
+
+        self.assertEqual(resp.status_code, 404)
+        service.delete_dns_record.assert_not_called()
+        self.assertTrue(DnsRecord.objects.filter(pk=self.other_record.pk).exists())

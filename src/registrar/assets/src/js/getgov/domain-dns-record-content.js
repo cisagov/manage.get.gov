@@ -1,5 +1,4 @@
 import { EditFormSwitcher, RecordSelectTypeSwitcher } from "./domain-dns-form-switcher";
-import { showElement } from "./helpers";
 
 // Establishes javascript for dynamic content label based on type
 function getCharCountText (charLimit, charLength) {
@@ -113,7 +112,7 @@ const getFocusId = (req, target)=>{
         }
 
         if(req.fromConfirmButton && target){
-            return req.type == "add" || target == 0 ? addRecordbtn : editButtonId(target)
+            return target == 0 ? addRecordbtn : editButtonId(target)
         }
 
         if(target == 0){
@@ -203,6 +202,9 @@ const teardownForm = (switcher) => {
                 refreshForm(refs.form, form.getAttribute("hx-post"));
             } else if(req.hasUnsavedChanges){
                 form.reset();
+                form.querySelectorAll(FIELD_SELECTOR).forEach(el => {
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                });
             }
         }
     } else {
@@ -211,12 +213,12 @@ const teardownForm = (switcher) => {
         const hadError = !!form?.querySelector(".usa-error-message");
         clearRecordForm(form);
         if(hadError){
-            refreshForm(refs.form, form.getAttribute("hx-post"));
+            didHtmxSwapHappen = true;
             const target = switcher.target;
             document.getElementById("dnsrecords-form-container").addEventListener('htmx:afterSwap', ()=>{
-                didHtmxSwapHappen = true;
                 switcher.switchForm(target);
-         })  
+         }, { once: true})  
+          refreshForm(refs.form, form.getAttribute("hx-post"));
         } else {
             form?.querySelectorAll(FIELD_SELECTOR).forEach(el => { el.value = ""; });
             const typeField = document.getElementById("id_type");
@@ -296,7 +298,7 @@ const editButtonEventListener = (switcher, recordTypeSwitcher)=>{
 export function initDNSRecordCancelModal(){
     const container = document.getElementById("dnsrecords-form-container");
     const confirmButton = document.getElementById("cancel-add-dnsrecord-confirm");
-    const deleteButton = document.getElementById("confirm-delete-record-button");
+
     if(!container || !confirmButton) return;
     
     const editFormSwitcher = new EditFormSwitcher(container);
@@ -366,7 +368,6 @@ export function initDNSRecordCancelModal(){
 
 
             switcher.pending.fromConfirmButton = true;
-
             const focusId = getFocusId(switcher.pending, switcher.target);
         
             teardownForm(
@@ -429,13 +430,15 @@ export function initDNSRecordCancelModal(){
             if(!e.isTrusted){
                 return;
             }
+            // Pauses the swap until unsaved changes are handled from the user, then programmatically updates the type.
+            e.stopPropagation()
             const index = e.target.selectedIndex;
             recordTypeSwitcher.setTarget(index);
             recordTypeSwitcher.attemptOpen();
             recordTypeSwitcher.updateSelectedType(recordTypeSwitcher.pending.recordId);
             onCancel(recordTypeSwitcher)
             }
-    })
+    }, true)
 
     document.getElementById('add-dnsrecord-button').addEventListener("click", (e) => {
             editFormSwitcher.setTarget(0);
@@ -701,6 +704,159 @@ export function initDynamicDNSRecordFormFields() {
     if (typeField.value) {
         typeField.dispatchEvent(new Event('change'));
     }
+}
+
+// Reads per-type DNS config (preview template, placeholders, etc) off the 
+// id_type field's data attribute. Returns {} if missing/empty JSON. 
+function getDNSRecordTypeConfig(){
+    const typeField = document.getElementById('id_type');
+    if (!typeField) return {};
+    try {
+        return JSON.parse(typeField.dataset.typeConfig || "{}");
+    } catch {
+        return {};
+    }
+}
+
+/* 
+Fills a template like "{name} points to {content}." with real values,
+bolding each one. Empty fields fall back to "[name]" style placeholders.
+Uses DOM nodes, not innerHTML, so that user input can't be rendered as markup. 
+*/ 
+function renderDNSRecordPreviewText(previewTextEl, template, values){
+    if (!previewTextEl) return;
+
+    previewTextEl.replaceChildren();
+
+    if (!template) return;
+
+    // regex to find every {placeholder} in this string -- {name} & {content}
+    const placeholderPattern = /\{(\w+)\}/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = placeholderPattern.exec(template)) != null) {
+        if (match.index > lastIndex) {
+            previewTextEl.appendChild(document.createTextNode(template.slice(lastIndex, match.index)));
+        }
+        
+        const span = document.createElement('span');
+        span.className = 'text-bold text-primary-dark';
+        
+        // this grabs the match captured earlier (either name or content)
+        let text = values[match[1]]
+        if (text == null || text == undefined) {
+            text = "[" + match[1] + "]";
+        }
+        span.textContent = text;
+
+        previewTextEl.appendChild(span);
+
+        lastIndex = placeholderPattern.lastIndex
+    }
+
+    if (lastIndex < template.length) {
+        previewTextEl.appendChild(document.createTextNode(template.slice(lastIndex)));
+    }
+}
+
+/*
+Recomputes the live preview sentence for one DNS record form.
+"@" is the root domain, so there's a conditional for that (via data-domain-name)
+*/
+function updateDNSRecordPreview(scope, config) {
+    if (!scope) return;
+
+    const previewText = scope.querySelector('.dns-record-preview-text');
+    if (!previewText) return;
+
+    const domainName = previewText.closest('.dns-record-preview')?.dataset.domainName
+
+    const typeField = scope.querySelector('[name="type"]');
+    const info = typeField && config[typeField.value];
+
+    if (!info || !info.previewTemplate) {
+        renderDNSRecordPreviewText(previewText, "", {});
+        return;
+    }
+
+    const nameField = scope.querySelector('[name="name"]');
+    const contentField = scope.querySelector('[name="content"]');
+    const  contentPlaceholder = info.previewContentPlaceholder || "content";
+
+    const rawName = nameField?.value.trim();
+    let displayName = rawName;
+
+    if (domainName) {
+        const lowerRaw = rawName?.toLowerCase();
+        const lowerDomain = domainName.toLowerCase();
+        const suffix = `.${lowerDomain}`;
+
+        if (rawName == "@") {
+        displayName = domainName;
+        } else if (rawName && (lowerRaw == lowerDomain || lowerRaw.endsWith(suffix))) {
+            displayName = rawName;
+        } else if (rawName) {
+            displayName = `${rawName}.${domainName}`;
+        }
+    }
+
+    if (!displayName) {
+        displayName = "[name]"
+    }
+    const values = {
+        name: displayName,
+        content: contentField?.value.trim() || `[${contentPlaceholder}]`,
+    }
+
+    renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
+}
+/* 
+Wires up the live preview on every DNS record form (for both add and edit row).
+Skips forms that are already bound so HTMX swaps don't double-attach listeners.
+*/
+export function initDNSRecordPreview() {
+    const config = getDNSRecordTypeConfig();
+
+    const scopes = [
+        document.getElementById('form-container'),
+        ...document.querySelectorAll('form[id^="dnsrecord-edit-form-"]'),
+    ];
+
+    scopes.forEach(scope => {
+        if (!scope) return;
+
+        if (!scope.dataset.dnsPreviewBound) {
+            scope.addEventListener('input', (e) => {
+                if (e.target.name == 'type') return;
+                updateDNSRecordPreview(scope, config);
+            });
+
+            scope.addEventListener('change', (e) => {
+                if (e.target.name == 'type') {
+                    const previewText = scope.querySelector('.dns-record-preview-text');
+                    if (previewText) previewText.replaceChildren();
+                    setTimeout(() => updateDNSRecordPreview(scope, config), 0);
+                } else {
+                    updateDNSRecordPreview(scope, config);
+                }
+            });
+
+            scope.addEventListener('focusout', (e) => {
+                if (!['name', 'content', 'type'].includes(e.target.name)) return;
+
+                const previewText = scope.querySelector('.dns-record-preview-text');
+                const announceEl = scope.querySelector('.dns-record-preview-announce');
+                if (previewText && announceEl) {
+                    announceEl.textContent = `DNS record preview text: ${previewText.textContent}`;
+                }
+            });
+
+            scope.dataset.dnsPreviewBound = "true";
+        }
+
+        updateDNSRecordPreview(scope, config);
+    });
 }
 
 export function initDeleteDnsRecord() {

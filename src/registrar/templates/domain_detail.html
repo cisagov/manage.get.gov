@@ -23,17 +23,7 @@
           <p class="font-sans-md margin-top-0 margin-bottom-05 text-primary-darker">
             <strong>Status:</strong>
             {# UNKNOWN domains would not have an expiration date and thus would show 'Expired' #}
-            {% if domain_deletion_flag and domain.days_on_hold >= 0 %}
-              On Hold
-            {% elif domain.is_expired and domain.state != domain.State.UNKNOWN %}
-              Expired
-            {% elif domain.is_expiring %}
-              Expiring soon
-            {% elif domain.state == domain.State.UNKNOWN or domain.state == domain.State.DNS_NEEDED %}
-              DNS needed
-            {% else %}
-              {{ domain.state|title }}
-            {% endif %}
+            {{ domain.state_display }}
           </p>
 
           {% if domain.get_state_help_text %}
@@ -62,10 +52,13 @@
     </div>
 
     {% include "includes/domain_dates.html" %}
-
+    {% if domain.is_using_external_hosting and is_domain_manager %}
+        {% include "includes/banner-external-dns-hosting.html" %}
+    {% endif %}
+    
     {% if analyst_action != 'edit' or analyst_action_location != domain.pk %}
       {% if can_access_domain_via_portfolio and not is_domain_manager %}
-      <div class="usa-alert usa-alert--info usa-alert--slim">
+      <div class="usa-alert usa-alert--info usa-alert--slim {% if domain.is_using_external_hosting %} margin-top-105 {%endif%}">
         <div class="usa-alert__body">
           {% if not is_portfolio_admin %}
           <p class="usa-alert__text ">
@@ -82,19 +75,24 @@
       {% endif %}
     {% endif %}
 
+    {% url 'domain-dns-records' domain_pk=domain.id as url %}
+    {% if domain.is_enrolled_in_dns_hosting and dns_hosting %} 
+      {% include "includes/summary_item.html" with title='DNS records' value=num_of_dns_records_message edit_link=url editable=is_editable %}
+     {% endif %}
+
     {% url 'domain-dns-nameservers' domain_pk=domain.id as url %}
     {% if not dns_hosting or not domain.is_enrolled_in_dns_hosting %}
       {% if domain.nameservers|length > 0 %}
-        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable %}
+        {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value=domain.nameservers list='true' edit_link=url editable=is_editable%}
       {% else %}
         {% if is_editable %}
           <h3 class="margin-top-3"> DNS name servers </h3>
-          <p> No DNS name servers have been added yet. Before your domain can be used we’ll need information about your domain name servers.</p>
+          <p> None provided. Domains must have at least two name servers.</p>
           <a class="usa-button margin-bottom-1" href="{{url}}"> Add DNS name servers </a>
         {% else %}
           {% include "includes/summary_item.html" with title='DNS name servers' domains='true' value='' edit_link=url editable=is_editable %}
         {% endif %}
-      {% endif %}
+      {% endif %}     
 
       {% url 'domain-dns-dnssec' domain_pk=domain.id as url %}
       {% if domain.dnssecdata is not None %}

@@ -39,6 +39,7 @@ class Command(BaseCommand):
         """Get list of domain manager email addresses for a domain"""
         return list(
             UserDomainRole.objects.filter(domain=domain, user__isnull=False)
+            .exclude(user__email="")
             .values_list("user__email", flat=True)
             .distinct()
         )
@@ -52,7 +53,9 @@ class Command(BaseCommand):
             UserPortfolioPermission.objects.filter(
                 portfolio=portfolio,
                 roles__contains=[UserPortfolioRoleChoices.ORGANIZATION_ADMIN],
+                user__isnull=False,
             )
+            .exclude(user__email="")
             .values_list("user__email", flat=True)
             .distinct()
         )
@@ -120,8 +123,8 @@ class Command(BaseCommand):
         seven_days_ago_start, seven_days_ago_end = self._get_seven_days_ago_date_range(today)
 
         domains = Domain.objects.filter(
-            created_at_reference__gte=seven_days_ago_start,
-            created_at_reference__lte=seven_days_ago_end,
+            created_at__gte=seven_days_ago_start,
+            created_at__lte=seven_days_ago_end,
             state__in=[Domain.State.UNKNOWN, Domain.State.DNS_NEEDED],
         ).exclude(state=Domain.State.DELETED)
 

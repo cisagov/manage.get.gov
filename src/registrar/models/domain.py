@@ -13,6 +13,7 @@ from django.utils import timezone
 from functools import cached_property
 from django.core.exceptions import ValidationError
 from typing import Any
+from registrar.logging_context import set_dns_log_context
 from registrar.models.domain_invitation import DomainInvitation
 from registrar.models.host import Host
 from registrar.models.host_ip import HostIP
@@ -47,6 +48,7 @@ from .public_contact import PublicContact
 from .public_contact import get_id
 
 from .user_domain_role import UserDomainRole
+from registrar.utility.waffle import flag_is_active_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +248,6 @@ class Domain(TimeStampedModel, DomainHelper):
             super().__delete__(obj)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, optimistic_lock=False):
-        is_adding = self._state.adding
         # -------- Optimistic locking (quick-fix) --------
         if optimistic_lock and self.pk:
             current_updated_at = type(self).objects.only("updated_at").get(pk=self.pk).updated_at
@@ -263,19 +264,13 @@ class Domain(TimeStampedModel, DomainHelper):
                 raise ValidationError("DNS hosting cannot be enabled for legacy domains without a portfolio.")
 
         super().save(force_insert, force_update, using, update_fields)
-
-        if is_adding and not self.created_at_reference:
-            type(self).objects.filter(pk=self.pk, created_at_reference__isnull=True).update(
-                created_at_reference=self.created_at
-            )
-            self.created_at_reference = self.created_at
         self._original_updated_at = self.updated_at
 
     @property
     def display_created_at(self):
         """Creation date shown in the UI: the registry creation date, falling
         back to the registrar record date for domains that never reached the registry (e.g. UNKNOWN)."""
-        return self.x_registry_created_at or self.created_at_reference
+        return self.x_registry_created_at or self.created_at
 
     @classmethod
     def available(cls, domain: str) -> bool:
@@ -1302,45 +1297,48 @@ class Domain(TimeStampedModel, DomainHelper):
                 VendorDnsRecord,
             )
 
-            logger.debug("Deleting DNS data for %s.", self.name)
-            try:
-                with transaction.atomic():
-                    dns_zone = DnsZone.objects.get(domain_id=self.id)
-                    logger.info("Removing db DNS records associated with %s.", self.name)
-                    records = DnsRecord.objects.filter(dns_zone=dns_zone)
-                    logger.info("Removing %s db DNS records: %s.", self.name, str(records))
-                    # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
-                    # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
-                    for record in records:
-                        vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(dns_record=record).values_list(
-                            "vendor_dns_record_id", flat=True
-                        )
-                        vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
-                        if vendor_records:
-                            vendor_records.delete()
-                    records.delete()
-                    logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
-                    logger.info("Removing db DNS zone data for domain %s.", self.name)
-                    vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
-                    dns_zone.delete()
-                    vendor_zone.delete()
-                    logger.info("Removed db DNS zone data for domain %s.", self.name)
-                    logger.info("Removing db DNS account data for %s.", self.name)
-                    dns_account = dns_zone.dns_account
-                    vendor_account = DnsAccount_VendorDnsAccount.objects.get(dns_account=dns_account).vendor_dns_account
-                    x_account_id = vendor_account.x_account_id
-                    dns_account.delete()
-                    vendor_account.delete()
-                    logger.info("Removed db DNS account data for domain %s.", self.name)
+            with set_dns_log_context(self.name):
+                logger.debug("Deleting DNS data for %s.", self.name)
+                try:
+                    with transaction.atomic():
+                        dns_zone = DnsZone.objects.get(domain_id=self.id)
+                        logger.info("Removing db DNS records associated with %s.", self.name)
+                        records = DnsRecord.objects.filter(dns_zone=dns_zone)
+                        logger.info("Removing %s db DNS records: %s.", self.name, str(records))
+                        # Deleting DnsRecord cascade deletes associated DnsRecord_VendorDnsRecord.
+                        # Removes VendorDnsRecord associated with deleted DnsRecord_VendorDnsRecord
+                        for record in records:
+                            vendor_records_pks = DnsRecord_VendorDnsRecord.objects.filter(
+                                dns_record=record
+                            ).values_list("vendor_dns_record_id", flat=True)
+                            vendor_records = VendorDnsRecord.objects.filter(pk__in=vendor_records_pks)
+                            if vendor_records:
+                                vendor_records.delete()
+                        records.delete()
+                        logger.info("Removed db DNS records associated with zone for domain %s.", self.name)
+                        logger.info("Removing db DNS zone data for domain %s.", self.name)
+                        vendor_zone = DnsZone_VendorDnsZone.objects.get(dns_zone=dns_zone).vendor_dns_zone
+                        dns_zone.delete()
+                        vendor_zone.delete()
+                        logger.info("Removed db DNS zone data for domain %s.", self.name)
+                        logger.info("Removing db DNS account data for %s.", self.name)
+                        dns_account = dns_zone.dns_account
+                        vendor_account = DnsAccount_VendorDnsAccount.objects.get(
+                            dns_account=dns_account
+                        ).vendor_dns_account
+                        x_account_id = vendor_account.x_account_id
+                        dns_account.delete()
+                        vendor_account.delete()
+                        logger.info("Removed db DNS account data for domain %s.", self.name)
 
-                    logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
-                    from registrar.services.dns_host_service import DnsHostService
+                        logger.info("Delete Cloudflare account and DNS resources for domain %s.", self.name)
+                        from registrar.services.dns_host_service import DnsHostService
 
-                    dns_host_service = DnsHostService()
-                    dns_host_service.delete_account(x_account_id)  # deletes account from vendor
-            except Exception as e:
-                logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
-                raise e
+                        dns_host_service = DnsHostService()
+                        dns_host_service.delete_account(x_account_id)  # deletes account from vendor
+                except Exception as e:
+                    logger.error("Error deleting DNS data for %s: %s", self.name, e, exc_info=True)
+                    raise e
 
     def _delete_related_objects_from_db(self):
         """
@@ -1451,13 +1449,6 @@ class Domain(TimeStampedModel, DomainHelper):
         help_text=("Date the domain expires in the registry"),
     )
 
-    created_at_reference = models.DateTimeField(
-        null=True,
-        blank=True,
-        editable=True,
-        help_text=("Date the domain record was created in the registrar"),
-    )
-
     x_registry_created_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -1534,10 +1525,19 @@ class Domain(TimeStampedModel, DomainHelper):
             return "Expiring soon"
         elif self.state == self.State.UNKNOWN or self.state == self.State.DNS_NEEDED:
             return "DNS needed"
+        elif (
+            self.state == self.State.READY
+            and self.is_enrolled_in_dns_hosting
+            and flag_is_active_for_user(request, "dns_hosting")
+        ):
+            return "Active"
         return self.state.capitalize()
 
     def enrolled_hosting_display(self, request=None):
         return "Yes" if self.is_enrolled_in_dns_hosting else "No"
+
+    def is_using_external_hosting(self, request=None):
+        return not self.is_enrolled_in_dns_hosting and self.state in [self.State.READY, self.State.ON_HOLD]
 
     def active_invitations(self):
         """Returns only the active invitations (those with status 'invited')."""
@@ -2747,7 +2747,7 @@ class Domain(TimeStampedModel, DomainHelper):
         if len(self.nameservers) >= 2 or self.host.all().count() >= 2:
             logger.error(
                 f"Domain {self.name} has {len(self.nameservers)} nameservers "
-                f"and {len(self.host.all().count())} hosts "
+                f"and {self.host.all().count()} hosts "
                 f"but is in state {self.state}. Aborting deletion."
             )
             raise ActionNotAllowed(f"Domain {self.name} has active nameservers. Cannot delete.")

@@ -1,12 +1,11 @@
 from datetime import date
 from itertools import chain
 import json
-from httpx import RequestError
 import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -50,7 +49,6 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
     DnsHostingError,
-    APIError,
     EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
@@ -70,6 +68,7 @@ from registrar.services.invitation_service import (
 
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models.dns.dns_zone import DnsZone
+from registrar.logging_context import set_dns_log_context
 
 from ..forms import (
     SeniorOfficialContactForm,
@@ -472,6 +471,17 @@ class DomainView(DomainBaseView):
     def get_breadcrumb_current_label(self):
         return None
 
+    def get_dns_records_message(self):
+        zone = DnsZone.objects.filter(domain=self.object).first()
+        if zone:
+            num_dns_records = DnsRecord.objects.filter(dns_zone=zone).count()
+            if num_dns_records == 0:
+                return "No records"
+            elif num_dns_records == 1:
+                return "1 record"
+            else:
+                return f"{num_dns_records} records"
+
     def get_context_data(self, **kwargs):
         """If we don't reference security email in context for older deleted domains
         there wont be a 500 error (bc it was referencing something that didn't exist
@@ -479,13 +489,14 @@ class DomainView(DomainBaseView):
         context = super().get_context_data(**kwargs)
 
         default_emails = DefaultEmail.get_all_emails()
-
         context["breadcrumb_domain_is_current"] = True
         context.setdefault("hide_domain_base_crumbs", False)
         context["hidden_security_emails"] = default_emails
         context["user_portfolio_permission"] = UserPortfolioPermission.objects.filter(
             user=self.request.user, portfolio=get_portfolio_from_session(self.request.session)
         ).first()
+        if flag_is_active(self.request, "dns_hosting") and self.object.is_enrolled_in_dns_hosting:
+            context["num_of_dns_records_message"] = self.get_dns_records_message()
 
         if self.object.state != self.object.State.DELETED:
             security_email = self.object.get_security_email()
@@ -869,7 +880,8 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if not self.object.is_enrolled_in_dns_hosting:
             raise Http404("Domain is not enrolled in DNS hosting")
 
-        return super().dispatch(request, *args, **kwargs)
+        with set_dns_log_context(self.object.name):
+            return super().dispatch(request, *args, **kwargs)
 
     def get_breadcrumb_items(self):
         return [
@@ -905,11 +917,10 @@ class DomainDNSRecordsView(DomainFormBaseView):
         # uniqueness validators (name-conflict, full-duplicate) can exclude the record
         # being edited via self.instance.pk. get_for_domain scopes the lookup to this
         # domain's zone so we don't trust arbitrary PKs from the request.
-        record_id = self._parse_dns_record_id(self.request)
-        if record_id and self.object:
-            existing = DnsRecord.get_for_domain(self.object, record_id)
-            if existing:
-                kwargs["instance"] = existing
+
+        if self.object:
+            kwargs["instance"] = self.dns_record
+
         return kwargs
 
     def attach_edit_form(self, dns_records):
@@ -948,10 +959,9 @@ class DomainDNSRecordsView(DomainFormBaseView):
         return next((item.get("id") for item in items if item.get("name") == name), None)
 
     def _parse_dns_record_id(self, request) -> int | None:
-        """Parse the DNS record id from POST data."""
-        raw = request.POST.get("id")
         try:
-            return int(raw) if raw not in (None, "") else None
+            raw = request.POST.get("id")
+            return int(raw)
         except (TypeError, ValueError):
             return None
 
@@ -1002,28 +1012,23 @@ class DomainDNSRecordsView(DomainFormBaseView):
             status=status,
         )
 
-    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict, record_id: int | None) -> int | None:
+    def _handle_edit(self, request, x_zone_id: str, form_record_data: dict | None) -> None:
         """Update an existing DNS record and prepare the DB-backed row for rendering."""
         try:
-            dns_record = self.dns_host_service.update_dns_record(x_zone_id, record_id, form_record_data)
-
+            self.dns_host_service.update_dns_record(x_zone_id, self.dns_record, form_record_data)
         except ValueError as e:
             messages.error(request, str(e))
             raise GenericError(GenericErrorCodes.GENERIC_ERROR)
-        except RequestError as e:
-            logger.error(f"DNS record edit failed, network error: {e}")
-            raise APIError(str(e))
 
         messages.success(request, "The DNS record for this domain has been updated.")
 
         # Refresh with db instance for templating (edit form requires BoundFields)
-        dns_record.refresh_from_db()
-        self._attach_form(dns_record)
-        self.dns_record = dns_record
+        self.dns_record.refresh_from_db()
+        self._attach_form(self.dns_record)
 
-        return record_id
+        return None
 
-    def _handle_invalid_form(self, request, form, is_edit):
+    def _handle_invalid_form(self, request, form):
         """Return the appropriate error response for an invalid form submission."""
         # If the form set a banner-level (non-field) error, show only that as the banner;
         # otherwise show each unique field error.
@@ -1031,32 +1036,27 @@ class DomainDNSRecordsView(DomainFormBaseView):
         errors = non_field_errors if non_field_errors else self.get_form_errors(form)
         for error in dict.fromkeys(errors):
             messages.error(request, error)
+        # Edit record form
+        if self.dns_record:
+            self._attach_form(self.dns_record, form=form)
+            hx_trigger_events = json.dumps({"messagesRefresh": ""})
+            return TemplateResponse(
+                request,
+                "domain_dns_record_form_response.html",
+                {
+                    "dns_record": self.dns_record,
+                    "domain": self.object,
+                    "form": DomainDNSRecordForm(),
+                    "nameservers": None,
+                    "is_edit": True,
+                    "is_first_record": False,
+                    "update_cells": False,
+                },
+                headers={"HX-TRIGGER": hx_trigger_events},
+                status=200,
+            )
 
-        if is_edit:
-            try:
-                dns_record = DnsRecord.objects.get(id=is_edit)
-            except DnsRecord.DoesNotExist:
-                dns_record = None
-            if dns_record:
-                self._attach_form(dns_record, form=form)
-                hx_trigger_events = json.dumps({"messagesRefresh": ""})
-                return TemplateResponse(
-                    request,
-                    "domain_dns_record_form_response.html",
-                    {
-                        "dns_record": dns_record,
-                        "domain": self.object,
-                        "form": DomainDNSRecordForm(),
-                        "nameservers": None,
-                        "record_id": is_edit,
-                        "is_edit": True,
-                        "is_first_record": False,
-                        "update_cells": False,
-                    },
-                    headers={"HX-TRIGGER": hx_trigger_events},
-                    status=200,
-                )
-
+        # Add record form
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
@@ -1074,24 +1074,33 @@ class DomainDNSRecordsView(DomainFormBaseView):
         if dns_record:
             self._attach_form(dns_record)
             self.dns_record = dns_record
-            return is_first_record, dns_record.id
+            return is_first_record
         self.dns_record = None
-        return is_first_record, None
+        return is_first_record
 
     def post(self, request, *args, **kwargs):  # noqa: C901
         """Handle form submission (create + update + delete) for DNS records via htmx."""
         self.object = self.get_object()
+
+        dns_record_id = self._parse_dns_record_id(request)
+        if dns_record_id:
+            self.dns_record = DnsRecord.get_for_domain(self.object, dns_record_id)
+            if self.dns_record is None:
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                return self._error_response(request, status=404)
+
         form = self.get_form()
-        is_edit = self._parse_dns_record_id(request)
+
         delete_record = request.POST.get("delete_record")
         self._get_domain(request)
 
         if not delete_record and not form.is_valid():
-            return self._handle_invalid_form(request, form, is_edit)
+            return self._handle_invalid_form(request, form)
 
-        nameservers = None
         is_first_record = False
-        record_id = None
+        response_form = None
+        headers = None
+        is_edit = False
 
         try:
             allowlist = settings.DNS_HOSTING_PROD_ALLOWLIST
@@ -1103,33 +1112,32 @@ class DomainDNSRecordsView(DomainFormBaseView):
                     f"Only {allowed_domains_string} is allowed in production right now."
                 )
 
-            x_zone_id, nameservers = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
-            if not x_zone_id:
-                return JsonResponse(
-                    {"status": "error", "message": "DNS zone not found. Domain may not be enrolled."},
-                    status=400,
-                )
+            x_zone_id = self.dns_host_service.get_x_zone_id_if_zone_exists(self.object.name)
+            if x_zone_id is None:
+                messages.error(request, DnsHostingError.GENERIC_ERROR_MESSAGE)
+                return self._error_response(request, status=400)
+            headers = {"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})}
+            response_form = DomainDNSRecordForm()
 
             # DELETE
             if delete_record:
-                self._handle_delete(request, x_zone_id)
+                self._handle_delete(request, x_zone_id, self.dns_record)
             else:
                 form_record_data = self._build_dns_record_form_data(form)
                 # EDIT
-                if is_edit:
-                    record_id = self._handle_edit(request, x_zone_id, form_record_data, is_edit)
+                if self.dns_record:
+                    is_edit = True
+                    self._handle_edit(request, x_zone_id, form_record_data)
 
                 # CREATE
                 else:
-                    is_first_record, record_id = self._handle_create(request, x_zone_id, form_record_data)
-
+                    is_first_record = self._handle_create(request, x_zone_id, form_record_data)
         except DnsHostingError as e:
             messages.error(request, e.message)
-            if is_edit:
-                record_id = is_edit
-                dns_record = DnsRecord.objects.get(id=record_id)
-                self._attach_form(dns_record=dns_record)
-                self.dns_record = dns_record
+            response_form = form  # retain form data when experiencing external DNS service error
+            if self.dns_record:
+                self._attach_form(dns_record=self.dns_record, form=form)
+
         except GenericError:
             return self._error_response(request, status=400)
         finally:
@@ -1143,31 +1151,25 @@ class DomainDNSRecordsView(DomainFormBaseView):
                 headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
                 status=200,
             )
-
         return TemplateResponse(
             request,
             "domain_dns_record_form_response.html",
             {
                 "dns_record": self.dns_record,
                 "domain": self.object,
-                "form": DomainDNSRecordForm(),
-                "record_id": record_id,
-                "nameservers": nameservers,
-                "is_edit": is_edit,
+                "form": response_form,
                 "is_first_record": is_first_record,
-                "update_cells": is_edit and self.dns_record is not None,
+                "update_cells": is_edit and self.dns_record,
+                "is_edit": is_edit,
             },
-            headers={"HX-Trigger-After-Settle": json.dumps({"messagesRefresh": "", "recordSubmitSuccess": ""})},
+            headers=headers,
             status=200,
         )
 
-    def _handle_delete(self, request, x_zone_id: int):
+    def _handle_delete(self, request, x_zone_id: str, dns_record: DnsRecord):
         """Handle deletion for DNS records via htmx."""
-        self.object = self.get_object()
-        record_id = self._parse_dns_record_id(request)
-        self._get_domain(request)
 
-        self.dns_host_service.delete_dns_record(x_zone_id, record_id)
+        self.dns_host_service.delete_dns_record(x_zone_id, dns_record)
         messages.success(request, "The DNS record for this domain has been deleted.")
 
 

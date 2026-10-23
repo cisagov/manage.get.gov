@@ -63,12 +63,6 @@ class UserFixture:
             "title": "Catlady",
         },
         {
-            "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
-            "first_name": "Erin",
-            "last_name": "Song",
-            "title": "Catlady 2",
-        },
-        {
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
@@ -83,10 +77,10 @@ class UserFixture:
             "title": "Software Engineer",
         },
         {
-            "username": "f20b7a53-f40d-48f8-8c12-f42f35eede92",
+            "username": "287019a2-5355-4b5e-99c0-0d2a243071f3",
             "first_name": "Kimberly",
             "last_name": "Aralar",
-            "email": "kimberly.aralar@gsa.gov",
+            "email": "kimberlyanne.aralar@cisa.dhs.gov",
             "title": "Designer",
         },
         {
@@ -130,6 +124,20 @@ class UserFixture:
             "email": "samir.mishra@ecstech.com",
             "title": "Code Mage",
         },
+        {
+            "username": "413803a4-ac88-4e68-a441-93535c4648d1",
+            "first_name": "Amir",
+            "last_name": "Tawfik",
+            "email": "amr.tawfik@ecstech.com",
+            "title": "Software Engineer",
+        },
+        {
+            "username": "6d11be5-d028-47b6-842b-e52448de36ba",
+            "first_name": "Corwayne",
+            "last_name": "Pyle",
+            "email": "corwayne.pyle@ecstech.com",
+            "title": "Tech Lead",
+        },
     ]
 
     STAFF = [
@@ -165,12 +173,6 @@ class UserFixture:
             "email": "gaby+1@truss.works",
         },
         {
-            "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
-            "first_name": "Erin-Analyst",
-            "last_name": "Song-Analyst",
-            "email": "erin.song+1@gsa.gov",
-        },
-        {
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
             "first_name": "Kristina-Analyst",
             "last_name": "Yin-Analyst",
@@ -184,10 +186,10 @@ class UserFixture:
             "email": "elizabeth.liao@gwe.cisa.dhs.gov",
         },
         {
-            "username": "cf2b32fe-280d-4bc0-96c2-99eec09ba4da",
+            "username": "e464e2a7-3928-4e89-aff1-89a8b699307f",
             "first_name": "Kimberly-Analyst",
             "last_name": "Aralar-Analyst",
-            "email": "kimberly.aralar+1@gsa.gov",
+            "email": "kimberlyanne.aralar+1@cisa.dhs.gov",
         },
         {
             "username": "80db923e-ac64-4128-9b6f-e54b2174a09b",

@@ -1,12 +1,13 @@
 """Test the domain rdap lookup API."""
 
 import json
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.test import TestCase
 
-from ..views import rdap
+from ..views import rdap, get_rdap_data
 
 API_BASE_PATH = "/api/v1/rdap/?domain="
 
@@ -18,6 +19,7 @@ class RdapViewTest(TestCase):
         super().setUp()
         self.user = get_user_model().objects.create(username="username")
         self.factory = RequestFactory()
+        get_rdap_data.cache_clear()
 
     def test_rdap_get_no_tld(self):
         """RDAP API successfully fetches RDAP for domain without a TLD"""
@@ -31,15 +33,26 @@ class RdapViewTest(TestCase):
         self.assertIn("rdapConformance", response_object)
 
     def test_rdap_invalid_domain(self):
-        """RDAP API accepts invalid domain queries and returns JSON response
+        """RDAP API does not accept invalid domain queries and returns JSON response
         with appropriate error codes"""
         request = self.factory.get(API_BASE_PATH + "whitehouse.com")
         request.user = self.user
         response = rdap(request, domain="whitehouse.com")
 
-        self.assertContains(response, "errorCode")
+        self.assertContains(response, "errorCode", status_code=400)
         response_object = json.loads(response.content)
         self.assertIn("errorCode", response_object)
+
+    @patch("registrar.models.utility.domain_helper.check_domain_available")
+    def test_rdap_skips_availability_check(self, mock_check_available):
+        """RDAP validation must not call the registry availability check,
+        since registered domains are the expected lookup target"""
+        request = self.factory.get(API_BASE_PATH + "whitehouse.gov")
+        request.user = self.user
+        response = rdap(request, domain="whitehouse.gov")
+
+        mock_check_available.assert_not_called()
+        self.assertEqual(response.status_code, 200)
 
 
 class RdapAPITest(TestCase):
@@ -47,6 +60,7 @@ class RdapAPITest(TestCase):
 
     def setUp(self):
         super().setUp()
+        get_rdap_data.cache_clear()
         username = "test_user"
         first_name = "First"
         last_name = "Last"

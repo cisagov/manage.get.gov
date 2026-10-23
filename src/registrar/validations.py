@@ -1,5 +1,10 @@
-from django.core.validators import MaxLengthValidator
+from django.core.validators import (
+    MaxLengthValidator,
+    validate_ipv4_address as _validate_ipv4_address,
+    validate_ipv6_address as _validate_ipv6_address,
+)
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 """
 Centralized character length "buckets" to keep server-side validation and
@@ -48,10 +53,9 @@ MX_CONTENT_MAX_LENGTH = 253
 DNS_NAME_INVALID_CHARS = frozenset("@():;")
 
 # DNS field requirements, included in error messages when requirements not met.
-DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons"
-DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT = "without using consecutive periods"
-DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT = "without using consecutive periods"
-DNS_HOSTNAME_LEADING_DOT_REQUIREMENT = "without using consecutive periods"
+DNS_NAME_FORMAT_REQUIREMENT = "without using parentheses, colons, or semicolons. \
+    If you use @, it must be the only character"
+DNS_NAME_DOTS_REQUIREMENT = "without consecutive periods or leading or trailing periods"
 DNS_RECORD_CONTENT_REQUIREMENT = "for this record"
 DNS_NAME_SPACES_REQUIREMENT = "without any spaces"
 
@@ -71,12 +75,10 @@ CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE = "Name and target can't be the same."
 CNAME_NAME_INLINE_ERROR_MESSAGE = "Name can't be the same as the target."
 CNAME_TARGET_INLINE_ERROR_MESSAGE = "Target can't be the same as the record name."
 MX_CONTENT_SPACES_ERROR_MESSAGE = "Enter the mail server without any spaces."
-TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content using quotation marks at neither the beginning nor end."
+TXT_RECORD_CONTENT_QUOTES_ERROR_MESSAGE = "Enter content without quotation marks at the beginning or end."
 TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE = "Content must be no more than 4080 characters."
-DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "This DNS record is already associated with this domain. "
-"DNS records must be unique."
-MAX_COMBINED_CONTENT_LENGTH_ERROR_MESSAGE = "Combined content length of records with this name and "
-"type must not exceed 8192 characters."
+DUPLICATE_DNS_RECORD_ERROR_MESSAGE = "This DNS record is already associated with this domain. \
+    DNS records must be unique."
 
 
 def get_content_type_label_by_record_type(record_type):
@@ -147,21 +149,15 @@ def _validate_dns_name_spaces(name: str, field_type="name") -> None:
 
 def _validate_dns_name_structure(name: str) -> None:
     """Reject empty labels created by consecutive, leading, or trailing dots."""
-    if ".." in name:
-        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
-        raise ValidationError(error_message)
-    if name.startswith(".") or name.endswith("."):
-        error_message = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+    if ".." in name or name.startswith(".") or name.endswith("."):
+        error_message = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         raise ValidationError(error_message)
 
 
 def _validate_dns_hostname_structure(content: str, field_type) -> None:
     """Reject empty labels created by consecutive or trailing dots and labels with numeric last label."""
-    if ".." in content:
-        error_message = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT, field_type)
-        raise ValidationError(error_message)
-    if content.startswith("."):
-        error_message = get_error_message_from_requirement(DNS_HOSTNAME_LEADING_DOT_REQUIREMENT, field_type)
+    if ".." in content or content.startswith("."):
+        error_message = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT, field_type)
         raise ValidationError(error_message)
     last_label = _get_non_wildcard_dns_name_labels(content)[-1]
     if last_label.isdigit():
@@ -296,6 +292,24 @@ def check_has_invalid_quoted_string(content: str) -> bool:
     last_item_is_double_quote = content[len(content) - 1] == double_quote
 
     return first_item_char_is_double_quote or last_item_is_double_quote
+
+
+def validate_ipv4_address(content: str) -> None:
+    try:
+        _validate_ipv4_address(content)
+    except ValidationError:
+        raise ValidationError(
+            _("Enter a valid IPv4 address using numbers and periods."), code="invalid", params={"value": content}
+        )
+
+
+def validate_ipv6_address(content: str) -> None:
+    try:
+        _validate_ipv6_address(content)
+    except ValidationError:
+        raise ValidationError(
+            _("Enter a valid IPv6 address using numbers and colons."), code="invalid", params={"value": content}
+        )
 
 
 def validate_txt_content(content: str) -> None:

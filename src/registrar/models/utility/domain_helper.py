@@ -32,12 +32,12 @@ class DomainHelper:
         return bool(cls.DOMAIN_REGEX.match(domain))
 
     @classmethod
-    def validate(cls, domain: str, blank_ok=False) -> str:
+    def validate(cls, domain: str, blank_ok=False, check_availability=True) -> str:
         """Attempt to determine if a domain name could be requested."""
         # Split into pieces for the linter
         domain = cls._validate_domain_string(domain, blank_ok)
 
-        if domain != "":
+        if domain != "" and check_availability:
             try:
                 if not check_domain_available(domain):
                     raise errors.DomainUnavailableError()
@@ -80,7 +80,7 @@ class DomainHelper:
         return domain
 
     @classmethod
-    def validate_and_handle_errors(cls, domain, return_type, blank_ok=False):
+    def validate_and_handle_errors(cls, domain, return_type, blank_ok=False, check_availability=True):
         """
         Validates a domain and returns an appropriate response based on the validation result.
 
@@ -91,7 +91,7 @@ class DomainHelper:
             domain (str): The domain to validate.
             return_type (ValidationReturnType): Determines the type of response (JSON or form validation error).
             blank_ok (bool, optional): If True, blank input does not raise an exception. Defaults to False.
-
+            check_availability (bool, optional): If True, checks if the domain is available. Defaults to True.
         Returns:
             tuple: The validated domain (or None if validation failed), and the response (success or error).
         """  # noqa
@@ -111,7 +111,7 @@ class DomainHelper:
 
         try:
             # Attempt to validate the domain
-            validated = cls.validate(domain, blank_ok)
+            validated = cls.validate(domain, blank_ok, check_availability)
 
         # Get a list of each possible exception, and the code to return
         except tuple(error_map.keys()) as error:

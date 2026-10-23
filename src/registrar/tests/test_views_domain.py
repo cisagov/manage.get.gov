@@ -3,15 +3,15 @@ from unittest.mock import MagicMock, ANY, patch, Mock
 
 from django.conf import settings
 from django.http import Http404
+from django.test import override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from registrar.models.portfolio_invitation import PortfolioInvitation
 from registrar.services.dns_host_service import DnsHostService
-from registrar.services.mock_cloudflare_service import MockCloudflareService
-from registrar.services.cloudflare_service import CloudflareService
 from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
+from registrar.views.domain import DomainDNSRecordsView
 from .common import GenericTestHelper, MockEppLib, create_user, form_with_field, get_ap_style_month  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
@@ -86,6 +86,9 @@ class TestWithDomainPermissions(TestWithUser):
         self.domain_just_nameserver, _ = Domain.objects.get_or_create(name="justnameserver.com")
         self.domain_no_nameserver, _ = Domain.objects.get_or_create(name="nonameserver.com")
         self.domain_no_information, _ = Domain.objects.get_or_create(name="noinformation.gov")
+        self.domain_ready_state, _ = Domain.objects.get_or_create(
+            name="domainwithexternalhosting.gov", state=Domain.State.READY
+        )
         self.domain_on_hold, _ = Domain.objects.get_or_create(
             name="on-hold.gov",
             state=Domain.State.ON_HOLD,
@@ -147,6 +150,7 @@ class TestWithDomainPermissions(TestWithUser):
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_on_hold)
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_deleted)
         DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_dns_needed)
+        DomainInformation.objects.get_or_create(requester=self.user, domain=self.domain_ready_state)
 
         self.role, _ = UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain, role=UserDomainRole.Roles.MANAGER
@@ -208,6 +212,9 @@ class TestWithDomainPermissions(TestWithUser):
         )
         UserDomainRole.objects.get_or_create(
             user=self.user, domain=self.domain_deleted, role=UserDomainRole.Roles.MANAGER
+        )
+        UserDomainRole.objects.get_or_create(
+            user=self.user, domain=self.domain_ready_state, role=UserDomainRole.Roles.MANAGER
         )
 
     def tearDown(self):
@@ -441,6 +448,34 @@ class TestDomainDetail(TestDomainOverview):
             self.assertContains(detail_page, "DNS name servers")
             self.assertContains(detail_page, "DNSSEC")
 
+    def test_domain_detail_dns_hosting_active_status(self):
+        # added patches to override the is_expiring and is_expired checks for the domain
+        # the is_expired and is_expiring statuses on the domain overview page takes precedent over the "active" status
+        def custom_is_expiring_or_expired(self):
+            return False
+
+        with less_console_noise() and override_flag("dns_hosting", active=True):
+            with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                Domain, "is_expired", custom_is_expiring_or_expired
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+
+                self.assertContains(detail_page, "Active")
+                self.assertNotContains(detail_page, "Ready")
+
+        with less_console_noise() and override_flag("dns_hosting", active=False):
+            with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                Domain, "is_expired", custom_is_expiring_or_expired
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
+
+                self.assertNotContains(detail_page, "Active")
+                self.assertContains(detail_page, "Ready")
+
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
         when no domain information or domain request exist"""
@@ -560,6 +595,23 @@ class TestDomainDetail(TestDomainOverview):
         # Check that invited domain manager is displayed
         self.assertContains(detail_page, "Invited domain managers")
         self.assertContains(detail_page, "invited@example.com")
+
+    def test_domain_external_hosting_detail_banner_message(self):
+        """
+        Test that the external hosting banner shows on the domain detail with the following criteria for the domain:
+        - is ready or on hold state
+        - not enrolled in dns hosting
+        """
+        banner_message = "This domain's name servers"
+
+        on_hold_detail_page = self.client.get(f"/domain/{self.domain_on_hold.id}")
+        self.assertContains(on_hold_detail_page, banner_message)
+
+        ready_state_detail_page = self.client.get(f"/domain/{self.domain_ready_state.id}")
+        self.assertContains(ready_state_detail_page, banner_message)
+
+        domain_enrolled_dns_hosting_detail = self.client.get(f"/domain/{self.domain_enrolled_in_dns_hosting.id}")
+        self.assertNotContains(domain_enrolled_dns_hosting_detail, banner_message)
 
 
 class TestDomainDetailDomainRenewal(TestDomainOverview):
@@ -2190,6 +2242,13 @@ class TestDomainNameservers(TestDomainOverview, MockEppLib):
             status_code=200,
         )
 
+    @less_console_noise_decorator
+    def test_domain_nameservers_banner_view(self):
+        detail_page = self.client.get(
+            reverse("domain-dns-nameservers", kwargs={"domain_pk": self.domain_ready_state.id})
+        )
+        self.assertContains(detail_page, "This domain's name servers")
+
 
 class TestDomainDNSPagesNonenrolledDomains(TestDomainOverview):
     def test_domain_external_dns_pages_redirect_when_dns_hosting_flag_enabled_and_enrolled(self):
@@ -3806,21 +3865,20 @@ class TestDomainDns(TestWithSharedDomainPermissions, WebTest):
         self.assertNotContains(page, "DNS Records")
         self.assertContains(page, "DNSSEC")
 
+    @override_flag("dns_hosting", active=False)
+    def test_domain_dns_banner_for_external_dns_hosting(self):
+        domain = Domain.objects.create(name="domainwithexternalhosting.gov", state=Domain.State.READY)
+        DomainInformation.objects.create(requester=self.user, domain=domain)
+        UserDomainRole.objects.create(domain=domain, user=self.user, role=UserDomainRole.Roles.MANAGER)
+        page = self.client.get(reverse("domain-dns", kwargs={"domain_pk": domain.id}))
+        self.assertContains(
+            page,
+            "This domain's name servers",
+        )
 
+
+@override_settings(DNS_MOCK_EXTERNAL_APIS=True)
 class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
-    mock_api_service = MockCloudflareService()
-
-    @classmethod
-    def setUpClass(cls):
-        """Start mock service once for all tests in this class"""
-        super().setUpClass()
-        cls.mock_api_service.start()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop mock service after all tests"""
-        cls.mock_api_service.stop()
-        super().tearDownClass()
 
     def tearDown(self):
         delete_all_dns_data()
@@ -3829,14 +3887,30 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @less_console_noise_decorator
     def setUp(self):
         super().setUp()
-        self.cf_service = CloudflareService(self.client)
         self.user = create_user()
         self.client.force_login(self.user)
+
+    @override_flag("dns_hosting", active=True)
+    def test_dns_records_denies_non_manager_before_touching_domain(self):
+        random_user = get_user_model().objects.create(
+            username="random_user",
+            first_name="First",
+            last_name="Last",
+            email="info@example.com",
+            phone="8003111234",
+            title="test title",
+        )
+        self.client.force_login(random_user)
+        domain, _, _ = create_initial_dns_setup(domain_manager=self.user)
+        with patch.object(DomainDNSRecordsView, "_get_domain") as mock_get:
+            response = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
+        self.assertEqual(response.status_code, 403)
+        mock_get.assert_not_called()
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
     def test_domain_dns_records(self):
-        """Can load domain's DNS records page when enrolled and dns hosting is enabled."""
+        """Can load a domain's DNS records page when enrolled and dns hosting is enabled."""
         domain, _, _ = create_initial_dns_setup(domain_manager=self.user)  # creates enrolled domain
         page = self.client.get(reverse("domain-dns-records", kwargs={"domain_pk": domain.id}))
         self.assertContains(page, "DNS records")
@@ -3995,6 +4069,42 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(dns_record.content, "192.168.1.1")
         self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(response.headers["HX-TRIGGER"], '{"messagesRefresh": ""}')
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_edit_dns_record_general_500_returns_500_page_with_request_id(self):
+        """A 500 error (when not a DnsHostingError) returns the custom 500.html page."""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124")
+
+        # Return the 500 response instead of re-raising the view's exception in the test
+        self.client.raise_request_exception = False
+
+        # WebTest forces DEBUG_PROPAGATE_EXCEPTIONS=True, which skips handler500 entirely.
+        # Turns it off so Django renders the custom 500 page, and let the client return it.
+        with (
+            override_settings(DEBUG_PROPAGATE_EXCEPTIONS=False),
+            patch.object(DnsHostService, "update_and_save_dns_record", side_effect=Exception("simulated")),
+        ):
+            response = self.client.post(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+                data={
+                    "id": dns_record.id,
+                    "type": dns_record.type,
+                    "name": "api",
+                    "content": "203.0.113.25",
+                    "ttl": 3600,
+                    "comment": "Should display 500 page",
+                },
+                headers={"HX-Request": True},
+            )
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.headers["HX-Retarget"], "body")
+        self.assertEqual(response.headers["HX-Reswap"], "innerHTML")
+        self.assertContains(response, "Here's a unique identifier for this error", status_code=500)
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)

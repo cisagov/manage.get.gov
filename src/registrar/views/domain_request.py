@@ -69,7 +69,6 @@ class DomainRequestWizard(TemplateView):
         Step.ORGANIZATION_TYPE: _("Type of organization"),
         Step.TRIBAL_GOVERNMENT: _("Tribal government"),
         Step.ORGANIZATION_FEDERAL: _("Federal government"),
-        Step.ORGANIZATION_ELECTION: _("Election office"),
         Step.ORGANIZATION_CONTACT: _("Organization"),
         Step.ABOUT_YOUR_ORGANIZATION: _("About your organization"),
         Step.SENIOR_OFFICIAL: _("Senior official"),
@@ -99,7 +98,6 @@ class DomainRequestWizard(TemplateView):
     REGULAR_WIZARD_CONDITIONS = {
         Step.ORGANIZATION_FEDERAL: lambda w: w.from_model("show_organization_federal", False),
         Step.TRIBAL_GOVERNMENT: lambda w: w.from_model("show_tribal_government", False),
-        Step.ORGANIZATION_ELECTION: lambda w: w.from_model("show_organization_election", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda w: w.from_model("show_about_your_organization", False),
     }
 
@@ -112,7 +110,6 @@ class DomainRequestWizard(TemplateView):
         Step.ORGANIZATION_TYPE: lambda self: self.domain_request.generic_org_type is not None,
         Step.TRIBAL_GOVERNMENT: lambda self: self.domain_request.tribe_name is not None,
         Step.ORGANIZATION_FEDERAL: lambda self: self.domain_request.federal_type is not None,
-        Step.ORGANIZATION_ELECTION: lambda self: self.domain_request.is_election_board is not None,
         Step.ORGANIZATION_CONTACT: lambda self: self.from_model("unlock_organization_contact", False),
         Step.ABOUT_YOUR_ORGANIZATION: lambda self: self.domain_request.about_your_organization is not None,
         Step.SENIOR_OFFICIAL: lambda self: self.domain_request.senior_official is not None,
@@ -729,11 +726,6 @@ class TribalGovernment(DomainRequestWizard):
 class OrganizationFederal(DomainRequestWizard):
     template_name = "domain_request_org_federal.html"
     forms: list = []  # need this for linter
-
-
-class OrganizationElection(DomainRequestWizard):
-    template_name = "domain_request_org_election.html"
-    forms = [forms.OrganizationElectionForm]
 
 
 class OrganizationContact(DomainRequestWizard):

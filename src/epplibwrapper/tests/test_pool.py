@@ -12,10 +12,10 @@ from unittest.mock import MagicMock
 from django.test import TestCase
 from api.tests.common import less_console_noise_decorator
 
-from epplibwrapper.utility.pool import EPPConnectionPool, PoolExhausted
+from epplibwrapper.utility.pool import EPPConnectionPool, PoolExhausted, ConnectionNotLoggedIn
 
 try:
-    from epplib.commands import Hello, Logout
+    from epplib.commands import CheckDomain, Logout
     from epplib.exceptions import TransportError
 except ImportError:
     pass
@@ -32,6 +32,8 @@ class TestEPPConnectionPool(TestCase):
     def factory(self):
         """Stand-in for EPPLibWrapper._create_connection - returns a mock client."""
         client = MagicMock()
+        # a healthy registry answer by default so the CheckDomain ping passes
+        client.send.return_value = MagicMock(code=1000)
         self.created_clients.append(client)
         return client
 
@@ -114,6 +116,22 @@ class TestEPPConnectionPool(TestCase):
         self.assertEqual(pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
 
     @less_console_noise_decorator
+    def test_not_logged_in_discards_connection(self):
+        """
+        Scenario: A checked-out pool connection reports its registry session is gone
+            Given a pool with one idle connection
+            When a caller checks it out and raises ConnectionNotLoggedIn while using it
+            Then the connection is closed and discarded instead of being returned to the pool
+            And the pool slot is freed for a fresh connection
+        """
+        pool = self.make_pool(size=1)
+        with self.assertRaises(ConnectionNotLoggedIn):
+            with pool.connection():
+                raise ConnectionNotLoggedIn("Registrar is not logged in.")
+        self.created_clients[0].close.assert_called_once()
+        self.assertEqual(pool.stats(), {"size": 1, "connections created": 0, "idle": 0, "in use": 0})
+
+    @less_console_noise_decorator
     def test_borrow_replaces_discarded_connection(self):
         """After a discard, the next checkout builds a fresh connection to fill the slot."""
         pool = self.make_pool(size=1)
@@ -127,7 +145,7 @@ class TestEPPConnectionPool(TestCase):
 
     @less_console_noise_decorator
     def test_fresh_connection_is_not_pinged_on_borrow(self):
-        """A recently-active connection is trusted as-is - no Hello before handing it out."""
+        """A recently-active connection is trusted as-is - no CheckDomain ping before handing it out."""
         pool = self.make_pool(size=1)
         with pool.connection():
             pass
@@ -135,7 +153,7 @@ class TestEPPConnectionPool(TestCase):
 
     @less_console_noise_decorator
     def test_stale_connection_is_pinged_before_reuse(self):
-        """A connection idle past idle_ping_seconds must answer a Hello before being handed out."""
+        """A connection idle past idle_ping_seconds must answer a CheckDomain ping before being handed out."""
         pool = self.make_pool(size=1, idle_ping_seconds=60)
         conn = pool._borrow()
         conn.last_ping = time.monotonic() - 120
@@ -144,18 +162,38 @@ class TestEPPConnectionPool(TestCase):
         with pool.connection() as client:
             self.assertIs(client, self.created_clients[0])
 
-        # exactly one Hello was sent during checkout, and the checkout still reused the connection
-        hello_calls = [c for c in self.created_clients[0].send.call_args_list if isinstance(c.args[0], Hello)]
-        self.assertEqual(len(hello_calls), 1)
+        # exactly one CheckDomain ping was sent during checkout, and the checkout still reused the connection
+        ping_calls = [c for c in self.created_clients[0].send.call_args_list if isinstance(c.args[0], CheckDomain)]
+        self.assertEqual(len(ping_calls), 1)
         self.assertEqual(len(self.created_clients), 1)
 
     @less_console_noise_decorator
     def test_stale_connection_failing_ping_is_replaced(self):
-        """If the Hello fails, the stale connection is discarded and a new one is created."""
+        """If the CheckDomain ping fails, the stale connection is discarded and a new one is created."""
         pool = self.make_pool(size=1, idle_ping_seconds=60)
         conn = pool._borrow()
         conn.last_ping = time.monotonic() - 120
         conn.client.send.side_effect = TransportError("connection silently dropped")
+        pool._put_back(conn)  # bypass the checkin stamps so the connection stays stale
+
+        with pool.connection() as client:
+            self.assertIs(client, self.created_clients[1])
+        self.created_clients[0].close.assert_called_once()
+        self.assertEqual(pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
+
+    @less_console_noise_decorator
+    def test_stale_connection_with_dead_session_is_replaced(self):
+        """
+        Scenario: A stale idle connection fails the health-check ping because its session is gone
+            Given a connection idle past idle_ping_seconds
+            When it is borrowed and the CheckDomain ping returns 2002 "Registrar is not logged in."
+            Then the connection is closed and discarded
+            And a new connection is created and handed to the caller
+        """
+        pool = self.make_pool(size=1, idle_ping_seconds=60)
+        conn = pool._borrow()
+        conn.last_ping = time.monotonic() - 120
+        conn.client.send.return_value = MagicMock(code=2002, msg="Registrar is not logged in.")
         pool._put_back(conn)  # bypass the checkin stamps so the connection stays stale
 
         with pool.connection() as client:
@@ -267,7 +305,7 @@ class TestEPPConnectionPool(TestCase):
 
     @less_console_noise_decorator
     def test_maintenance_pings_stale_idle_connection(self):
-        """The maintenance pass Hellos an idle connection past idle_ping_seconds
+        """The maintenance pass pings an idle connection past idle_ping_seconds
         and returns it to the pool with a refreshed clock."""
         pool = self.make_pool(size=1, idle_ping_seconds=60)
         conn = pool._borrow()
@@ -276,13 +314,13 @@ class TestEPPConnectionPool(TestCase):
 
         pool._maintain_idle_connections()
 
-        hello_calls = [c for c in self.created_clients[0].send.call_args_list if isinstance(c.args[0], Hello)]
-        self.assertEqual(len(hello_calls), 1)
+        ping_calls = [c for c in self.created_clients[0].send.call_args_list if isinstance(c.args[0], CheckDomain)]
+        self.assertEqual(len(ping_calls), 1)
         self.assertEqual(pool.stats(), {"size": 1, "connections created": 1, "idle": 1, "in use": 0})
 
     @less_console_noise_decorator
     def test_maintenance_replaces_dead_idle_connection(self):
-        """If the maintenance Hello fails, the dead connection is discarded
+        """If the maintenance CheckDomain ping fails, the dead connection is discarded
         and replenish builds a replacement."""
         pool = self.make_pool(size=1, idle_ping_seconds=60)
         conn = pool._borrow()

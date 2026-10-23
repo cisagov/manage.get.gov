@@ -1,5 +1,9 @@
 {% autoescape off %}{# In a text file, we don't want to have HTML entities escaped #}
 
-Attempted to delete domain {{ domain }} and there were already hosts… did not delete.
+Attempted to delete domain {{ domain }} and there were already hosts...did not delete.
+
+Check out the playbook here for next steps: 
+
+https://docs.google.com/document/d/1BNL9IwrOIKmKcyueCh1386DJUGNpLvAfaHALbPZkhp4/edit?tab=t.0
 
 {% endautoescape %}

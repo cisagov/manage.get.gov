@@ -1,0 +1,21 @@
+{% load static field_helpers %}
+<h1>DNS</h1>
+
+<p>The Domain Name System (DNS) is the internet service that translates your domain name into an IP address. You can add and manage the DNS records that connect your organization's domain to services like your website, email, or other online tools.</p>
+<p>Since we host your organization's domain, you won't need to manage the domain's name servers.</p>
+
+<ul class="padding-left-0 usa-list--unstyled">
+    <li>
+      {% url 'domain-dns-records' domain_pk=domain.id as url %}
+      <h2 class="h3 text-primary margin-top-2">
+        <a href="{{ url }}"
+        class="heading-link display-inline-flex flex-align-center"
+        >
+          DNS Records <svg class="usa-icon" aria-hidden="true" focusable="false" role="img" height="24" width="24">
+            <use xlink:href="{%static 'img/sprite.svg'%}#navigate_next"></use>
+          </svg>
+        </a>
+      </h2>
+      <p class="margin-top-0 margin-bottom-0">Review, add, and edit DNS records.</p>
+    </li>
+</ul>

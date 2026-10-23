@@ -2,9 +2,8 @@ from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
 from registrar.validations import (
-    DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT,
+    DNS_NAME_DOTS_REQUIREMENT,
     DNS_NAME_FORMAT_REQUIREMENT,
-    DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT,
     DNS_NAME_SPACES_REQUIREMENT,
     validate_dns_name,
     validate_dns_name_fqdn_length,
@@ -56,11 +55,11 @@ class TestValidateDNSName(SimpleTestCase):
         self.assert_all_raise(names_with_spaces, expected_error)
 
     def test_validate_dns_name_rejects_consecutive_dots(self):
-        expected_error = get_error_message_from_requirement(DNS_NAME_CONSECUTIVE_DOTS_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         self.assert_dns_name_validation_error("ab..cd", expected_error)
 
     def test_validate_dns_name_rejects_leading_or_trailing_dot(self):
-        expected_error = get_error_message_from_requirement(DNS_NAME_LEADING_TRAILING_DOT_REQUIREMENT)
+        expected_error = get_error_message_from_requirement(DNS_NAME_DOTS_REQUIREMENT)
         self.assert_all_raise([".abc", "abc."], expected_error)
 
     def test_validate_dns_name_rejects_invalid_characters(self):
