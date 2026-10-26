@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 from registrar.models import Domain, DnsAccount, DnsZone, DnsSoa, VendorDnsZone, DnsZone_VendorDnsZone as ZonesJoin
 
 
@@ -65,3 +66,8 @@ class DnsZoneTest(TestCase):
 
         returned_x_zone_id = self.dns_zone.get_active_x_zone_id()
         self.assertIsNone(returned_x_zone_id)
+
+    def test_clean_requires_two_nameservers_success(self):
+        self.dns_zone.nameservers = ["ns1.dns-test.gov"]
+        with self.assertRaises(ValidationError):
+            self.dns_zone.clean()

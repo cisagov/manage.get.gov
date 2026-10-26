@@ -280,6 +280,7 @@ class TestInvitationService(TestCase):
 
     @patch("registrar.utility.email_invitations._send_domain_invitation_update_emails_to_domain_managers")
     @patch("registrar.utility.email_invitations.send_templated_email")
+    @override_flag("legacy_invitations", active=True)
     def test_create_domain_invitation_for_unknown_email_forces_email(
         self, mock_send_templated_email, mock_send_manager_updates
     ):
