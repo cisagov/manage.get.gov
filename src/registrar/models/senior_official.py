@@ -80,7 +80,12 @@ class SeniorOfficial(TimeStampedModel):
         help_text="The federally recognized tribe the senior official is associated with",
     )
 
-    # QUESTION: What model type would we want this to be? See below
+    suffix = models.CharField(
+        null=True,
+        blank=True,
+        help_text="Name suffix (ie jr, sr, III)",
+    )
+
     tribal_leader_updated_at = models.DateTimeField(
         null=True,
         blank=True,
