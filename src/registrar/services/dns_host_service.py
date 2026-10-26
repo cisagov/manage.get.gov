@@ -5,7 +5,6 @@ from typing import List
 from django.conf import settings
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import EnrollmentNotAllowedError
 from registrar.services.dns_http_client import build_dns_client
 from registrar.logging_context import set_dns_log_context
 from registrar.models import (

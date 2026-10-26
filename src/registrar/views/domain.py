@@ -49,7 +49,6 @@ from registrar.utility.errors import (
     SecurityEmailError,
     SecurityEmailErrorCodes,
     DnsHostingError,
-    EnrollmentNotAllowedError,
 )
 from registrar.models.utility.contact_error import ContactError
 from registrar.utility.waffle import flag_is_active_for_user
