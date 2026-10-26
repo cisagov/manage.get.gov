@@ -508,7 +508,8 @@ class DnsHostService:
 
                     # Mark domain as enrolled
                     domain.is_enrolled_in_dns_hosting = True
-                    domain.save(update_fields=["is_enrolled_in_dns_hosting"])
+                    domain.ready()
+                    domain.save()
 
             except Exception:
                 logger.exception(

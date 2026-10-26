@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock, ANY
+from unittest.mock import patch, Mock, ANY, PropertyMock
 from django.test import TestCase, override_settings
 from django.db import IntegrityError
 from httpx import HTTPStatusError
@@ -23,7 +23,7 @@ from registrar.models import (
 )
 from registrar.services.utility.dns_helper import make_dns_account_name
 from registrar.tests.helpers.log_capture import capture_json_logs, json_log_entries
-from registrar.utility.errors import APIError, EnrollmentNotAllowedError
+from registrar.utility.errors import APIError
 from registrar.tests.helpers.dns_data_generator import (
     create_domain,
     create_dns_account,
@@ -32,7 +32,6 @@ from registrar.tests.helpers.dns_data_generator import (
     create_dns_zone,
 )
 from epplibwrapper import RegistryError
-
 
 class TestDnsHostService(TestCase):
 
@@ -462,9 +461,9 @@ class TestDnsHostService(TestCase):
         self.service.dns_zone_setup = Mock()
         self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
         self.service.register_nameservers = Mock()
-
-        with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
-            self.service.enroll_domain(domain)
+        with patch.object(Domain, "nameservers", new_callable=PropertyMock, return_value=[("ns1.rainbow.gov",), ("ns2.rainbow.gov",),] ):
+            with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
+                self.service.enroll_domain(domain)
 
         self.service.dns_account_setup.assert_called_once_with(domain_name)
         self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
@@ -483,10 +482,12 @@ class TestDnsHostService(TestCase):
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
         self.service.dns_zone_setup = Mock()
-        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
-        self.service.register_nameservers = Mock()
-
-        self.service.enroll_domain(allowed_domain)
+        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"]) 
+        
+        with patch.object(Domain, "nameservers", new_callable=PropertyMock, return_value=[("ns1.rainbow.gov",), ("ns2.rainbow.gov",),] ):
+            self.service.enroll_domain(allowed_domain)
+            
+        
         self.service.dns_account_setup.assert_called()  # got past allowllist conditional
 
 
