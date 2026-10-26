@@ -454,27 +454,27 @@ class TestDomainDetail(TestDomainOverview):
         def custom_is_expiring_or_expired(self):
             return False
 
-            with less_console_noise() and override_flag("dns_hosting", active=True):
-                with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
-                    Domain, "is_expired", custom_is_expiring_or_expired
-                ):
-                    detail_page = self.app.get(
-                        reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-                    )
+        with less_console_noise() and override_flag("dns_hosting", active=True):
+            with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                Domain, "is_expired", custom_is_expiring_or_expired
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
 
-                    self.assertContains(detail_page, "Active")
-                    self.assertNotContains(detail_page, "Ready")
+                self.assertContains(detail_page, "Active")
+                self.assertNotContains(detail_page, "Ready")
 
-            with less_console_noise() and override_flag("dns_hosting", active=False):
-                with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
-                    Domain, "is_expired", custom_is_expiring_or_expired
-                ):
-                    detail_page = self.app.get(
-                        reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
-                    )
+        with less_console_noise() and override_flag("dns_hosting", active=False):
+            with patch.object(Domain, "is_expiring", custom_is_expiring_or_expired), patch.object(
+                Domain, "is_expired", custom_is_expiring_or_expired
+            ):
+                detail_page = self.app.get(
+                    reverse("domain", kwargs={"domain_pk": self.domain_enrolled_in_dns_hosting.id})
+                )
 
-                    self.assertNotContains(detail_page, "Active")
-                    self.assertContains(detail_page, "Ready")
+                self.assertNotContains(detail_page, "Active")
+                self.assertContains(detail_page, "Ready")
 
     def test_domain_detail_with_no_information_or_domain_request(self):
         """Test that domain management page returns 200 and displays error
@@ -4069,6 +4069,42 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
         self.assertEqual(dns_record.content, "192.168.1.1")
         self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(response.headers["HX-TRIGGER"], '{"messagesRefresh": ""}')
+
+    @less_console_noise_decorator
+    @override_flag("dns_hosting", active=True)
+    def test_edit_dns_record_general_500_returns_500_page_with_request_id(self):
+        """A 500 error (when not a DnsHostingError) returns the custom 500.html page."""
+        _, _, dns_zone = create_initial_dns_setup(
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-124"
+        )
+        dns_record = create_dns_record(dns_zone, x_record_id="record-edit-124")
+
+        # Return the 500 response instead of re-raising the view's exception in the test
+        self.client.raise_request_exception = False
+
+        # WebTest forces DEBUG_PROPAGATE_EXCEPTIONS=True, which skips handler500 entirely.
+        # Turns it off so Django renders the custom 500 page, and let the client return it.
+        with (
+            override_settings(DEBUG_PROPAGATE_EXCEPTIONS=False),
+            patch.object(DnsHostService, "update_and_save_dns_record", side_effect=Exception("simulated")),
+        ):
+            response = self.client.post(
+                reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
+                data={
+                    "id": dns_record.id,
+                    "type": dns_record.type,
+                    "name": "api",
+                    "content": "203.0.113.25",
+                    "ttl": 3600,
+                    "comment": "Should display 500 page",
+                },
+                headers={"HX-Request": True},
+            )
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.headers["HX-Retarget"], "body")
+        self.assertEqual(response.headers["HX-Reswap"], "innerHTML")
+        self.assertContains(response, "Here's a unique identifier for this error", status_code=500)
 
     @less_console_noise_decorator
     @override_flag("dns_hosting", active=True)
