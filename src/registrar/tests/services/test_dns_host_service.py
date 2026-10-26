@@ -33,6 +33,7 @@ from registrar.tests.helpers.dns_data_generator import (
 )
 from epplibwrapper import RegistryError
 
+
 class TestDnsHostService(TestCase):
 
     def setUp(self):
@@ -461,7 +462,15 @@ class TestDnsHostService(TestCase):
         self.service.dns_zone_setup = Mock()
         self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
         self.service.register_nameservers = Mock()
-        with patch.object(Domain, "nameservers", new_callable=PropertyMock, return_value=[("ns1.rainbow.gov",), ("ns2.rainbow.gov",),] ):
+        with patch.object(
+            Domain,
+            "nameservers",
+            new_callable=PropertyMock,
+            return_value=[
+                ("ns1.rainbow.gov",),
+                ("ns2.rainbow.gov",),
+            ],
+        ):
             with capture_json_logs(logger_name="registrar.services.dns_host_service") as stream:
                 self.service.enroll_domain(domain)
 
@@ -482,14 +491,20 @@ class TestDnsHostService(TestCase):
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
         self.service.dns_account_setup = Mock(return_value="12345")
         self.service.dns_zone_setup = Mock()
-        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"]) 
-        
-        with patch.object(Domain, "nameservers", new_callable=PropertyMock, return_value=[("ns1.rainbow.gov",), ("ns2.rainbow.gov",),] ):
-            self.service.enroll_domain(allowed_domain)
-            
-        
-        self.service.dns_account_setup.assert_called()  # got past allowllist conditional
+        self.service.get_nameservers_from_zone = Mock(return_value=["ns1.rainbow.gov", "ns2.rainbow.gov"])
 
+        with patch.object(
+            Domain,
+            "nameservers",
+            new_callable=PropertyMock,
+            return_value=[
+                ("ns1.rainbow.gov",),
+                ("ns2.rainbow.gov",),
+            ],
+        ):
+            self.service.enroll_domain(allowed_domain)
+
+        self.service.dns_account_setup.assert_called()  # got past allowllist conditional
 
     @override_settings(IS_LOCAL=False)
     def test_logging_for_registry_error_for_register_nameservers(self):
