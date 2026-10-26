@@ -434,8 +434,8 @@ class DomainInformation(TimeStampedModel):
                 self.federally_recognized_tribe = None
                 self.state_recognized_tribe = None
                 self.tribe_name = None
-                self.federally_recognized_tribe = None
-                self.state_recognized_tribe = None
+                self.federal_tribe = None
+                self.state_tribe = None
 
             # Clear election board field if org type doesn't show election question
             # Election question shows for all types except Federal, Interstate, and School District

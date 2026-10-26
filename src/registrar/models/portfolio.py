@@ -21,9 +21,23 @@ class Portfolio(TimeStampedModel):
         ordering = ["organization_name"]
 
         constraints = [
+            # A portfolio points at one tribe, never both federal and state
             models.CheckConstraint(
                 condition=Q(state_tribe__isnull=True) | Q(federal_tribe__isnull=True),
                 name="portfolio_single_tribe_reference",
+            ),
+            # A state or federal tribe is claimed by at most one portfolio
+            models.UniqueConstraint(
+                fields=["state_tribe"],
+                condition=Q(state_tribe__isnull=False),
+                name="portfolio_unique_state_tribe",
+                violation_error_message="A portfolio for this state recognized tribe already exists.",
+            ),
+            models.UniqueConstraint(
+                fields=["federal_tribe"],
+                condition=Q(federal_tribe__isnull=False),
+                name="portfolio_unique_federal_tribe",
+                violation_error_message="A portfolio for this federally recognized tribe already exists.",
             ),
         ]
 

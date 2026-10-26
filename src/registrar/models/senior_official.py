@@ -1,32 +1,10 @@
 from django.db import models
 from django.db.models import Q
 
-# from django.utils import timezone
+from django.utils import timezone
 
 from .utility.time_stamped_model import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
-
-"""
-!QUESTION SECTION!
-
-For the model:
-1. For state_tribe and federal_tribe do we want PROTECT instead of SET_NULL?
-If the Tribe goes away, PROTECT would block the delete
-Do we want the the tribe <> senior official link to not be able to be borked?
-
-2. Do we want is_editable field? If so, is this name okay
-(Assuming Federal is False so not editable, State is True and editable)
-
-3. For tribal_leader_updated_at - what model type would we want this to be?
-We want to update the tribal leader contact info if there are any updates to the record
-A. Will/should Analysts be able to edit these records?
-(Iirc currently Federal Tribes Analysts cannot edit, State Tribes Analysts can)
-B. If not, what if we have tribal_leader_updated_at be a JSON blob so it can compare per field
-(maybe we rename that variable too)
-C. We should just always overwrite bc they should be editing it on the Federal/State Tribe field
-anyway which is our source of truth
-
-"""
 
 
 class SeniorOfficial(TimeStampedModel):
@@ -82,12 +60,9 @@ class SeniorOfficial(TimeStampedModel):
         help_text="The federal agency this user is associated with",
     )
 
-    # QUESTION: Do we want PROTECT instead of SET_NULL?
-    # If the Tribe goes away, PROTECT would block the delete
-    # Do we want the the tribe <> senior official link to not be able to be borked?
     state_tribe = models.ForeignKey(
         "registrar.StateTribe",
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="senior_official",
@@ -95,12 +70,9 @@ class SeniorOfficial(TimeStampedModel):
         help_text="The state recognized tribe the senior official is associated with",
     )
 
-    # QUESTION: Do we want PROTECT instead of SET_NULL?
-    # If the Tribe goes away, PROTECT would block the delete
-    # Do we want the the tribe <> senior official link to not be able to be borked?
     federal_tribe = models.ForeignKey(
         "registrar.FederalTribe",
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="senior_official",
@@ -115,13 +87,6 @@ class SeniorOfficial(TimeStampedModel):
         verbose_name="Tribal leader last updated",
         help_text="When this record was last updated from the linked tribe's leader information",
     )
-
-    # QUESTION: Do we want this, is this name ok
-    # Assuming Federal is False, State would be True
-    # is_editable = models.BooleanField(
-    #     default=True,
-    #     verbose_name="Editable",
-    # )
 
     def get_formatted_name(self):
         """Returns the contact's name in Western order."""
@@ -143,54 +108,71 @@ class SeniorOfficial(TimeStampedModel):
         """The tribe record the SO is associated with, if any"""
         return self.federal_tribe or self.state_tribe
 
-    """
-    QUESTION:
-    We want to update the tribal leader contact info if there are any updates to the record
-    1. Will/should Analysts be able to edit these records?
-    (Iirc currently Federal Tribes Analysts cannot edit, State Tribes Analysts can)
-    2. If not, what if we have tribal_leader_updated_at be a JSON blob so it can compare per field
-    (maybe we rename that variable too)
-    3. We should just always overwrite bc they should be editing it on the Federal/State Tribe field
-    anyway which is our source of truth
-    """
+    @property
+    def tribal_leader_is_stale(self):
+        """
+        True when the linked tribe record changed after the last sync
 
-    # @property
-    # def tribal_leader_is_stale(self):
-    #     """True when the linked tribe record changed after the last sync"""
-    #     tribe = self.linked_tribe
-    #     if not tribe or not self.tribal_leader_updated_at:
-    #         return False
-    #     return tribe.updated_at > self.tribal_leader_updated_at
+        This is NOT a manual check - the State/Federal Tribe record is
+        source of truth, so a sync overwrites whatever is here
+        """
+        tribe = self.linked_tribe
+        if not tribe:
+            return False
+        if not self.tribal_leader_updated_at:
+            return True
+        return tribe.updated_at > self.tribal_leader_updated_at
 
-    # def sync_from_tribal_leader(self, save=True):
-    #     """
-    #     Copies tribal leader contact info from the linked tribe record
+    def _tribal_leader_values(self):
+        """
+        Leader values from the linked tribe
+        (State/Federal diff field name hence if/else)
 
-    #     NOTE: Nothing triggers this yet, these are just possible dummy functions
-    #     that can be edited.
-    #     Do we even want this? Bc if an Analyst were to come in and manually edit,
-    #     whenever we have another sync this would overwrite it
-    #     """
-    #     if self.federal_tribe:
-    #         tribe = self.federal_tribe
-    #         self.first_name = tribe.first_name
-    #         self.last_name = tribe.last_name
-    #         if tribe.job_title:
-    #             self.title = tribe.job_title
-    #     elif self.state_tribe:
-    #         tribe = self.state_tribe
-    #         self.first_name = tribe.tribal_leader_first_name
-    #         self.last_name = tribe.tribal_leader_last_name
-    #     else:
-    #         return
+        Returns None when there is no linked tribe
+        """
+        if self.federal_tribe:
+            tribe = self.federal_tribe
+            values = {
+                "first_name": tribe.first_name,
+                "last_name": tribe.last_name,
+                "title": tribe.job_title,
+            }
+        elif self.state_tribe:
+            tribe = self.state_tribe
+            values = {
+                "first_name": tribe.tribal_leader_first_name,
+                "last_name": tribe.tribal_leader_last_name,
+                # StateTribe has no title equivalent
+                "title": None,
+            }
+        else:
+            return None
 
-    #     if tribe.email:
-    #         self.email = tribe.email[0]
+        # email is an ArrayField on both tribe models, only grab first email
+        values["email"] = tribe.email[0] if tribe.email else None
+        values["phone"] = tribe.phone or None
 
-    #     if tribe.phone:
-    #         self.phone = tribe.phone
+        return values
 
-    #     self.tribal_leader_updated_at = timezone.now()
+    def sync_from_tribal_leader(self, save=True):
+        """
+        Overwrites this record's contact fields from the linked tribe
 
-    #     if save:
-    #         self.save()
+        The Federal/State Tribe record is the source of truth so this always overwrites,
+        incl clearing any field the tribe no longer has a value for.
+
+        Returns True if a sync happened, False if there is no linked tribe
+        """
+        values = self._tribal_leader_values()
+        if values is None:
+            return False
+
+        for field, value in values.items():
+            setattr(self, field, value)
+
+        self.tribal_leader_updated_at = timezone.now()
+
+        if save:
+            self.save(update_fields=[*values.keys(), "tribal_leader_updated_at", "updated_at"])
+
+        return True
