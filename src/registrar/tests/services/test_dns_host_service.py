@@ -964,6 +964,23 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(dns_record.ttl, self.updated_record_data["result"].get("ttl"))
         self.assertEqual(dns_record.comment, self.updated_record_data["result"].get("comment"))
 
+    def update_db_record_ignores_fields_not_in_allow_list(self):
+        """Only allow-listed fields are copied from the Cloudflare response"""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+
+        payload = {"result": {**self.updated_record_data["result"], "type": "TXT"}}
+        DnsRecord.update_from_vendor_data(x_zone_id, x_record_id, payload)
+
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+        self.assertEqual(dns_record.type, "A")
+        self.assertEqual(dns_record.content, self.updated_record_data["result"].get("content"))
+
     def test_update_db_record_with_error_fails(self):
         """Preserve original DNS record data when update fails."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
@@ -985,7 +1002,8 @@ class TestDnsHostServiceDB(TestCase):
         # Record data should still preserve original vendor record data on failed update
         self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
         self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
-        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        # Cloudflare "auto" (1) will be stored as 300 in our DB
+        self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
     def test_update_db_record_with_bad_data_fails(self):
