@@ -30,6 +30,10 @@ There are several tools we use locally that you will need to have.
 - [ ] VSCode (our preferred editor)*
 - [ ] Github Desktop* or the Github CLI*
 
+We also have [accessibility tools needed for testing](https://docs.google.com/document/d/1ukbpW4LSqkb_CCt8LWfpehP03qqfyYfvK3Fl21NaEq8/edit?tab=t.0#heading=h.b49mjz9i9yh4):
+- [ ] ANDI
+- [ ] NVDA and/or VoiceOver
+
 The following tools are optional  but recommended. For DHS devices, these can be requested through the DHS IT portal:
 - [ ] Slack Desktop App**
 - [ ] Python 3.14*
@@ -45,7 +49,7 @@ The following tools are optional  but recommended. For DHS devices, these can be
 
 ### Steps for the onboardee
 - [ ] Setup commit signing in Github and with git locally using either [gpg](#setting-up-commit-signing-with-gpg) or [ssh](#setting-up-commit-signing-with-ssh). (Note: commit _signing_ is different than GH _authentication_ through GPG or SSH)
-- [ ] [Create a cloud.gov account](https://cloud.gov/docs/getting-started/accounts/)
+- [ ] [Create a cloud.gov account](https://cloud.gov/docs/getting-started/accounts/). Notify your onboarder once your account is created.
 - [ ] Email github@cisa.dhs.gov (cc: Cameron) to add you to the [CISA Github organization](https://github.com/getgov) and [.gov Team](https://github.com/orgs/cisagov/teams/gov).
 - [ ] Ensure you can login to your cloud.gov account via the CLI
 ```bash
@@ -61,7 +65,7 @@ Follow the [.gov onboarding dev setup instructions](https://docs.google.com/docu
 - [ ] Login.gov account to access stable
 
 ### Steps for the onboarder
-- [ ] Add the onboardee to cloud.gov org (cisa-dotgov)
+- [ ] Add the onboardee to cloud.gov org (cisa-dotgov) after they have created their account.
 - [ ] Setup a [developer specific space for the new developer](#setting-up-developer-sandbox)
 - [ ] Add the onboardee to our login.gov sandbox team (`.gov Registrar`) via the [dashboard](https://dashboard.int.identitysandbox.gov/)
 
@@ -145,7 +149,9 @@ Now test commit signing is working by checking out a branch (`yourinitials/test-
 We have four types of environments: stable, staging, development, and sandbox. Stable (production) and staging (pre-prod) get deployed via tagged release, development is automatically updated with any merge to main and represents the current state on the `main` branch. Developer sandboxes are given to get.gov developers to mess around in a production-like environment without disrupting stable or staging. Each sandbox is namespaced and will automatically be deployed too when the appropriate branch syntax is used for that space in an open pull request. There are several things you need to setup to make the sandbox work for a developer.
 (see more documentation [here](https://github.com/cisagov/manage.get.gov/blob/main/docs/operations/README.md#deploy) if interested)
 
-All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox.
+See [this section of the engineering handbook](https://docs.google.com/document/d/1SPe-pS8hGIaVOvFiLJLliGq0J4MY-3X4BzC-D2E2BO8/edit?tab=t.1sq9d5m608ob#heading=h.9rz13znp4emz) for more details.
+
+All automation for setting up a developer sandbox is documented in the scripts for [creating a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/create_dev_sandbox.sh) and [removing a developer sandbox](https://github.com/cisagov/manage.get.gov/blob/main/ops/scripts/destroy_dev_sandbox.sh). A Cloud.gov organization administrator will have to perform the script in order to create the sandbox. 
 
 ## Known Issues
 

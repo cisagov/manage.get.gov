@@ -2,7 +2,24 @@ from datetime import date
 import logging
 import copy
 from typing import Optional
+
+from auditlog.models import LogEntry  # type: ignore
+from auditlog.admin import LogEntryAdmin  # type: ignore
+
 from django import forms
+from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
+from django.conf import settings
+from django.contrib.messages import get_messages
+from django.contrib.admin.helpers import AdminForm
+from django.contrib import admin, messages
+from django.contrib.admin.views.main import IGNORED_PARAMS, ChangeList
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.forms import UserChangeForm, UsernameField
+from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.admin.views.main import ORDER_VAR
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import (
     Case,
@@ -11,13 +28,45 @@ from django.db.models import (
     Q,
     Value,
     When,
+    Exists,
+    OuterRef,
+    Subquery,
 )
+from django.db.models.functions import Concat, Coalesce, Cast
+from django.db.models.fields import DateField
 
-from django.db.models.functions import Concat, Coalesce
-from django.core.exceptions import ValidationError
+from django_fsm import get_available_FIELD_transitions, FSMField
+from django_fsm import TransitionNotAllowed  # type: ignore
+
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+from django.utils.html import format_html, escape
+from django.utils.translation import gettext_lazy as _
+from django.utils.dateparse import parse_datetime
+
+from epplibwrapper.errors import ErrorCode, RegistryError
+
+from registrar.models import (
+    Contact,
+    Domain,
+    DomainInformation,
+    DomainInvitation,
+    DomainRequest,
+    DraftDomain,
+    FederalTribe,
+    Portfolio,
+    StateTribe,
+    SeniorOfficial,
+    User,
+    UserPortfolioPermission,
+    Website,
+)
 from registrar.models.federal_agency import FederalAgency
 from registrar.models.portfolio_invitation import PortfolioInvitation
+from registrar.models.user_domain_role import UserDomainRole
+from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.services.invitation_service import (
     create_domain_role_or_invitation,
     create_portfolio_permission_or_invitation,
@@ -34,20 +83,15 @@ from registrar.utility.admin_helpers import (
     get_rejection_reason_default_email,
     get_field_links_as_list,
 )
-from django.conf import settings
-from django.contrib.messages import get_messages
-from django.contrib.admin.helpers import AdminForm
-from django.shortcuts import redirect, get_object_or_404
-from django_fsm import get_available_FIELD_transitions, FSMField
-from registrar.models import (
-    DomainInformation,
-    Portfolio,
-    UserPortfolioPermission,
-    DomainInvitation,
-    StateTribe,
-    FederalTribe,
+from registrar.utility.constants import BranchChoices
+from registrar.utility.enums import DNSRecordTypes
+from registrar.utility.errors import (
+    EnrollmentNotAllowedError,
+    FSMDomainRequestError,
+    FSMErrorCodes,
+    DnsHostingError,
+    MultipleUsersWithEmailError,
 )
-from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.utility.email_invitations import (
     send_domain_invitation_email,
     send_portfolio_admin_addition_emails,
@@ -59,49 +103,17 @@ from registrar.views.utility.invitation_helper import (
     get_org_membership,
     handle_invitation_exceptions,
 )
-from waffle.decorators import flag_is_active
-from django.contrib import admin, messages
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import Group
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
-from epplibwrapper.errors import ErrorCode, RegistryError
-from registrar.models.user_domain_role import UserDomainRole
-from waffle.admin import FlagAdmin
-from waffle.models import Sample, Switch
-from registrar.models import Contact, Domain, DomainRequest, DraftDomain, User, Website, SeniorOfficial
-from registrar.utility.constants import BranchChoices
-from registrar.utility.errors import (
-    EnrollmentNotAllowedError,
-    FSMDomainRequestError,
-    FSMErrorCodes,
-    DnsHostingError,
-    MultipleUsersWithEmailError,
-)
-from registrar.utility.waffle import flag_is_active_for_user
 from registrar.views.utility.mixins import OrderableFieldsMixin
-from django.contrib.admin.views.main import ORDER_VAR
+from registrar.utility.waffle import flag_is_active_for_user
 from registrar.widgets import NoAutocompleteFilteredSelectMultiple
+
 from . import models
-from auditlog.models import LogEntry  # type: ignore
-from auditlog.admin import LogEntryAdmin  # type: ignore
-from django_fsm import TransitionNotAllowed  # type: ignore
-from django.utils.safestring import mark_safe
-from django.utils.html import escape
-from django.contrib.auth.forms import UserChangeForm, UsernameField
-from django.contrib.admin.views.main import IGNORED_PARAMS, ChangeList
-from django_admin_multiple_choice_list_filter.list_filters import MultipleChoiceListFilter
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
-from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.utils.html import format_html
-from django.utils.translation import gettext_lazy as _
-from django.utils.dateparse import parse_datetime
-from django.db.models import Exists, OuterRef, Subquery
-from django.db.models.fields import DateField
-from django.db.models.functions import Cast
 from .models import DnsRecord
+from waffle.decorators import flag_is_active
+from waffle.admin import FlagAdmin
+from waffle.models import Sample, Switch
 
 logger = logging.getLogger(__name__)
 
@@ -3298,7 +3310,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "is_election_board",
                     "organization_type",
                 ]
             },
@@ -3391,7 +3402,6 @@ class DomainInformationAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "portfolio_zipcode",
         "portfolio_urbanization",
         "other_contacts",
-        "is_election_board",
     )
 
     # Read only that we'll leverage for CISA Analysts
@@ -3685,24 +3695,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             else:
                 return queryset.filter(investigator__id__exact=self.value())
 
-    class ElectionOfficeFilter(admin.SimpleListFilter):
-        """Define a custom filter for is_election_board"""
-
-        title = _("election office")
-        parameter_name = "is_election_board"
-
-        def lookups(self, request, model_admin):
-            return (
-                ("1", _("Yes")),
-                ("0", _("No")),
-            )
-
-        def queryset(self, request, queryset):
-            if self.value() == "1":
-                return queryset.filter(is_election_board=True)
-            if self.value() == "0":
-                return queryset.filter(Q(is_election_board=False) | Q(is_election_board=None))
-
     class PortfolioFilter(admin.SimpleListFilter):
         """Define a custom filter for portfolio"""
 
@@ -3720,13 +3712,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
                 return queryset.filter(Q(portfolio__isnull=False))
             if self.value() == "0":
                 return queryset.filter(Q(portfolio__isnull=True))
-
-    # ------ Custom fields ------
-    def custom_election_board(self, obj):
-        return "Yes" if obj.is_election_board else "No"
-
-    custom_election_board.admin_order_field = "is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
 
     @admin.display(description=_("Requested Domain"))
     def custom_requested_domain(self, obj):
@@ -3862,7 +3847,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "last_submitted_date",
         "last_status_update",
         "status",
-        "custom_election_board",
         "converted_generic_org_type",
         "converted_organization_name",
         "converted_federal_agency",
@@ -3882,7 +3866,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         StatusListFilter,
         GenericOrgFilter,
         FederalTypeFilter,
-        ElectionOfficeFilter,
         "rejection_reason",
         InvestigatorFilter,
     )
@@ -3968,7 +3951,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
             "Type of organization",
             {
                 "fields": [
-                    "is_election_board",
                     "organization_type",
                 ]
             },
@@ -4063,7 +4045,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "other_contacts",
         "current_websites",
         "alternative_domains",
-        "is_election_board",
         "status_history",
     )
 
@@ -4121,7 +4102,6 @@ class DomainRequestAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "portfolio_city",
         "portfolio_zipcode",
         "portfolio_urbanization",
-        "is_election_board",
         "organization_type",
         "federal_type",
         "federal_agency",
@@ -4989,24 +4969,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
     resource_classes = [DomainResource]
 
     # ------- FILTERS
-    class ElectionOfficeFilter(admin.SimpleListFilter):
-        """Define a custom filter for is_election_board"""
-
-        title = _("election office")
-        parameter_name = "is_election_board"
-
-        def lookups(self, request, model_admin):
-            return (
-                ("1", _("Yes")),
-                ("0", _("No")),
-            )
-
-        def queryset(self, request, queryset):
-            if self.value() == "1":
-                return queryset.filter(domain_info__is_election_board=True)
-            if self.value() == "0":
-                return queryset.filter(Q(domain_info__is_election_board=False) | Q(domain_info__is_election_board=None))
-
     class GenericOrgFilter(admin.SimpleListFilter):
         """Custom Generic Organization filter that accomodates portfolio feature.
         If we have a portfolio, use the portfolio's organization.  If not, use the
@@ -5203,7 +5165,7 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         )
 
     # Filters
-    list_filter = [DnsEnrolledFilter, GenericOrgFilter, FederalTypeFilter, ElectionOfficeFilter, "state"]
+    list_filter = [DnsEnrolledFilter, GenericOrgFilter, FederalTypeFilter, "state"]
 
     # ------- END FILTERS
 
@@ -5218,7 +5180,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         "converted_federal_type",
         "converted_federal_agency",
         "converted_organization_name",
-        "custom_election_board",
         "converted_city",
         "converted_state_territory",
         "state",
@@ -5380,15 +5341,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         return "\n".join(formatted_nameservers)
 
     nameservers.short_description = "Name servers"  # type: ignore
-
-    def custom_election_board(self, obj):
-        domain_info = getattr(obj, "domain_info", None)
-        if domain_info:
-            return "Yes" if domain_info.is_election_board else "No"
-        return "No"
-
-    custom_election_board.admin_order_field = "domain_info__is_election_board"  # type: ignore
-    custom_election_board.short_description = "Election office"  # type: ignore
 
     # Search
     search_fields = ["name"]
@@ -5789,12 +5741,13 @@ class DnsRecordAdmin(admin.ModelAdmin):
         "name",
         "ttl",
         "content",
+        "priority",
         "comment",
         "created_at",
         "updated_at",
     )
 
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = fields
 
     list_filter = ("type", "created_at", "updated_at")
 
@@ -5807,6 +5760,21 @@ class DnsRecordAdmin(admin.ModelAdmin):
 
     def record_name(self, obj):
         return obj.name
+
+    def get_fields(self, request, obj=None):
+        fields = list(super().get_fields(request, obj))
+        if obj is None or obj.type != DNSRecordTypes.MX:
+            fields.remove("priority")
+        return fields
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class DraftDomainResource(resources.ModelResource):

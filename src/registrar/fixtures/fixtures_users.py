@@ -63,12 +63,6 @@ class UserFixture:
             "title": "Catlady",
         },
         {
-            "username": "24840450-bf47-4d89-8aa9-c612fe68f9da",
-            "first_name": "Erin",
-            "last_name": "Song",
-            "title": "Catlady 2",
-        },
-        {
             "username": "e0ea8b94-6e53-4430-814a-849a7ca45f21",
             "first_name": "Kristina",
             "last_name": "Yin",
@@ -137,6 +131,13 @@ class UserFixture:
             "email": "amr.tawfik@ecstech.com",
             "title": "Software Engineer",
         },
+        {
+            "username": "6d11be5-d028-47b6-842b-e52448de36ba",
+            "first_name": "Corwayne",
+            "last_name": "Pyle",
+            "email": "corwayne.pyle@ecstech.com",
+            "title": "Tech Lead",
+        },
     ]
 
     STAFF = [
@@ -170,12 +171,6 @@ class UserFixture:
             "first_name": "Gaby-Analyst",
             "last_name": "DiSarli-Analyst",
             "email": "gaby+1@truss.works",
-        },
-        {
-            "username": "378d0bc4-d5a7-461b-bd84-3ae6f6864af9",
-            "first_name": "Erin-Analyst",
-            "last_name": "Song-Analyst",
-            "email": "erin.song+1@gsa.gov",
         },
         {
             "username": "9a98e4c9-9409-479d-964e-4aec7799107f",
