@@ -13,7 +13,6 @@ from django.utils.decorators import method_decorator
 from django.utils.safestring import mark_safe
 from django.views.generic import DeleteView, DetailView, UpdateView
 from django.views.generic.edit import FormMixin
-from django.conf import settings
 from django.http import Http404
 from waffle import flag_is_active
 from waffle.decorators import waffle_flag
