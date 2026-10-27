@@ -35,7 +35,7 @@ typing-extensions ='*'
 django-login-required-middleware = "*"
 greenlet = "*"
 gevent = "*"
-fred-epplib = {git = "https://github.com/cisagov/epplib.git", ref = "308e625b794a9a8e50551e8f9caa837470e24630"}
+fred-epplib = {file = "https://github.com/cisagov/epplib/archive/308e625b794a9a8e50551e8f9caa837470e24630.tar.gz#sha256=804a644f4ffaa42e45007f7f7cf4a210ee534f51b13bb3ae30e40643f963be0d"}
 pyzipper="*"
 tblib = "*"
 django-admin-multiple-choice-list-filter = "*"

@@ -21,25 +21,19 @@ jobs:
         with:
           python-version: "3.14"
       - run: pip install pipenv
-      # Git-sourced packages can't be hash-pinned, so they go in requirements-git.txt
-      # (installed by src/bin/post_compile); everything else is hash-verified.
-      - run: |
-          { echo "--require-hashes"; pipenv requirements --hash | grep -v ' @ git+'; } > requirements.txt
-          pipenv requirements | grep ' @ git+' > requirements-git.txt
+      - run: pipenv requirements --hash > requirements.txt
         working-directory: src
       - name: Commit via API (GitHub-signed)
         env:
           GH_TOKEN: ${{ github.token }}
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
-          for f in requirements.txt requirements-git.txt; do
-            if git diff --quiet "src/$f"; then
-              echo "$f already in sync"; continue
-            fi
-            SHA=$(git rev-parse "HEAD:src/$f")
-            gh api -X PUT "/repos/${GITHUB_REPOSITORY}/contents/src/$f" \
-              -f message="Regenerate $f from Pipfile.lock" \
-              -f branch="$BRANCH" \
-              -f sha="$SHA" \
-              -f content="$(base64 -w0 "src/$f")"
-          done
+          if git diff --quiet src/requirements.txt; then
+            echo "requirements.txt already in sync"; exit 0
+          fi
+          SHA=$(git rev-parse "HEAD:src/requirements.txt")
+          gh api -X PUT "/repos/${GITHUB_REPOSITORY}/contents/src/requirements.txt" \
+            -f message="Regenerate requirements.txt from Pipfile.lock" \
+            -f branch="$BRANCH" \
+            -f sha="$SHA" \
+            -f content="$(base64 -w0 src/requirements.txt)"
