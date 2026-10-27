@@ -2058,7 +2058,6 @@ class TestDomainRequestAdmin(MockEppLib):
             "requester",
             "investigator",
             "generic_org_type",
-            "is_election_board",
             "organization_type",
             "federally_recognized_tribe",
             "state_recognized_tribe",
