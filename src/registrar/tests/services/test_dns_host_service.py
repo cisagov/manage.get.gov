@@ -484,8 +484,8 @@ class TestDnsHostService(TestCase):
             self.assertEqual(entry.get("domain_name"), domain_name)
 
     @override_settings(IS_PRODUCTION=True)
-    def test_enroll_domain_allowed_domain_enrollment_in_production_succeeds(self):
-        allowed_domain = create_domain(**{"domain_name": "igorville.gov"})
+    def test_enroll_domain_enrollment_in_production_succeeds(self):
+        allowed_domain = create_domain(**{"domain_name": "notigorville.gov"})
 
         mock_get_x_zone_id_if_zone_exists = Mock(return_value=None)
         self.service.get_x_zone_id_if_zone_exists = mock_get_x_zone_id_if_zone_exists
