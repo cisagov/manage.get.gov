@@ -1,7 +1,7 @@
 from collections import Counter
 import logging
 import random
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from django.conf import settings
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
@@ -22,7 +22,7 @@ from registrar.models import (
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
-from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.services.utility.dns_helper import get_dns_zone_name_from_account_name, make_dns_account_name
 from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
@@ -529,7 +529,7 @@ class DnsHostService:
                 domain_name,
             )
 
-    def get_account_comparison_betw_vendor_and_db(self):
+    def compare_vendor_and_db_accounts(self):
         # get all the CF accounts and convert data to tuples (name, id)
         vendor_accounts = self.get_all_accounts()
         vendor_accounts_data = [(a["name"], a["id"]) for a in vendor_accounts]
@@ -538,46 +538,70 @@ class DnsHostService:
 
         # Only get db accounts for the current active vendor
         # get all the db dnsaccounts (name and x_account_id)
-        db_account_data = list(DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
-            "dns_account__name", "vendor_dns_account__account_id"
-        ))
+        db_accounts_data = list(
+            DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
+                "dns_account__name", "vendor_dns_account__account_id"
+            )
+        )
 
-        # compare vendor and db data by (name, x_account_id)
-        vendor_only = [x for x in vendor_accounts_data if x not in db_account_data]
-        db_only = [x for x in db_account_data if x not in vendor_accounts_data]
+        # compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only since since the db account name must be unique.
+        vendor_only = list(set(vendor_accounts_data) - set(db_accounts_data))
+        db_only = list(set(db_accounts_data) - set(vendor_accounts_data))
 
-        synced_accounts = set(vendor_accounts_data).intersection(set(db_account_data))
+        synced_accounts = list(set(vendor_accounts_data).intersection(set(db_accounts_data)))
         not_actually_synced_accounts = []
         zone_id_mismatch = []
-        for a in synced_accounts:
-            vendor_zone_data, db_zone_data = self._get_existing_zone_data(a)
+        unexpected_results = []
+
+        # which accounts have incomplete zone
+        for name, account_id in synced_accounts:
+            vendor_zone_data, db_zone_data = self._get_existing_zone_data(name, account_id)
 
             # Check if vendor zone exists and db does not, or if they exist but the ids are mismatched
             # B/c account and zone creation happen in a transaction, if the account exists, we don't expect to have db zone w/o vendor zone or db account without db zone
-            if vendor_zone_data and not db_zone_data:
-                vendor_only = vendor_only(vendor_zone_data)
-                not_actually_synced_accounts.append(a)
+
+            if not vendor_zone_data:
+                relevant_data = {
+                        "x_account_id": account_id,
+                        "vendor_zone_data": vendor_zone_data,
+                        "db_zone_data": db_zone_data,
+                    }
+                unexpected_results.append(relevant_data)
+            elif not db_zone_data:
+                vendor_only.append((name, account_id))
+                not_actually_synced_accounts.append((name, account_id))
             elif vendor_zone_data[1] != db_zone_data[1]:  # mismatched zone_ids
-                domain_name = a.name.split(" ")[2]
-                zone_id_mismatch.append({"domain_name": domain_name, "zone_ids": (vendor_zone_data[1], db_zone_data[1])})
-        synced_accounts = synced_accounts - not_actually_synced_accounts
+                domain_name = get_dns_zone_name_from_account_name(name)
+                zone_id_mismatch.append(
+                    {"domain_name": domain_name, "zone_ids": (vendor_zone_data[1], db_zone_data[1])}
+                )
+                not_actually_synced_accounts.append((name, account_id))
 
-        return {"duplicate_account_names": duplicate_account_names, "vendor_only": vendor_only, "db_only": db_only, "synced_accounts": synced_accounts, "zone_id_mismatch": zone_id_mismatch}
+        synced_accounts = list(set(synced_accounts) - set(not_actually_synced_accounts))
 
-    def _get_duplicate_account_names(self, vendor_accounts)-> List[str]:
+        return {
+            "duplicate_account_names": duplicate_account_names,
+            "vendor_only": vendor_only,
+            "db_only": db_only,
+            "synced_accounts": synced_accounts,
+            "zone_id_mismatch": zone_id_mismatch,
+            "unexpected_results": unexpected_results,
+        }
+
+    def _get_duplicate_account_names(self, vendor_accounts) -> List[str]:
         vendor_account_names = [a["name"] for a in vendor_accounts]
         name_counts = Counter(vendor_account_names)
         duplicate_account_names = [name for name, count in name_counts.items() if count > 1]
         return duplicate_account_names
 
-    def _get_existing_zone_data(self, account_data)-> Tuple[List[tuple], List[tuple]]:
+    def _get_existing_zone_data(self, name, account_id) -> Tuple[Optional[tuple], Optional[tuple]]:
         # get vendor zone data (name, id)
-        domain_name = account_data.name.split(" ")[2]
-        vendor_zone = self._find_existing_zone_in_cf(domain_name, account_data.id)
+        domain_name = get_dns_zone_name_from_account_name(name)
+        vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
         vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
 
         # get db zone data (name, id)
-        db_zone = DnsZone.objects.filter(name=domain_name).first()
-        db_zone_data = (db_zone["name"], db_zone)
+        db_zone = DnsZone.objects.filter(name=domain_name, domain__name=domain_name).first()
+        db_zone_data = (db_zone.name, db_zone.get_active_x_zone_id()) if db_zone else None
 
         return vendor_zone_data, db_zone_data
