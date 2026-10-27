@@ -24,7 +24,7 @@ def normalize_organization_types(apps, schema_editor):
             records = model.objects.filter(organization_type=election_org_type)
             updated_total += records.update(organization_type=organization_type)
 
-        remaining_total = model.objects.filter(organization_type__in=election_org_type).count()
+        remaining_total = model.objects.filter(organization_type__in=election_org_types.keys()).count()
         if remaining_total:
             raise RuntimeError(
                 f"Migration failed to update all {model_name}.organization_type values: "

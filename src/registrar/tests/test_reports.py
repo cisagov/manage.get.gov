@@ -1145,7 +1145,7 @@ class HelperFunctions(MockDbForSharedTests):
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
-        """Should get fitered requests counts sliced by org type and."""
+        """Should get fitered requests counts sliced by org type."""
 
         with less_console_noise():
             filter_condition = {
