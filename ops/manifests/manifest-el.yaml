@@ -33,5 +33,7 @@ applications:
   routes:
     - route: getgov-el.app.cloud.gov
   services:
-  - getgov-credentials
-  - getgov-el-database
+    - getgov-credentials
+    - getgov-el-database
+  buildpacks:
+    - https://github.com/cloudfoundry/python-buildpack#v1.9.8
