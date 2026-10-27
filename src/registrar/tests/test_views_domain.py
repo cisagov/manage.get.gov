@@ -4168,11 +4168,11 @@ class TestDomainDnsRecords(TestWithSharedDomainPermissions, WebTest):
     @patch("registrar.views.domain.DnsHostService")
     def test_invalid_post_does_not_create_dns_client(self, mock_service_cls):
         _, _, _ = create_initial_dns_setup(
-                    domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
-                )
+            domain=self.portfolio_domain, domain_manager=self.user, x_zone_id="zone-edit-123"
+        )
         self.client.post(
             reverse("domain-dns-records", kwargs={"domain_pk": self.portfolio_domain.id}),
             data={"type": "A", "name": "", "content": "", "ttl": 60},
-        ) # Bad Request due to missing required values
+        )  # Bad Request due to missing required values
 
         mock_service_cls.assert_not_called()
