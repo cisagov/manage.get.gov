@@ -11,11 +11,7 @@ import json
 from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, HASH_SESSION_KEY
 from django.contrib.sessions.backends.db import SessionStore
 from django.core.management.base import BaseCommand
-from registrar.models import Domain, DomainInformation, User, UserDomainRole, WaffleFlag, UserGroup
-from registrar.tests.helpers.dns_data_generator import (
-    create_dns_record,
-    create_initial_dns_setup,
-)
+from registrar.models import User, UserGroup
 
 # Recognizable values so anyone looking at the database can tell at a glance
 # what created these rows. Don't use real-looking names here.
@@ -50,13 +46,13 @@ class Command(BaseCommand):
             "first_name": "Playwright",
             "last_name": "Tester",
             "title": "Test Engineer",
-            "phone": "+1-555-555-5555"
+            "phone": "+1-555-555-5555",
         }
         user, created = User.objects.get_or_create(
             username=TEST_USERNAME,
             defaults=defaults,
         )
-        group = UserGroup.objects.get(name='full_access_group')
+        group = UserGroup.objects.get(name="full_access_group")
 
         group.user_set.add(user)
         # If someone in the past created the user with missing fields, top them up.

@@ -23,7 +23,7 @@ from registrar.management.commands.seed_playwright_session import (
 )
 from registrar.models import (
     User,
-    )
+)
 
 
 @require_GET
@@ -46,9 +46,7 @@ def playwright_seed(request):
     if request.GET.get("format") == "json":
         return JsonResponse(seed)
 
-    body = (
-        f"SESSION_KEY={seed['sessionKey']}\n"
-    )
+    body = f"SESSION_KEY={seed['sessionKey']}\n"
     return HttpResponse(body, content_type="text/plain")
 
 

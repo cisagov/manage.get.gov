@@ -1025,7 +1025,7 @@ if DEBUG and not RUNNING_TESTS:
     ]
 
     # allow dev laptop and docker-compose network to connect
-     # `getgov-test` is the alias the playwright service uses for `app`
+    # `getgov-test` is the alias the playwright service uses for `app`
     # (avoids Chrome's `.app` HSTS rule). See docker-compose.yml.
     ALLOWED_HOSTS += ("localhost", "app", "getgov-test")
     SECURE_SSL_REDIRECT = False

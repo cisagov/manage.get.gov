@@ -434,7 +434,7 @@ if settings.DEBUG and "debug_toolbar" in settings.INSTALLED_APPS and not setting
         path("__debug__/", include(debug_toolbar.urls)),
     ]
 
-#Dev-only Playwright seed/purge endpoints; never in prod.
+# Dev-only Playwright seed/purge endpoints; never in prod.
 if not settings.IS_PRODUCTION:
     from registrar.views.dev_playwright import playwright_purge, playwright_seed
 
