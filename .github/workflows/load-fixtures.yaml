@@ -42,7 +42,7 @@ jobs:
       CF_USERNAME: CF_${{ github.event.inputs.environment }}_USERNAME
       CF_PASSWORD: CF_${{ github.event.inputs.environment }}_PASSWORD
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
+      - uses: GitHubSecurityLab/actions-permissions/monitor@bf82d13b9b10051d224345ab9184f5ede0a94289 # v1
       - name: Load fake data for ${{ github.event.inputs.environment }}
         uses: cloud-gov/cg-cli-tools@bafcd2b3d36984482c01b1dd2c3750b4f355b8a2 # v1.0.0
         with:
