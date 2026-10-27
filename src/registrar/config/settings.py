@@ -991,9 +991,7 @@ SESSION_COOKIE_NAME = "JSESSIONID"
 SESSION_COOKIE_SAMESITE = "Lax"
 
 # instruct browser to only send cookie via HTTPS
-SESSION_COOKIE_SECURE = False
-
-SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+SESSION_COOKIE_SECURE = True
 
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"

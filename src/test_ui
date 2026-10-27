@@ -52,9 +52,9 @@ for _ in $(seq 1 60); do
     case "$code" in 2*|3*) break ;; esac
     sleep 1
 done
-
+echo "Getting Session seed"
 # Seed test data + a login session via the dev endpoint. Returns three
-# KEY=value lines (SESSION_KEY, DOMAIN_ID, RECORD_IDS). We `eval` because
+# KEY=value lines (SESSION_KEY). We `eval` because
 # the source is our own dev-only endpoint on localhost — not user input —
 # and the values are short alphanumerics from the management command.
 seed_output=$(curl -sf "${BASE_URL}/api/v1/dev/playwright-seed")
@@ -62,10 +62,9 @@ if [ -z "$seed_output" ]; then
     echo "Failed to fetch ${BASE_URL}/api/v1/dev/playwright-seed (dev endpoint disabled?)"
     exit 1
 fi
+echo "Got session seed"
 eval "$seed_output"
 export PLAYWRIGHT_SESSION_KEY="$SESSION_KEY"
-export PLAYWRIGHT_DOMAIN_ID="$DOMAIN_ID"
-export PLAYWRIGHT_RECORD_IDS="$RECORD_IDS"
 
 # Purge the seeded rows + sessions on exit, no matter how we got there
 # (tests passed, tests failed, Ctrl+C). Safe to call when nothing's there.

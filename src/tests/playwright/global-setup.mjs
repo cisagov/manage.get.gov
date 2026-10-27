@@ -11,10 +11,9 @@ const STORAGE_PATH = path.join(here, '.auth-state.json');
 
 export default async function globalSetup() {
     const sessionKey = process.env.PLAYWRIGHT_SESSION_KEY;
-    const domainId = process.env.PLAYWRIGHT_DOMAIN_ID;
-    if (!sessionKey || !domainId) {
+    if (!sessionKey) {
         throw new Error(
-            'PLAYWRIGHT_SESSION_KEY / PLAYWRIGHT_DOMAIN_ID not set — '
+            'PLAYWRIGHT_SESSION_KEY not set — '
             + 'run via `docker compose exec playwright ./test_ui`.',
         );
     }

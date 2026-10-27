@@ -23,19 +23,8 @@ from registrar.management.commands.seed_playwright_session import (
     TEST_USERNAME,
 )
 from registrar.models import (
-    Domain,
-    DomainInformation,
-    DnsAccount,
-    DnsRecord,
     User,
-    UserDomainRole,
-    VendorDnsAccount,
-    VendorDnsRecord,
-    VendorDnsZone,
-    DnsAccount_VendorDnsAccount as AccountsJoin,
-    DnsZone_VendorDnsZone as ZonesJoin,
-    DnsRecord_VendorDnsRecord as RecordsJoin,
-)
+    )
 
 
 @require_GET
@@ -60,8 +49,6 @@ def playwright_seed(request):
 
     body = (
         f"SESSION_KEY={seed['sessionKey']}\n"
-        f"DOMAIN_ID={seed['domainId']}\n"
-        f"RECORD_IDS={','.join(str(r) for r in seed['recordIds'])}\n"
     )
     return HttpResponse(body, content_type="text/plain")
 
@@ -80,13 +67,6 @@ def playwright_purge(request):
     if settings.IS_PRODUCTION:
         raise Http404
 
-    domain = Domain.objects.filter(name=TEST_DOMAIN_NAME).first()
-    if domain:
-        _purge_dns_for(domain)
-        UserDomainRole.objects.filter(domain=domain).delete()
-        DomainInformation.objects.filter(domain=domain).delete()
-        domain.delete()
-
     user = User.objects.filter(username=TEST_USERNAME).first()
     if user:
         # Sessions don't FK to User; scan and decode to find this user's.
@@ -96,32 +76,3 @@ def playwright_purge(request):
         user.delete()
 
     return HttpResponse("ok\n", content_type="text/plain")
-
-
-def _purge_dns_for(domain):
-    """Walk the DNS structure rooted at `domain` and delete every row."""
-    zone = getattr(domain, "dnszone", None)
-    if zone is None:
-        return
-
-    record_ids = list(zone.records.values_list("id", flat=True))
-    vendor_record_ids = list(
-        RecordsJoin.objects.filter(dns_record_id__in=record_ids).values_list("vendor_dns_record_id", flat=True)
-    )
-    RecordsJoin.objects.filter(dns_record_id__in=record_ids).delete()
-    VendorDnsRecord.objects.filter(id__in=vendor_record_ids).delete()
-    DnsRecord.objects.filter(id__in=record_ids).delete()
-
-    vendor_zone_ids = list(ZonesJoin.objects.filter(dns_zone=zone).values_list("vendor_dns_zone_id", flat=True))
-    ZonesJoin.objects.filter(dns_zone=zone).delete()
-    VendorDnsZone.objects.filter(id__in=vendor_zone_ids).delete()
-    account_id = zone.dns_account_id
-    zone.delete()
-
-    if account_id:
-        vendor_account_ids = list(
-            AccountsJoin.objects.filter(dns_account_id=account_id).values_list("vendor_dns_account_id", flat=True)
-        )
-        AccountsJoin.objects.filter(dns_account_id=account_id).delete()
-        VendorDnsAccount.objects.filter(id__in=vendor_account_ids).delete()
-        DnsAccount.objects.filter(id=account_id).delete()
