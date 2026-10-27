@@ -237,6 +237,33 @@ class TestDnsHostService(TestCase):
         self.assertEqual(settings_response.result["zone_defaults"]["zone_mode"], "dns_only")
         self.assertEqual(settings_response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
 
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_get_all_accounts_success(self, mock_get_tenant_accounts):
+        mock_accounts = [
+            {
+                "account_tag": "54345",
+                "account_pubname": "Account for stream.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "54346",
+                "account_pubname": "Account for river.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+            {
+                "account_tag": "98765",
+                "account_pubname": "Account for sea.us",
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
+            },
+        ]
+        mock_get_tenant_accounts.return_value = mock_accounts
+
+        accounts = self.service.get_all_accounts()
+        self.assertEqual(accounts, mock_accounts)
+
     @patch("registrar.services.dns_host_service.DnsHostService.create_db_account")
     @patch("registrar.services.dns_host_service.DnsHostService._configure_new_account_dns_settings")
     @patch("registrar.services.dns_host_service.CloudflareService.create_cf_account")
@@ -368,6 +395,21 @@ class TestDnsHostService(TestCase):
         self.assertEqual(response.result["zone_defaults"]["zone_mode"], "dns_only")
         self.assertEqual(response.result["zone_defaults"]["nameservers"]["type"], "custom.tenant")
         self.assertEqual(response.errors, [])
+
+    @patch("registrar.services.dns_host_service.CloudflareService.get_zone_records")
+    def test_get_records_by_zone_success(self, mock_get_zone_records):
+        x_zone_id = "1357"
+        mock_records = [
+            {"id": 1, "name": "A", "content": "198.22.333.4", "ttl": 3600},
+            {"id": 2, "name": "AAAA", "content": "2001:db8::1234:5678", "ttl": 300},
+            {"id": 3, "name": "TXT", "content": "I am your content", "ttl": 3600},
+            {"id": 4, "name": "MX", "content": "mail.mytest.gov", "ttl": 3600},
+            {"id": 5, "name": "PTR", "content": "blog.mytest.gov", "ttl": 3600},
+        ]
+
+        mock_get_zone_records.return_value = mock_records
+        records = self.service.get_records_for_zone(x_zone_id)
+        self.assertEqual(records, mock_records)
 
     def test_update_account_dns_settings_failure(self):
         x_account_id = "12345"
@@ -930,6 +972,23 @@ class TestDnsHostServiceDB(TestCase):
         self.assertEqual(dns_record.ttl, self.updated_record_data["result"].get("ttl"))
         self.assertEqual(dns_record.comment, self.updated_record_data["result"].get("comment"))
 
+    def update_db_record_ignores_fields_not_in_allow_list(self):
+        """Only allow-listed fields are copied from the Cloudflare response"""
+        x_zone_id = self.vendor_zone_data["result"].get("id")
+        x_record_id = self.vendor_record_data["result"].get("id")
+        _, _, zone = create_initial_dns_setup(
+            x_zone_id=x_zone_id,
+            nameservers=self.vendor_zone_data["result"].get("name_servers"),
+        )
+        DnsRecord.create_from_vendor_data(x_zone_id, self.vendor_record_data)
+
+        payload = {"result": {**self.updated_record_data["result"], "type": "TXT"}}
+        DnsRecord.update_from_vendor_data(x_zone_id, x_record_id, payload)
+
+        dns_record = DnsRecord.objects.filter(dns_zone=zone).first()
+        self.assertEqual(dns_record.type, "A")
+        self.assertEqual(dns_record.content, self.updated_record_data["result"].get("content"))
+
     def test_update_db_record_with_error_fails(self):
         """Preserve original DNS record data when update fails."""
         x_zone_id = self.vendor_zone_data["result"].get("id")
@@ -951,7 +1010,8 @@ class TestDnsHostServiceDB(TestCase):
         # Record data should still preserve original vendor record data on failed update
         self.assertEqual(dns_record.name, self.vendor_record_data["result"].get("name"))
         self.assertEqual(dns_record.content, self.vendor_record_data["result"].get("content"))
-        self.assertEqual(dns_record.ttl, self.vendor_record_data["result"].get("ttl"))
+        # Cloudflare "auto" (1) will be stored as 300 in our DB
+        self.assertEqual(dns_record.ttl, 300)
         self.assertEqual(dns_record.comment, self.vendor_record_data["result"].get("comment"))
 
     def test_update_db_record_with_bad_data_fails(self):

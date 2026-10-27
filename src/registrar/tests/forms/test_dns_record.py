@@ -262,6 +262,20 @@ class DomainDNSRecordFormValidationTests(BaseDomainDNSRecordFormTest):
         self.assertFalse(form.is_valid())
         self.assertIn(TXT_RECORD_CONTENT_MAX_LENGTH_ERROR_MESSAGE, form.errors["content"])
 
+    def test_blank_ttl_defaults_to_300(self):
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["ttl"] = ""
+        form = self.make_form(data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["ttl"], 300)
+
+    def test_comment_over_100_characters_throws_error(self):
+        data = self.valid_form_data_for_record_type("A", self.VALID_CONTENT_BY_TYPE["A"])
+        data["comment"] = "a" * 151
+        form = self.make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("comment", form.errors)
+
 
 class DomainMXRecordFormTests(BaseDomainDNSRecordFormTest):
     """Tests for MX record-specific behavior in DomainDNSRecordForm."""

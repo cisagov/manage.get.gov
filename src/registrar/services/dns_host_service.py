@@ -1,5 +1,6 @@
 import logging
 import random
+from typing import List
 
 from django.conf import settings
 from registrar.models.domain import Domain
@@ -201,6 +202,11 @@ class DnsHostService:
         """
         self.update_account_dns_settings(x_account_id)
 
+    def get_all_accounts(self) -> List[dict]:
+        """Calls the vendor service's list accounts method"""
+        per_page_max = 50
+        return self.dns_vendor_service.get_tenant_accounts(per_page_max)
+
     def create_and_save_zone(self, domain_name, x_account_id):
         # Create zone in vendor service
         zone_data = self.dns_vendor_service.create_cf_zone(domain_name, x_account_id)
@@ -302,6 +308,10 @@ class DnsHostService:
             self.dns_vendor_service.delete_dns_record(x_zone_id, x_record_id)
 
         return x_record_id
+
+    def get_records_for_zone(self, x_zone_id) -> List[dict]:
+        """Calls the vendor service's list zone records method"""
+        return self.dns_vendor_service.get_zone_records(x_zone_id)
 
     def _find_existing_account_in_cf(self, account_name) -> dict | None:
         return self.dns_vendor_service.get_account_by_name(account_name)
