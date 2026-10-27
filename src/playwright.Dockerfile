@@ -6,6 +6,12 @@ FROM --platform=linux/amd64 docker.io/cimg/node:current-browsers
 
 USER root
 
+COPY zscaler-root.pem /usr/local/share/ca-certificates/zscaler-root.crt
+
+RUN update-ca-certificates
+
+ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/zscaler-root.crt
+
 # Xvfb is already in the base image; this adds VNC + the noVNC web client.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         x11vnc \

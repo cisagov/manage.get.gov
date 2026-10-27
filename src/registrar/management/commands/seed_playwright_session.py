@@ -126,7 +126,7 @@ class Command(BaseCommand):
         """
         session = SessionStore()
         session[SESSION_KEY] = str(user.pk)
-        session[BACKEND_SESSION_KEY] = "django.contrib.auth.backends.ModelBackend"
+        session[BACKEND_SESSION_KEY] = "djangooidc.backends.OpenIdConnectBackend"
         session[HASH_SESSION_KEY] = user.get_session_auth_hash()
         session.save()
         return session.session_key

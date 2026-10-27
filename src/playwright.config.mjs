@@ -21,6 +21,7 @@ export default defineConfig({
     use: {
         baseURL: process.env.PLAYWRIGHT_BASE_URL,
         storageState: path.join(here, 'tests/playwright/.auth-state.json'),
+        ignoreHTTPSErrors: true,
         trace: 'retain-on-failure',
         launchOptions: demoMode
             ? { slowMo: parseInt(process.env.PWDEMO_MS || '400', 10) }

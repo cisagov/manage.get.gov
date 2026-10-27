@@ -732,6 +732,9 @@ LOGIN_URL = "/openid/login"
 # the initial login requests without erroring.
 LOGIN_REQUIRED_IGNORE_PATHS = [
     r"/openid/(.+)$",
+    # Dev-only Playwright endpoints — must be reachable without a session.
+    # URLs are only registered when IS_PRODUCTION=False.
+    r"/api/v1/dev/playwright-(seed|purge)/?$",
 ]
 
 # where to go after logging out
@@ -988,7 +991,9 @@ SESSION_COOKIE_NAME = "JSESSIONID"
 SESSION_COOKIE_SAMESITE = "Lax"
 
 # instruct browser to only send cookie via HTTPS
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
 # session engine to cache session information
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
@@ -1022,6 +1027,8 @@ if DEBUG and not RUNNING_TESTS:
     ]
 
     # allow dev laptop and docker-compose network to connect
+     # `getgov-test` is the alias the playwright service uses for `app`
+    # (avoids Chrome's `.app` HSTS rule). See docker-compose.yml.
     ALLOWED_HOSTS += ("localhost", "app", "getgov-test")
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_PRELOAD = False
