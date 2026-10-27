@@ -536,59 +536,47 @@ class DnsHostService:
 
         duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
 
+        # Get all the db DNS accounts (name and x_account_id)
         # Only get db accounts for the current active vendor
-        # get all the db dnsaccounts (name and x_account_id)
         db_accounts_data = list(
             DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
                 "dns_account__name", "vendor_dns_account__account_id"
             )
         )
 
-        # compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only since since the db account name must be unique.
-        vendor_only = list(set(vendor_accounts_data) - set(db_accounts_data))
-        db_only = list(set(db_accounts_data) - set(vendor_accounts_data))
+        # compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only since the db account name must be unique, so can't be duplicated.
+        vendor_only = set(vendor_accounts_data) - set(db_accounts_data)
+        db_only = set(db_accounts_data) - set(vendor_accounts_data)
 
-        synced_accounts = list(set(vendor_accounts_data).intersection(set(db_accounts_data)))
-        not_actually_synced_accounts = []
+        synced_accounts = set(vendor_accounts_data).intersection(set(db_accounts_data))
+        vendor_accounts_with_zone = set()
         zone_id_mismatch = []
-        unexpected_results = []
 
-        # which accounts have incomplete zone
-        for name, account_id in synced_accounts:
+        # which vendor-only accounts have corresponding zone
+        for name, account_id in vendor_only:
             vendor_zone_data, db_zone_data = self._get_existing_zone_data(name, account_id)
+            # Check if a vendor zone exists for vendor_only accounts. Because the account and zone creation are inside of a transaction, failures would result in rolling back db account/zone, but not the cf account/zone
 
-            # Check if vendor zone exists and db does not, or if they exist but the ids are mismatched
-            # B/c account and zone creation happen in a transaction, if the account exists, we don't expect to have db zone w/o vendor zone or db account without db zone
+            if vendor_zone_data:
+                vendor_accounts_with_zone.add((name, account_id))
+                if db_zone_data and vendor_zone_data[1] != db_zone_data[1]:  # mismatched zone_ids
+                    domain_name = get_dns_zone_name_from_account_name(name)
+                    zone_id_mismatch.append(
+                        {"domain_name": domain_name, "zone_ids": (vendor_zone_data[1], db_zone_data[1])}
+                    )
 
-            if not vendor_zone_data:
-                relevant_data = {
-                        "x_account_id": account_id,
-                        "vendor_zone_data": vendor_zone_data,
-                        "db_zone_data": db_zone_data,
-                    }
-                unexpected_results.append(relevant_data)
-            elif not db_zone_data:
-                vendor_only.append((name, account_id))
-                not_actually_synced_accounts.append((name, account_id))
-            elif vendor_zone_data[1] != db_zone_data[1]:  # mismatched zone_ids
-                domain_name = get_dns_zone_name_from_account_name(name)
-                zone_id_mismatch.append(
-                    {"domain_name": domain_name, "zone_ids": (vendor_zone_data[1], db_zone_data[1])}
-                )
-                not_actually_synced_accounts.append((name, account_id))
-
-        synced_accounts = list(set(synced_accounts) - set(not_actually_synced_accounts))
-
+        # sorted will return each as a sorted list
         return {
-            "duplicate_account_names": duplicate_account_names,
-            "vendor_only": vendor_only,
-            "db_only": db_only,
-            "synced_accounts": synced_accounts,
-            "zone_id_mismatch": zone_id_mismatch,
-            "unexpected_results": unexpected_results,
+            "duplicate_account_names": sorted(duplicate_account_names),
+            "vendor_only": sorted(vendor_only),
+            "db_only": sorted(db_only),
+            "vendor_accounts_with_zone": sorted(vendor_accounts_with_zone),
+            "synced_accounts": sorted(synced_accounts),
+            "zone_id_mismatch": sorted(zone_id_mismatch, key=lambda d: d["domain_name"]),
         }
 
     def _get_duplicate_account_names(self, vendor_accounts) -> List[str]:
+        """Returns a list of names of vendor accounts that are duplicated"""
         vendor_account_names = [a["name"] for a in vendor_accounts]
         name_counts = Counter(vendor_account_names)
         duplicate_account_names = [name for name, count in name_counts.items() if count > 1]

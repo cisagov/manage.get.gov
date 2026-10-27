@@ -22,7 +22,7 @@ def get_dns_zone_name_from_account_name(account_name) -> str:
             f"Account name {account_name!r} does not start with "
             f"expected prefix {DNS_ACCOUNT_NAME_PREFIX!r}"
         )
+
     zone_name = account_name[len(DNS_ACCOUNT_NAME_PREFIX):]
-    if not zone_name:
-        raise ValueError(f"Account name {account_name!r} has no domain after the prefix")
+
     return zone_name
