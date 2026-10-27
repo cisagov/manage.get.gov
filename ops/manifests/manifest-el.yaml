@@ -2,7 +2,7 @@
 applications:
 - name: getgov-el
   buildpacks:
-    - python_buildpack
+    - https://github.com/cloudfoundry/python-buildpack#v1.9.8
   path: ../../src
   instances: 1
   memory: 512M
@@ -35,5 +35,3 @@ applications:
   services:
     - getgov-credentials
     - getgov-el-database
-  buildpacks:
-    - https://github.com/cloudfoundry/python-buildpack#v1.9.8

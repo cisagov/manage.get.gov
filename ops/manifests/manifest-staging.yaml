@@ -2,10 +2,10 @@
 applications:
 - name: getgov-staging
   buildpacks:
-    - python_buildpack
+    - https://github.com/cloudfoundry/python-buildpack#v1.9.8
   path: ../../src
   instances: 2
-  memory: 512M
+  memory: 1G
   stack: cflinuxfs4
   timeout: 180
   command: ./run.sh
@@ -34,5 +34,5 @@ applications:
   routes:
     - route: getgov-staging.app.cloud.gov
   services:
-  - getgov-credentials
-  - getgov-staging-database
+    - getgov-credentials
+    - getgov-staging-database
