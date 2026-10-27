@@ -105,19 +105,11 @@ class DomainInformation(TimeStampedModel):
         help_text="Type of organization",
     )
 
-    # TODO - Ticket #1911: stub this data from DomainRequest
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        verbose_name="election office",
-    )
-
     organization_type = models.CharField(
         max_length=255,
-        choices=DomainRequest.OrgChoicesElectionOffice.choices,
+        choices=DomainRequest.OrganizationChoices.choices,
         null=True,
         blank=True,
-        help_text='"Election" appears after the org type if it\'s an election office.',
     )
 
     federally_recognized_tribe = models.BooleanField(
@@ -156,12 +148,6 @@ class DomainInformation(TimeStampedModel):
         choices=BranchChoices.choices,
         null=True,
         blank=True,
-    )
-
-    is_election_board = models.BooleanField(
-        null=True,
-        blank=True,
-        verbose_name="election office",
     )
 
     organization_name = models.CharField(
@@ -378,29 +364,12 @@ class DomainInformation(TimeStampedModel):
 
     def sync_organization_type(self):
         """
-        Updates the organization_type (without saving) to match
-        the is_election_board and generic_organization_type fields.
+        Keeps organization_type and generic_org_type synchronized (without saving).
         """
 
-        # Define mappings between generic org and election org.
-        # These have to be defined here, as you'd get a cyclical import error
-        # otherwise.
-
-        # For any given organization type, return the "_ELECTION" enum equivalent.
-        # For example: STATE_OR_TERRITORY => STATE_OR_TERRITORY_ELECTION
-        generic_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_generic_to_org_election()
-
-        # For any given "_election" variant, return the base org type.
-        # For example: STATE_OR_TERRITORY_ELECTION => STATE_OR_TERRITORY
-        election_org_map = DomainRequest.OrgChoicesElectionOffice.get_org_election_to_org_generic()
-
-        # Manages the "organization_type" variable and keeps in sync with
-        # "is_election_office" and "generic_organization_type"
         org_type_helper = CreateOrUpdateOrganizationTypeHelper(
             sender=self.__class__,
             instance=self,
-            generic_org_to_org_map=generic_org_map,
-            election_org_to_generic_org_map=election_org_map,
         )
 
         # Actually updates the organization_type field
@@ -415,7 +384,6 @@ class DomainInformation(TimeStampedModel):
         - federal_agency, federal_type: Only relevant for Federal orgs
         - tribe_name, federally_recognized_tribe, state_recognized_tribe, state_tribe,
         federal_tribe: Only for Tribal orgs
-        - is_election_board: Not applicable to Federal, Interstate, or School District
         - about_your_organization: Only for Special District or Interstate orgs
         """
 
@@ -436,16 +404,6 @@ class DomainInformation(TimeStampedModel):
                 self.tribe_name = None
                 self.federal_tribe = None
                 self.state_tribe = None
-
-            # Clear election board field if org type doesn't show election question
-            # Election question shows for all types except Federal, Interstate, and School District
-            excluded_from_election = [
-                DomainRequest.OrganizationChoices.FEDERAL,
-                DomainRequest.OrganizationChoices.INTERSTATE,
-                DomainRequest.OrganizationChoices.SCHOOL_DISTRICT,
-            ]
-            if new_org_type in excluded_from_election:
-                self.is_election_board = None
 
             # Clear "about your organization" field if not special district or interstate
             about_org_types = [
