@@ -487,7 +487,7 @@ class DnsHostService:
             raise EnrollmentNotAllowedError(
                 "This domain cannot be enrolled in DNS Hosting. Domain must be in the prod allowlist"
             )
-                    
+
         domain_name = domain.name
         with set_dns_log_context(domain_name):
             if domain.is_enrolled_in_dns_hosting:
