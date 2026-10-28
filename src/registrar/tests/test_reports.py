@@ -632,13 +632,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "MANAGED DOMAINS COUNTS AT START DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
-            "School district,Election office\n"
-            "0,0,0,0,0,0,0,0,0,0\n"
+            "School district\n"
+            "0,0,0,0,0,0,0,0,0\n"
             "\n"
             "MANAGED DOMAINS COUNTS AT END DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,"
-            "Special district,School district,Election office\n"
-            "3,2,1,0,0,0,0,0,0,0\n"
+            "Special district,School district\n"
+            "3,2,1,0,0,0,0,0,0\n"
             "\n"
             "Domain name,Domain type,Domain managers,Invited domain managers\n"
             "cdomain11.gov,Federal,meoward@rocks.com,\n"
@@ -670,13 +670,13 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
         expected_content = (
             "UNMANAGED DOMAINS AT START DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
-            "School district,Election office\n"
-            "0,0,0,0,0,0,0,0,0,0\n"
+            "School district\n"
+            "0,0,0,0,0,0,0,0,0\n"
             "\n"
             "UNMANAGED DOMAINS AT END DATE\n"
             "Total,Federal,Interstate,State or territory,Tribal,County,City,Special district,"
-            "School district,Election office\n"
-            "1,1,0,0,0,0,0,0,0,0\n"
+            "School district\n"
+            "1,1,0,0,0,0,0,0,0\n"
             "\n"
             "Domain name,Domain type\n"
             "adomain10.gov,Federal\n"
@@ -739,7 +739,6 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             "Federal type",
             "Federal agency",
             "Organization name",
-            "Election office",
             "City",
             "State/territory",
             "Region",
@@ -777,30 +776,30 @@ class ExportDataTest(MockDbForIndividualTests, MockEppLib):
             expected_content = (
                 # Header
                 "Domain request,Status,Domain type,Portfolio,Federal type,Federal agency,Organization name,"
-                "Election office,City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
+                "City,State/territory,Region,Suborganization,Requested suborg,Suborg city,"
                 "Suborg state/territory,Requester first name,Requester last name,Requester email,"
                 "Requester approved domains count,Requester active requests count,Alternative domains,SO first name,"
                 "SO last name,SO email,SO title/role,Request purpose,Request additional details,Other contacts,"
                 "CISA regional representative,Current websites,Investigator\n"
                 # Content
-                "city5.gov,Approved,Federal,No,,,Testorg,N/A,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
+                "city5.gov,Approved,Federal,No,,,Testorg,,NY,2,requested_suborg,SanFran,CA,,,,,1,0,"
                 "city1.gov,Testy,Tester,testy@town.com,Chief Tester,Purpose of the site,There is more,"
                 "Testy Tester testy2@town.com,,city.com,\n"
                 "city2.gov,In review,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
-                "N/A,,,2,SubOrg 1,,,,,,,0,1,city1.gov,,,,,Purpose of the site,There is more,"
+                ",,2,SubOrg 1,,,,,,,0,1,city1.gov,,,,,Purpose of the site,There is more,"
                 "Testy Tester testy2@town.com,,city.com,\n"
                 "city3.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
-                "N/A,,,2,,,,,,,,0,1,"
+                ",,2,,,,,,,,0,1,"
                 '"cheeseville.gov, city1.gov, igorville.gov",,,,,Purpose of the site,CISA-first-name CISA-last-name | '
                 'There is more,"Meow Tester24 te2@town.com, Testy1232 Tester24 te2@town.com, '
                 'Testy Tester testy2@town.com",'
                 'test@igorville.com,"city.com, https://www.example2.com, https://www.example.com",\n'
-                "city4.gov,Submitted,City,No,,,Testorg,Yes,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
+                "city4.gov,Submitted,City,No,,,Testorg,,NY,2,,,,,,,,0,1,city1.gov,Testy,"
                 "Tester,testy@town.com,"
                 "Chief Tester,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,"
                 "cisaRep@igorville.gov,city.com,\n"
-                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,N/A,"
+                "city6.gov,Submitted,Federal,Yes,Executive,Portfolio 1 Federal Agency,Portfolio 1 Federal Agency,"
                 ",,2,,,,,,,,0,1,city1.gov,,,,,Purpose of the site,CISA-first-name CISA-last-name | There is more,"
                 "Testy Tester testy2@town.com,cisaRep@igorville.gov,city.com,\n"
             )
@@ -1128,7 +1127,7 @@ class HelperFunctions(MockDbForSharedTests):
         self.assertEqual(actual_date.date(), expected_date.date())
 
     def test_get_sliced_domains(self):
-        """Should get fitered domains counts sliced by org type and election office."""
+        """Should get fitered domains counts sliced by org type."""
 
         with less_console_noise():
             filter_condition = {
@@ -1137,16 +1136,16 @@ class HelperFunctions(MockDbForSharedTests):
             }
             # Test with distinct
             managed_domains_sliced_at_end_date = DomainExport.get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
             # Test without distinct
             managed_domains_sliced_at_end_date = DomainExport.get_sliced_domains(filter_condition)
-            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0, 0]
+            expected_content = [3, 2, 1, 0, 0, 0, 0, 0, 0]
             self.assertEqual(managed_domains_sliced_at_end_date, expected_content)
 
     def test_get_sliced_requests(self):
-        """Should get fitered requests counts sliced by org type and election office."""
+        """Should get fitered requests counts sliced by org type."""
 
         with less_console_noise():
             filter_condition = {
@@ -1154,5 +1153,5 @@ class HelperFunctions(MockDbForSharedTests):
                 "last_submitted_date__lte": self.end_date,
             }
             submitted_requests_sliced_at_end_date = DomainRequestExport.get_sliced_requests(filter_condition)
-            expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0, 1]
+            expected_content = [3, 2, 0, 0, 0, 0, 1, 0, 0]
             self.assertEqual(submitted_requests_sliced_at_end_date, expected_content)

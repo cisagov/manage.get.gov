@@ -83,7 +83,6 @@ def get_rdap_data(domain):
     Domain parameter is cleaned upstream in the rdap view function.
     Returns a JSON dictionary of the RDAP data.
     """
-    print(f"Will delete before merging, request for domain: {domain}")
     return requests.get(RDAP_URL.format(domain=quote(domain, safe="")), timeout=5).json()
 
 

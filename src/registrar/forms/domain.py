@@ -35,7 +35,7 @@ from .common import (
     ALGORITHM_CHOICES,
     DIGEST_TYPE_CHOICES,
 )
-from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES
+from registrar.utility.enums import DNSRecordTypes, DNS_TTL_CHOICES, format_dns_ttl
 from registrar.validations import (
     CNAME_NAME_INLINE_ERROR_MESSAGE,
     CNAME_NAME_TARGET_BANNER_ERROR_MESSAGE,
@@ -845,6 +845,13 @@ class DomainDNSRecordForm(forms.ModelForm):
 
         self.fields["type"].widget.attrs["data-type-config"] = json.dumps(config)
 
+        ttl = self.initial.get("ttl")
+        # legacy Cloudflare "auto" rows should be treated as 300
+        if ttl == 1:
+            ttl = self.initial["ttl"] = 300
+        if ttl is not None and ttl not in dict(DNS_TTL_CHOICES):
+            self.fields["ttl"].choices = [(ttl, format_dns_ttl(ttl))] + list(DNS_TTL_CHOICES)
+
     class Meta:
         model = DnsRecord
         fields = ["type", "name", "content", "priority", "ttl", "comment"]
@@ -963,6 +970,10 @@ class DomainDNSRecordForm(forms.ModelForm):
             self.add_error("priority", DNS_RECORD_PRIORITY_RANGE_ERROR_MESSAGE)
 
         return priority
+
+    def clean_ttl(self):
+        """Default to 300 (5 minutes) when no TTL is submitted."""
+        return self.cleaned_data.get("ttl") or 300
 
     def _field_is_clean(self, field: str, value) -> bool:
         """True if a field has a non-empty value and no field-level errors yet."""

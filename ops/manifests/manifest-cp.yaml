@@ -2,7 +2,7 @@
 applications:
 - name: getgov-cp
   buildpacks:
-    - python_buildpack
+    - https://github.com/cloudfoundry/python-buildpack#v1.9.8
   path: ../../src
   instances: 1
   memory: 512M
@@ -33,5 +33,5 @@ applications:
   routes:
     - route: getgov-cp.app.cloud.gov
   services:
-  - getgov-credentials
-  - getgov-cp-database
+    - getgov-credentials
+    - getgov-cp-database

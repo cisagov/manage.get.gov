@@ -148,7 +148,6 @@ class AnalyticsView(View):
                     "City",
                     "Special District",
                     "School District",
-                    "Election Board",
                 ],
                 "user_count": models.User.objects.all().count(),
                 "domain_count": models.Domain.objects.all().count(),
