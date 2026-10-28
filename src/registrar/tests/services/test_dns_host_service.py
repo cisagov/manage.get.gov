@@ -4,6 +4,7 @@ from django.db import IntegrityError
 from httpx import HTTPStatusError
 import copy
 
+
 from registrar.services.cloudflare_service import CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_host_service import DnsHostService
 from registrar.models import (
@@ -522,7 +523,9 @@ class TestDnsHostService(TestCase):
             )
             self.assertEqual(entry.get("domain_name"), domain.name)
 
-    def test_compare_vendor_and_db_accounts(self):
+    @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
+    @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
+    def test_compare_vendor_and_db_accounts(self, mock_get_tenant_accounts, mock_get_account_zones):
             # Create data with scenarios:
                 # all good: cf account, db account, cf zone, db zone
                 # has vendor account but no db account
@@ -531,24 +534,72 @@ class TestDnsHostService(TestCase):
                 # multiple accounts with same name, one with cf/db zone
                 # no vendor but yes zone db data
 
-            duplicate_account_names = [("Account for haunted.gov", 1), ("Account for haunted.gov", 2)]
-            vendor_only = [("Account for haunted.gov", 2), ("Account for patella.gov", 3), ("Account for ulna.gov", 7)]
-            db_only = [("Account for sternum.gov", 4)]
-            vendor_accounts_with_zone = [("Account for haunted.gov", 2)]
-            synced_accounts = [("Account for easypeezy.gov", 5), ("Account for pieceofcake.gov", 6)]
-            zone_id_mismatch = [{"domain_name": "easypeezy.gov", "zone_ids": ("123", "321")}]
-
-            expected_result = {
-                "duplicate_account_names": sorted(duplicate_account_names),
-                "vendor_only": sorted(vendor_only),
-                "db_only": sorted(db_only),
-                "vendor_accounts_with_zone": sorted(vendor_accounts_with_zone),
-                "synced_accounts": sorted(synced_accounts),
-                "zone_id_mismatch": sorted(zone_id_mismatch, key=lambda d: d["domain_name"]),
+        def cf_account(domain_name, x_account_id):
+            return {
+                "account_tag": x_account_id,
+                "account_pubname": make_dns_account_name(domain_name),
+                "account_type": "enterprise",
+                "created_on": "2026-06-09T18:25:46.427351Z",
             }
 
-            result = self.test_compare_vendor_and_db_accounts()
-            self.assertEquals(result, expected_result)
+        def cf_zone(domain_name, x_zone_id):
+            return {"id": x_zone_id, "name": domain_name}
+
+        # --- DB data: account + zone, linked to the vendor ids ---
+        for domain_name, x_account_id, x_zone_id in [
+            ("easypeezy.gov", "5", "zone-easypeezy"),
+            ("pieceofcake.gov", "6", "zone-pieceofcake"),
+            ("haunted.gov", "1", "zone-haunted-1"),
+            ("no-vendor.gov", "4", "zone-no-vendor"),
+        ]:
+            create_initial_dns_setup(
+                domain=create_domain(domain_name=domain_name),
+                x_account_id=x_account_id,
+                x_zone_id=x_zone_id,
+            )
+
+        # --- Vendor (Cloudflare) data ---
+        mock_get_tenant_accounts.return_value = [
+            cf_account("easypeezy.gov", "5"),
+            cf_account("pieceofcake.gov", "6"),
+            cf_account("haunted.gov", "1"),
+            cf_account("haunted.gov", "2"),  # duplicate name, never made it to the db or zone creation
+            cf_account("vendoronly.gov", "3"),
+            cf_account("vendoronly2.gov", "7"),
+            # no-vendor.gov ("4") intentionally missing from cf
+        ]
+
+        zones_by_x_account_id = {
+            "5": [cf_zone("easypeezy.gov", "zone-easypeezy")],
+            "6": [cf_zone("pieceofcake.gov", "zone-pieceofcake")],
+            "1": [cf_zone("haunted.gov", "zone-haunted-1")],
+            "2": [],
+            "3": [cf_zone("vendoronly.gov", "zone-vendoronly-1")],
+            "7": [],
+        }
+        mock_get_account_zones.side_effect = lambda x_account_id: {"result": zones_by_x_account_id[x_account_id]}
+
+        expected_result = {
+            "duplicate_account_names": ["Account for haunted.gov"],
+            "vendor_only": [
+                ("Account for haunted.gov", "2"),
+                ("Account for vendoronly.gov", "3"),
+                ("Account for vendoronly2.gov", "7"),
+            ],
+            "db_only": [("Account for no-vendor.gov", "4")],
+            "vendor_accounts_with_zone_no_db": [
+                ("Account for vendoronly.gov", "3"),
+            ],
+            "synced_accounts": [
+                ("Account for easypeezy.gov", "5"),
+                ("Account for haunted.gov", "1"),
+                ("Account for pieceofcake.gov", "6"),
+            ],
+        }
+
+        result = self.service.compare_vendor_and_db_accounts()
+
+        self.assertEqual(result, expected_result)
 
 
 class TestDnsHostServiceDB(TestCase):
@@ -1196,7 +1247,7 @@ class TestDnsHostServiceDB(TestCase):
             # no vendor but yes db data
 
         duplicate_account_names = [("Account for haunted.gov", 1), ("Account for haunted.gov", 2)]
-        vendor_only = [("Account for haunted.gov", 2), ("Account for patella.gov", 3), ("Account for ulna.gov", 7)]
+        vendor_only = [("Account for haunted.gov", 2), ("Account for vendoronly.gov", 3), ("Account for vendoronly-2.gov", 7)]
         db_only = [("Account for sternum.gov", 4)]
         vendor_accounts_with_zone = [("Account for haunted.gov", 2)]
         synced_accounts = [("Account for easypeezy.gov", 5), ("Account for pieceofcake.gov", 6)]

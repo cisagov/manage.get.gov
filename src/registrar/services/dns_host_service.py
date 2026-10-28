@@ -532,7 +532,7 @@ class DnsHostService:
     def compare_vendor_and_db_accounts(self):
         # get all the CF accounts and convert data to tuples (name, id)
         vendor_accounts = self.get_all_accounts()
-        vendor_accounts_data = [(a["name"], a["id"]) for a in vendor_accounts]
+        vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
 
         duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
 
@@ -540,44 +540,36 @@ class DnsHostService:
         # Only get db accounts for the current active vendor
         db_accounts_data = list(
             DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
-                "dns_account__name", "vendor_dns_account__account_id"
+                "dns_account__name", "vendor_dns_account__x_account_id"
             )
         )
 
-        # compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only since the db account name must be unique, so can't be duplicated.
+        # Compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only since the db account name must be unique, so can't be duplicated.
         vendor_only = set(vendor_accounts_data) - set(db_accounts_data)
         db_only = set(db_accounts_data) - set(vendor_accounts_data)
 
         synced_accounts = set(vendor_accounts_data).intersection(set(db_accounts_data))
         vendor_accounts_with_zone = set()
-        zone_id_mismatch = []
 
         # which vendor-only accounts have corresponding zone
-        for name, account_id in vendor_only:
-            vendor_zone_data, db_zone_data = self._get_existing_zone_data(name, account_id)
+        for name, account_id in sorted(vendor_only):
             # Check if a vendor zone exists for vendor_only accounts. Because the account and zone creation are inside of a transaction, failures would result in rolling back db account/zone, but not the cf account/zone
-
+            vendor_zone_data = self._get_existing_zone_data(name, account_id)
             if vendor_zone_data:
                 vendor_accounts_with_zone.add((name, account_id))
-                if db_zone_data and vendor_zone_data[1] != db_zone_data[1]:  # mismatched zone_ids
-                    domain_name = get_dns_zone_name_from_account_name(name)
-                    zone_id_mismatch.append(
-                        {"domain_name": domain_name, "zone_ids": (vendor_zone_data[1], db_zone_data[1])}
-                    )
 
-        # sorted will return each as a sorted list
+        # Return each as a sorted list
         return {
             "duplicate_account_names": sorted(duplicate_account_names),
             "vendor_only": sorted(vendor_only),
             "db_only": sorted(db_only),
-            "vendor_accounts_with_zone": sorted(vendor_accounts_with_zone),
+            "vendor_accounts_with_zone_no_db": sorted(vendor_accounts_with_zone),
             "synced_accounts": sorted(synced_accounts),
-            "zone_id_mismatch": sorted(zone_id_mismatch, key=lambda d: d["domain_name"]),
         }
 
     def _get_duplicate_account_names(self, vendor_accounts) -> List[str]:
         """Returns a list of names of vendor accounts that are duplicated"""
-        vendor_account_names = [a["name"] for a in vendor_accounts]
+        vendor_account_names = [a["account_pubname"] for a in vendor_accounts]
         name_counts = Counter(vendor_account_names)
         duplicate_account_names = [name for name, count in name_counts.items() if count > 1]
         return duplicate_account_names
@@ -588,8 +580,4 @@ class DnsHostService:
         vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
         vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
 
-        # get db zone data (name, id)
-        db_zone = DnsZone.objects.filter(name=domain_name, domain__name=domain_name).first()
-        db_zone_data = (db_zone.name, db_zone.get_active_x_zone_id()) if db_zone else None
-
-        return vendor_zone_data, db_zone_data
+        return vendor_zone_data
