@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import ArrayField
 
 from .utility.time_stamped_model import TimeStampedModel
 
-# from .utility.tribe_helper import TribeHelper
+from .utility.tribe_helper import TribeHelper
 from .domain_request import DomainRequest
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
 
@@ -119,10 +119,10 @@ class StateTribe(TimeStampedModel):
     def __str__(self):
         return self.tribe_name or ""
 
-    # @classmethod
-    # def get_dropdown_options(cls):
-    #     """Return dropdown options flagged with whether a Portfolio exists for each tribe.
+    @classmethod
+    def get_dropdown_options(cls):
+        """Return dropdown options flagged with whether a Portfolio exists for each tribe.
 
-    #     Returns: [{"id": int, "name": str, "has_existing_portfolio": bool}, ...]
-    #     """
-    #     return TribeHelper.get_dropdown_options(cls, "tribe_name", "state_tribe")
+        Returns: [{"id": int, "name": str, "has_existing_portfolio": bool}, ...]
+        """
+        return TribeHelper.get_dropdown_options(cls, "tribe_name", "state_tribe")
