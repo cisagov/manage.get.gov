@@ -958,28 +958,8 @@ class DomainRequestAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         domain_request = kwargs.get("instance")
-        # Build the tribe selector that combines federal and state choices
         if "tribe" in self.fields:
-            choices = [("", "---------")]
-            tribe_groups = [
-                ("federal", "Federally recognized tribes", FederalTribe),
-                ("state", "State recognized tribes", StateTribe),
-            ]
-            for tribe_type, group_label, tribe_model in tribe_groups:
-                options = []
-                for tribe_record in tribe_model.get_dropdown_options():
-                    # The value will look like "federal:12" or "state:34"
-                    submitted_value = f"{tribe_type}:{tribe_record['id']}"
-                    visible_name = tribe_record["name"]
-                    options.append((submitted_value, visible_name))
-                choices.append((group_label, options))
-            self.fields["tribe"].choices = choices
-            # Set tribe value on the form if the request already has one stored
-            if domain_request:
-                if domain_request.federal_tribe_id:
-                    self.initial["tribe"] = f"federal:{domain_request.federal_tribe_id}"
-                elif domain_request.state_tribe_id:
-                    self.initial["tribe"] = f"state:{domain_request.state_tribe_id}"
+            self._initialize_tribe_field(domain_request)
 
         if domain_request and domain_request.pk:
             current_state = domain_request.status
@@ -1004,6 +984,29 @@ class DomainRequestAdminForm(forms.ModelForm):
             # readonly and the status field will not have a widget
             if not domain_request.requester.is_restricted() and "status" in self.fields:
                 self.fields["status"].widget.choices = available_transitions
+
+    def _initialize_tribe_field(self, domain_request):
+        """Build the tribe selector that combines federal and state choices"""
+        choices = [("", "---------")]
+        tribe_groups = [
+            ("federal", "Federally recognized tribes", FederalTribe),
+            ("state", "State recognized tribes", StateTribe),
+        ]
+        for tribe_type, group_label, tribe_model in tribe_groups:
+            options = []
+            for tribe_record in tribe_model.get_dropdown_options():
+                # The value will look like "federal:12" or "state:34"
+                submitted_value = f"{tribe_type}:{tribe_record['id']}"
+                visible_name = tribe_record["name"]
+                options.append((submitted_value, visible_name))
+            choices.append((group_label, options))
+        self.fields["tribe"].choices = choices
+        # Set tribe value on the form if the request already has one stored
+        if domain_request:
+            if domain_request.federal_tribe_id:
+                self.initial["tribe"] = f"federal:{domain_request.federal_tribe_id}"
+            elif domain_request.state_tribe_id:
+                self.initial["tribe"] = f"state:{domain_request.state_tribe_id}"
 
     def get_custom_field_transitions(self, instance, field):
         """Custom implementation of get_available_FIELD_transitions
