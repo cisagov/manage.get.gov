@@ -1236,30 +1236,3 @@ class TestDnsHostServiceDB(TestCase):
         self.assertTrue(
             RecordsJoin.objects.filter(vendor_dns_record_id=vendor_record_db_id, dns_record_id=record_db.id).exists()
         )
-
-    def test_compare_vendor_and_db_accounts(self):
-        # Create data with scenarios:
-            # all good: cf account, db account, cf zone, db zone
-            # has vendor account but no db account
-              # missing db data for account and zone, cf account/zone exist
-              # only vendor account, no vendor zone
-            # multiple accounts with same name, one with cf/db zone
-            # no vendor but yes db data
-
-        duplicate_account_names = [("Account for haunted.gov", 1), ("Account for haunted.gov", 2)]
-        vendor_only = [("Account for haunted.gov", 2), ("Account for vendoronly.gov", 3), ("Account for vendoronly-2.gov", 7)]
-        db_only = [("Account for sternum.gov", 4)]
-        vendor_accounts_with_zone = [("Account for haunted.gov", 2)]
-        synced_accounts = [("Account for easypeezy.gov", 5), ("Account for pieceofcake.gov", 6)]
-        zone_id_mismatch = [{"domain_name": "easypeezy.gov", "zone_ids": ("123", "321")}]
-        expected_result = {
-            "duplicate_account_names": sorted(duplicate_account_names),
-            "vendor_only": sorted(vendor_only),
-            "db_only": sorted(db_only),
-            "vendor_accounts_with_zone": sorted(vendor_accounts_with_zone),
-            "synced_accounts": sorted(synced_accounts),
-            "zone_id_mismatch": sorted(zone_id_mismatch, key=lambda d: d["domain_name"]),
-        }
-
-        result = self.test_compare_vendor_and_db_accounts()
-        self.assertEquals(result, expected_result)
