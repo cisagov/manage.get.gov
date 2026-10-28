@@ -526,13 +526,12 @@ class TestDnsHostService(TestCase):
     @patch("registrar.services.dns_host_service.CloudflareService.get_account_zones")
     @patch("registrar.services.dns_host_service.CloudflareService.get_tenant_accounts")
     def test_compare_vendor_and_db_accounts(self, mock_get_tenant_accounts, mock_get_account_zones):
-            # Create data with scenarios:
-                # all good: cf account, db account, cf zone, db zone
-                # has vendor account but no db account
-                  # missing db data for account and zone, cf account/zone exist
-                  # only vendor account, no vendor zone
-                # multiple accounts with same name, one with cf/db zone
-                # no vendor but yes zone db data
+        # Create data with scenarios:
+        # all good: vendor account, db account, vendor zone, db zone
+        # has vendor account, has vendor zone, missing account and zone db
+        # only vendor account, no vendor zone (no account/zone db)
+        # multiple accounts with same name: one with  vendor/db zone, the other with only acccount, no db
+        # has db account, no vendor account
 
         def cf_account(domain_name, x_account_id):
             return {

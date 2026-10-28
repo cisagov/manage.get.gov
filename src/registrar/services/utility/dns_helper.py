@@ -16,13 +16,13 @@ def make_dns_account_name(domain_name) -> str:
     """
     return DNS_ACCOUNT_NAME_PREFIX + domain_name
 
+
 def get_dns_zone_name_from_account_name(account_name) -> str:
     if not account_name.startswith(DNS_ACCOUNT_NAME_PREFIX):
         raise ValueError(
-            f"Account name {account_name!r} does not start with "
-            f"expected prefix {DNS_ACCOUNT_NAME_PREFIX!r}"
+            f"Account name {account_name!r} does not start with " f"expected prefix {DNS_ACCOUNT_NAME_PREFIX!r}"
         )
 
-    zone_name = account_name[len(DNS_ACCOUNT_NAME_PREFIX):]
+    zone_name = account_name[len(DNS_ACCOUNT_NAME_PREFIX) :]
 
     return zone_name
