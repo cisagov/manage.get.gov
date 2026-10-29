@@ -1,5 +1,5 @@
 -i https://pypi.org/simple
-annotated-types==0.8.0; python_version >= '3.10' --hash=sha256:13b2beaad985e05e2d6407ee4c4f35590b11f8d693a258a561055cac8f64cab7 --hash=sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb7
+annotated-types==0.8.0; python_version >= '3.10' --hash=sha256:13b2beaad985e05e2d6407ee4c4f35590b61055cac8f64cab7 --hash=sha256:f072f4d804ea359e4eaf198b1af7a8b0947
 anyio==4.15.1; python_version >= '3.10' --hash=sha256:6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101 --hash=sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94
 asgiref==3.13.0; python_version >= '3.11' --hash=sha256:034cc8cbf72d00553b4be256703ac545120b4e50af13b49dec99da899aeeecb4 --hash=sha256:f9596a2434512686473d50f96ff6207fbba49ae1a785dfac614df4aeb085674d
 boto3==1.43.121; python_version >= '3.10' --hash=sha256:0599bdde7d0c03d914d9247b0a328ea48c15b0b3b5fb31a153857fa5bc7a4fd3 --hash=sha256:fc41ea80507416c30a3f7bdea3682124551ec0c36405c0d8149efaf65d9628e7
