@@ -478,6 +478,7 @@ class TestDnsHostService(TestCase):
         self.service.dns_zone_setup.assert_called_once_with(domain_name, "12345")
         self.service.register_nameservers.assert_called_once_with(domain_name, ["ns1.rainbow.gov", "ns2.rainbow.gov"])
 
+        self.assertEqual(domain.state, Domain.State.READY)
         log_entries = json_log_entries(stream, containing="Successfully enrolled")
         self.assertTrue(log_entries, "Expected a 'Successfully enrolled' log line")
         for entry in log_entries:
@@ -504,7 +505,7 @@ class TestDnsHostService(TestCase):
         ):
             self.service.enroll_domain(allowed_domain)
 
-        self.service.dns_account_setup.assert_called()  # got past allowllist conditional
+        self.service.dns_account_setup.assert_called()
 
     @override_settings(IS_LOCAL=False)
     def test_logging_for_registry_error_for_register_nameservers(self):
