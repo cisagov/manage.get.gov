@@ -65,7 +65,6 @@ class TestPopulateVerificationType(MockEppLib):
         self.domain_request_1 = completed_domain_request(
             name="lasers.gov",
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
 
@@ -163,7 +162,6 @@ class TestPopulateOrganizationType(MockEppLib):
         self.domain_request_1 = completed_domain_request(
             name="lasers.gov",
             generic_org_type=DomainRequest.OrganizationChoices.FEDERAL,
-            is_election_board=True,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
         self.domain_request_2 = completed_domain_request(
@@ -179,7 +177,6 @@ class TestPopulateOrganizationType(MockEppLib):
         self.domain_request_4 = completed_domain_request(
             name="saladandfries.gov",
             generic_org_type=DomainRequest.OrganizationChoices.TRIBAL,
-            is_election_board=True,
             status=DomainRequest.DomainRequestStatus.IN_REVIEW,
         )
 
@@ -237,33 +234,30 @@ class TestPopulateOrganizationType(MockEppLib):
         """
         This is a helper function that tests the following conditions:
         1. DomainRequest and DomainInformation (on given objects) are equivalent
-        2. That generic_org_type, is_election_board, and organization_type are equal to passed in values
+        2. That generic_org_type and organization_type are equal to passed in values
 
         Args:
             domain_request (DomainRequest): The DomainRequest object to test
 
             domain_info (DomainInformation): The DomainInformation object to test
 
-            expected_values (dict): Container for what we expect is_electionboard, generic_org_type,
+            expected_values (dict): Container for what we expect generic_org_type,
             and organization_type to be on DomainRequest and DomainInformation.
                 Example:
                 expected_values = {
-                    "is_election_board": False,
                     "generic_org_type": DomainRequest.OrganizationChoices.CITY,
-                    "organization_type": DomainRequest.OrgChoicesElectionOffice.CITY,
+                    "organization_type": DomainRequest.OrganizationChoices.CITY,
                 }
         """
 
         # Test domain request
         with self.subTest(field="DomainRequest"):
             self.assertEqual(domain_request.generic_org_type, expected_values["generic_org_type"])
-            self.assertEqual(domain_request.is_election_board, expected_values["is_election_board"])
             self.assertEqual(domain_request.organization_type, expected_values["organization_type"])
 
         # Test domain info
         with self.subTest(field="DomainInformation"):
             self.assertEqual(domain_info.generic_org_type, expected_values["generic_org_type"])
-            self.assertEqual(domain_info.is_election_board, expected_values["is_election_board"])
             self.assertEqual(domain_info.organization_type, expected_values["organization_type"])
 
     def do_nothing(self):
@@ -277,10 +271,9 @@ class TestPopulateOrganizationType(MockEppLib):
 
         Scenario: A domain request (of type city) is made that is not defined in the CSV file.
             When a domain request is made for a city that is not listed in the CSV,
-            Then the `is_election_board` value should remain False,
-                and the `generic_org_type` and `organization_type` should both be `city`.
+            Then the `generic_org_type` and `organization_type` should both be `city`.
 
-        Expected Result: The `is_election_board` and `generic_org_type` attributes should be unchanged.
+        Expected Result: The `generic_org_type` attributes should be unchanged.
         The `organization_type` field should now be `city`.
         """
 
@@ -288,12 +281,9 @@ class TestPopulateOrganizationType(MockEppLib):
         city_info = self.domain_request_2
 
         # Make sure that all data is correct before proceeding.
-        # Since the presave fixture is in effect, we should expect that
-        # is_election_board is equal to none, even though we tried to define it as "True"
         expected_values = {
-            "is_election_board": False,
             "generic_org_type": DomainRequest.OrganizationChoices.CITY,
-            "organization_type": DomainRequest.OrgChoicesElectionOffice.CITY,
+            "organization_type": DomainRequest.OrganizationChoices.CITY,
         }
         self.assert_expected_org_values_on_request_and_info(city_request, city_info, expected_values)
 
@@ -313,22 +303,18 @@ class TestPopulateOrganizationType(MockEppLib):
 
         Scenario: A domain request (of type federal) is processed after running the populate_organization_type script.
             When a federal domain request is made,
-            Then the `is_election_board` value should remain None,
-                and the `generic_org_type` and `organization_type` fields should both be `federal`.
+            Then the `generic_org_type` and `organization_type` fields should both be `federal`.
 
-        Expected Result: The `is_election_board` and `generic_org_type` attributes should be unchanged.
+        Expected Result: The `generic_org_type` attributes should be unchanged.
         The `organization_type` field should now be `federal`.
         """
         federal_request = self.domain_request_1
         federal_info = self.domain_info_1
 
         # Make sure that all data is correct before proceeding.
-        # Since the presave fixture is in effect, we should expect that
-        # is_election_board is equal to none, even though we tried to define it as "True"
         expected_values = {
-            "is_election_board": None,
             "generic_org_type": DomainRequest.OrganizationChoices.FEDERAL,
-            "organization_type": DomainRequest.OrgChoicesElectionOffice.FEDERAL,
+            "organization_type": DomainRequest.OrganizationChoices.FEDERAL,
         }
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
 
@@ -340,97 +326,6 @@ class TestPopulateOrganizationType(MockEppLib):
 
         # All values should be the same
         self.assert_expected_org_values_on_request_and_info(federal_request, federal_info, expected_values)
-
-    @less_console_noise_decorator
-    def test_request_and_info_tribal_add_election_office(self):
-        """
-        Tests if a tribal domain in the election csv changes organization_type to TRIBAL - ELECTION
-        for the domain request and the domain info
-        """
-
-        # Set org type fields to none to mimic an environment without this data
-        tribal_request = self.domain_request_3
-        tribal_request.organization_type = None
-        tribal_info = self.domain_info_3
-        tribal_info.organization_type = None
-        with patch.object(DomainRequest, "sync_organization_type", self.do_nothing):
-            with patch.object(DomainInformation, "sync_organization_type", self.do_nothing):
-                tribal_request.save()
-                tribal_info.save()
-
-        # Make sure that all data is correct before proceeding.
-        expected_values = {
-            "is_election_board": False,
-            "generic_org_type": DomainRequest.OrganizationChoices.TRIBAL,
-            "organization_type": None,
-        }
-        self.assert_expected_org_values_on_request_and_info(tribal_request, tribal_info, expected_values)
-
-        # Run the populate script
-        try:
-            self.run_populate_organization_type()
-        except Exception as e:
-            self.fail(f"Could not run populate_organization_type script. Failed with exception: {e}")
-
-        tribal_request.refresh_from_db()
-        tribal_info.refresh_from_db()
-
-        # Because we define this in the "csv", we expect that is election board will switch to True,
-        # and organization_type will now be tribal_election
-        expected_values["is_election_board"] = True
-        expected_values["organization_type"] = DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
-
-        self.assert_expected_org_values_on_request_and_info(tribal_request, tribal_info, expected_values)
-
-    @less_console_noise_decorator
-    def test_request_and_info_tribal_doesnt_remove_election_office(self):
-        """
-        Tests if a tribal domain in the election csv changes organization_type to TRIBAL_ELECTION
-        when the is_election_board is True, and generic_org_type is Tribal when it is not
-        present in the CSV.
-
-        To avoid overwriting data, the script should not set any domain specified as
-        an election_office (that doesn't exist in the CSV) to false.
-        """
-
-        # Set org type fields to none to mimic an environment without this data
-        tribal_election_request = self.domain_request_4
-        tribal_election_info = self.domain_info_4
-        tribal_election_request.organization_type = None
-        tribal_election_info.organization_type = None
-        with patch.object(DomainRequest, "sync_organization_type", self.do_nothing):
-            with patch.object(DomainInformation, "sync_organization_type", self.do_nothing):
-                tribal_election_request.save()
-                tribal_election_info.save()
-
-        # Make sure that all data is correct before proceeding.
-        # Because the presave fixture is in place when creating this, we should expect that the
-        # organization_type variable is already pre-populated. We will test what happens when
-        # it is not in another test.
-        expected_values = {
-            "is_election_board": True,
-            "generic_org_type": DomainRequest.OrganizationChoices.TRIBAL,
-            "organization_type": None,
-        }
-        self.assert_expected_org_values_on_request_and_info(
-            tribal_election_request, tribal_election_info, expected_values
-        )
-
-        # Run the populate script
-        try:
-            self.run_populate_organization_type()
-        except Exception as e:
-            self.fail(f"Could not run populate_organization_type script. Failed with exception: {e}")
-
-        # If we don't define this in the "csv", but the value was already true,
-        # we expect that is election board will stay True, and the org type will be tribal,
-        # and organization_type will now be tribal_election
-        expected_values["organization_type"] = DomainRequest.OrgChoicesElectionOffice.TRIBAL_ELECTION
-        tribal_election_request.refresh_from_db()
-        tribal_election_info.refresh_from_db()
-        self.assert_expected_org_values_on_request_and_info(
-            tribal_election_request, tribal_election_info, expected_values
-        )
 
 
 class TestPopulateFirstReady(TestCase):
