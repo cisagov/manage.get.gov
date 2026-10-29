@@ -1543,6 +1543,7 @@ class DomainRequest(TimeStampedModel):
         names = [n for n in [self.cisa_representative_first_name, self.cisa_representative_last_name] if n]
         return " ".join(names) if names else "Unknown"
 
+    # NOTE: This will be used in 5502
     # @property
     # def tribe_display_name(self):
     #     """Name to show for this request's tribe

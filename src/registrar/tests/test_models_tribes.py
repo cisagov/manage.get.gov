@@ -71,18 +71,19 @@ class TestTribeDropdownOptions(TestCase):
     @less_console_noise_decorator
     def test_state_and_federal_lookups_are_independent(self):
         """
-        A State Tribe can have a same name as a Federal Tribe, but we still
-        have it as two diff records
+        The State and Federal Tribe tables have their own links to Portfolio,
+        so each one has to check its own table
 
-        We want to check that a Portfolio for a Federal one should ONLY
-        mark the Federal one as "existing" and leave the State one alone
+        Lots of tribes are similarly named across the two tables, so we want
+        a Portfolio for a Federal tribe to ONLY mark that Federal tribe as
+        "existing" and to leave State ones alone
 
         NOTE: No org name is pass on purpose bc a tribal portfolio
         names itself after the tribe it points to when it saves
 
         """
-        self._make_tribes("Twinning Name Tribe")
-        federal = FederalTribe.objects.get(tribe_full_name="Twinning Name Tribe")
+        StateTribe.objects.create(tribe_name="Cherokee Tribe of Northeast Alabama")
+        federal = FederalTribe.objects.create(tribe_full_name="Cherokee Nation")
 
         Portfolio.objects.create(
             requester=self.user,

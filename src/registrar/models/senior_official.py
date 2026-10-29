@@ -108,6 +108,7 @@ class SeniorOfficial(TimeStampedModel):
         else:
             return ""
 
+    # NOTE: Will be used in 5537 for the Senior Official data
     # @property
     # def linked_tribe(self):
     #     """The tribe record the SO is associated with, if any"""

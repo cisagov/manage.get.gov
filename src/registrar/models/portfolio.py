@@ -21,12 +21,11 @@ class Portfolio(TimeStampedModel):
         ordering = ["organization_name"]
 
         constraints = [
-            # A portfolio points at one tribe, never both federal and state
+            # A state or federal tribe is claimed by at most one portfolio
             models.CheckConstraint(
                 condition=Q(state_tribe__isnull=True) | Q(federal_tribe__isnull=True),
                 name="portfolio_single_tribe_reference",
             ),
-            # A state or federal tribe is claimed by at most one portfolio
             models.UniqueConstraint(
                 fields=["state_tribe"],
                 condition=Q(state_tribe__isnull=False),
