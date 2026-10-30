@@ -115,8 +115,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     portfolio = _resolve_portfolio(request, **kwargs)
     session_portfolio = get_portfolio_from_session(request.session)
     is_org = bool(portfolio and user.is_org_user_for_portfolio(portfolio))
-    # get domain id from request session for htmx triggers
-    domain_id_from_session = request.session.get("domain_pk")
+
     # Define permission checks
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
