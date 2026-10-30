@@ -2062,6 +2062,8 @@ class TestDomainRequestAdmin(MockEppLib):
             "federally_recognized_tribe",
             "state_recognized_tribe",
             "tribe_name",
+            "state_tribe",
+            "federal_tribe",
             "federal_type",
             "organization_name",
             "address_line1",
