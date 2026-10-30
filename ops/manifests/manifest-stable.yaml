@@ -2,7 +2,7 @@
 applications:
 - name: getgov-stable
   buildpacks:
-    - python_buildpack
+    - https://github.com/cloudfoundry/python-buildpack#v1.9.8
   path: ../../src
   instances: 2
   memory: 1G
@@ -36,5 +36,5 @@ applications:
   routes:
     - route: getgov-stable.app.cloud.gov
   services:
-  - getgov-credentials
-  - getgov-stable-database
+    - getgov-credentials
+    - getgov-stable-database

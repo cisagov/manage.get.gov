@@ -5,6 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 
 
 from .utility.time_stamped_model import TimeStampedModel
+
 from .utility.tribe_helper import TribeHelper
 from .domain_request import DomainRequest
 from phonenumber_field.modelfields import PhoneNumberField  # type: ignore
