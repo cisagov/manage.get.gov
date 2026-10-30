@@ -760,6 +760,21 @@ function renderDNSRecordPreviewText(previewTextEl, template, values){
     }
 }
 
+// TXT content can be up to 4080 characters. Only this many characters of it are
+// shown in the text preview (and so read by screen readers); 
+// the full value stays in the input.
+const TXT_PREVIEW_CONTENT_MAX = 200;
+
+// Shortens text to `max` characters and adds an ellipsis if anything was cut. 
+function truncatePreviewContent(text, max) {
+    const chars = Array.from(text);
+    if (chars.length <= max) {
+        return text;
+    }
+    const shortened = chars.slice(0, max).join("") ;
+    return shortened + "…";
+}
+
 /*
 Recomputes the live preview sentence for one DNS record form.
 "@" is the root domain, so there's a conditional for that (via data-domain-name)
@@ -804,9 +819,15 @@ function updateDNSRecordPreview(scope, config) {
     if (!displayName) {
         displayName = "[name]"
     }
+
+    let displayContent = contentField?.value.trim();
+    if (displayContent && typeField.value == "TXT") {
+        displayContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
+    }
+
     const values = {
         name: displayName,
-        content: contentField?.value.trim() || `[${contentPlaceholder}]`,
+        content: displayContent || `[${contentPlaceholder}]`,
     }
 
     renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
