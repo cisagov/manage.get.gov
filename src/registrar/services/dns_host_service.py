@@ -1,8 +1,10 @@
+from collections import Counter
 import logging
 import random
-from typing import List
+from typing import List, Optional
 
 from django.conf import settings
+from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
 from registrar.services.dns_http_client import build_dns_client
@@ -19,7 +21,7 @@ from registrar.models import (
 )
 from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
-from registrar.services.utility.dns_helper import make_dns_account_name
+from registrar.services.utility.dns_helper import get_dns_zone_name_from_account_name, make_dns_account_name
 from epplibwrapper.errors import RegistryError
 
 logger = logging.getLogger(__name__)
@@ -329,7 +331,7 @@ class DnsHostService:
         return dns_account.get_active_x_account_id()
 
     def _find_existing_zone_in_cf(self, zone_name, x_account_id) -> dict | None:
-
+        """Finds zone within an account by zone (domain) name"""
         all_zones_data = self.dns_vendor_service.get_account_zones(x_account_id)
         zones = all_zones_data["result"]
         zone_data = self._find_zone_json_by_name(zones, zone_name)
@@ -521,3 +523,59 @@ class DnsHostService:
                 "Successfully enrolled %s in DNS hosting",
                 domain_name,
             )
+
+    def compare_vendor_and_db_accounts(self):
+        # get all the CF accounts and convert data to tuples (name, id)
+        vendor_accounts = self.get_all_accounts()
+        vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
+
+        duplicate_account_names = self._get_duplicate_account_names(vendor_accounts)
+
+        # Get all the db DNS accounts (name and x_account_id)
+        # Only get db accounts for the current active vendor
+        db_accounts_data = list(
+            DnsAccount_VendorDnsAccount.objects.filter(is_active=True).values_list(
+                "dns_account__name", "vendor_dns_account__x_account_id"
+            )
+        )
+
+        # Compare vendor and db data by (name, x_account_id). Duplicate vendor names will show up as vendor_only
+        # since the db account name must be unique, so can't be duplicated.
+        vendor_only = set(vendor_accounts_data) - set(db_accounts_data)
+        db_only = set(db_accounts_data) - set(vendor_accounts_data)
+
+        synced_accounts = set(vendor_accounts_data).intersection(set(db_accounts_data))
+        vendor_accounts_with_zone = set()
+
+        # which vendor-only accounts have corresponding zone
+        for name, account_id in sorted(vendor_only):
+            # Check if a vendor zone exists for vendor_only accounts.
+            # Because the account and zone creation are inside of a transaction,
+            # failures would result in rolling back db account/zone, but not the cf account/zone
+            vendor_zone_data = self._get_existing_zone_data(name, account_id)
+            if vendor_zone_data:
+                vendor_accounts_with_zone.add((name, account_id))
+
+        # Return each as a sorted list
+        return {
+            "duplicate_account_names": sorted(duplicate_account_names),
+            "vendor_only": sorted(vendor_only),
+            "db_only": sorted(db_only),
+            "vendor_accounts_with_zone_no_db": sorted(vendor_accounts_with_zone),
+            "synced_accounts": sorted(synced_accounts),
+        }
+
+    def _get_duplicate_account_names(self, vendor_accounts) -> List[str]:
+        """Returns a list of names of vendor accounts that are duplicated"""
+        vendor_account_names = [a["account_pubname"] for a in vendor_accounts]
+        name_counts = Counter(vendor_account_names)
+        duplicate_account_names = [name for name, count in name_counts.items() if count > 1]
+        return duplicate_account_names
+
+    def _get_existing_zone_data(self, name, account_id) -> Optional[tuple]:
+        # get vendor zone data (name, id)
+        domain_name = get_dns_zone_name_from_account_name(name)
+        vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
+        vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
+
+        return vendor_zone_data
