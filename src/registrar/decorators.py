@@ -130,9 +130,7 @@ def _user_has_permission(user, request, rules, **kwargs):
                     # Legacy / not in org context, domain manager is fine
                     not session_portfolio
                     # In Org mode, domain must belong to the active session portfolio
-                    or _domain_exists_under_portfolio(
-                        session_portfolio, kwargs.get("domain_pk")
-                    )
+                    or _domain_exists_under_portfolio(session_portfolio, kwargs.get("domain_pk"))
                 )
             ),
         ),
