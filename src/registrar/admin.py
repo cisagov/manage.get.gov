@@ -86,7 +86,6 @@ from registrar.utility.admin_helpers import (
 from registrar.utility.constants import BranchChoices
 from registrar.utility.enums import DNSRecordTypes
 from registrar.utility.errors import (
-    EnrollmentNotAllowedError,
     FSMDomainRequestError,
     FSMErrorCodes,
     DnsHostingError,
@@ -5695,9 +5694,6 @@ class DomainAdmin(ListHeaderAdmin, ImportExportRegistrarModelAdmin):
         try:
             service = DnsHostService()
             service.enroll_domain(obj)
-        except EnrollmentNotAllowedError as e:
-            logger.warning("DNS enrollment blocked: %s", e)
-            self.message_user(request, str(e), messages.WARNING)
         except DnsHostingError as e:
             request_id = e.context.get("request_id")
             self.message_user(

@@ -5,6 +5,8 @@
             aria-label="Toggle to view comment for {{ dns_record.name }}"
             aria-expanded="false"
             :aria-expanded="openComments.includes('{{ dns_record.id }}') ? 'true' : 'false' "
+            :disabled="showFormId == '{{ dns_record.id }}'"
+            :aria-disabed="showFormId == '{{ dns_record.id }}' ? 'true' : 'false'"
          >
          
          <svg   
