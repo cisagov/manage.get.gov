@@ -115,8 +115,7 @@ def _user_has_permission(user, request, rules, **kwargs):
     portfolio = _resolve_portfolio(request, **kwargs)
     session_portfolio = get_portfolio_from_session(request.session)
     is_org = bool(portfolio and user.is_org_user_for_portfolio(portfolio))
-    # get domain id from request session for htmx triggers
-    domain_id_from_session = request.session.get("domain_pk")
+
     # Define permission checks
     permission_checks = [
         (IS_STAFF, lambda: user.is_staff),
@@ -126,14 +125,12 @@ def _user_has_permission(user, request, rules, **kwargs):
         (
             IS_DOMAIN_MANAGER,
             lambda: (
-                _is_domain_manager(user, domain_id_from_session, **kwargs)
+                _is_domain_manager(user, **kwargs)
                 and (
                     # Legacy / not in org context, domain manager is fine
                     not session_portfolio
                     # In Org mode, domain must belong to the active session portfolio
-                    or _domain_exists_under_portfolio(
-                        session_portfolio, kwargs.get("domain_pk"), domain_id_from_session
-                    )
+                    or _domain_exists_under_portfolio(session_portfolio, kwargs.get("domain_pk"))
                 )
             ),
         ),
@@ -217,7 +214,7 @@ def _has_portfolio_domain_requests_edit(user, portfolio, domain_request_id):
     return bool(portfolio) and user.has_edit_request_portfolio_permission(portfolio)
 
 
-def _is_domain_manager(user, domain_id_from_session=None, **kwargs):
+def _is_domain_manager(user, **kwargs):
     """
     Determines if the given user is a domain manager for a specified domain.
 
@@ -231,8 +228,6 @@ def _is_domain_manager(user, domain_id_from_session=None, **kwargs):
         bool: True if the user is a domain manager, False otherwise.
     """
     domain_id = kwargs.get("domain_pk")
-    if not domain_id and domain_id_from_session:
-        domain_id = domain_id_from_session
 
     if domain_id:
         return UserDomainRole.objects.filter(user=user, domain_id=domain_id).exists()
@@ -254,7 +249,7 @@ def _p_id(portfolio_or_id):
     return portfolio_or_id
 
 
-def _domain_exists_under_portfolio(portfolio, domain_pk, domain_from_session=None):
+def _domain_exists_under_portfolio(portfolio, domain_pk):
     """Checks to see if the given domain exists under the provided portfolio.
     HELPFUL REMINDER: Watch for typos! Verify that the kwarg key exists before using this function.
     Returns True if the pk is falsy. Otherwise, returns a bool if said object exists.
