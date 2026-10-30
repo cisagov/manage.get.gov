@@ -15,9 +15,11 @@ if id "circleci" &>/dev/null; then
   echo "Updating ownership of /app recursively to circleci:circleci"
   chown -R circleci:circleci /app
 
-  # Switch to circleci user and execute the command
+  # %q-escape each arg so spaces survive `su -c`'s single-string interface
+  # (e.g. `--grep "Tab walks"` stays one flag, not three words).
   echo "Switching to circleci user and running command: $@"
-  su -s /bin/bash -c "$*" circleci
+  cmd=$(printf ' %q' "$@")
+  su -s /bin/bash -c "$cmd" circleci
 else
   echo "circleci user does not exist. Running command as the current user."
   exec "$@"
