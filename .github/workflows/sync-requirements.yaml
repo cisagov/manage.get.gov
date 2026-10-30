@@ -11,7 +11,7 @@ permissions:
   contents: write
 jobs:
   sync:
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: "3.14"
       - run: pip install pipenv
-      - run: pipenv requirements > requirements.txt
+      - run: pipenv requirements --hash > requirements.txt
         working-directory: src
       - name: Commit via API (GitHub-signed)
         env:
