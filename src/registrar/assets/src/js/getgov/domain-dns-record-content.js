@@ -819,20 +819,24 @@ function updateDNSRecordPreview(scope, config) {
     }
 
     let displayContent = contentField?.value.trim();
-    let previewTemplate = info.previewTemplate;
+    let hideClosingPeriod = false;
 
     if (displayContent && typeField.value == "TXT") {
-        const truncatedContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
-
-        if (truncatedContent !== displayContent) {
-            previewTemplate = previewTemplate.replace(/\.$/, "");
+        if (displayContent.endsWith(".") || displayContent.length > TXT_PREVIEW_CONTENT_MAX) {
+            hideClosingPeriod = true;
         }
-        displayContent = truncatedContent;
+
+        displayContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
     }
 
     const values = {
         name: displayName,
         content: displayContent || `[${contentPlaceholder}]`,
+    }
+
+    let previewTemplate = info.previewTemplate;
+    if (hideClosingPeriod) {
+        previewTemplate = previewTemplate.replace(/\.$/, "")
     }
 
     renderDNSRecordPreviewText(previewText, previewTemplate, values);
