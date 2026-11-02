@@ -767,12 +767,10 @@ const TXT_PREVIEW_CONTENT_MAX = 200;
 
 // Shortens text to `max` characters and adds an ellipsis if anything was cut. 
 function truncatePreviewContent(text, max) {
-    const chars = Array.from(text);
-    if (chars.length <= max) {
-        return text;
+    if (text.length <= max) {
+        return text
     }
-    const shortened = chars.slice(0, max).join("") ;
-    return shortened + "…";
+    return text.substring(0, max) + "…";
 }
 
 /*
