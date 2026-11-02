@@ -819,8 +819,15 @@ function updateDNSRecordPreview(scope, config) {
     }
 
     let displayContent = contentField?.value.trim();
+    let previewTemplate = info.previewTemplate;
+
     if (displayContent && typeField.value == "TXT") {
-        displayContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
+        const truncatedContent = truncatePreviewContent(displayContent, TXT_PREVIEW_CONTENT_MAX);
+
+        if (truncatedContent !== displayContent) {
+            previewTemplate = previewTemplate.replace(/\.$/, "");
+        }
+        displayContent = truncatedContent;
     }
 
     const values = {
@@ -828,7 +835,7 @@ function updateDNSRecordPreview(scope, config) {
         content: displayContent || `[${contentPlaceholder}]`,
     }
 
-    renderDNSRecordPreviewText(previewText, info.previewTemplate, values);
+    renderDNSRecordPreviewText(previewText, previewTemplate, values);
 }
 /* 
 Wires up the live preview on every DNS record form (for both add and edit row).
