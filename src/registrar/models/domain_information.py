@@ -36,6 +36,13 @@ class DomainInformation(TimeStampedModel):
             models.Index(fields=["domain_request"]),
         ]
 
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(state_tribe__isnull=True) | models.Q(federal_tribe__isnull=True),
+                name="domain_information_single_tribe_reference",
+            ),
+        ]
+
         verbose_name_plural = "Domain information"
 
     StateTerritoryChoices = DomainRequest.StateTerritoryChoices
@@ -116,6 +123,24 @@ class DomainInformation(TimeStampedModel):
     tribe_name = models.CharField(
         null=True,
         blank=True,
+    )
+
+    state_tribe = models.ForeignKey(
+        "registrar.StateTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_informations",
+        verbose_name="State recognized tribe",
+    )
+
+    federal_tribe = models.ForeignKey(
+        "registrar.FederalTribe",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="domain_informations",
+        verbose_name="Federally recognized tribe",
     )
 
     federal_type = models.CharField(
@@ -357,7 +382,8 @@ class DomainInformation(TimeStampedModel):
 
         When generic_org_type changes, certain conditional fields become irrelevant:
         - federal_agency, federal_type: Only relevant for Federal orgs
-        - tribe_name, federally_recognized_tribe, state_recognized_tribe: Only for Tribal orgs
+        - tribe_name, federally_recognized_tribe, state_recognized_tribe, state_tribe,
+        federal_tribe: Only for Tribal orgs
         - about_your_organization: Only for Special District or Interstate orgs
         """
 
@@ -376,6 +402,8 @@ class DomainInformation(TimeStampedModel):
                 self.federally_recognized_tribe = None
                 self.state_recognized_tribe = None
                 self.tribe_name = None
+                self.federal_tribe = None
+                self.state_tribe = None
 
             # Clear "about your organization" field if not special district or interstate
             about_org_types = [
