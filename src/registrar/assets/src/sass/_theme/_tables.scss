@@ -172,7 +172,7 @@ th {
 }
 
 // Styling for dns records table
-#dnsrecords-table {
+.dotgov-table.dnsrecords-table {
     table-layout: fixed;
 
     .no-padding{
@@ -224,5 +224,15 @@ th {
     td:nth-child(5){
       width:15%;
     }
+
+    @include at-media(mobile-lg) {
+    th{
+      width:100%; 
+    }
+    td{
+      width:100%;
+    }
+
+  }
   }
  
