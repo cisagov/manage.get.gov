@@ -770,7 +770,8 @@ function truncatePreviewContent(text, max) {
     if (text.length <= max) {
         return text
     }
-    return text.substring(0, max) + "…";
+    let truncated = text.substring(0, max).replace(/\.+$/, "");
+    return truncated + "…";
 }
 
 /*
