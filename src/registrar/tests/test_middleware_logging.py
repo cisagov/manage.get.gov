@@ -3,10 +3,14 @@ from django.urls import reverse
 import io
 import json
 import logging
+import sys
 import uuid
-from registrar.config.settings import JsonFormatter
+from registrar.config.settings import JsonFormatter, OmitPermissionDeniedTraceback
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 import registrar.registrar_middleware
+from registrar.models import Domain
+from .common import create_test_user
 from ..logging_context import clear_user_log_context
 
 
@@ -161,3 +165,47 @@ class RegisterLoggingMiddlewareTest(TestCase):
 
         self.assertIsNotNone(matching_entry, "No log line carried weird_field")
         self.assertEqual(matching_entry.get("weird_field"), "unserializable-thing")
+
+
+class PermissionDeniedLoggingTest(TestCase):
+    """Permission denials log a single line without a traceback."""
+
+    def setUp(self):
+        self.user = create_test_user()
+        self.domain = Domain.objects.create(name="denied.gov")
+
+    def tearDown(self):
+        Domain.objects.all().delete()
+        get_user_model().objects.all().delete()
+
+    @staticmethod
+    def _make_record(exc):
+        """Build a log record carrying exc as its exc_info."""
+        try:
+            raise exc
+        except type(exc):
+            exc_info = sys.exc_info()
+        return logging.LogRecord("django.request", logging.WARNING, __file__, 0, "msg", None, exc_info)
+
+    def test_forbidden_request_logs_without_traceback(self):
+        """A 403 from a view the user can't access is logged with no exc_info."""
+        self.client.force_login(self.user)
+        with self.assertLogs("django.request", level="WARNING") as captured:
+            response = self.client.get(reverse("domain", kwargs={"domain_pk": self.domain.id}))
+
+        self.assertEqual(response.status_code, 403)
+        forbidden_records = [r for r in captured.records if "Forbidden (Permission denied)" in r.getMessage()]
+        self.assertEqual(len(forbidden_records), 1)
+        self.assertIsNone(forbidden_records[0].exc_info)
+
+    def test_filter_strips_permission_denied_exc_info(self):
+        """The filter clears exc_info for PermissionDenied and still lets the record through."""
+        record = self._make_record(PermissionDenied())
+        self.assertTrue(OmitPermissionDeniedTraceback().filter(record))
+        self.assertIsNone(record.exc_info)
+
+    def test_filter_keeps_other_exc_info(self):
+        """The filter leaves exc_info in place for any other exception."""
+        record = self._make_record(ValueError("boom"))
+        self.assertTrue(OmitPermissionDeniedTraceback().filter(record))
+        self.assertIsNotNone(record.exc_info)

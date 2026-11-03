@@ -26,6 +26,7 @@ from botocore.config import Config
 import json
 import logging
 import traceback
+from django.core.exceptions import PermissionDenied
 from django.utils.log import ServerFormatter
 from ..logging_context import get_user_log_context
 
@@ -569,6 +570,16 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_record, ensure_ascii=False)
 
 
+class OmitPermissionDeniedTraceback(logging.Filter):
+    """Keep the one-line 403 log entry but drop the traceback for permission denials."""
+
+    def filter(self, record):
+        if record.exc_info and isinstance(record.exc_info[1], PermissionDenied):
+            record.exc_info = None
+            record.exc_text = None
+        return True
+
+
 class JsonServerFormatter(ServerFormatter):
     """Formats server logs into JSON for better parsing"""
 
@@ -628,6 +639,11 @@ LOGGING = {
             "()": JsonFormatter,
         },
     },
+    "filters": {
+        "omit_permission_denied_traceback": {
+            "()": OmitPermissionDeniedTraceback,
+        },
+    },
     # define where log messages will be sent
     # each logger can have one or more handlers
     "handlers": {
@@ -674,6 +690,7 @@ LOGGING = {
         # Django's runserver requests
         "django.request": {
             "handlers": ["django.server"],
+            "filters": ["omit_permission_denied_traceback"],
             "level": "INFO",
             "propagate": False,
         },
