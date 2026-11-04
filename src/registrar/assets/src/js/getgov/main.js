@@ -81,7 +81,7 @@ initDNSRecordPreview()
 // Attach only on an afterSettle event listener so that it doesn't get attached multiple times on the same element when HTMX swaps out the content
 initDNSRecordCancelModal()
 
-// Init the state/tribe dropdown
+// Init the state/federal tribe dropdown
 initializeTribalGovernmentToggle();
 
 document.addEventListener('htmx:afterSettle', (evt) => {
