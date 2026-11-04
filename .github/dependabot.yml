@@ -11,12 +11,23 @@ updates:
     directory: "/src"
     patterns: ["*"]
     multi-ecosystem-group: "weekly-dependencies"
+    ignore:
+      # Django majors are planned upgrades; keep 5.2.x patch/minor flowing
+      - dependency-name: "django"
+        update-types: ["version-update:semver-major"]
+      # Pinned to 7.0.0: 8.x breaks the OWASP ZAP scan against the dev build
+      - dependency-name: "django-debug-toolbar"
+      # Pinned exact in Pipfile; unpin there before removing this
+      - dependency-name: "django-model2puml"
 
   - package-ecosystem: "npm"
     directory: "/src"
     patterns: ["*"]
     multi-ecosystem-group: "weekly-dependencies"
-
+    ignore:
+      # USWDS upgrades change markup/visuals; handle in a dedicated ticket
+      - dependency-name: "@uswds/uswds"
+      - dependency-name: "@uswds/compile"
   - package-ecosystem: "github-actions"
     directory: "/"
     patterns: ["*"]
