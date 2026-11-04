@@ -7,7 +7,7 @@ Federal government branch:
 {{ domain_request.get_federal_type_display }}
 {% elif domain_request.show_tribal_government %}
 Tribal government:
-{{ domain_request.tribe_name|default:"Incomplete" }}{% if domain_request.federally_recognized_tribe %}
+{{ domain_request.tribe_display_name|default:"Incomplete" }}{% if domain_request.federally_recognized_tribe %}
 Federally-recognized tribe
 {% endif %}{% if domain_request.state_recognized_tribe %}
 State-recognized tribe

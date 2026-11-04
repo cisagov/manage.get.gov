@@ -135,7 +135,7 @@
                 {% endwith %}
 
                 {% if DomainRequest.tribe_name %}
-                    {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_name %}
+                    {% include "includes/summary_item.html" with title='Tribal government' value=DomainRequest.tribe_display_name %}
 
                     {% if DomainRequest.federally_recognized_tribe %}
                         <p>Federally-recognized tribe</p>
