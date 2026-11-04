@@ -2357,7 +2357,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         """Tests that no edit can occur when the underlying domain is federal"""
 
         # Set the org type to federal
-        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.FEDERAL
+        self.domain_information.organization_type = DomainInformation.OrganizationChoices.FEDERAL
         self.domain_information.save()
 
         # Add an SO
@@ -2378,7 +2378,7 @@ class TestDomainSeniorOfficial(TestDomainOverview):
         """Tests that no edit can occur when the underlying domain is tribal"""
 
         # Set the org type to federal
-        self.domain_information.generic_org_type = DomainInformation.OrganizationChoices.TRIBAL
+        self.domain_information.organization_type = DomainInformation.OrganizationChoices.TRIBAL
         self.domain_information.save()
 
         # Add an SO. We can do this at the model level, just not the form level.
@@ -2475,7 +2475,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         tribal_org_type = DomainInformation.OrganizationChoices.TRIBAL
-        self.domain_information.generic_org_type = tribal_org_type
+        self.domain_information.organization_type = tribal_org_type
         self.domain_information.save()
         try:
             # Add an org name
@@ -2484,7 +2484,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.generic_org_type, tribal_org_type)
+        self.assertEqual(self.domain_information.organization_type, tribal_org_type)
 
         org_name_page = self.app.get(reverse("domain-org-name-address", kwargs={"domain_pk": self.domain.id}))
 
@@ -2533,7 +2533,7 @@ class TestDomainOrganization(TestDomainOverview):
         # Set the current domain to a tribal organization with a preset value.
         # Save first, so we can test if saving is unaffected (it should be).
         federal_org_type = DomainInformation.OrganizationChoices.FEDERAL
-        self.domain_information.generic_org_type = federal_org_type
+        self.domain_information.organization_type = federal_org_type
         self.domain_information.save()
 
         federal_agency, _ = FederalAgency.objects.get_or_create(agency="AMTRAK")
@@ -2545,7 +2545,7 @@ class TestDomainOrganization(TestDomainOverview):
         except ValueError as err:
             self.fail(f"A ValueError was caught during the test: {err}")
 
-        self.assertEqual(self.domain_information.generic_org_type, federal_org_type)
+        self.assertEqual(self.domain_information.organization_type, federal_org_type)
 
         new_value = ("Department of State", "Department of State")
         self.client.post(
