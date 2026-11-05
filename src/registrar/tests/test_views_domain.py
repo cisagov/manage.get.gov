@@ -12,7 +12,14 @@ from registrar.utility.email import EmailSendingError
 from api.tests.common import less_console_noise_decorator
 from registrar.models.utility.portfolio_helper import UserPortfolioPermissionChoices, UserPortfolioRoleChoices
 from registrar.views.domain import DomainDNSRecordsView
-from .common import GenericTestHelper, MockEppLib, create_domain_manager_user, create_user, form_with_field, get_ap_style_month  # type: ignore
+from .common import (
+    GenericTestHelper,
+    MockEppLib,
+    create_domain_manager_user,
+    create_user,
+    form_with_field,
+    get_ap_style_month,
+)  # type: ignore
 from django_webtest import WebTest  # type: ignore
 import boto3_mocking  # type: ignore
 from waffle.testutils import override_flag
@@ -34,7 +41,6 @@ from registrar.models import (
     Domain,
     DomainInformation,
     DomainInvitation,
-    UserDomainRole,
     AllowedEmail,
     Contact,
     PublicContact,

@@ -1077,6 +1077,7 @@ def create_user(**kwargs):
     user.groups.set([group])
     return user
 
+
 def create_domain_manager_user(**kwargs):
     """Creates a user with is_staff=False and no user group"""
     User = get_user_model()
@@ -1092,6 +1093,7 @@ def create_domain_manager_user(**kwargs):
         phone=kwargs.get("phone", "8004111234"),
     )
     return user
+
 
 def create_omb_analyst_user(**kwargs):
     """Creates a analyst user with is_staff=True and the group cisa_analysts_group"""
