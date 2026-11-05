@@ -554,7 +554,7 @@ class DnsHostService:
             # failures would result in rolling back db account/zone, but not the cf account/zone
             try:
                 vendor_zone_data = self._get_existing_zone_data(name, account_id)
-            except:
+            except ValueError:
                 continue
             if vendor_zone_data:
                 vendor_accounts_with_zone.add((name, account_id))
@@ -579,7 +579,7 @@ class DnsHostService:
         # get vendor zone data (name, id)
         try:
             domain_name = get_dns_zone_name_from_account_name(name)
-        except ValueError as e:
+        except ValueError:
             logger.error(f"Cannot extract domain name from the account name {name}")
         vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
         vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
