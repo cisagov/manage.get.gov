@@ -21,6 +21,7 @@ from registrar.utility.constants import CURRENT_DNS_VENDOR
 from django.db import transaction
 from registrar.services.utility.dns_helper import make_dns_account_name
 from epplibwrapper.errors import RegistryError
+from registrar.utility.errors import DnsHostingErrorCodes, DnsHostingError
 
 logger = logging.getLogger(__name__)
 
@@ -297,7 +298,7 @@ class DnsHostService:
         Returns the deleted DnsRecord's vendor id.
         Raises ValueError if the record or its vendor id cannot be resolved.
         """
-
+        raise DnsHostingError(code=DnsHostingErrorCodes.UPSTREAM_ERROR)
         x_record_id = dns_record.get_active_x_record_id()
         if not x_record_id:
             raise ValueError("This DNS record is missing an external record id and cannot be deleted.")
