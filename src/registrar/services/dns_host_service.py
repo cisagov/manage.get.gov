@@ -7,7 +7,6 @@ from django.conf import settings
 from registrar.models.dns.dns_account_vendor_dns_account import DnsAccount_VendorDnsAccount
 from registrar.models.domain import Domain
 from registrar.services.cloudflare_service import CloudflareService, CloudflareDnsSettingsUpdateResponse
-from registrar.utility.errors import EnrollmentNotAllowedError
 from registrar.services.dns_http_client import build_dns_client
 from registrar.logging_context import set_dns_log_context
 from registrar.models import (
@@ -485,11 +484,6 @@ class DnsHostService:
 
         The enrollment flag is only set if the entire operation succeeds.
         """
-        if settings.IS_PRODUCTION and domain.name not in settings.DNS_HOSTING_PROD_ALLOWLIST:
-            raise EnrollmentNotAllowedError(
-                "This domain cannot be enrolled in DNS Hosting. Domain must be in the prod allowlist"
-            )
-
         domain_name = domain.name
         with set_dns_log_context(domain_name):
             if domain.is_enrolled_in_dns_hosting:
@@ -515,7 +509,8 @@ class DnsHostService:
 
                     # Mark domain as enrolled
                     domain.is_enrolled_in_dns_hosting = True
-                    domain.save(update_fields=["is_enrolled_in_dns_hosting"])
+                    domain.ready()
+                    domain.save()
 
             except Exception:
                 logger.exception(
