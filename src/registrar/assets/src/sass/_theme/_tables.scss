@@ -225,14 +225,5 @@ th {
       width:15%;
     }
 
-    @include at-media(mobile-lg) {
-    th{
-      width:100%; 
-    }
-    td{
-      width:100%;
-    }
-
-  }
   }
  
