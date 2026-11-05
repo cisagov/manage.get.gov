@@ -949,3 +949,59 @@ class TestTribalGovernmentForm(TestCase):
         self.assertEqual(form.cleaned_data["tribe_name"], "Cherokee Nation")
         self.assertNotIn("federal_tribe", form.cleaned_data)
         self.assertNotIn("state_tribe", form.cleaned_data)
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_switching_recognition_type_drops_other_tribe(self):
+        """We want to clear prev value (ie is user switches from Federal to State)"""
+        form = TribalGovernmentForm(
+            data={
+                "federally_recognized_tribe": True,
+                "federal_tribe": self.federal_tribe.pk,
+                # Below is "leftover" from when the
+                # user chose State recognized before (no True like above)
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["federal_tribe"], self.federal_tribe)
+        self.assertIsNone(form.cleaned_data["state_tribe"])
+
+    @override_flag("is_embd_tribal", active=True)
+    @less_console_noise_decorator
+    def test_switching_recognition_type_saves_wo_hitting_the_constraint(self):
+        """
+        User chooses State recognized -> hits save -> then changes to Federal
+        recognized and hits save again. Confirms we don't hit IntegrityError
+        with saving two tribes
+        """
+        first = TribalGovernmentForm(
+            data={
+                "state_recognized_tribe": True,
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+        self.assertTrue(first.is_valid())
+        first.to_database(self.domain_request)
+
+        self.domain_request.refresh_from_db()
+        self.assertEqual(self.domain_request.state_tribe, self.state_tribe)
+
+        second = TribalGovernmentForm(
+            data={
+                "federally_recognized_tribe": True,
+                "federal_tribe": self.federal_tribe.pk,
+                # The "leftover" that we want to remove
+                "state_tribe": self.state_tribe.pk,
+            },
+            domain_request=self.domain_request,
+        )
+        self.assertTrue(second.is_valid())
+        second.to_database(self.domain_request)
+
+        self.domain_request.refresh_from_db()
+        self.assertEqual(self.domain_request.federal_tribe, self.federal_tribe)
+        self.assertIsNone(self.domain_request.state_tribe)

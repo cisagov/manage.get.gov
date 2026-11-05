@@ -368,10 +368,15 @@ class TribalGovernmentForm(RegistrarForm):
             return
 
         # If Federal AND State are checked, we show Federal Tribes
+        # If someone picks a tribe and then switches which kind of tribe
+        # they are, the now hidden dropdown still keeps what was "picked"
+        # Only one tribe can be saved, so we drop the prev "picK" otherwise the save will fail
         if self.cleaned_data.get("federally_recognized_tribe"):
+            self.cleaned_data["state_tribe"] = None
             if not self.cleaned_data.get("federal_tribe"):
                 self.add_error("federal_tribe", "Select the tribe you represent")
         elif self.cleaned_data.get("state_recognized_tribe"):
+            self.cleaned_data["federal_tribe"] = None
             if not self.cleaned_data.get("state_tribe"):
                 self.add_error("state_tribe", "Select the tribe you represent")
 
