@@ -530,7 +530,7 @@ class DnsHostService:
             )
 
     def compare_vendor_and_db_accounts(self):
-        # get all the CF accounts and convert data to tuples (name, id)
+        # get all the CF accounts and convert data to tuples (name, id). Used for sync status report.
         vendor_accounts = self.get_all_accounts()
         vendor_accounts_data = [(a["account_pubname"], a["account_tag"]) for a in vendor_accounts]
 
@@ -557,7 +557,10 @@ class DnsHostService:
             # Check if a vendor zone exists for vendor_only accounts.
             # Because the account and zone creation are inside of a transaction,
             # failures would result in rolling back db account/zone, but not the cf account/zone
-            vendor_zone_data = self._get_existing_zone_data(name, account_id)
+            try:
+                vendor_zone_data = self._get_existing_zone_data(name, account_id)
+            except:
+                continue
             if vendor_zone_data:
                 vendor_accounts_with_zone.add((name, account_id))
 
@@ -579,7 +582,10 @@ class DnsHostService:
 
     def _get_existing_zone_data(self, name, account_id) -> Optional[tuple]:
         # get vendor zone data (name, id)
-        domain_name = get_dns_zone_name_from_account_name(name)
+        try:
+            domain_name = get_dns_zone_name_from_account_name(name)
+        except ValueError as e:
+            logger.error(f"Cannot extract domain name from the account name {name}")
         vendor_zone = self._find_existing_zone_in_cf(domain_name, account_id)
         vendor_zone_data = (vendor_zone["name"], vendor_zone["id"]) if vendor_zone else None
 
